@@ -73,14 +73,14 @@ namespace UnityEditor
         [SerializeField] protected LabelGUI m_LabelGUI = new LabelGUI();
         [SerializeField] protected int m_LastInspectedObjectInstanceID = -1;
         [SerializeField] protected float m_LastVerticalScrollValue = 0;
-        [SerializeField] protected string m_AssetGUID = "";
-        [SerializeField] protected int m_InstanceID = 0;
+        [SerializeField] protected string m_GlobalObjectId = "";
 
         private Object m_InspectedObject;
         private static PropertyEditor s_LastPropertyEditor;
         protected int m_LastInitialEditorInstanceID;
         protected Component[] m_ComponentsInPrefabSource;
         protected HashSet<Component> m_RemovedComponents;
+        protected HashSet<Component> m_SuppressedComponents;
         protected bool m_ResetKeyboardControl;
         internal bool m_OpenAddComponentMenu = false;
         protected ActiveEditorTracker m_Tracker;
@@ -288,6 +288,7 @@ namespace UnityEditor
             CreateTracker();
 
             EditorApplication.focusChanged += OnFocusChanged;
+            Undo.undoRedoPerformed += OnUndoRedoPerformed;
         }
 
         [UsedImplicitly]
@@ -298,6 +299,7 @@ namespace UnityEditor
             m_LastVerticalScrollValue = m_ScrollView?.verticalScroller.value ?? 0;
 
             EditorApplication.focusChanged -= OnFocusChanged;
+            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
         }
 
         [UsedImplicitly]
@@ -387,16 +389,13 @@ namespace UnityEditor
         {
             var objTitle = ObjectNames.GetInspectorTitle(obj);
             var titleTooltip = objTitle;
-            if (!String.IsNullOrEmpty(m_AssetGUID))
-                titleTooltip = AssetDatabase.GUIDToAssetPath(m_AssetGUID);
-            else
-            {
-                var go = obj as GameObject;
-                if (go)
-                    titleTooltip = EditorUtility.GetHierarchyPath(go);
-                else if (obj is Component c)
-                    titleTooltip = $"{EditorUtility.GetHierarchyPath(c.gameObject)} ({objTitle})";
-            }
+
+            if (obj is GameObject go)
+                titleTooltip = EditorUtility.GetHierarchyPath(go);
+            else if (obj is Component c)
+                titleTooltip = $"{EditorUtility.GetHierarchyPath(c.gameObject)} ({objTitle})";
+            else if (GlobalObjectId.TryParse(m_GlobalObjectId, out var gid))
+                titleTooltip = AssetDatabase.GUIDToAssetPath(gid.assetGUID);
 
             titleContent = EditorGUIUtility.TrTextContentWithIcon(obj.name, titleTooltip, "UnityEditor.InspectorWindow");
             titleContent.image = AssetPreview.GetMiniThumbnail(obj);
@@ -530,19 +529,13 @@ namespace UnityEditor
 
         protected bool LoadPersistedObject()
         {
-            if (String.IsNullOrEmpty(m_AssetGUID) && m_InstanceID == 0)
+            if (String.IsNullOrEmpty(m_GlobalObjectId))
                 return false;
 
-            if (!String.IsNullOrEmpty(m_AssetGUID))
-            {
-                var assetPath = AssetDatabase.GUIDToAssetPath(m_AssetGUID);
-                m_InspectedObject = AssetDatabase.LoadAssetAtPath<Object>(assetPath);
-            }
-            else if (m_InstanceID != 0)
-            {
-                m_InspectedObject = FindObjectFromInstanceID(m_InstanceID) ?? ForceLoadFromInstanceID(m_InstanceID);
-            }
+            if (!GlobalObjectId.TryParse(m_GlobalObjectId, out var gid))
+                return false;
 
+            m_InspectedObject = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(gid);
             if (m_InspectedObject)
             {
                 SetTitle(m_InspectedObject);
@@ -576,14 +569,30 @@ namespace UnityEditor
             ClearVersionControlBarState();
         }
 
+        private void OnUndoRedoPerformed()
+        {
+            // Early out if we have no removed or suppressed components.
+            // It's only a change from suppressed to removed or vice versa that needs to be handled specially on undo/redo.
+            // Other cases will cause the number of Editors to change which will result in the tracker being rebuilt already.
+            if ((m_RemovedComponents == null || m_RemovedComponents.Count == 0) && (m_SuppressedComponents == null || m_SuppressedComponents.Count == 0))
+                return;
+
+            // Since undo could cause a removed component to become a supressed component or vice versa, we have to rebuild that info here.
+            RebuildContentsContainers();
+        }
+
         private void ExtractPrefabComponents()
         {
-            m_LastInitialEditorInstanceID = m_Tracker.activeEditors[0].GetInstanceID();
+            m_LastInitialEditorInstanceID = m_Tracker.activeEditors.Length == 0 ? 0 : m_Tracker.activeEditors[0].GetInstanceID();
 
             m_ComponentsInPrefabSource = null;
             if (m_RemovedComponents == null)
+            {
                 m_RemovedComponents = new HashSet<Component>();
+                m_SuppressedComponents = new HashSet<Component>();
+            }
             m_RemovedComponents.Clear();
+            m_SuppressedComponents.Clear();
 
             if (m_Tracker.activeEditors.Length == 0)
                 return;
@@ -601,10 +610,14 @@ namespace UnityEditor
                 return;
 
             m_ComponentsInPrefabSource = sourceGo.GetComponents<Component>();
+            Component[] actuallyRemovedComponents = PrefabUtility.GetRemovedComponents(PrefabUtility.GetPrefabInstanceHandle(go));
             var removedComponentsList = PrefabOverridesUtility.GetRemovedComponentsForSingleGameObject(go);
             for (int i = 0; i < removedComponentsList.Count; i++)
             {
-                m_RemovedComponents.Add(removedComponentsList[i].assetComponent);
+                if (actuallyRemovedComponents.Contains(removedComponentsList[i].assetComponent))
+                    m_RemovedComponents.Add(removedComponentsList[i].assetComponent);
+                else
+                    m_SuppressedComponents.Add(removedComponentsList[i].assetComponent);
             }
         }
 
@@ -1897,14 +1910,10 @@ namespace UnityEditor
             if (!obj)
                 return null;
 
-            var assetPath = AssetDatabase.GetAssetPath(obj) ?? String.Empty;
             var propertyEditor = CreateInstance<PropertyEditor>();
             propertyEditor.tracker.SetObjectsLockedByThisTracker(new List<Object> { obj });
 
-            if (!String.IsNullOrEmpty(assetPath))
-                propertyEditor.m_AssetGUID = AssetDatabase.AssetPathToGUID(assetPath);
-            else
-                propertyEditor.m_InstanceID = obj.GetInstanceID();
+            propertyEditor.m_GlobalObjectId = GlobalObjectId.GetGlobalObjectIdSlow(obj).ToString();
             propertyEditor.m_InspectedObject = obj;
 
             propertyEditor.SetTitle(obj);
@@ -1918,8 +1927,11 @@ namespace UnityEditor
             propertyEditor.Show();
 
             // Offset new window instance.
-            var pos = s_LastPropertyEditor ? s_LastPropertyEditor.position : propertyEditor.m_Parent.screenPosition;
-            propertyEditor.position = new Rect(pos.x + 30, pos.y + 30, propertyEditor.position.width, propertyEditor.position.height);
+            if (s_LastPropertyEditor)
+            {
+                var pos = s_LastPropertyEditor.position;
+                propertyEditor.position = new Rect(pos.x + 30, pos.y + 30, propertyEditor.position.width, propertyEditor.position.height);
+            }
             s_LastPropertyEditor = propertyEditor;
         }
 

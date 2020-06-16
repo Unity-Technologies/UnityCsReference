@@ -3,10 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Scripting;
 using UnityEngine.Bindings;
-using System.Runtime.InteropServices;
 
 namespace UnityEditor
 {
@@ -16,8 +15,8 @@ namespace UnityEditor
     [StaticAccessor("MeshUtility", StaticAccessorType.DoubleColon)]
     public class MeshUtility
     {
-        [FreeFunction] extern private static void OptimizeIndexBuffers(Mesh mesh);
-        [FreeFunction] extern private static void OptimizeReorderVertexBuffer(Mesh mesh);
+        [FreeFunction] extern private static void OptimizeIndexBuffers([NotNull("NullExceptionObject")] Mesh mesh);
+        [FreeFunction] extern private static void OptimizeReorderVertexBuffer([NotNull("NullExceptionObject")] Mesh mesh);
 
         public static void Optimize(Mesh mesh)
         {
@@ -44,5 +43,24 @@ namespace UnityEditor
         }
 
         extern internal static Vector2[] ComputeTextureBoundingHull(Texture texture, int vertexCount);
+
+        public static Mesh.MeshDataArray AcquireReadOnlyMeshData(Mesh mesh)
+        {
+            return new Mesh.MeshDataArray(mesh, false);
+        }
+
+        public static Mesh.MeshDataArray AcquireReadOnlyMeshData(Mesh[] meshes)
+        {
+            if (meshes == null)
+                throw new ArgumentNullException(nameof(meshes), "Mesh array is null");
+            return new Mesh.MeshDataArray(meshes, meshes.Length, false);
+        }
+
+        public static Mesh.MeshDataArray AcquireReadOnlyMeshData(List<Mesh> meshes)
+        {
+            if (meshes == null)
+                throw new ArgumentNullException(nameof(meshes), "Mesh list is null");
+            return new Mesh.MeshDataArray(NoAllocHelpers.ExtractArrayFromListT(meshes), meshes.Count, false);
+        }
     }
 }

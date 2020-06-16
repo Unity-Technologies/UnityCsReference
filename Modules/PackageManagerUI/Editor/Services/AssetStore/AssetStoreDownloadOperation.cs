@@ -19,8 +19,6 @@ namespace UnityEditor.PackageManager.UI
         [SerializeField]
         private string m_ProductId;
         public string packageUniqueId => m_ProductId;
-
-        public string specialUniqueId => string.Empty;
         public string versionUniqueId => string.Empty;
 
         // a timestamp is added to keep track of how `fresh` the result is
@@ -114,7 +112,7 @@ namespace UnityEditor.PackageManager.UI
                         m_DownloadedBytes = 0;
                         m_State = DownloadState.Aborted;
                         m_ErrorMessage = L10n.Tr("Download aborted.");
-                        onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage));
+                        onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage, UIError.Attribute.IsClearable | UIError.Attribute.IsWarning));
                         onOperationFinalized?.Invoke(this);
                     }
                     else
@@ -136,7 +134,7 @@ namespace UnityEditor.PackageManager.UI
             m_State = DownloadState.Error;
             m_ErrorMessage = L10n.Tr(k_DownloadErrorMessage);
             Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {errorMessage}");
-            onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage, UIError.Attribute.IsDetailInConsole));
+            onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage, UIError.Attribute.IsDetailInConsole | UIError.Attribute.IsClearable));
             onOperationFinalized?.Invoke(this);
         }
 

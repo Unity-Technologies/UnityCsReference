@@ -30,7 +30,7 @@ namespace UnityEditor
         class Texts
         {
             public GUIContent create = EditorGUIUtility.TrTextContent("", "Create and assign a Particle System as sub-emitter.");
-            public GUIContent inherit = EditorGUIUtility.TrTextContent("Inherit", "Determines what properties to inherit from the parent system.");
+            public GUIContent inherit = EditorGUIUtility.TrTextContent("Inherit", "Determines what properties to inherit from the Parent System.");
             public GUIContent emitProbability = EditorGUIUtility.TrTextContent("Emit Probability", "Determines the proportion of sub-emitter spawn events that successfully triggers the associated sub-emitter.");
 
             public GUIContent[] subEmitterTypes = new GUIContent[]

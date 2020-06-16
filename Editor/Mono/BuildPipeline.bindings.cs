@@ -115,7 +115,10 @@ namespace UnityEditor
         EnableDeepProfilingSupport = 1 << 28,
 
         // The BuildReport object returned by BuildPipeline.BuildPlayer will contain more details (about build times and contents), at the cost of a slightly (typically, a few percents) longer build time
-        DetailedBuildReport = 1 << 29
+        DetailedBuildReport = 1 << 29,
+
+        // Turn shader stripping on and enable shader live link connection
+        ShaderLivelinkSupport = 1 << 30,
     }
 
     // Asset Bundle building options.

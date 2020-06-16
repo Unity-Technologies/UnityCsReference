@@ -202,7 +202,7 @@ namespace UnityEditor.Utils
             if (Application.platform == RuntimePlatform.OSXEditor)
             {
                 var start = DateTime.Now;
-                while (!_process.HasExited && (DateTime.Now - start).Milliseconds < milliseconds)
+                while (!_process.HasExited && (DateTime.Now - start).TotalMilliseconds < milliseconds)
                 {
                     // Don't consume 100% of CPU while waiting for process to exit
                     Thread.Sleep(SleepTimeoutMiliseconds);

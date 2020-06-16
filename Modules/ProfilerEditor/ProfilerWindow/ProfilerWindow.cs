@@ -4,22 +4,23 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Collections.ObjectModel;
 using UnityEditor.Accessibility;
-using UnityEditorInternal;
-using UnityEditor.Profiling;
-using UnityEngine;
-using UnityEngine.Profiling;
-using UnityEditorInternal.Profiling;
-using UnityEngine.Scripting;
-using UnityEngine.Networking.PlayerConnection;
 using UnityEditor.Networking.PlayerConnection;
+using UnityEditor.Profiling;
+using UnityEditor.Profiling.ModuleEditor;
 using UnityEditor.StyleSheets;
+using UnityEditorInternal;
+using UnityEditorInternal.Profiling;
+using UnityEngine;
+using UnityEngine.Networking.PlayerConnection;
+using UnityEngine.Profiling;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Profiler", useTypeNameAsIconName = true)]
-    internal class ProfilerWindow : EditorWindow, IProfilerWindowController, IHasCustomMenu
+    internal class ProfilerWindow : EditorWindow, IProfilerWindowController, IHasCustomMenu, ProfilerModulesDropdownWindow.IResponder
     {
         internal static class Styles
         {
@@ -92,7 +93,12 @@ namespace UnityEditor
                 profilerGraphBackground.overflow.left = -(int)Chart.kSideWidth;
             }
         }
-        private static readonly ProfilerArea[] ms_StackedAreas = { ProfilerArea.CPU, ProfilerArea.GPU, ProfilerArea.UI, ProfilerArea.GlobalIllumination };
+
+        static List<ProfilerWindow> s_ProfilerWindows = new List<ProfilerWindow>();
+
+        const int k_NoModuleSelected = -1;
+        const string k_SelectedModuleIndexPreferenceKey = "ProfilerWindow.SelectedModuleIndex";
+        const string k_DynamicModulesPreferenceKey = "ProfilerWindow.DynamicModules";
 
         [NonSerialized]
         bool m_Initialized;
@@ -111,53 +117,23 @@ namespace UnityEditor
 
         // For keeping correct "Recording" state on window maximizing
         [SerializeField]
-        private bool m_Recording;
+        bool m_Recording;
 
-        private IConnectionStateInternal m_AttachProfilerState;
+        IConnectionStateInternal m_AttachProfilerState;
 
-        private Vector2 m_GraphPos = Vector2.zero;
+        Vector2 m_GraphPos = Vector2.zero;
 
         [SerializeField]
-        string m_ActiveNativePlatformSupportModule = null;
+        string m_ActiveNativePlatformSupportModuleName;
 
-        static List<ProfilerWindow> m_ProfilerWindows = new List<ProfilerWindow>();
-
-        // used by Tests/PerformanceTests/Profiler ProfilerWindowTests.CPUViewTests through reflection
         [SerializeField]
-        ProfilerArea m_CurrentArea = k_InvalidArea;
-        const ProfilerArea k_InvalidArea = unchecked((ProfilerArea)Profiler.invalidProfilerArea);
-
-        const string k_CurrentAreaPrefKey = "ProfilerWindow.CurrentArea";
+        int m_SelectedModuleIndex;
 
         int m_CurrentFrame = -1;
         int m_LastFrameFromTick = -1;
         int m_PrevLastFrame = -1;
 
         bool m_CurrentFrameEnabled = false;
-
-        // Profiler charts
-        // used by Tests/PerformanceTests/Profiler ProfilerWindowTests.CPUViewTests through reflection
-        ProfilerChart[] m_Charts;
-
-        float[] m_ChartOldMax = new[]
-        {
-            -1.0f, // Cpu
-            -1.0f, // Gpu
-            0, // Rendering,
-            0, // Memory,
-            0, // Audio,
-            0, // Video,
-            0, // Physics,
-            0, // Physics2D,
-            0, // NetworkMessages,
-            0, // NetworkOperations,
-            -1.0f, // UI,
-            0, // UIDetails,
-            0, // GlobalIllumination,
-            0, // AreaCount,
-        };
-        const float k_ChartMinClamp = 110.0f;
-        const float k_ChartMaxClamp = 70000.0f;
 
         // Profiling GUI constants
         const float kRowHeight = 16;
@@ -170,28 +146,19 @@ namespace UnityEditor
 
         // used by Tests/PerformanceTests/Profiler ProfilerWindowTests.CPUViewTests through reflection
         [SerializeReference]
-        ProfilerModuleBase[] m_ProfilerModules;
-
-        // used by Tests/PerformanceTests/Profiler ProfilerWindowTests.CPUViewTests.SelectAndDisplayDetailsForAFrame_WithSearchFiltering to avoid brittle tests due to reflection
-        internal T GetProfilerModule<T>(ProfilerArea area) where T : ProfilerModuleBase
-        {
-            var index = (int)area;
-            if (index >= 0 && index < m_ProfilerModules.Length)
-                return m_ProfilerModules[index] as T;
-            return null;
-        }
+        List<ProfilerModuleBase> m_Modules;
+        // Used by ProfilerEditorTests/ProfilerAreaReferenceCounterTests through reflection.
+        ProfilerAreaReferenceCounter m_AreaReferenceCounter = new ProfilerAreaReferenceCounter();
 
         ProfilerMemoryRecordMode m_CurrentCallstackRecordMode = ProfilerMemoryRecordMode.None;
         [SerializeField]
         ProfilerMemoryRecordMode m_CallstackRecordMode = ProfilerMemoryRecordMode.None;
 
-
         public string ConnectedTargetName => m_AttachProfilerState.connectionName;
-
         public bool ConnectedToEditor => m_AttachProfilerState.connectedToTarget == ConnectionTarget.Editor;
 
         [SerializeField]
-        private bool m_ClearOnPlay;
+        bool m_ClearOnPlay;
 
         const string kProfilerRecentSaveLoadProfilePath = "ProfilerRecentSaveLoadProfilePath";
         const string kProfilerEnabledSessionKey = "ProfilerEnabled";
@@ -205,10 +172,19 @@ namespace UnityEditor
         internal event Action<bool> deepProfileChanged = delegate {};
         internal event Action<ProfilerMemoryRecordMode> memoryRecordingModeChanged = delegate {};
 
-        // use this when iterating over arrays of history length. This + iterationIndex < 0 means no data for this frame, for anything else, this is the same as ProfilerDriver.firstFrame.
-        int firstFrameIndexWithHistoryOffset
+        public ProfilerModuleBase SelectedModule
         {
-            get { return ProfilerDriver.lastFrameIndex + 1 - ProfilerUserSettings.frameCount; }
+            get
+            {
+                if ((m_SelectedModuleIndex != k_NoModuleSelected) &&
+                    (m_SelectedModuleIndex >= 0) &&
+                    (m_SelectedModuleIndex < m_Modules.Count))
+                {
+                    return m_Modules[m_SelectedModuleIndex];
+                }
+
+                return null;
+            }
         }
 
         public void SetSelectedPropertyPath(string path)
@@ -217,7 +193,7 @@ namespace UnityEditor
             {
                 ProfilerDriver.selectedPropertyPath = path;
                 selectionChanged.Invoke(path);
-                UpdateCharts();
+                UpdateModules();
             }
         }
 
@@ -227,7 +203,7 @@ namespace UnityEditor
             {
                 ProfilerDriver.selectedPropertyPath = string.Empty;
                 selectionChanged.Invoke(string.Empty);
-                UpdateCharts();
+                UpdateModules();
             }
         }
 
@@ -248,7 +224,7 @@ namespace UnityEditor
 
             var property = new ProfilerProperty();
             property.SetRoot(targetedFrame, sortType, (int)ProfilerViewType.Hierarchy);
-            property.onlyShowGPUSamples = m_CurrentArea == ProfilerArea.GPU;
+            property.onlyShowGPUSamples = (SelectedModule is GPUProfilerModule);
             return property;
         }
 
@@ -269,21 +245,68 @@ namespace UnityEditor
             return m_Recording;
         }
 
+        // Used by Profiler Analyzer via reflection.
+        internal T GetProfilerModule<T>(ProfilerArea area) where T : ProfilerModuleBase
+        {
+            foreach (var module in m_Modules)
+            {
+                if (module.area == area)
+                {
+                    return module as T;
+                }
+            }
+
+            return null;
+        }
+
+        // used by Tests/PerformanceTests/Profiler to avoid brittle tests due to reflection
+        internal T GetProfilerModuleByType<T>() where T : ProfilerModuleBase
+        {
+            foreach (var module in m_Modules)
+            {
+                if (module is T)
+                {
+                    return module as T;
+                }
+            }
+
+            return null;
+        }
+
+        // Used by Tests/ProfilerEditorTests/ProfilerModulePreferenceKeyTests.
+        internal ProfilerModuleBase GetProfilerModuleByType(Type type)
+        {
+            foreach (var module in m_Modules)
+            {
+                if (module.GetType() == type)
+                {
+                    return module;
+                }
+            }
+
+            return null;
+        }
+
         void OnEnable()
         {
             InitializeIfNeeded();
 
             titleContent = GetLocalizedTitleContent();
-            m_ProfilerWindows.Add(this);
+            s_ProfilerWindows.Add(this);
             EditorApplication.playModeStateChanged += OnPlaymodeStateChanged;
             EditorApplication.pauseStateChanged += OnPauseStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged += OnSettingsChanged;
             ProfilerUserSettings.settingsChanged += OnSettingsChanged;
             ProfilerDriver.profileLoaded += OnProfileLoaded;
 
-            foreach (var module in m_ProfilerModules)
+            if (ModuleEditorWindow.TryGetOpenInstance(out var moduleEditorWindow))
             {
-                module?.OnEnable(this);
+                moduleEditorWindow.onChangesConfirmed += OnModuleEditorChangesConfirmed;
+            }
+
+            foreach (var module in m_Modules)
+            {
+                module?.OnEnable();
             }
         }
 
@@ -295,133 +318,110 @@ namespace UnityEditor
             Initialize();
         }
 
-        static readonly string[] k_DefaultMemoryAreaCounterNames =
-        {
-            "Total Used Memory",
-            "Texture Memory",
-            "Mesh Memory",
-            "Material Count",
-            "Object Count",
-            "GC Used Memory",
-            "GC Allocated In Frame",
-        };
-
-        static readonly string[] k_PS4MemoryAreaCounterNames = k_DefaultMemoryAreaCounterNames.Concat(new string[]
-        {
-            "GARLIC heap allocs",
-            "ONION heap allocs"
-        }).ToArray();
-
-        string[] GetStatNamesForArea(ProfilerArea area)
-        {
-            if (area == ProfilerArea.Memory)
-            {
-                if (m_ActiveNativePlatformSupportModule == "PS4")
-                    return k_PS4MemoryAreaCounterNames;
-                else
-                    return k_DefaultMemoryAreaCounterNames;
-            }
-
-            return ProfilerDriver.GetGraphStatisticsPropertiesForArea(area);
-        }
-
         void Initialize()
         {
             // When reinitializing (e.g. because Colorblind mode or PlatformModule changed) we don't need a new state
             if (m_AttachProfilerState == null)
                 m_AttachProfilerState = PlayerConnectionGUIUtility.GetConnectionState(this, OnTargetedEditorConnectionChanged, IsEditorConnectionTargeted, (player) => ClearFramesCallback()) as IConnectionStateInternal;
 
-            int historySize = ProfilerUserSettings.frameCount;
+            m_Modules = InstantiateAvailableProfilerModules();
+            InitializeActiveNativePlatformSupportModuleName();
+            InitializeSelectedModuleIndex();
+            ConfigureLayoutProperties();
 
-            m_Charts = new ProfilerChart[Profiler.areaCount];
-
-            var chartAreaColors = ProfilerColors.chartAreaColors;
-
-            for (int i = 0; i < Profiler.areaCount; i++)
+            foreach (var module in m_Modules)
             {
-                float scale = 1.0f;
-                Chart.ChartType chartType = Chart.ChartType.Line;
-                string[] statisticsNames = GetStatNamesForArea((ProfilerArea)i);
-                int length = statisticsNames.Length;
-                if (Array.IndexOf(ms_StackedAreas, (ProfilerArea)i) != -1)
-                {
-                    chartType = Chart.ChartType.StackedFill;
-                    scale = 1.0f / 1000.0f;
-                }
-
-                ProfilerChart chart = CreateProfilerChart((ProfilerArea)i, chartType, scale, length);
-
-                if (chart.m_Area == ProfilerArea.CPU)
-                {
-                    chart.SetOnSeriesToggleCallback(OnToggleCPUChartSeries);
-                }
-
-                if (chart.m_Area == ProfilerArea.GPU)
-                {
-                    chart.statisticsAvailabilityMessage = GPUProfilerModule.GetStatisticsAvailabilityStateReason;
-                }
-
-                for (int s = 0; s < length; s++)
-                {
-                    chart.m_Series[s] = new ChartSeriesViewData(statisticsNames[s], historySize, chartAreaColors[s % chartAreaColors.Length]);
-                    for (int frameIdx = 0; frameIdx < historySize; ++frameIdx)
-                        chart.m_Series[s].xValues[frameIdx] = (float)frameIdx;
-                }
-
-                m_Charts[(int)i] = chart;
+                module?.OnEnable();
             }
 
+            UpdateModules();
 
-            m_CurrentArea = (ProfilerArea)SessionState.GetInt(k_CurrentAreaPrefKey, (int)k_InvalidArea);
+            m_Initialized = true;
+        }
 
-            if (m_CurrentArea == k_InvalidArea || !m_Charts[(int)m_CurrentArea].active)
+        List<ProfilerModuleBase> InstantiateAvailableProfilerModules()
+        {
+            var profilerModules = new List<ProfilerModuleBase>();
+            InstantiatePredefinedProfilerModules(profilerModules);
+            InstantiateDynamicProfilerModules(profilerModules);
+
+            profilerModules.Sort((a, b) => a.orderIndex.CompareTo(b.orderIndex));
+
+            return profilerModules;
+        }
+
+        void InstantiatePredefinedProfilerModules(List<ProfilerModuleBase> outModules)
+        {
+            var moduleTypes = TypeCache.GetTypesDerivedFrom<ProfilerModuleBase>();
+            foreach (var moduleType in moduleTypes)
             {
-                for (int i = 0; i < m_Charts.Length; i++)
+                // Exclude DynamicProfilerModule as they are defined via the Module Editor, i.e. they are not 'predefined'.
+                if (!moduleType.IsAbstract && moduleType != typeof(DynamicProfilerModule))
                 {
-                    if (m_Charts[i].active)
+                    try
                     {
-                        m_CurrentArea = (ProfilerArea)i;
+                        var module = Activator.CreateInstance(moduleType, this as IProfilerWindowController) as ProfilerModuleBase;
+                        if (module != null)
+                        {
+                            outModules.Add(module);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogError($"Unable to create Profiler module of type {moduleType}. {e.Message}");
+                    }
+                }
+            }
+        }
+
+        void InstantiateDynamicProfilerModules(List<ProfilerModuleBase> outModules)
+        {
+            var json = EditorPrefs.GetString(k_DynamicModulesPreferenceKey);
+            var serializedDynamicModules = JsonUtility.FromJson<DynamicProfilerModule.SerializedDataCollection>(json);
+            if (serializedDynamicModules != null)
+            {
+                for (int i = 0; i < serializedDynamicModules.Length; i++)
+                {
+                    var serializedDynamicModuleData = serializedDynamicModules[i];
+                    var dynamicModule = DynamicProfilerModule.CreateFromSerializedData(serializedDynamicModuleData, this as IProfilerWindowController);
+                    outModules.Add(dynamicModule);
+                }
+            }
+        }
+
+        void InitializeActiveNativePlatformSupportModuleName()
+        {
+            m_ActiveNativePlatformSupportModuleName = EditorUtility.GetActiveNativePlatformSupportModuleName();
+        }
+
+        void InitializeSelectedModuleIndex()
+        {
+            m_SelectedModuleIndex = SessionState.GetInt(k_SelectedModuleIndexPreferenceKey, k_NoModuleSelected);
+
+            // If no module is selected or the selected module is not active anymore, attempt to select the first active module.
+            if (m_SelectedModuleIndex == k_NoModuleSelected || (SelectedModule != null && !SelectedModule.isActive))
+            {
+                for (int i = 0; i < m_Modules.Count; i++)
+                {
+                    var module = m_Modules[i];
+                    if (module.isActive)
+                    {
+                        m_SelectedModuleIndex = i;
                         break;
                     }
                 }
             }
+        }
 
+        void ConfigureLayoutProperties()
+        {
             if (m_VertSplit == null || !m_VertSplit.IsValid())
+            {
                 m_VertSplit = SplitterState.FromRelative(new[] { EditorPrefs.GetFloat(k_VertSplitterPercentageElement0PrefKey, 50f), EditorPrefs.GetFloat(k_VertSplitterPercentageElement1PrefKey, 50f) }, new float[] { k_VertSplitterMinSizes, k_VertSplitterMinSizes }, null);
+            }
+
             // 2 times the min splitter size plus one line height for the toolbar up top
             minSize = new Vector2(Chart.kSideWidth + k_RightPaneMinSize, k_VertSplitterMinSizes * m_VertSplit.minSizes.Length + k_LineHeight);
-
-            // TODO: only create modules for active charts and otherwise lazy initialize them.
-            if (m_ProfilerModules == null)
-            {
-                m_ProfilerModules = new ProfilerModuleBase[]
-                {
-                    new CPUProfilerModule(), //CPU
-                    new GPUProfilerModule(), //GPU
-                    new RenderingProfilerModule(), //Rendering
-                    new MemoryProfilerModule(), //Memory
-                    new AudioProfilerModule(), //Audio
-                    new VideoProfilerModule(), //Video
-                    new PhysicsProfilerModule(), //Physics
-                    new Physics2DProfilerModule(), //Physics2D
-                    new NetworkingMessagesProfilerModule(), //NetworkMessages
-                    new NetworkingOperationsProfilerModule(), //NetworkOperations
-                    new UIProfilerModule(), //UI
-                    new UIDetailsProfilerModule(), //UIDetails
-                    new GlobalIlluminationProfilerModule(), //GlobalIllumination
-                };
-            }
-
-            foreach (var module in m_ProfilerModules)
-            {
-                module?.OnEnable(this);
-            }
-
-            UpdateCharts();
-            foreach (var chart in m_Charts)
-                chart.LoadAndBindSettings();
-
-            m_Initialized = true;
         }
 
         void OnSettingsChanged()
@@ -437,85 +437,72 @@ namespace UnityEditor
             m_LastFrameFromTick = -1;
         }
 
-        void OnToggleCPUChartSeries(bool wasToggled)
+        void IProfilerWindowController.SelectModule(ProfilerModuleBase module)
         {
-            if (wasToggled)
+            var previousSelectedModuleIndex = m_SelectedModuleIndex;
+            int newSelectedModuleIndex = IndexOfModule(module);
+            if ((previousSelectedModuleIndex == newSelectedModuleIndex) ||
+                (newSelectedModuleIndex == -1))
             {
-                int historyLength = ProfilerUserSettings.frameCount;
-                int firstEmptyFrame = firstFrameIndexWithHistoryOffset;
-                int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
-
-                ComputeChartScaleValue(ProfilerArea.CPU, historyLength, firstEmptyFrame, firstFrame);
-            }
-        }
-
-        ProfilerChart CreateProfilerChart(ProfilerArea i, Chart.ChartType chartType, float scale, int length)
-        {
-            ProfilerChart newChart = (i == ProfilerArea.UIDetails)
-                ? new UISystemProfilerChart(chartType, scale, length)
-                : new ProfilerChart(i, chartType, scale, length);
-
-            if (i == ProfilerArea.NetworkMessages || i == ProfilerArea.NetworkOperations)
-            {
-                newChart.m_SharedScale = true;
-            }
-            newChart.selected += OnChartSelected;
-            newChart.closed += OnChartClosed;
-            return newChart;
-        }
-
-        void OnChartClosed(Chart sender)
-        {
-            ProfilerChart profilerChart = (ProfilerChart)sender;
-            m_CurrentArea = k_InvalidArea;
-            profilerChart.active = false;
-            m_ProfilerModules[(int)profilerChart.m_Area].OnDisable();
-            m_ProfilerModules[(int)profilerChart.m_Area].OnClosed();
-            m_CurrentArea = k_InvalidArea;
-        }
-
-        void OnChartSelected(Chart sender)
-        {
-            ProfilerArea newArea = ((ProfilerChart)sender).m_Area;
-
-            if (m_CurrentArea == newArea)
                 return;
-            var oldArea = m_CurrentArea;
-            m_CurrentArea = newArea;
+            }
 
-            // if switched out of CPU area, reset selected property
-            if (m_CurrentArea != ProfilerArea.CPU)
+            var previousSelectedModule = SelectedModule;
+            m_SelectedModuleIndex = newSelectedModuleIndex;
+
+            // If switched out of CPU area, reset selected property.
+            if (previousSelectedModule != null &&
+                previousSelectedModule is CPUProfilerModule)
             {
                 ClearSelectedPropertyPath();
             }
 
-            if (oldArea != k_InvalidArea)
-            {
-                m_ProfilerModules[(int)oldArea].OnDisable();
-            }
-
-            m_ProfilerModules[(int)newArea].OnEnable(this);
+            previousSelectedModule?.OnDisable();
+            SelectedModule?.OnEnable();
 
             Repaint();
             GUIUtility.keyboardControl = 0;
             GUIUtility.ExitGUI();
         }
 
+        void IProfilerWindowController.CloseModule(ProfilerModuleBase module)
+        {
+            m_SelectedModuleIndex = k_NoModuleSelected;
+
+            module.OnDisable();
+            module.OnClosed();
+        }
+
+        int IndexOfModule(ProfilerModuleBase module)
+        {
+            int index = -1;
+            for (int i = 0; i < m_Modules.Count; i++)
+            {
+                var m = m_Modules[i];
+                if (m.Equals(module))
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            return index;
+        }
+
         void CheckForPlatformModuleChange()
         {
-            if (m_ActiveNativePlatformSupportModule == null)
+            var activeNativePlatformSupportModuleName = EditorUtility.GetActiveNativePlatformSupportModuleName();
+            if (m_ActiveNativePlatformSupportModuleName != activeNativePlatformSupportModuleName)
             {
-                m_ActiveNativePlatformSupportModule = EditorUtility.GetActiveNativePlatformSupportModuleName();
-                return;
+                OnActiveNativePlatformSupportModuleChanged(activeNativePlatformSupportModuleName);
             }
+        }
 
-
-            if (m_ActiveNativePlatformSupportModule != EditorUtility.GetActiveNativePlatformSupportModuleName())
-            {
-                ProfilerDriver.ClearAllFrames();
-                Initialize();
-                m_ActiveNativePlatformSupportModule = EditorUtility.GetActiveNativePlatformSupportModuleName();
-            }
+        void OnActiveNativePlatformSupportModuleChanged(string activeNativePlatformSupportModuleName)
+        {
+            ProfilerDriver.ClearAllFrames();
+            m_ActiveNativePlatformSupportModuleName = activeNativePlatformSupportModuleName;
+            Initialize();
         }
 
         void OnDisable()
@@ -523,8 +510,8 @@ namespace UnityEditor
             SaveViewSettings();
             m_AttachProfilerState.Dispose();
             m_AttachProfilerState = null;
-            m_ProfilerWindows.Remove(this);
-            foreach (var module in m_ProfilerModules)
+            s_ProfilerWindows.Remove(this);
+            foreach (var module in m_Modules)
             {
                 module.OnDisable();
             }
@@ -537,16 +524,18 @@ namespace UnityEditor
 
         void SaveViewSettings()
         {
-            foreach (var module in m_ProfilerModules)
+            foreach (var module in m_Modules)
             {
                 module.SaveViewSettings();
             }
+
             if (m_VertSplit != null && m_VertSplit.relativeSizes != null)
             {
                 EditorPrefs.SetFloat(k_VertSplitterPercentageElement0PrefKey, m_VertSplit.relativeSizes[0]);
                 EditorPrefs.SetFloat(k_VertSplitterPercentageElement1PrefKey, m_VertSplit.relativeSizes[1]);
             }
-            SessionState.SetInt(k_CurrentAreaPrefKey, (int)m_CurrentArea);
+
+            SessionState.SetInt(k_SelectedModuleIndexPreferenceKey, m_SelectedModuleIndex);
         }
 
         void Awake()
@@ -609,10 +598,10 @@ namespace UnityEditor
             {
                 // The chart may not have had the chance to release the hot control before we lost focus.
                 // This happens when changing the selected frame, which may pause the game and switch the focus to another view.
-                for (int c = 0; c < m_Charts.Length; ++c)
+                for (int i = 0; i < m_Modules.Count; ++i)
                 {
-                    ProfilerChart chart = m_Charts[c];
-                    chart.OnLostFocus();
+                    var module = m_Modules[i];
+                    module.OnLostFocus();
                 }
             }
         }
@@ -699,7 +688,7 @@ namespace UnityEditor
             }
         }
 
-        private static void EditorGUI_HyperLinkClicked(object sender, EventArgs e)
+        static void EditorGUI_HyperLinkClicked(object sender, EventArgs e)
         {
             EditorGUILayout.HyperLinkClickedEventArgs args = (EditorGUILayout.HyperLinkClickedEventArgs)e;
 
@@ -710,7 +699,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static void RepaintAllProfilerWindows()
         {
-            foreach (ProfilerWindow window in m_ProfilerWindows)
+            foreach (ProfilerWindow window in s_ProfilerWindows)
             {
                 // This is useful hack when you need to profile in the editor and dont want it to affect your framerate...
                 // NOTE: we should make this an option in the UI somehow...
@@ -801,150 +790,12 @@ namespace UnityEditor
             return m_FrameDataView;
         }
 
-        private static void UpdateChartGrid(float timeMax, ChartViewData data)
+        void UpdateModules()
         {
-            if (timeMax < 1500)
+            foreach (var module in m_Modules)
             {
-                data.SetGrid(new float[] { 1000, 250, 100 }, new[] { "1ms (1000FPS)", "0.25ms (4000FPS)", "0.1ms (10000FPS)" });
+                module.Update();
             }
-            else if (timeMax < 10000)
-            {
-                data.SetGrid(new float[] { 8333, 4000, 1000 }, new[] { "8ms (120FPS)", "4ms (250FPS)", "1ms (1000FPS)" });
-            }
-            else if (timeMax < 30000)
-            {
-                data.SetGrid(new float[] { 16667, 10000, 5000 }, new[] { "16ms (60FPS)", "10ms (100FPS)", "5ms (200FPS)" });
-            }
-            else if (timeMax < 100000)
-            {
-                data.SetGrid(new float[] { 66667, 33333, 16667 }, new[] { "66ms (15FPS)", "33ms (30FPS)", "16ms (60FPS)" });
-            }
-            else
-            {
-                data.SetGrid(new float[] { 500000, 200000, 66667 }, new[] { "500ms (2FPS)", "200ms (5FPS)", "66ms (15FPS)" });
-            }
-        }
-
-        private void UpdateCharts()
-        {
-            int historyLength = ProfilerUserSettings.frameCount;
-            int firstEmptyFrame = firstFrameIndexWithHistoryOffset;
-            int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
-            // Collect chart values
-            foreach (var chart in m_Charts)
-            {
-                UpdateSingleChart(chart, firstEmptyFrame, firstFrame);
-            }
-
-            // CPU chart overlay values
-            string selectedName = ProfilerDriver.selectedPropertyPath;
-            bool hasCPUOverlay = (selectedName != string.Empty) && m_CurrentArea == ProfilerArea.CPU;
-            ProfilerChart cpuChart = m_Charts[(int)ProfilerArea.CPU];
-            if (hasCPUOverlay)
-            {
-                cpuChart.m_Data.hasOverlay = true;
-                int numCharts = cpuChart.m_Data.numSeries;
-                for (int i = 0; i < numCharts; ++i)
-                {
-                    var chart = cpuChart.m_Data.series[i];
-                    cpuChart.m_Data.overlays[i] = new ChartSeriesViewData(chart.name, chart.yValues.Length, chart.color);
-                    for (int frameIdx = 0; frameIdx < chart.yValues.Length; ++frameIdx)
-                        cpuChart.m_Data.overlays[i].xValues[frameIdx] = (float)frameIdx;
-                    float maxValue;
-                    ProfilerDriver.GetCounterValuesBatch(ProfilerArea.CPU, UnityString.Format("Selected{0}", chart.name), firstEmptyFrame, 1.0f, cpuChart.m_Data.overlays[i].yValues, out maxValue);
-                    cpuChart.m_Data.overlays[i].yScale = cpuChart.m_DataScale;
-                }
-            }
-            else
-            {
-                cpuChart.m_Data.hasOverlay = false;
-            }
-
-            // CPU, GPU & UI chart scale value
-            for (int i = 0; i < ms_StackedAreas.Length; i++)
-                ComputeChartScaleValue(ms_StackedAreas[i], historyLength, firstEmptyFrame, firstFrame);
-        }
-
-        private void ComputeChartScaleValue(ProfilerArea i, int historyLength, int firstEmptyFrame, int firstFrame)
-        {
-            ProfilerChart chart = m_Charts[(int)i];
-            float timeMax = 0.0f;
-            float timeMaxExcludeFirst = 0.0f;
-            for (int k = 0; k < historyLength; k++)
-            {
-                float timeNow = 0.0F;
-                for (int j = 0; j < chart.m_Series.Length; j++)
-                {
-                    var series = chart.m_Series[j];
-
-                    if (series.enabled)
-                        timeNow += series.yValues[k];
-                }
-                if (timeNow > timeMax)
-                    timeMax = timeNow;
-                if (timeNow > timeMaxExcludeFirst && k + firstEmptyFrame >= firstFrame + 1)
-                    timeMaxExcludeFirst = timeNow;
-            }
-            if (timeMaxExcludeFirst != 0.0f)
-                timeMax = timeMaxExcludeFirst;
-
-            timeMax = Mathf.Clamp(timeMax * chart.m_DataScale, k_ChartMinClamp, k_ChartMaxClamp);
-
-            // Do not apply the new scale immediately, but gradually go towards it
-            if (m_ChartOldMax[(int)i] > 0.0f)
-                timeMax = Mathf.Lerp(m_ChartOldMax[(int)i], timeMax, 0.4f);
-            m_ChartOldMax[(int)i] = timeMax;
-
-            for (int k = 0; k < chart.m_Data.numSeries; ++k)
-                chart.m_Data.series[k].rangeAxis = new Vector2(0f, timeMax);
-            UpdateChartGrid(timeMax, chart.m_Data);
-        }
-
-        internal void UpdateSingleChart(ProfilerChart chart, int firstEmptyFrame, int firstFrame)
-        {
-            float totalMaxValue = 1;
-            for (int i = 0, count = chart.m_Series.Length; i < count; ++i)
-            {
-                ProfilerDriver.GetCounterValuesBatch(chart.m_Area, chart.m_Series[i].name, firstEmptyFrame, 1.0f, chart.m_Series[i].yValues, out var maxValue);
-                chart.m_Series[i].yScale = chart.m_DataScale;
-                maxValue *= chart.m_DataScale;
-
-                // Minimum size so we don't generate nans during drawing
-                maxValue = Mathf.Max(maxValue, 0.0001F);
-
-                if (maxValue > totalMaxValue)
-                    totalMaxValue = maxValue;
-
-                if (chart.m_Type == Chart.ChartType.Line)
-                {
-                    // Scale line charts so they never hit the top. Scale them slightly differently for each line
-                    // so that in "no stuff changing" case they will not end up being exactly the same.
-                    maxValue *= (1.05f + i * 0.05f);
-                    chart.m_Series[i].rangeAxis = new Vector2(0f, maxValue);
-                }
-            }
-            if (chart.m_SharedScale && chart.m_Type == Chart.ChartType.Line)
-            {
-                // For some charts, every line is scaled individually, so every data series gets their own range based on their own max scale.
-                // For charts that share their scale (like the Networking charts) all series get adjusted to the total max of the chart.
-                for (int i = 0, count = chart.m_Series.Length; i < count; ++i)
-                    chart.m_Series[i].rangeAxis = new Vector2(0f, (1.05f + i * 0.05f) * totalMaxValue);
-                chart.m_Data.maxValue = totalMaxValue;
-            }
-            chart.m_Data.Assign(chart.m_Series, firstEmptyFrame, firstFrame);
-
-            ProfilerDriver.GetStatisticsAvailabilityStates(chart.m_Area, firstEmptyFrame, chart.m_Data.dataAvailable);
-
-            if (chart is UISystemProfilerChart)
-                ((UISystemProfilerChart)chart).Update(firstFrame, ProfilerUserSettings.frameCount);
-        }
-
-        void AddAreaClick(object userData, string[] options, int selected)
-        {
-            if (m_Charts[selected].active)
-                m_Charts[selected].Close();
-            else
-                m_Charts[selected].active = true;
         }
 
         void SetCallstackRecordMode(ProfilerMemoryRecordMode memRecordMode)
@@ -996,9 +847,9 @@ namespace UnityEditor
                     SessionState.SetBool(kProfilerEnabledSessionKey, m_Recording);
                     if (ProfilerUserSettings.rememberLastRecordState)
                         EditorPrefs.SetBool(kProfilerEnabledSessionKey, m_Recording);
-                    #pragma warning disable CS0618
+#pragma warning disable CS0618
                     NetworkDetailStats.m_NetworkOperations.Clear();
-                    #pragma warning restore
+#pragma warning restore
                 }
             }
         }
@@ -1014,26 +865,11 @@ namespace UnityEditor
             Repaint();
         }
 
-        private void DrawMainToolbar()
+        void DrawMainToolbar()
         {
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
 
-            // Graph types
-            Rect popupRect = GUILayoutUtility.GetRect(Styles.addArea, EditorStyles.toolbarDropDown, Styles.chartWidthOption);
-            if (EditorGUI.DropdownButton(popupRect, Styles.addArea, FocusType.Passive, EditorStyles.toolbarDropDownLeft))
-            {
-                int length = m_Charts.Length;
-                var names = new string[length];
-                var enabled = new bool[length];
-                var selected = new int[length];
-                for (int c = 0; c < length; ++c)
-                {
-                    names[c] = L10n.Tr(((ProfilerArea)c).ToString());
-                    enabled[c] = true;
-                    selected[c] = m_Charts[c].active ? c : -1;
-                }
-                EditorUtility.DisplayCustomMenu(popupRect, names, enabled, selected, AddAreaClick, null);
-            }
+            DrawModuleSelectionDropdownMenu();
 
             // Engine attach
             PlayerConnectionGUILayout.ConnectionTargetSelectionDropdown(m_AttachProfilerState, EditorStyles.toolbarDropDown);
@@ -1116,6 +952,20 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
         }
 
+        void DrawModuleSelectionDropdownMenu()
+        {
+            Rect popupRect = GUILayoutUtility.GetRect(Styles.addArea, EditorStyles.toolbarDropDown, Styles.chartWidthOption);
+            if (EditorGUI.DropdownButton(popupRect, Styles.addArea, FocusType.Passive, EditorStyles.toolbarDropDownLeft))
+            {
+                if (!HasOpenInstances<ProfilerModulesDropdownWindow>())
+                {
+                    var popupScreenRect = GUIUtility.GUIToScreenRect(popupRect);
+                    var modulesDropdownWindow = ProfilerModulesDropdownWindow.Present(popupScreenRect, m_Modules);
+                    modulesDropdownWindow.responder = this as ProfilerModulesDropdownWindow.IResponder;
+                }
+            }
+        }
+
         void OpenProfilerPreferences()
         {
             var settings = SettingsWindow.Show(SettingsScope.User, "Preferences/Analysis/Profiler");
@@ -1156,8 +1006,10 @@ namespace UnityEditor
 
         void Clear()
         {
-            m_ProfilerModules[(int)ProfilerArea.CPU].Clear();
-            m_ProfilerModules[(int)ProfilerArea.GPU].Clear();
+            foreach (var module in m_Modules)
+            {
+                module.Clear();
+            }
 
             ProfilerDriver.ClearAllFrames();
             m_LastFrameFromTick = -1;
@@ -1170,7 +1022,7 @@ namespace UnityEditor
 #pragma warning restore
         }
 
-        private void FrameNavigationControls()
+        void FrameNavigationControls()
         {
             if (m_CurrentFrame > ProfilerDriver.lastFrameIndex)
             {
@@ -1251,18 +1103,20 @@ namespace UnityEditor
             CheckForPlatformModuleChange();
             InitializeIfNeeded();
 
-            if (m_CurrentArea == k_InvalidArea && Event.current.type == EventType.Repaint)
+            if (m_SelectedModuleIndex == k_NoModuleSelected && Event.current.type == EventType.Repaint)
             {
-                for (int i = 0; i < m_Charts.Length; i++)
+                for (int i = 0; i < m_Modules.Count; i++)
                 {
-                    if (m_Charts[i].active)
+                    var module = m_Modules[i];
+                    if (module.isActive)
                     {
-                        m_Charts[i].ChartSelected();
+                        var chart = module.chart;
+                        chart.ChartSelected();
                         break;
                     }
                 }
             }
-            // Initialization
+
             DrawMainToolbar();
 
             SplitterGUILayout.BeginVerticalSplit(m_VertSplit);
@@ -1271,28 +1125,19 @@ namespace UnityEditor
 
             if (m_PrevLastFrame != ProfilerDriver.lastFrameIndex)
             {
-                UpdateCharts();
+                UpdateModules();
                 m_PrevLastFrame = ProfilerDriver.lastFrameIndex;
             }
 
-            int newCurrentFrame = m_CurrentFrame;
-            bool noActiveModules = true;
-            for (int c = 0; c < m_Charts.Length; ++c)
-            {
-                var chart = m_Charts[c];
-                if (!chart.active)
-                    continue;
-                noActiveModules = false;
-                newCurrentFrame = chart.DoChartGUI(newCurrentFrame, m_CurrentArea == chart.m_Area);
-            }
-
+            int newCurrentFrame = DrawModuleChartViews(m_CurrentFrame, out bool hasNoActiveModules);
             if (newCurrentFrame != m_CurrentFrame)
             {
                 SetCurrentFrame(newCurrentFrame);
                 Repaint();
                 GUIUtility.ExitGUI();
             }
-            if (noActiveModules)
+
+            if (hasNoActiveModules)
             {
                 GUILayout.FlexibleSpace();
                 GUILayout.BeginHorizontal();
@@ -1306,19 +1151,10 @@ namespace UnityEditor
             EditorGUILayout.EndScrollView();
 
             GUILayout.BeginVertical();
-            if (m_CurrentArea != k_InvalidArea)
+            var selectedModule = this.SelectedModule;
+            if (selectedModule != null)
             {
-                var detailViewPosition = new Rect(0, m_VertSplit.realSizes[0] + EditorGUI.kWindowToolbarHeight, position.width, m_VertSplit.realSizes[1]);
-                var detailViewToolbar = detailViewPosition;
-                detailViewToolbar.height = EditorStyles.contentToolbar.CalcHeight(GUIContent.none, 10.0f);
-                m_ProfilerModules[(int)m_CurrentArea].DrawToolbar(detailViewPosition);
-
-                detailViewPosition.yMin += detailViewToolbar.height;
-                m_ProfilerModules[(int)m_CurrentArea].DrawView(detailViewPosition);
-
-                // Draw separator
-                var lineRect = new Rect(0, m_VertSplit.realSizes[0] + EditorGUI.kWindowToolbarHeight - 1, position.width, 1);
-                EditorGUI.DrawRect(lineRect, Styles.borderColor);
+                DrawDetailsViewForModule(selectedModule);
             }
             else
             {
@@ -1328,6 +1164,216 @@ namespace UnityEditor
             }
             GUILayout.EndVertical();
             SplitterGUILayout.EndVerticalSplit();
+        }
+
+        int DrawModuleChartViews(int currentFrame, out bool hasNoActiveModules)
+        {
+            hasNoActiveModules = true;
+            for (int i = 0; i < m_Modules.Count; i++)
+            {
+                var module = m_Modules[i];
+                if (module.isActive)
+                {
+                    hasNoActiveModules = false;
+                    bool isSelected = (m_SelectedModuleIndex == i);
+                    currentFrame = module.DrawChartView(currentFrame, isSelected);
+                }
+            }
+
+            return currentFrame;
+        }
+
+        void DrawDetailsViewForModule(ProfilerModuleBase module)
+        {
+            var detailViewPosition = new Rect(0, m_VertSplit.realSizes[0] + EditorGUI.kWindowToolbarHeight, position.width, m_VertSplit.realSizes[1]);
+            var detailViewToolbar = detailViewPosition;
+            detailViewToolbar.height = EditorStyles.contentToolbar.CalcHeight(GUIContent.none, 10.0f);
+            module.DrawToolbar(detailViewPosition);
+
+            detailViewPosition.yMin += detailViewToolbar.height;
+            module.DrawDetailsView(detailViewPosition);
+
+            // Draw separator
+            var lineRect = new Rect(0, m_VertSplit.realSizes[0] + EditorGUI.kWindowToolbarHeight - 1, position.width, 1);
+            EditorGUI.DrawRect(lineRect, Styles.borderColor);
+        }
+
+        void ProfilerModulesDropdownWindow.IResponder.OnModuleActiveStateChanged()
+        {
+            Repaint();
+        }
+
+        void ProfilerModulesDropdownWindow.IResponder.OnConfigureModules()
+        {
+            ModuleEditorWindow moduleEditorWindow;
+            if (ModuleEditorWindow.TryGetOpenInstance(out moduleEditorWindow))
+            {
+                moduleEditorWindow.Focus();
+            }
+            else
+            {
+                moduleEditorWindow = ModuleEditorWindow.Present(m_Modules);
+                moduleEditorWindow.onChangesConfirmed += OnModuleEditorChangesConfirmed;
+            }
+        }
+
+        void ProfilerModulesDropdownWindow.IResponder.OnRestoreDefaultModules()
+        {
+            int index = m_Modules.Count - 1;
+            while (index >= 0)
+            {
+                var module = m_Modules[index];
+                if (module is DynamicProfilerModule)
+                {
+                    DeleteProfilerModuleAtIndex(index);
+                }
+
+                module.ResetOrderIndexToDefault();
+
+                index--;
+            }
+
+            m_Modules.Sort((a, b) => a.orderIndex.CompareTo(b.orderIndex));
+
+            PersistDynamicModulesToEditorPrefs();
+            UpdateModules();
+            Repaint();
+        }
+
+        void OnModuleEditorChangesConfirmed(ReadOnlyCollection<ModuleData> modules, ReadOnlyCollection<ModuleData> deletedModules)
+        {
+            var selectedModuleIndexCached = m_SelectedModuleIndex;
+
+            int index = 0;
+            foreach (var moduleData in modules)
+            {
+                switch (moduleData.editedState)
+                {
+                    case ModuleData.EditedState.Created:
+                    {
+                        CreateNewProfilerModule(moduleData, index);
+                        break;
+                    }
+
+                    case ModuleData.EditedState.Updated:
+                    {
+                        UpdateProfilerModule(moduleData, index, selectedModuleIndexCached);
+                        break;
+                    }
+                }
+
+                index++;
+            }
+
+            foreach (var moduleData in deletedModules)
+            {
+                DeleteProfilerModule(moduleData);
+            }
+
+            // If any modules were deleted, all existing modules should update/refresh their order index.
+            bool hasDeletedModules = deletedModules.Count > 0;
+            if (hasDeletedModules)
+            {
+                for (int i = 0; i < m_Modules.Count; i++)
+                {
+                    var profilerModule = m_Modules[i];
+                    profilerModule.orderIndex = i;
+                }
+            }
+
+            m_Modules.Sort((a, b) => a.orderIndex.CompareTo(b.orderIndex));
+
+            PersistDynamicModulesToEditorPrefs();
+            UpdateModules();
+            Repaint();
+        }
+
+        void CreateNewProfilerModule(ModuleData moduleData, int orderIndex)
+        {
+            var name = moduleData.name;
+            var module = new DynamicProfilerModule(this as IProfilerWindowController, name);
+            var chartCounters = new List<ProfilerCounterData>(moduleData.chartCounters);
+            var detailCounters = new List<ProfilerCounterData>(moduleData.detailCounters);
+            module.SetCounters(chartCounters, detailCounters);
+            module.orderIndex = orderIndex;
+
+            m_Modules.Add(module);
+            module.OnEnable();
+        }
+
+        void UpdateProfilerModule(ModuleData moduleData, int orderIndex, int selectedModuleIndexCached)
+        {
+            var currentProfilerModuleName = moduleData.currentProfilerModuleName;
+            int updatedModuleIndex = IndexOfModuleWithName(currentProfilerModuleName);
+            if (updatedModuleIndex < 0)
+            {
+                Debug.LogError($"Unable to update module '{currentProfilerModuleName}'.");
+                return;
+            }
+
+            var module = m_Modules[updatedModuleIndex];
+            var isSelectedIndex = (module.orderIndex == selectedModuleIndexCached);
+
+            module.name = moduleData.name;
+            var chartCounters = new List<ProfilerCounterData>(moduleData.chartCounters);
+            var detailCounters = new List<ProfilerCounterData>(moduleData.detailCounters);
+            module.SetCounters(chartCounters, detailCounters);
+            module.orderIndex = orderIndex;
+
+            if (isSelectedIndex)
+            {
+                m_SelectedModuleIndex = orderIndex;
+            }
+        }
+
+        void DeleteProfilerModule(ModuleData moduleData)
+        {
+            var currentProfilerModuleName = moduleData.currentProfilerModuleName;
+            int deletedModuleIndex = IndexOfModuleWithName(currentProfilerModuleName);
+            if (deletedModuleIndex < 0)
+            {
+                Debug.LogError($"Unable to delete module '{currentProfilerModuleName}'.");
+                return;
+            }
+
+            DeleteProfilerModuleAtIndex(deletedModuleIndex);
+        }
+
+        void DeleteProfilerModuleAtIndex(int index)
+        {
+            if (index < 0 || index >= m_Modules.Count)
+            {
+                Debug.LogError($"Unable to delete module at index '{index}'.");
+                return;
+            }
+
+            var moduleToDelete = m_Modules[index];
+            moduleToDelete.SetActive(false); // Ensure that active areas in use are decremented.
+            moduleToDelete.DeleteAllPreferences();
+            m_Modules.RemoveAt(index);
+        }
+
+        int IndexOfModuleWithName(string moduleName)
+        {
+            int moduleIndex = -1;
+            for (int i = 0; i < m_Modules.Count; i++)
+            {
+                var module = m_Modules[i];
+                if (module.name.Equals(moduleName))
+                {
+                    moduleIndex = i;
+                    break;
+                }
+            }
+
+            return moduleIndex;
+        }
+
+        void PersistDynamicModulesToEditorPrefs()
+        {
+            var serializableDynamicModules = DynamicProfilerModule.SerializedDataCollection.FromDynamicProfilerModulesInCollection(m_Modules);
+            var json = JsonUtility.ToJson(serializableDynamicModules);
+            EditorPrefs.SetString(k_DynamicModulesPreferenceKey, json);
         }
 
         public void SetClearOnPlay(bool enabled)
@@ -1399,6 +1445,24 @@ namespace UnityEditor
             }
 
             return doApply;
+        }
+
+        void IProfilerWindowController.SetAreasInUse(IEnumerable<ProfilerArea> areas, bool inUse)
+        {
+            if (inUse)
+            {
+                foreach (var area in areas)
+                {
+                    m_AreaReferenceCounter.IncrementArea(area);
+                }
+            }
+            else
+            {
+                foreach (var area in areas)
+                {
+                    m_AreaReferenceCounter.DecrementArea(area);
+                }
+            }
         }
     }
 }

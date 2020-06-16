@@ -144,7 +144,7 @@ namespace UnityEditor
             // Draw free rotation first to give it the lowest priority
             if (!isDisabled
                 && param.ShouldShow(RotationHandleParam.Handle.XYZ)
-                && (isHot && ids.xyz == GUIUtility.hotControl || !isHot))
+                && (ids.xyz == GUIUtility.hotControl || !isHot))
             {
                 color = new Color(0, 0, 0, 0.3f);
                 rotation = UnityEditorInternal.FreeRotate.Do(ids.xyz, rotation, position, size * param.xyzSize, param.displayXYZCircle);
@@ -173,7 +173,7 @@ namespace UnityEditor
 
             if (!isDisabled
                 && param.ShouldShow(RotationHandleParam.Handle.CameraAxis)
-                && (isHot && ids.cameraAxis == GUIUtility.hotControl || !isHot))
+                && (ids.cameraAxis == GUIUtility.hotControl || !isHot))
             {
                 color = ToActiveColorSpace(centerColor);
                 rotation = UnityEditorInternal.Disc.Do(ids.cameraAxis, rotation, position, camForward, size * param.cameraAxisSize, false, 0, param.enableRayDrag, true, k_RotationPieColor);

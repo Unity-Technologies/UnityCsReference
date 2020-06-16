@@ -802,31 +802,6 @@ namespace UnityEditor.Experimental.GraphView
             BuildContextualMenu(evt);
         }
 
-        private void OnBeforeUpdaterChange()
-        {
-            UpdateDrawChainRegistration(false);
-        }
-
-        private void OnAfterUpdaterChange()
-        {
-            UpdateDrawChainRegistration(true);
-        }
-
-        private void UpdateDrawChainRegistration(bool register)
-        {
-            var p = panel as BaseVisualElementPanel;
-            if (p != null)
-            {
-                var updater = p.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;
-                if (updater != null)
-                {
-                    if (register)
-                        updater.BeforeDrawChain += OnBeforeDrawChain;
-                    else updater.BeforeDrawChain -= OnBeforeDrawChain;
-                }
-            }
-        }
-
         static Shader graphViewShader = null;
         void OnEnterPanel(AttachToPanelEvent e)
         {
@@ -840,11 +815,8 @@ namespace UnityEditor.Experimental.GraphView
                 if (ownerView != null && ownerView.actualView != null)
                     ownerView.actualView.antiAliasing = 4;
 
-                // Changing the updaters is assumed not to be a normal use case, except maybe for Unity debugging
-                // purposes. For that reason, we don't track updater changes.
-                Panel.BeforeUpdaterChange += OnBeforeUpdaterChange;
-                Panel.AfterUpdaterChange += OnAfterUpdaterChange;
-                UpdateDrawChainRegistration(true);
+                p.updateMaterial += OnUpdateMaterial;
+                p.beforeUpdate += OnBeforeUpdate;
             }
 
             // Force DefaultCommonDark.uss since GraphView only has a dark style at the moment
@@ -859,9 +831,12 @@ namespace UnityEditor.Experimental.GraphView
             if (isReframable)
                 panel.visualTree.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
 
-            Panel.BeforeUpdaterChange -= OnBeforeUpdaterChange;
-            Panel.AfterUpdaterChange -= OnAfterUpdaterChange;
-            UpdateDrawChainRegistration(false);
+            var p = panel as BaseVisualElementPanel;
+            if (p != null)
+            {
+                p.beforeUpdate -= OnBeforeUpdate;
+                p.updateMaterial -= OnUpdateMaterial;
+            }
         }
 
         void OnKeyDownShortcut(KeyDownEvent evt)
@@ -1526,13 +1501,16 @@ namespace UnityEditor.Experimental.GraphView
         static readonly int s_EditorPixelsPerPointId = Shader.PropertyToID("_EditorPixelsPerPoint");
         static readonly int s_GraphViewScaleId = Shader.PropertyToID("_GraphViewScale");
 
-        void OnBeforeDrawChain(UnityEngine.UIElements.UIR.RenderChain renderChain)
+        void OnBeforeUpdate(IPanel panel)
         {
-            Material mat = renderChain.GetStandardMaterial();
+            redrawn?.Invoke();
+        }
+
+        void OnUpdateMaterial(Material mat)
+        {
             // Set global graph view shader properties (used by UIR)
             mat.SetFloat(s_EditorPixelsPerPointId, EditorGUIUtility.pixelsPerPoint);
             mat.SetFloat(s_GraphViewScaleId, scale);
-            redrawn?.Invoke();
         }
 
         public virtual Blackboard GetBlackboard()

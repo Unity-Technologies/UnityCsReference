@@ -39,6 +39,7 @@ namespace UnityEditor
 
         StyleSheet GetUIToolkitDefaultCommonDarkStyleSheet();
         StyleSheet GetUIToolkitDefaultCommonLightStyleSheet();
+        StyleSheet CompileStyleSheetContent(string styleSheetContent, bool disableValidation, bool reportErrors);
     }
 
     internal static class EditorUIService

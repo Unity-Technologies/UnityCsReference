@@ -446,8 +446,8 @@ namespace UnityEngine.UIElements.UIR
         {
             s_MarkerRender.Begin();
 
-            if (BeforeDrawChain != null)
-                BeforeDrawChain(this);
+            Material standardMaterial = GetStandardMaterial();
+            ((BaseVisualElementPanel)panel).InvokeUpdateMaterial(standardMaterial);
 
             Exception immediateException = null;
             if (m_FirstCommand != null)
@@ -455,8 +455,6 @@ namespace UnityEngine.UIElements.UIR
                 if (!m_DrawInCameras)
                 {
                     var viewport = panel.visualTree.layout;
-
-                    Material standardMaterial = GetStandardMaterial();
                     standardMaterial?.SetPass(0);
 
                     var projection = ProjectionUtils.Ortho(viewport.xMin, viewport.xMax, viewport.yMax, viewport.yMin, -0.001f, 1.001f);
@@ -521,8 +519,6 @@ namespace UnityEngine.UIElements.UIR
                 (panel as BaseVisualElementPanel)?.OnVersionChanged(m_FirstTextElement, VersionChangeType.Transform); // Force a window refresh
             s_MarkerTextRegen.End();
         }
-
-        public event Action<RenderChain> BeforeDrawChain;
 
         #region UIElements event handling callbacks
         public void UIEOnChildAdded(VisualElement parent, VisualElement ve, int index)

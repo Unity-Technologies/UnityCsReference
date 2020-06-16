@@ -385,8 +385,8 @@ namespace UnityEngine
     {
         private AudioClip() {}
 
-        extern static private bool GetData(AudioClip clip, [Out] float[] data, int numSamples, int samplesOffset);
-        extern static private bool SetData(AudioClip clip, float[] data, int numsamples, int samplesOffset);
+        extern static private bool GetData([NotNull("NullExceptionObject")] AudioClip clip, [Out] float[] data, int numSamples, int samplesOffset);
+        extern static private bool SetData([NotNull("NullExceptionObject")] AudioClip clip, float[] data, int numsamples, int samplesOffset);
         extern static private AudioClip Construct_Internal();
 
         extern private string GetName();
@@ -606,7 +606,7 @@ namespace UnityEngine
         extern static private void PlayHelper([NotNull] AudioSource source, UInt64 delay);
         extern private void Play(double delay);
 
-        extern static private void PlayOneShotHelper([NotNull] AudioSource source, AudioClip clip, float volumeScale);
+        extern static private void PlayOneShotHelper([NotNull] AudioSource source, [NotNull("NullExceptionObject")] AudioClip clip, float volumeScale);
 
         extern private void Stop(bool stopOneShots);
 
@@ -1025,7 +1025,7 @@ namespace UnityEngine
 
         [NativeThrows]
         [NativeMethod(Name = "AudioLowPassFilterBindings::SetCustomLowpassLevelCurveHelper", IsFreeFunction = true)]
-        extern static private void SetCustomLowpassLevelCurveHelper(AudioLowPassFilter source, AnimationCurve curve);
+        extern static private void SetCustomLowpassLevelCurveHelper([NotNull("NullExceptionObject")] AudioLowPassFilter source, AnimationCurve curve);
 
         public AnimationCurve customCutoffCurve
         {

@@ -14,10 +14,10 @@ namespace UnityEditor
         // Calculate distance between a point and a bezier
         public static extern float DistancePointBezier(Vector3 point, Vector3 startPosition, Vector3 endPosition, Vector3 startTangent, Vector3 endTangent);
 
-        internal static extern GameObject[] Internal_PickRectObjects(Camera cam, Rect rect, bool selectPrefabRoots);
+        internal static extern GameObject[] Internal_PickRectObjects(Camera cam, Rect rect, bool selectPrefabRoots, bool drawGizmos);
 
         internal static extern bool Internal_FindNearestVertex(Camera cam, Vector2 screenPoint, Transform[] objectsToSearch, Transform[] ignoreObjects, out Vector3 vertex);
-        internal static extern GameObject Internal_PickClosestGO(Camera cam, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, out int materialIndex);
+        internal static extern GameObject Internal_PickClosestGO(Camera cam, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, bool drawGizmos, out int materialIndex);
 
 
         private static extern void Internal_SetHandleWireTextureIndex(int textureIndex, int samplerIndex);

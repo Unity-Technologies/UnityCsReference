@@ -3,10 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngineInternal;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine
 {
@@ -115,5 +118,27 @@ namespace UnityEngine
         // Unloads assets that are not used.
         [FreeFunction("Resources_Bindings::UnloadUnusedAssets")]
         extern public static AsyncOperation UnloadUnusedAssets();
+
+        [FreeFunction("Resources_Bindings::InstanceIDToObject")]
+        public extern static Object InstanceIDToObject(int instanceID);
+
+        [FreeFunction("Resources_Bindings::InstanceIDToObjectList")]
+        extern private static void InstanceIDToObjectList(IntPtr instanceIDs, int instanceCount, List<Object> objects);
+
+        public static unsafe void InstanceIDToObjectList(NativeArray<int> instanceIDs, List<Object> objects)
+        {
+            if (!instanceIDs.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(instanceIDs));
+            if (objects == null)
+                throw new ArgumentNullException(nameof(objects));
+
+            if (instanceIDs.Length == 0)
+            {
+                objects.Clear();
+                return;
+            }
+
+            InstanceIDToObjectList((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), instanceIDs.Length, objects);
+        }
     }
 }

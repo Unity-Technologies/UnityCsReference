@@ -132,7 +132,7 @@ namespace UnityEditorInternal
         public extern static bool PerformUnmarkedBumpMapTexturesFixing();
 
         [FreeFunction("InternalEditorUtilityBindings::BumpMapTextureNeedsFixingInternal")]
-        public extern static bool BumpMapTextureNeedsFixingInternal(Material material, string propName, bool flaggedAsNormal);
+        public extern static bool BumpMapTextureNeedsFixingInternal([NotNull("NullExceptionObject")] Material material, string propName, bool flaggedAsNormal);
 
         internal static bool BumpMapTextureNeedsFixing(MaterialProperty prop)
         {

@@ -76,14 +76,14 @@ namespace UnityEditorInternal.Media
 
         [NativeHeader("Editor/Mono/Media/Bindings/MediaDecoder.bindings.h")]
         [FreeFunction]
-        extern private static IntPtr Internal_MediaDecoder_CreateFromClip(VideoClip clip);
+        extern private static IntPtr Internal_MediaDecoder_CreateFromClip([NotNull("NullExceptionObject")] VideoClip clip);
 
         [NativeHeader("Modules/Video/Public/Base/VideoClipMedia.h")]
         [FreeFunction("VideoClipMedia::Release")]
         extern private static void Internal_Release(IntPtr decoder);
 
         [FreeFunction]
-        extern private static bool Internal_MediaDecoder_GetNextFrame(IntPtr decoder, Texture2D texture, out MediaTime time);
+        extern private static bool Internal_MediaDecoder_GetNextFrame(IntPtr decoder, [NotNull("NullExceptionObject")] Texture2D texture, out MediaTime time);
 
         [FreeFunction]
         extern private static bool Internal_MediaDecoder_SetPosition(IntPtr decoder, MediaTime time);

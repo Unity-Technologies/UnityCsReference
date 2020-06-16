@@ -20,8 +20,7 @@ namespace UnityEditor
             AllAssets,
             InAssetsOnly,
             InPackagesOnly,
-            SelectedFolders,
-            AssetStore
+            SelectedFolders
         }
 
         public enum State
@@ -31,8 +30,7 @@ namespace UnityEditor
             SearchingInAllAssets,
             SearchingInAssetsOnly,
             SearchingInPackagesOnly,
-            SearchingInFolders,
-            SearchingInAssetStore
+            SearchingInFolders
         }
 
         // Searching
@@ -120,9 +118,6 @@ namespace UnityEditor
 
             if (isSearchActive)
             {
-                if (m_SearchArea == SearchArea.AssetStore)
-                    return State.SearchingInAssetStore;
-
                 if (foldersActive && m_SearchArea == SearchArea.SelectedFolders)
                     return State.SearchingInFolders;
 
@@ -148,8 +143,7 @@ namespace UnityEditor
             return (state == State.SearchingInAllAssets ||
                 state == State.SearchingInAssetsOnly ||
                 state == State.SearchingInPackagesOnly ||
-                state == State.SearchingInFolders ||
-                state == State.SearchingInAssetStore);
+                state == State.SearchingInFolders);
         }
 
         public bool SetNewFilter(SearchFilter newFilter)

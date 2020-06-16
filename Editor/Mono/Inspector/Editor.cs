@@ -920,7 +920,7 @@ namespace UnityEditor
                 // We have a static preview it just hasn't been loaded yet. Repaint until we have it loaded.
                 if (isLoadingAssetPreview)
                     Repaint();
-                icon = AssetPreview.GetMiniThumbnail(target);
+                icon = EditorGUIUtility.GetSkinnedIcon(AssetPreview.GetMiniThumbnail(target));
             }
 
             GUI.Label(iconRect, icon, BaseStyles.centerStyle);

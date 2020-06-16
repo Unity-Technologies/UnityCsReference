@@ -149,7 +149,8 @@ namespace UnityEditor.Connect
                 Notification.Topic.CoppaCompliance,
                 Notification.Topic.CrashService,
                 Notification.Topic.ProjectBind,
-                Notification.Topic.PurchasingService
+                Notification.Topic.PurchasingService,
+                Notification.Topic.UDPService
             );
 
             rootVisualElement.Q<Button>(k_ProjectSettingsBtnName).clicked += () =>

@@ -15,10 +15,6 @@ namespace UnityEditor.PackageManager.UI
         // `onOperationProgress` will only be triggered if `isProgressTrackable` is true
         event Action<IOperation> onOperationProgress;
 
-        // the special unique id is used when neither package unique id or version unique id applies
-        // e.g. git url, tar ball path that does not contain any package name or version
-        string specialUniqueId { get; }
-
         string packageUniqueId { get; }
         string versionUniqueId { get; }
 

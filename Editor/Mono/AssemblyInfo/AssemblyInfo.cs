@@ -115,6 +115,8 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.UIElements.Editor")]
 [assembly: InternalsVisibleTo("Unity.UIElements.Tests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
+[assembly: InternalsVisibleTo("UnityEditor.UIElementsGameObjectsModule")]
+
 [assembly: InternalsVisibleTo("Unity.SceneTemplate.Editor")]
 [assembly: InternalsVisibleTo("com.unity.purchasing.udp.Editor")]
 

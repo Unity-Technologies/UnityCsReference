@@ -621,6 +621,24 @@ namespace UnityEditor
             EditorGUI.showMixedValue = false;
         }
 
+        [MenuItem("CONTEXT/AssemblyDefinitionImporter/Reset")]
+        internal static void ContextReset(MenuCommand command)
+        {
+            var templatePath = AssetsMenuUtility.GetScriptTemplatePath(ScriptTemplate.AsmDef_NewAssembly);
+            Debug.Assert(!string.IsNullOrEmpty(templatePath));
+
+            var templateContent = File.ReadAllText(templatePath);
+            var importer = command.context as AssemblyDefinitionImporter;
+
+            if (importer != null)
+            {
+                var assetPath = importer.assetPath;
+                templateContent = ProjectWindowUtil.PreprocessScriptAssetTemplate(assetPath, templateContent);
+                File.WriteAllText(assetPath, templateContent);
+                AssetDatabase.ImportAsset(assetPath);
+            }
+        }
+
         static void AddPrecompiledReferenceListElement(ReorderableList list)
         {
             list.serializedProperty.arraySize += 1;

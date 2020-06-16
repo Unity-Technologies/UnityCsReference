@@ -80,7 +80,8 @@ namespace UnityEditor.Connect
             Notification.Topic.CoppaCompliance,
             Notification.Topic.CrashService,
             Notification.Topic.ProjectBind,
-            Notification.Topic.PurchasingService
+            Notification.Topic.PurchasingService,
+            Notification.Topic.UDPService
         };
 
         protected override SingleService serviceInstance => null;

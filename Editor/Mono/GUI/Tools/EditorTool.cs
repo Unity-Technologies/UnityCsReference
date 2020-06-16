@@ -59,10 +59,15 @@ namespace UnityEditor.EditorTools
             get { return m_Target == null ? Selection.activeObject : m_Target; }
         }
 
+        // [Obsolete("Use UnityEngine.IconAttribute")]
         public virtual GUIContent toolbarIcon
         {
-            get { return EditorToolUtility.GetDefaultToolbarIcon(GetType()); }
+            get { return null; }
         }
+
+        public virtual void OnActivated() {}
+
+        public virtual void OnWillBeDeactivated() {}
 
         public virtual void OnToolGUI(EditorWindow window) {}
 

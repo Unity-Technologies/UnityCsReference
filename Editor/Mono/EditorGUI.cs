@@ -1615,7 +1615,7 @@ namespace UnityEditor
         public static bool Toggle(Rect position, GUIContent label, bool value)
         {
             int id = GUIUtility.GetControlID(s_ToggleHash, FocusType.Keyboard, position);
-            return EditorGUIInternal.DoToggleForward(PrefixLabel(position, id, label), id, value, GUIContent.none, EditorStyles.toggle);
+            return EditorGUIInternal.DoToggleForward(PrefixLabel(position, id, label), id, value, GUIContent.none, EditorStyles.toggle, false);
         }
 
         // Make a toggle.
@@ -2479,6 +2479,9 @@ namespace UnityEditor
             // will still be around at that time. Hence create our own copy. (case 1051734)
             SerializedObject serializedObjectCopy = new SerializedObject(property.serializedObject.targetObjects);
             SerializedProperty propertyWithPath = serializedObjectCopy.FindProperty(property.propertyPath);
+
+            if (propertyWithPath == null)
+                return null;
 
             // FillPropertyContextMenu is now always called when a right click is done on a property.
             // However we don't want those menu to be added when the property is disabled.
@@ -4951,7 +4954,7 @@ namespace UnityEditor
 
                 if (!iconProperty.hasMultipleDifferentValues)
                 {
-                    icon = AssetPreview.GetMiniThumbnail(targets[0]);
+                    icon = EditorGUIUtility.GetSkinnedIcon(AssetPreview.GetMiniThumbnail(targets[0]));
                 }
                 if (icon == null)
                 {
@@ -5184,7 +5187,7 @@ namespace UnityEditor
 
             if (evt.type == EventType.Repaint)
             {
-                var icon = AssetPreview.GetMiniThumbnail(targetObjs[0]);
+                var icon = EditorGUIUtility.GetSkinnedIcon(AssetPreview.GetMiniThumbnail(targetObjs[0]));
                 GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(icon), iconRect.Contains(Event.current.mousePosition), false, false, false);
 
                 if (isAddedComponentAndEventIsRepaint)
@@ -5241,9 +5244,6 @@ namespace UnityEditor
 
             Event evt = Event.current;
 
-            if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
-                DrawOverrideBackground(position, true);
-
             bool openMenu = false;
             Rect openMenuRect = new Rect();
             if (position.Contains(Event.current.mousePosition))
@@ -5258,6 +5258,7 @@ namespace UnityEditor
             headerItemRect.x -= kInspTitlebarIconWidth + kInspTitlebarSpacing;
             textRect.xMax = headerItemRect.xMin - kInspTitlebarSpacing;
 
+            int id = GUIUtility.GetControlID(s_TitlebarHash, FocusType.Keyboard, position);
             switch (evt.type)
             {
                 case EventType.MouseDown:
@@ -5269,7 +5270,12 @@ namespace UnityEditor
                     break;
                 case EventType.Repaint:
                     baseStyle.Draw(position, GUIContent.none, false, false, false, false);
-                    iconButtonStyle.Draw(settingsRect, GUIContents.titleSettingsIcon, false, false, false, false);
+
+                    if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
+                        DrawOverrideBackground(position, true);
+
+                    EditorStyles.optionsButtonStyle.Draw(settingsRect, GUIContent.none, id, false, settingsRect.Contains(Event.current.mousePosition));
+
                     var icon = AssetPreview.GetMiniThumbnail(sourceComponent);
 
                     using (new DisabledScope(true))
@@ -6309,12 +6315,12 @@ namespace UnityEditor
                     int fallbackMipLevel = (int)Math.Ceiling(Math.Log(factor, 2));
 
                     if (fallbackMipLevel > (int)mipLevel)
-                        VirtualTexturing.System.RequestRegion(mat, stackNameId, new Rect(0, 0, 1, 1), fallbackMipLevel, 2); //make sure the 128x128 mip is also requested to always have a fallback. Needed for mini thumbnails
+                        VirtualTexturing.Streaming.RequestRegion(mat, stackNameId, new Rect(0, 0, 1, 1), fallbackMipLevel, 2); //make sure the 128x128 mip is also requested to always have a fallback. Needed for mini thumbnails
                 }
 
                 if (mipLevel >= 0) //otherwise we don't know what mip will be sampled in the shader
                 {
-                    VirtualTexturing.System.RequestRegion(mat, stackNameId, new Rect(0, 0, 1, 1), (int)mipLevel, 1);
+                    VirtualTexturing.Streaming.RequestRegion(mat, stackNameId, new Rect(0, 0, 1, 1), (int)mipLevel, 1);
                 }
             }
         }
@@ -6640,7 +6646,7 @@ namespace UnityEditor
                     case SerializedPropertyType.Gradient:
                     {
                         int id = GUIUtility.GetControlID(s_CurveHash, FocusType.Keyboard, position);
-                        DoGradientField(PrefixLabel(position, id, label), id, null, property, false);
+                        DoGradientField(PrefixLabel(position, id, label), id, null, property, false, ColorSpace.Gamma);
                         break;
                     }
                     case SerializedPropertyType.Vector3:

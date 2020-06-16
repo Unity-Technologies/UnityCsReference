@@ -227,6 +227,8 @@ namespace UnityEditor.Modules
 
         bool SupportsCustomLightmapEncoding();
 
+        bool SupportsCustomNormalMapEncoding();
+
         bool ShouldShowVulkanSettings();
 
         void VulkanSectionGUI();

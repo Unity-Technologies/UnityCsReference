@@ -185,7 +185,7 @@ namespace UnityEditor
             var colorUsage = (GradientUsageAttribute)attribute;
 
             EditorGUI.BeginChangeCheck();
-            Gradient newGradient = EditorGUI.GradientField(position, label, property.gradientValue, colorUsage.hdr);
+            Gradient newGradient = EditorGUI.GradientField(position, label, property.gradientValue, colorUsage.hdr, colorUsage.colorSpace);
             if (EditorGUI.EndChangeCheck())
             {
                 property.gradientValue = newGradient;

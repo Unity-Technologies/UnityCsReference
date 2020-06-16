@@ -85,7 +85,7 @@ namespace UnityEditor
             {
                 case ObjectFieldVisualType.IconAndText:
                 case ObjectFieldVisualType.MiniPreview:
-                    return new Rect(position.xMax - 19, position.y, 19, position.height);
+                    return new Rect(position.xMax - 14, position.y, 19, position.height);
                 case ObjectFieldVisualType.LargePreview:
                     return new Rect(position.xMax - 36, position.yMax - 14, 36, 14);
                 default:

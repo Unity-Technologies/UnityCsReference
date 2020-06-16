@@ -284,6 +284,12 @@ namespace UnityEditor.VFX
         public VFXMapping[] exposed;
     }
 
+
+    /*Version history
+    0 - before tracking of versions
+    1 - gradient keys change to linear
+    */
+
     [UsedByNativeCode]
     [NativeHeader("Modules/VFXEditor/Public/ScriptBindings/VisualEffectResourceBindings.h")]
     [NativeHeader("Modules/VFXEditor/Public/VisualEffectResource.h")]
@@ -298,6 +304,9 @@ namespace UnityEditor.VFX
         public const string Extension = ".vfx";
         extern private static void CreateVisualEffectResource([Writable] VisualEffectResource resource);
         extern public void ClearRuntimeData();
+
+        //Must be kept in sync with C++
+        public const int CurrentVersion = 1;
 
         private static VFXExpressionValuesSheetInternal CreateValueSheet(VFXExpressionValueContainerDesc[] values)
         {

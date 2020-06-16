@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEditor.StyleSheets
 {

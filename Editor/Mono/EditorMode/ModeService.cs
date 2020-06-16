@@ -597,7 +597,7 @@ namespace UnityEditor
 
                 try
                 {
-                    if (args.nextIndex != 0 || args.prevIndex == -1 || HasCapability(args.prevIndex, ModeCapability.LayoutSwitching, true))
+                    if (args.nextIndex != 0 || HasCapability(args.prevIndex, ModeCapability.LayoutSwitching, true))
                     {
                         // Load the last valid layout for this mode
                         WindowLayout.LoadCurrentModeLayout(keepMainWindow: true);

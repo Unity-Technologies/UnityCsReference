@@ -71,15 +71,23 @@ namespace UnityEditor.VisualStudioIntegration
             {
                 if (assembly.sourceFiles.Any(shouldFileBePartOfSolution))
                 {
-                    yield return new Assembly(assembly.name, assembly.outputPath, assembly.sourceFiles, new[] { "DEBUG", "TRACE" }.Concat(assembly.defines).Concat(EditorUserBuildSettings.activeScriptCompilationDefines).ToArray(), assembly.assemblyReferences, assembly.compiledAssemblyReferences, assembly.flags)
+                    var options = new ScriptCompilerOptions()
                     {
-                        compilerOptions =
-                        {
-                            ResponseFiles = assembly.compilerOptions.ResponseFiles,
-                            AllowUnsafeCode = assembly.compilerOptions.AllowUnsafeCode,
-                            ApiCompatibilityLevel = assembly.compilerOptions.ApiCompatibilityLevel
-                        }
+                        ResponseFiles = assembly.compilerOptions.ResponseFiles,
+                        AllowUnsafeCode = assembly.compilerOptions.AllowUnsafeCode,
+                        ApiCompatibilityLevel = assembly.compilerOptions.ApiCompatibilityLevel
                     };
+
+                    yield return new Assembly(assembly.name,
+                        assembly.outputPath,
+                        assembly.sourceFiles,
+                        new[] {"DEBUG", "TRACE"}.Concat(assembly.defines)
+                            .Concat(EditorUserBuildSettings.activeScriptCompilationDefines).ToArray(),
+                        assembly.assemblyReferences,
+                        assembly.compiledAssemblyReferences,
+                        assembly.flags,
+                        options,
+                        assembly.rootNamespace);
                 }
             }
 

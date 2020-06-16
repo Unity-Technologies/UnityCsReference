@@ -11,13 +11,6 @@ namespace UnityEditorInternal.Profiling
 {
     internal static class FlowIndicatorDrawer
     {
-        public enum IndicatorAppearanceMode
-        {
-            NoActiveEvents = 0,
-            Active,
-            Inactive,
-        }
-
         public static Vector2 textureVisualSize
         {
             get
@@ -26,24 +19,14 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        // Used by Tests/ProfilerEditorTests/Editor/FlowIndicatorDrawerTests
-        internal static int appearanceModeAlphaValuesCount
-        {
-            get
-            {
-                return Styles.appearanceModeAlphaValues.Length;
-            }
-        }
-
-        public static void DrawFlowIndicatorForFlowEvent(RawFrameDataView.FlowEvent flowEvent, Rect sampleRect, IndicatorAppearanceMode indicatorAppearanceMode)
+        public static void DrawFlowIndicatorForFlowEvent(RawFrameDataView.FlowEvent flowEvent, Rect sampleRect)
         {
             float indicatorAngularRotationDegrees;
             var flowIndicatorRect = IndicatorRectForFlowEventType(flowEvent.FlowEventType, sampleRect, out indicatorAngularRotationDegrees);
-            var color = IndicatorColorForMode(indicatorAppearanceMode);
 
             var matrix = GUI.matrix;
             GUIUtility.RotateAroundPivot(indicatorAngularRotationDegrees, flowIndicatorRect.center);
-            GUI.DrawTexture(flowIndicatorRect, Styles.texture, ScaleMode.StretchToFill, true, 0f, color, 0f, 0f);
+            GUI.DrawTexture(flowIndicatorRect, Styles.texture, ScaleMode.StretchToFill, true, 0f, Styles.color, 0f, 0f);
             GUI.matrix = matrix;
         }
 
@@ -63,6 +46,7 @@ namespace UnityEditorInternal.Profiling
                 }
 
                 case ProfilerFlowEventType.Next:
+                case ProfilerFlowEventType.ParallelNext:
                 {
                     // Next arrows anchor to the bottom left corner of the sample rect. The arrow texture will be rotated by -90deg, so adjust padding accordingly.
                     var halfTextureSize = Styles.textureSize * 0.5f;
@@ -88,13 +72,6 @@ namespace UnityEditorInternal.Profiling
             return new Rect(flowIndicatorPosition, Styles.textureSize);
         }
 
-        static Color IndicatorColorForMode(IndicatorAppearanceMode mode)
-        {
-            var color = Styles.color;
-            color.a = Styles.appearanceModeAlphaValues[(int)mode];
-            return color;
-        }
-
         static class Styles
         {
             public const string textureName = "ProfilerTimelineFlowMarker";
@@ -105,15 +82,6 @@ namespace UnityEditorInternal.Profiling
             // The arrow texture has transparent padding. This value is the visible size of the arrow without the transparent padding.
             public static readonly Vector2 textureVisualSize = textureSize * new Vector3(1f - (texturePadding01.x * 2f), 1f - (texturePadding01.y * 2f));
             public static readonly Color color = new Color(255f, 255f, 255f, 1f);
-            public const float noActiveEventsAlpha = 1f;
-            public const float activeAlpha = 1f;
-            public const float inactiveAlpha = 0.3f;
-            public static readonly float[] appearanceModeAlphaValues = new float[]
-            {
-                noActiveEventsAlpha,
-                activeAlpha,
-                inactiveAlpha
-            };
         }
     }
 }

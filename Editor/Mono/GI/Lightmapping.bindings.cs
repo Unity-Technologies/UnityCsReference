@@ -496,6 +496,18 @@ namespace UnityEditor
             return Lightmapping.lightingSettingsInternal;
         }
 
+        [StaticAccessor("GetLightmapSettingsManager()")]
+        [NativeName("SetLightingSettingsForScene")]
+        public static extern void SetLightingSettingsForScene(Scene scene, LightingSettings lightingSettings);
+
+        [StaticAccessor("GetLightmapSettingsManager()")]
+        [NativeName("SetLightingSettingsForScenes")]
+        public static extern void SetLightingSettingsForScenes(Scene[] scenes, LightingSettings lightingSettings);
+
+        [StaticAccessor("GetLightmapSettingsManager()")]
+        [NativeName("GetLightingSettingsForScene")]
+        public static extern LightingSettings GetLightingSettingsForScene(Scene scene);
+
         public static void BakeMultipleScenes(string[] paths)
         {
             if (paths.Length == 0)
@@ -567,28 +579,28 @@ namespace UnityEditor
         // Packing for realtime GI may fail of the mesh has zero UV or surface area. This is the outcome for the given renderer.
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool HasZeroAreaMesh(Renderer renderer);
+        extern static internal bool HasZeroAreaMesh([NotNull("NullExceptionObject")] Renderer renderer);
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool HasUVOverlaps(Renderer renderer);
+        extern static internal bool HasUVOverlaps([NotNull("NullExceptionObject")] Renderer renderer);
 
         // Packing for realtime GI may clamp the output resolution. This is the outcome for the given renderer.
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool HasClampedResolution(Renderer renderer);
+        extern static internal bool HasClampedResolution([NotNull("NullExceptionObject")] Renderer renderer);
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetSystemResolution(Renderer renderer, out int width, out int height);
+        extern static internal bool GetSystemResolution([NotNull("NullExceptionObject")] Renderer renderer, out int width, out int height);
 
         [FreeFunction("GetSystemResolution")]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetTerrainSystemResolution(Terrain terrain, out int width, out int height, out int numChunksInX, out int numChunksInY);
+        extern static internal bool GetTerrainSystemResolution([NotNull("NullExceptionObject")] Terrain terrain, out int width, out int height, out int numChunksInX, out int numChunksInY);
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetInstanceResolution(Renderer renderer, out int width, out int height);
+        extern static internal bool GetInstanceResolution([NotNull("NullExceptionObject")] Renderer renderer, out int width, out int height);
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
@@ -604,7 +616,7 @@ namespace UnityEditor
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetInstanceHash(Renderer renderer, out Hash128 instanceHash);
+        extern static internal bool GetInstanceHash([NotNull("NullExceptionObject")] Renderer renderer, out Hash128 instanceHash);
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
@@ -620,7 +632,7 @@ namespace UnityEditor
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetGeometryHash(Renderer renderer, out Hash128 geometryHash);
+        extern static internal bool GetGeometryHash([NotNull("NullExceptionObject")] Renderer renderer, out Hash128 geometryHash);
     }
 }
 

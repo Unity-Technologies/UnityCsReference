@@ -38,9 +38,9 @@ namespace UnityEngine.VFX
             ProcessCameraCommand(cam, null);
         }
 
-        extern public static void PrepareCamera(Camera cam);
-        extern public static void ProcessCameraCommand(Camera cam, CommandBuffer cmd);
-        extern public static VFXCameraBufferTypes IsCameraBufferNeeded(Camera cam);
-        extern public static void SetCameraBuffer(Camera cam, VFXCameraBufferTypes type, Texture buffer, int x, int y, int width, int height);
+        extern public static void PrepareCamera([NotNull("NullExceptionObject")] Camera cam);
+        extern public static void ProcessCameraCommand([NotNull("NullExceptionObject")] Camera cam, CommandBuffer cmd);
+        extern public static VFXCameraBufferTypes IsCameraBufferNeeded([NotNull("NullExceptionObject")] Camera cam);
+        extern public static void SetCameraBuffer([NotNull("NullExceptionObject")] Camera cam, VFXCameraBufferTypes type, Texture buffer, int x, int y, int width, int height);
     }
 }

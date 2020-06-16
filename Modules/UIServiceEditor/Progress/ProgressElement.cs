@@ -21,13 +21,14 @@ namespace UnityEditor
         public readonly Label descriptionLabel;
         public readonly Label elapsedTimeLabel;
         public readonly ProgressBar progressBar;
+        public readonly Button pauseButton;
         public readonly Button cancelButton;
         public VisualElement progress;
         public bool isIndefinite;
         public bool isResponding;
         public float lastElapsedTime;
 
-        public DisplayedTask(Label name, Label progress, VisualElement descriptionIcon, Label description, Label elapsedTime, ProgressBar progressBar, Button cancelButton)
+        public DisplayedTask(Label name, Label progress, VisualElement descriptionIcon, Label description, Label elapsedTime, ProgressBar progressBar, Button pauseButton, Button cancelButton)
         {
             nameLabel = name;
             progressLabel = progress;
@@ -35,6 +36,7 @@ namespace UnityEditor
             this.descriptionIcon = descriptionIcon;
             this.descriptionLabel = description;
             this.progressBar = progressBar;
+            this.pauseButton = pauseButton;
             this.cancelButton = cancelButton;
             this.progress = this.progressBar.Q(null, "unity-progress-bar__progress");
             isIndefinite = false;
@@ -45,7 +47,7 @@ namespace UnityEditor
         {
             if (indefinite)
             {
-                var progressTotalWidth = float.IsNaN(progressBar.worldBound.width) ? 146 : progressBar.worldBound.width;
+                var progressTotalWidth = float.IsNaN(progressBar.worldBound.width) ? progressBar.resolvedStyle.width : progressBar.worldBound.width;
                 var barWidth = progressTotalWidth * 0.2f;
                 if (indefinite != isIndefinite)
                 {
@@ -101,7 +103,9 @@ namespace UnityEditor
         private VisualElement m_Details;
         private ScrollView m_DetailsScrollView;
         private Toggle m_DetailsFoldoutToggle;
+        private bool isPaused;
 
+        private TaskReorderingHelper m_TaskReorderingHelper;
         public VisualElement rootVisualElement { get; }
         public Progress.Item dataSource { get; private set; }
 
@@ -140,6 +144,7 @@ namespace UnityEditor
 
             m_ProgressItemChildren = new List<Progress.Item>();
             m_SubTasks = new List<DisplayedTask>();
+            m_TaskReorderingHelper = new TaskReorderingHelper(RemoveAtInsertAt);
 
             m_MainTask = InitializeTask(dataSource, rootVisualElement);
         }
@@ -157,7 +162,7 @@ namespace UnityEditor
 
         internal void CheckUnresponsive()
         {
-            if (!dataSource.running)
+            if (dataSource.finished)
             {
                 return;
             }
@@ -165,7 +170,7 @@ namespace UnityEditor
             var taskElapsedTime = Mathf.Round(dataSource.elapsedTime);
             if (dataSource.finished || taskElapsedTime >= 2f)
             {
-                if (m_MainTask.lastElapsedTime != taskElapsedTime)
+                if (m_MainTask.lastElapsedTime != taskElapsedTime || dataSource.paused) // a paused task will have the same elapsedTime and lastElapsedTime
                 {
                     m_MainTask.lastElapsedTime = taskElapsedTime;
                     UpdateRunningTime();
@@ -191,19 +196,68 @@ namespace UnityEditor
             if (m_MainTask == null)
                 return;
 
-            if (dataSource.timeDisplayMode == Progress.TimeDisplayMode.NoTimeShown)
+            StringBuilder sb = new StringBuilder();
+
+            if (dataSource.totalSteps != -1)
             {
-                m_MainTask.elapsedTimeLabel.text = "";
+                if (string.IsNullOrEmpty(dataSource.stepLabel))
+                    sb.AppendFormat("({0}/{1})", dataSource.currentStep, dataSource.totalSteps);
+                else
+                    sb.AppendFormat("({0}/{1} {2})", dataSource.currentStep, dataSource.totalSteps, dataSource.stepLabel);
+            }
+
+            if (dataSource.paused)
+            {
+                if (sb.Length > 0)
+                {
+                    sb.Insert(0, " ");
+                }
+                sb.Insert(0, "Paused");
+                m_MainTask.elapsedTimeLabel.text = sb.ToString();
                 return;
             }
 
+            if (dataSource.timeDisplayMode == Progress.TimeDisplayMode.NoTimeShown)
+            {
+                m_MainTask.elapsedTimeLabel.text = sb.ToString();
+                return;
+            }
+
+            if (sb.Length > 0)
+            {
+                sb.Insert(0, " ");
+            }
+
+
             if (dataSource.timeDisplayMode == Progress.TimeDisplayMode.ShowRemainingTime && !dataSource.finished)
-                m_MainTask.elapsedTimeLabel.text = FormatRemainingTime(dataSource.remainingTime);
+                sb.Insert(0, FormatRemainingTime(dataSource.remainingTime));
             else
-                m_MainTask.elapsedTimeLabel.text = $"{m_MainTask.lastElapsedTime:0} seconds";
+                sb.Insert(0, $"{m_MainTask.lastElapsedTime:0} seconds");
+
+            m_MainTask.elapsedTimeLabel.text = sb.ToString();
         }
 
-        internal bool TryUpdate(Progress.Item op, int id)
+        internal void ReorderSubtasks()
+        {
+            m_TaskReorderingHelper.ReorderItems(m_ProgressItemChildren.Count, i => m_ProgressItemChildren[i]);
+        }
+
+        private void RemoveAtInsertAt(int insertIndex, int itemIndex)
+        {
+            var itemToMove = m_ProgressItemChildren[itemIndex];
+            var displayedTaskToMove = m_SubTasks[itemIndex];
+            var scrollViewElementToMove = m_DetailsScrollView[itemIndex];
+            m_SubTasks.RemoveAt(itemIndex);
+            m_ProgressItemChildren.RemoveAt(itemIndex);
+            m_DetailsScrollView.RemoveAt(itemIndex);
+            if (itemIndex <= insertIndex)
+                --insertIndex;
+            m_ProgressItemChildren.Insert(insertIndex, itemToMove);
+            m_SubTasks.Insert(insertIndex, displayedTaskToMove);
+            m_DetailsScrollView.Insert(insertIndex, scrollViewElementToMove);
+        }
+
+        internal bool TryUpdate(Progress.Item op, int id, bool anotherSubtaskWasAlreadyUpdated)
         {
             if (dataSource.id == id)
             {
@@ -213,11 +267,14 @@ namespace UnityEditor
             }
             else
             {
+                if (!anotherSubtaskWasAlreadyUpdated) // if this is the 1st subtask to update then we reset the helper before adding reordering info
+                    m_TaskReorderingHelper.Clear();
                 for (int i = 0; i < m_ProgressItemChildren.Count; ++i)
                 {
                     if (m_ProgressItemChildren[i].id == id)
                     {
                         m_ProgressItemChildren[i] = op;
+                        m_TaskReorderingHelper.AddItemToReorder(op, i); // add the reordering info for the subtask
                         UpdateDisplay(m_SubTasks[i], m_ProgressItemChildren[i]);
                         return true;
                     }
@@ -273,6 +330,7 @@ namespace UnityEditor
             else if (!dataSource.responding && task.isResponding)
             {
                 task.descriptionLabel.text = string.IsNullOrEmpty(dataSource.description) ? "(Not Responding)" : $"{dataSource.description} (Not Responding)";
+
                 if (!task.progress.ClassListContains("unity-progress-bar__progress__unresponding"))
                 {
                     task.progress.AddToClassList("unity-progress-bar__progress__unresponding");
@@ -298,11 +356,51 @@ namespace UnityEditor
                 task.SetProgressStyleFull(dataSource.progress > 0.96f);
             }
 
+            if (dataSource.priority == (int)Progress.Priority.Idle)
+            {
+                task.descriptionLabel.text = dataSource.description;
+                if (!task.progress.ClassListContains("unity-progress-bar__progress__idle"))
+                {
+                    task.progress.AddToClassList("unity-progress-bar__progress__idle");
+                }
+
+                if (dataSource.status == Progress.Status.Succeeded)
+                {
+                    if (task.progress.ClassListContains("unity-progress-bar__progress__idle"))
+                    {
+                        task.progress.RemoveFromClassList("unity-progress-bar__progress__idle");
+                    }
+                }
+            }
+            else
+            {
+                if (task.progress.ClassListContains("unity-progress-bar__progress__idle"))
+                {
+                    task.progress.RemoveFromClassList("unity-progress-bar__progress__idle");
+                }
+            }
+
             if (dataSource.status == Progress.Status.Canceled)
             {
                 task.descriptionLabel.text = "Cancelled";
                 UpdateStatusIcon(task, ProgressWindow.kCanceledIcon);
                 task.progress.AddToClassList("unity-progress-bar__progress__inactive");
+            }
+            else if (dataSource.status == Progress.Status.Paused)
+            {
+                this.isPaused = true;
+                task.progress.AddToClassList("unity-progress-bar__progress__inactive");
+                task.pauseButton.RemoveFromClassList("pause-button");
+                task.pauseButton.AddToClassList("resume-button");
+            }
+            else if (isPaused && dataSource.status == Progress.Status.Running) // that case is needed when resuming a paused task
+            {
+                // we need to update it during the UpdateDisplay (we need to update it from the update callback and UpdateDisplay is called at that time)
+                this.isPaused = false;
+                UpdateStatusIcon(task, null);
+                task.progress.RemoveFromClassList("unity-progress-bar__progress__inactive");
+                task.pauseButton.RemoveFromClassList("resume-button");
+                task.pauseButton.AddToClassList("pause-button");
             }
             else if (dataSource.status == Progress.Status.Failed)
             {
@@ -329,15 +427,26 @@ namespace UnityEditor
                 }
             }
 
-            task.cancelButton.visible = dataSource.cancellable && dataSource.running;
+            task.cancelButton.visible = dataSource.cancellable && !dataSource.finished;
+            task.pauseButton.visible = dataSource.pausable && !dataSource.finished;
         }
 
         private static void UpdateStatusIcon(DisplayedTask task, string iconName)
         {
-            task.descriptionIcon.style.backgroundImage = EditorGUIUtility.LoadIcon(iconName);
-            task.descriptionIcon.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
-            task.descriptionIcon.style.height = ProgressWindow.kIconSize;
-            task.descriptionIcon.style.width = ProgressWindow.kIconSize;
+            if (string.IsNullOrEmpty(iconName))
+            {
+                task.descriptionIcon.style.backgroundImage = null;
+                task.descriptionIcon.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
+                task.descriptionIcon.style.height = 0;
+                task.descriptionIcon.style.width = 0;
+            }
+            else
+            {
+                task.descriptionIcon.style.backgroundImage = EditorGUIUtility.LoadIcon(iconName);
+                task.descriptionIcon.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
+                task.descriptionIcon.style.height = ProgressWindow.kIconSize;
+                task.descriptionIcon.style.width = ProgressWindow.kIconSize;
+            }
         }
 
         private void ToggleDetailsFoldout(ChangeEvent<bool> evt)
@@ -352,9 +461,10 @@ namespace UnityEditor
 
             DisplayedTask displayedSubTask = InitializeTask(subTaskSource, parentElement);
 
-            m_ProgressItemChildren.Add(subTaskSource);
-            m_SubTasks.Add(displayedSubTask);
-            m_DetailsScrollView.Add(parentElement);
+            int insertIndex = m_TaskReorderingHelper.FindIndexToInsertAt(subTaskSource, m_ProgressItemChildren.Count, i => m_ProgressItemChildren[i]);
+            m_ProgressItemChildren.Insert(insertIndex, subTaskSource);
+            m_SubTasks.Insert(insertIndex, displayedSubTask);
+            m_DetailsScrollView.Insert(insertIndex, parentElement);
         }
 
         private DisplayedTask InitializeTask(Progress.Item progressItem, VisualElement parentElement)
@@ -366,6 +476,7 @@ namespace UnityEditor
                 parentElement.Q<Label>("BackgroundTaskDescriptionLabel"),
                 parentElement.Q<Label>("BackgroundTaskElapsedTimeLabel"),
                 parentElement.Q<ProgressBar>("ProgressBar"),
+                parentElement.Q<Button>("PauseButton"),
                 parentElement.Q<Button>("CancelButton")
             );
             Assert.IsNotNull(displayedTask.nameLabel);
@@ -374,7 +485,15 @@ namespace UnityEditor
             Assert.IsNotNull(displayedTask.elapsedTimeLabel);
             Assert.IsNotNull(displayedTask.progressLabel);
             Assert.IsNotNull(displayedTask.progressBar);
+            Assert.IsNotNull(displayedTask.pauseButton);
             Assert.IsNotNull(displayedTask.cancelButton);
+
+            displayedTask.pauseButton.RemoveFromClassList("unity-text-element");
+            displayedTask.pauseButton.RemoveFromClassList("unity-button");
+            displayedTask.pauseButton.AddToClassList("pause-button");
+
+            displayedTask.pauseButton.userData = progressItem;
+            displayedTask.pauseButton.clickable.clickedWithEventInfo += PauseButtonClicked;
 
             displayedTask.cancelButton.RemoveFromClassList("unity-text-element");
             displayedTask.cancelButton.RemoveFromClassList("unity-button");
@@ -393,17 +512,25 @@ namespace UnityEditor
             var ds = sender?.userData as Progress.Item;
             if (ds != null)
             {
-                var wasCancelled = ds.Cancel();
-                if (wasCancelled)
-                {
-                    OnCancelled();
-                }
+                ds.Cancel();
             }
         }
 
-        private void OnCancelled()
+        private void PauseButtonClicked(EventBase obj)
         {
-            UpdateDisplay(m_MainTask, dataSource);
+            var sender = obj.target as Button;
+            var ds = sender?.userData as Progress.Item;
+            if (ds != null)
+            {
+                if (!ds.paused)
+                {
+                    ds.Pause();
+                }
+                else
+                {
+                    ds.Resume();
+                }
+            }
         }
 
         private static string FormatRemainingTime(TimeSpan eta)

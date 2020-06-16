@@ -45,6 +45,7 @@ namespace UnityEditor
             public static Texture2D warningIcon = EditorGUIUtility.LoadIcon("console.warnicon.sml");
 
             public static GUIContent togglePreprocess = EditorGUIUtility.TrTextContent("Preprocess only", "Show preprocessor output instead of compiled shader code");
+            public static GUIContent toggleStripLineDirective = EditorGUIUtility.TrTextContent("Strip #line directives", "Strip #line directives from preprocessor output");
             public static GUIContent showSurface = EditorGUIUtility.TrTextContent("Show generated code", "Show generated code of a surface shader");
             public static GUIContent showFF = EditorGUIUtility.TrTextContent("Show generated code", "Show generated code of a fixed function shader");
             public static GUIContent showCurrent = EditorGUIUtility.TrTextContent("Compile and show code \u007C \u25BE");  // vertical bar & dropdow arrow - due to lacking editor style of "mini button with a dropdown"
@@ -60,6 +61,7 @@ namespace UnityEditor
         static readonly int kErrorViewHash = "ShaderErrorView".GetHashCode();
 
         private static bool s_PreprocessOnly = false;
+        private static bool s_StripLineDirectives = true;
 
         Vector2 m_ScrollPosition = Vector2.zero;
         private Material m_SrpCompatibilityCheckMaterial = null;
@@ -346,11 +348,17 @@ namespace UnityEditor
         {
             EditorGUILayout.BeginVertical();
             ShaderImporter importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(s.GetInstanceID())) as ShaderImporter;
+
             bool enablePreprocessOnly = EditorSettings.cachingShaderPreprocessor;
             if (importer && importer.preprocessorOverride == PreprocessorOverride.ForceCachingPreprocessor)
                 enablePreprocessOnly = true;
             using (new EditorGUI.DisabledScope(!enablePreprocessOnly))
+            {
                 s_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, s_PreprocessOnly);
+                if (s_PreprocessOnly)
+                    s_StripLineDirectives = EditorGUILayout.Toggle(Styles.toggleStripLineDirective, s_StripLineDirectives);
+            }
+
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel("Compiled code", EditorStyles.miniButton);
 
@@ -369,7 +377,7 @@ namespace UnityEditor
                 }
                 if (GUI.Button(modeRect, modeContent, EditorStyles.miniButton))
                 {
-                    ShaderUtil.OpenCompiledShader(s, ShaderInspectorPlatformsPopup.currentMode, ShaderInspectorPlatformsPopup.currentPlatformMask, ShaderInspectorPlatformsPopup.currentVariantStripping == 0, enablePreprocessOnly && s_PreprocessOnly);
+                    ShaderUtil.OpenCompiledShader(s, ShaderInspectorPlatformsPopup.currentMode, ShaderInspectorPlatformsPopup.currentPlatformMask, ShaderInspectorPlatformsPopup.currentVariantStripping == 0, enablePreprocessOnly && s_PreprocessOnly, s_StripLineDirectives);
                     GUIUtility.ExitGUI();
                 }
             }

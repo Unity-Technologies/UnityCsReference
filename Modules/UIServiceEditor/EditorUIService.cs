@@ -3,10 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor.Connect;
 using UnityEditor.PackageManager.UI;
 using UnityEditor.ShortcutManagement;
+using UnityEditor.StyleSheets;
 using UnityEditor.UIElements;
+using UnityEditor.UIElements.StyleSheets;
+using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 
@@ -47,5 +49,19 @@ namespace UnityEditor
         public string GetUIToolkitDefaultCommonLightStyleSheetPath() => UIElementsEditorUtility.s_DefaultCommonLightStyleSheetPath;
         public StyleSheet GetUIToolkitDefaultCommonDarkStyleSheet() => UIElementsEditorUtility.s_DefaultCommonDarkStyleSheet;
         public StyleSheet GetUIToolkitDefaultCommonLightStyleSheet() => UIElementsEditorUtility.s_DefaultCommonLightStyleSheet;
+
+        public StyleSheet CompileStyleSheetContent(string styleSheetContent, bool disableValidation, bool reportErrors)
+        {
+            var importer = new StyleSheetImporterImpl();
+            var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
+            importer.disableValidation = disableValidation;
+            importer.Import(styleSheet, styleSheetContent);
+            if (reportErrors)
+            {
+                foreach (var err in importer.importErrors)
+                    Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, styleSheet, err.ToString());
+            }
+            return styleSheet;
+        }
     }
 }

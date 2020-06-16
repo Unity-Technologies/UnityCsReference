@@ -560,7 +560,7 @@ namespace UnityEditor.VisualStudioIntegration
                 MSBuildNamespaceUri,
                 Path.GetFileNameWithoutExtension(assembly.outputPath),
                 m_assemblyNameProvider.GetCompileOutputPath(assembly.name),
-                m_assemblyNameProvider.ProjectGenerationRootNamespace,
+                assembly.rootNamespace,
                 targetframeworkversion,
                 targetLanguageVersion,
                 baseDirectory,

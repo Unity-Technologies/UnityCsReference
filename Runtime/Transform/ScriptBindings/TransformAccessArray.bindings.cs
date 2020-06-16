@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using UnityEngine.Bindings;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -12,23 +14,119 @@ namespace UnityEngine.Jobs
 {
     //@TODO: Static code analysis needs to prevent creation of TransformAccess
     //       except through what is passed into the job function.
-    //       Code below assumes this to be true since it doesn't check if TransformAccess is valid
+    //       Code below assumes this to be true since it doesn't check if the index is valid
+
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Runtime/Transform/ScriptBindings/TransformAccess.bindings.h")]
-    public partial struct TransformAccess
+    public struct TransformAccess
     {
         private IntPtr hierarchy;
-        private int    index;
+        private int index;
+        private bool isReadOnly;
 
-        public Vector3 position         { get { Vector3 p; GetPosition(ref this, out p); return p; }         set { SetPosition(ref this, ref value); } }
-        public Quaternion rotation      { get { Quaternion r; GetRotation(ref this, out r); return r; }      set { SetRotation(ref this, ref value); } }
+        public Vector3 position
+        {
+            get
+            {
+                CheckHierarchyValid();
+                GetPosition(ref this, out var p);
+                return p;
+            }
+            set
+            {
+                CheckHierarchyValid();
+                CheckWriteAccess();
+                SetPosition(ref this, ref value);
+            }
+        }
 
-        public Vector3 localPosition    { get { Vector3 p; GetLocalPosition(ref this, out p); return p; }    set { SetLocalPosition(ref this, ref value); } }
-        public Quaternion localRotation { get { Quaternion r; GetLocalRotation(ref this, out r); return r; } set { SetLocalRotation(ref this, ref value); } }
-        public Vector3 localScale       { get { Vector3 s; GetLocalScale(ref this, out s); return s; }       set { SetLocalScale(ref this, ref value); } }
 
-        public Matrix4x4 localToWorldMatrix { get { Matrix4x4 m; GetLocalToWorldMatrix(ref this, out m); return m; } }
-        public Matrix4x4 worldToLocalMatrix { get { Matrix4x4 m; GetWorldToLocalMatrix(ref this, out m); return m; } }
+        public Quaternion rotation
+        {
+            get
+            {
+                CheckHierarchyValid();
+                GetRotation(ref this, out var r);
+                return r;
+            }
+            set
+            {
+                CheckHierarchyValid();
+                CheckWriteAccess();
+                SetRotation(ref this, ref value);
+            }
+        }
+
+        public Vector3 localPosition
+        {
+            get
+            {
+                CheckHierarchyValid();
+                GetLocalPosition(ref this, out var p);
+                return p;
+            }
+            set
+            {
+                CheckHierarchyValid();
+                CheckWriteAccess();
+                SetLocalPosition(ref this, ref value);
+            }
+        }
+
+        public Quaternion localRotation
+        {
+            get
+            {
+                CheckHierarchyValid();
+                GetLocalRotation(ref this, out var r);
+                return r;
+            }
+            set
+            {
+                CheckHierarchyValid();
+                CheckWriteAccess();
+                SetLocalRotation(ref this, ref value);
+            }
+        }
+
+        public Vector3 localScale
+        {
+            get
+            {
+                CheckHierarchyValid();
+                GetLocalScale(ref this, out var s);
+                return s;
+            }
+            set
+            {
+                CheckHierarchyValid();
+                CheckWriteAccess();
+                SetLocalScale(ref this, ref value);
+            }
+        }
+
+
+        public Matrix4x4 localToWorldMatrix
+        {
+            get
+            {
+                CheckHierarchyValid();
+                GetLocalToWorldMatrix(ref this, out var m);
+                return m;
+            }
+        }
+
+        public Matrix4x4 worldToLocalMatrix
+        {
+            get
+            {
+                CheckHierarchyValid();
+                GetWorldToLocalMatrix(ref this, out var m);
+                return m;
+            }
+        }
+
+        public bool isValid => hierarchy != IntPtr.Zero;
 
         //@TODO: Static code analysis needs to prevent creation of TransformAccess except through TransformAccessArray accessor.
         // Code below assumes this to be true since it doesn't check if TransformAccess is valid
@@ -70,6 +168,36 @@ namespace UnityEngine.Jobs
 
         [NativeMethod(Name = "TransformAccessBindings::GetWorldToLocalMatrix", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
         private static extern void GetWorldToLocalMatrix(ref TransformAccess access, out Matrix4x4 m);
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        internal void CheckHierarchyValid()
+        {
+            if (!isValid)
+                throw new NullReferenceException("The TransformAccess is not valid and points to an invalid hierarchy");
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        internal void MarkReadWrite()
+        {
+            isReadOnly = false;
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        internal void MarkReadOnly()
+        {
+            isReadOnly = true;
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        void CheckWriteAccess()
+        {
+            if (isReadOnly)
+                throw new InvalidOperationException("Cannot write to TransformAccess since the transform job was scheduled as read-only");
+        }
 
         //@TODO: API incomplete...
     }

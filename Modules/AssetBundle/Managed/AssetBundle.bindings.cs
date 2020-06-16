@@ -53,7 +53,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("LoadMainObjectFromAssetBundle", true)]
-        internal static extern Object returnMainAsset(AssetBundle bundle);
+        internal static extern Object returnMainAsset([NotNull("NullExceptionObject")] AssetBundle bundle);
 
         [FreeFunction("UnloadAllAssetBundles")]
         public extern static void UnloadAllAssetBundles(bool unloadAllObjects);

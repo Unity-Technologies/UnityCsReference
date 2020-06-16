@@ -80,31 +80,31 @@ namespace UnityEditor.U2D
     [NativeHeader("Runtime/2D/SpriteAtlas/SpriteAtlas.h")]
     public static class SpriteAtlasExtensions
     {
-        extern public static void Add(this SpriteAtlas spriteAtlas, UnityEngine.Object[] objects);
-        extern public static void Remove(this SpriteAtlas spriteAtlas, UnityEngine.Object[] objects);
-        extern internal static void RemoveAt(this SpriteAtlas spriteAtlas, int index);
-        extern public static UnityEngine.Object[] GetPackables(this SpriteAtlas spriteAtlas);
-        extern public static SpriteAtlasTextureSettings GetTextureSettings(this SpriteAtlas spriteAtlas);
-        extern public static void SetTextureSettings(this SpriteAtlas spriteAtlas, SpriteAtlasTextureSettings src);
-        extern public static SpriteAtlasPackingSettings GetPackingSettings(this SpriteAtlas spriteAtlas);
-        extern public static void SetPackingSettings(this SpriteAtlas spriteAtlas, SpriteAtlasPackingSettings src);
-        extern public static TextureImporterPlatformSettings GetPlatformSettings(this SpriteAtlas spriteAtlas, string buildTarget);
-        extern public static void SetPlatformSettings(this SpriteAtlas spriteAtlas, TextureImporterPlatformSettings src);
-        extern public static void SetIncludeInBuild(this SpriteAtlas spriteAtlas, bool value);
-        extern public static void SetIsVariant(this SpriteAtlas spriteAtlas, bool value);
-        extern public static void SetMasterAtlas(this SpriteAtlas spriteAtlas, SpriteAtlas value);
-        extern public static void SetVariantScale(this SpriteAtlas spriteAtlas, float value);
-        extern internal static void CopyMasterAtlasSettings(this SpriteAtlas spriteAtlas);
-        extern internal static string GetHash(this SpriteAtlas spriteAtlas);
-        extern internal static Texture2D[] GetPreviewTextures(this SpriteAtlas spriteAtlas);
-        extern internal static Texture2D[] GetPreviewAlphaTextures(this SpriteAtlas spriteAtlas);
-        extern internal static TextureFormat GetTextureFormat(this SpriteAtlas spriteAtlas, BuildTarget target);
-        extern internal static Sprite[] GetPackedSprites(this SpriteAtlas spriteAtlas);
-        extern internal static Hash128 GetStoredHash(this SpriteAtlas spriteAtlas);
-        extern internal static TextureImporterPlatformSettings GetSecondaryPlatformSettings(this SpriteAtlas spriteAtlas, string buildTarget, string secondaryTextureName);
-        extern internal static void SetSecondaryPlatformSettings(this SpriteAtlas spriteAtlas, TextureImporterPlatformSettings src, string secondaryTextureName);
-        extern internal static bool GetSecondaryColorSpace(this SpriteAtlas spriteAtlas, string secondaryTextureName);
-        extern internal static void SetSecondaryColorSpace(this SpriteAtlas spriteAtlas, string secondaryTextureName, bool srGB);
-        extern internal static void DeleteSecondaryPlatformSettings(this SpriteAtlas spriteAtlas, string secondaryTextureName);
+        extern public static void Add([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, UnityEngine.Object[] objects);
+        extern public static void Remove([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, UnityEngine.Object[] objects);
+        extern internal static void RemoveAt([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, int index);
+        extern public static UnityEngine.Object[] GetPackables([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas);
+        extern public static SpriteAtlasTextureSettings GetTextureSettings([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas);
+        extern public static void SetTextureSettings([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, SpriteAtlasTextureSettings src);
+        extern public static SpriteAtlasPackingSettings GetPackingSettings([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas);
+        extern public static void SetPackingSettings([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, SpriteAtlasPackingSettings src);
+        extern public static TextureImporterPlatformSettings GetPlatformSettings([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, string buildTarget);
+        extern public static void SetPlatformSettings([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, TextureImporterPlatformSettings src);
+        extern public static void SetIncludeInBuild([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, bool value);
+        extern public static void SetIsVariant([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, bool value);
+        extern public static void SetMasterAtlas([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, SpriteAtlas value);
+        extern public static void SetVariantScale([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, float value);
+        extern internal static void CopyMasterAtlasSettings([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas);
+        extern internal static string GetHash([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas);
+        extern internal static Texture2D[] GetPreviewTextures([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas);
+        extern internal static Texture2D[] GetPreviewAlphaTextures([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas);
+        extern internal static TextureFormat GetTextureFormat([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, BuildTarget target);
+        extern internal static Sprite[] GetPackedSprites([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas);
+        extern internal static Hash128 GetStoredHash([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas);
+        extern internal static TextureImporterPlatformSettings GetSecondaryPlatformSettings([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, string buildTarget, string secondaryTextureName);
+        extern internal static void SetSecondaryPlatformSettings([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, TextureImporterPlatformSettings src, string secondaryTextureName);
+        extern internal static bool GetSecondaryColorSpace([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, string secondaryTextureName);
+        extern internal static void SetSecondaryColorSpace([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, string secondaryTextureName, bool srGB);
+        extern internal static void DeleteSecondaryPlatformSettings([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, string secondaryTextureName);
     }
 }

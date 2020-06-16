@@ -24,12 +24,6 @@ namespace UnityEditor
 
     internal class AssetModificationProcessorInternal
     {
-        enum FileMode
-        {
-            Binary,
-            Text
-        }
-
         static bool CheckArgumentTypes(Type[] types, MethodInfo method)
         {
             ParameterInfo[] parameters = method.GetParameters();
@@ -121,21 +115,20 @@ namespace UnityEditor
         }
 
         // ReSharper disable once UnusedMember.Local - invoked from native code
-        static void FileModeChanged(string[] assets, UnityEditor.VersionControl.FileMode mode)
+        static void FileModeChanged(string[] assets, FileMode mode)
         {
-            if (!Provider.enabled)
-                return;
+            AssetModificationHook.FileModeChanged(assets, mode);
 
-            // if we happen to be disconnected or work offline, there's not much we can do;
-            // just ignore the file mode and hope that VCS client/project is setup to handle
-            // appropriate file types correctly
-            if (!Provider.isActive)
-                return;
-
-            // we'll want to re-serialize these assets in different (text vs binary) mode;
-            // make sure they are editable first
-            AssetDatabase.MakeEditable(assets);
-            Provider.SetFileMode(assets, mode);
+            object[] args = { assets, mode };
+            foreach (var type in AssetModificationProcessors)
+            {
+                var method = type.GetMethod("FileModeChanged", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                if (method == null)
+                    continue;
+                if (!CheckArgumentsAndReturnType(args, method, typeof(void)))
+                    continue;
+                method.Invoke(null, args);
+            }
         }
 
         // Postprocess on all assets once an automatic import has completed
@@ -301,31 +294,73 @@ namespace UnityEditor
             }
         }
 
-        static MethodInfo[] isOpenForEditMethods = null;
-        static MethodInfo[] GetIsOpenForEditMethods()
-        {
-            if (isOpenForEditMethods == null)
-            {
-                List<MethodInfo> mArray = new List<MethodInfo>();
-                foreach (var assetModificationProcessorClass in AssetModificationProcessors)
-                {
-                    MethodInfo method = assetModificationProcessorClass.GetMethod("IsOpenForEdit", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-                    if (method != null)
-                    {
-                        string dummy = "";
-                        bool bool_dummy = false;
-                        Type[] types = { dummy.GetType(), dummy.GetType().MakeByRefType() };
-                        if (!CheckArgumentTypesAndReturnType(types, method, bool_dummy.GetType()))
-                            continue;
+        static MethodInfo[] s_CanOpenForEditMethods;
+        static MethodInfo[] s_LegacyCanOpenForEditMethods;
+        static MethodInfo[] s_IsOpenForEditMethods;
+        static MethodInfo[] s_LegacyIsOpenForEditMethods;
 
-                        mArray.Add(method);
-                    }
+        static void GetOpenForEditMethods(bool canOpenForEditVariant, out MethodInfo[] methods, out MethodInfo[] legacyMethods)
+        {
+            if (canOpenForEditVariant)
+            {
+                if (s_CanOpenForEditMethods == null)
+                    GetOpenForEditMethods("CanOpenForEdit", out s_CanOpenForEditMethods, out s_LegacyCanOpenForEditMethods);
+                methods = s_CanOpenForEditMethods;
+                legacyMethods = s_LegacyCanOpenForEditMethods;
+            }
+            else
+            {
+                if (s_IsOpenForEditMethods == null)
+                    GetOpenForEditMethods("IsOpenForEdit", out s_IsOpenForEditMethods, out s_LegacyIsOpenForEditMethods);
+                methods = s_IsOpenForEditMethods;
+                legacyMethods = s_LegacyIsOpenForEditMethods;
+            }
+        }
+
+        static void GetOpenForEditMethods(string name, out MethodInfo[] methods, out MethodInfo[] legacyMethods)
+        {
+            var methodList = new List<MethodInfo>();
+            var legacyMethodList = new List<MethodInfo>();
+
+            Type[] types = { typeof(string[]), typeof(List<string>), typeof(StatusQueryOptions) };
+            Type[] legacyTypes = { typeof(string), typeof(string).MakeByRefType() };
+
+            foreach (var type in AssetModificationProcessors)
+            {
+                // First look for a method with a signature that accepts multiple paths "bool (string[] assetOrMetaFilePaths, List<string> outNotEditablePaths, StatusQueryOptions statusQueryOptions)".
+                MethodInfo method;
+                try
+                {
+                    method = type.GetMethod(name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null);
+                }
+                catch (AmbiguousMatchException)
+                {
+                    Debug.LogWarning($"Ambiguous {name} methods in {type.Name}.");
+                    continue;
+                }
+                if (method?.ReturnType == typeof(bool))
+                {
+                    methodList.Add(method);
+                    continue;
                 }
 
-                isOpenForEditMethods = mArray.ToArray();
+                // Then look for a legacy method that accepts single path only "bool (string assetOrMetaFilePath, out string message)".
+                MethodInfo legacyMethod;
+                try
+                {
+                    legacyMethod = type.GetMethod(name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                }
+                catch (AmbiguousMatchException)
+                {
+                    Debug.LogWarning($"Ambiguous {name} methods in {type.Name}.");
+                    continue;
+                }
+                if (legacyMethod != null && CheckArgumentTypesAndReturnType(legacyTypes, legacyMethod, typeof(bool)))
+                    legacyMethodList.Add(legacyMethod);
             }
 
-            return isOpenForEditMethods;
+            methods = methodList.ToArray();
+            legacyMethods = legacyMethodList.ToArray();
         }
 
         enum Editability
@@ -350,21 +385,63 @@ namespace UnityEditor
             return Editability.Maybe;
         }
 
-        static bool IsOpenForEditViaScriptCallbacks(string assetPath, ref string message)
+        static bool GetOpenForEditViaScriptCallbacks(bool canOpenForEditVariant, string[] paths, List<string> notEditablePaths, out string message, StatusQueryOptions options)
         {
-            foreach (var method in GetIsOpenForEditMethods())
+            message = string.Empty;
+            GetOpenForEditMethods(canOpenForEditVariant, out var methods, out var legacyMethods);
+
+            if (methods.Length != 0)
             {
-                object[] args = {assetPath, message};
-                if (!(bool)method.Invoke(null, args))
+                object[] args = { paths, notEditablePaths, options };
+                foreach (var method in methods)
                 {
-                    message = args[1] as string;
-                    return false;
+                    if (!(bool)method.Invoke(null, args))
+                        return false;
                 }
             }
+
+            if (legacyMethods.Length != 0)
+            {
+                foreach (var legacyMethod in legacyMethods)
+                {
+                    var result = true;
+                    foreach (var path in paths)
+                    {
+                        object[] legacyArgs = { path, null };
+                        if (!(bool)legacyMethod.Invoke(null, legacyArgs))
+                        {
+                            result = false;
+                            notEditablePaths.Add(path);
+                            message = legacyArgs[1] as string;
+                        }
+                    }
+
+                    if (!result)
+                        return false;
+                }
+            }
+
             return true;
         }
 
+        internal static bool CanOpenForEdit(string assetPath, out string message, StatusQueryOptions statusOptions)
+        {
+            if (IsOpenForEdit(assetPath, out message, statusOptions))
+                return true;
+
+            // Status has just been updated so there's no need to force update again.
+            if (statusOptions == StatusQueryOptions.ForceUpdate)
+                statusOptions = StatusQueryOptions.UseCachedIfPossible;
+
+            return GetOpenForEdit(true, assetPath, out message, statusOptions);
+        }
+
         internal static bool IsOpenForEdit(string assetPath, out string message, StatusQueryOptions statusOptions)
+        {
+            return GetOpenForEdit(false, assetPath, out message, statusOptions);
+        }
+
+        static bool GetOpenForEdit(bool canOpenForEditVariant, string assetPath, out string message, StatusQueryOptions statusOptions)
         {
             message = string.Empty;
             if (string.IsNullOrEmpty(assetPath))
@@ -375,22 +452,64 @@ namespace UnityEditor
                 return true;
             if (editability == Editability.Never)
                 return false;
-            if (!AssetModificationHook.IsOpenForEdit(assetPath, out message, statusOptions))
-                return false;
-            if (!IsOpenForEditViaScriptCallbacks(assetPath, ref message))
+
+            if (!AssetModificationHook.GetOpenForEdit(canOpenForEditVariant, assetPath, out message, statusOptions))
                 return false;
 
-            return true;
+            return GetOpenForEditViaScriptCallbacks(canOpenForEditVariant, new[] { assetPath }, new List<string>(), out message, statusOptions);
         }
 
-        internal static void IsOpenForEdit(string[] assetOrMetaFilePaths, List<string> outNotEditablePaths, StatusQueryOptions statusQueryOptions = StatusQueryOptions.UseCachedIfPossible)
+        internal static bool CanOpenForEdit(string[] assetOrMetaFilePaths, List<string> outNotEditablePaths, StatusQueryOptions statusQueryOptions)
         {
             outNotEditablePaths.Clear();
             if (assetOrMetaFilePaths == null || assetOrMetaFilePaths.Length == 0)
-                return;
+                return true;
 
-            var queryList = new List<string>();
-            foreach (var path in assetOrMetaFilePaths)
+            var queryList = GetQueryList(assetOrMetaFilePaths, outNotEditablePaths);
+            if (queryList.Count == 0)
+                return outNotEditablePaths.Count == 0;
+
+            // Get a list of paths that are not open for edit.
+            var notOpenForEditPaths = new List<string>();
+            AssetModificationHook.GetOpenForEdit(false, queryList, notOpenForEditPaths, statusQueryOptions);
+            GetOpenForEditViaScriptCallbacks(false, queryList.ToArray(), notOpenForEditPaths, out var message, statusQueryOptions);
+
+            if (notOpenForEditPaths.Count == 0)
+                return outNotEditablePaths.Count == 0;
+
+            // Status has just been updated so there's no need to force update again.
+            if (statusQueryOptions == StatusQueryOptions.ForceUpdate)
+                statusQueryOptions = StatusQueryOptions.UseCachedIfPossible;
+
+            // Check paths that are not open for edit.
+            if (!AssetModificationHook.GetOpenForEdit(true, notOpenForEditPaths, outNotEditablePaths, statusQueryOptions))
+                return false;
+
+            return GetOpenForEditViaScriptCallbacks(true, notOpenForEditPaths.ToArray(), outNotEditablePaths, out message, statusQueryOptions);
+        }
+
+        internal static bool IsOpenForEdit(string[] assetOrMetaFilePaths, List<string> outNotEditablePaths, StatusQueryOptions statusQueryOptions)
+        {
+            outNotEditablePaths.Clear();
+            if (assetOrMetaFilePaths == null || assetOrMetaFilePaths.Length == 0)
+                return true;
+
+            var queryList = GetQueryList(assetOrMetaFilePaths, outNotEditablePaths);
+            if (queryList.Count == 0)
+                return outNotEditablePaths.Count == 0;
+
+            // check with VCS
+            if (!AssetModificationHook.GetOpenForEdit(false, queryList, outNotEditablePaths, statusQueryOptions))
+                return false;
+
+            // check with possible script callbacks
+            return GetOpenForEditViaScriptCallbacks(false, queryList.ToArray(), outNotEditablePaths, out var message, statusQueryOptions);
+        }
+
+        static List<string> GetQueryList(string[] paths, List<string> outNotEditablePaths)
+        {
+            var result = new List<string>(paths.Length);
+            foreach (var path in paths)
             {
                 if (string.IsNullOrEmpty(path))
                     continue; // treat empty/null paths as editable (might be under Library folders etc.)
@@ -402,24 +521,9 @@ namespace UnityEditor
                     outNotEditablePaths.Add(path);
                     continue;
                 }
-                queryList.Add(path);
+                result.Add(path);
             }
-
-            // check with VCS
-            AssetModificationHook.IsOpenForEdit(queryList, outNotEditablePaths, statusQueryOptions);
-
-            // check with possible script callbacks
-            var scriptCallbacks = GetIsOpenForEditMethods();
-            if (scriptCallbacks != null && scriptCallbacks.Length > 0)
-            {
-                var stillEditable = assetOrMetaFilePaths.Except(outNotEditablePaths).Where(f => !string.IsNullOrEmpty(f));
-                var message = string.Empty;
-                foreach (var path in stillEditable)
-                {
-                    if (!IsOpenForEditViaScriptCallbacks(path, ref message))
-                        outNotEditablePaths.Add(path);
-                }
-            }
+            return result;
         }
 
         internal static void OnStatusUpdated()
@@ -438,6 +542,50 @@ namespace UnityEditor
                     method.Invoke(null, args);
                 }
             }
+        }
+
+        static MethodInfo[] s_MakeEditableMethods;
+
+        static MethodInfo[] GetMakeEditableMethods()
+        {
+            if (s_MakeEditableMethods == null)
+            {
+                var methods = new List<MethodInfo>();
+                Type[] types = { typeof(string[]), typeof(string), typeof(List<string>) };
+                foreach (var type in AssetModificationProcessors)
+                {
+                    MethodInfo method;
+                    try
+                    {
+                        method = type.GetMethod("MakeEditable", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                    }
+                    catch (AmbiguousMatchException)
+                    {
+                        Debug.LogWarning($"Ambiguous MakeEditable methods in {type.Name}.");
+                        continue;
+                    }
+                    if (method != null && CheckArgumentTypesAndReturnType(types, method, typeof(bool)))
+                        methods.Add(method);
+                }
+                s_MakeEditableMethods = methods.ToArray();
+            }
+            return s_MakeEditableMethods;
+        }
+
+        internal static bool MakeEditable(string[] paths, string prompt, List<string> outNotEditablePaths)
+        {
+            var methods = GetMakeEditableMethods();
+            if (methods == null || methods.Length == 0)
+                return true;
+
+            object[] args = { paths, prompt ?? string.Empty, outNotEditablePaths ?? new List<string>() };
+            foreach (var method in methods)
+            {
+                if (!(bool)method.Invoke(null, args))
+                    return false;
+            }
+
+            return true;
         }
     }
 }

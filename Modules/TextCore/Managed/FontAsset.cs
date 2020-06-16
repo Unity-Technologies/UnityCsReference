@@ -976,7 +976,7 @@ namespace UnityEngine.TextCore
             // Check if glyph is already contained in the glyph table.
             if (m_GlyphLookupDictionary.ContainsKey(glyphIndex) == false)
             {
-                if (glyph.glyphRect.width == 0 || glyph.glyphRect.width == 0)
+                if (glyph.glyphRect.width == 0 || glyph.glyphRect.height == 0)
                 {
                     // Glyphs with zero width and / or height can be automatically added to font asset.
                     m_GlyphTable.Add(glyph);

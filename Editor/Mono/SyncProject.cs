@@ -412,7 +412,7 @@ namespace UnityEditor
                     string value = key.GetValue("Version", null) as string;
                     if (value == null) return false;
                     string[] components = value.Split('.');
-                    if (components == null || components.Length < 3) return false;
+                    if (components.Length < 3) return false;
                     try
                     {
                         haveBuild = Convert.ToInt32(components[2]);

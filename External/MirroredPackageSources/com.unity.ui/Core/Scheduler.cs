@@ -178,7 +178,7 @@ namespace UnityEngine.UIElements
             if (item == null)
                 return;
 
-            ScheduledItem scheduledItem = item as ScheduledItem;
+            ScheduledItem scheduledItem = item;
 
             if (scheduledItem == null)
             {

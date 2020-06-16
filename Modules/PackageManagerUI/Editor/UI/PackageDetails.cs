@@ -173,6 +173,7 @@ namespace UnityEditor.PackageManager.UI
             resumeButton.clickable.clicked += ResumeClick;
             detailDescMore.clickable.clicked += DescMoreClick;
             detailDescLess.clickable.clicked += DescLessClick;
+            okButton.clickable.clicked += ClearError;
 
             detailDesc.RegisterCallback<GeometryChangedEvent>(DescriptionGeometryChangeEvent);
             detailImages?.RegisterCallback<GeometryChangedEvent>(ImagesGeometryChangeEvent);
@@ -199,6 +200,7 @@ namespace UnityEditor.PackageManager.UI
         {
             detailImagesWidthsWhenImagesRemoved = new Stack<float>();
             m_Application.onFinishCompiling += RefreshPackageActionButtons;
+            m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
 
             m_PackageDatabase.onPackagesChanged += (added, removed, preUpdate, postUpdate) => OnPackagesUpdated(postUpdate);
             m_PackageDatabase.onPackagesChanged += (added, removed, preUpdate, postUpdate) => RefreshDependencies();
@@ -220,6 +222,7 @@ namespace UnityEditor.PackageManager.UI
         public void OnDisable()
         {
             m_Application.onFinishCompiling -= RefreshPackageActionButtons;
+            m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
 
             m_PackageDatabase.onPackageProgressUpdate -= OnPackageProgressUpdate;
 
@@ -232,16 +235,20 @@ namespace UnityEditor.PackageManager.UI
             ClearSupportingImages();
         }
 
+        private void OnInternetReachabilityChange(bool value)
+        {
+            RefreshButtonStatusAndTooltip(resumeButton, PackageAction.Resume,
+                new ButtonDisableCondition(!value, L10n.Tr("You need to restore your network connection to perform this action.")));
+
+            RefreshButtonStatusAndTooltip(downloadButton, PackageAction.Download,
+                new ButtonDisableCondition(!value, L10n.Tr("You need to restore your network connection to perform this action.")));
+
+            if (value)
+                RefreshErrorDisplay();
+        }
+
         private void UpdateDownloadProgressBar(IOperation operation)
         {
-            if (!m_Application.isInternetReachable)
-            {
-                detailError.SetError(new UIError(UIErrorCode.NetworkError, L10n.Tr("No internet connection.")));
-                m_PackageDatabase.AbortDownload(package);
-                RefreshDownloadStatesButtons();
-                return;
-            }
-
             if (displayVersion?.packageUniqueId != operation.packageUniqueId)
                 return;
             downloadProgress.UpdateProgress(operation);
@@ -273,7 +280,15 @@ namespace UnityEditor.PackageManager.UI
         {
             UIUtils.SetElementDisplay(detailContainer, visible);
             UIUtils.SetElementDisplay(packageToolbarContainer, visible);
+
+            SetToolBarVisibility(visible);
+        }
+
+        private void SetToolBarVisibility(bool visible)
+        {
+            UIUtils.SetElementDisplay(packageToolbarMainContainer, visible);
             UIUtils.SetElementDisplay(packageToolbarLeftArea, visible);
+            UIUtils.SetElementDisplay(packageToolbarErrorContainer, !visible);
         }
 
         internal void OnSelectionChanged(IPackageVersion version)
@@ -306,7 +321,7 @@ namespace UnityEditor.PackageManager.UI
         {
             detailScrollView.scrollOffset = new Vector2(0, 0);
 
-            var detailVisible = package != null && displayVersion != null;
+            var detailVisible = package != null && displayVersion != null && !inProgressView.Refresh(package, displayVersion);
             var detailEnabled = displayVersion == null || displayVersion.isFullyFetched;
             if (!detailVisible)
             {
@@ -677,14 +692,60 @@ namespace UnityEditor.PackageManager.UI
 
         private void RefreshErrorDisplay()
         {
-            var error = displayVersion?.errors?.FirstOrDefault() ?? package?.errors?.FirstOrDefault();
+            var error = displayVersion?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.IsClearable)) ?? package?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.IsClearable));
+            var operationError = displayVersion?.errors?.FirstOrDefault(e  => e.HasAttribute(UIError.Attribute.IsClearable)) ?? package?.errors?.FirstOrDefault(e => e.HasAttribute(UIError.Attribute.IsClearable));
+
+            if (error == null && operationError == null)
+            {
+                ClearError();
+                detailError.ClearError();
+                return;
+            }
+
             if (error == null)
                 detailError.ClearError();
             else
-            {
                 detailError.SetError(error);
-                detailError.onCloseError = () => m_PackageDatabase.ClearPackageErrors(package);
+
+            if (operationError == null)
+            {
+                ClearError();
             }
+            else
+            {
+                SetError(operationError.message, operationError.HasAttribute(UIError.Attribute.IsWarning) ? PackageState.Warning : PackageState.Error);
+                SetToolBarVisibility(false);
+            }
+        }
+
+        public void ClearError()
+        {
+            UIUtils.SetElementDisplay(packageToolbarErrorContainer, false);
+            errorMessage.text = string.Empty;
+            errorStatus.ClearClassList();
+
+            var error = displayVersion?.errors?.FirstOrDefault() ?? package?.errors?.FirstOrDefault();
+            if (error != null)
+                package?.ClearErrors(e => e.HasAttribute(UIError.Attribute.IsClearable));
+
+            SetToolBarVisibility(true);
+        }
+
+        public void SetError(string message, PackageState state)
+        {
+            switch (state)
+            {
+                case PackageState.Error:
+                    errorStatus.AddClasses("error");
+                    break;
+                case PackageState.Warning:
+                    errorStatus.AddClasses("warning");
+                    break;
+                default: break;
+            }
+
+            errorMessage.text = message;
+            UIUtils.SetElementDisplay(packageToolbarErrorContainer, true);
         }
 
         internal void OnPackageProgressUpdate(IPackage package)
@@ -763,6 +824,7 @@ namespace UnityEditor.PackageManager.UI
                     RefreshButtonStatusAndTooltip(downloadButton, action,
                         new ButtonDisableCondition(alreadyDownloaded, L10n.Tr("This package has already been downloaded to disk.")),
                         new ButtonDisableCondition(isDownloadRequested, L10n.Tr("The download request has been sent. Please wait for the download to start.")),
+                        new ButtonDisableCondition(!m_Application.isInternetReachable, L10n.Tr("You need to restore your network connection to perform this action.")),
                         disableIfCompiling);
                 }
 
@@ -906,7 +968,6 @@ namespace UnityEditor.PackageManager.UI
                     return;
             }
 
-            detailError.ClearError();
             m_PackageDatabase.Install(targetVersion);
             RefreshPackageActionButtons();
 
@@ -973,7 +1034,6 @@ namespace UnityEditor.PackageManager.UI
                 if (!EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), L10n.Tr("You will lose all your changes (if any) if you delete a package in development. Are you sure?"), L10n.Tr("Yes"), L10n.Tr("No")))
                     return;
 
-                detailError.ClearError();
                 m_PackageDatabase.RemoveEmbedded(package);
                 RefreshPackageActionButtons();
 
@@ -1015,7 +1075,6 @@ namespace UnityEditor.PackageManager.UI
             }
 
             // Remove
-            detailError.ClearError();
             m_PackageDatabase.Uninstall(package);
             RefreshPackageActionButtons();
 
@@ -1088,12 +1147,7 @@ namespace UnityEditor.PackageManager.UI
         {
             var downloadInProgress = m_PackageDatabase.IsDownloadInProgress(displayVersion);
             if (!downloadInProgress && !m_Application.isInternetReachable)
-            {
-                detailError.SetError(new UIError(UIErrorCode.NetworkError, L10n.Tr("No internet connection.")));
                 return;
-            }
-
-            detailError.ClearError();
 
             m_PackageDatabase.Download(package);
             RefreshDownloadStatesButtons();
@@ -1107,14 +1161,6 @@ namespace UnityEditor.PackageManager.UI
 
         private void CancelClick()
         {
-            var downloadInProgress = m_PackageDatabase.IsDownloadInProgress(displayVersion);
-            if (!downloadInProgress && !m_Application.isInternetReachable)
-            {
-                detailError.SetError(new UIError(UIErrorCode.NetworkError, L10n.Tr("No internet connection.")));
-                m_PackageDatabase.AbortDownload(package);
-                return;
-            }
-
             m_PackageDatabase.AbortDownload(package);
             RefreshDownloadStatesButtons();
 
@@ -1131,10 +1177,7 @@ namespace UnityEditor.PackageManager.UI
         private void ResumeClick()
         {
             if (!m_Application.isInternetReachable)
-            {
-                detailError.SetError(new UIError(UIErrorCode.NetworkError, L10n.Tr("No internet connection.")));
                 return;
-            }
 
             m_PackageDatabase.ResumeDownload(package);
             RefreshDownloadStatesButtons();
@@ -1143,6 +1186,7 @@ namespace UnityEditor.PackageManager.UI
 
         private VisualElementCache cache { get; set; }
 
+        private InProgressView inProgressView => cache.Get<InProgressView>("inProgressView");
         private TextField detailDesc { get { return cache.Get<TextField>("detailDesc"); } }
         private Button detailDescMore { get { return cache.Get<Button>("detailDescMore"); } }
         private Button detailDescLess { get { return cache.Get<Button>("detailDescLess"); } }
@@ -1162,6 +1206,7 @@ namespace UnityEditor.PackageManager.UI
         private PackageSampleList sampleList { get { return cache.Get<PackageSampleList>("detailSampleList"); } }
         private PackageDependencies dependencies { get { return cache.Get<PackageDependencies>("detailDependencies"); } }
         internal VisualElement packageToolbarContainer { get { return cache.Get<VisualElement>("toolbarContainer"); } }
+        internal VisualElement packageToolbarMainContainer { get { return cache.Get<VisualElement>("toolbarMainContainer"); } }
         private VisualElement packageToolbarLeftArea { get { return cache.Get<VisualElement>("leftItems"); } }
         internal Button updateButton { get { return cache.Get<Button>("update"); } }
         internal Button removeButton { get { return cache.Get<Button>("remove"); } }
@@ -1186,5 +1231,9 @@ namespace UnityEditor.PackageManager.UI
         private VisualElement detailSourcePathContainer { get { return cache.Get<VisualElement>("detailSourcePathContainer"); } }
         private TextField detailSourcePath { get { return cache.Get<TextField>("detailSourcePath"); } }
         internal PackageTagLabel GetTagLabel(string tag) { return cache.Get<PackageTagLabel>("tag" + tag); }
+        internal VisualElement packageToolbarErrorContainer { get { return cache.Get<VisualElement>("toolbarErrorContainer"); } }
+        private Label errorMessage { get { return cache.Get<Label>("message"); } }
+        private Label errorStatus { get { return cache.Get<Label>("state"); } }
+        private Button okButton { get { return cache.Get<Button>("ok"); } }
     }
 }

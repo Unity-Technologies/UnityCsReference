@@ -30,6 +30,7 @@ namespace UnityEngine.Rendering
 
         [FreeFunction("ShaderScripting::GetGlobalKeywordIndex")] extern internal static int GetGlobalKeywordIndex(string keyword);
         [FreeFunction("ShaderScripting::GetKeywordIndex")]       extern internal static int GetKeywordIndex(Shader shader, string keyword);
+        [FreeFunction("ShaderScripting::GetKeywordIndex")]       extern internal static int GetComputeShaderKeywordIndex(ComputeShader shader, string keyword);
 
         [FreeFunction("ShaderScripting::GetGlobalKeywordName")] extern public static string GetGlobalKeywordName(ShaderKeyword index);
         [FreeFunction("ShaderScripting::GetGlobalKeywordType")] extern public static ShaderKeywordType GetGlobalKeywordType(ShaderKeyword index);
@@ -37,6 +38,19 @@ namespace UnityEngine.Rendering
 
         [FreeFunction("ShaderScripting::GetKeywordName")] extern public static string GetKeywordName(Shader shader, ShaderKeyword index);
         [FreeFunction("ShaderScripting::GetKeywordType")] extern public static ShaderKeywordType GetKeywordType(Shader shader, ShaderKeyword index);
+
+        [FreeFunction("ShaderScripting::GetKeywordName")] extern internal static string GetComputeShaderKeywordName(ComputeShader shader, ShaderKeyword index);
+        [FreeFunction("ShaderScripting::GetKeywordType")] extern internal static ShaderKeywordType GetComputeShaderKeywordType(ComputeShader shader, ShaderKeyword index);
+
+        public static string GetKeywordName(ComputeShader shader, ShaderKeyword index)
+        {
+            return GetComputeShaderKeywordName(shader, index);
+        }
+
+        public static ShaderKeywordType GetKeywordType(ComputeShader shader, ShaderKeyword index)
+        {
+            return GetComputeShaderKeywordType(shader, index);
+        }
 
         internal ShaderKeyword(int keywordIndex)
         {
@@ -51,6 +65,11 @@ namespace UnityEngine.Rendering
         public ShaderKeyword(Shader shader, string keywordName)
         {
             m_KeywordIndex = GetKeywordIndex(shader, keywordName);
+        }
+
+        public ShaderKeyword(ComputeShader shader, string keywordName)
+        {
+            m_KeywordIndex = GetComputeShaderKeywordIndex(shader, keywordName);
         }
 
         public bool IsValid()

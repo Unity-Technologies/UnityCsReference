@@ -22,10 +22,10 @@ namespace UnityEditor.PackageManager.UI
         [Flags]
         internal enum Attribute
         {
-            None = 0,
-            IsDetailInConsole = 1 << 0,
-            IsWarning = 1 << 1,
-            IsClearable = 1 << 2
+            None                = 0,
+            IsDetailInConsole   = 1 << 0,
+            IsWarning           = 1 << 1,
+            IsClearable         = 1 << 2
         }
 
         public UIError(UIErrorCode errorCode, string message, Attribute attribute = Attribute.None)
@@ -40,5 +40,10 @@ namespace UnityEditor.PackageManager.UI
         public string message => m_Message;
 
         public Attribute attribute => m_Attribute;
+
+        public bool HasAttribute(Attribute attribute)
+        {
+            return (m_Attribute & attribute) != 0;
+        }
     }
 }

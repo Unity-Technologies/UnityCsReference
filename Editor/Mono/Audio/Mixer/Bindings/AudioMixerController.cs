@@ -434,7 +434,7 @@ namespace UnityEditor.Audio
         {
             var snapshotList = new List<AudioMixerSnapshotController>(snapshots);
             var ob = Instantiate(TargetSnapshot);
-            var newSnapshot = ob as AudioMixerSnapshotController;
+            var newSnapshot = ob;
             newSnapshot.name = TargetSnapshot.name + " - Copy";
             snapshotList.Add(newSnapshot);
             snapshots = snapshotList.ToArray();

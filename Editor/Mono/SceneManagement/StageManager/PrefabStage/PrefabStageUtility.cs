@@ -499,7 +499,7 @@ namespace UnityEditor.Experimental.SceneManagement
             Unsupported.SetOverrideLightingSettings(previewScene);
             UnityEngine.RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
             UnityEngine.RenderSettings.customReflection = GetDefaultReflection();   // ensure chrome materials do not render black
-            UnityEngine.RenderSettings.skybox = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Skybox.mat") as Material;
+            UnityEngine.RenderSettings.skybox = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Skybox.mat");
             UnityEngine.RenderSettings.ambientMode = AmbientMode.Skybox;
             UnityEditorInternal.InternalEditorUtility.CalculateAmbientProbeFromSkybox();
             Unsupported.RestoreOverrideLightingSettings();

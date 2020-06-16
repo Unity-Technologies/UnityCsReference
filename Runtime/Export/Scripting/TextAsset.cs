@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace UnityEngine
@@ -45,6 +43,12 @@ namespace UnityEngine
             }
         }
 
+        internal string GetPreview(int maxChars)
+        {
+            // Take 4 times as much bytes because our widest character could be 4 bytes long
+            return DecodeString(GetPreviewBytes(maxChars * 4));
+        }
+
         static class EncodingUtility
         {
             internal static readonly KeyValuePair<byte[], Encoding>[] encodingLookup;
@@ -75,10 +79,9 @@ namespace UnityEngine
 
         internal static string DecodeString(byte[] bytes)
         {
-            Encoding encoding = null;
-            int preambleLength = 0;
             int encodingLookupLength = EncodingUtility.encodingLookup.Length;
 
+            int preambleLength;
             for (int i = 0; i < encodingLookupLength; i++)
             {
                 byte[] preamble = EncodingUtility.encodingLookup[i].Key;
@@ -98,20 +101,14 @@ namespace UnityEngine
                     try
                     {
                         Encoding tempEncoding = EncodingUtility.encodingLookup[i].Value;
-                        string text = tempEncoding.GetString(bytes, preambleLength, bytes.Length - preambleLength);
-                        encoding = tempEncoding;
-                        break;
+                        return tempEncoding.GetString(bytes, preambleLength, bytes.Length - preambleLength);
                     }
                     catch {};
                 }
             }
 
-            if (encoding == null)
-            {
-                encoding = EncodingUtility.targetEncoding;
-                preambleLength = 0;
-            }
-
+            preambleLength = 0;
+            Encoding encoding = EncodingUtility.targetEncoding;
             return encoding.GetString(bytes, preambleLength, bytes.Length - preambleLength);
         }
     }

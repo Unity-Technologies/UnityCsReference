@@ -15,6 +15,8 @@ namespace UnityEngine.Rendering
     [StructLayout(LayoutKind.Sequential)]
     public partial struct ScriptableRenderContext : IEquatable<ScriptableRenderContext>
     {
+        static readonly ShaderTagId kRenderTypeTag = new ShaderTagId("RenderType");
+
         IntPtr m_Ptr;
 
         AtomicSafetyHandle m_Safety;
@@ -120,7 +122,7 @@ namespace UnityEngine.Rendering
         {
             Validate();
             cullingResults.Validate();
-            DrawRenderers_Internal(cullingResults.ptr, ref drawingSettings, ref filteringSettings, IntPtr.Zero, IntPtr.Zero, 0);
+            DrawRenderers_Internal(cullingResults.ptr, ref drawingSettings, ref filteringSettings, ShaderTagId.none, false, IntPtr.Zero, IntPtr.Zero, 0);
         }
 
         public unsafe void DrawRenderers(CullingResults cullingResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings, ref RenderStateBlock stateBlock)
@@ -130,7 +132,7 @@ namespace UnityEngine.Rendering
             var renderType = new ShaderTagId();
             fixed(RenderStateBlock* stateBlockPtr = &stateBlock)
             {
-                DrawRenderers_Internal(cullingResults.ptr, ref drawingSettings, ref filteringSettings, (IntPtr)(&renderType), (IntPtr)stateBlockPtr, 1);
+                DrawRenderers_Internal(cullingResults.ptr, ref drawingSettings, ref filteringSettings, ShaderTagId.none, false, (IntPtr)(&renderType), (IntPtr)stateBlockPtr, 1);
             }
         }
 
@@ -140,7 +142,16 @@ namespace UnityEngine.Rendering
             cullingResults.Validate();
             if (renderTypes.Length != stateBlocks.Length)
                 throw new ArgumentException($"Arrays {nameof(renderTypes)} and {nameof(stateBlocks)} should have same length, but {nameof(renderTypes)} had length {renderTypes.Length} while {nameof(stateBlocks)} had length {stateBlocks.Length}.");
-            DrawRenderers_Internal(cullingResults.ptr, ref drawingSettings, ref filteringSettings, (IntPtr)renderTypes.GetUnsafeReadOnlyPtr(), (IntPtr)stateBlocks.GetUnsafeReadOnlyPtr(), renderTypes.Length);
+            DrawRenderers_Internal(cullingResults.ptr, ref drawingSettings, ref filteringSettings, kRenderTypeTag, false, (IntPtr)renderTypes.GetUnsafeReadOnlyPtr(), (IntPtr)stateBlocks.GetUnsafeReadOnlyPtr(), renderTypes.Length);
+        }
+
+        public unsafe void DrawRenderers(CullingResults cullingResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings, ShaderTagId tagName, bool isPassTagName, NativeArray<ShaderTagId> tagValues, NativeArray<RenderStateBlock> stateBlocks)
+        {
+            Validate();
+            cullingResults.Validate();
+            if (tagValues.Length != stateBlocks.Length)
+                throw new ArgumentException($"Arrays {nameof(tagValues)} and {nameof(stateBlocks)} should have same length, but {nameof(tagValues)} had length {tagValues.Length} while {nameof(stateBlocks)} had length {stateBlocks.Length}.");
+            DrawRenderers_Internal(cullingResults.ptr, ref drawingSettings, ref filteringSettings, tagName, isPassTagName, (IntPtr)tagValues.GetUnsafeReadOnlyPtr(), (IntPtr)stateBlocks.GetUnsafeReadOnlyPtr(), tagValues.Length);
         }
 
         public unsafe void DrawShadows(ref ShadowDrawingSettings settings)

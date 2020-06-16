@@ -297,7 +297,7 @@ namespace UnityEngine
         extern public float GetBlendShapeWeight(int index);
         extern public void  SetBlendShapeWeight(int index, float value);
         public void BakeMesh(Mesh mesh) { BakeMesh(mesh, false); }
-        extern public void  BakeMesh(Mesh mesh, bool useScale);
+        extern public void  BakeMesh([NotNull("NullExceptionObject")] Mesh mesh, bool useScale);
 
         [FreeFunction(Name = "SkinnedMeshRendererScripting::GetLocalAABB", HasExplicitThis = true)]
         extern private Bounds GetLocalAABB();

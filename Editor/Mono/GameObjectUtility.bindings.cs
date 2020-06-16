@@ -99,10 +99,10 @@ namespace UnityEditor
         }
 
         [FreeFunction]
-        public static extern int GetMonoBehavioursWithMissingScriptCount(GameObject go);
+        public static extern int GetMonoBehavioursWithMissingScriptCount([NotNull("NullExceptionObject")] GameObject go);
 
         [FreeFunction]
-        public static extern int RemoveMonoBehavioursWithMissingScript(GameObject go);
+        public static extern int RemoveMonoBehavioursWithMissingScript([NotNull("NullExceptionObject")] GameObject go);
 
         public static ulong ModifyMaskIfGameObjectIsHiddenForPrefabModeInContext(ulong sceneCullingMask, GameObject gameObject)
         {
@@ -111,7 +111,7 @@ namespace UnityEditor
             return sceneCullingMask & ~SceneManagement.SceneCullingMasks.MainStageExcludingPrefabInstanceObjectsOpenInPrefabMode;
         }
 
-        internal static extern bool IsPrefabInstanceHiddenForInContextEditing(GameObject go);
+        internal static extern bool IsPrefabInstanceHiddenForInContextEditing([NotNull] GameObject go);
 
         [System.Obsolete("GetNavMeshArea instead.")]
         public static int GetNavMeshLayer(GameObject go)

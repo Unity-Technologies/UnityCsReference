@@ -88,6 +88,9 @@ namespace Unity.Jobs.LowLevel.Unsafe
         [FreeFunction("ScheduleManagedJobParallelForTransform", ThrowsException = true)]
         public static extern JobHandle ScheduleParallelForTransform(ref JobScheduleParameters parameters, IntPtr transfromAccesssArray);
 
+        [FreeFunction("ScheduleManagedJobParallelForTransformReadOnly", ThrowsException = true)]
+        public static extern JobHandle ScheduleParallelForTransformReadOnly(ref JobScheduleParameters parameters, IntPtr transfromAccesssArray, int innerloopBatchCount);
+
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true)]
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         unsafe public static extern void PatchBufferMinMaxRanges(IntPtr bufferRangePatchData, void* jobdata, int startIndex, int rangeSize);

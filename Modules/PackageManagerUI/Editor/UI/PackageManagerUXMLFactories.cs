@@ -23,6 +23,7 @@ namespace UnityEditor.PackageManager.UI
                 new Alert.UxmlFactory(),
                 new DropdownButton.UxmlFactory(),
                 new LoadingSpinner.UxmlFactory(),
+                new InProgressView.UxmlFactory(),
                 new PackageDependencies.UxmlFactory(),
                 new PackageDetails.UxmlFactory(),
                 new PackageTagLabel.UxmlFactory(),

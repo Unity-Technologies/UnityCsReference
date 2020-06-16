@@ -7,6 +7,7 @@ using System;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 using UnityEngine.Internal;
 using UnityEngine.SceneManagement;
 
@@ -91,6 +92,7 @@ namespace UnityEngine
         }
 
         public Rigidbody rigidbody { get { return collider != null ? collider.attachedRigidbody : null; }  }
+        public ArticulationBody articulationBody { get { return collider != null ? collider.attachedArticulationBody : null; }  }
 
         public Vector2 lightmapCoord
         {
@@ -330,6 +332,7 @@ namespace UnityEngine
     {
         extern public bool enabled { get; set; }
         extern public Rigidbody attachedRigidbody {[NativeMethod("GetRigidbody")] get; }
+        extern public ArticulationBody attachedArticulationBody {[NativeMethod("GetArticulationBody")] get; }
         extern public bool isTrigger { get; set; }
         extern public float contactOffset { get; set; }
         extern public Vector3 ClosestPoint(Vector3 position);
@@ -456,6 +459,7 @@ namespace UnityEngine
     public class Joint : UnityEngine.Component
     {
         extern public Rigidbody connectedBody { get; set; }
+        extern public ArticulationBody connectedArticulationBody { get; set; }
         extern public Vector3 axis { get; set; }
         extern public Vector3 anchor { get; set; }
         extern public Vector3 connectedAnchor { get; set; }
@@ -993,6 +997,76 @@ namespace UnityEngine
     }
 
     [NativeHeader("Modules/Physics/ArticulationBody.h")]
+    public struct ArticulationJacobian
+    {
+        private int rowsCount;
+        private int colsCount;
+        private List<float> matrixData;
+
+        public ArticulationJacobian(int rows, int cols)
+        {
+            rowsCount = rows;
+            colsCount = cols;
+            matrixData = new List<float>(rows * cols);
+            for (int i = 0; i < rows * cols; i++)
+                matrixData.Add(0.0f);
+        }
+
+        public float this[int row, int col]
+        {
+            get
+            {
+                if (row < 0 || row >= rowsCount)
+                    throw new IndexOutOfRangeException();
+                if (col < 0 || col >= colsCount)
+                    throw new IndexOutOfRangeException();
+                return matrixData[row * colsCount + col];
+            }
+            set
+            {
+                if (row < 0 || row >= rowsCount)
+                    throw new IndexOutOfRangeException();
+                if (col < 0 || col >= colsCount)
+                    throw new IndexOutOfRangeException();
+                matrixData[row * colsCount + col] = value;
+            }
+        }
+        public int rows
+        {
+            get
+            {
+                return rowsCount;
+            }
+            set
+            {
+                rowsCount = value;
+            }
+        }
+        public int columns
+        {
+            get
+            {
+                return colsCount;
+            }
+            set
+            {
+                colsCount = value;
+            }
+        }
+        public List<float> elements
+        {
+            get
+            {
+                return matrixData;
+            }
+            set
+            {
+                matrixData = value;
+            }
+        }
+    }
+
+    [NativeHeader("Modules/Physics/ArticulationBody.h")]
     [NativeClass("Unity::ArticulationBody")]
     public class ArticulationBody : Behaviour
     {
@@ -1028,8 +1102,8 @@ namespace UnityEngine
         extern public void AddRelativeTorque(Vector3 torque);
         extern public void AddForceAtPosition(Vector3 force, Vector3 position);
 
-        extern public Vector3 velocity { get; }
-        extern public Vector3 angularVelocity { get; }
+        extern public Vector3 velocity { get; set; }
+        extern public Vector3 angularVelocity { get; set; }
 
         extern public float mass { get; set; }
         extern public Vector3 centerOfMass { get; set; }
@@ -1048,6 +1122,8 @@ namespace UnityEngine
         extern public int solverVelocityIterations { get; set; }
 
         extern public float maxAngularVelocity { get; set; }
+        extern public float maxLinearVelocity { get; set; }
+        extern public float maxJointVelocity { get; set; }
         extern public float maxDepenetrationVelocity { get; set; }
 
         extern public ArticulationReducedSpace jointPosition { get; set; }
@@ -1056,12 +1132,29 @@ namespace UnityEngine
         extern public ArticulationReducedSpace jointForce { get; set; }
 
         extern public int dofCount { get; }
+        extern public int index { [NativeMethod("GetBodyIndex")] get; }
 
         extern public void TeleportRoot(Vector3 position, Quaternion rotation);
         extern public Vector3 GetClosestPoint(Vector3 point);
 
         extern public Vector3 GetRelativePointVelocity(Vector3 relativePoint);
         extern public Vector3 GetPointVelocity(Vector3 worldPoint);
+
+        extern public int GetDenseJacobian(ref ArticulationJacobian jacobian);
+
+        extern public int GetJointPositions(List<float> positions);
+        extern public void SetJointPositions(List<float> positions);
+        extern public int GetJointVelocities(List<float> velocities);
+        extern public void SetJointVelocities(List<float> velocities);
+        extern public int GetJointAccelerations(List<float> accelerations);
+        extern public void SetJointAccelerations(List<float> accelerations);
+        extern public int GetJointForces(List<float> forces);
+        extern public void SetJointForces(List<float> forces);
+        extern public int GetDriveTargets(List<float> targets);
+        extern public void SetDriveTargets(List<float> targets);
+        extern public int GetDriveTargetVelocities(List<float> targetVelocities);
+        extern public void SetDriveTargetVelocities(List<float> targetVelocities);
+        extern public int GetDofStartIndices(List<int> dofStartIndices);
     }
 
     [NativeHeader("Modules/Physics/PhysicsManager.h")]
@@ -1127,7 +1220,7 @@ namespace UnityEngine
         [NativeProperty("DefaultPhysicsSceneHandle")]
         extern public static PhysicsScene defaultPhysicsScene { get; }
 
-        extern public static void IgnoreCollision(Collider collider1, Collider collider2, [DefaultValue("true")] bool ignore);
+        extern public static void IgnoreCollision([NotNull("NullExceptionObject")] Collider collider1, [NotNull("NullExceptionObject")] Collider collider2, [DefaultValue("true")] bool ignore);
 
         [ExcludeFromDocs]
         public static void IgnoreCollision(Collider collider1, Collider collider2)
@@ -1146,7 +1239,7 @@ namespace UnityEngine
 
         extern public static bool GetIgnoreLayerCollision(int layer1, int layer2);
 
-        extern public static bool GetIgnoreCollision(Collider collider1, Collider collider2);
+        extern public static bool GetIgnoreCollision([NotNull("NullExceptionObject")] Collider collider1, [NotNull("NullExceptionObject")] Collider collider2);
         static public bool Raycast(Vector3 origin, Vector3 direction, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
             return defaultPhysicsScene.Raycast(origin, direction, maxDistance, layerMask, queryTriggerInteraction);

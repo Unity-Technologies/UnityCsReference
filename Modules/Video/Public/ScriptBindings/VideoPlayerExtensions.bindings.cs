@@ -49,7 +49,7 @@ namespace UnityEngine.Experimental.Video
             return provider;
         }
 
-        extern internal static uint InternalGetAudioSampleProviderId(this VideoPlayer vp, ushort trackIndex);
+        extern internal static uint InternalGetAudioSampleProviderId([NotNull("NullExceptionObject")] this VideoPlayer vp, ushort trackIndex);
     }
 }
 

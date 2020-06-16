@@ -289,10 +289,7 @@ namespace UnityEditor
                 GUIObject(s_Texts.customSimulationSpace, m_CustomSimulationSpace);
             GUIFloat(s_Texts.simulationSpeed, m_SimulationSpeed);
             GUIBoolAsPopup(s_Texts.deltaTime, m_UseUnscaledTime, new string[] { "Scaled", "Unscaled" });
-
-            bool anyNonMesh = m_ParticleSystemUI.m_ParticleSystems.FirstOrDefault(o => !o.shape.enabled || (o.shape.shapeType != ParticleSystemShapeType.SkinnedMeshRenderer && o.shape.shapeType != ParticleSystemShapeType.MeshRenderer)) != null;
-            if (anyNonMesh)
-                GUIPopup(s_Texts.scalingMode, m_ScalingMode, s_Texts.scalingModes);
+            GUIPopup(s_Texts.scalingMode, m_ScalingMode, s_Texts.scalingModes);
 
             bool oldPlayOnAwake = m_PlayOnAwake.boolValue;
             bool newPlayOnAwake = GUIToggle(s_Texts.autoplay, m_PlayOnAwake);

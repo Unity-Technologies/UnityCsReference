@@ -679,7 +679,7 @@ namespace UnityEditor
                 {
                     // Get mip level
                     float mipLevel = 0.0F;
-                    TextureInspector cubemapEditor = m_CubemapEditor as TextureInspector;
+                    TextureInspector cubemapEditor = m_CubemapEditor;
                     if (cubemapEditor)
                         mipLevel = cubemapEditor.GetMipLevelForRendering();
 

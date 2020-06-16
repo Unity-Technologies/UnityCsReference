@@ -1394,18 +1394,15 @@ namespace UnityEditor
                 {
                     float nr = threshold.floatValue;
                     EditorGUI.BeginChangeCheck();
-                    string floatStr = EditorGUI.DelayedTextFieldInternal(rects[col], nr.ToString(CultureInfo.InvariantCulture.NumberFormat), "inftynaeINFTYNAE0123456789.,-", EditorStyles.textField);
+                    nr = EditorGUI.DelayedFloatField(rects[col], "", nr, EditorStyles.textField);
                     col++;
                     if (EditorGUI.EndChangeCheck())
                     {
-                        if (float.TryParse(floatStr, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out nr))
-                        {
-                            threshold.floatValue = nr;
-                            serializedObject.ApplyModifiedProperties();
-                            m_BlendTree.SortChildren();
-                            SetMinMaxThresholds();
-                            GUI.changed = true;
-                        }
+                        threshold.floatValue = nr;
+                        serializedObject.ApplyModifiedProperties();
+                        m_BlendTree.SortChildren();
+                        SetMinMaxThresholds();
+                        GUI.changed = true;
                     }
                 }
             }
@@ -1434,18 +1431,14 @@ namespace UnityEditor
                 for (int i = 0; i < 2; i++)
                 {
                     EditorGUI.BeginChangeCheck();
-                    string valStr = EditorGUI.DelayedTextFieldInternal(rects[col], pos[i].ToString(), "inftynaeINFTYNAE0123456789.,-", EditorStyles.textField);
+                    float coord = EditorGUI.DelayedFloatField(rects[col], "", pos[i], EditorStyles.textField);
                     col++;
                     if (EditorGUI.EndChangeCheck())
                     {
-                        float coord;
-                        if (float.TryParse(valStr, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out coord))
-                        {
-                            pos[i] = Mathf.Clamp(coord, -10000, 10000);
-                            position.vector2Value = pos;
-                            serializedObject.ApplyModifiedProperties();
-                            GUI.changed = true;
-                        }
+                        pos[i] = Mathf.Clamp(coord, -10000, 10000);
+                        position.vector2Value = pos;
+                        serializedObject.ApplyModifiedProperties();
+                        GUI.changed = true;
                     }
                 }
             }

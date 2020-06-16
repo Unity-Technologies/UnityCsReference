@@ -26,6 +26,8 @@ namespace UnityEditorInternal.Profiling
         [SerializeField]
         internal bool updateViewLive;
 
+        protected CPUorGPUProfilerModule(IProfilerWindowController profilerWindow, string name, string iconName) : base(profilerWindow, name, iconName, Chart.ChartType.StackedFill) {}
+
         protected bool fetchData
         {
             get { return !(m_ProfilerWindow == null || (m_ProfilerWindow.IsRecording() && (ProfilerDriver.IsConnectionEditor()))) || updateViewLive; }
@@ -76,12 +78,12 @@ namespace UnityEditorInternal.Profiling
             set { m_ViewType = value; }
         }
 
-        public override void OnEnable(IProfilerWindowController profilerWindow)
+        public override void OnEnable()
         {
-            base.OnEnable(profilerWindow);
+            base.OnEnable();
             if (m_FrameDataHierarchyView == null)
                 m_FrameDataHierarchyView = new ProfilerFrameDataHierarchyView(HierarchyViewSettingsKeyPrefix);
-            m_FrameDataHierarchyView.OnEnable(this, profilerWindow, false);
+            m_FrameDataHierarchyView.OnEnable(this, m_ProfilerWindow, false);
             m_FrameDataHierarchyView.viewTypeChanged += CPUOrGPUViewTypeChanged;
             m_FrameDataHierarchyView.selectionChanged += CPUOrGPUViewSelectionChanged;
             m_ProfilerWindow.selectionChanged += m_FrameDataHierarchyView.SetSelectionFromLegacyPropertyPath;
@@ -144,7 +146,7 @@ namespace UnityEditorInternal.Profiling
             m_FrameDataHierarchyView.Clear();
         }
 
-        public override void DrawView(Rect position)
+        public override void DrawDetailsView(Rect position)
         {
             m_FrameDataHierarchyView.DoGUI(fetchData ? GetFrameDataView() : null, fetchData, ref updateViewLive);
         }

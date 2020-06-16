@@ -31,6 +31,7 @@ namespace UnityEditor
             UmpProfilerExit,                  // Editor > Profiler: Request the OOPP to exit (used when the main editor is about to quit)
             UmpProfilerPing,                  // Used for regression testing.
             UmpProfilerRequestRecordState,    // Used for regression testing.
+            UmpProfilerFocus                  // Used to focus the OOPP when a user tries to open a second instance
         }
 
         [Serializable]
@@ -85,6 +86,7 @@ namespace UnityEditor
                 EventService.RegisterEventHandler(nameof(EventType.UmpProfilerRequestRecordState), HandleRequestRecordState);
                 EventService.RegisterEventHandler(nameof(EventType.UmpProfilerPing), HandlePingEvent);
                 EventService.RegisterEventHandler(nameof(EventType.UmpProfilerExit), HandleExitEvent);
+                EventService.RegisterEventHandler(nameof(EventType.UmpProfilerFocus), HandleFocus);
 
                 EditorApplication.update -= SetupProfilerDriver;
                 EditorApplication.update += SetupProfilerDriver;
@@ -220,6 +222,11 @@ namespace UnityEditor
             static object HandleRequestRecordState(string type, object[] args)
             {
                 return ProfilerDriver.enabled;
+            }
+
+            static void HandleFocus(string type, object[] args)
+            {
+                EditorWindow.FocusWindowIfItsOpen(typeof(ProfilerWindow));
             }
 
             [UsedImplicitly, CommandHandler("Profiler/OpenProfileData", CommandHint.Menu)]
@@ -373,7 +380,8 @@ namespace UnityEditor
         {
             if (IsRunning())
             {
-                Debug.LogWarning($"You've already launched the profiler out-of-process ({s_SlaveProcessId}), please wait a few seconds...");
+                Debug.LogWarning("Profiler (Standalone Process) already launched. Focusing window.");
+                EventService.Emit(nameof(EventType.UmpProfilerFocus), null);
                 return s_SlaveProcessId;
             }
 

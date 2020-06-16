@@ -632,7 +632,7 @@ namespace UnityEditorInternal
 
                 if (isHumanBone)
                 {
-                    Debug.LogWarning("Keyframing translation on humanoid rig is not supported!", target as Transform);
+                    Debug.LogWarning("Keyframing translation on humanoid rig is not supported!", target);
                     discardListPos.Add(item.Key);
                 }
                 else if (isRootMotion)
@@ -691,7 +691,7 @@ namespace UnityEditorInternal
 
                 if (isHumanBone)
                 {
-                    Debug.LogWarning("Keyframing rotation on humanoid rig is not supported!", target as Transform);
+                    Debug.LogWarning("Keyframing rotation on humanoid rig is not supported!", target);
                     discardListRot.Add(item.Key);
                 }
                 else if (isRootMotion)
@@ -739,7 +739,7 @@ namespace UnityEditorInternal
                 bool isHumanBone = isHuman && !isRootTransform && animator.IsBoneTransform(target);
                 if (isHumanBone)
                 {
-                    Debug.LogWarning("Keyframing scale on humanoid rig is not supported!", target as Transform);
+                    Debug.LogWarning("Keyframing scale on humanoid rig is not supported!", target);
                     discardListScale.Add(item.Key);
                 }
             }

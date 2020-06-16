@@ -1106,7 +1106,7 @@ namespace UnityEditor
                 }
 
                 mainWindow.Show(mainWindow.showMode, loadPosition: true, displayImmediately: true, setFocus: true);
-                if (mainWindow.maximized != mainWindowMaximized)
+                if (mainWindowToSetSize && mainWindow.maximized != mainWindowMaximized)
                     mainWindow.ToggleMaximize();
 
                 // Make sure to restore the save to layout flag when loading a layout from a file.
@@ -1605,12 +1605,6 @@ namespace UnityEditor
         static void ShowVersionControl()
         {
             EditorWindow.GetWindow<WindowPending>();
-        }
-
-        [MenuItem("Window/2D/Sprite Packer", false, 1)]
-        static void ShowSpritePackerWindow()
-        {
-            EditorWindow.GetWindow<Sprites.PackerWindow>();
         }
 
         [MenuItem("Window/General/Console %#c", false, 6)]

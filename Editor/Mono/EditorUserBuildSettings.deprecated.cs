@@ -31,5 +31,41 @@ namespace UnityEditor
         // Force full optimisations for script complilation in Development builds (OBSOLETE, replaced by "IL2CPP optimization level" Player Setting)
         [Obsolete("forceOptimizeScriptCompilation is obsolete - will always return false. Control script optimization using the 'IL2CPP optimization level' configuration in Player Settings / Other.")]
         public static bool forceOptimizeScriptCompilation { get { return false; } }
+
+        [Obsolete(@"androidDebugMinification is obsolete. Use PlayerSettings.Android.minifyDebug and PlayerSettings.Android.minifyWithR8.")]
+        public static AndroidMinification androidDebugMinification
+        {
+            get
+            {
+                if (PlayerSettings.Android.minifyDebug)
+                {
+                    return PlayerSettings.Android.minifyWithR8 ? AndroidMinification.Gradle : AndroidMinification.Proguard;
+                }
+                return AndroidMinification.None;
+            }
+            set
+            {
+                PlayerSettings.Android.minifyDebug = value != AndroidMinification.None;
+                PlayerSettings.Android.minifyWithR8 = value == AndroidMinification.Gradle;
+            }
+        }
+
+        [Obsolete(@"androidReleaseMinification is obsolete. Use PlayerSettings.Android.minifyRelease and PlayerSettings.Android.minifyWithR8.")]
+        public static AndroidMinification androidReleaseMinification
+        {
+            get
+            {
+                if (PlayerSettings.Android.minifyRelease)
+                {
+                    return PlayerSettings.Android.minifyWithR8 ? AndroidMinification.Gradle : AndroidMinification.Proguard;
+                }
+                return AndroidMinification.None;
+            }
+            set
+            {
+                PlayerSettings.Android.minifyRelease = value != AndroidMinification.None;
+                PlayerSettings.Android.minifyWithR8 = value == AndroidMinification.Gradle;
+            }
+        }
     }
 }

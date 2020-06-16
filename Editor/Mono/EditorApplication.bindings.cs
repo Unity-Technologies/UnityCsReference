@@ -116,12 +116,6 @@ namespace UnityEditor
             get;
         }
 
-        internal static extern bool isPreviewPackageInUse
-        {
-            [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
-            get;
-        }
-
         // Is remote connected to a client app?
         public static extern bool isRemoteConnected
         {
@@ -256,7 +250,7 @@ namespace UnityEditor
         }
 
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
-        private static extern void FileMenuNewScene();
+        internal static extern void FileMenuNewScene();
 
         [ThreadSafe]
         internal static extern void SignalTick();

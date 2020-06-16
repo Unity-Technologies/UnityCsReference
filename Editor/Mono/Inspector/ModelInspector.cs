@@ -433,7 +433,7 @@ namespace UnityEditor
             int submeshes = mesh.subMeshCount;
             var tintSubmeshes = false;
             var colorPropID = 0;
-            if (submeshes > 1 && settings.displayMode == DisplayMode.Shaded && customProperties == null & meshSubset == -1)
+            if (submeshes > 1 && settings.displayMode == DisplayMode.Shaded && customProperties == null && meshSubset == -1)
             {
                 tintSubmeshes = true;
                 customProperties = new MaterialPropertyBlock();

@@ -11,8 +11,6 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<Alert> {}
 
-        public Action onCloseError;
-
         private ResourceLoader m_ResourceLoader;
         private void ResolveDependencies()
         {
@@ -30,23 +28,23 @@ namespace UnityEditor.PackageManager.UI
             Add(root);
 
             cache = new VisualElementCache(root);
-
-            closeButton.clickable.clicked += () =>
-            {
-                onCloseError?.Invoke();
-                ClearError();
-            };
         }
 
         public void SetError(UIError error)
         {
-            var message = string.IsNullOrEmpty(error.message) ? L10n.Tr("An error occurred.")
-                : string.Format(L10n.Tr("An error occurred: {0}"), error.message);
+            var state = error.HasAttribute(UIError.Attribute.IsWarning) ? PackageState.Warning : PackageState.Error;
+            var message = state == PackageState.Warning ? L10n.Tr("A warning occurred") : L10n.Tr("An error occurred");
 
-            if ((UIError.Attribute.IsDetailInConsole & error.attribute) != 0)
-            {
+            if (!string.IsNullOrEmpty(error.message))
+                message = string.Format("{0}: {1}", message, error.message);
+            if (error.HasAttribute(UIError.Attribute.IsDetailInConsole))
                 message = string.Format(L10n.Tr("{0} See console for more details."), message);
-            }
+
+            var addClass = state == PackageState.Warning ? "warning" : "error";
+            var removeFromClass = state == PackageState.Warning ? "error" : "warning";
+
+            alertContainer.RemoveFromClassList(removeFromClass);
+            alertContainer.AddClasses(addClass);
 
             alertMessage.text = message;
             UIUtils.SetElementDisplay(this, true);
@@ -56,13 +54,11 @@ namespace UnityEditor.PackageManager.UI
         {
             UIUtils.SetElementDisplay(this, false);
             alertMessage.text = string.Empty;
-            onCloseError = null;
         }
 
         private VisualElementCache cache { get; set; }
 
         private Label alertMessage { get { return cache.Get<Label>("alertMessage"); } }
-
-        private Button closeButton { get { return cache.Get<Button>("close"); } }
+        private VisualElement alertContainer { get { return cache.Get<VisualElement>("alertContainer"); } }
     }
 }

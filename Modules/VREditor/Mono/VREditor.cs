@@ -91,26 +91,31 @@ namespace UnityEditor
 {
     partial class PlayerSettings
     {
+        [Obsolete("This API is obsolete, and should no longer be used. Please use XRManagerSettings in the XR Management package instead.")]
         public static string[] GetAvailableVirtualRealitySDKs(BuildTargetGroup targetGroup)
         {
             return VREditor.GetAvailableVirtualRealitySDKs(targetGroup);
         }
 
+        [Obsolete("This API is obsolete, and should no longer be used. Please use XRManagerSettings in the XR Management package instead.")]
         public static bool GetVirtualRealitySupported(BuildTargetGroup targetGroup)
         {
             return VREditor.GetVREnabledOnTargetGroup(targetGroup);
         }
 
+        [Obsolete("This API is obsolete, and should no longer be used. Please use XRManagerSettings in the XR Management package instead.")]
         public static void SetVirtualRealitySupported(BuildTargetGroup targetGroup, bool value)
         {
             VREditor.SetVREnabledOnTargetGroup(targetGroup, value);
         }
 
+        [Obsolete("This API is obsolete, and should no longer be used. Please use XRManagerSettings in the XR Management package instead.")]
         public static string[] GetVirtualRealitySDKs(BuildTargetGroup targetGroup)
         {
             return VREditor.GetVirtualRealitySDKs(targetGroup);
         }
 
+        [Obsolete("This API is obsolete, and should no longer be used. Please use XRManagerSettings in the XR Management package instead.")]
         public static void SetVirtualRealitySDKs(BuildTargetGroup targetGroup, string[] sdks)
         {
             VREditor.SetVirtualRealitySDKs(targetGroup, sdks);

@@ -68,19 +68,24 @@ namespace UnityEditor
 
         public override void Draw(Rect rect, int index)
         {
-            DrawInternal(rect, m_Presets[index].gradient);
+            DrawInternal(rect, m_Presets[index].gradient, ColorSpace.Gamma);
         }
 
         public override void Draw(Rect rect, object presetObject)
         {
-            DrawInternal(rect, presetObject as Gradient);
+            DrawInternal(rect, presetObject as Gradient, ColorSpace.Gamma);
         }
 
-        private void DrawInternal(Rect rect, Gradient gradient)
+        public void Draw(Rect rect, object presetObject, ColorSpace colorSpace)
+        {
+            DrawInternal(rect, presetObject as Gradient, colorSpace);
+        }
+
+        private void DrawInternal(Rect rect, Gradient gradient, ColorSpace colorSpace)
         {
             if (gradient == null)
                 return;
-            GradientEditor.DrawGradientWithBackground(rect, gradient);
+            GradientEditor.DrawGradientWithBackground(rect, gradient, colorSpace);
         }
 
         public override string GetName(int index)

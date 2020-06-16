@@ -363,42 +363,42 @@ namespace UnityEditor
 
         private void ShowScriptPopup(Rect r)
         {
-            int length = m_DefaultTimeScripts.Count;
-            string[] names = new string[length];
-            bool[] enabled = new bool[length];
-            var lockedScripts = new HashSet<MonoScript>();
+            var length = m_DefaultTimeScripts.Count;
+            var names = new string[length];
+            var enabled = new bool[length];
 
-            if (Provider.enabled)
+            for (var i = 0; i < length; ++i)
             {
-                var assetList = new AssetList();
-                var pathToScript = new Dictionary<string, MonoScript>();
-
-                for (int i = 0; i < length; i++)
-                {
-                    var metaPath = AssetDatabase.GetTextMetaFilePathFromAssetPath(AssetDatabase.GetAssetPath(m_DefaultTimeScripts[i]));
-
-                    if (Provider.GetAssetByPath(metaPath) != null)
-                    {
-                        assetList.Add(Provider.GetAssetByPath(metaPath));
-                        pathToScript.Add(metaPath, m_DefaultTimeScripts[i]);
-                    }
-                }
-
-                Provider.Status(assetList).Wait();
-
-                const Asset.States kExclusiveLockedRemote = Asset.States.Exclusive | Asset.States.LockedRemote;
-                foreach (var asset in assetList)
-                {
-                    if ((asset.state & kExclusiveLockedRemote) == kExclusiveLockedRemote)
-                        lockedScripts.Add(pathToScript[asset.metaPath]);
-                }
+                names[i] = m_DefaultTimeScripts[i].GetClass().FullName; // todo: Localization with a proper database.
+                enabled[i] = true;
             }
 
-            for (int c = 0; c < length; c++)
+            var paths = new List<string>(length);
+            var pathsIndices = new Dictionary<string, int>(length);
+
+            for (var i = 0; i < length; ++i)
             {
-                names[c] = m_DefaultTimeScripts[c].GetClass().FullName; // TODO: localization with a proper database.
-                enabled[c] = !lockedScripts.Contains(m_DefaultTimeScripts[c]); //List item is disabled when asset is locked
+                var assetPath = AssetDatabase.GetAssetPath(m_DefaultTimeScripts[i]);
+                if (string.IsNullOrEmpty(assetPath))
+                {
+                    enabled[i] = false;
+                    continue;
+                }
+
+                var metaPath = AssetDatabase.GetTextMetaFilePathFromAssetPath(assetPath);
+                paths.Add(metaPath);
+                pathsIndices.Add(metaPath, i);
             }
+
+            var notEditablePaths = new List<string>();
+            AssetDatabase.CanOpenForEdit(paths.ToArray(), notEditablePaths);
+
+            foreach (var notEditablePath in notEditablePaths)
+            {
+                if (pathsIndices.TryGetValue(notEditablePath, out var index))
+                    enabled[index] = false;
+            }
+
             EditorUtility.DisplayCustomMenu(r, names, enabled, null, MenuSelection, null);
         }
 

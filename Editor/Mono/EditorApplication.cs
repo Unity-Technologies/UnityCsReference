@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Scripting;
 using UnityEditorInternal;
+using UnityEditor.Scripting;
 using UnityEngine.TestTools;
 using Unity.Profiling;
 using UnityEngine.Profiling;
@@ -40,14 +41,13 @@ namespace UnityEditor
 
     internal class ApplicationTitleDescriptor
     {
-        public ApplicationTitleDescriptor(string projectName, string unityVersion, string activeSceneName, string licenseType, bool previewPackageInUse, string targetName, bool codeCoverageEnabled)
+        public ApplicationTitleDescriptor(string projectName, string unityVersion, string activeSceneName, string licenseType, string targetName, bool codeCoverageEnabled)
         {
             title = "";
             this.projectName = projectName;
             this.unityVersion = unityVersion;
             this.activeSceneName = activeSceneName;
             this.licenseType = licenseType;
-            this.previewPackageInUse = previewPackageInUse;
             this.targetName = targetName;
             this.codeCoverageEnabled = codeCoverageEnabled;
         }
@@ -57,7 +57,6 @@ namespace UnityEditor
         public string unityVersion { get; private set; }
         public string activeSceneName { get; private set; }
         public string licenseType { get; private set; }
-        public bool previewPackageInUse { get; private set; }
         public string targetName { get; private set; }
         public bool codeCoverageEnabled { get; private set; }
     }
@@ -116,6 +115,7 @@ namespace UnityEditor
         {
             quitting?.Invoke();
             editorApplicationQuit?.Invoke();
+            ScriptCompilers.Cleanup();
         }
 
         // Delegate to be called for every visible list item in the ProjectWindow on every OnGUI event.
@@ -169,6 +169,7 @@ namespace UnityEditor
 
         // Delegate for generic updates.
         public static CallbackFunction update;
+        internal static event CallbackFunction tick;
 
         public static event Func<bool> wantsToQuit;
 
@@ -184,14 +185,14 @@ namespace UnityEditor
             {
                 if ((DateTime.Now - startTime).TotalSeconds < delaySeconds)
                     return;
-                update -= delayedHandler;
+                tick -= delayedHandler;
                 action();
             });
-            update += delayedHandler;
+            tick += delayedHandler;
             if (delaySeconds == 0f)
                 SignalTick();
 
-            return () => update -= delayedHandler;
+            return () => tick -= delayedHandler;
         }
 
         // Each time an object is (or a group of objects are) created, renamed, parented, unparented or destroyed this callback is raised.
@@ -261,7 +262,7 @@ namespace UnityEditor
                 ? $"{desc.activeSceneName} - {desc.projectName}"
                 : $"{desc.projectName} - {desc.activeSceneName}";
 
-            // FUTURE: [PREVIEW PACKAGES IN USE], [CODE COVERAGE] and the build target info do not belong in the title bar. they
+            // FUTURE: [CODE COVERAGE] and the build target info do not belong in the title bar. they
             // are there now because we want them to be always-visible to user, which normally would be a) buildconfig
             // bar or b) status bar, but we don't have a) and our b) needs work to support such a thing.
 
@@ -274,11 +275,6 @@ namespace UnityEditor
             if (!string.IsNullOrEmpty(desc.licenseType))
             {
                 title += $" {desc.licenseType}";
-            }
-
-            if (desc.previewPackageInUse)
-            {
-                title += " " + L10n.Tr("[PREVIEW PACKAGES IN USE]");
             }
 
             if (desc.codeCoverageEnabled)
@@ -303,7 +299,6 @@ namespace UnityEditor
                 InternalEditorUtility.GetUnityDisplayVersion(),
                 activeSceneName,
                 GetLicenseType(),
-                isPreviewPackageInUse,
                 BuildPipeline.GetBuildTargetGroupDisplayName(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)),
                 Coverage.enabled
             );
@@ -315,23 +310,15 @@ namespace UnityEditor
             return desc.title;
         }
 
-        static int m_UpdateHash;
-        static Delegate[] m_UpdateInvocationList;
-
         [RequiredByNativeCode]
-        static void Internal_CallUpdateFunctions()
+        internal static void Internal_CallUpdateFunctions()
         {
             if (update == null)
                 return;
+
             if (Profiler.enabled && !ProfilerDriver.deepProfiling)
             {
-                var currentUpdateHash = update.GetHashCode();
-                if (currentUpdateHash != m_UpdateHash)
-                {
-                    m_UpdateInvocationList = update.GetInvocationList();
-                    m_UpdateHash = currentUpdateHash;
-                }
-                foreach (var cb in m_UpdateInvocationList)
+                foreach (var cb in update.GetInvocationList())
                 {
                     var marker = new ProfilerMarker(cb.Method.Name);
                     marker.Begin();
@@ -340,20 +327,24 @@ namespace UnityEditor
                 }
             }
             else
-            {
-                update.Invoke();
-            }
+                update();
         }
 
         [RequiredByNativeCode]
-        static void Internal_CallDelayFunctions()
+        internal static void Internal_InvokeTickEvents()
+        {
+            tick?.Invoke();
+        }
+
+        [RequiredByNativeCode]
+        internal static void Internal_CallDelayFunctions()
         {
             CallbackFunction delay = delayCall;
             delayCall = null;
             delay?.Invoke();
         }
 
-        static void Internal_SwitchSkin()
+        internal static void Internal_SwitchSkin()
         {
             EditorGUIUtility.Internal_SwitchSkin();
         }
@@ -453,8 +444,14 @@ namespace UnityEditor
         [MenuItem("File/New Scene %n", priority = 150)]
         static void FireFileMenuNewScene()
         {
-            if (!ModeService.Execute("file_new_scene"))
-                FileMenuNewScene();
+            if (CommandService.Exists("Menu/File/NewSceneTemplate"))
+            {
+                CommandService.Execute("Menu/File/NewSceneTemplate");
+            }
+            else
+            {
+                EditorApplication.FileMenuNewScene();
+            }
         }
 
         internal static void TogglePlaying()

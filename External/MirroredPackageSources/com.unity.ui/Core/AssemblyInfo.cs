@@ -36,10 +36,13 @@ using System.Runtime.CompilerServices;
 [assembly: AssemblyFileVersion("1.0.0.0")]
 
 [assembly: InternalsVisibleTo("UnityEditor")]
+[assembly: InternalsVisibleTo("UnityEditor.UIElementsModule")]
 [assembly: InternalsVisibleTo("Unity.UIElements")]
 [assembly: InternalsVisibleTo("Unity.UIElements.Editor")]
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.PlayModeTests")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElementsGameObjectsModule")]
+[assembly: InternalsVisibleTo("UnityEditor.UIElementsGameObjectsModule")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] // for Moq

@@ -10,7 +10,7 @@
     <AssemblyName>UnityEditor</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <LangVersion>7.3</LangVersion>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Editor\Mono\2D\Common\ScriptBindings\SpriteEditorExtension.bindings.cs">
@@ -403,9 +403,6 @@
     <Compile Include="..\..\Editor\Mono\AssetStore.bindings.cs">
       <Link>Editor\Mono\AssetStore.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\AssetStoreContext.bindings.cs">
-      <Link>Editor\Mono\AssetStoreContext.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\AssetStoreToolUtils.bindings.cs">
       <Link>Editor\Mono\AssetStoreToolUtils.bindings.cs</Link>
     </Compile>
@@ -414,15 +411,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreAsset.cs">
       <Link>Editor\Mono\AssetStore\AssetStoreAsset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreClient.cs">
-      <Link>Editor\Mono\AssetStore\AssetStoreClient.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreContext.cs">
-      <Link>Editor\Mono\AssetStore\AssetStoreContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\AssetStore\AssetStorePreviewManager.cs">
-      <Link>Editor\Mono\AssetStore\AssetStorePreviewManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreWindow.cs">
       <Link>Editor\Mono\AssetStore\AssetStoreWindow.cs</Link>
@@ -1399,14 +1387,23 @@
     <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorToolGUI.cs">
       <Link>Editor\Mono\GUI\Tools\EditorToolGUI.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorToolManager.cs">
+      <Link>Editor\Mono\GUI\Tools\EditorToolManager.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorToolUtility.cs">
       <Link>Editor\Mono\GUI\Tools\EditorToolUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorToolWindow.cs">
       <Link>Editor\Mono\GUI\Tools\EditorToolWindow.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorTools.cs">
-      <Link>Editor\Mono\GUI\Tools\EditorTools.cs</Link>
+    <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorTools.deprecated.cs">
+      <Link>Editor\Mono\GUI\Tools\EditorTools.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\Tools\GameObjectToolContext.cs">
+      <Link>Editor\Mono\GUI\Tools\GameObjectToolContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\Tools\ToolManager.cs">
+      <Link>Editor\Mono\GUI\Tools\ToolManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\Tools\Tools.cs">
       <Link>Editor\Mono\GUI\Tools\Tools.cs</Link>
@@ -1617,6 +1614,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Help.bindings.cs">
       <Link>Editor\Mono\Help.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Help.cs">
+      <Link>Editor\Mono\Help.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\HierarchyProperty.bindings.cs">
       <Link>Editor\Mono\HierarchyProperty.bindings.cs</Link>
@@ -2485,9 +2485,6 @@
     <Compile Include="..\..\Editor\Mono\ObjectListArea.cs">
       <Link>Editor\Mono\ObjectListArea.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\ObjectListAssetStoreGroup.cs">
-      <Link>Editor\Mono\ObjectListAssetStoreGroup.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\ObjectListGroup.cs">
       <Link>Editor\Mono\ObjectListGroup.cs</Link>
     </Compile>
@@ -2715,6 +2712,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Progress\Progress.cs">
       <Link>Editor\Mono\Progress\Progress.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Progress\TaskReorderingHelper.cs">
+      <Link>Editor\Mono\Progress\TaskReorderingHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\ProjectBrowser.cs">
       <Link>Editor\Mono\ProjectBrowser.cs</Link>
@@ -3577,6 +3577,87 @@
     <Compile Include="..\..\External\JsonParsers\MiniJson\MiniJSON.cs">
       <Link>External\JsonParsers\MiniJson\MiniJSON.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\BaseCompositeField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\BaseCompositeField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\BasePopupField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\BasePopupField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\BindingExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\BindingExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\BindingsInterface.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\BindingsInterface.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\BoundsField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\BoundsField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\BoundsIntField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\BoundsIntField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\ColorField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\ColorField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\CompoundFields.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\CompoundFields.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\CurveField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\CurveField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\DoubleField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\DoubleField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\EnumField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\EnumField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\EnumFlagsField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\EnumFlagsField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\FloatField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\FloatField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\GradientField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\GradientField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\IntegerField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\IntegerField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\LayerField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\LayerField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\LayerMaskField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\LayerMaskField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\ListViewBindings.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\ListViewBindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\LongField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\LongField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\MaskField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\MaskField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\ObjectField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\ObjectField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\PopupField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\PopupField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\ProgressBar.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\ProgressBar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\PropertyControl.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\PropertyControl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\PropertyField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\PropertyField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\TagField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\TagField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\TextValueField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\TextValueField.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\BoxModelView.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\BoxModelView.cs</Link>
     </Compile>
@@ -3634,6 +3715,105 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UxmlExporter.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UxmlExporter.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\EditorContextualMenuManager.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\EditorContextualMenuManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\EditorCursor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\EditorCursor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\EditorDragAndDrop.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\EditorDragAndDrop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\EditorMenuExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\EditorMenuExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\EditorPanel.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\EditorPanel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\FieldMouseDragger.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\FieldMouseDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Inspector\EditorElement.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Inspector\EditorElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Inspector\InspectorElement.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Inspector\InspectorElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\PanelDebug.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\PanelDebug.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Renderer\EditorAtlasMonitor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Renderer\EditorAtlasMonitor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\RetainedMode.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\RetainedMode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\IToolbarMenuElement.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\IToolbarMenuElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\SearchFieldBase.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\SearchFieldBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\Toolbar.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\Toolbar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarBreadcrumbs.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarBreadcrumbs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarButton.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarMenu.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarPopupSearchField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarPopupSearchField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarSearchField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarSearchField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarSpacer.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarSpacer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarToggle.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarToggle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Tooltip.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Tooltip.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorUtility.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorWindowCreator\CSharpTemplateCreator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorWindowCreator\CSharpTemplateCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorWindowCreator\UIElementsEditorWindowCreator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorWindowCreator\UIElementsEditorWindowCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorWindowCreator\UssTemplateCreator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorWindowCreator\UssTemplateCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorWindowCreator\UxmlTemplateCreator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorWindowCreator\UxmlTemplateCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\UIElementsViewImporter.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\UIElementsViewImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\UXMLEditorFactories.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\UXMLEditorFactories.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\UXMLSchemaGenerator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\UXMLSchemaGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\VisualTreeAssetEditor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\VisualTreeAssetEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\WindowBackends\DefaultEditorWindowBackend.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\WindowBackends\DefaultEditorWindowBackend.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\WindowBackends\DefaultWindowBackend.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\WindowBackends\DefaultWindowBackend.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\il2cpp\builds\LinkerEditorIntegration\SharedWithEditor.cs">
       <Link>External\il2cpp\builds\LinkerEditorIntegration\SharedWithEditor.cs</Link>
     </Compile>
@@ -3642,6 +3822,9 @@
     </Compile>
     <Compile Include="..\..\Modules\AIEditor\Visualization\NavMeshVisualizationSettings.bindings.cs">
       <Link>Modules\AIEditor\Visualization\NavMeshVisualizationSettings.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AdaptivePerformance\Editor\AdaptivePerformanceInstaller.cs">
+      <Link>Modules\AdaptivePerformance\Editor\AdaptivePerformanceInstaller.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabase.bindings.cs">
       <Link>Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabase.bindings.cs</Link>
@@ -4357,6 +4540,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Filters\AssetStoreFiltersWindow.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Filters\AssetStoreFiltersWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\InProgressView.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\InProgressView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerExtension.cs</Link>
     </Compile>
@@ -4777,11 +4963,38 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\IProfilerWindowController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\IProfilerWindowController.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\Data\CounterCollector.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\Data\CounterCollector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\Data\ModuleData.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\Data\ModuleData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\ModuleDetailsViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\ModuleDetailsViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\ModuleEditorWindow.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\ModuleEditorWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\ModuleListViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\ModuleListViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\ViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\ViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\Views\DragIndicator.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\Views\DragIndicator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerAreaReferenceCounter.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerAreaReferenceCounter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerChart.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerChart.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerColors.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerColors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerCounterData.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerCounterData.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerDetailedCallsView.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerDetailedCallsView.cs</Link>
@@ -4803,6 +5016,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerInstrumentationPopup.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerInstrumentationPopup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModulesDropdownWindow.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModulesDropdownWindow.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Audio\AudioProfilerModule.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Audio\AudioProfilerModule.cs</Link>
@@ -4830,6 +5046,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\CPUorGPUProfilerModule.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\CPUorGPUProfilerModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\DynamicProfilerModule.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\DynamicProfilerModule.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\GPU\GPUProfilerModule.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\GPU\GPUProfilerModule.cs</Link>
@@ -4939,6 +5158,60 @@
     <Compile Include="..\..\Modules\RestService\ScriptBindings\RestService.bindings.cs">
       <Link>Modules\RestService\ScriptBindings\RestService.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\DropdownWindow.cs">
+      <Link>Modules\SceneTemplateEditor\DropdownWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\GridView.cs">
+      <Link>Modules\SceneTemplateEditor\GridView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\ListSelectionWindow.cs">
+      <Link>Modules\SceneTemplateEditor\ListSelectionWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\ReferenceUtils.cs">
+      <Link>Modules\SceneTemplateEditor\ReferenceUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\SceneTemplateAnalytics.cs">
+      <Link>Modules\SceneTemplateEditor\SceneTemplateAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\SceneTemplateAsset.cs">
+      <Link>Modules\SceneTemplateEditor\SceneTemplateAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\SceneTemplateAssetInspectorWindow.cs">
+      <Link>Modules\SceneTemplateEditor\SceneTemplateAssetInspectorWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\SceneTemplateDialog.cs">
+      <Link>Modules\SceneTemplateEditor\SceneTemplateDialog.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\SceneTemplatePipeline.cs">
+      <Link>Modules\SceneTemplateEditor\SceneTemplatePipeline.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\SceneTemplatePreviewArea.cs">
+      <Link>Modules\SceneTemplateEditor\SceneTemplatePreviewArea.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\SceneTemplateProjectSettings.cs">
+      <Link>Modules\SceneTemplateEditor\SceneTemplateProjectSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\SceneTemplateService.cs">
+      <Link>Modules\SceneTemplateEditor\SceneTemplateService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\SceneTemplateUtils.cs">
+      <Link>Modules\SceneTemplateEditor\SceneTemplateUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\SnapshotUtils.cs">
+      <Link>Modules\SceneTemplateEditor\SnapshotUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\StringListView.cs">
+      <Link>Modules\SceneTemplateEditor\StringListView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\Styles.cs">
+      <Link>Modules\SceneTemplateEditor\Styles.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\VisualSplitter.cs">
+      <Link>Modules\SceneTemplateEditor\VisualSplitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\ZebraList.cs">
+      <Link>Modules\SceneTemplateEditor\ZebraList.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ShortcutManagerEditor\BindingValidator.cs">
       <Link>Modules\ShortcutManagerEditor\BindingValidator.cs</Link>
     </Compile>
@@ -5044,9 +5317,6 @@
     <Compile Include="..\..\Modules\SpriteShapeEditor\Managed\SpriteShapeRendererEditor.cs">
       <Link>Modules\SpriteShapeEditor\Managed\SpriteShapeRendererEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\StyleSheetsEditor\CSSSpec.cs">
-      <Link>Modules\StyleSheetsEditor\CSSSpec.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\ConverterUtils.cs">
       <Link>Modules\StyleSheetsEditor\Converters\ConverterUtils.cs</Link>
     </Compile>
@@ -5085,27 +5355,6 @@
     </Compile>
     <Compile Include="..\..\Modules\StyleSheetsEditor\StylePainter.cs">
       <Link>Modules\StyleSheetsEditor\StylePainter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheetsEditor\StyleSheetBuilder.cs">
-      <Link>Modules\StyleSheetsEditor\StyleSheetBuilder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheetsEditor\StyleSheetEditor.cs">
-      <Link>Modules\StyleSheetsEditor\StyleSheetEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheetsEditor\StyleSheetImportErrors.cs">
-      <Link>Modules\StyleSheetsEditor\StyleSheetImportErrors.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheetsEditor\StyleSheetImporter.cs">
-      <Link>Modules\StyleSheetsEditor\StyleSheetImporter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheetsEditor\StyleSheetImporterImpl.cs">
-      <Link>Modules\StyleSheetsEditor\StyleSheetImporterImpl.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheetsEditor\StyleSheetResourceUtil.cs">
-      <Link>Modules\StyleSheetsEditor\StyleSheetResourceUtil.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheetsEditor\URIHelpers.cs">
-      <Link>Modules\StyleSheetsEditor\URIHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TerrainEditor\Brush\Brush.cs">
       <Link>Modules\TerrainEditor\Brush\Brush.cs</Link>
@@ -5308,185 +5557,26 @@
     <Compile Include="..\..\Modules\UIAutomationEditor\TestEditorWindow.cs">
       <Link>Modules\UIAutomationEditor\TestEditorWindow.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\BaseCompositeField.cs">
-      <Link>Modules\UIElementsEditor\Controls\BaseCompositeField.cs</Link>
+    <Compile Include="..\..\Modules\UIElementsEditor\EditorAtlasMonitorInjector.cs">
+      <Link>Modules\UIElementsEditor\EditorAtlasMonitorInjector.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\BasePopupField.cs">
-      <Link>Modules\UIElementsEditor\Controls\BasePopupField.cs</Link>
+    <Compile Include="..\..\Modules\UIElementsEditor\StyleSheets\StyleSheetEditor.cs">
+      <Link>Modules\UIElementsEditor\StyleSheets\StyleSheetEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\BindingExtensions.cs">
-      <Link>Modules\UIElementsEditor\Controls\BindingExtensions.cs</Link>
+    <Compile Include="..\..\Modules\UIElementsEditor\StyleSheets\StyleSheetImportErrors.cs">
+      <Link>Modules\UIElementsEditor\StyleSheets\StyleSheetImportErrors.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\BindingsInterface.cs">
-      <Link>Modules\UIElementsEditor\Controls\BindingsInterface.cs</Link>
+    <Compile Include="..\..\Modules\UIElementsEditor\StyleSheets\StyleSheetImporter.cs">
+      <Link>Modules\UIElementsEditor\StyleSheets\StyleSheetImporter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\BoundsField.cs">
-      <Link>Modules\UIElementsEditor\Controls\BoundsField.cs</Link>
+    <Compile Include="..\..\Modules\UIElementsEditor\StyleSheets\StyleSheetImporterImpl.cs">
+      <Link>Modules\UIElementsEditor\StyleSheets\StyleSheetImporterImpl.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\BoundsIntField.cs">
-      <Link>Modules\UIElementsEditor\Controls\BoundsIntField.cs</Link>
+    <Compile Include="..\..\Modules\UIElementsEditor\StyleSheets\StyleSheetResourceUtil.cs">
+      <Link>Modules\UIElementsEditor\StyleSheets\StyleSheetResourceUtil.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\ColorField.cs">
-      <Link>Modules\UIElementsEditor\Controls\ColorField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\CompoundFields.cs">
-      <Link>Modules\UIElementsEditor\Controls\CompoundFields.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\CurveField.cs">
-      <Link>Modules\UIElementsEditor\Controls\CurveField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\DoubleField.cs">
-      <Link>Modules\UIElementsEditor\Controls\DoubleField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\EnumField.cs">
-      <Link>Modules\UIElementsEditor\Controls\EnumField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\EnumFlagsField.cs">
-      <Link>Modules\UIElementsEditor\Controls\EnumFlagsField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\FloatField.cs">
-      <Link>Modules\UIElementsEditor\Controls\FloatField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\GradientField.cs">
-      <Link>Modules\UIElementsEditor\Controls\GradientField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\IntegerField.cs">
-      <Link>Modules\UIElementsEditor\Controls\IntegerField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\LayerField.cs">
-      <Link>Modules\UIElementsEditor\Controls\LayerField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\LayerMaskField.cs">
-      <Link>Modules\UIElementsEditor\Controls\LayerMaskField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\ListViewBindings.cs">
-      <Link>Modules\UIElementsEditor\Controls\ListViewBindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\LongField.cs">
-      <Link>Modules\UIElementsEditor\Controls\LongField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\MaskField.cs">
-      <Link>Modules\UIElementsEditor\Controls\MaskField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\ObjectField.cs">
-      <Link>Modules\UIElementsEditor\Controls\ObjectField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\PopupField.cs">
-      <Link>Modules\UIElementsEditor\Controls\PopupField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\ProgressBar.cs">
-      <Link>Modules\UIElementsEditor\Controls\ProgressBar.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\PropertyControl.cs">
-      <Link>Modules\UIElementsEditor\Controls\PropertyControl.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\PropertyField.cs">
-      <Link>Modules\UIElementsEditor\Controls\PropertyField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\TagField.cs">
-      <Link>Modules\UIElementsEditor\Controls\TagField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Controls\TextValueField.cs">
-      <Link>Modules\UIElementsEditor\Controls\TextValueField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\EditorContextualMenuManager.cs">
-      <Link>Modules\UIElementsEditor\EditorContextualMenuManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\EditorCursor.cs">
-      <Link>Modules\UIElementsEditor\EditorCursor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\EditorDragAndDrop.cs">
-      <Link>Modules\UIElementsEditor\EditorDragAndDrop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\EditorMenuExtensions.cs">
-      <Link>Modules\UIElementsEditor\EditorMenuExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\EditorPanel.cs">
-      <Link>Modules\UIElementsEditor\EditorPanel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\FieldMouseDragger.cs">
-      <Link>Modules\UIElementsEditor\FieldMouseDragger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Inspector\EditorElement.cs">
-      <Link>Modules\UIElementsEditor\Inspector\EditorElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Inspector\InspectorElement.cs">
-      <Link>Modules\UIElementsEditor\Inspector\InspectorElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\PanelDebug.cs">
-      <Link>Modules\UIElementsEditor\PanelDebug.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Renderer\EditorAtlasMonitor.cs">
-      <Link>Modules\UIElementsEditor\Renderer\EditorAtlasMonitor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\RetainedMode.cs">
-      <Link>Modules\UIElementsEditor\RetainedMode.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Toolbar\IToolbarMenuElement.cs">
-      <Link>Modules\UIElementsEditor\Toolbar\IToolbarMenuElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Toolbar\SearchFieldBase.cs">
-      <Link>Modules\UIElementsEditor\Toolbar\SearchFieldBase.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Toolbar\Toolbar.cs">
-      <Link>Modules\UIElementsEditor\Toolbar\Toolbar.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Toolbar\ToolbarBreadcrumbs.cs">
-      <Link>Modules\UIElementsEditor\Toolbar\ToolbarBreadcrumbs.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Toolbar\ToolbarButton.cs">
-      <Link>Modules\UIElementsEditor\Toolbar\ToolbarButton.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Toolbar\ToolbarMenu.cs">
-      <Link>Modules\UIElementsEditor\Toolbar\ToolbarMenu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Toolbar\ToolbarPopupSearchField.cs">
-      <Link>Modules\UIElementsEditor\Toolbar\ToolbarPopupSearchField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Toolbar\ToolbarSearchField.cs">
-      <Link>Modules\UIElementsEditor\Toolbar\ToolbarSearchField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Toolbar\ToolbarSpacer.cs">
-      <Link>Modules\UIElementsEditor\Toolbar\ToolbarSpacer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Toolbar\ToolbarToggle.cs">
-      <Link>Modules\UIElementsEditor\Toolbar\ToolbarToggle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Tooltip.cs">
-      <Link>Modules\UIElementsEditor\Tooltip.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\UIElementsEditorUtility.cs">
-      <Link>Modules\UIElementsEditor\UIElementsEditorUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\UIElementsEditorWindowCreator\CSharpTemplateCreator.cs">
-      <Link>Modules\UIElementsEditor\UIElementsEditorWindowCreator\CSharpTemplateCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\UIElementsEditorWindowCreator\UIElementsEditorWindowCreator.cs">
-      <Link>Modules\UIElementsEditor\UIElementsEditorWindowCreator\UIElementsEditorWindowCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\UIElementsEditorWindowCreator\UssTemplateCreator.cs">
-      <Link>Modules\UIElementsEditor\UIElementsEditorWindowCreator\UssTemplateCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\UIElementsEditorWindowCreator\UxmlTemplateCreator.cs">
-      <Link>Modules\UIElementsEditor\UIElementsEditorWindowCreator\UxmlTemplateCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\UIElementsViewImporter.cs">
-      <Link>Modules\UIElementsEditor\UIElementsViewImporter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\UXMLEditorFactories.cs">
-      <Link>Modules\UIElementsEditor\UXMLEditorFactories.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\UXMLSchemaGenerator.cs">
-      <Link>Modules\UIElementsEditor\UXMLSchemaGenerator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\VisualTreeAssetEditor.cs">
-      <Link>Modules\UIElementsEditor\VisualTreeAssetEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\WindowBackends\DefaultEditorWindowBackend.cs">
-      <Link>Modules\UIElementsEditor\WindowBackends\DefaultEditorWindowBackend.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\WindowBackends\DefaultWindowBackend.cs">
-      <Link>Modules\UIElementsEditor\WindowBackends\DefaultWindowBackend.cs</Link>
+    <Compile Include="..\..\Modules\UIElementsEditor\StyleSheets\URIHelpers.cs">
+      <Link>Modules\UIElementsEditor\StyleSheets\URIHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\ElementSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\ElementSnippet.cs</Link>
@@ -5837,7 +5927,6 @@
     <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_ASSETPIPELINE_GUI;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>0169;0649;0626</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Prefer32Bit>false</Prefer32Bit>

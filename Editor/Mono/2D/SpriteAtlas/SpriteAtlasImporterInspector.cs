@@ -108,8 +108,10 @@ namespace UnityEditor.U2D
                 return s_Styles;
             }
         }
-        private SpriteAtlasAsset spriteAtlasAsset { get { return m_TargetAsset as SpriteAtlasAsset; } }
-        private SpriteAtlasImporter spriteAtlasImporter { get { return target as SpriteAtlasImporter; } }
+        private SpriteAtlasAsset spriteAtlasAsset
+        {
+            get { return m_TargetAsset; }
+        }
         private enum AtlasType { Undefined = -1, Master = 0, Variant = 1 }
 
         private SerializedProperty m_FilterMode;

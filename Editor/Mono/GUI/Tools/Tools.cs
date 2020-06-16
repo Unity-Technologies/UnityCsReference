@@ -69,8 +69,8 @@ namespace UnityEditor
 
         public static Tool current
         {
-            get { return EditorToolUtility.GetEnumWithEditorTool(EditorToolContext.GetActiveTool()); }
-            set { EditorToolContext.activeTool = EditorToolUtility.GetEditorToolWithEnum(value); }
+            get { return EditorToolUtility.GetEnumWithEditorTool(EditorToolManager.GetActiveTool()); }
+            set { EditorToolManager.activeTool = EditorToolUtility.GetEditorToolWithEnum(value); }
         }
 
         internal static void SyncToolEnum()
@@ -124,7 +124,7 @@ namespace UnityEditor
         }
         internal static ViewTool s_LockedViewTool = ViewTool.None;
         internal static int s_ButtonDown = -1;
-        internal static bool viewToolActive
+        public static bool viewToolActive
         {
             get
             {
@@ -433,7 +433,7 @@ namespace UnityEditor
             Selection.selectionChanged += OnSelectionChange;
             Undo.undoRedoPerformed += OnSelectionChange;
 
-            EditorToolContext.activeToolChanged += (previous, active) =>
+            EditorToolManager.activeToolChanged += (previous, active) =>
             {
 #pragma warning disable 618
                 if (onToolChanged != null)

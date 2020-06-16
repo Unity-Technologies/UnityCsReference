@@ -15,13 +15,13 @@ namespace UnityEditor
     {
         protected override void GetActors(
             ConfigurableJoint joint,
-            out Rigidbody dynamicActor,
-            out Rigidbody connectedActor,
+            out Transform dynamicPose,
+            out Transform connectedPose,
             out int jointFrameActorIndex,
             out bool rightHandedLimit
         )
         {
-            base.GetActors(joint, out dynamicActor, out connectedActor, out jointFrameActorIndex, out rightHandedLimit);
+            base.GetActors(joint, out dynamicPose, out connectedPose, out jointFrameActorIndex, out rightHandedLimit);
             if (joint.swapBodies)
             {
                 jointFrameActorIndex = 0;

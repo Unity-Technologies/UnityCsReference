@@ -54,33 +54,44 @@ namespace UnityEngine.XR.WSA.Input
             return (int)m_Id;
         }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public uint id { get { return m_Id; } }
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public InteractionSourceKind kind { get { return m_SourceKind; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public InteractionSourceHandedness handedness
         { get { return m_Handedness; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool supportsGrasp
         { get { return (m_Flags & InteractionSourceFlags.SupportsGrasp) != 0; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool supportsMenu
         { get { return (m_Flags & InteractionSourceFlags.SupportsMenu) != 0; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool supportsPointing
         { get { return (m_Flags & InteractionSourceFlags.SupportsPointing) != 0; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool supportsThumbstick
         { get { return (m_Flags & InteractionSourceFlags.SupportsThumbstick) != 0; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool supportsTouchpad
         { get { return (m_Flags & InteractionSourceFlags.SupportsTouchpad) != 0; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public ushort vendorId
         { get { return m_VendorId; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public ushort productId
         { get { return m_ProductId; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public ushort productVersion
         { get { return m_ProductVersion; } }
 
@@ -152,11 +163,13 @@ namespace UnityEngine.XR.WSA.Input
     [NativeHeader("Modules/VR/HoloLens/Gestures/GestureCommon.h")]
     public partial struct InteractionSourcePose
     {
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool TryGetPosition(out Vector3 position)
         {
             return TryGetPosition(out position, InteractionSourceNode.Grip);
         }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool TryGetPosition(out Vector3 position, InteractionSourceNode node)
         {
             if (node == InteractionSourceNode.Grip)
@@ -171,6 +184,7 @@ namespace UnityEngine.XR.WSA.Input
             }
         }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool TryGetRotation(out Quaternion rotation, InteractionSourceNode node = InteractionSourceNode.Grip)
         {
             if (node == InteractionSourceNode.Grip)
@@ -185,6 +199,7 @@ namespace UnityEngine.XR.WSA.Input
             }
         }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool TryGetForward(out Vector3 forward, InteractionSourceNode node = InteractionSourceNode.Grip)
         {
             Quaternion rotation;
@@ -193,6 +208,7 @@ namespace UnityEngine.XR.WSA.Input
             return ret;
         }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool TryGetRight(out Vector3 right, InteractionSourceNode node = InteractionSourceNode.Grip)
         {
             Quaternion rotation;
@@ -201,6 +217,7 @@ namespace UnityEngine.XR.WSA.Input
             return ret;
         }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool TryGetUp(out Vector3 up, InteractionSourceNode node = InteractionSourceNode.Grip)
         {
             Quaternion rotation;
@@ -209,18 +226,21 @@ namespace UnityEngine.XR.WSA.Input
             return ret;
         }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool TryGetVelocity(out Vector3 velocity)
         {
             velocity = m_Velocity;
             return (m_Flags & InteractionSourcePoseFlags.HasVelocity) != 0;
         }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool TryGetAngularVelocity(out Vector3 angularVelocity)
         {
             angularVelocity = m_AngularVelocity;
             return (m_Flags & InteractionSourcePoseFlags.HasAngularVelocity) != 0;
         }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public InteractionSourcePositionAccuracy positionAccuracy
         {
             get
@@ -246,7 +266,9 @@ namespace UnityEngine.XR.WSA.Input
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public partial struct InteractionSourceProperties
     {
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public double sourceLossRisk { get { return m_SourceLossRisk; } }
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public Vector3 sourceLossMitigationDirection { get { return m_SourceLossMitigationDirection; } }
 
         internal double m_SourceLossRisk;
@@ -260,45 +282,59 @@ namespace UnityEngine.XR.WSA.Input
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public partial struct InteractionSourceState
     {
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool anyPressed
         { get { return (m_Flags & InteractionSourceStateFlags.AnyPressed) != 0; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public Pose headPose
         { get { return m_HeadPose; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public InteractionSourceProperties properties
         { get { return m_Properties; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public InteractionSource source
         { get { return m_Source; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public InteractionSourcePose sourcePose
         { get { return m_Properties.m_SourcePose; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public float selectPressedAmount
         { get { return m_SelectPressedAmount; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool selectPressed
         { get { return (m_Flags & InteractionSourceStateFlags.SelectPressed) != 0; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool menuPressed
         { get { return (m_Flags & InteractionSourceStateFlags.MenuPressed) != 0; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool grasped
         { get { return (m_Flags & InteractionSourceStateFlags.Grasped) != 0; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool touchpadTouched
         { get { return (m_Flags & InteractionSourceStateFlags.TouchpadTouched) != 0; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool touchpadPressed
         { get { return (m_Flags & InteractionSourceStateFlags.TouchpadPressed) != 0; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public Vector2 touchpadPosition
         { get { return m_TouchpadPosition; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public Vector2 thumbstickPosition
         { get { return m_ThumbstickPosition; } }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool thumbstickPressed
         { get { return (m_Flags & InteractionSourceStateFlags.ThumbstickPressed) != 0; } }
 
@@ -391,11 +427,13 @@ namespace UnityEngine.XR.WSA.Input
         public static event Action<InteractionSourceReleasedEventArgs> InteractionSourceReleased;
         public static event Action<InteractionSourceUpdatedEventArgs> InteractionSourceUpdated;
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public static int GetCurrentReading(InteractionSourceState[] sourceStates)
         {
             return GetCurrentReading_Internal(sourceStates);
         }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public static InteractionSourceState[] GetCurrentReading()
         {
             InteractionSourceState[] sourceStates = new InteractionSourceState[numSourceStates];
@@ -405,6 +443,7 @@ namespace UnityEngine.XR.WSA.Input
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
         [NativeName("GetCurrentReading")]
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         private extern static int GetCurrentReading_Internal([NotNull] InteractionSourceState[] sourceStates);
 
         // In sync with Runtime/HoloLens/Gestures/GestureSource.h
@@ -417,6 +456,7 @@ namespace UnityEngine.XR.WSA.Input
             SourceReleased
         }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public extern static int numSourceStates
         {
             [NativeConditional("ENABLE_HOLOLENS_MODULE")]

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,6 +17,23 @@ namespace UnityEditorInternal.VersionControl
     // Monitor the behavior of assets.  This is where general unity asset operations are handled
     public class AssetModificationHook
     {
+        public static void FileModeChanged(string[] assets, UnityEditor.VersionControl.FileMode mode)
+        {
+            if (!Provider.enabled)
+                return;
+
+            // if we happen to be disconnected or work offline, there's not much we can do;
+            // just ignore the file mode and hope that VCS client/project is setup to handle
+            // appropriate file types correctly
+            if (!Provider.isActive)
+                return;
+
+            // we'll want to re-serialize these assets in different (text vs binary) mode;
+            // make sure they are editable first
+            AssetDatabase.MakeEditable(assets);
+            Provider.SetFileMode(assets, mode);
+        }
+
         static Asset GetStatusCachedIfPossible(string fromPath, bool synchronous)
         {
             Asset asset = Provider.CacheStatus(fromPath);
@@ -210,12 +228,16 @@ namespace UnityEditorInternal.VersionControl
                     //NOTE: we most likely don't know which assets failed to actually be deleted
                     for (int i = batchStart; i < batchStart + deleteAssetList.Count(); i++)
                         deletionResults[i] = AssetDeleteResult.FailedDelete;
-                    ;
                 }
             }
         }
 
         public static bool IsOpenForEdit(string assetPath, out string message, StatusQueryOptions statusOptions)
+        {
+            return GetOpenForEdit(false, assetPath, out message, statusOptions);
+        }
+
+        internal static bool GetOpenForEdit(bool canOpenForEditVariant, string assetPath, out string message, StatusQueryOptions statusOptions)
         {
             message = "";
 
@@ -238,13 +260,13 @@ namespace UnityEditorInternal.VersionControl
                 return false;
             }
 
-            return Provider.IsOpenForEdit(asset);
+            return canOpenForEditVariant ? Provider.CheckoutIsValid(asset) : Provider.IsOpenForEdit(asset);
         }
 
-        internal static void IsOpenForEdit(List<string> assetPaths, List<string> outNotOpenPaths, StatusQueryOptions statusOptions)
+        internal static bool GetOpenForEdit(bool canOpenForEditVariant, List<string> assetPaths, List<string> outNotOpenPaths, StatusQueryOptions statusOptions)
         {
             if (!Provider.enabled || EditorUserSettings.WorkOffline || assetPaths == null || assetPaths.Count == 0)
-                return; // everything is editable
+                return true; // everything is editable
 
             // paths that are empty/null are considered to be editable, so remove them from consideration
             assetPaths = assetPaths.Where(p => !string.IsNullOrEmpty(p)).ToList();
@@ -259,15 +281,21 @@ namespace UnityEditorInternal.VersionControl
             {
                 // nothing is editable (we might be disconnected)
                 outNotOpenPaths.AddRange(assetPaths);
-                return;
+                return false;
             }
 
+            var result = true;
+            var action = canOpenForEditVariant ? new Func<Asset, bool>(Provider.CheckoutIsValid) : Provider.IsOpenForEdit;
             for (var i = 0; i < assetPaths.Count; ++i)
             {
                 var asset = assets[i];
-                if (asset == null || !Provider.IsOpenForEdit(asset))
+                if (asset == null || !action(asset))
+                {
+                    result = false;
                     outNotOpenPaths.Add(assetPaths[i]);
+                }
             }
+            return result;
         }
     }
 }

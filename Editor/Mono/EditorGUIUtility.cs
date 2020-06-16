@@ -85,6 +85,7 @@ namespace UnityEditor
         static Hashtable s_TextGUIContents = new Hashtable();
         static Hashtable s_GUIContents = new Hashtable();
         static Hashtable s_IconGUIContents = new Hashtable();
+        static Hashtable s_SkinnedIcons = new Hashtable();
 
         private static readonly GUIContent s_ObjectContent = new GUIContent();
         private static readonly GUIContent s_Text = new GUIContent();
@@ -561,6 +562,70 @@ namespace UnityEditor
             return TrIconContent(FindTexture(typeof(T)), tooltip);
         }
 
+        internal static Texture2D GetSkinnedIcon(Texture2D icon)
+        {
+            return GetSkinnedIconForDpi(icon, isProSkin, pixelsPerPoint);
+        }
+
+        internal static Texture2D GetSkinnedIconForDpi(Texture2D icon, bool isDarkSkin, float dpi)
+        {
+            if (icon == null)
+                return null;
+
+            var assetPath = AssetDatabase.GetAssetPath(icon);
+
+            // Ignore bundle paths
+            if (string.IsNullOrEmpty(assetPath) || !Path.HasExtension(assetPath))
+                return icon;
+
+            string key = string.Format("{0}|{1}", assetPath, pixelsPerPoint);
+
+            Texture2D skinnedIcon = (Texture2D)s_SkinnedIcons[key];
+
+            if (skinnedIcon == null)
+            {
+                var dirPath = Path.GetDirectoryName(assetPath);
+                var baseName = Path.GetFileNameWithoutExtension(assetPath);
+                var extension = Path.GetExtension(assetPath);
+                var isDarkTheme = isProSkin;
+                var isDarkIcon = baseName.StartsWith("d_");
+
+                // If the current theme is the Dark theme and the icon name does not start with 'd_'
+                if (isDarkTheme && !isDarkIcon)
+                {
+                    baseName = "d_" + baseName;
+                }
+                // If the current theme is the Light theme and the icon name starts with 'd_'
+                else if (!isDarkTheme && isDarkIcon)
+                {
+                    baseName = baseName.Remove(0, 2);
+                }
+
+                string path = null;
+
+                if (pixelsPerPoint > 1.0)
+                {
+                    path = Path.Combine(dirPath, baseName + "@2x" + extension);
+                    skinnedIcon = Load(path) as Texture2D;
+                }
+
+                if (skinnedIcon == null)
+                {
+                    path = Path.Combine(dirPath, baseName + extension);
+
+                    if (!assetPath.Equals(path))
+                        skinnedIcon = Load(path) as Texture2D;
+
+                    if (skinnedIcon == null)
+                        skinnedIcon = icon;
+                }
+
+                s_SkinnedIcons[key] = skinnedIcon;
+            }
+
+            return skinnedIcon;
+        }
+
         public static float singleLineHeight => EditorGUI.kSingleLineHeight;
         public static float standardVerticalSpacing => EditorGUI.kControlVerticalSpacing;
 
@@ -749,6 +814,19 @@ namespace UnityEditor
             return tex;
         }
 
+        [UsedByNativeCode]
+        internal static string GetIconPathFromAttribute(Type type)
+        {
+            if (Attribute.IsDefined(type, typeof(IconAttribute)))
+            {
+                var attributes = type.GetCustomAttributes(typeof(IconAttribute), true);
+                for (int i = 0, c = attributes.Length; i < c; i++)
+                    if (attributes[i] is IconAttribute)
+                        return ((IconAttribute)attributes[i]).path;
+            }
+            return null;
+        }
+
         internal static GUIContent IconContent<T>(string text = null) where T : UnityObject
         {
             return IconContent(FindTexture(typeof(T)), text);
@@ -822,12 +900,12 @@ namespace UnityEditor
             if (obj)
             {
                 s_ObjectContent.text = GetObjectNameWithInfo(obj);
-                s_ObjectContent.image = AssetPreview.GetMiniThumbnail(obj);
+                s_ObjectContent.image = EditorGUIUtility.GetSkinnedIcon(AssetPreview.GetMiniThumbnail(obj));
             }
             else if (type != null)
             {
                 s_ObjectContent.text = GetTypeNameWithInfo(type.Name, instanceID);
-                s_ObjectContent.image = AssetPreview.GetMiniTypeThumbnail(type);
+                s_ObjectContent.image = EditorGUIUtility.GetSkinnedIcon(AssetPreview.GetMiniTypeThumbnail(type));
             }
             else
             {

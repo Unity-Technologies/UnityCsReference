@@ -14,7 +14,13 @@ namespace UnityEditor.PackageManager.UI
         [SerializeField]
         private string m_SpecialUniqueId = string.Empty;
 
-        public override string specialUniqueId { get { return m_SpecialUniqueId; } }
+        // the special unique id is used when neither package unique id or version unique id applies
+        // e.g. git url, tar ball path that does not contain any package name or version
+        public string specialUniqueId => m_SpecialUniqueId;
+
+        [SerializeField]
+        private PackageTag m_PackageTag = PackageTag.None;
+        public PackageTag packageTag => m_PackageTag;
 
         public override RefreshOptions refreshOptions => RefreshOptions.None;
 
@@ -24,15 +30,17 @@ namespace UnityEditor.PackageManager.UI
             m_PackageName = string.Empty;
             m_SpecialUniqueId = string.Empty;
             m_PackageUniqueId = packageUniqueId ?? packageName;
+            m_PackageTag = PackageTag.None;
             Start();
         }
 
-        public void AddByUrlOrPath(string urlOrPath)
+        public void AddByUrlOrPath(string urlOrPath, PackageTag tag)
         {
             m_SpecialUniqueId = urlOrPath;
             m_PackageId = string.Empty;
             m_PackageName = string.Empty;
             m_PackageUniqueId = string.Empty;
+            m_PackageTag = tag;
             Start();
         }
 

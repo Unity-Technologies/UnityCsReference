@@ -38,8 +38,6 @@ namespace UnityEditor.PackageManager.UI
         public string packageUniqueId { get { return m_PackageUniqueId; } }
         public string versionUniqueId { get { return packageId; } }
 
-        public virtual string specialUniqueId { get { return string.Empty; } }
-
         [SerializeField]
         protected long m_Timestamp = 0;
         public long timestamp { get { return m_Timestamp; } }

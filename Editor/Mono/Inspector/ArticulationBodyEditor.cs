@@ -566,6 +566,7 @@ namespace UnityEditor
                     EditorGUILayout.Vector3Field("Local Center of Mass", body.centerOfMass);
                     EditorGUILayout.Vector3Field("World Center of Mass", body.worldCenterOfMass);
                     EditorGUILayout.LabelField("Sleep State", body.IsSleeping() ? "Asleep" : "Awake");
+                    EditorGUILayout.IntField("Body Index", body.index);
                     EditorGUI.EndDisabledGroup();
 
                     // We need to repaint as some of the above properties can change without causing a repaint.

@@ -23,7 +23,7 @@ namespace UnityEngine.Assertions
             {
                 var message = base.Message;
                 if (m_UserMessage != null)
-                    message += '\n' + m_UserMessage;
+                    message = m_UserMessage + '\n' + message; // match UnityEngine.Assertions.Assert.Fail
                 return message;
             }
         }

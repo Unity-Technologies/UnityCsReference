@@ -182,11 +182,11 @@ namespace UnityEditor
             UpdateShaderAsset(shader, source, true);
         }
 
-        [FreeFunction("GetScriptMapper().AddShader")] extern public static void RegisterShader(Shader shader);
+        [FreeFunction("GetScriptMapper().AddShader")] extern public static void RegisterShader([NotNull("NullExceptionObject")] Shader shader);
 
 
-        extern internal static void OpenCompiledShader(Shader shader, int mode, int externPlatformsMask, bool includeAllVariants, bool preprocessOnly);
-        extern internal static void OpenCompiledComputeShader(ComputeShader shader, bool allVariantsAndPlatforms, bool showPreprocessed);
+        extern internal static void OpenCompiledShader(Shader shader, int mode, int externPlatformsMask, bool includeAllVariants, bool preprocessOnly, bool stripLineDirectives);
+        extern internal static void OpenCompiledComputeShader(ComputeShader shader, bool allVariantsAndPlatforms, bool showPreprocessed, bool stripLineDirectives);
         extern internal static void OpenParsedSurfaceShader(Shader shader);
         extern internal static void OpenGeneratedFixedFunctionShader(Shader shader);
         extern internal static void OpenShaderCombinations(Shader shader, bool usedBySceneOnly);

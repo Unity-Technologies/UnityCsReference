@@ -2095,7 +2095,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (IsCompilationTaskCompiling())
             {
                 if (compilationTask.Poll()) // Returns true when compilation finished.
-                    return (compilationTask == null || compilationTask.CompileErrors) ? CompileStatus.CompilationFailed : CompileStatus.CompilationComplete;
+                    return compilationTask.CompileErrors ? CompileStatus.CompilationFailed : CompileStatus.CompilationComplete;
 
                 return CompileStatus.Compiling;
             }

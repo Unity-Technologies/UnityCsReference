@@ -71,6 +71,11 @@ namespace UnityEditor.Build
         void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data);
     }
 
+    public interface IPreprocessComputeShaders : IOrderedCallback
+    {
+        void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data);
+    }
+
     public interface IUnityLinkerProcessor : IOrderedCallback
     {
         string GenerateAdditionalLinkXmlFile(BuildReport report, UnityLinker.UnityLinkerBuildPipelineData data);
@@ -102,6 +107,7 @@ namespace UnityEditor.Build
             public List<IFilterBuildAssemblies> filterBuildAssembliesProcessor;
             public List<IActiveBuildTargetChanged> buildTargetProcessors;
             public List<IPreprocessShaders> shaderProcessors;
+            public List<IPreprocessComputeShaders> computeShaderProcessors;
             public List<IPostBuildPlayerScriptDLLs> buildPlayerScriptDLLProcessors;
 
             public List<IUnityLinkerProcessor> unityLinkerProcessors;
@@ -130,7 +136,8 @@ namespace UnityEditor.Build
             ShaderProcessors = 16,
             BuildPlayerScriptDLLProcessors = 32,
             UnityLinkerProcessors = 64,
-            I2CppProcessors = 128
+            I2CppProcessors = 128,
+            ComputeShaderProcessors = 256
         }
 
         //common comparer for all callback types
@@ -203,6 +210,7 @@ namespace UnityEditor.Build
             bool findTargetProcessors = (findFlags & BuildCallbacks.BuildTargetProcessors) == BuildCallbacks.BuildTargetProcessors;
             bool findFilterProcessors = (findFlags & BuildCallbacks.FilterAssembliesProcessors) == BuildCallbacks.FilterAssembliesProcessors;
             bool findShaderProcessors = (findFlags & BuildCallbacks.ShaderProcessors) == BuildCallbacks.ShaderProcessors;
+            bool findComputeShaderProcessors = (findFlags & BuildCallbacks.ComputeShaderProcessors) == BuildCallbacks.ComputeShaderProcessors;
             bool findBuildPlayerScriptDLLsProcessors = (findFlags & BuildCallbacks.BuildPlayerScriptDLLProcessors) == BuildCallbacks.BuildPlayerScriptDLLProcessors;
             bool findUnityLinkerProcessors = (findFlags & BuildCallbacks.UnityLinkerProcessors) == BuildCallbacks.UnityLinkerProcessors;
             bool findIl2CppProcessors = (findFlags & BuildCallbacks.I2CppProcessors) == BuildCallbacks.I2CppProcessors;
@@ -255,6 +263,11 @@ namespace UnityEditor.Build
                     AddToListIfTypeImplementsInterface(t, ref instance, ref processors.shaderProcessors);
                 }
 
+                if (findComputeShaderProcessors)
+                {
+                    AddToListIfTypeImplementsInterface(t, ref instance, ref processors.computeShaderProcessors);
+                }
+
                 if (findBuildPlayerScriptDLLsProcessors)
                 {
                     AddToListIfTypeImplementsInterface(t, ref instance, ref processors.buildPlayerScriptDLLProcessors);
@@ -297,6 +310,8 @@ namespace UnityEditor.Build
                 processors.il2cppProcessors.Sort(CompareICallbackOrder);
             if (processors.shaderProcessors != null)
                 processors.shaderProcessors.Sort(CompareICallbackOrder);
+            if (processors.computeShaderProcessors != null)
+                processors.computeShaderProcessors.Sort(CompareICallbackOrder);
             if (processors.buildPlayerScriptDLLProcessors != null)
                 processors.buildPlayerScriptDLLProcessors.Sort(CompareICallbackOrder);
         }
@@ -480,6 +495,27 @@ namespace UnityEditor.Build
         }
 
         [RequiredByNativeCode]
+        internal static ShaderCompilerData[] OnPreprocessComputeShaders(ComputeShader shader, string kernelName, ShaderCompilerData[] data)
+        {
+            var dataList = data.ToList();
+            if (processors.computeShaderProcessors != null)
+            {
+                foreach (IPreprocessComputeShaders abtc in processors.computeShaderProcessors)
+                {
+                    try
+                    {
+                        abtc.OnProcessComputeShader(shader, kernelName, dataList);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogException(e);
+                    }
+                }
+            }
+            return dataList.ToArray();
+        }
+
+        [RequiredByNativeCode]
         internal static void OnPostBuildPlayerScriptDLLs(BuildReport report)
         {
             if (processors.buildPlayerScriptDLLProcessors != null)
@@ -544,6 +580,7 @@ namespace UnityEditor.Build
             processors.unityLinkerProcessors = null;
             processors.il2cppProcessors = null;
             processors.shaderProcessors = null;
+            processors.computeShaderProcessors = null;
             processors.buildPlayerScriptDLLProcessors = null;
             previousFlags = BuildCallbacks.None;
         }

@@ -2,15 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using UnityEngine.Profiling;
 
+
 namespace UnityEngine.TextCore.LowLevel
 {
     [UsedByNativeCode]
+    [Flags]
     public enum GlyphLoadFlags
     {
         LOAD_DEFAULT = 0,
@@ -37,6 +40,7 @@ namespace UnityEngine.TextCore.LowLevel
     /// <summary>
     /// Rasterizing modes used by the Font Engine to raster glyphs.
     /// </summary>
+    [Flags]
     internal enum GlyphRasterModes
     {
         RASTER_MODE_8BIT        = 0x1,
@@ -107,10 +111,10 @@ namespace UnityEngine.TextCore.LowLevel
         RASTER_HINTED = GlyphRasterModes.RASTER_MODE_HINTED | GlyphRasterModes.RASTER_MODE_MONO | GlyphRasterModes.RASTER_MODE_BITMAP | GlyphRasterModes.RASTER_MODE_1X,
         RASTER = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_MONO | GlyphRasterModes.RASTER_MODE_BITMAP | GlyphRasterModes.RASTER_MODE_1X,
 
-        SDF = GlyphRasterModes.RASTER_MODE_HINTED | GlyphRasterModes.RASTER_MODE_MONO | GlyphRasterModes.RASTER_MODE_SDF | GlyphRasterModes.RASTER_MODE_1X,
-        SDF8 = GlyphRasterModes.RASTER_MODE_HINTED | GlyphRasterModes.RASTER_MODE_MONO | GlyphRasterModes.RASTER_MODE_SDF | GlyphRasterModes.RASTER_MODE_8X,
-        SDF16 = GlyphRasterModes.RASTER_MODE_HINTED | GlyphRasterModes.RASTER_MODE_MONO | GlyphRasterModes.RASTER_MODE_SDF | GlyphRasterModes.RASTER_MODE_16X,
-        SDF32 = GlyphRasterModes.RASTER_MODE_HINTED | GlyphRasterModes.RASTER_MODE_MONO | GlyphRasterModes.RASTER_MODE_SDF | GlyphRasterModes.RASTER_MODE_32X,
+        SDF = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_MONO | GlyphRasterModes.RASTER_MODE_SDF | GlyphRasterModes.RASTER_MODE_1X,
+        SDF8 = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_MONO | GlyphRasterModes.RASTER_MODE_SDF | GlyphRasterModes.RASTER_MODE_8X,
+        SDF16 = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_MONO | GlyphRasterModes.RASTER_MODE_SDF | GlyphRasterModes.RASTER_MODE_16X,
+        SDF32 = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_MONO | GlyphRasterModes.RASTER_MODE_SDF | GlyphRasterModes.RASTER_MODE_32X,
 
         SDFAA_HINTED = GlyphRasterModes.RASTER_MODE_HINTED | GlyphRasterModes.RASTER_MODE_8BIT | GlyphRasterModes.RASTER_MODE_SDFAA | GlyphRasterModes.RASTER_MODE_1X,
         SDFAA = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_8BIT | GlyphRasterModes.RASTER_MODE_SDFAA | GlyphRasterModes.RASTER_MODE_1X,
@@ -134,10 +138,9 @@ namespace UnityEngine.TextCore.LowLevel
     [NativeHeader("Modules/TextCore/Native/FontEngine/FontEngine.h")]
     public sealed class FontEngine
     {
-        private static readonly FontEngine s_Instance = new FontEngine();
-
         private static Glyph[] s_Glyphs = new Glyph[16];
-        private static uint[] s_GlyphIndexes_MarshallingArray = new uint[16];
+        private static uint[] s_GlyphIndexes_MarshallingArray_A;
+        private static uint[] s_GlyphIndexes_MarshallingArray_B;
 
         private static GlyphMarshallingStruct[] s_GlyphMarshallingStruct_IN = new GlyphMarshallingStruct[16];
         private static GlyphMarshallingStruct[] s_GlyphMarshallingStruct_OUT = new GlyphMarshallingStruct[16];
@@ -149,16 +152,10 @@ namespace UnityEngine.TextCore.LowLevel
 
         private static Dictionary<uint, Glyph> s_GlyphLookupDictionary = new Dictionary<uint, Glyph>();
 
-        internal FontEngine() {}
-
         /// <summary>
-        /// Returns the instance of the FontEngine
+        ///
         /// </summary>
-        /// <returns>Returns the singleton instance of the Font Engine.</returns>
-        internal static FontEngine GetInstance()
-        {
-            return s_Instance;
-        }
+        internal FontEngine() {}
 
         /// <summary>
         /// Initialize the Font Engine and library.
@@ -172,6 +169,7 @@ namespace UnityEngine.TextCore.LowLevel
         [NativeMethod(Name = "TextCore::FontEngine::InitFontEngine", IsFreeFunction = true)]
         static extern int InitializeFontEngine_Internal();
 
+
         /// <summary>
         /// Destroy and unload resources used by the Font Engine.
         /// </summary>
@@ -183,6 +181,7 @@ namespace UnityEngine.TextCore.LowLevel
 
         [NativeMethod(Name = "TextCore::FontEngine::DestroyFontEngine", IsFreeFunction = true)]
         static extern int DestroyFontEngine_Internal();
+
 
         /// <summary>
         /// Force the cancellation of any atlas or glyph rendering process.
@@ -196,6 +195,7 @@ namespace UnityEngine.TextCore.LowLevel
         [NativeMethod(Name = "TextCore::FontEngine::SendCancellationRequest", IsFreeFunction = true)]
         static extern void SendCancellationRequest_Internal();
 
+
         /// <summary>
         /// Determines if the font engine is currently in the process of rendering and adding glyphs into an atlas texture.
         /// Used primarily by the Font Asset Creator.
@@ -206,6 +206,7 @@ namespace UnityEngine.TextCore.LowLevel
             get;
         }
 
+
         /// <summary>
         /// Returns the generation progress on glyph packing and rendering.
         /// Used primarily by the Font Asset Creator.
@@ -215,6 +216,7 @@ namespace UnityEngine.TextCore.LowLevel
             [NativeMethod(Name = "TextCore::FontEngine::GetGenerationProgress", IsFreeFunction = true)]
             get;
         }
+
 
         /// <summary>
         /// Load the source font file at the given file path.
@@ -746,6 +748,7 @@ namespace UnityEngine.TextCore.LowLevel
         [NativeMethod(Name = "TextCore::FontEngine::ReleaseSharedTextureData", IsThreadSafe = true, IsFreeFunction = true)]
         internal extern static void ReleaseSharedTexture();
 
+
         /// <summary>
         /// Internal function used to add glyph to atlas texture.
         /// </summary>
@@ -811,6 +814,144 @@ namespace UnityEngine.TextCore.LowLevel
             GlyphPackingMode packingMode, [Out] GlyphRect[] freeGlyphRects, ref int freeGlyphRectCount, [Out] GlyphRect[] usedGlyphRects, ref int usedGlyphRectCount,
             GlyphRenderMode renderMode, Texture2D texture, out GlyphMarshallingStruct glyph);
 
+
+        /// <summary>
+        /// Internal function used to add glyph to atlas texture.
+        /// </summary>
+        internal static bool TryAddGlyphsToTexture(List<Glyph> glyphsToAdd, List<Glyph> glyphsAdded, int padding, GlyphPackingMode packingMode, List<GlyphRect> freeGlyphRects, List<GlyphRect> usedGlyphRects, GlyphRenderMode renderMode, Texture2D texture)
+        {
+            Profiler.BeginSample("FontEngine.TryAddGlyphsToTexture");
+
+            int writeIndex = 0;
+            bool keepCopyingData;
+
+            int glyphsToAddCount = glyphsToAdd.Count;
+            int glyphsAddedCount = 0;
+
+            // Make sure marshalling arrays allocations are appropriate
+            if (s_GlyphMarshallingStruct_IN.Length < glyphsToAddCount || s_GlyphMarshallingStruct_OUT.Length < glyphsToAddCount)
+            {
+                int newSize = Mathf.NextPowerOfTwo(glyphsToAddCount + 1);
+
+                if (s_GlyphMarshallingStruct_IN.Length < glyphsToAddCount)
+                    System.Array.Resize(ref s_GlyphMarshallingStruct_IN, newSize);
+
+                if (s_GlyphMarshallingStruct_OUT.Length < glyphsToAddCount)
+                    System.Array.Resize(ref s_GlyphMarshallingStruct_OUT, newSize);
+            }
+
+            // Determine potential total allocations required for glyphs and glyph rectangles.
+            int freeGlyphRectCount = freeGlyphRects.Count;
+            int usedGlyphRectCount = usedGlyphRects.Count;
+            int totalGlyphRects = freeGlyphRectCount + usedGlyphRectCount + glyphsToAddCount;
+
+            // Make sure marshalling arrays allocations are appropriate
+            if (s_FreeGlyphRects.Length < totalGlyphRects || s_UsedGlyphRects.Length < totalGlyphRects)
+            {
+                int newSize = Mathf.NextPowerOfTwo(totalGlyphRects + 1);
+
+                if (s_FreeGlyphRects.Length < totalGlyphRects)
+                    System.Array.Resize(ref s_FreeGlyphRects, newSize);
+
+                if (s_UsedGlyphRects.Length < totalGlyphRects)
+                    System.Array.Resize(ref s_UsedGlyphRects, newSize);
+            }
+
+            s_GlyphLookupDictionary.Clear();
+
+            // Copy data to marshalling arrays
+            writeIndex = 0;
+            keepCopyingData = true;
+            while (keepCopyingData == true)
+            {
+                keepCopyingData = false;
+
+                if (writeIndex < glyphsToAddCount)
+                {
+                    Glyph glyph = glyphsToAdd[writeIndex];
+
+                    s_GlyphMarshallingStruct_IN[writeIndex] = new GlyphMarshallingStruct(glyph);
+                    s_GlyphLookupDictionary.Add(glyph.index, glyph);
+                    keepCopyingData = true;
+                }
+
+                if (writeIndex < freeGlyphRectCount)
+                {
+                    s_FreeGlyphRects[writeIndex] = freeGlyphRects[writeIndex];
+                    keepCopyingData = true;
+                }
+
+                if (writeIndex < usedGlyphRectCount)
+                {
+                    s_UsedGlyphRects[writeIndex] = usedGlyphRects[writeIndex];
+                    keepCopyingData = true;
+                }
+
+                writeIndex += 1;
+            }
+
+            bool allGlyphsAdded = TryAddGlyphsToTexture_Internal_MultiThread(s_GlyphMarshallingStruct_IN, ref glyphsToAddCount, s_GlyphMarshallingStruct_OUT, ref glyphsAddedCount, padding, packingMode, s_FreeGlyphRects, ref freeGlyphRectCount, s_UsedGlyphRects, ref usedGlyphRectCount, renderMode, texture);
+
+            // Clear inbound lists
+            glyphsToAdd.Clear();
+            glyphsAdded.Clear();
+            freeGlyphRects.Clear();
+            usedGlyphRects.Clear();
+
+            // Copy new data into appropriate data structure
+            writeIndex = 0;
+            keepCopyingData = true;
+            while (keepCopyingData == true)
+            {
+                keepCopyingData = false;
+
+                if (writeIndex < glyphsToAddCount)
+                {
+                    uint glyphIndex = s_GlyphMarshallingStruct_IN[writeIndex].index;
+                    glyphsToAdd.Add(s_GlyphLookupDictionary[glyphIndex]);
+                    keepCopyingData = true;
+                }
+
+                if (writeIndex < glyphsAddedCount)
+                {
+                    uint glyphIndex = s_GlyphMarshallingStruct_OUT[writeIndex].index;
+                    Glyph glyph = s_GlyphLookupDictionary[glyphIndex];
+
+                    glyph.atlasIndex = s_GlyphMarshallingStruct_OUT[writeIndex].atlasIndex;
+                    glyph.scale = s_GlyphMarshallingStruct_OUT[writeIndex].scale;
+                    glyph.glyphRect = s_GlyphMarshallingStruct_OUT[writeIndex].glyphRect;
+                    glyph.metrics = s_GlyphMarshallingStruct_OUT[writeIndex].metrics;
+
+                    glyphsAdded.Add(glyph);
+                    keepCopyingData = true;
+                }
+
+                if (writeIndex < freeGlyphRectCount)
+                {
+                    freeGlyphRects.Add(s_FreeGlyphRects[writeIndex]);
+                    keepCopyingData = true;
+                }
+
+                if (writeIndex < usedGlyphRectCount)
+                {
+                    usedGlyphRects.Add(s_UsedGlyphRects[writeIndex]);
+                    keepCopyingData = true;
+                }
+
+                writeIndex += 1;
+            }
+
+            Profiler.EndSample();
+
+            return allGlyphsAdded;
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::TryAddGlyphsToTexture", IsThreadSafe = true, IsFreeFunction = true)]
+        extern static bool TryAddGlyphsToTexture_Internal_MultiThread([Out] GlyphMarshallingStruct[] glyphsToAdd, ref int glyphsToAddCount, [Out] GlyphMarshallingStruct[] glyphsAdded, ref int glyphsAddedCount,
+            int padding, GlyphPackingMode packingMode, [Out] GlyphRect[] freeGlyphRects, ref int freeGlyphRectCount, [Out] GlyphRect[] usedGlyphRects, ref int usedGlyphRectCount,
+            GlyphRenderMode renderMode, Texture2D texture);
+
+
         /// <summary>
         /// Internal function used to add multiple glyphs to atlas texture.
         /// </summary>
@@ -829,14 +970,14 @@ namespace UnityEngine.TextCore.LowLevel
             int glyphCount = glyphIndexes.Count;
 
             // Make sure marshalling glyph index array allocations are appropriate.
-            if (s_GlyphIndexes_MarshallingArray == null || s_GlyphIndexes_MarshallingArray.Length < glyphCount)
+            if (s_GlyphIndexes_MarshallingArray_A == null || s_GlyphIndexes_MarshallingArray_A.Length < glyphCount)
             {
-                if (s_GlyphIndexes_MarshallingArray == null)
-                    s_GlyphIndexes_MarshallingArray = new uint[glyphCount];
+                if (s_GlyphIndexes_MarshallingArray_A == null)
+                    s_GlyphIndexes_MarshallingArray_A = new uint[glyphCount];
                 else
                 {
                     int newSize = Mathf.NextPowerOfTwo(glyphCount + 1);
-                    s_GlyphIndexes_MarshallingArray = new uint[newSize];
+                    s_GlyphIndexes_MarshallingArray_A = new uint[newSize];
                 }
             }
 
@@ -867,7 +1008,7 @@ namespace UnityEngine.TextCore.LowLevel
             for (int i = 0; i < glyphRectCount; i++)
             {
                 if (i < glyphCount)
-                    s_GlyphIndexes_MarshallingArray[i] = glyphIndexes[i];
+                    s_GlyphIndexes_MarshallingArray_A[i] = glyphIndexes[i];
 
                 if (i < freeGlyphRectCount)
                     s_FreeGlyphRects[i] = freeGlyphRects[i];
@@ -877,7 +1018,7 @@ namespace UnityEngine.TextCore.LowLevel
             }
 
             // Marshall data over to the native side.
-            bool allGlyphsAdded = TryAddGlyphsToTexture_Internal(s_GlyphIndexes_MarshallingArray, padding, packingMode, s_FreeGlyphRects, ref freeGlyphRectCount, s_UsedGlyphRects, ref usedGlyphRectCount, renderMode, texture, s_GlyphMarshallingStruct_OUT, ref glyphCount);
+            bool allGlyphsAdded = TryAddGlyphsToTexture_Internal(s_GlyphIndexes_MarshallingArray_A, padding, packingMode, s_FreeGlyphRects, ref freeGlyphRectCount, s_UsedGlyphRects, ref usedGlyphRectCount, renderMode, texture, s_GlyphMarshallingStruct_OUT, ref glyphCount);
 
             // Make sure internal glyph array is properly sized.
             if (s_Glyphs == null || s_Glyphs.Length <= glyphCount)
@@ -931,22 +1072,20 @@ namespace UnityEngine.TextCore.LowLevel
         /// <returns>Array containing the positional adjustments for pairs of glyphs.</returns>
         internal static GlyphPairAdjustmentRecord[] GetGlyphPairAdjustmentTable(uint[] glyphIndexes)
         {
-            int maxGlyphPairAdjustmentRecords = glyphIndexes.Length * glyphIndexes.Length;
+            int recordCount;
+            PopulatePairAdjustmentRecordMarshallingArray_from_GlyphIndexes(glyphIndexes, out recordCount);
 
-            if (s_PairAdjustmentRecords_MarshallingArray == null || s_PairAdjustmentRecords_MarshallingArray.Length < maxGlyphPairAdjustmentRecords)
-            {
-                s_PairAdjustmentRecords_MarshallingArray = new GlyphPairAdjustmentRecord[maxGlyphPairAdjustmentRecords];
-            }
-
-            int adjustmentRecordCount;
-            if (GetGlyphPairAdjustmentTable_Internal(glyphIndexes, s_PairAdjustmentRecords_MarshallingArray, out adjustmentRecordCount) != 0)
-            {
-                // TODO: Add debug warning messages.
+            if (recordCount == 0)
                 return null;
-            }
 
-            // Since this internal array is used by several objects, we need to clear unused records in the array.
-            System.Array.Clear(s_PairAdjustmentRecords_MarshallingArray, adjustmentRecordCount, s_PairAdjustmentRecords_MarshallingArray.Length - adjustmentRecordCount);
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_PairAdjustmentRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetGlyphPairAdjustmentRecordsFromMarshallingArray(s_PairAdjustmentRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_PairAdjustmentRecords_MarshallingArray[recordCount] = new GlyphPairAdjustmentRecord();
 
             return s_PairAdjustmentRecords_MarshallingArray;
         }
@@ -954,52 +1093,77 @@ namespace UnityEngine.TextCore.LowLevel
         [NativeMethod(Name = "TextCore::FontEngine::GetGlyphPairAdjustmentTable", IsFreeFunction = true)]
         extern static int GetGlyphPairAdjustmentTable_Internal(uint[] glyphIndexes, [Out] GlyphPairAdjustmentRecord[] glyphPairAdjustmentRecords, out int adjustmentRecordCount);
 
+
         /// <summary>
-        ///
+        /// Internal function used to retrieve the potential PairAdjustmentRecord for the given pair of glyph indexes.
         /// </summary>
-        /// <param name="firstGlyphIndex"></param>
-        /// <param name="secondGlyphIndex"></param>
+        /// <param name="firstGlyphIndex">The index of the first glyph.</param>
+        /// <param name="secondGlyphIndex">The index of the second glyph.</param>
         /// <returns></returns>
         [NativeMethod(Name = "TextCore::FontEngine::GetGlyphPairAdjustmentRecord", IsFreeFunction = true)]
         internal extern static GlyphPairAdjustmentRecord GetGlyphPairAdjustmentRecord(uint firstGlyphIndex, uint secondGlyphIndex);
 
 
         /// <summary>
-        /// Internal function used to retrieve the GlyphPairAdjustmentRecords for the given list of glyph indexes.
+        /// Internal function used to retrieve GlyphPairAdjustmentRecords for the given list of glyph indexes.
         /// </summary>
-        /// <param name="glyphIndexes">List of the glyph indexes.</param>
-        /// <returns>The glyph pair adjustment records.</returns>
-        internal static GlyphPairAdjustmentRecord[] GetGlyphPairAdjustmentRecords(List<uint> glyphIndexes, out int recordCount)
+        /// <param name="newGlyphIndexes">List containing the indexes of the newly added glyphs.</param>
+        /// <param name="allGlyphIndexes">List containing the indexes of all the glyphs including the indexes of those newly added glyphs.</param>
+        /// <returns></returns>
+        internal static GlyphPairAdjustmentRecord[] GetGlyphPairAdjustmentRecords(List<uint> newGlyphIndexes, List<uint> allGlyphIndexes)
         {
-            int glyphIndexCount = glyphIndexes.Count;
+            // Copy source list data to array of same type.
+            GenericListToMarshallingArray(ref newGlyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
 
-            if (s_GlyphIndexes_MarshallingArray == null || s_GlyphIndexes_MarshallingArray.Length < glyphIndexCount)
-                s_GlyphIndexes_MarshallingArray = new uint[Mathf.NextPowerOfTwo(glyphIndexCount + 1)];
+            GenericListToMarshallingArray(ref allGlyphIndexes, ref s_GlyphIndexes_MarshallingArray_B);
 
-            // Populate marshalling array
-            for (int i = 0; i < glyphIndexCount; i++)
-                s_GlyphIndexes_MarshallingArray[i] = glyphIndexes[i];
-
-            // Set marshalling array boundary / terminator to value of zero.
-            s_GlyphIndexes_MarshallingArray[glyphIndexCount] = 0;
-
-            PopulatePairAdjustmentRecordMarshallingArray_from_GlyphIndexes(s_GlyphIndexes_MarshallingArray, out recordCount);
+            int recordCount;
+            PopulatePairAdjustmentRecordMarshallingArray_for_NewlyAddedGlyphIndexes(s_GlyphIndexes_MarshallingArray_A, s_GlyphIndexes_MarshallingArray_B, out recordCount);
 
             if (recordCount == 0)
                 return null;
 
             // Make sure marshalling array allocation is appropriate.
-            if (s_PairAdjustmentRecords_MarshallingArray == null || s_PairAdjustmentRecords_MarshallingArray.Length < recordCount)
-                s_PairAdjustmentRecords_MarshallingArray = new GlyphPairAdjustmentRecord[Mathf.NextPowerOfTwo(recordCount + 1)];
+            SetMarshallingArraySize(ref s_PairAdjustmentRecords_MarshallingArray, recordCount);
 
             // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
             GetGlyphPairAdjustmentRecordsFromMarshallingArray(s_PairAdjustmentRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_PairAdjustmentRecords_MarshallingArray[recordCount] = new GlyphPairAdjustmentRecord();
 
             return s_PairAdjustmentRecords_MarshallingArray;
         }
 
         /// <summary>
-        /// Internal function used to retrieve the GlyphPairAdjustmentRecords for the given glyph index.
+        /// Internal function used to retrieve GlyphPairAdjustmentRecords for the given list of glyph indexes.
+        /// </summary>
+        /// <param name="glyphIndexes">List of the glyph indexes.</param>
+        /// <returns>The glyph pair adjustment records.</returns>
+        internal static GlyphPairAdjustmentRecord[] GetGlyphPairAdjustmentRecords(List<uint> glyphIndexes, out int recordCount)
+        {
+            // Copy source list data to array of same type.
+            GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
+
+            PopulatePairAdjustmentRecordMarshallingArray_from_GlyphIndexes(s_GlyphIndexes_MarshallingArray_A, out recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_PairAdjustmentRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetGlyphPairAdjustmentRecordsFromMarshallingArray(s_PairAdjustmentRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_PairAdjustmentRecords_MarshallingArray[recordCount] = new GlyphPairAdjustmentRecord();
+
+            return s_PairAdjustmentRecords_MarshallingArray;
+        }
+
+        /// <summary>
+        /// Internal function used to retrieve GlyphPairAdjustmentRecords for the given glyph index.
         /// </summary>
         /// <param name="glyphIndex">Index of the target glyph.</param>
         /// <param name="recordCount">Number of glyph pair adjustment records using this glyph.</param>
@@ -1012,18 +1176,20 @@ namespace UnityEngine.TextCore.LowLevel
                 return null;
 
             // Make sure marshalling array allocation is appropriate.
-            if (s_PairAdjustmentRecords_MarshallingArray == null || s_PairAdjustmentRecords_MarshallingArray.Length < recordCount)
-                s_PairAdjustmentRecords_MarshallingArray = new GlyphPairAdjustmentRecord[Mathf.NextPowerOfTwo(recordCount + 1)];
+            SetMarshallingArraySize(ref s_PairAdjustmentRecords_MarshallingArray, recordCount);
 
             // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
             GetGlyphPairAdjustmentRecordsFromMarshallingArray(s_PairAdjustmentRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_PairAdjustmentRecords_MarshallingArray[recordCount] = new GlyphPairAdjustmentRecord();
 
             return s_PairAdjustmentRecords_MarshallingArray;
         }
 
         /// <summary>
-        /// Internal function used in the process of retrieving potential GlyphPairAdjustmentRecords for the given list of glyph indexes.
-        /// Function only populates an internal marshalling array which will be subsequently retrieved by the GetPopulatedGlyphPairAdjustmentRecords function.
+        /// Internal functions used in the process of retrieving potential glyph PairAdjustmentRecords for the given list of glyph indexes.
+        /// Functions populate internal marshalling array which will be subsequently retrieved by the GetPopulatedGlyphPairAdjustmentRecords function.
         /// </summary>
         /// <param name="glyphIndexes">Glyph indexes</param>
         /// <param name="recordCount">Number of glyph pair adjustment records for the given glyph indexes.</param>
@@ -1032,10 +1198,59 @@ namespace UnityEngine.TextCore.LowLevel
         extern static int PopulatePairAdjustmentRecordMarshallingArray_from_GlyphIndexes(uint[] glyphIndexes, out int recordCount);
 
         [NativeMethod(Name = "TextCore::FontEngine::PopulatePairAdjustmentRecordMarshallingArray", IsFreeFunction = true)]
+        extern static int PopulatePairAdjustmentRecordMarshallingArray_for_NewlyAddedGlyphIndexes(uint[] newGlyphIndexes, uint[] allGlyphIndexes, out int recordCount);
+
+        [NativeMethod(Name = "TextCore::FontEngine::PopulatePairAdjustmentRecordMarshallingArray", IsFreeFunction = true)]
         extern static int PopulatePairAdjustmentRecordMarshallingArray_from_GlyphIndex(uint glyphIndex, out int recordCount);
 
         [NativeMethod(Name = "TextCore::FontEngine::GetGlyphPairAdjustmentRecordsFromMarshallingArray", IsFreeFunction = true)]
         extern static int GetGlyphPairAdjustmentRecordsFromMarshallingArray([Out] GlyphPairAdjustmentRecord[] glyphPairAdjustmentRecords);
+
+
+        // ================================================
+        // Utility Methods
+        // ================================================
+
+        /// <summary>
+        ///
+        /// </summary>
+        static void GenericListToMarshallingArray<T>(ref List<T> srcList, ref T[] dstArray)
+        {
+            int count = srcList.Count;
+
+            if (dstArray == null || dstArray.Length < count + 1)
+            {
+                int size = Mathf.NextPowerOfTwo(count + 1);
+
+                if (dstArray == null)
+                    dstArray = new T[size];
+                else
+                    Array.Resize(ref dstArray, size);
+            }
+
+            // Copy list data to marshalling array
+            for (int i = 0; i < count; i++)
+                dstArray[i] = srcList[i];
+
+            // Set marshalling array boundary / terminator to value of zero.
+            dstArray[count] = default(T);
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        static void SetMarshallingArraySize<T>(ref T[] marshallingArray, int recordCount)
+        {
+            if (marshallingArray == null || marshallingArray.Length < recordCount)
+            {
+                int size = Mathf.NextPowerOfTwo(recordCount + 1);
+
+                if (marshallingArray == null)
+                    marshallingArray = new T[size];
+                else
+                    Array.Resize(ref marshallingArray, size);
+            }
+        }
 
         // ================================================
         // Experimental / Testing / Benchmarking Functions
@@ -1057,6 +1272,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// <param name="dstTexture">Texture containing the rastered shape.</param>
         [NativeMethod(Name = "TextCore::FontEngine::RenderToTexture", IsFreeFunction = true)]
         internal extern static void RenderBufferToTexture(Texture2D srcTexture, int padding, GlyphRenderMode renderMode, Texture2D dstTexture);
+
 
         /*
         [NativeMethod(Name = "TextCore::FontEngine::ModifyGlyph", IsFreeFunction = true)]

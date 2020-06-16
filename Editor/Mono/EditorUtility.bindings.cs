@@ -85,20 +85,20 @@ namespace UnityEditor
         public static extern string InvokeDiffTool(string leftTitle, string leftFile, string rightTitle, string rightFile, string ancestorTitle, string ancestorFile);
 
         [FreeFunction("CopySerialized")]
-        public static extern void CopySerialized(Object source, Object dest);
+        public static extern void CopySerialized([NotNull("NullExceptionObject")] Object source, [NotNull("NullExceptionObject")] Object dest);
 
         [FreeFunction("CopyScriptSerialized")]
         public static extern void CopySerializedManagedFieldsOnly([NotNull] System.Object source, [NotNull] System.Object dest);
 
         [FreeFunction("CopySerializedIfDifferent")]
-        private static extern void InternalCopySerializedIfDifferent(Object source, Object dest);
+        private static extern void InternalCopySerializedIfDifferent([NotNull("NullExceptionObject")] Object source, [NotNull("NullExceptionObject")] Object dest);
 
         [NativeThrows]
         public static extern Object[] CollectDependencies(Object[] roots);
         public static extern Object[] CollectDeepHierarchy(Object[] roots);
 
         [FreeFunction("InstantiateObjectRemoveAllNonAnimationComponents")]
-        private static extern Object Internal_InstantiateRemoveAllNonAnimationComponentsSingle(Object data, Vector3 pos, Quaternion rot);
+        private static extern Object Internal_InstantiateRemoveAllNonAnimationComponentsSingle([NotNull("NullExceptionObject")] Object data, Vector3 pos, Quaternion rot);
 
         [FreeFunction("UnloadUnusedAssetsImmediate")]
         private static extern void UnloadUnusedAssets(bool managedObjects);

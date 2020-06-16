@@ -3,25 +3,42 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.Profiling;
 using UnityEditor;
 using UnityEditor.StyleSheets;
+using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
     internal class NetworkingOperationsProfilerModule : ProfilerModuleBase
     {
+        const string k_IconName = "Profiler.NetworkOperations";
+        const int k_DefaultOrderIndex = 9;
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("Network Operations");
+
         [SerializeField]
         SplitterState m_NetworkSplit;
 
         static SVC<Color> s_SeparatorColor = new SVC<Color>("--theme-profiler-border-color-darker", Color.black);
 
-        public override void OnEnable(IProfilerWindowController profilerWindow)
+        public NetworkingOperationsProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName) {}
+
+        public override ProfilerArea area => ProfilerArea.NetworkOperations;
+
+        protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        protected override string legacyPreferenceKey => "ProfilerChartNetworkOperations";
+
+        protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
         {
-            base.OnEnable(profilerWindow);
+            var chart = base.InstantiateChart(defaultChartScale, chartMaximumScaleInterpolationValue);
+            chart.m_SharedScale = true;
+            return chart;
+        }
+
+        public override void OnEnable()
+        {
+            base.OnEnable();
 
             if (m_NetworkSplit == null || !m_NetworkSplit.IsValid())
                 m_NetworkSplit = SplitterState.FromRelative(new[] { 20f, 80f }, new[] { 100f, 100f }, null);
@@ -32,7 +49,7 @@ namespace UnityEditorInternal.Profiling
             // This module still needs to be broken apart into Toolbar and View.
         }
 
-        public override void DrawView(Rect position)
+        public override void DrawDetailsView(Rect position)
         {
             DrawNetworkOperationsPane(position);
         }
@@ -48,7 +65,7 @@ namespace UnityEditorInternal.Profiling
         void DrawNetworkOperationsPane(Rect position)
         {
             SplitterGUILayout.BeginHorizontalSplit(m_NetworkSplit);
-            var overviewLabel = GUIContent.Temp(ProfilerDriver.GetOverviewText(ProfilerArea.NetworkOperations,
+            var overviewLabel = GUIContent.Temp(ProfilerDriver.GetOverviewText(area,
                 m_ProfilerWindow.GetActiveVisibleFrameIndex()));
             var labelRect = GUILayoutUtility.GetRect(overviewLabel, EditorStyles.wordWrappedLabel);
 
@@ -121,6 +138,5 @@ namespace UnityEditorInternal.Profiling
                 position.height + EditorGUI.kWindowToolbarHeight);
             EditorGUI.DrawRect(lineRect, s_SeparatorColor);
         }
-
     }
 }

@@ -35,6 +35,24 @@ namespace Unity.Profiling
         }
 
         [MethodImpl(256)]
+        public unsafe ProfilerMarker(char* name, int nameLen)
+        {
+            m_Ptr = ProfilerUnsafeUtility.CreateMarker(name, nameLen, ProfilerUnsafeUtility.CategoryScripts, MarkerFlags.Default, 0);
+        }
+
+        [MethodImpl(256)]
+        public ProfilerMarker(ProfilerCategory category, string name)
+        {
+            m_Ptr = ProfilerUnsafeUtility.CreateMarker(name, category, MarkerFlags.Default, 0);
+        }
+
+        [MethodImpl(256)]
+        public unsafe ProfilerMarker(ProfilerCategory category, char* name, int nameLen)
+        {
+            m_Ptr = ProfilerUnsafeUtility.CreateMarker(name, nameLen, category, MarkerFlags.Default, 0);
+        }
+
+        [MethodImpl(256)]
         [Conditional("ENABLE_PROFILER")]
         [Pure]
         public void Begin()
@@ -96,8 +114,9 @@ namespace Unity.Profiling
     public enum ProfilerFlowEventType : byte
     {
         Begin = 0,
-        Next = 1,
+        ParallelNext = 1,
         End = 2,
+        Next = 3,
     }
 
     // Supported profiler metadata units.

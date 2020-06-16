@@ -231,7 +231,7 @@ namespace UnityEditor
         public extern bool transcodeSkipped { get; }
 
         [NativeMethod("operator==")]
-        extern public bool Equals(VideoClipImporter rhs);
+        extern public bool Equals([NotNull("NullExceptionObject")] VideoClipImporter rhs);
     }
 
 }

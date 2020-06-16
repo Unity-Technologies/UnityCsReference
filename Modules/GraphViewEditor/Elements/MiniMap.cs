@@ -292,7 +292,7 @@ namespace UnityEditor.Experimental.GraphView
             {
                 if (rect.x >= xMax)
                     return new Rect(0, 0, 0, 0);
-                rect.width -= rect.x + rect.width - xMax;
+                rect.width = rect.x - xMax;
             }
 
             if (rect.y < yMin + titleBarOffset)
@@ -307,7 +307,7 @@ namespace UnityEditor.Experimental.GraphView
             {
                 if (rect.y >= yMax)
                     return new Rect(0, 0, 0, 0);
-                rect.height -= rect.y + rect.height - yMax;
+                rect.height = rect.y - yMax;
             }
 
             return rect;

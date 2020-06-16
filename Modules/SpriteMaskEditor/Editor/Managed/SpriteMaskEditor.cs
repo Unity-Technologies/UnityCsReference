@@ -33,34 +33,6 @@ namespace UnityEditor
             public static readonly GUIContent spriteSortPointLabel = EditorGUIUtility.TrTextContent("Sprite Sort Point", "Determines which position of the Sprite which is used for sorting");
         }
 
-        [MenuItem("GameObject/2D Object/Sprite Mask")]
-        static void CreateSpriteMaskGameObject()
-        {
-            var go = ObjectFactory.CreateGameObject("");
-            go.AddComponent<SpriteMask>();
-            if (Selection.activeObject is Sprite)
-                go.GetComponent<SpriteMask>().sprite = (Sprite)Selection.activeObject;
-            else if (Selection.activeObject is Texture2D)
-            {
-                var assetPath = AssetDatabase.GetAssetPath(Selection.activeObject);
-                if (!string.IsNullOrEmpty(assetPath))
-                {
-                    var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
-                    if (sprite != null)
-                        go.GetComponent<SpriteMask>().sprite = sprite;
-                }
-            }
-            else if (Selection.activeObject is GameObject)
-            {
-                var activeGO = (GameObject)Selection.activeObject;
-                if (!PrefabUtility.IsPartOfPrefabAsset(activeGO))
-                    GameObjectUtility.SetParentAndAlign(go, activeGO);
-            }
-            go.name = GameObjectUtility.GetUniqueNameForSibling(go.transform.parent, Styles.newSpriteMaskName.text);
-            Undo.SetCurrentGroupName(Styles.createSpriteMaskUndoString.text);
-            Selection.activeGameObject = go;
-        }
-
         public override void OnEnable()
         {
             base.OnEnable();

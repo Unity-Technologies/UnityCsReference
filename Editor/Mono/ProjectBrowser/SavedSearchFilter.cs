@@ -310,8 +310,7 @@ namespace UnityEditor
             // Clear unused data before saving
             if (filterCopy.GetState() == SearchFilter.State.SearchingInAllAssets ||
                 filterCopy.GetState() == SearchFilter.State.SearchingInAssetsOnly ||
-                filterCopy.GetState() == SearchFilter.State.SearchingInPackagesOnly ||
-                filterCopy.GetState() == SearchFilter.State.SearchingInAssetStore)
+                filterCopy.GetState() == SearchFilter.State.SearchingInPackagesOnly)
             {
                 filterCopy.folders = new string[0];
             }

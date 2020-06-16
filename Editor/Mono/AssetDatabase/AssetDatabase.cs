@@ -74,6 +74,17 @@ namespace UnityEditor
             return IsOpenForEdit(assetOrMetaFilePath);
         }
 
+        public static void CanOpenForEdit(string[] assetOrMetaFilePaths, List<string> outNotEditablePaths, [uei.DefaultValue("StatusQueryOptions.UseCachedIfPossible")] StatusQueryOptions statusQueryOptions = StatusQueryOptions.UseCachedIfPossible)
+        {
+            if (assetOrMetaFilePaths == null)
+                throw new ArgumentNullException(nameof(assetOrMetaFilePaths));
+            if (outNotEditablePaths == null)
+                throw new ArgumentNullException(nameof(outNotEditablePaths));
+            UnityEngine.Profiling.Profiler.BeginSample("AssetDatabase.CanOpenForEdit");
+            AssetModificationProcessorInternal.CanOpenForEdit(assetOrMetaFilePaths, outNotEditablePaths, statusQueryOptions);
+            UnityEngine.Profiling.Profiler.EndSample();
+        }
+
         public static void IsOpenForEdit(string[] assetOrMetaFilePaths, List<string> outNotEditablePaths, [uei.DefaultValue("StatusQueryOptions.UseCachedIfPossible")] StatusQueryOptions statusQueryOptions = StatusQueryOptions.UseCachedIfPossible)
         {
             if (assetOrMetaFilePaths == null)
@@ -108,12 +119,15 @@ namespace UnityEditor
         {
             if (paths == null)
                 throw new ArgumentNullException(nameof(paths));
-
+            UnityEngine.Profiling.Profiler.BeginSample("AssetDatabase.MakeEditable");
             ChangeSet changeSet = null;
-            if (!Provider.HandlePreCheckoutCallback(ref paths, ref changeSet))
-                return false;
-
-            return Provider.MakeEditableImpl(paths, prompt, changeSet, outNotEditablePaths);
+            var result = Provider.HandlePreCheckoutCallback(ref paths, ref changeSet);
+            if (result && !AssetModificationProcessorInternal.MakeEditable(paths, prompt, outNotEditablePaths))
+                result = false;
+            if (result && !Provider.MakeEditableImpl(paths, prompt, changeSet, outNotEditablePaths))
+                result = false;
+            UnityEngine.Profiling.Profiler.EndSample();
+            return result;
         }
     }
 }

@@ -55,13 +55,15 @@ namespace UnityEditor
         Gradient m_Gradient;
         int m_NumSteps;
         bool m_HDR;
+        ColorSpace m_ColorSpace;
 
         // Fixed steps are only used if numSteps > 1
-        public void Init(Gradient gradient, int numSteps, bool hdr)
+        public void Init(Gradient gradient, int numSteps, bool hdr, ColorSpace colorSpace)
         {
             m_Gradient = gradient;
             m_NumSteps = numSteps;
             m_HDR = hdr;
+            m_ColorSpace = colorSpace;
 
             BuildArrays();
 
@@ -111,9 +113,9 @@ namespace UnityEditor
             m_GradientMode = m_Gradient.mode;
         }
 
-        public static void DrawGradientWithBackground(Rect position, Gradient gradient)
+        public static void DrawGradientWithBackground(Rect position, Gradient gradient, ColorSpace colorSpace)
         {
-            Texture2D gradientTexture = UnityEditorInternal.GradientPreviewCache.GetGradientPreview(gradient);
+            Texture2D gradientTexture = UnityEditorInternal.GradientPreviewCache.GetGradientPreview(gradient, colorSpace);
             Rect r2 = new Rect(position.x + 1, position.y + 1, position.width - 2, position.height - 2);
 
             // Background checkers
@@ -162,7 +164,7 @@ namespace UnityEditor
             if (Event.current.type == EventType.Repaint)
             {
                 position.height = gradientTextureHeight;
-                DrawGradientWithBackground(position, m_Gradient);
+                DrawGradientWithBackground(position, m_Gradient, m_ColorSpace);
             }
             position.y += gradientTextureHeight;
             position.height = swatchHeight;
@@ -411,7 +413,7 @@ namespace UnityEditor
         {
             Color temp = GUI.backgroundColor;
             Rect r = CalcSwatchRect(totalPos, s);
-            GUI.backgroundColor = s.m_Value;
+            GUI.backgroundColor = m_ColorSpace == ColorSpace.Linear ? s.m_Value.gamma : s.m_Value;
             GUIStyle back = upwards ? s_Styles.upSwatch : s_Styles.downSwatch;
             GUIStyle overlay = upwards ? s_Styles.upSwatchOverlay : s_Styles.downSwatchOverlay;
             back.Draw(r, false, false, m_SelectedSwatch == s, false);
@@ -517,17 +519,17 @@ namespace UnityEditor
         }
 
         // GUI Helpers
-        public static void DrawGradientSwatch(Rect position, Gradient gradient, Color bgColor)
+        public static void DrawGradientSwatch(Rect position, Gradient gradient, Color bgColor, ColorSpace colorSpace)
         {
-            DrawGradientSwatchInternal(position, gradient, null, bgColor);
+            DrawGradientSwatchInternal(position, gradient, null, bgColor, colorSpace);
         }
 
-        public static void DrawGradientSwatch(Rect position, SerializedProperty property, Color bgColor)
+        public static void DrawGradientSwatch(Rect position, SerializedProperty property, Color bgColor, ColorSpace colorSpace)
         {
-            DrawGradientSwatchInternal(position, null, property, bgColor);
+            DrawGradientSwatchInternal(position, null, property, bgColor, colorSpace);
         }
 
-        private static void DrawGradientSwatchInternal(Rect position, Gradient gradient, SerializedProperty property, Color bgColor)
+        private static void DrawGradientSwatchInternal(Rect position, Gradient gradient, SerializedProperty property, Color bgColor, ColorSpace colorSpace)
         {
             if (Event.current.type != EventType.Repaint)
                 return;
@@ -567,12 +569,12 @@ namespace UnityEditor
             float maxColorComponent;
             if (property != null)
             {
-                preview = GradientPreviewCache.GetPropertyPreview(property);
+                preview = GradientPreviewCache.GetPropertyPreview(property, colorSpace);
                 maxColorComponent = GetMaxColorComponent(property.gradientValue);
             }
             else
             {
-                preview = GradientPreviewCache.GetGradientPreview(gradient);
+                preview = GradientPreviewCache.GetGradientPreview(gradient, colorSpace);
                 maxColorComponent = GetMaxColorComponent(gradient);
             }
 

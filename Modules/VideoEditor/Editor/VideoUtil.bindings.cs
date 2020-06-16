@@ -15,7 +15,7 @@ namespace UnityEditor
     [StaticAccessor("VideoManager::GetInstance()", StaticAccessorType.Dot)]
     internal static class VideoUtil
     {
-        public static extern GUID StartPreview(VideoClip clip);
+        public static extern GUID StartPreview([NotNull("NullExceptionObject")] VideoClip clip);
 
         public static extern void StopPreview(GUID id);
 

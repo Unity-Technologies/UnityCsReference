@@ -55,8 +55,7 @@ namespace UnityEditor
             AllAssets,
             InAssetsOnly,
             InPackagesOnly,
-            SubFolders,
-            AssetStore
+            SubFolders
         }
 
         // Styles used in the object selector
@@ -201,8 +200,6 @@ namespace UnityEditor
         public GUIContent m_SearchInAssetsOnly = EditorGUIUtility.TrTextContent("In Assets");
         [NonSerialized]
         public GUIContent m_SearchInFolders = new GUIContent(""); // updated when needed
-        [NonSerialized]
-        public GUIContent m_SearchAssetStore = EditorGUIUtility.TrTextContent("Asset Store"); // updated when needed
 
         [NonSerialized]
         private string m_lastSearchFilter;
@@ -446,7 +443,6 @@ namespace UnityEditor
             m_ListArea.keyboardCallback += ListAreaKeyboardCallback;
             m_ListArea.gotKeyboardFocus += ListGotKeyboardFocus;
             m_ListArea.drawLocalAssetHeader += DrawLocalAssetHeader;
-            m_ListArea.assetStoreSearchEnded += AssetStoreSearchEndedCallback;
             m_ListArea.gridSize = m_StartGridSize;
 
             m_StartGridSize = Mathf.Clamp(m_StartGridSize, m_ListArea.minGridSize, m_ListArea.maxGridSize);
@@ -516,9 +512,6 @@ namespace UnityEditor
                 case SearchViewState.SubFolders:
                     m_SearchFilter.searchArea = SearchFilter.SearchArea.SelectedFolders;
                     break;
-                case SearchViewState.AssetStore:
-                    m_SearchFilter.searchArea = SearchFilter.SearchArea.AssetStore;
-                    break;
                 case SearchViewState.NotSearching:
                     Debug.LogError("Invalid search mode as setter");
                     break;
@@ -537,7 +530,6 @@ namespace UnityEditor
                 case SearchFilter.State.SearchingInAssetsOnly:   return SearchViewState.InAssetsOnly;
                 case SearchFilter.State.SearchingInPackagesOnly: return SearchViewState.InPackagesOnly;
                 case SearchFilter.State.SearchingInFolders:      return SearchViewState.SubFolders;
-                case SearchFilter.State.SearchingInAssetStore:   return SearchViewState.AssetStore;
             }
             return SearchViewState.NotSearching;
         }
@@ -567,7 +559,6 @@ namespace UnityEditor
             GUIStyle onStyle = s_Styles.exposablePopupItem;
             GUIStyle offStyle = s_Styles.exposablePopupItem;
             bool hasFolderSelected = m_SearchFilter.folders.Length > 0;
-            m_SearchAssetStore.text = m_ListArea.GetAssetStoreButtonText();
 
             bool on = state == SearchViewState.AllAssets;
             buttonData.Add(new ExposablePopupMenu.ItemData(m_SearchAllAssets, on ? onStyle : offStyle, on, true, (int)SearchViewState.AllAssets));
@@ -577,8 +568,6 @@ namespace UnityEditor
             buttonData.Add(new ExposablePopupMenu.ItemData(m_SearchInAssetsOnly, on ? onStyle : offStyle, on, true, (int)SearchViewState.InAssetsOnly));
             on = state == SearchViewState.SubFolders;
             buttonData.Add(new ExposablePopupMenu.ItemData(m_SearchInFolders, on ? onStyle : offStyle, on, hasFolderSelected, (int)SearchViewState.SubFolders));
-            on = state == SearchViewState.AssetStore;
-            buttonData.Add(new ExposablePopupMenu.ItemData(m_SearchAssetStore, on ? onStyle : offStyle, on, true, (int)SearchViewState.AssetStore));
 
             GUIContent popupButtonContent = m_SearchAllAssets;
             switch (state)
@@ -595,9 +584,8 @@ namespace UnityEditor
                 case SearchViewState.SubFolders:
                     popupButtonContent = m_SearchInFolders;
                     break;
-                case SearchViewState.AssetStore:
                 case SearchViewState.NotSearching:
-                    popupButtonContent = m_SearchAssetStore;
+                    popupButtonContent = m_SearchInAssetsOnly;
                     break;
                 default:
                     Debug.LogError("Unhandled enum");
@@ -606,20 +594,6 @@ namespace UnityEditor
 
             ExposablePopupMenu.PopupButtonData popListData = new ExposablePopupMenu.PopupButtonData(popupButtonContent, s_Styles.exposablePopup);
             m_SearchAreaMenu.Init(buttonData, 10f, 450f, popListData, SearchButtonClickedCallback);
-        }
-
-        void AssetStoreSearchEndedCallback()
-        {
-            InitSearchMenu();
-        }
-
-        static public void ShowAssetStoreHitsWhileSearchingLocalAssetsChanged()
-        {
-            foreach (var ob in s_ProjectBrowsers)
-            {
-                ob.m_ListArea.ShowAssetStoreHitCountWhileSearchingLocalAssetsChanged();
-                ob.InitSearchMenu();
-            }
         }
 
         void RefreshSearchText()
@@ -1128,8 +1102,6 @@ namespace UnityEditor
                 m_SearchFilter.searchArea = m_LastLocalAssetsSearchArea; // local asset was selected
                 m_InternalSelectionChange = true;
             }
-            else if (AssetStoreAssetSelection.Count > 0)
-                Selection.activeObject = AssetStoreAssetInspector.Instance;
 
             m_FocusSearchField = false;
 
@@ -1217,13 +1189,6 @@ namespace UnityEditor
             }
 
             m_InternalSelectionChange = false;
-
-            // Clear asset store asset selection
-            if (Selection.activeObject != null && Selection.activeObject.GetType() != typeof(AssetStoreAssetInspector))
-            {
-                m_ListArea.selectedAssetStoreAsset = false;
-                AssetStoreAssetSelection.Clear();
-            }
 
             RefreshSelectedPath();
             Repaint();
@@ -1429,13 +1394,6 @@ namespace UnityEditor
                     case SearchViewState.AllAssets:
                     case SearchViewState.InAssetsOnly:
                     case SearchViewState.InPackagesOnly:
-                    case SearchViewState.AssetStore:
-                    {
-                        if (!isSavedFilterSelected)
-                            m_FolderTree.SetSelection(k_EmptySelection, false);
-                    }
-                    break;
-
                     case SearchViewState.SubFolders:
                     case SearchViewState.NotSearching:
                     {
@@ -1672,13 +1630,13 @@ namespace UnityEditor
         }
 
         public const string FocusProjectWindowCommand = "FocusProjectWindow";
-        // Returns true if we should early out of OnGUI
-        bool HandleCommandEvents()
+
+        void HandleCommandEvents()
         {
             // Check if event made on immutable package
             if (ShouldDiscardCommandsEventsForImmmutablePackages())
             {
-                return false;
+                return;
             }
 
             EventType eventType = Event.current.type;
@@ -1751,7 +1709,6 @@ namespace UnityEditor
                     Event.current.Use();
                 }
             }
-            return false;
         }
 
         void SelectAll()
@@ -2019,11 +1976,8 @@ namespace UnityEditor
                     if (listRect.Contains(evt.mousePosition))
                     {
                         GUIUtility.hotControl = 0;
-                        // Context click in list area (can be an asset store asset or a local asset)
-                        if (AssetStoreAssetSelection.GetFirstAsset() != null)
-                            AssetStoreItemContextMenu.Show();
-                        else
-                            EditorUtility.DisplayPopupMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), "Assets/", null);
+                        // Context click in list area
+                        EditorUtility.DisplayPopupMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), "Assets/", null);
 
                         evt.Use();
                     }
@@ -2451,7 +2405,7 @@ namespace UnityEditor
             {
                 SearchViewState state = GetSearchViewState();
                 if (state == SearchViewState.AllAssets || state == SearchViewState.InAssetsOnly ||
-                    state == SearchViewState.InPackagesOnly || state == SearchViewState.AssetStore)
+                    state == SearchViewState.InPackagesOnly)
                 {
                     // Clear all except folders if folder is set
                     string[] folders = m_SearchFilter.folders;
@@ -2479,7 +2433,6 @@ namespace UnityEditor
             int newGridSize = (int)GUI.HorizontalSlider(r, m_ListArea.gridSize, m_ListArea.minGridSize, m_ListArea.maxGridSize);
             if (EditorGUI.EndChangeCheck())
             {
-                AssetStorePreviewManager.AbortSize(m_ListArea.gridSize);
                 m_ListArea.gridSize = newGridSize;
             }
         }
@@ -3015,34 +2968,6 @@ namespace UnityEditor
                 int folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(m_SubFolder);
                 if (folderInstanceID != 0)
                     m_Caller.ShowFolderContents(folderInstanceID, false);
-            }
-        }
-
-        internal class AssetStoreItemContextMenu
-        {
-            static internal void Show()
-            {
-                GenericMenu menu = new GenericMenu();
-
-                GUIContent assetStoreWindow = EditorGUIUtility.TrTextContent("Show in Asset Store window");
-                AssetStoreAsset activeAsset = AssetStoreAssetSelection.GetFirstAsset();
-                if (activeAsset != null && activeAsset.id != 0)
-                    menu.AddItem(assetStoreWindow, false, new AssetStoreItemContextMenu().OpenAssetStoreWindow);
-                else
-                    menu.AddDisabledItem(assetStoreWindow);
-
-                menu.ShowAsContext();
-            }
-
-            private void OpenAssetStoreWindow()
-            {
-                AssetStoreAsset activeAsset = AssetStoreAssetSelection.GetFirstAsset();
-                if (activeAsset != null)
-                    AssetStoreAssetInspector.OpenItemInAssetStore(activeAsset);
-            }
-
-            private AssetStoreItemContextMenu()
-            {
             }
         }
     }

@@ -77,7 +77,7 @@ namespace UnityEditor.PackageManager.UI
                 return;
 
             m_LastInternetCheck = EditorApplication.timeSinceStartup;
-            var isInternetReachable = Application.internetReachability == NetworkReachability.ReachableViaLocalAreaNetwork;
+            var isInternetReachable = Application.internetReachability != NetworkReachability.NotReachable;
             if (isInternetReachable != m_IsInternetReachable)
             {
                 m_IsInternetReachable = isInternetReachable;

@@ -236,7 +236,7 @@ namespace UnityEngine
         [FreeFunction("MeshScripting::GetSubMesh", HasExplicitThis = true, ThrowsException = true)]
         extern public SubMeshDescriptor GetSubMesh(int index);
 
-        [FreeFunction("MeshScripting::SetAllSubMeshesAtOnceFromArray", HasExplicitThis = true)]
+        [FreeFunction("MeshScripting::SetAllSubMeshesAtOnceFromArray", HasExplicitThis = true, ThrowsException = true)]
         extern private void SetAllSubMeshesAtOnceFromArray(SubMeshDescriptor[] desc, int start, int count, UnityEngine.Rendering.MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default);
         [FreeFunction("MeshScripting::SetAllSubMeshesAtOnceFromNativeArray", HasExplicitThis = true, ThrowsException = true)]
         extern private void SetAllSubMeshesAtOnceFromNativeArray(IntPtr desc, int start, int count, UnityEngine.Rendering.MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default);
@@ -254,6 +254,8 @@ namespace UnityEngine
         [FreeFunction(Name = "MeshScripting::GetPrimitiveType", HasExplicitThis = true)]
         extern private MeshTopology GetTopologyImpl(int submesh);
 
+        [NativeMethod("RecalculateMeshMetric")] extern private void RecalculateUVDistributionMetricImpl(int uvSetIndex, float uvAreaThreshold);
+        [NativeMethod("RecalculateMeshMetrics")] extern private void RecalculateUVDistributionMetricsImpl(float uvAreaThreshold);
         [NativeMethod("GetMeshMetric")] extern public float GetUVDistributionMetric(int uvSetIndex);
 
         [NativeMethod(Name = "MeshScripting::CombineMeshes", IsFreeFunction = true, ThrowsException = true, HasExplicitThis = true)]

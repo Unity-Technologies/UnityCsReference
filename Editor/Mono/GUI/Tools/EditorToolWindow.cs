@@ -57,17 +57,17 @@ namespace UnityEditor.EditorTools
 
         void OnEnable()
         {
-            EditorTools.activeToolChanged += ToolChanged;
+            ToolManager.activeToolChanged += ToolChanged;
 
             //active tool is null when opening the editor but activeToolChanged will be called soon after.
             //This is quick enough that the user shouldn't notice.
-            if (EditorToolContext.activeTool)
+            if (EditorToolManager.activeTool)
                 ToolChanged();
         }
 
         void OnDisable()
         {
-            EditorTools.activeToolChanged -= ToolChanged;
+            ToolManager.activeToolChanged -= ToolChanged;
 
             if (m_Editor != null)
                 DestroyImmediate(m_Editor);
@@ -77,7 +77,7 @@ namespace UnityEditor.EditorTools
         {
             if (m_Editor != null)
                 DestroyImmediate(m_Editor);
-            var activeTool = EditorToolContext.activeTool;
+            var activeTool = EditorToolManager.activeTool;
             m_Editor = Editor.CreateEditor(activeTool);
             titleContent = new GUIContent(EditorToolUtility.GetToolName(activeTool.GetType()));
             Repaint();

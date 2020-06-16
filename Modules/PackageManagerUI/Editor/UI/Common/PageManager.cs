@@ -442,14 +442,25 @@ namespace UnityEditor.PackageManager.UI
             if (pageSize == 0)
                 return;
 
+            if ((options & RefreshOptions.UpmSearch) != 0)
+            {
+                m_UpmClient.SearchAll();
+                // Since the SearchAll online call now might return error and an empty list, we want to trigger a `SearchOffline` call if
+                // we detect that SearchOffline has not been called before. That way we will have some offline result to show to the user instead of nothing
+                if (!m_RefreshTimestamps.TryGetValue(RefreshOptions.UpmSearchOffline, out var value) || value == 0)
+                    options |= RefreshOptions.UpmSearchOffline;
+            }
             if ((options & RefreshOptions.UpmSearchOffline) != 0)
                 m_UpmClient.SearchAll(true);
-            if ((options & RefreshOptions.UpmSearch) != 0)
-                m_UpmClient.SearchAll();
+            if ((options & RefreshOptions.UpmList) != 0)
+            {
+                m_UpmClient.List();
+                // Do the same logic for the List operations as the Search operations
+                if (!m_RefreshTimestamps.TryGetValue(RefreshOptions.UpmListOffline, out var value) || value == 0)
+                    options |= RefreshOptions.UpmListOffline;
+            }
             if ((options & RefreshOptions.UpmListOffline) != 0)
                 m_UpmClient.List(true);
-            if ((options & RefreshOptions.UpmList) != 0)
-                m_UpmClient.List();
             if ((options & RefreshOptions.Purchased) != 0)
             {
                 var queryArgs = new PurchasesQueryArgs
@@ -622,6 +633,19 @@ namespace UnityEditor.PackageManager.UI
         private void OnRefreshOperationSuccess(IOperation operation)
         {
             m_RefreshTimestamps[operation.refreshOptions] = operation.timestamp;
+            if (operation.refreshOptions == RefreshOptions.UpmSearch)
+            {
+                // when an online operation successfully returns with a timestamp newer than the offline timestamp, we update the offline timestamp as well
+                // since we merge the online & offline result in the PackageDatabase and it's the newer ones that are being shown
+                if (!m_RefreshTimestamps.TryGetValue(RefreshOptions.UpmSearchOffline, out var value) || value < operation.timestamp)
+                    m_RefreshTimestamps[RefreshOptions.UpmSearchOffline] = operation.timestamp;
+            }
+            else if (operation.refreshOptions == RefreshOptions.UpmList)
+            {
+                // Do the same logic for the List operations as the Search operations
+                if (!m_RefreshTimestamps.TryGetValue(RefreshOptions.UpmListOffline, out var value) || value < operation.timestamp)
+                    m_RefreshTimestamps[RefreshOptions.UpmListOffline] = operation.timestamp;
+            }
             if (m_RefreshErrors.ContainsKey(operation.refreshOptions))
                 m_RefreshErrors.Remove(operation.refreshOptions);
         }
@@ -651,7 +675,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 if ((option & item.Key) == 0)
                     continue;
-                if (item.Value == 0)
+                if (item.Value == 0 && !m_RefreshErrors.ContainsKey(item.Key))
                     return false;
             }
             return true;

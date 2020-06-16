@@ -2,13 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEngine;
-using Object = UnityEngine.Object;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine.Bindings;
 
 namespace UnityEditor
@@ -16,58 +9,19 @@ namespace UnityEditor
     // Helper class to access Unity documentation.
     [NativeHeader("Editor/Src/Panels/HelpPanel.h")]
     [NativeHeader("Editor/Platform/Interface/EditorUtility.h")]
-    public class Help
+    [NativeHeader("Editor/Src/Utility/DocUtilities.h")]
+    public partial class Help
     {
-        // Is there a help page for this object?
-        public static bool HasHelpForObject(Object obj) { return HasHelpForObject(obj, true); }
-
-        // Intentionally internal. Extra argument only used to make doc authoring easier.
         [FreeFunction]
-        internal static extern bool HasHelpForObject(Object obj, bool defaultToMonoBehaviour);
+        internal static extern void SendHelpRequestedUsabilityEvent(long start, long duration, UnityEngine.Object contextObject, string url);
 
-        // Intentionally internal.
-        internal static string GetNiceHelpNameForObject(Object obj)
-        {
-            return GetNiceHelpNameForObject(obj, true);
-        }
-
-        // Intentionally internal.
-        [FreeFunction]
-        internal static extern string GetNiceHelpNameForObject(Object obj, bool defaultToMonoBehaviour);
-
-        public static string GetHelpURLForObject(Object obj)
-        {
-            return GetHelpURLForObject(obj, true);
-        }
-
-        [FreeFunction]
-        private static extern string GetHelpURLForObject(Object obj, bool defaultToMonoBehaviour);
-        // Show help page for this object.
-        [FreeFunction]
-        public static extern void ShowHelpForObject(Object obj);
-        // Show a help page.
-        [FreeFunction("ShowNamedHelp")]
-        public static extern void ShowHelpPage(string page);
-        // Open /url/ in the default web browser.
-        [FreeFunction("OpenURLInWebbrowser")]
-        public static extern void BrowseURL(string url);
+        [FreeFunction("DocUtilities::GetDocumentationAbsolutePath")]
+        private static extern string GetDocumentationAbsolutePath_Internal();
 
         [UnityEngine.Scripting.RequiredByNativeCode]
-        internal static string GetDispatchedHelpURL(Object obj, string fieldName)
+        internal static void ShowNamedHelp(string topic)
         {
-            System.Reflection.FieldInfo field = obj.GetType().GetField(fieldName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (field == null)
-                return null;
-
-            object value = field.GetValue(obj);
-            if (value == null)
-                return null;
-
-            object[] attrs = value.GetType().GetCustomAttributes(typeof(HelpURLAttribute), true);
-            if (attrs != null && attrs.Length > 0)
-                return ((HelpURLAttribute)attrs[0]).m_Url;
-
-            return null;
+            ShowHelpPage(topic);
         }
     }
 }

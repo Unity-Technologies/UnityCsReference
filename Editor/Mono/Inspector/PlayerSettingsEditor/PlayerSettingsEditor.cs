@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor.Modules;
+using UnityEditorInternal.VR;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
@@ -136,8 +137,8 @@ namespace UnityEditor
             public static readonly GUIContent framebufferDepthMemorylessMode = EditorGUIUtility.TrTextContent("Memoryless Depth", "Memoryless mode of framebuffer depth");
             public static readonly GUIContent[] memorylessModeNames = { EditorGUIUtility.TrTextContent("Unused"), EditorGUIUtility.TrTextContent("Forced"), EditorGUIUtility.TrTextContent("Automatic")};
             public static readonly GUIContent vulkanEnableSetSRGBWrite = EditorGUIUtility.TrTextContent("SRGB Write Mode*", "If set, enables Graphics.SetSRGBWrite() for toggling sRGB write mode during the frame but may decrease performance especially on tiled GPUs.");
-            public static readonly GUIContent vulkanNumSwapchainBuffers = EditorGUIUtility.TrTextContent("Number of swapchain buffers");
-            public static readonly GUIContent vulkanEnablePreTransform = EditorGUIUtility.TrTextContent("Apply display rotation during rendering");
+            public static readonly GUIContent vulkanNumSwapchainBuffers = EditorGUIUtility.TrTextContent("Number of swapchain buffers*");
+            public static readonly GUIContent vulkanEnableLateAcquireNextImage = EditorGUIUtility.TrTextContent("Acquire swapchain image late as possible*", "If set, renders to a staging image to delay acquiring the swapchain buffer.");
             public static readonly GUIContent mTRendering = EditorGUIUtility.TrTextContent("Multithreaded Rendering*");
             public static readonly GUIContent staticBatching = EditorGUIUtility.TrTextContent("Static Batching");
             public static readonly GUIContent dynamicBatching = EditorGUIUtility.TrTextContent("Dynamic Batching");
@@ -190,6 +191,8 @@ namespace UnityEditor
             public static readonly GUIContent useReferenceAssembclies = EditorGUIUtility.TrTextContent("Use Roslyn Reference Assemblies", "Skips compilation of assembly references if the metadata of the modified assembly does not change.");
             public static readonly GUIContent activeInputHandling = EditorGUIUtility.TrTextContent("Active Input Handling*");
             public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager (Old)"), EditorGUIUtility.TrTextContent("Input System Package (New)"), EditorGUIUtility.TrTextContent("Both") };
+            public static readonly GUIContent normalMapEncodingLabel = EditorGUIUtility.TrTextContent("Normal Map Encoding");
+            public static readonly GUIContent[] normalMapEncodingNames = { EditorGUIUtility.TrTextContent("XYZ"), EditorGUIUtility.TrTextContent("DXT5nm-style") };
             public static readonly GUIContent lightmapEncodingLabel = EditorGUIUtility.TrTextContent("Lightmap Encoding", "Affects the encoding scheme and compression format of the lightmaps.");
             public static readonly GUIContent[] lightmapEncodingNames = { EditorGUIUtility.TrTextContent("Low Quality"), EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality")};
             public static readonly GUIContent lightmapStreamingEnabled = EditorGUIUtility.TrTextContent("Lightmap Streaming", "Only load larger lightmap mipmaps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings. This value is applied to the light map textures as they are generated.");
@@ -197,7 +200,7 @@ namespace UnityEditor
             public static readonly GUIContent lightmapQualityAndroidWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires OpenGL ES 3.0 or Vulkan. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API");
             public static readonly GUIContent lightmapQualityIOSWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES APIs.");
             public static readonly GUIContent legacyClampBlendShapeWeights = EditorGUIUtility.TrTextContent("Clamp BlendShapes (Deprecated)*", "If set, the range of BlendShape weights in SkinnedMeshRenderers will be clamped.");
-            public static readonly GUIContent virtualTexturingSupportEnabled = EditorGUIUtility.TrTextContent("Enable Virtual Texturing*", "Enable support for Virtual Texturing. Changing this value requires an Editor restart.");
+            public static readonly GUIContent virtualTexturingSupportEnabled = EditorGUIUtility.TrTextContent("Virtual Texturing*", "Enable support for Virtual Texturing. Changing this value requires an Editor restart.");
             public static readonly GUIContent virtualTexturingUnsupportedPlatformWarning = EditorGUIUtility.TrTextContent("The current target platform does not support Virtual Texturing. To build for this platform, uncheck Enable Virtual Texturing.");
             public static readonly GUIContent virtualTexturingUnsupportedAPI = EditorGUIUtility.TrTextContent("The target graphics API does not support Virtual Texturing. To target compatible graphics APIs, uncheck 'Auto Graphics API', and remove OpenGL ES 2/3 and OpenGLCore.");
             public static readonly GUIContent virtualTexturingUnsupportedAPIWin = EditorGUIUtility.TrTextContent("The target Windows graphics API does not support Virtual Texturing. To target compatible graphics APIs, uncheck 'Auto Graphics API for Windows', and remove OpenGL ES 2/3 and OpenGLCore.");
@@ -250,6 +253,7 @@ namespace UnityEditor
 
         // vulkan
         SerializedProperty m_VulkanNumSwapchainBuffers;
+        SerializedProperty m_VulkanEnableLateAcquireNextImage;
 
         // iOS, tvOS
 #pragma warning disable 169
@@ -498,19 +502,20 @@ namespace UnityEditor
             m_SupportedAspectRatios         = FindPropertyAssert("m_SupportedAspectRatios");
             m_UsePlayerLog                  = FindPropertyAssert("usePlayerLog");
 
-            m_KeepLoadedShadersAlive        = FindPropertyAssert("keepLoadedShadersAlive");
-            m_PreloadedAssets               = FindPropertyAssert("preloadedAssets");
-            m_BakeCollisionMeshes           = FindPropertyAssert("bakeCollisionMeshes");
-            m_ResizableWindow               = FindPropertyAssert("resizableWindow");
-            m_UseMacAppStoreValidation      = FindPropertyAssert("useMacAppStoreValidation");
-            m_MacAppStoreCategory           = FindPropertyAssert("macAppStoreCategory");
-            m_VulkanNumSwapchainBuffers     = FindPropertyAssert("vulkanNumSwapchainBuffers");
-            m_FullscreenMode                = FindPropertyAssert("fullscreenMode");
-            m_VisibleInBackground           = FindPropertyAssert("visibleInBackground");
-            m_AllowFullscreenSwitch         = FindPropertyAssert("allowFullscreenSwitch");
-            m_SkinOnGPU                     = FindPropertyAssert("gpuSkinning");
-            m_ForceSingleInstance           = FindPropertyAssert("forceSingleInstance");
-            m_UseFlipModelSwapchain         = FindPropertyAssert("useFlipModelSwapchain");
+            m_KeepLoadedShadersAlive           = FindPropertyAssert("keepLoadedShadersAlive");
+            m_PreloadedAssets                  = FindPropertyAssert("preloadedAssets");
+            m_BakeCollisionMeshes              = FindPropertyAssert("bakeCollisionMeshes");
+            m_ResizableWindow                  = FindPropertyAssert("resizableWindow");
+            m_UseMacAppStoreValidation         = FindPropertyAssert("useMacAppStoreValidation");
+            m_MacAppStoreCategory              = FindPropertyAssert("macAppStoreCategory");
+            m_VulkanNumSwapchainBuffers        = FindPropertyAssert("vulkanNumSwapchainBuffers");
+            m_VulkanEnableLateAcquireNextImage = FindPropertyAssert("vulkanEnableLateAcquireNextImage");
+            m_FullscreenMode                   = FindPropertyAssert("fullscreenMode");
+            m_VisibleInBackground              = FindPropertyAssert("visibleInBackground");
+            m_AllowFullscreenSwitch            = FindPropertyAssert("allowFullscreenSwitch");
+            m_SkinOnGPU                        = FindPropertyAssert("gpuSkinning");
+            m_ForceSingleInstance              = FindPropertyAssert("forceSingleInstance");
+            m_UseFlipModelSwapchain            = FindPropertyAssert("useFlipModelSwapchain");
 
             m_RequireES31                   = FindPropertyAssert("openGLRequireES31");
             m_RequireES31AEP                = FindPropertyAssert("openGLRequireES31AEP");
@@ -927,7 +932,7 @@ namespace UnityEditor
 
                         EditorGUILayout.PropertyField(m_DefaultScreenOrientation, SettingsContent.defaultScreenOrientation);
 
-                        if (PlayerSettings.virtualRealitySupported)
+                        if (VREditor.GetVREnabledOnTargetGroup(targetGroup))
                         {
                             EditorGUILayout.HelpBox(SettingsContent.vrOrientationInfo.text, MessageType.Warning);
                         }
@@ -1801,6 +1806,23 @@ namespace UnityEditor
                 }
             }
 
+            if (settingsExtension != null && settingsExtension.SupportsCustomNormalMapEncoding())
+            {
+                using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))
+                {
+                    EditorGUI.BeginChangeCheck();
+                    NormalMapEncoding oldEncoding = PlayerSettings.GetNormalMapEncoding(targetGroup);
+                    NormalMapEncoding[] encodingValues = { NormalMapEncoding.XYZ, NormalMapEncoding.DXT5nm };
+                    NormalMapEncoding newEncoding = BuildEnumPopup(SettingsContent.normalMapEncodingLabel, oldEncoding, encodingValues, SettingsContent.normalMapEncodingNames);
+                    if (EditorGUI.EndChangeCheck() && newEncoding != oldEncoding)
+                    {
+                        PlayerSettings.SetNormalMapEncoding(targetGroup, newEncoding);
+                        serializedObject.ApplyModifiedProperties();
+                        GUIUtility.ExitGUI();
+                    }
+                }
+            }
+
             // Show Lightmap Encoding quality option
             if (customLightmapEncodingSupported)
             {
@@ -1921,12 +1943,9 @@ namespace UnityEditor
             // Virtual Texturing settings
             using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || EditorApplication.isCompiling))
             {
-                Rect vtPropRect = EditorGUILayout.GetControlRect();
-                vtPropRect = EditorGUI.PrefixLabel(vtPropRect, 0, SettingsContent.virtualTexturingSupportEnabled);
-
                 EditorGUI.BeginChangeCheck();
                 bool selectedValue = m_VirtualTexturingSupportEnabled.boolValue;
-                EditorGUI.PropertyField(vtPropRect, m_VirtualTexturingSupportEnabled, GUIContent.none);
+                m_VirtualTexturingSupportEnabled.boolValue = EditorGUILayout.Toggle(SettingsContent.virtualTexturingSupportEnabled, m_VirtualTexturingSupportEnabled.boolValue);
                 if (EditorGUI.EndChangeCheck())
                 {
                     bool doApply = false;
@@ -2076,7 +2095,7 @@ namespace UnityEditor
             PlayerSettings.vulkanEnableSetSRGBWrite = EditorGUILayout.Toggle(SettingsContent.vulkanEnableSetSRGBWrite, PlayerSettings.vulkanEnableSetSRGBWrite);
             EditorGUILayout.PropertyField(m_VulkanNumSwapchainBuffers, SettingsContent.vulkanNumSwapchainBuffers);
             PlayerSettings.vulkanNumSwapchainBuffers = (UInt32)m_VulkanNumSwapchainBuffers.intValue;
-            PlayerSettings.vulkanEnablePreTransform = EditorGUILayout.Toggle(SettingsContent.vulkanEnablePreTransform, PlayerSettings.vulkanEnablePreTransform);
+            EditorGUILayout.PropertyField(m_VulkanEnableLateAcquireNextImage, SettingsContent.vulkanEnableLateAcquireNextImage);
 
             if (settingsExtension != null && settingsExtension.ShouldShowVulkanSettings())
                 settingsExtension.VulkanSectionGUI();

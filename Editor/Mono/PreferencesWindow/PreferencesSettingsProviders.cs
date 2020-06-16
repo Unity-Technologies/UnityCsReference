@@ -63,12 +63,11 @@ namespace UnityEditor
             public static readonly GUIContent loadPreviousProjectOnStartup = EditorGUIUtility.TrTextContent("Load Previous Project on Startup");
             public static readonly GUIContent compressAssetsOnImport = EditorGUIUtility.TrTextContent("Compress Assets on Import");
             public static readonly GUIContent disableEditorAnalytics = EditorGUIUtility.TrTextContent("Disable Editor Analytics (Pro Only)");
-            public static readonly GUIContent showAssetStoreSearchHits = EditorGUIUtility.TrTextContent("Show Asset Store search hits");
             public static readonly GUIContent verifySavingAssets = EditorGUIUtility.TrTextContent("Verify Saving Assets");
             public static readonly GUIContent scriptChangesDuringPlay = EditorGUIUtility.TrTextContent("Script Changes While Playing");
             public static readonly GUIContent editorFont = EditorGUIUtility.TrTextContent("Editor Font");
             public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Theme");
-            public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Personal"), EditorGUIUtility.TrTextContent("Professional") };
+            public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Light"), EditorGUIUtility.TrTextContent("Dark") };
             public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alphanumeric Sorting");
             public static readonly GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation");
             public static readonly GUIContent codeCoverageEnabled = EditorGUIUtility.TrTextContent("Enable Code Coverage", "Check this to enable Code Coverage. Code Coverage lets you see how much of your code is executed when it is run. Note that Code Coverage lowers Editor performance.");
@@ -84,6 +83,17 @@ namespace UnityEditor
             };
             public static readonly GUIContent progressDialogDelay = EditorGUIUtility.TrTextContent("Busy Progress Delay", "Delay in seconds before 'Unity is busy' progress bar shows up.");
             public static readonly GUIContent enableSnapping = EditorGUIUtility.TrTextContent("Graph Snapping", "If enabled, GraphElements in Graph Views (such as Shader Graph) align with one another when you move them. If disabled, GraphElements move freely.");
+
+            public static readonly GUIContent packageManagerLogLevel = EditorGUIUtility.TrTextContent("Package Manager Log Level",
+                "Determines the level of detail when the Package Manager writes information to log files.\n"
+                + "\nFrom least detailed to most detailed:"
+                + "\n* Error: unexpected errors and failures only."
+                + "\n* Warn: abnormal situations that can lead to issues."
+                + "\n* Info: high-level informational messages."
+                + "\n* Verbose: detailed informational messages."
+                + "\n* Debug: high-level debugging messages."
+                + "\n* Silly: detailed debugging messages.");
+            public static readonly GUIContent packageManagerLogLevelOverridden = EditorGUIUtility.TrTextContent("Package Manager Log Level currently overridden by -enablePackageManagerTraces command-line argument.");
         }
 
         internal class ExternalProperties
@@ -143,6 +153,7 @@ namespace UnityEditor
         {
             public static readonly GUIContent developerMode = EditorGUIUtility.TrTextContent("Developer Mode", "Enable or disable developer mode features.");
             public static readonly GUIContent showRepaintDots = EditorGUIUtility.TrTextContent("Show Repaint Dots", "Enable or disable the colored dots that flash when an EditorWindow repaints.");
+            public static readonly GUIContent redirectionServer = EditorGUIUtility.TrTextContent("Documentation Server", "Select the documentation redirection server.");
         }
 
         private List<IPreferenceWindowExtension> prefWinExtensions;
@@ -152,7 +163,6 @@ namespace UnityEditor
         private bool m_ReopenLastUsedProjectOnStartup;
         private bool m_CompressAssetsOnImport;
         private bool m_EnableEditorAnalytics;
-        private bool m_ShowAssetStoreSearchHits;
         private bool m_VerifySavingAssets;
         private ScriptChangesDuringPlayOptions m_ScriptCompilationDuringPlay;
         private bool m_DeveloperMode;
@@ -550,12 +560,6 @@ namespace UnityEditor
                 m_EnableEditorAnalytics = !EditorGUILayout.Toggle(GeneralProperties.disableEditorAnalytics, !m_EnableEditorAnalytics) || !pro && !m_EnableEditorAnalytics;
             }
 
-            bool assetStoreSearchChanged = false;
-            EditorGUI.BeginChangeCheck();
-            m_ShowAssetStoreSearchHits = EditorGUILayout.Toggle(GeneralProperties.showAssetStoreSearchHits, m_ShowAssetStoreSearchHits);
-            if (EditorGUI.EndChangeCheck())
-                assetStoreSearchChanged = true;
-
             m_VerifySavingAssets = EditorGUILayout.Toggle(GeneralProperties.verifySavingAssets, m_VerifySavingAssets);
 
             m_ScriptCompilationDuringPlay = (ScriptChangesDuringPlayOptions)EditorGUILayout.EnumPopup(GeneralProperties.scriptChangesDuringPlay, m_ScriptCompilationDuringPlay);
@@ -665,12 +669,9 @@ namespace UnityEditor
             if (oldAlphaNumeric != m_AllowAlphaNumericHierarchy)
                 EditorApplication.DirtyHierarchyWindowSorting();
 
-            if (assetStoreSearchChanged)
-            {
-                ProjectBrowser.ShowAssetStoreHitsWhileSearchingLocalAssetsChanged();
-            }
-
             DrawInteractionModeOptions();
+
+            DrawPackageManagerOptions();
         }
 
         enum InteractionMode
@@ -726,6 +727,23 @@ namespace UnityEditor
                 {
                     EditorPrefs.SetInt(idleTimePrefKeyName, idleTimeMs);
                     EditorPrefs.SetInt(interactionModePrefKeyName, (int)interactionModeOption);
+                }
+            }
+        }
+
+        private void DrawPackageManagerOptions()
+        {
+            bool isLogLevelOverridden = Application.HasARGV("enablePackageManagerTraces");
+            using (new EditorGUI.DisabledScope(isLogLevelOverridden))
+            {
+                var packageManagerLogLevel = (PackageManager.LogLevel)EditorGUILayout.EnumPopup(GeneralProperties.packageManagerLogLevel, PackageManager.Client.LogLevel);
+                if (packageManagerLogLevel != PackageManager.Client.LogLevel)
+                {
+                    PackageManager.Client.LogLevel = packageManagerLogLevel;
+                }
+                if (isLogLevelOverridden)
+                {
+                    EditorGUILayout.HelpBox(GeneralProperties.packageManagerLogLevelOverridden.text, MessageType.Info, true);
                 }
             }
         }
@@ -1040,11 +1058,20 @@ namespace UnityEditor
         private void ShowDeveloperMode(string searchContext)
         {
             EditorGUI.BeginChangeCheck();
-            m_DeveloperMode = EditorGUILayout.Toggle(DeveloperModeProperties.developerMode, m_DeveloperMode);
+
+            GUILayout.BeginHorizontal();
+            m_DeveloperMode = EditorGUILayout.Toggle(DeveloperModeProperties.developerMode, m_DeveloperMode, GUILayout.ExpandWidth(false));
+            GUILayout.EndHorizontal();
 
             using (new EditorGUI.DisabledScope(!m_DeveloperMode))
             {
                 m_ShowRepaintDots = EditorGUILayout.Toggle(DeveloperModeProperties.showRepaintDots, m_ShowRepaintDots);
+
+                var docServer = (Help.DocRedirectionServer)EditorGUILayout.EnumPopup(DeveloperModeProperties.redirectionServer, Help.docRedirectionServer);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Help.docRedirectionServer = docServer;
+                }
             }
 
             // If any developer mode preference changes, make sure to repaint all views
@@ -1106,7 +1133,6 @@ namespace UnityEditor
 
             EditorPrefs.SetBool("ReopenLastUsedProjectOnStartup", m_ReopenLastUsedProjectOnStartup);
             EditorPrefs.SetBool("EnableEditorAnalytics", m_EnableEditorAnalytics);
-            EditorPrefs.SetBool("ShowAssetStoreSearchHits", m_ShowAssetStoreSearchHits);
             EditorPrefs.SetBool("VerifySavingAssets", m_VerifySavingAssets);
             EditorPrefs.SetInt("ScriptCompilationDuringPlay", (int)m_ScriptCompilationDuringPlay);
 
@@ -1222,7 +1248,6 @@ namespace UnityEditor
 
             m_EnableEditorAnalytics = EditorPrefs.GetBool("EnableEditorAnalytics", true);
 
-            m_ShowAssetStoreSearchHits = EditorPrefs.GetBool("ShowAssetStoreSearchHits", true);
             m_VerifySavingAssets = EditorPrefs.GetBool("VerifySavingAssets", false);
             m_ScriptCompilationDuringPlay = (ScriptChangesDuringPlayOptions)EditorPrefs.GetInt("ScriptCompilationDuringPlay", 0);
             m_DeveloperMode = Unsupported.IsDeveloperMode();

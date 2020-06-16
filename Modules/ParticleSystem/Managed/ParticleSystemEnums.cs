@@ -165,6 +165,14 @@ namespace UnityEngine
         Callback = 2
     }
 
+    // How many colliders are stored for each particle in trigger events
+    public enum ParticleSystemColliderQueryMode
+    {
+        Disabled,
+        One,
+        All
+    }
+
     // The simulation space for particle systems
     public enum ParticleSystemSimulationSpace
     {

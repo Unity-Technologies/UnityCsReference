@@ -14,9 +14,9 @@ namespace UnityEditor
     internal partial class PolygonEditor
     {
         [NativeThrows]
-        extern public static void StartEditing(Collider2D collider);
+        extern public static void StartEditing([NotNull("NullExceptionObject")] Collider2D collider);
         [NativeThrows]
-        extern public static void ApplyEditing(Collider2D collider);
+        extern public static void ApplyEditing([NotNull("NullExceptionObject")] Collider2D collider);
 
         [StaticAccessor("PolygonEditor::Get()", StaticAccessorType.Dot)]
         extern public static void StopEditing();

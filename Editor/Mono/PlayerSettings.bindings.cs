@@ -235,6 +235,12 @@ namespace UnityEditor
         High = 2
     }
 
+    public enum NormalMapEncoding
+    {
+        XYZ = 0,
+        DXT5nm = 1
+    }
+
     // Player Settings is where you define various parameters for the final game that you will build in Unity. Some of these values are used in the Resolution Dialog that launches when you open a standalone game.
     [NativeClass(null)]
     [NativeHeader("Editor/Mono/PlayerSettings.bindings.h")]
@@ -498,6 +504,7 @@ namespace UnityEditor
         [NativeProperty("FullscreenMode")]
         public static extern FullScreenMode fullScreenMode { get; set; }
 
+        [Obsolete("This API is obsolete, and should no longer be used. Please use XRManagerSettings in the XR Management package instead.")]
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         public static extern bool virtualRealitySupported { get; set; }
 
@@ -1242,5 +1249,11 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings()")]
         [NativeMethod("SetVirtualTexturingSupportEnabled")]
         public static extern void SetVirtualTexturingSupportEnabled(bool enabled);
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        public static extern NormalMapEncoding GetNormalMapEncoding(BuildTargetGroup platform);
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        public static extern void SetNormalMapEncoding(BuildTargetGroup platform, NormalMapEncoding encoding);
     }
 }

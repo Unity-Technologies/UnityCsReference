@@ -1,0 +1,209 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System.Collections.Generic;
+using UnityEditorInternal.Profiling;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace UnityEditor.Profiling
+{
+    internal class ProfilerModulesDropdownWindow : EditorWindow
+    {
+        const string k_UxmlResourceName = "ProfilerModulesDropdownWindow.uxml";
+        const string k_UssSelectorModuleEditorWindowDark = "profiler-modules-dropdown-window__dark";
+        const string k_UssSelectorModuleEditorWindowLight = "profiler-modules-dropdown-window__light";
+        const string k_UssSelector_ListView = "modules__list-view";
+        const string k_UssSelector_ConfigureButton = "modules__toolbar__configure-button";
+        const string k_UssSelector_ConfigureIcon = "modules__toolbar__configure-icon";
+        const string k_UssSelector_RestoreDefaultsButton = "modules__toolbar__restore-defaults-button";
+        const int k_WindowWidth = 250;
+        const int k_ListViewItemHeight = 26;
+        const int k_ToolbarHeight = 30;
+        const int k_TotalBorderHeight = 2;
+
+        // Data
+        bool m_IsInitialized;
+        List<ProfilerModuleBase> m_Modules;
+
+        // UI
+        ListView m_ModulesListView;
+
+        public IResponder responder { get; set; }
+
+        public static ProfilerModulesDropdownWindow Present(Rect buttonRect, List<ProfilerModuleBase> modules)
+        {
+            var window = GetWindowDontShow<ProfilerModulesDropdownWindow>();
+            window.Initialize(modules);
+
+            var windowHeight = (k_ListViewItemHeight * modules.Count) + k_ToolbarHeight + k_TotalBorderHeight;
+            var windowSize = new Vector2(k_WindowWidth, windowHeight);
+            window.ShowAsDropDown(buttonRect, windowSize);
+            window.Focus();
+
+            return window;
+        }
+
+        void Initialize(List<ProfilerModuleBase> modules)
+        {
+            if (m_IsInitialized)
+            {
+                return;
+            }
+
+            m_Modules = modules;
+            m_IsInitialized = true;
+
+            BuildWindow();
+        }
+
+        void BuildWindow()
+        {
+            var template = EditorGUIUtility.Load(k_UxmlResourceName) as VisualTreeAsset;
+            template.CloneTree(rootVisualElement);
+
+            var themeUssClass = (EditorGUIUtility.isProSkin) ? k_UssSelectorModuleEditorWindowDark : k_UssSelectorModuleEditorWindowLight;
+            rootVisualElement.AddToClassList(themeUssClass);
+
+            rootVisualElement.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
+
+            m_ModulesListView = rootVisualElement.Q<ListView>(k_UssSelector_ListView);
+            m_ModulesListView.itemHeight = k_ListViewItemHeight;
+            m_ModulesListView.makeItem = MakeListViewItem;
+            m_ModulesListView.bindItem = BindListViewItem;
+            m_ModulesListView.selectionType = SelectionType.Single;
+            m_ModulesListView.onSelectionChange += OnModuleSelected;
+            m_ModulesListView.itemsSource = m_Modules;
+
+            var configureButton = rootVisualElement.Q<Button>(k_UssSelector_ConfigureButton);
+            configureButton.clicked += ConfigureModules;
+
+            var configureIcon = rootVisualElement.Q<VisualElement>(k_UssSelector_ConfigureIcon);
+            configureIcon.style.backgroundImage = Styles.configureIcon;
+
+            var restoreDefaultsButton = rootVisualElement.Q<Button>(k_UssSelector_RestoreDefaultsButton);
+            restoreDefaultsButton.text = LocalizationDatabase.GetLocalizedString("Restore Defaults");
+            restoreDefaultsButton.clicked += RestoreDefaults;
+        }
+
+        void OnMouseLeave(MouseLeaveEvent evt)
+        {
+            // Check if the mouse is still over the window when we received the leave event. This can occur if a tooltip is shown.
+            var modifiedRect = rootVisualElement.rect;
+            // For some reason, ShowAsDropDown() causes the MouseLeaveEvent to fire 5 pixels from the top.
+            modifiedRect.yMin += 6;
+            if (modifiedRect.Contains(evt.localMousePosition))
+            {
+                return;
+            }
+
+            Close();
+        }
+
+        void OnModuleSelected(IEnumerable<object> selectedItems)
+        {
+            var selectedIndex = m_ModulesListView.selectedIndex;
+            if (selectedIndex < 0)
+            {
+                return;
+            }
+
+            var selectedModule = m_Modules[selectedIndex];
+            selectedModule.ToggleActive();
+            m_ModulesListView.Refresh();
+            m_ModulesListView.ClearSelection();
+
+            responder?.OnModuleActiveStateChanged();
+        }
+
+        void ConfigureModules()
+        {
+            responder?.OnConfigureModules();
+            Close();
+        }
+
+        void RestoreDefaults()
+        {
+            var title = LocalizationDatabase.GetLocalizedString("Restore Defaults");
+            var message = LocalizationDatabase.GetLocalizedString("Do you want to restore the default Profiler Window modules? All custom modules will be deleted and the order of modules will be reset.");
+            var restoreDefaults = LocalizationDatabase.GetLocalizedString("Restore Defaults");
+            var cancel = LocalizationDatabase.GetLocalizedString("Cancel");
+            bool proceed = EditorUtility.DisplayDialog(title, message, restoreDefaults, cancel);
+            if (proceed)
+            {
+                responder?.OnRestoreDefaultModules();
+            }
+        }
+
+        VisualElement MakeListViewItem()
+        {
+            return new ModuleListViewItem();
+        }
+
+        void BindListViewItem(VisualElement element, int index)
+        {
+            var module = m_Modules[index];
+            var moduleListViewItem = element as ModuleListViewItem;
+            moduleListViewItem.ConfigureWithModule(module);
+        }
+
+        static class Styles
+        {
+            public static readonly Texture2D configureIcon = EditorGUIUtility.LoadIcon("SettingsIcon");
+        }
+
+        class ModuleListViewItem : VisualElement
+        {
+            const string k_UssClass = "module-list-view-item";
+            const string k_UssClass_Icon = "module-list-view-item__icon";
+            const string k_UssClass_Label = "module-list-view-item__label";
+
+            Image m_Icon;
+            Label m_Label;
+
+            public ModuleListViewItem()
+            {
+                AddToClassList(k_UssClass);
+
+                m_Icon = new Image
+                {
+                    scaleMode = ScaleMode.ScaleToFit
+                };
+                m_Icon.AddToClassList(k_UssClass_Icon);
+                Add(m_Icon);
+
+                m_Label = new Label();
+                m_Label.AddToClassList(k_UssClass_Label);
+                Add(m_Label);
+            }
+
+            public void ConfigureWithModule(ProfilerModuleBase module)
+            {
+                bool isActive = module.isActive;
+                SetActive(isActive);
+
+                m_Label.text = module.name;
+            }
+
+            public void SetActive(bool active)
+            {
+                var icon = (active) ? Styles.activeIcon : Styles.inactiveIcon;
+                m_Icon.image = icon;
+            }
+
+            static class Styles
+            {
+                public static readonly Texture2D inactiveIcon = EditorGUIUtility.LoadIcon("toggle_bg");
+                public static readonly Texture2D activeIcon = EditorGUIUtility.LoadIcon("toggle_on");
+            }
+        }
+
+        public interface IResponder
+        {
+            void OnModuleActiveStateChanged();
+            void OnConfigureModules();
+            void OnRestoreDefaultModules();
+        }
+    }
+}

@@ -57,7 +57,7 @@ namespace UnityEditor
                 set
                 {
                     m_Obj = value;
-                    icon = (m_Obj is GameObject) ? PrefabUtility.GetIconForGameObject((GameObject)m_Obj) : AssetPreview.GetMiniThumbnail(m_Obj);
+                    icon = EditorGUIUtility.GetSkinnedIcon((m_Obj is GameObject) ? PrefabUtility.GetIconForGameObject((GameObject)m_Obj) : AssetPreview.GetMiniThumbnail(m_Obj));
                 }
             }
             Object m_Obj;

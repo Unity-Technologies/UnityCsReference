@@ -37,6 +37,6 @@ namespace UnityEditor
 
         [NativeMethod("ApplyPropertyModificationToObject", IsFreeFunction = true)]
         [NativeHeader("Editor/Src/Prefabs/PropertyModification.h")]
-        extern internal static void ApplyPropertyModificationToObject(Object target, PropertyModification value);
+        extern internal static void ApplyPropertyModificationToObject([NotNull("NullExceptionObject")] Object target, PropertyModification value);
     }
 }

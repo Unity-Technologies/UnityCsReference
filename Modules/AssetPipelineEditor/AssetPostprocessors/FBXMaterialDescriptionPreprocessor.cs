@@ -34,6 +34,8 @@ namespace UnityEditor.Experimental.AssetImporters
                     CreateFrom3DsMaxArnoldStandardSurfaceMaterial(description, material, clips);
                 else if (Is3DsMaxPhysicalMaterial(description))
                     CreateFrom3DsMaxPhysicalMaterial(description, material, clips);
+                else if (Is3DsMaxSimplifiedPhysicalMaterial(description))
+                    CreateFrom3DsMaxSimplifiedPhysicalMaterial(description, material, clips);
                 else
                     CreateFromStandardMaterial(description, material, clips);
             }
@@ -46,6 +48,15 @@ namespace UnityEditor.Experimental.AssetImporters
             description.TryGetProperty("ClassIDa", out classIdA);
             description.TryGetProperty("ClassIDb", out classIdB);
             return classIdA == 1030429932 && classIdB == -559038463;
+        }
+
+        static bool Is3DsMaxSimplifiedPhysicalMaterial(MaterialDescription description)
+        {
+            float classIdA;
+            float classIdB;
+            description.TryGetProperty("ClassIDa", out classIdA);
+            description.TryGetProperty("ClassIDb", out classIdB);
+            return classIdA == -804315648 && classIdB == -1099438848;
         }
 
         static bool IsMayaArnoldStandardSurfaceMaterial(MaterialDescription description)
@@ -412,6 +423,111 @@ namespace UnityEditor.Experimental.AssetImporters
                 {
                     vectorProperty *= floatProperty;
                 }
+                material.SetColor("_EmissionColor", vectorProperty);
+                material.EnableKeyword("_EMISSION");
+                material.globalIlluminationFlags |= MaterialGlobalIlluminationFlags.RealtimeEmissive;
+            }
+        }
+
+        void CreateFrom3DsMaxSimplifiedPhysicalMaterial(MaterialDescription description, Material material, AnimationClip[] clips)
+        {
+            var shader = Shader.Find("Autodesk Interactive");
+            if (shader == null)
+            {
+                context.LogImportError("FBXMaterialDescriptionPreprocessor cannot find a shader named 'Autodesk Interactive'.");
+                return;
+            }
+            material.shader = shader;
+
+            float floatProperty;
+            Vector4 vectorProperty;
+            TexturePropertyDescription textureProperty;
+
+            description.TryGetProperty("base_color", out vectorProperty);
+
+            if (vectorProperty.w > 0.0f)
+            {
+                material.SetInt("_Mode", (int)StandardShaderGUI.BlendMode.Transparent);
+                material.SetOverrideTag("RenderType", "Transparent");
+                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                material.SetInt("_ZWrite", 0);
+                material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
+                material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            }
+            else
+            {
+                material.SetInt("_Mode", (int)StandardShaderGUI.BlendMode.Opaque);
+                material.SetOverrideTag("RenderType", "");
+                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+                material.SetInt("_ZWrite", 1);
+                material.DisableKeyword("_ALPHATEST_ON");
+                material.DisableKeyword("_ALPHABLEND_ON");
+                material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                material.renderQueue = -1;
+            }
+
+            if (description.TryGetProperty("base_color_map", out textureProperty))
+            {
+                SetMaterialTextureProperty("_MainTex", material, textureProperty);
+            }
+            if (description.TryGetProperty("basecolor", out vectorProperty))
+            {
+                material.SetColor("_Color", vectorProperty);
+            }
+
+            if (description.TryGetProperty("norm_map", out textureProperty))
+            {
+                if (description.TryGetProperty("bump_map_amt", out floatProperty))
+                {
+                    material.SetFloat("_BumpScale", floatProperty);
+                }
+                SetMaterialTextureProperty("_BumpMap", material, textureProperty);
+                material.EnableKeyword("_NORMALMAP");
+            }
+
+            if (description.TryGetProperty("roughness_map", out textureProperty))
+            {
+                SetMaterialTextureProperty("_SpecGlossMap", material, textureProperty);
+                material.EnableKeyword("_SPECGLOSSMAP");
+            }
+            else if (description.TryGetProperty("roughness", out floatProperty))
+            {
+                material.SetFloat("_Glossiness", floatProperty);
+            }
+
+            if (description.TryGetProperty("metalness_map", out textureProperty))
+            {
+                SetMaterialTextureProperty("_MetallicGlossMap", material, textureProperty);
+                material.EnableKeyword("_METALLICGLOSSMAP");
+            }
+            else if (description.TryGetProperty("metalness", out floatProperty))
+            {
+                material.SetFloat("_Metallic", floatProperty);
+            }
+
+            if (description.TryGetProperty("displacement_map", out textureProperty))
+            {
+                SetMaterialTextureProperty("_ParallaxMap", material, textureProperty);
+                material.EnableKeyword("_PARALLAXMAP");
+            }
+
+            if (description.TryGetProperty("ao_map", out textureProperty))
+            {
+                SetMaterialTextureProperty("_OcclusionMap", material, textureProperty);
+                material.EnableKeyword("_PARALLAXMAP");
+            }
+
+            if (description.TryGetProperty("emit_color_map", out textureProperty))
+            {
+                SetMaterialTextureProperty("_EmissionMap", material, textureProperty);
+                material.SetColor("_EmissionColor", Color.white);
+                material.EnableKeyword("_EMISSION");
+                material.globalIlluminationFlags |= MaterialGlobalIlluminationFlags.RealtimeEmissive;
+            }
+            else if (description.TryGetProperty("emit_color", out vectorProperty))
+            {
                 material.SetColor("_EmissionColor", vectorProperty);
                 material.EnableKeyword("_EMISSION");
                 material.globalIlluminationFlags |= MaterialGlobalIlluminationFlags.RealtimeEmissive;
