@@ -14,7 +14,7 @@ using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
-[assembly: InternalsVisibleTo("Unity.2D.Hybrid")]
+[assembly: InternalsVisibleTo("Unity.2D.Entities.Hybrid")]
 namespace UnityEngine.Experimental.U2D
 {
     [RequiredByNativeCode]

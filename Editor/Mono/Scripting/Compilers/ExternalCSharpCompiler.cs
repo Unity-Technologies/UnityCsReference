@@ -104,6 +104,7 @@ namespace UnityEditor.Scripting.Compilers
                     line = x.line,
                     message = x.message,
                     type = x.type == Compilation.CompilerMessageType.Error ? CompilerMessageType.Error : CompilerMessageType.Warning,
+                    assemblyName = m_Assembly.Filename,
                 })
                 .ToArray();
         }

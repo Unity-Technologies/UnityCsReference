@@ -24,6 +24,7 @@ namespace UnityEditor.Connect
 
         int m_GameIdsRequestIteration = 0;
         UnityWebRequest m_CurrentWebRequest;
+        Timer m_RetryTimer;
 
         public override string name { get; }
         public override string title { get; }
@@ -115,6 +116,10 @@ namespace UnityEditor.Connect
 
         void RequestGameIds()
         {
+            //Make sure to dispose of the retry timer if it was active for a retry
+            m_RetryTimer?.Dispose();
+            m_RetryTimer = null;
+
             if (IsServiceEnabled() && m_CurrentWebRequest == null &&
                 !string.IsNullOrEmpty(UnityConnect.instance.projectInfo.projectGUID))
             {
@@ -171,7 +176,7 @@ namespace UnityEditor.Connect
 
                     //Adding a delay between retries as we may be waiting for the project to be created
                     var context = SynchronizationContext.Current;
-                    var unused = new Timer((obj) =>
+                    m_RetryTimer = new Timer((obj) =>
                     {
                         context?.Post((o) => this?.RequestGameIds(), null);
                     }, null, k_GameIdsIterationDelay, 0);

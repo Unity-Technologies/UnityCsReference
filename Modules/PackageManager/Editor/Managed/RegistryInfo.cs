@@ -29,6 +29,10 @@ namespace UnityEditor.PackageManager
         private string m_Url;
 
         [SerializeField]
+        [NativeName("scopes")]
+        private string[] m_Scopes;
+
+        [SerializeField]
         [NativeName("isDefault")]
         private bool m_IsDefault;
 
@@ -36,13 +40,14 @@ namespace UnityEditor.PackageManager
         [NativeName("capabilities")]
         private SearchCapabilities m_Capabilities;
 
-        internal RegistryInfo() : this("", "", "", false, SearchCapabilities.None) {}
+        internal RegistryInfo() : this("", "", "", new string[0], false, SearchCapabilities.None) {}
 
-        internal RegistryInfo(string id, string name, string url, bool isDefault, SearchCapabilities capabilities)
+        internal RegistryInfo(string id, string name, string url, string[] scopes, bool isDefault, SearchCapabilities capabilities)
         {
             m_Id = id;
             m_Name = name;
             m_Url = url;
+            m_Scopes = scopes;
             m_IsDefault = isDefault;
             m_Capabilities = capabilities;
         }
@@ -50,6 +55,7 @@ namespace UnityEditor.PackageManager
         internal string id { get { return m_Id;  } }
         public string name { get { return m_Name;  } }
         public string url { get { return m_Url;  } }
+        internal string[] scopes { get { return m_Scopes; } }
         public bool isDefault { get { return m_IsDefault; } }
         internal SearchCapabilities capabilities { get { return m_Capabilities; } }
     }
