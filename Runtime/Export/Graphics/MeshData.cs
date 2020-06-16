@@ -78,12 +78,12 @@ namespace UnityEngine
                 Dispose();
             }
 
-            internal MeshDataArray(Mesh mesh)
+            internal MeshDataArray(Mesh mesh, bool checkReadWrite = true)
             {
                 // error checking
                 if (mesh == null)
                     throw new ArgumentNullException(nameof(mesh), "Mesh is null");
-                if (!mesh.canAccess)
+                if (checkReadWrite && !mesh.canAccess)
                     throw new InvalidOperationException($"Not allowed to access vertex data on mesh '{mesh.name}' (isReadable is false; Read/Write must be enabled in import settings)");
 
                 m_Length = 1;
@@ -100,7 +100,7 @@ namespace UnityEngine
                 AtomicSafetyHandle.UseSecondaryVersion(ref m_Safety);
             }
 
-            internal MeshDataArray(Mesh[] meshes, int meshesCount)
+            internal MeshDataArray(Mesh[] meshes, int meshesCount, bool checkReadWrite = true)
             {
                 // error checking
                 if (meshes.Length < meshesCount)
@@ -110,7 +110,7 @@ namespace UnityEngine
                     Mesh m = meshes[i];
                     if (m == null)
                         throw new ArgumentNullException(nameof(meshes), $"Mesh at index {i} is null");
-                    if (!m.canAccess)
+                    if (checkReadWrite && !m.canAccess)
                         throw new InvalidOperationException($"Not allowed to access vertex data on mesh '{m.name}' at array index {i} (isReadable is false; Read/Write must be enabled in import settings)");
                 }
 

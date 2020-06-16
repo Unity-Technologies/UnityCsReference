@@ -6306,12 +6306,12 @@ namespace UnityEditor
                     int fallbackMipLevel = (int)Math.Ceiling(Math.Log(factor, 2));
 
                     if (fallbackMipLevel > (int)mipLevel)
-                        VirtualTexturing.System.RequestRegion(mat, stackNameId, new Rect(0, 0, 1, 1), fallbackMipLevel, 2); //make sure the 128x128 mip is also requested to always have a fallback. Needed for mini thumbnails
+                        VirtualTexturing.Streaming.RequestRegion(mat, stackNameId, new Rect(0, 0, 1, 1), fallbackMipLevel, 2); //make sure the 128x128 mip is also requested to always have a fallback. Needed for mini thumbnails
                 }
 
                 if (mipLevel >= 0) //otherwise we don't know what mip will be sampled in the shader
                 {
-                    VirtualTexturing.System.RequestRegion(mat, stackNameId, new Rect(0, 0, 1, 1), (int)mipLevel, 1);
+                    VirtualTexturing.Streaming.RequestRegion(mat, stackNameId, new Rect(0, 0, 1, 1), (int)mipLevel, 1);
                 }
             }
         }

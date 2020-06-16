@@ -38,7 +38,7 @@ namespace UnityEngine
 
         [NativeProperty("SkyboxMaterial")] extern static public Material skybox { get; set; }
         extern public static Light sun { get; set; }
-        extern public static Rendering.SphericalHarmonicsL2 ambientProbe { get; set; }
+        extern public static Rendering.SphericalHarmonicsL2 ambientProbe { [NativeMethod("GetFinalAmbientProbe")] get; set; }
 
         extern public static Cubemap        customReflection            { get; set; }
         extern public static float          reflectionIntensity         { get; set; }

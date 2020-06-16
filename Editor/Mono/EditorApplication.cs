@@ -176,7 +176,7 @@ namespace UnityEditor
 
         public static CallbackFunction delayCall;
 
-        internal static void CallDelayed(CallbackFunction action, double delaySeconds = 0.0f)
+        internal static Action CallDelayed(CallbackFunction action, double delaySeconds = 0.0f)
         {
             var startTime = DateTime.Now;
             CallbackFunction delayedHandler = null;
@@ -190,6 +190,8 @@ namespace UnityEditor
             update += delayedHandler;
             if (delaySeconds == 0f)
                 SignalTick();
+
+            return () => update -= delayedHandler;
         }
 
         // Each time an object is (or a group of objects are) created, renamed, parented, unparented or destroyed this callback is raised.

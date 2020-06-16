@@ -2024,7 +2024,7 @@ namespace UnityEditor
                                     try
                                     {
                                         int width, height;
-                                        VirtualTexturing.System.GetTextureStackSize(mat, stackId, out width, out height);
+                                        VirtualTexturing.Streaming.GetTextureStackSize(mat, stackId, out width, out height);
                                         stackTextures[stackId] = Math.Max(width, height);
                                     }
                                     catch
@@ -2060,7 +2060,7 @@ namespace UnityEditor
                                 }
 
                                 //@TODO use synchronous requesting once it is available.
-                                VirtualTexturing.System.RequestRegion(mat, stackId, new Rect(0, 0, 1, 1), mipToRequest, 2);
+                                VirtualTexturing.Streaming.RequestRegion(mat, stackId, new Rect(0, 0, 1, 1), mipToRequest, 2);
                             }
 
                             //2 system updates per sleep to make sure we flush the VT system while limiting sleeping.

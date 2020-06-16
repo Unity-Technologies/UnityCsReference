@@ -58,6 +58,8 @@ namespace UnityEditor
 
         private bool m_RequestedViewDataSave;
 
+        private static Action s_UpdateWindowMenuListingOff;
+
         internal SerializableJsonDictionary viewDataDictionary
         {
             get
@@ -1135,7 +1137,8 @@ namespace UnityEditor
 
         internal static void UpdateWindowMenuListing()
         {
-            EditorApplication.CallDelayed(EditorWindow.BuildWindowMenuListing);
+            s_UpdateWindowMenuListingOff?.Invoke();
+            s_UpdateWindowMenuListingOff = EditorApplication.CallDelayed(BuildWindowMenuListing);
         }
 
         internal static void BuildWindowMenuListing()

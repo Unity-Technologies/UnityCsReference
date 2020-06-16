@@ -24,14 +24,6 @@ namespace UnityEngine.Rendering
             [NativeThrows] extern public static void Update();
 
             public const int AllMips = int.MaxValue;
-
-            [NativeThrows]
-            extern public static void RequestRegion([NotNull] Material mat, int stackNameId, Rect r, int mipMap, int numMips);
-            [NativeThrows]
-            extern public static void GetTextureStackSize([NotNull] Material mat, int stackNameId, out int width, out int height);
-
-            // Apply the virtualtexturing settings to the renderer. This may be an expensive operation so it should be done very sparingly (e.g. during a level load/startup).
-            [NativeThrows] extern public static void ApplyVirtualTexturingSettings([NotNull] VirtualTexturingSettings settings);
         }
 
         [NativeHeader("Modules/VirtualTexturing/ScriptBindings/VirtualTexturing.bindings.h")]
@@ -162,58 +154,45 @@ namespace UnityEngine.Rendering
         }
 
         [NativeHeader("Modules/VirtualTexturing/Public/VirtualTexturingSettings.h")]
-        [UsedByNativeCode]
-        public enum VirtualTexturingCacheUsage
-        {
-            Any,
-            Streaming,
-            Procedural
-        }
-
-        [NativeHeader("Modules/VirtualTexturing/Public/VirtualTexturingSettings.h")]
         [StructLayout(LayoutKind.Sequential)]
         [UsedByNativeCode]
         [Serializable]
-        public struct VirtualTexturingGPUCacheSizeOverride
+        public struct GPUCacheSetting
         {
-            public VirtualTexturingCacheUsage usage;
             public GraphicsFormat format;
             public uint sizeInMegaBytes;
         };
 
-        [NativeHeader("Modules/VirtualTexturing/Public/VirtualTexturingSettings.h")]
-        [StructLayout(LayoutKind.Sequential)]
-        [UsedByNativeCode]
-        [Serializable]
-        public struct VirtualTexturingGPUCacheSettings
+        [NativeHeader("Modules/VirtualTexturing/ScriptBindings/VirtualTexturing.bindings.h")]
+        [StaticAccessor("VirtualTexturing::Streaming", StaticAccessorType.DoubleColon)]
+        public static class Streaming
         {
-            public uint sizeInMegaBytes;
-            public VirtualTexturingGPUCacheSizeOverride[] sizeOverrides;
+            [NativeThrows]
+            extern public static void RequestRegion([NotNull] Material mat, int stackNameId, Rect r, int mipMap, int numMips);
+            [NativeThrows]
+            extern public static void GetTextureStackSize([NotNull] Material mat, int stackNameId, out int width, out int height);
+
+            // Set the size of the CPU cache(s). This can cause a noticeable hiccup as a lot of system memory needs to be reallocated.
+            [NativeThrows]
+            extern public static void SetCPUCacheSize(int sizeInMegabytes);
+
+            // Apply settings to the streaming GPU caches. In the worst case this triggers a recreation of all streaming GPU caches which takes several frames to be fully applied.
+            [NativeThrows]
+            extern public static void SetGPUCacheSettings(GPUCacheSetting[] cacheSettings);
         }
 
-        [NativeHeader("Modules/VirtualTexturing/Public/VirtualTexturingSettings.h")]
-        [StructLayout(LayoutKind.Sequential)]
-        [UsedByNativeCode]
-        [Serializable]
-        public struct VirtualTexturingCPUCacheSettings
+        [NativeHeader("Modules/VirtualTexturing/ScriptBindings/VirtualTexturing.bindings.h")]
+        [StaticAccessor("VirtualTexturing::Procedural", StaticAccessorType.DoubleColon)]
+        public static class Procedural
         {
-            public uint sizeInMegaBytes;
-        }
+            // Set the size of the CPU cache(s). All PVT Stacks must have been freed before calling this.
+            [NativeThrows] extern public static void SetCPUCacheSize(int sizeInMegabytes);
+            [NativeThrows] extern public static int GetCPUCacheSize();
 
-        [StructLayout(LayoutKind.Sequential)]
-        [NativeHeader("Modules/VirtualTexturing/Public/VirtualTexturingSettings.h")]
-        [NativeAsStruct]
-        [UsedByNativeCode]
-        [Serializable]
-        // This is a class on the managed side so it's easier to integrate into a UI and serialize. e.g. the HDRP settings UI/serialization.
-        public class VirtualTexturingSettings
-        {
-            public VirtualTexturingGPUCacheSettings gpuCache;
-            public VirtualTexturingCPUCacheSettings cpuCache;
-        }
+            // Apply settings to the streaming GPU caches. All PVT Stacks must have been freed before calling this.
+            [NativeThrows] extern public static void SetGPUCacheSettings(GPUCacheSetting[] cacheSettings);
+            [NativeThrows] extern public static GPUCacheSetting[] GetGPUCacheSettings();
 
-        namespace Procedural
-        {
             [NativeHeader("Modules/VirtualTexturing/ScriptBindings/VirtualTexturing.bindings.h")]
             [StaticAccessor("VirtualTexturing::Procedural", StaticAccessorType.DoubleColon)]
             internal static class Binding
@@ -234,6 +213,7 @@ namespace UnityEngine.Rendering
 
                 [NativeThrows] extern internal static void RequestRegion(ulong handle, Rect r, int mipMap, int numMips);
                 [NativeThrows] extern internal static void InvalidateRegion(ulong handle, Rect r, int mipMap, int numMips);
+                [NativeThrows] extern public static void EvictRegion(ulong handle, Rect r, int mipMap, int numMips);
             }
 
             [StructLayout(LayoutKind.Sequential)]
@@ -249,7 +229,7 @@ namespace UnityEngine.Rendering
                 public GraphicsFormat[] layers;
                 internal int borderSize;
                 internal int gpuGeneration;
-                internal int useAutoCalculatedCPUCacheSize;
+                internal int flags;
 
                 internal void Validate()
                 {
@@ -440,6 +420,9 @@ namespace UnityEngine.Rendering
             {
                 public int destX, destY;
                 public RenderTargetIdentifier dest;
+
+                public extern int GetWidth();
+                public extern int GetHeight();
             }
 
             [UsedByNativeCode]
@@ -529,7 +512,9 @@ namespace UnityEngine.Rendering
                     {
                         NativeArray<T>.Copy(colorData, i * width, dstDataAsColor, i * dstWidth, width);
                     }
-                    dstDataAsColor.Dispose();
+
+                    // Dispose call here was removed for 2020.1 because there's a DOTS bug whose fix can't be backported easily and we can do without the dispose call.
+
                     AtomicSafetyHandle.Release(safety);
                 }
             }
@@ -596,7 +581,7 @@ namespace UnityEngine.Rendering
                     creationParams = _creationParams;
                     creationParams.borderSize = borderSize;
                     creationParams.gpuGeneration = gpuGeneration ? 1 : 0;
-                    creationParams.useAutoCalculatedCPUCacheSize = 0;
+                    creationParams.flags = 0;
                     creationParams.Validate();
                     handle = Binding.Create(creationParams);
                 }
@@ -664,6 +649,15 @@ namespace UnityEngine.Rendering
                     }
                     Binding.InvalidateRegion(handle, r, mipMap, numMips);
                 }
+
+                public void EvictRegion(Rect r, int mipMap, int numMips)
+                {
+                    if (IsValid() == false)
+                    {
+                        throw new InvalidOperationException($"Invalid ProceduralTextureStack {name}");
+                    }
+                    Binding.EvictRegion(handle, r, mipMap, numMips);
+                }
             }
 
             public sealed class GPUTextureStack : TextureStackBase<GPUTextureStackRequestParameters>
@@ -678,14 +672,6 @@ namespace UnityEngine.Rendering
                 public CPUTextureStack(string _name, CreationParameters creationParams)
                     : base(_name, creationParams, false)
                 {}
-            }
-
-            [NativeHeader("Modules/VirtualTexturing/ScriptBindings/VirtualTexturing.bindings.h")]
-            [StaticAccessor("VirtualTexturing::Procedural", StaticAccessorType.DoubleColon)]
-            public static class TextureStackRequestLayerUtil
-            {
-                public extern static int GetWidth(this GPUTextureStackRequestLayerParameters layer);
-                public extern static int GetHeight(this GPUTextureStackRequestLayerParameters layer);
             }
         }
     }

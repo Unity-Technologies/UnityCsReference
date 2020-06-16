@@ -109,7 +109,7 @@ namespace UnityEditor
             return sceneCullingMask & ~SceneManagement.SceneCullingMasks.MainStageExcludingPrefabInstanceObjectsOpenInPrefabMode;
         }
 
-        internal static extern bool IsPrefabInstanceHiddenForInContextEditing(GameObject go);
+        internal static extern bool IsPrefabInstanceHiddenForInContextEditing([NotNull] GameObject go);
 
         [System.Obsolete("GetNavMeshArea instead.")]
         public static int GetNavMeshLayer(GameObject go)

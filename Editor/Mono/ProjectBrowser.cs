@@ -24,6 +24,8 @@ namespace UnityEditor
     {
         public const int kPackagesFolderInstanceId = int.MaxValue;
 
+        private static readonly int[] k_EmptySelection = new int[0];
+
         private bool isFolderTreeViewContextClicked = false;
 
         // Alive ProjectBrowsers
@@ -1427,7 +1429,7 @@ namespace UnityEditor
                     case SearchViewState.AssetStore:
                     {
                         if (!isSavedFilterSelected)
-                            m_FolderTree.SetSelection(new int[0], false);
+                            m_FolderTree.SetSelection(k_EmptySelection, false);
                     }
                     break;
 
@@ -2042,9 +2044,8 @@ namespace UnityEditor
             // Deselect all
             if (m_AssetTree.GetSelection().Length > 0)
             {
-                int[] newSelection = new int[0];
-                m_AssetTree.SetSelection(newSelection, false);
-                AssetTreeSelectionCallback(newSelection);
+                m_AssetTree.SetSelection(k_EmptySelection, false);
+                AssetTreeSelectionCallback(k_EmptySelection);
             }
 
             // Context click with no selected assets
@@ -2793,20 +2794,12 @@ namespace UnityEditor
                 return s_LastInteractedProjectBrowser.m_FolderTree.GetSelection();
             }
 
-            return new int[0];
+            return k_EmptySelection;
         }
 
         public float listAreaGridSize
         {
             get { return m_ListArea.gridSize; }
-        }
-
-        int GetProjectBrowserDebugID()
-        {
-            for (int i = 0; i < s_ProjectBrowsers.Count; ++i)
-                if (s_ProjectBrowsers[i] == this)
-                    return i;
-            return -1;
         }
 
         [UsedByNativeCode]
@@ -2856,7 +2849,7 @@ namespace UnityEditor
             if (ProjectWindowUtil.DeleteAssets(instanceIDs, askIfSure))
             {
                 // Ensure selection is cleared since StopAssetEditing() will restore selection from a backup saved in StartAssetEditing.
-                Selection.instanceIDs = new int[0];
+                Selection.instanceIDs = k_EmptySelection;
             }
         }
 
@@ -2903,7 +2896,7 @@ namespace UnityEditor
             if (m_ViewMode == ViewMode.TwoColumns)
             {
                 m_ListArea.ShowObjectsInList(instanceIDs);
-                m_FolderTree.SetSelection(new int[0], false); // Remove selection from folder tree since we show custom list (press F to focus)
+                m_FolderTree.SetSelection(k_EmptySelection, false); // Remove selection from folder tree since we show custom list (press F to focus)
             }
             else if (m_ViewMode == ViewMode.OneColumn)
             {
