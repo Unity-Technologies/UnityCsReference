@@ -3,45 +3,43 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using UnityEngine;
 using UnityEditor;
 using UnityEditor.Profiling;
+using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
     internal class CPUProfilerModule : CPUorGPUProfilerModule
     {
+        const string k_SettingsKeyPrefix = "Profiler.CPUProfilerModule.";
+        const string k_IconName = "Profiler.CPU";
+        const int k_DefaultOrderIndex = 0;
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("CPU Usage");
+
         [SerializeField]
         ProfilerTimelineGUI m_TimelineGUI;
 
-        const string k_SettingsKeyPrefix = "Profiler.CPUProfilerModule.";
+        public CPUProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName) {}
+
+        public override ProfilerArea area => ProfilerArea.CPU;
+
+        protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        protected override string legacyPreferenceKey => "ProfilerChartCPU";
         protected override string SettingsKeyPrefix => k_SettingsKeyPrefix;
         protected override ProfilerViewType DefaultViewTypeSetting => ProfilerViewType.Timeline;
 
-        public override void OnEnable(IProfilerWindowController profilerWindow)
+        public override void OnEnable()
         {
-            base.OnEnable(profilerWindow);
+            base.OnEnable();
 
             m_TimelineGUI = new ProfilerTimelineGUI();
-            m_TimelineGUI.OnEnable(this, profilerWindow, false);
+            m_TimelineGUI.OnEnable(this, m_ProfilerWindow, false);
             m_TimelineGUI.viewTypeChanged += CPUOrGPUViewTypeChanged;
         }
 
-        public override void DrawToolbar(Rect position)
-        {
-            if (m_TimelineGUI != null && m_ViewType == ProfilerViewType.Timeline)
-            {
-                base.DrawToolbar(position);
-            }
-            else
-            {
-                base.DrawToolbar(position);
-            }
-        }
-
-        public override void DrawView(Rect position)
+        public override void DrawDetailsView(Rect position)
         {
             if (m_TimelineGUI != null && m_ViewType == ProfilerViewType.Timeline)
             {
@@ -49,7 +47,7 @@ namespace UnityEditorInternal.Profiling
             }
             else
             {
-                base.DrawView(position);
+                base.DrawDetailsView(position);
             }
         }
 
@@ -62,6 +60,46 @@ namespace UnityEditorInternal.Profiling
         {
             base.ToggleOption(option);
             m_TimelineGUI?.Clear();
+        }
+
+        protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
+        {
+            var chart = base.InstantiateChart(defaultChartScale, chartMaximumScaleInterpolationValue);
+            chart.SetOnSeriesToggleCallback(OnChartSeriesToggled);
+            return chart;
+        }
+
+        protected override void ApplyActiveState()
+        {
+            // Opening/closing CPU chart should not set the CPU area as that would set Profiler.enabled.
+        }
+
+        void OnChartSeriesToggled(bool wasToggled)
+        {
+            if (wasToggled)
+            {
+                int firstEmptyFrame = firstFrameIndexWithHistoryOffset;
+                int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
+                int frameCount = ProfilerUserSettings.frameCount;
+                m_Chart.ComputeChartScaleValue(firstEmptyFrame, firstFrame, frameCount);
+            }
+        }
+
+        protected override void UpdateChartOverlay(int firstEmptyFrame, int firstFrame, int frameCount)
+        {
+            base.UpdateChartOverlay(firstEmptyFrame, firstFrame, frameCount);
+
+            string selectedName = ProfilerDriver.selectedPropertyPath;
+            var selectedModule = m_ProfilerWindow.SelectedModule;
+            bool hasCPUOverlay = (selectedName != string.Empty) && this.Equals(selectedModule);
+            if (hasCPUOverlay)
+            {
+                m_Chart.UpdateOverlayData(firstEmptyFrame);
+            }
+            else
+            {
+                m_Chart.m_Data.hasOverlay = false;
+            }
         }
     }
 }

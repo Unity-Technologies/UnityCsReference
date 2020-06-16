@@ -539,7 +539,7 @@ namespace UnityEditor
                     {
                         if (EditorUtility.IsPersistent(go))
                         {
-                            var newGo = Instantiate(go) as GameObject;
+                            var newGo = Instantiate(go);
                             if (newGo != null)
                             {
                                 newGo.transform.parent = m_LODGroup.transform;

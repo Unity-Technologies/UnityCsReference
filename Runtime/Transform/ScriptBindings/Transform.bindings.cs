@@ -289,7 +289,7 @@ namespace UnityEngine
         public extern int GetSiblingIndex();
 
         [FreeFunction]
-        private static extern Transform FindRelativeTransformWithPath(Transform transform, string path, [UnityEngine.Internal.DefaultValue("false")] bool isActiveOnly);
+        private static extern Transform FindRelativeTransformWithPath([NotNull("NullExceptionObject")] Transform transform, string path, [UnityEngine.Internal.DefaultValue("false")] bool isActiveOnly);
 
         // Finds a child by /name/ and returns it.
         public Transform Find(string n)

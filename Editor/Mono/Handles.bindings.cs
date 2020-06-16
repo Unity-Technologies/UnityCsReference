@@ -41,20 +41,20 @@ namespace UnityEditor
         internal static extern void Internal_DoDrawGizmos([NotNull] Camera camera);
 
         [FreeFunction("Internal_IsCameraDrawModeEnabled")]
-        internal static extern bool IsCameraDrawModeEnabled(Camera camera, DrawCameraMode drawMode);
+        internal static extern bool IsCameraDrawModeEnabled([NotNull("NullExceptionObject")] Camera camera, DrawCameraMode drawMode);
 
         [FreeFunction]
-        static extern void Internal_DrawCameraWithGrid(Camera cam, DrawCameraMode renderMode, ref DrawGridParameters gridParam, bool drawGizmos);
+        static extern void Internal_DrawCameraWithGrid([NotNull("NullExceptionObject")] Camera cam, DrawCameraMode renderMode, ref DrawGridParameters gridParam, bool drawGizmos);
 
         [FreeFunction]
-        static extern void Internal_DrawCamera(Camera cam, DrawCameraMode renderMode, bool drawGizmos);
+        static extern void Internal_DrawCamera([NotNull("NullExceptionObject")] Camera cam, DrawCameraMode renderMode, bool drawGizmos);
 
         [FreeFunction]
-        static extern void Internal_FinishDrawingCamera(Camera cam, [DefaultValue("true")] bool drawGizmos);
+        static extern void Internal_FinishDrawingCamera([NotNull("NullExceptionObject")] Camera cam, [DefaultValue("true")] bool drawGizmos);
         static void Internal_FinishDrawingCamera(Camera cam) { Internal_FinishDrawingCamera(cam, true); }
 
         [FreeFunction]
-        static extern void Internal_ClearCamera(Camera cam);
+        static extern void Internal_ClearCamera([NotNull("NullExceptionObject")] Camera cam);
 
         [FreeFunction]
         internal static extern void Internal_SetCurrentCamera(Camera cam);
@@ -66,17 +66,17 @@ namespace UnityEditor
         internal static extern void SetSceneViewModeGIContributorsReceiversColors(Color noContributeGI, Color receiveGILightmaps, Color receiveGILightProbesColor);
 
         [FreeFunction("Internal_EnableCameraFx")]
-        internal static extern void EnableCameraFx(Camera cam, bool fx);
+        internal static extern void EnableCameraFx([NotNull("NullExceptionObject")] Camera cam, bool fx);
 
         [FreeFunction("Internal_EnableCameraFlares")]
-        internal static extern void EnableCameraFlares(Camera cam, bool flares);
+        internal static extern void EnableCameraFlares([NotNull("NullExceptionObject")] Camera cam, bool flares);
 
         [FreeFunction("Internal_EnableCameraSkybox")]
-        internal static extern void EnableCameraSkybox(Camera cam, bool skybox);
+        internal static extern void EnableCameraSkybox([NotNull("NullExceptionObject")] Camera cam, bool skybox);
 
         // Setup viewport and stuff for a current camera.
         [FreeFunction]
-        static extern void Internal_SetupCamera(Camera cam);
+        static extern void Internal_SetupCamera([NotNull("NullExceptionObject")] Camera cam);
 
         [FreeFunction]
         static extern void Internal_DrawAAPolyLine(Color[] colors, Vector3[] points, Color defaultColor, int actualNumberOfPoints, Texture2D texture, float width, Matrix4x4 toWorld);
@@ -91,16 +91,16 @@ namespace UnityEditor
         internal static extern void SetDiscSectionPoints(Vector3[] dest, Vector3 center, Vector3 normal, Vector3 from, float angle, float radius);
 
         [FreeFunction("Internal_EmitGUIGeometryForCamera")]
-        internal static extern void EmitGUIGeometryForCamera(Camera source, Camera dest);
+        internal static extern void EmitGUIGeometryForCamera([NotNull("NullExceptionObject")] Camera source, Camera dest);
 
         [FreeFunction("Internal_SetCameraFilterMode")]
-        internal static extern void SetCameraFilterMode(Camera camera, CameraFilterMode mode);
+        internal static extern void SetCameraFilterMode([NotNull("NullExceptionObject")] Camera camera, CameraFilterMode mode);
 
         [FreeFunction("Internal_GetCameraFilterMode")]
-        internal static extern CameraFilterMode GetCameraFilterMode(Camera camera);
+        internal static extern CameraFilterMode GetCameraFilterMode([NotNull("NullExceptionObject")] Camera camera);
 
         [FreeFunction("Internal_DrawCameraFade")]
-        internal static extern void DrawCameraFade(Camera camera, float fade);
+        internal static extern void DrawCameraFade([NotNull("NullExceptionObject")] Camera camera, float fade);
 
         [FreeFunction]
         static extern Vector3[] Internal_MakeBezierPoints(Vector3 startPosition, Vector3 endPosition, Vector3 startTangent, Vector3 endTangent, int division);

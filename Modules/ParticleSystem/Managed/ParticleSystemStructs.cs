@@ -402,6 +402,31 @@ namespace UnityEngine
             internal int maxTrailCount;
             internal int maxPositionsPerTrailCount;
         }
+
+        public struct ColliderData
+        {
+            internal Component[] colliders;       // The list of colliders assigned to the trigger module
+            internal int[] colliderIndices;      // The full list of collider indices that every particle triggered
+            internal int[] particleStartIndices; // Lookup for every particle index, to say which entry in the colliderIndices its results begin from
+
+            // How many colliders the particle triggered
+            public int GetColliderCount(int particleIndex)
+            {
+                if (particleIndex < particleStartIndices.Length - 1)
+                    return particleStartIndices[particleIndex + 1] - particleStartIndices[particleIndex];
+                return colliderIndices.Length - particleStartIndices[particleIndex];
+            }
+
+            // Get a collider for a given particle
+            public Component GetCollider(int particleIndex, int colliderIndex)
+            {
+                if (colliderIndex >= GetColliderCount(particleIndex))
+                    throw new IndexOutOfRangeException("colliderIndex exceeded the total number of colliders for the requested particle");
+
+                int index = particleStartIndices[particleIndex] + colliderIndex;
+                return colliders[colliderIndices[index]];
+            }
+        }
     }
 
     [RequiredByNativeCode(Optional = true)]

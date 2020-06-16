@@ -11,6 +11,7 @@ using System.Text;
 using UnityEditor.Experimental;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.StyleSheets
@@ -565,7 +566,7 @@ namespace UnityEditor.StyleSheets
 
         public static T LoadResource<T>(string path) where T : Object
         {
-            var resource = StyleSheetResourceUtil.LoadResource(path, typeof(T)) as T;
+            var resource = Panel.LoadResource(path, typeof(T), GUIUtility.pixelsPerPoint) as T;
             if (resource == null)
             {
                 // It might be a builtin resource:
@@ -576,7 +577,7 @@ namespace UnityEditor.StyleSheets
 
         public static T LoadResourceRequired<T>(string path) where T : Object
         {
-            var resource = StyleSheetResourceUtil.LoadResource(path, typeof(T)) as T;
+            var resource = Panel.LoadResource(path, typeof(T), GUIUtility.pixelsPerPoint) as T;
             if (resource == null)
             {
                 // It might be a builtin resource:
@@ -826,16 +827,7 @@ namespace UnityEditor.StyleSheets
 
         internal static StyleSheet CompileStyleSheetContent(string styleSheetContent, bool disableValidation = true, bool reportErrors = false)
         {
-            var importer = new StyleSheetImporterImpl();
-            var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
-            importer.disableValidation = disableValidation;
-            importer.Import(styleSheet, styleSheetContent);
-            if (reportErrors)
-            {
-                foreach (var err in importer.importErrors)
-                    Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, styleSheet, err.ToString());
-            }
-            return styleSheet;
+            return EditorUIService.instance.CompileStyleSheetContent(styleSheetContent, disableValidation, reportErrors);
         }
     }
 }

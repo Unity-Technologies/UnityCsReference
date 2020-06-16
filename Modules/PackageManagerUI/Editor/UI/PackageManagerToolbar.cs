@@ -245,6 +245,15 @@ namespace UnityEditor.PackageManager.UI
                     {
                         m_PackageDatabase.InstallFromUrl(url);
                         PackageManagerWindowAnalytics.SendEvent("addFromGitUrl");
+
+                        // while adding a git package is in progress, we'll show an `in-progress` package, and that package will NOT be part of the `In Project` tab
+                        // until the installation is complete. Therefore we want to switch to `All tab` and focus on the `in-progress` package
+                        var package = m_PackageDatabase.GetPackage(url);
+                        if (package != null)
+                        {
+                            m_PackageFiltering.currentFilterTab = PackageFilterTab.All;
+                            m_PageManager.SetSelected(package);
+                        }
                     }
                 };
 

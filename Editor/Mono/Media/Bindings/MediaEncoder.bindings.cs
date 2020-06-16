@@ -241,7 +241,7 @@ namespace UnityEditor.Media
         extern private static void Internal_Release(IntPtr encoder);
 
         [FreeFunction]
-        extern private static bool Internal_AddFrame(IntPtr encoder, Texture2D texture, MediaTime time);
+        extern private static bool Internal_AddFrame(IntPtr encoder, [NotNull("NullExceptionObject")] Texture2D texture, MediaTime time);
 
         [FreeFunction]
         unsafe extern private static bool Internal_AddFrameRaw(

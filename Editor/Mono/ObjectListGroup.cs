@@ -225,13 +225,6 @@ namespace UnityEditor
                 if (!string.IsNullOrEmpty(m_GroupSeparatorTitle))
                     GUI.Label(rect, m_GroupSeparatorTitle, textStyle);
 
-                if (s_Debug)
-                {
-                    Rect r2 = rect;
-                    r2.x += 120;
-                    GUI.Label(r2, AssetStorePreviewManager.StatsString());
-                }
-
                 rect.y -= 1;
 
                 // Only draw counts if we have room for it

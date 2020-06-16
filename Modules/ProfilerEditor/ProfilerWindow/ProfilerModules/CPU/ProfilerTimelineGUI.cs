@@ -41,8 +41,6 @@ namespace UnityEditorInternal
             public bool alive;
             public int maxDepth;
 
-            List<FlowEventData> m_ActiveFlowEvents = new List<FlowEventData>();
-
             public ThreadInfo(string name, int threadIndex, int maxDepth, int linesToDisplay)
             {
                 this.name = name;
@@ -51,13 +49,7 @@ namespace UnityEditorInternal
                 this.maxDepth = Mathf.Max(1, maxDepth);
             }
 
-            public List<FlowEventData> ActiveFlowEvents
-            {
-                get
-                {
-                    return m_ActiveFlowEvents;
-                }
-            }
+            public List<FlowEventData> ActiveFlowEvents { get; } = new List<FlowEventData>();
 
             public int CompareTo(ThreadInfo other)
             {
@@ -109,7 +101,7 @@ namespace UnityEditorInternal
         }
 
         List<GroupInfo> m_Groups = null;
-        List<int> m_SamplesWithDrawnFlowEventsPerThreadCache = new List<int>();
+        HashSet<DrawnFlowIndicatorCacheValue> m_DrawnFlowIndicatorsCache = new HashSet<DrawnFlowIndicatorCacheValue>(new DrawnFlowIndicatorCacheValueComparer());
 
         // Not localizable strings - should match group names in native code.
         const string k_MainGroupName = "";
@@ -198,15 +190,7 @@ namespace UnityEditorInternal
             public int instanceCount = -1;
             public string callstackInfo = string.Empty;
 
-            List<RawFrameDataView.FlowEvent> m_FlowEvents = new List<RawFrameDataView.FlowEvent>();
-
-            public List<RawFrameDataView.FlowEvent> FlowEvents
-            {
-                get
-                {
-                    return m_FlowEvents;
-                }
-            }
+            public List<RawFrameDataView.FlowEvent> FlowEvents { get; } = new List<RawFrameDataView.FlowEvent>();
 
             public override void Reset()
             {
@@ -827,16 +811,20 @@ namespace UnityEditorInternal
                 return;
             }
 
+            m_DrawnFlowIndicatorsCache.Clear();
+
             bool hasSelectedSampleWithFlowEvents = (m_SelectedEntry.FlowEvents.Count > 0) && SelectedSampleIsVisible(firstDrawnFrameIndex, lastDrawnFrameIndex);
             FlowLinesDrawer activeFlowLinesDrawer = (hasSelectedSampleWithFlowEvents) ? new FlowLinesDrawer() : null;
             ForEachThreadInEachGroup(fullRect, scaleForThreadHeight, (groupInfo, threadInfo, threadRect) =>
             {
                 var groupIsExpanded = groupInfo.expanded.value;
-                DrawIndicatorsForAllFlowEventsInFrameOnThread(currentFrameIndex, threadInfo, threadRect, fullRect, groupIsExpanded, hasSelectedSampleWithFlowEvents);
-
                 if (hasSelectedSampleWithFlowEvents)
                 {
                     ProcessActiveFlowEventsOnThread(ref activeFlowLinesDrawer, threadInfo, threadRect, fullRect, currentFrameIndex, groupIsExpanded);
+                }
+                else
+                {
+                    DrawIndicatorsForAllFlowEventsInFrameOnThread(currentFrameIndex, threadInfo, threadRect, fullRect, groupIsExpanded, hasSelectedSampleWithFlowEvents);
                 }
             });
 
@@ -845,31 +833,29 @@ namespace UnityEditorInternal
 
         void DrawIndicatorsForAllFlowEventsInFrameOnThread(int currentFrameIndex, ThreadInfo threadInfo, Rect threadRect, Rect fullRect, bool groupIsExpanded, bool hasSelectedEntryWithFlowEvents)
         {
-            m_SamplesWithDrawnFlowEventsPerThreadCache.Clear();
-
             using (var frameData = ProfilerDriver.GetRawFrameDataView(currentFrameIndex, threadInfo.threadIndex))
             {
                 frameData.GetFlowEvents(m_CachedThreadFlowEvents);
 
                 var localViewport = new Rect(Vector2.zero, fullRect.size);
-                var indicatorMode = (hasSelectedEntryWithFlowEvents) ? FlowIndicatorDrawer.IndicatorAppearanceMode.Inactive : FlowIndicatorDrawer.IndicatorAppearanceMode.NoActiveEvents;
                 foreach (var flowEvent in m_CachedThreadFlowEvents)
                 {
                     if (flowEvent.ParentSampleIndex != 0)
                     {
-                        // A sample can have multiple begin flow events. Check an indicator hasn't already been drawn for this sample on this thread.
-                        if (!SampleAlreadyHasFlowEventType(flowEvent.ParentSampleIndex, flowEvent.FlowEventType))
+                        // A sample can have multiple flow events. Check an indicator hasn't already been drawn for this sample on this thread.
+                        var indicatorCacheValue = new DrawnFlowIndicatorCacheValue()
+                        {
+                            threadId = threadInfo.threadIndex,
+                            markerId = flowEvent.ParentSampleIndex,
+                            flowEventType = flowEvent.FlowEventType
+                        };
+                        if (!m_DrawnFlowIndicatorsCache.Contains(indicatorCacheValue))
                         {
                             var sampleRect = RectForSampleOnFrameInThread(flowEvent.ParentSampleIndex, currentFrameIndex, threadInfo, threadRect, 0f, m_TimeArea.shownArea, (groupIsExpanded == false));
                             if (sampleRect.Overlaps(localViewport))
                             {
-                                FlowIndicatorDrawer.DrawFlowIndicatorForFlowEvent(flowEvent, sampleRect, indicatorMode);
-
-                                // A sample can only have multiple Begin flow events so only use the cache for begin events.
-                                if (flowEvent.FlowEventType == ProfilerFlowEventType.Begin)
-                                {
-                                    m_SamplesWithDrawnFlowEventsPerThreadCache.Add(flowEvent.ParentSampleIndex);
-                                }
+                                FlowIndicatorDrawer.DrawFlowIndicatorForFlowEvent(flowEvent, sampleRect);
+                                m_DrawnFlowIndicatorsCache.Add(indicatorCacheValue);
                             }
                         }
                     }
@@ -891,41 +877,31 @@ namespace UnityEditorInternal
                 {
                     // Add flow events to the 'flow lines drawer' for drawing later.
                     bool isSelectedSample = false;
-                    if (!flowLinesDrawer.hasSelectedEventPosition)
+                    if (!flowLinesDrawer.hasSelectedEvent)
                     {
                         isSelectedSample = (m_SelectedEntry.threadId == threadInfo.threadIndex) && (m_SelectedEntry.frameId == flowEventFrameIndex) && m_SelectedEntry.FlowEvents.Contains(flowEvent);
                     }
                     flowLinesDrawer.AddFlowEvent(flowEventData, threadInfo.threadIndex, sampleRect, isSelectedSample);
 
-                    // Draw indicator for this active flow event.
-                    var localViewport = new Rect(Vector2.zero, fullRect.size);
-                    if (sampleRect.Overlaps(localViewport))
+                    // A sample can have multiple flow events. Check an indicator hasn't already been drawn for this sample on this thread.
+                    var indicatorCacheValue = new DrawnFlowIndicatorCacheValue()
                     {
-                        FlowIndicatorDrawer.DrawFlowIndicatorForFlowEvent(flowEvent, sampleRect, FlowIndicatorDrawer.IndicatorAppearanceMode.Active);
+                        threadId = threadInfo.threadIndex,
+                        markerId = flowEvent.ParentSampleIndex,
+                        flowEventType = flowEvent.FlowEventType
+                    };
+                    if (!m_DrawnFlowIndicatorsCache.Contains(indicatorCacheValue))
+                    {
+                        // Draw indicator for this active flow event.
+                        var localViewport = new Rect(Vector2.zero, fullRect.size);
+                        if (sampleRect.Overlaps(localViewport))
+                        {
+                            FlowIndicatorDrawer.DrawFlowIndicatorForFlowEvent(flowEvent, sampleRect);
+                            m_DrawnFlowIndicatorsCache.Add(indicatorCacheValue);
+                        }
                     }
                 }
             }
-        }
-
-        bool SampleAlreadyHasFlowEventType(int sampleIndex, ProfilerFlowEventType flowEventType)
-        {
-            // A sample can only have multiple Begin flow events.
-            if (flowEventType != ProfilerFlowEventType.Begin)
-            {
-                return false;
-            }
-
-            bool sampleAlreadyHasFlowEventType = false;
-            foreach (int parentSampleId in m_SamplesWithDrawnFlowEventsPerThreadCache)
-            {
-                if (sampleIndex == parentSampleId)
-                {
-                    sampleAlreadyHasFlowEventType = true;
-                    break;
-                }
-            }
-
-            return sampleAlreadyHasFlowEventType;
         }
 
         /// <summary>
@@ -1919,6 +1895,26 @@ namespace UnityEditorInternal
                         }
                     }
                 }
+            }
+        }
+
+        struct DrawnFlowIndicatorCacheValue
+        {
+            public int threadId;
+            public int markerId;
+            public ProfilerFlowEventType flowEventType;
+        }
+
+        class DrawnFlowIndicatorCacheValueComparer : EqualityComparer<DrawnFlowIndicatorCacheValue>
+        {
+            public override bool Equals(DrawnFlowIndicatorCacheValue x, DrawnFlowIndicatorCacheValue y)
+            {
+                return x.threadId.Equals(y.threadId) && x.markerId.Equals(y.markerId) && x.flowEventType.Equals(y.flowEventType);
+            }
+
+            public override int GetHashCode(DrawnFlowIndicatorCacheValue obj)
+            {
+                return base.GetHashCode();
             }
         }
     }

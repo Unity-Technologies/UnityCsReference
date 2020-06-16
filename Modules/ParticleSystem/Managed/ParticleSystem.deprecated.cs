@@ -47,6 +47,18 @@ namespace UnityEngine
             public bool randomDirection { get { return (randomDirectionAmount >= 0.5f); } set { randomDirectionAmount = value ? 1.0f : 0.0f; } }
         }
 
+        public partial struct CollisionModule
+        {
+            [Obsolete("The maxPlaneCount restriction has been removed. Please use planeCount instead to find out how many planes there are. (UnityUpgradable) -> UnityEngine.ParticleSystem/CollisionModule.planeCount", false)]
+            public int maxPlaneCount { get { return planeCount; } }
+        }
+
+        public partial struct TriggerModule
+        {
+            [Obsolete("The maxColliderCount restriction has been removed. Please use colliderCount instead to find out how many colliders there are. (UnityUpgradable) -> UnityEngine.ParticleSystem/TriggerModule.colliderCount", false)]
+            public int maxColliderCount { get { return colliderCount; } }
+        }
+
         public partial struct SubEmittersModule
         {
             [Obsolete("birth0 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]

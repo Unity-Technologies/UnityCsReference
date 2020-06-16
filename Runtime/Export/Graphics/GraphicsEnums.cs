@@ -949,6 +949,14 @@ namespace UnityEngine.Rendering
         DontCare = 3,
     }
 
+    [Flags]
+    public enum FastMemoryFlags
+    {
+        None = 0,
+        SpillTop = (1 << 0),   // put the top portion of the surface into DRAM
+        SpillBottom = (1 << 1),   // put the bottom portion of the surface into DRAM
+    }
+
     [NativeHeader("Runtime/GfxDevice/GfxDeviceTypes.h")]
     public enum BlendMode
     {
@@ -1753,6 +1761,8 @@ namespace UnityEngine.Rendering
         UNITY_LIGHTMAP_RGBM_ENCODING,
         UNITY_LIGHTMAP_FULL_HDR,
         UNITY_VIRTUAL_TEXTURING,
+        UNITY_PRETRANSFORM_TO_DISPLAY_ORIENTATION,
+        UNITY_ASTC_NORMALMAP_ENCODING
     }
 
     // Match VideoShadersMode on C++ side

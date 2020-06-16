@@ -143,7 +143,7 @@ namespace UnityEditor.PackageManager.UI
                     path = $"../{relativePathToProjectRoot}";
             }
 
-            addOperation.AddByUrlOrPath($"file:{path}");
+            addOperation.AddByUrlOrPath($"file:{path}", PackageTag.Local);
             SetupAddOperation();
         }
 
@@ -152,11 +152,7 @@ namespace UnityEditor.PackageManager.UI
             if (isAddRemoveOrEmbedInProgress)
                 return;
 
-            // convert SCP-like syntax to SSH URL as currently UPM doesn't support it
-            if (url.ToLower().StartsWith("git@"))
-                url = "ssh://" + url.Replace(':', '/');
-
-            addOperation.AddByUrlOrPath(url);
+            addOperation.AddByUrlOrPath(url, PackageTag.Git);
             SetupAddOperation();
         }
 

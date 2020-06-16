@@ -8,13 +8,28 @@ using UnityEditorInternal;
 
 namespace UnityEditor
 {
+    class PresetLibraryGradientEditor : PresetLibraryEditor<GradientPresetLibrary>
+    {
+        public PresetLibraryGradientEditor(ScriptableObjectSaveLoadHelper<GradientPresetLibrary> helper,
+                                           PresetLibraryEditorState state,
+                                           System.Action<int, object> itemClickedCallback
+        ) : base(helper, state, itemClickedCallback)
+        {}
+
+        public ColorSpace colorSpace { get; set; }
+
+        protected override void DrawPreset(PresetLibrary lib, Rect rect, object presetObject)
+        {
+            ((GradientPresetLibrary)lib).Draw(rect, presetObject, colorSpace);
+        }
+    }
     internal class GradientPicker : EditorWindow
     {
         private static GradientPicker s_GradientPicker;
         public static string presetsEditorPrefID { get { return "Gradient"; } }
 
         private GradientEditor m_GradientEditor;
-        private PresetLibraryEditor<GradientPresetLibrary> m_GradientLibraryEditor;
+        private PresetLibraryGradientEditor m_GradientLibraryEditor;
         [SerializeField]
         private PresetLibraryEditorState m_GradientLibraryEditorState;
         private Gradient m_Gradient;
@@ -22,35 +37,45 @@ namespace UnityEditor
         private GUIView m_DelegateView;
         private System.Action<Gradient> m_Delegate;
         private bool m_HDR;
+        private ColorSpace m_ColorSpace;
         private bool gradientChanged { get; set; }
 
         // Static methods
-        public static void Show(Gradient newGradient, bool hdr)
+        public static void Show(Gradient newGradient, bool hdr, ColorSpace colorSpace = ColorSpace.Gamma)
         {
             GUIView currentView = GUIView.current;
-            PrepareShow(hdr);
+            PrepareShow(hdr, colorSpace);
             s_GradientPicker.m_DelegateView = currentView;
             s_GradientPicker.m_Delegate = null;
-            s_GradientPicker.Init(newGradient, hdr);
+            s_GradientPicker.Init(newGradient, hdr, colorSpace);
 
             GradientPreviewCache.ClearCache();
         }
 
         public static void Show(Gradient newGradient, bool hdr, System.Action<Gradient> onGradientChanged)
         {
-            PrepareShow(hdr);
+            Show(newGradient, hdr, ColorSpace.Gamma, onGradientChanged);
+        }
+
+        public static void Show(Gradient newGradient, bool hdr, ColorSpace colorSpace, System.Action<Gradient> onGradientChanged)
+        {
+            PrepareShow(hdr, colorSpace);
             s_GradientPicker.m_DelegateView = null;
             s_GradientPicker.m_Delegate = onGradientChanged;
-            s_GradientPicker.Init(newGradient, hdr);
+            s_GradientPicker.Init(newGradient, hdr, colorSpace);
 
             GradientPreviewCache.ClearCache();
         }
 
-        static void PrepareShow(bool hdr)
+        static void PrepareShow(bool hdr, ColorSpace colorSpace)
         {
             if (s_GradientPicker == null)
             {
                 string title = hdr ? "HDR Gradient Editor" : "Gradient Editor";
+                if (colorSpace == ColorSpace.Linear)
+                {
+                    title += " (linear)";
+                }
                 s_GradientPicker = (GradientPicker)GetWindow(typeof(GradientPicker), true, title, false);
                 Vector2 minSize = new Vector2(360, 224);
                 Vector2 maxSize = new Vector2(1900, 3000);
@@ -89,12 +114,13 @@ namespace UnityEditor
             }
         }
 
-        private void Init(Gradient newGradient, bool hdr)
+        private void Init(Gradient newGradient, bool hdr, ColorSpace colorSpace)
         {
             m_Gradient = newGradient;
             m_HDR = hdr;
+            m_ColorSpace = colorSpace;
             if (m_GradientEditor != null)
-                m_GradientEditor.Init(newGradient, k_DefaultNumSteps, m_HDR);
+                m_GradientEditor.Init(newGradient, k_DefaultNumSteps, m_HDR, m_ColorSpace);
             Repaint();
         }
 
@@ -103,7 +129,7 @@ namespace UnityEditor
             m_Gradient.colorKeys = gradient.colorKeys;
             m_Gradient.alphaKeys = gradient.alphaKeys;
             m_Gradient.mode = gradient.mode;
-            Init(m_Gradient, m_HDR);
+            Init(m_Gradient, m_HDR, m_ColorSpace);
         }
 
         public static bool visible
@@ -153,7 +179,7 @@ namespace UnityEditor
             if (m_GradientEditor == null)
             {
                 m_GradientEditor = new GradientEditor();
-                m_GradientEditor.Init(m_Gradient, k_DefaultNumSteps, m_HDR);
+                m_GradientEditor.Init(m_Gradient, k_DefaultNumSteps, m_HDR, m_ColorSpace);
             }
 
             if (m_GradientLibraryEditorState == null)
@@ -165,8 +191,9 @@ namespace UnityEditor
             if (m_GradientLibraryEditor == null)
             {
                 var saveLoadHelper = new ScriptableObjectSaveLoadHelper<GradientPresetLibrary>("gradients", SaveType.Text);
-                m_GradientLibraryEditor = new PresetLibraryEditor<GradientPresetLibrary>(saveLoadHelper, m_GradientLibraryEditorState, PresetClickedCallback);
+                m_GradientLibraryEditor = new PresetLibraryGradientEditor(saveLoadHelper, m_GradientLibraryEditorState, PresetClickedCallback);
                 m_GradientLibraryEditor.showHeader = true;
+                m_GradientLibraryEditor.colorSpace = m_ColorSpace;
                 m_GradientLibraryEditor.minMaxPreviewHeight = new Vector2(14f, 14f);
             }
         }

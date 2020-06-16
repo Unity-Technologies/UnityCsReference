@@ -19,7 +19,7 @@ namespace UnityEditor
         }
 
         [FreeFunction]
-        public static extern long GetStorageMemorySizeLong(Texture t);
+        public static extern long GetStorageMemorySizeLong([NotNull("NullExceptionObject")] Texture t);
 
         [Obsolete("GetRuntimeMemorySize has been deprecated since it is limited to 2GB. Please use GetRuntimeMemorySizeLong() instead.")]
         public static int GetRuntimeMemorySize(Texture t)
@@ -28,13 +28,13 @@ namespace UnityEditor
         }
 
         [FreeFunction]
-        public static extern long GetRuntimeMemorySizeLong(Texture t);
+        public static extern long GetRuntimeMemorySizeLong([NotNull("NullExceptionObject")] Texture t);
 
         [FreeFunction]
-        public static extern bool IsNonPowerOfTwo(Texture2D t);
+        public static extern bool IsNonPowerOfTwo([NotNull("NullExceptionObject")] Texture2D t);
 
         [FreeFunction]
-        public static extern TextureUsageMode GetUsageMode(Texture t);
+        public static extern TextureUsageMode GetUsageMode([NotNull("NullExceptionObject")] Texture t);
 
         [FreeFunction]
         public static extern bool IsNormalMapUsageMode(TextureUsageMode usageMode);
@@ -61,7 +61,7 @@ namespace UnityEditor
         public static extern bool IsCompressedCrunchTextureFormat(TextureFormat format);
 
         [FreeFunction]
-        public static extern TextureFormat GetTextureFormat(Texture texture);
+        public static extern TextureFormat GetTextureFormat([NotNull("NullExceptionObject")] Texture texture);
 
         [FreeFunction]
         public static extern bool IsAlphaOnlyTextureFormat(TextureFormat format);
@@ -76,7 +76,7 @@ namespace UnityEditor
         public static extern string GetTextureFormatString(TextureFormat format);
 
         [FreeFunction]
-        public static extern string GetTextureColorSpaceString(Texture texture);
+        public static extern string GetTextureColorSpaceString([NotNull("NullExceptionObject")] Texture texture);
 
         [FreeFunction]
         public static extern TextureFormat ConvertToAlphaTextureFormat(TextureFormat format);
@@ -87,22 +87,22 @@ namespace UnityEditor
         }
 
         [FreeFunction]
-        public static extern bool HasMipMap(Texture t);
+        public static extern bool HasMipMap([NotNull("NullExceptionObject")] Texture t);
 
         [FreeFunction]
-        public static extern bool NeedsExposureControl(Texture t);
+        public static extern bool NeedsExposureControl([NotNull("NullExceptionObject")] Texture t);
 
         [FreeFunction]
-        public static extern int GetGPUWidth(Texture t);
+        public static extern int GetGPUWidth([NotNull("NullExceptionObject")] Texture t);
 
         [FreeFunction]
-        public static extern int GetGPUHeight(Texture t);
+        public static extern int GetGPUHeight([NotNull("NullExceptionObject")] Texture t);
 
         [FreeFunction]
-        public static extern int GetMipmapCount(Texture t);
+        public static extern int GetMipmapCount([NotNull("NullExceptionObject")] Texture t);
 
         [FreeFunction]
-        public static extern bool GetLinearSampled(Texture t);
+        public static extern bool GetLinearSampled([NotNull("NullExceptionObject")] Texture t);
 
         public static int GetDefaultCompressionQuality()
         {
@@ -110,25 +110,25 @@ namespace UnityEditor
         }
 
         [FreeFunction]
-        public static extern Vector4 GetTexelSizeVector(Texture t);
+        public static extern Vector4 GetTexelSizeVector([NotNull("NullExceptionObject")] Texture t);
 
         [FreeFunction]
-        public static extern Texture2D GetSourceTexture(Cubemap cubemapRef, CubemapFace face);
+        public static extern Texture2D GetSourceTexture([NotNull("NullExceptionObject")] Cubemap cubemapRef, CubemapFace face);
 
         [FreeFunction]
-        public static extern void SetSourceTexture(Cubemap cubemapRef, CubemapFace face, Texture2D tex);
+        public static extern void SetSourceTexture([NotNull("NullExceptionObject")] Cubemap cubemapRef, CubemapFace face, Texture2D tex);
 
         [FreeFunction]
-        public static extern void CopyTextureIntoCubemapFace(Texture2D textureRef, Cubemap cubemapRef, CubemapFace face);
+        public static extern void CopyTextureIntoCubemapFace([NotNull("NullExceptionObject")] Texture2D textureRef, [NotNull("NullExceptionObject")] Cubemap cubemapRef, CubemapFace face);
 
         [FreeFunction]
-        public static extern void CopyCubemapFaceIntoTexture(Cubemap cubemapRef, CubemapFace face, Texture2D textureRef);
+        public static extern void CopyCubemapFaceIntoTexture([NotNull("NullExceptionObject")] Cubemap cubemapRef, CubemapFace face, [NotNull("NullExceptionObject")] Texture2D textureRef);
 
         [FreeFunction]
-        public static extern bool ReformatCubemap(Cubemap cubemap, int width, int height, TextureFormat textureFormat, bool useMipmap, bool linear);
+        public static extern bool ReformatCubemap([NotNull("NullExceptionObject")] Cubemap cubemap, int width, int height, TextureFormat textureFormat, bool useMipmap, bool linear);
 
         [FreeFunction]
-        public static extern bool ReformatTexture(ref Texture2D texture, int width, int height, TextureFormat textureFormat, bool useMipmap, bool linear);
+        public static extern bool ReformatTexture([NotNull("NullExceptionObject")] ref Texture2D texture, int width, int height, TextureFormat textureFormat, bool useMipmap, bool linear);
 
         [FreeFunction]
         public static extern void SetAnisoLevelNoDirty(Texture tex, int level);
@@ -146,7 +146,7 @@ namespace UnityEditor
         public static extern bool DoesTextureStillNeedToBeCompressed(string assetPath);
 
         [FreeFunction]
-        public static extern bool IsCubemapReadable(Cubemap cubemapRef);
+        public static extern bool IsCubemapReadable([NotNull("NullExceptionObject")] Cubemap cubemapRef);
 
         [FreeFunction]
         public static extern void MarkCubemapReadable(Cubemap cubemapRef, bool readable);

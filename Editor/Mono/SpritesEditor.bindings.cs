@@ -41,9 +41,6 @@ namespace UnityEditor.Sprites
         extern private static System.Object GenerateOutlineFromSpriteImpl([NotNull] Sprite sprite, float detail, byte alphaTolerance, bool holeDetection);
 
         extern internal static Vector2[] GeneratePolygonOutlineVerticesOfSize(int sides, int width, int height);
-
-        [FreeFunction("::CreateSpriteForPrimitive")]
-        extern internal static void CreateSpritePolygonAssetAtPath(string pathName, int sides);
     }
 
     // Class renamed to UnityEditor.Sprites.SpriteUtility. Empty dummy class left here for scriptupdater.

@@ -389,8 +389,11 @@ namespace UnityEditor
             return property.isArray && property.propertyType != SerializedPropertyType.String;
         }
 
-        static bool IsArrayReorderable(SerializedProperty property)
+        internal static bool IsArrayReorderable(SerializedProperty property)
         {
+            if (property == null) return false;
+            if (property.IsReorderable()) return true;
+
             FieldInfo listInfo = null;
             Queue<string> propertyName = new Queue<string>(property.propertyPath.Split(".".ToCharArray(), StringSplitOptions.RemoveEmptyEntries));
             listInfo = property.serializedObject.targetObject.GetType().GetField(propertyName.Dequeue());
@@ -411,7 +414,7 @@ namespace UnityEditor
                 }
             }
 
-            return TypeCache.GetFieldsWithAttribute(typeof(ReorderableAttribute)).Any(f => f.Equals(listInfo)) || property.IsReorderable();
+            return TypeCache.GetFieldsWithAttribute(typeof(ReorderableAttribute)).Any(f => f.Equals(listInfo));
         }
     }
 }

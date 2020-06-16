@@ -57,42 +57,6 @@ namespace UnityEditor
 
         bool m_NeedToSaveValuesOnConnect;
 
-        [StructLayout(LayoutKind.Sequential)]
-        public struct ExternalVersionControl
-        {
-            private readonly string m_Value;
-
-            public static readonly string Disabled = "Hidden Meta Files";
-            public static readonly string AutoDetect = "Auto detect";
-            public static readonly string Generic = "Visible Meta Files";
-
-
-            [Obsolete("Asset Server VCS support has been removed.")]
-            public static readonly string AssetServer = "Asset Server";
-
-            public ExternalVersionControl(string value)
-            {
-                m_Value = value;
-            }
-
-            // User-defined conversion
-            public static implicit operator string(ExternalVersionControl d)
-            {
-                return d.ToString();
-            }
-
-            // User-defined conversion
-            public static implicit operator ExternalVersionControl(string d)
-            {
-                return new ExternalVersionControl(d);
-            }
-
-            public override string ToString()
-            {
-                return m_Value;
-            }
-        }
-
         private string[] logLevelPopupList =
         {
             "Verbose", "Info", "Notice", "Fatal"

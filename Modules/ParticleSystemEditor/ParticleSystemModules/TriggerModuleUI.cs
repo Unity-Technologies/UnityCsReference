@@ -4,34 +4,33 @@
 
 using UnityEngine;
 using System.Collections.Generic;
-
+using UnityEditorInternal;
 
 namespace UnityEditor
 {
     class TriggerModuleUI : ModuleUI
     {
-        // Keep in sync with TriggerModule.h
-        const int k_MaxNumCollisionShapes = 6;
         enum OverlapOptions { Ignore = 0, Kill = 1, Callback = 2 }
 
-        SerializedProperty[] m_CollisionShapes = new SerializedProperty[k_MaxNumCollisionShapes];
+        SerializedProperty m_Primitives;
         SerializedProperty m_Inside;
         SerializedProperty m_Outside;
         SerializedProperty m_Enter;
         SerializedProperty m_Exit;
+        SerializedProperty m_ColliderQueryMode;
         SerializedProperty m_RadiusScale;
-        SerializedProperty[] m_ShownCollisionShapes;
 
         static bool s_VisualizeBounds = false;
 
         class Texts
         {
             public GUIContent collisionShapes = EditorGUIUtility.TrTextContent("Colliders", "The list of collision shapes to use for the trigger.");
-            public GUIContent createCollisionShape = EditorGUIUtility.TrTextContent("", "Create a GameObject containing a sphere collider and assigns it to the list.");
+            public GUIContent createCollisionShape = EditorGUIUtility.TrTextContent("", "Create a GameObject containing a sphere collider and assign it to the list.");
             public GUIContent inside = EditorGUIUtility.TrTextContent("Inside", "What to do for particles that are inside the collision volume.");
             public GUIContent outside = EditorGUIUtility.TrTextContent("Outside", "What to do for particles that are outside the collision volume.");
             public GUIContent enter = EditorGUIUtility.TrTextContent("Enter", "Triggered once when particles enter the collision volume.");
             public GUIContent exit = EditorGUIUtility.TrTextContent("Exit", "Triggered once when particles leave the collision volume.");
+            public GUIContent colliderQueryMode = EditorGUIUtility.TrTextContent("Collider Query Mode", "Required in order to get collider information when using the ParticleSystem.GetTriggerParticles script API. Disabled by default because it has a performance cost.\nWhen set to One, the script can retrieve the first collider in the list that the particle interacts with.\nSetting to All will return all colliders that the particle interacts with.");
             public GUIContent radiusScale = EditorGUIUtility.TrTextContent("Radius Scale", "Scale particle bounds by this amount to get more precise collisions.");
             public GUIContent visualizeBounds = EditorGUIUtility.TrTextContent("Visualize Bounds", "Render the collision bounds of the particles.");
 
@@ -41,8 +40,17 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Kill"),
                 EditorGUIUtility.TrTextContent("Callback")
             };
+
+            public GUIContent[] colliderQueryModeOptions = new GUIContent[]
+            {
+                EditorGUIUtility.TrTextContent("Disabled"),
+                EditorGUIUtility.TrTextContent("One"),
+                EditorGUIUtility.TrTextContent("All")
+            };
         }
         private static Texts s_Texts;
+
+        ReorderableList m_PrimitivesList;
 
         public TriggerModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)
             : base(owner, o, "TriggerModule", displayName)
@@ -58,24 +66,19 @@ namespace UnityEditor
             if (s_Texts == null)
                 s_Texts = new Texts();
 
-            List<SerializedProperty> shownCollisionShapes = new List<SerializedProperty>();
-            for (int i = 0; i < m_CollisionShapes.Length; ++i)
-            {
-                m_CollisionShapes[i] = GetProperty("collisionShape" + i); // Keep name in sync with transfer func in TriggerModule.h
-                System.Diagnostics.Debug.Assert(m_CollisionShapes[i] != null);
-
-                // Always show the first collision shape
-                if (i == 0 || m_CollisionShapes[i].objectReferenceValue != null)
-                    shownCollisionShapes.Add(m_CollisionShapes[i]);
-            }
-
-            m_ShownCollisionShapes = shownCollisionShapes.ToArray();
-
+            m_Primitives = GetProperty("primitives");
             m_Inside = GetProperty("inside");
             m_Outside = GetProperty("outside");
             m_Enter = GetProperty("enter");
             m_Exit = GetProperty("exit");
+            m_ColliderQueryMode = GetProperty("colliderQueryMode");
             m_RadiusScale = GetProperty("radiusScale");
+
+            m_PrimitivesList = new ReorderableList(m_Primitives.m_SerializedObject, m_Primitives, true, false, true, true);
+            m_PrimitivesList.headerHeight = 0;
+            m_PrimitivesList.drawElementCallback = DrawPrimitiveElementCallback;
+            m_PrimitivesList.elementHeight = kReorderableListElementHeight;
+            m_PrimitivesList.onAddCallback = OnAddPrimitiveElementCallback;
 
             s_VisualizeBounds = EditorPrefs.GetBool("VisualizeTriggerBounds", false);
         }
@@ -88,6 +91,7 @@ namespace UnityEditor
             GUIPopup(s_Texts.outside, m_Outside, s_Texts.overlapOptions);
             GUIPopup(s_Texts.enter, m_Enter, s_Texts.overlapOptions);
             GUIPopup(s_Texts.exit, m_Exit, s_Texts.overlapOptions);
+            GUIPopup(s_Texts.colliderQueryMode, m_ColliderQueryMode, s_Texts.colliderQueryModeOptions);
             GUIFloat(s_Texts.radiusScale, m_RadiusScale);
 
             EditorGUI.BeginChangeCheck();
@@ -113,61 +117,38 @@ namespace UnityEditor
 
         private void DoListOfCollisionShapesGUI()
         {
-            // only show the list of colliders when we can edit them safely
+            // only allow editing in single edit mode
             if (m_ParticleSystemUI.multiEdit)
             {
-                for (int shapeIndex = 0; shapeIndex < k_MaxNumCollisionShapes; shapeIndex++)
-                {
-                    int hasShape = -1;
-                    foreach (ParticleSystem ps in m_ParticleSystemUI.m_ParticleSystems)
-                    {
-                        int shapeValue = (ps.trigger.GetCollider(shapeIndex) != null) ? 1 : 0;
-                        if (hasShape == -1)
-                        {
-                            hasShape = shapeValue;
-                        }
-                        else if (shapeValue != hasShape)
-                        {
-                            EditorGUILayout.HelpBox("Collider list editing is only available when all selected systems contain the same number of colliders", MessageType.Info, true);
-                            return;
-                        }
-                    }
-                }
+                EditorGUILayout.HelpBox("Trigger editing is only available when editing a single Particle System", MessageType.Info, true);
+                return;
             }
 
-            int buttonPressedIndex = GUIListOfFloatObjectToggleFields(s_Texts.collisionShapes, m_ShownCollisionShapes, null, s_Texts.createCollisionShape, !m_ParticleSystemUI.multiEdit);
-            if (buttonPressedIndex >= 0 && !m_ParticleSystemUI.multiEdit)
-            {
-                GameObject go = CreateDefaultCollider("Collider " + (buttonPressedIndex + 1), m_ParticleSystemUI.m_ParticleSystems[0]);
-                go.transform.localPosition = new Vector3(0, 0, 10 + buttonPressedIndex); // ensure each collider is not at same pos
-                m_ShownCollisionShapes[buttonPressedIndex].objectReferenceValue = go;
-            }
+            m_PrimitivesList.DoLayoutList();
+        }
 
-            // Minus button
-            Rect rect = GUILayoutUtility.GetRect(0, EditorGUI.kSingleLineHeight); //GUILayoutUtility.GetLastRect();
-            rect.x = rect.xMax - kPlusAddRemoveButtonWidth * 2 - kPlusAddRemoveButtonSpacing;
-            rect.width = kPlusAddRemoveButtonWidth;
-            if (m_ShownCollisionShapes.Length > 1)
+        void OnAddPrimitiveElementCallback(ReorderableList list)
+        {
+            int index = m_Primitives.arraySize;
+            m_Primitives.InsertArrayElementAtIndex(index);
+            m_Primitives.GetArrayElementAtIndex(index).objectReferenceValue = null;
+        }
+
+        void DrawPrimitiveElementCallback(Rect rect, int index, bool isActive, bool isFocused)
+        {
+            var primitive = m_Primitives.GetArrayElementAtIndex(index);
+
+            Rect objectRect = new Rect(rect.x, rect.y, rect.width - EditorGUI.kSpacing - ParticleSystemStyles.Get().plus.fixedWidth, rect.height);
+            EditorGUI.ObjectField(objectRect, primitive, null, GUIContent.none, ParticleSystemStyles.Get().objectField);
+
+            if (primitive.objectReferenceValue == null)
             {
-                if (MinusButton(rect))
+                Rect buttonRect = new Rect(objectRect.xMax + EditorGUI.kSpacing, rect.y + 4, ParticleSystemStyles.Get().plus.fixedWidth, rect.height);
+                if (GUI.Button(buttonRect, s_Texts.createCollisionShape, ParticleSystemStyles.Get().plus))
                 {
-                    m_ShownCollisionShapes[m_ShownCollisionShapes.Length - 1].objectReferenceValue = null;
-
-                    List<SerializedProperty> shownCollisionShapes = new List<SerializedProperty>(m_ShownCollisionShapes);
-                    shownCollisionShapes.RemoveAt(shownCollisionShapes.Count - 1);
-                    m_ShownCollisionShapes = shownCollisionShapes.ToArray();
-                }
-            }
-
-            // Plus button
-            if (m_ShownCollisionShapes.Length < k_MaxNumCollisionShapes && !m_ParticleSystemUI.multiEdit)
-            {
-                rect.x += kPlusAddRemoveButtonWidth + kPlusAddRemoveButtonSpacing;
-                if (PlusButton(rect))
-                {
-                    List<SerializedProperty> shownCollisionShapes = new List<SerializedProperty>(m_ShownCollisionShapes);
-                    shownCollisionShapes.Add(m_CollisionShapes[shownCollisionShapes.Count]);
-                    m_ShownCollisionShapes = shownCollisionShapes.ToArray();
+                    GameObject go = CreateDefaultCollider("Collider " + (index + 1), m_ParticleSystemUI.m_ParticleSystems[0]);
+                    go.transform.localPosition = new Vector3(0, 0, 10 + index); // ensure each collider is not at the same position
+                    primitive.objectReferenceValue = go.GetComponent<Collider>();
                 }
             }
         }

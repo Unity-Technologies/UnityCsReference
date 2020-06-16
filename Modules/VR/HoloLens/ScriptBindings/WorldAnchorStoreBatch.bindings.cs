@@ -38,6 +38,7 @@ namespace UnityEngine.XR.WSA.Sharing
             m_NativePtr = nativePtr;
         }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public static void ExportAsync(WorldAnchorTransferBatch transferBatch, SerializationDataAvailableDelegate onDataAvailable, SerializationCompleteDelegate onCompleted)
         {
             if (transferBatch == null)
@@ -57,11 +58,13 @@ namespace UnityEngine.XR.WSA.Sharing
         }
 
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public static void ImportAsync(byte[] serializedData, DeserializationCompleteDelegate onComplete)
         {
             ImportAsync(serializedData, 0, serializedData.Length, onComplete);
         }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public static void ImportAsync(byte[] serializedData, int offset, int length, DeserializationCompleteDelegate onComplete)
         {
             if (serializedData == null)
@@ -85,6 +88,7 @@ namespace UnityEngine.XR.WSA.Sharing
         }
 
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool AddWorldAnchor(string id, WorldAnchor anchor)
         {
             if (string.IsNullOrEmpty(id))
@@ -100,6 +104,7 @@ namespace UnityEngine.XR.WSA.Sharing
 
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public extern int anchorCount { get; }
 
         public int GetAllIds(string[] ids)
@@ -110,12 +115,14 @@ namespace UnityEngine.XR.WSA.Sharing
             return 0;
         }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public string[] GetAllIds()
         {
             return new string[0];
         }
 
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public WorldAnchor LockObject(string id, GameObject go)
         {
             return null;
@@ -123,8 +130,10 @@ namespace UnityEngine.XR.WSA.Sharing
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
         [NativeName("LoadAnchor")]
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         private extern bool LoadAnchor_Internal(string id, WorldAnchor anchor);
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public WorldAnchorTransferBatch()
         {
             m_NativePtr = Create_Internal();
@@ -148,6 +157,7 @@ namespace UnityEngine.XR.WSA.Sharing
         [NativeName("DisposeThreaded")]
         private extern void DisposeThreaded_Internal();
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public void Dispose()
         {
             if (m_NativePtr != IntPtr.Zero)

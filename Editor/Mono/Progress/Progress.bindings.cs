@@ -22,7 +22,8 @@ namespace UnityEditor
             Running,
             Succeeded,
             Failed,
-            Canceled
+            Canceled,
+            Paused
         }
 
         [Flags, NativeType(Header = "Editor/Src/Progress.h")]
@@ -44,6 +45,16 @@ namespace UnityEditor
             ShowRemainingTime
         }
 
+        [NativeType(Header = "Editor/Src/Progress.h")]
+        public enum Priority
+        {
+            Unresponsive = 0,
+            Idle = 1,
+            Low = 2,
+            Normal = 6,
+            High = 10
+        }
+
         [NativeMethod(IsFreeFunction = true, IsThreadSafe = true, Name = "Editor::Progress::Start")]
         private static extern int Internal_Start(string name, string description, Options options, int parentId);
 
@@ -58,20 +69,45 @@ namespace UnityEditor
         [ThreadSafe]
         public static extern void Finish(int id, Status status = Status.Succeeded);
 
-        [ThreadSafe]
-        public static extern int Remove(int id);
+        [NativeMethod(IsFreeFunction = true, IsThreadSafe = true, Name = "Editor::Progress::Remove")]
+        private static extern int Internal_Remove(int id, bool forceSynchronous);
+
+        public static int Remove(int id)
+        {
+            return Remove(id, false);
+        }
+
+        public static int Remove(int id, bool forceSynchronous)
+        {
+            return Internal_Remove(id, forceSynchronous);
+        }
 
         [NativeMethod(IsFreeFunction = true, IsThreadSafe = true, Name = "Editor::Progress::Report")]
         private static extern void Internal_Report(int id, float progress, string description = null);
+
+        [NativeMethod(IsFreeFunction = true, IsThreadSafe = true, Name = "Editor::Progress::Report")]
+        private static extern void Internal_Report_Items(int id, int currentStep, int totalSteps, string description = null);
 
         public static void Report(int id, float progress)
         {
             Internal_Report(id, progress);
         }
 
+        public static void Report(int id, int currentStep, int totalSteps)
+        {
+            Internal_Report_Items(id, currentStep, totalSteps);
+        }
+
         public static void Report(int id, float progress, string description)
         {
             Internal_Report(id, progress, description);
+            if (string.IsNullOrEmpty(description))
+                SetDescription(id, description);
+        }
+
+        public static void Report(int id, int currentStep, int totalSteps, string description)
+        {
+            Internal_Report_Items(id, currentStep, totalSteps, description);
             if (string.IsNullOrEmpty(description))
                 SetDescription(id, description);
         }
@@ -89,11 +125,27 @@ namespace UnityEditor
         [ThreadSafe]
         public static extern void UnregisterCancelCallback(int id);
 
+        public static extern bool Pause(int id);
+        public static extern bool Resume(int id);
+
+        [ThreadSafe]
+        internal static extern void RegisterPauseCallbackFromScript(int id, Func<bool, bool> callback);
+
+        public static void RegisterPauseCallback(int id, Func<bool, bool> callback)
+        {
+            RegisterPauseCallbackFromScript(id, callback);
+        }
+
+        [ThreadSafe]
+        public static extern void UnregisterPauseCallback(int id);
+
         public static extern int GetCount();
 
         public static extern int[] GetCountPerStatus();
 
         public static extern float GetProgress(int id);
+        public static extern int GetCurrentStep(int id);
+        public static extern int GetTotalSteps(int id);
 
         public static extern string GetName(int id);
 
@@ -112,6 +164,8 @@ namespace UnityEditor
 
         public static extern bool IsCancellable(int id);
 
+        public static extern bool IsPausable(int id);
+
         public static extern Status GetStatus(int id);
 
         public static extern Options GetOptions(int id);
@@ -122,108 +176,40 @@ namespace UnityEditor
         [ThreadSafe]
         public static extern void SetRemainingTime(int id, long seconds);
 
+        [NativeMethod(IsFreeFunction = true, IsThreadSafe = true, Name = "Editor::Progress::SetPriority")]
+        private static extern void Internal_SetPriority(int id, int priority);
+
+        [NativeMethod(IsFreeFunction = true, IsThreadSafe = true, Name = "Editor::Progress::SetPriority")]
+        private static extern void Internal_SetPriority_Enum(int id, Priority priority);
+
+        public static void SetPriority(int id, int priority)
+        {
+            Internal_SetPriority(id, priority);
+        }
+
+        public static void SetPriority(int id, Priority priority)
+        {
+            Internal_SetPriority_Enum(id, priority);
+        }
+
         public static extern TimeDisplayMode GetTimeDisplayMode(int id);
 
         public static extern bool Exists(int id);
 
         public static extern long GetRemainingTime(int id);
 
+        public static extern int GetPriority(int id);
+
         public static extern void ClearRemainingTime(int id);
+
+        [ThreadSafe]
+        public static extern void SetStepLabel(int id, string label);
+
+        public static extern string GetStepLabel(int id);
 
         public static void ShowDetails(bool shouldReposition = true)
         {
             EditorUIService.instance.ProgressWindowShowDetails(shouldReposition);
-        }
-
-        public static int RunTask(string name, string description, Func<int, object, IEnumerator> taskHandler, Options options = Options.None, int parentId = -1, object userData = null)
-        {
-            var progressId = Start(name, description, options, parentId);
-            s_Tasks.Add(new Task { id = progressId, handler = taskHandler, userData = userData, iterators = new Stack<IEnumerator>() });
-
-            EditorApplication.update -= RunTasks;
-            EditorApplication.update += RunTasks;
-
-            return progressId;
-        }
-
-        private static void RunTasks()
-        {
-            for (var taskIndex = s_Tasks.Count - 1; taskIndex >= 0; --taskIndex)
-            {
-                var task = s_Tasks[taskIndex];
-                try
-                {
-                    if (task.iterators.Count == 0)
-                        task.iterators.Push(task.handler(task.id, task.userData));
-
-                    var iterator = task.iterators.Peek();
-                    var finished = !iterator.MoveNext();
-
-                    if (finished)
-                    {
-                        if (task.iterators.Count > 1)
-                        {
-                            ++taskIndex;
-                            task.iterators.Pop();
-                        }
-                        else
-                        {
-                            Finish(task.id, Status.Succeeded);
-                            s_Tasks.RemoveAt(taskIndex);
-                        }
-
-                        continue;
-                    }
-
-                    var cEnumerable = iterator.Current as IEnumerable;
-                    if (cEnumerable != null)
-                    {
-                        ++taskIndex;
-                        task.iterators.Push(cEnumerable.GetEnumerator());
-                        continue;
-                    }
-
-                    var cEnumerator = iterator.Current as IEnumerator;
-                    if (cEnumerator != null)
-                    {
-                        ++taskIndex;
-                        task.iterators.Push(cEnumerator);
-                        continue;
-                    }
-
-                    var report = iterator.Current as TaskReport;
-                    if (report?.error != null)
-                    {
-                        SetDescription(task.id, report.error);
-                        Finish(task.id, Status.Failed);
-                        s_Tasks.RemoveAt(taskIndex);
-                    }
-                    else
-                    {
-                        if (report != null)
-                        {
-                            if (string.IsNullOrEmpty(report.description))
-                                Report(task.id, report.progress);
-                            else
-                                Report(task.id, report.progress, report.description);
-                        }
-                        else if ((GetOptions(task.id) & Options.Indefinite) == Options.Indefinite)
-                        {
-                            Report(task.id, -1f);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    UnityEngine.Debug.LogException(ex);
-                    SetDescription(task.id, ex.Message);
-                    Finish(task.id, Status.Failed);
-                    s_Tasks.RemoveAt(taskIndex);
-                }
-            }
-
-            if (s_Tasks.Count == 0)
-                EditorApplication.update -= RunTasks;
         }
 
         private static List<Item> s_ProgressItems = new List<Item>(8);
@@ -233,7 +219,6 @@ namespace UnityEditor
         private static TimeSpan s_RemainingTime = TimeSpan.Zero;
         private static bool s_RemainingTimeDirty = true;
         private static DateTime s_LastRemainingTimeUpdate = DateTime.Now;
-        private static List<Task> s_Tasks = new List<Task>();
 
         public static event Action<Item[]> added;
         public static event Action<Item[]> updated;
@@ -283,6 +268,9 @@ namespace UnityEditor
 
         [NativeMethod(IsFreeFunction = true, IsThreadSafe = false, Name = "Editor::Progress::GetGlobalRemainingTime")]
         private static extern long Internal_GetGlobalRemainingTime();
+
+        [NativeMethod(IsFreeFunction = true, IsThreadSafe = false, Name = "Editor::Progress::Internal_ClearLogs")]
+        internal static extern void ClearLogs();
 
         public static TimeSpan globalRemainingTime
         {
@@ -361,6 +349,28 @@ namespace UnityEditor
             s_ProgressItems.Remove(item);
 
             removed?.Invoke(new[] {item});
+        }
+
+        [RequiredByNativeCode]
+        private static void OnOperationsStateRemoved(int[] ids)
+        {
+            if (!s_Initialized) return;
+
+            var items = new Item[ids.Length];
+            var i = 0;
+            foreach (var id in ids)
+            {
+                var item = GetProgressById(id);
+                items[i++] = item;
+                Assert.IsNotNull(item);
+                s_ProgressItems.Remove(item);
+            }
+
+            s_ProgressDirty = true;
+            s_RemainingTimeDirty = true;
+
+
+            removed?.Invoke(items);
         }
 
         private static void RestoreProgressItems()

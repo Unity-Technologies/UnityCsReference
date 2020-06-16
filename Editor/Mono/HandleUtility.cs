@@ -923,7 +923,8 @@ namespace UnityEditor
             rect.width /= cam.pixelWidth;
             rect.y /= cam.pixelHeight;
             rect.height /= cam.pixelHeight;
-            return Internal_PickRectObjects(cam, rect, selectPrefabRootsOnly);
+            bool allowGizmos = SceneView.lastActiveSceneView == null || SceneView.lastActiveSceneView.drawGizmos;
+            return Internal_PickRectObjects(cam, rect, selectPrefabRootsOnly, allowGizmos);
         }
 
         internal static bool FindNearestVertex(Vector2 guiPoint, Transform[] objectsToSearch, out Vector3 vertex)
@@ -978,8 +979,10 @@ namespace UnityEditor
                 picked = pickClosestGameObjectDelegate(cam, layers, position, ignore, filter, out materialIndex);
             #pragma warning restore 618
 
+            bool drawGizmos = SceneView.lastActiveSceneView == null || SceneView.lastActiveSceneView.drawGizmos;
+
             if (picked == null)
-                picked = Internal_PickClosestGO(cam, layers, position, ignore, filter, out materialIndex);
+                picked = Internal_PickClosestGO(cam, layers, position, ignore, filter, drawGizmos, out materialIndex);
 
             if (picked == null && pickGameObjectCustomPasses != null)
             {

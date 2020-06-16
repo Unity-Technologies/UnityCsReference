@@ -292,6 +292,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ImmediateModeElement.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\ImmediateModeElement.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\InjectedEditor\EditorAtlasMonitor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\InjectedEditor\EditorAtlasMonitor.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\InteractionEnums.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\InteractionEnums.cs</Link>
     </Compile>
@@ -400,6 +403,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StylePainter.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\StylePainter.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\CSSSpec.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\CSSSpec.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\Dimension.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\Dimension.cs</Link>
     </Compile>
@@ -438,6 +444,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSheetApplicator.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSheetApplicator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSheetBuilder.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSheetBuilder.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSheetCache.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSheetCache.cs</Link>
@@ -808,6 +817,9 @@
     <Compile Include="..\..\Modules\Accessibility\VisionUtility.cs">
       <Link>Modules\Accessibility\VisionUtility.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\AndroidDevice.bindings.cs">
+      <Link>Modules\AndroidJNI\AndroidDevice.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AndroidJNI\AndroidJNI.bindings.cs">
       <Link>Modules\AndroidJNI\AndroidJNI.bindings.cs</Link>
     </Compile>
@@ -816,6 +828,9 @@
     </Compile>
     <Compile Include="..\..\Modules\AndroidJNI\AndroidJava.cs">
       <Link>Modules\AndroidJNI\AndroidJava.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\AndroidPermissions.cs">
+      <Link>Modules\AndroidJNI\AndroidPermissions.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Animation\Managed\Animation.deprecated.cs">
       <Link>Modules\Animation\Managed\Animation.deprecated.cs</Link>
@@ -1606,6 +1621,12 @@
     <Compile Include="..\..\Modules\UnityConnect\UnityConnectSettings.bindings.cs">
       <Link>Modules\UnityConnect\UnityConnectSettings.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UnityCurl\FriendAttributes.cs">
+      <Link>Modules\UnityCurl\FriendAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityCurl\Public\UnityCurl.bindings.cs">
+      <Link>Modules\UnityCurl\Public\UnityCurl.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UnityWebRequestAssetBundle\Public\DownloadHandlerAssetBundle.bindings.cs">
       <Link>Modules\UnityWebRequestAssetBundle\Public\DownloadHandlerAssetBundle.bindings.cs</Link>
     </Compile>
@@ -1830,12 +1851,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\2D\SortingLayer.bindings.cs">
       <Link>Runtime\Export\2D\SortingLayer.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Android\AndroidDevice.bindings.cs">
-      <Link>Runtime\Export\Android\AndroidDevice.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Android\AndroidPermissions.bindings.cs">
-      <Link>Runtime\Export\Android\AndroidPermissions.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Animation\AnimationCurve.bindings.cs">
       <Link>Runtime\Export\Animation\AnimationCurve.bindings.cs</Link>
@@ -2227,6 +2242,9 @@
     <Compile Include="..\..\Runtime\Export\Graphics\RenderingCommandBuffer.deprecated.cs">
       <Link>Runtime\Export\Graphics\RenderingCommandBuffer.deprecated.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\RenderingCommandBufferExtensions.bindings.cs">
+      <Link>Runtime\Export\Graphics\RenderingCommandBufferExtensions.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\ShaderWarmup.bindings.cs">
       <Link>Runtime\Export\Graphics\ShaderWarmup.bindings.cs</Link>
     </Compile>
@@ -2508,6 +2526,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Rendering\BatchRendererGroup.bindings.cs">
       <Link>Runtime\Export\Rendering\BatchRendererGroup.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Resources\IconAttribute.cs">
+      <Link>Runtime\Export\Resources\IconAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Resources\Resources.bindings.cs">
       <Link>Runtime\Export\Resources\Resources.bindings.cs</Link>
@@ -2911,8 +2932,14 @@
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\Profiler.bindings.cs">
       <Link>Runtime\Profiler\ScriptBindings\Profiler.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerCategory.cs">
+      <Link>Runtime\Profiler\ScriptBindings\ProfilerCategory.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerMarker.bindings.cs">
       <Link>Runtime\Profiler\ScriptBindings\ProfilerMarker.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerRecorder.bindings.cs">
+      <Link>Runtime\Profiler\ScriptBindings\ProfilerRecorder.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerScreenCapture.cs">
       <Link>Runtime\Profiler\ScriptBindings\ProfilerScreenCapture.cs</Link>
@@ -2957,7 +2984,6 @@
     <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_ASSETPIPELINE_GUI;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>0626</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Prefer32Bit>false</Prefer32Bit>

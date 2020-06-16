@@ -414,7 +414,7 @@ namespace UnityEditorInternal
         // show default background
         public bool showDefaultBackground = true;
 
-        private float HeaderHeight { get { return Mathf.Max(headerHeight, Defaults.minHeaderHeight); } }
+        private float HeaderHeight { get { return Mathf.Max(m_DisplayHeader ? headerHeight : 0, Defaults.minHeaderHeight); } }
 
         private float listElementTopPadding => headerHeight > 5 ? 4 : 1; // headerHeight is usually set to 3px when there is no header content. Therefore, we add a 1px top margin to match the 4px bottom margin
         private const float kListElementBottomPadding = 4;
@@ -474,6 +474,11 @@ namespace UnityEditorInternal
                     }
 
                     float height = elementHeight;
+                    if (elementHeightCallback != null)
+                    {
+                        height = elementHeightCallback(m_PropertyCache.Count);
+                    }
+
                     m_PropertyCache.Add(new PropertyCacheEntry(null, height, offset));
                 }
             }

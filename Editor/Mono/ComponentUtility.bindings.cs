@@ -48,9 +48,9 @@ namespace UnityEditorInternal
         static extern bool PasteComponentValues(UnityObject[] context, bool validateOnly);
 
         //Append new Components to the GameObject
-        public static extern bool PasteComponentAsNew(GameObject go);
+        public static extern bool PasteComponentAsNew([NotNull("NullExceptionObject")] GameObject go);
 
-        internal static extern bool CollectConnectedComponents(GameObject targetGameObject, Component[] components, bool copy, [NotNull] List<Component> outCollectedComponents, out string outErrorMessage);
+        internal static extern bool CollectConnectedComponents([NotNull("NullExceptionObject")] GameObject targetGameObject, Component[] components, bool copy, [NotNull] List<Component> outCollectedComponents, out string outErrorMessage);
 
         internal static bool MoveComponentToGameObject(Component component, GameObject targetGameObject)
         {
@@ -58,7 +58,7 @@ namespace UnityEditorInternal
         }
 
         [FreeFunction("MoveComponent")]
-        internal static extern bool MoveComponentToGameObject(Component component, GameObject targetGameObject, [DefaultValue("false")] bool validateOnly);
+        internal static extern bool MoveComponentToGameObject([NotNull("NullExceptionObject")] Component component, [NotNull("NullExceptionObject")] GameObject targetGameObject, [DefaultValue("false")] bool validateOnly);
 
         internal static bool MoveComponentRelativeToComponent(Component component, Component targetComponent, bool aboveTarget)
         {
@@ -66,7 +66,7 @@ namespace UnityEditorInternal
         }
 
         [FreeFunction("MoveComponent")]
-        internal static extern bool MoveComponentRelativeToComponent(Component component, Component targetComponent, bool aboveTarget, [DefaultValue("false")] bool validateOnly);
+        internal static extern bool MoveComponentRelativeToComponent([NotNull("NullExceptionObject")] Component component, [NotNull("NullExceptionObject")] Component targetComponent, bool aboveTarget, [DefaultValue("false")] bool validateOnly);
 
         internal static bool MoveComponentsRelativeToComponents(Component[] components, Component[] targetComponents, bool aboveTarget)
         {
@@ -76,13 +76,13 @@ namespace UnityEditorInternal
         [FreeFunction("MoveComponents")]
         internal static extern bool MoveComponentsRelativeToComponents(Component[] components, Component[] targetComponents, bool aboveTarget, [DefaultValue("false")] bool validateOnly);
 
-        internal static extern bool CopyComponentToGameObject(Component component, GameObject targetGameObject, bool validateOnly, [NotNull] List<Component> outNewComponents);
-        internal static extern bool CopyComponentToGameObjects(Component component, GameObject[] targetGameObjects, bool validateOnly, [NotNull] List<Component> outNewComponents);
-        internal static extern bool CopyComponentRelativeToComponent(Component component, Component targetComponent, bool aboveTarget, bool validateOnly, [NotNull] List<Component> outNewComponents);
-        internal static extern bool CopyComponentRelativeToComponents(Component component, Component[] targetComponents, bool aboveTarget, bool validateOnly, [NotNull] List<Component> outNewComponents);
+        internal static extern bool CopyComponentToGameObject([NotNull("NullExceptionObject")] Component component, [NotNull("NullExceptionObject")] GameObject targetGameObject, bool validateOnly, [NotNull] List<Component> outNewComponents);
+        internal static extern bool CopyComponentToGameObjects([NotNull("NullExceptionObject")] Component component, GameObject[] targetGameObjects, bool validateOnly, [NotNull] List<Component> outNewComponents);
+        internal static extern bool CopyComponentRelativeToComponent([NotNull("NullExceptionObject")] Component component, [NotNull("NullExceptionObject")] Component targetComponent, bool aboveTarget, bool validateOnly, [NotNull] List<Component> outNewComponents);
+        internal static extern bool CopyComponentRelativeToComponents([NotNull("NullExceptionObject")] Component component, Component[] targetComponents, bool aboveTarget, bool validateOnly, [NotNull] List<Component> outNewComponents);
         internal static extern bool CopyComponentsRelativeToComponents(Component[] components, Component[] targetComponents, bool aboveTarget, bool validateOnly, List<Component> outNewComponents);
 
         [FreeFunction]
-        internal static extern bool WarnCanAddScriptComponent(GameObject gameObject, MonoScript script);
+        internal static extern bool WarnCanAddScriptComponent([NotNull("NullExceptionObject")] GameObject gameObject, [NotNull("NullExceptionObject")] MonoScript script);
     }
 }

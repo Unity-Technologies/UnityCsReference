@@ -45,7 +45,7 @@ namespace UnityEditor
                                 //  - Doesn't support showing different icons for different prefab types, such as prefab variants.
                                 // Support for specific file types based on file extensiom have to be supported inside AssetDatabase.GetCachedIcon
                                 // itself to work correctly and universally. for e.g. uxml files from within GetCachedIcon without relying on FindIconForFile.
-                                return AssetDatabase.GetCachedIcon(path) as Texture2D;
+                                return EditorGUIUtility.GetSkinnedIcon(AssetDatabase.GetCachedIcon(path) as Texture2D);
 
                             path = string.IsNullOrEmpty(m_Guid) ? null : AssetDatabase.GUIDToAssetPath(m_Guid);
                             if (path != null)
@@ -416,7 +416,6 @@ namespace UnityEditor
                 case SearchFilter.State.SearchingInAssetsOnly:   SearchAllAssets(SearchFilter.SearchArea.InAssetsOnly); break;
                 case SearchFilter.State.SearchingInPackagesOnly: SearchAllAssets(SearchFilter.SearchArea.InPackagesOnly); break;
                 case SearchFilter.State.SearchingInFolders:      SearchInFolders(); break;
-                case SearchFilter.State.SearchingInAssetStore: /*do nothing*/ break;
                 case SearchFilter.State.EmptySearchFilter: /*do nothing*/ break;
                 default: Debug.LogError("Unhandled enum!"); break;
             }

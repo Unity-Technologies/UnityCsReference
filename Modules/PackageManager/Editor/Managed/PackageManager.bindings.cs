@@ -43,7 +43,7 @@ namespace UnityEditor.PackageManager
         private static extern NativeStatusCode ResetToEditorDefaults([Out] out long operationId);
 
         [FreeFunction("PackageManager::Resolve")]
-        internal static extern void Resolve();
+        public static extern void Resolve();
 
         [FreeFunction("PackageManager::Search::StartOperation")]
         private static extern NativeStatusCode Search([Out] out long operationId, SearchOptions options);

@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEditor.AnimatedValues;
+using UnityEditorInternal.VR;
 
 namespace UnityEditor
 {
@@ -124,7 +125,7 @@ namespace UnityEditor
 
         private void AllRootCanvases()
         {
-            if (PlayerSettings.virtualRealitySupported && (m_RenderMode.enumValueIndex == (int)RenderMode.ScreenSpaceOverlay))
+            if (VREditor.GetVREnabledOnTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)) && (m_RenderMode.enumValueIndex == (int)RenderMode.ScreenSpaceOverlay))
             {
                 EditorGUILayout.HelpBox("Using a render mode of ScreenSpaceOverlay while VR is enabled will cause the Canvas to continue to incur a rendering cost, even though the Canvas will not be visible in VR.", MessageType.Warning);
             }

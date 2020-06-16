@@ -3,9 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.Profiling;
 
 namespace UnityEditorInternal.Profiling
@@ -13,14 +12,32 @@ namespace UnityEditorInternal.Profiling
     [Serializable]
     internal class NetworkingMessagesProfilerModule : ProfilerModuleBase
     {
-        public override void DrawToolbar(Rect position)
+        const string k_IconName = "Profiler.NetworkMessages";
+        const int k_DefaultOrderIndex = 8;
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("Network Messages");
+
+        public NetworkingMessagesProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName) {}
+
+        public override ProfilerArea area => ProfilerArea.NetworkMessages;
+
+        protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        protected override string legacyPreferenceKey => "ProfilerChartNetworkMessages";
+
+        protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
         {
-            DrawOtherToolbar(ProfilerArea.NetworkMessages);
+            var chart = base.InstantiateChart(defaultChartScale, chartMaximumScaleInterpolationValue);
+            chart.m_SharedScale = true;
+            return chart;
         }
 
-        public override void DrawView(Rect position)
+        public override void DrawToolbar(Rect position)
         {
-            DrawOverviewText(ProfilerArea.NetworkMessages, position);
+            DrawEmptyToolbar();
+        }
+
+        public override void DrawDetailsView(Rect position)
+        {
+            DrawDetailsViewText(position);
         }
     }
 }

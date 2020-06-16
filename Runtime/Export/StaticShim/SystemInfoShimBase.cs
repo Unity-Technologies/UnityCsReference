@@ -97,6 +97,8 @@ namespace UnityEngine
 
         public virtual bool supportsTessellationShaders => EditorSystemInfo.supportsTessellationShaders;
 
+        public virtual bool supportsRenderTargetArrayIndexFromVertexShader => EditorSystemInfo.supportsRenderTargetArrayIndexFromVertexShader;
+
         public virtual bool supportsInstancing => EditorSystemInfo.supportsInstancing;
 
         public virtual bool supportsHardwareQuadTopology => EditorSystemInfo.supportsHardwareQuadTopology;
@@ -112,6 +114,8 @@ namespace UnityEngine
         public virtual int supportedRandomWriteTargetCount => EditorSystemInfo.supportedRandomWriteTargetCount;
 
         public virtual int supportsMultisampledTextures => EditorSystemInfo.supportsMultisampledTextures;
+
+        public virtual bool supportsMultisampled2DArrayTextures => EditorSystemInfo.supportsMultisampled2DArrayTextures;
 
         public virtual bool supportsMultisampleAutoResolve => EditorSystemInfo.supportsMultisampleAutoResolve;
 

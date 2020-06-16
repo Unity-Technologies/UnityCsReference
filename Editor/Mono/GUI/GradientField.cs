@@ -64,7 +64,7 @@ namespace UnityEditor
         public static Gradient GradientField(Rect position, Gradient gradient)
         {
             int id = EditorGUIUtility.GetControlID(s_GradientHash, FocusType.Keyboard, position);
-            return DoGradientField(position, id, gradient, null, false);
+            return DoGradientField(position, id, gradient, null, false, ColorSpace.Gamma);
         }
 
         public static Gradient GradientField(Rect position, string label, Gradient gradient)
@@ -79,8 +79,13 @@ namespace UnityEditor
 
         public static Gradient GradientField(Rect position, GUIContent label, Gradient gradient, bool hdr)
         {
+            return GradientField(position, label, gradient, hdr, ColorSpace.Gamma);
+        }
+
+        public static Gradient GradientField(Rect position, GUIContent label, Gradient gradient, bool hdr, ColorSpace colorSpace)
+        {
             int id = EditorGUIUtility.GetControlID(s_GradientHash, FocusType.Keyboard, position);
-            return DoGradientField(PrefixLabel(position, id, label), id, gradient, null, hdr);
+            return DoGradientField(PrefixLabel(position, id, label), id, gradient, null, hdr, colorSpace);
         }
 
         // SerializedProperty versions
@@ -91,8 +96,13 @@ namespace UnityEditor
 
         internal static Gradient GradientField(Rect position, SerializedProperty property, bool hdr)
         {
+            return GradientField(position, property, hdr, ColorSpace.Gamma);
+        }
+
+        internal static Gradient GradientField(Rect position, SerializedProperty property, bool hdr, ColorSpace colorSpace)
+        {
             int id = EditorGUIUtility.GetControlID(s_GradientHash, FocusType.Keyboard, position);
-            return DoGradientField(position, id, null, property, hdr);
+            return DoGradientField(position, id, null, property, hdr, colorSpace);
         }
 
         internal static Gradient GradientField(Rect position, string label, SerializedProperty property)
@@ -103,10 +113,10 @@ namespace UnityEditor
         internal static Gradient GradientField(Rect position, GUIContent label, SerializedProperty property)
         {
             int id = EditorGUIUtility.GetControlID(s_GradientHash, FocusType.Keyboard, position);
-            return DoGradientField(PrefixLabel(position, id, label), id, null, property, false);
+            return DoGradientField(PrefixLabel(position, id, label), id, null, property, false, ColorSpace.Gamma);
         }
 
-        internal static Gradient DoGradientField(Rect position, int id, Gradient value, SerializedProperty property, bool hdr)
+        internal static Gradient DoGradientField(Rect position, int id, Gradient value, SerializedProperty property, bool hdr, ColorSpace space)
         {
             Event evt = Event.current;
 
@@ -120,7 +130,7 @@ namespace UnityEditor
                             s_GradientID = id;
                             GUIUtility.keyboardControl = id;
                             Gradient gradient = property != null ? property.gradientValue : value;
-                            GradientPicker.Show(gradient, hdr);
+                            GradientPicker.Show(gradient, hdr, space);
                             GUIUtility.ExitGUI();
                         }
                         else if (evt.button == 1)
@@ -135,9 +145,9 @@ namespace UnityEditor
                 {
                     Rect r2 = new Rect(position.x + 1, position.y + 1, position.width - 2, position.height - 2);    // Adjust for box drawn on top
                     if (property != null)
-                        GradientEditor.DrawGradientSwatch(r2, property, Color.white);
+                        GradientEditor.DrawGradientSwatch(r2, property, Color.white, space);
                     else
-                        GradientEditor.DrawGradientSwatch(r2, value, Color.white);
+                        GradientEditor.DrawGradientSwatch(r2, value, Color.white, space);
                     EditorStyles.colorPickerBox.Draw(position, GUIContent.none, id);
                     break;
                 }
@@ -167,7 +177,7 @@ namespace UnityEditor
                     {
                         Event.current.Use();
                         Gradient gradient = property != null ? property.gradientValue : value;
-                        GradientPicker.Show(gradient, hdr);
+                        GradientPicker.Show(gradient, hdr, space);
                         GUIUtility.ExitGUI();
                     }
                     break;

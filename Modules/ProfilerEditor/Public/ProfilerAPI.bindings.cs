@@ -226,8 +226,23 @@ namespace UnityEditorInternal
         static public extern string GetFormattedCounterValue(int frame, ProfilerArea area, string name);
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        static extern string GetFormattedCounterValueByCategory(int frame, string category, string name);
+
+        public static string GetFormattedCounterValue(int frame, string category, string name)
+        {
+            return GetFormattedCounterValueByCategory(frame, category, name);
+        }
+
+        [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
         public static extern void GetCounterValuesBatch(ProfilerArea area, string name, int firstFrame, float scale, [Out] float[] buffer, out float maxValue);
 
+        [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        static extern void GetCounterValuesBatchByCategory(string category, string name, int firstFrame, float scale, [Out] float[] buffer, out float maxValue);
+
+        public static void GetCounterValuesBatch(string category, string name, int firstFrame, float scale, [Out] float[] buffer, out float maxValue)
+        {
+            GetCounterValuesBatchByCategory(category, name, firstFrame, scale, buffer, out maxValue);
+        }
 
         static public void GetGpuStatisticsAvailabilityStates(int firstFrame, [Out] GpuProfilingStatisticsAvailabilityStates[] buffer)
         {
@@ -252,10 +267,27 @@ namespace UnityEditorInternal
         [NativeMethod("GetStatisticsAvailabilityState")]
         static internal extern int GetStatisticsAvailabilityState(ProfilerArea area, int frame);
 
+        static internal int GetStatisticsAvailabilityState(string category, int frame)
+        {
+            return GetStatisticsAvailabilityStateByCategory(category, frame);
+        }
+
+        [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        [NativeMethod("GetStatisticsAvailabilityStateByCategory")]
+        static internal extern int GetStatisticsAvailabilityStateByCategory(string category, int frame);
+
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
         [NativeMethod("GetStatisticsAvailabilityStates")]
         static internal extern void GetStatisticsAvailabilityStates(ProfilerArea area, int firstFrame, [Out] int[] buffer);
 
+        [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        [NativeMethod("GetStatisticsAvailabilityStatesByCategory")]
+        static internal extern void GetStatisticsAvailabilityStatesByCategory(string category, int firstFrame, [Out] int[] buffer);
+
+        static internal void GetStatisticsAvailabilityStates(string category, int firstFrame, [Out] int[] buffer)
+        {
+            GetStatisticsAvailabilityStatesByCategory(category, firstFrame, buffer);
+        }
 
         static public HierarchyFrameDataView GetHierarchyFrameDataView(int frameIndex, int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int sortColumn, bool sortAscending)
         {

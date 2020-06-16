@@ -489,7 +489,8 @@ namespace UnityEditor
                                 if (m_DragState.draggingIndex == i || GUIUtility.hotControl == itemControlID)
                                     DrawHoverEffect(itemRect, false);
 
-                                lib.Draw(previewRect, i);
+                                DrawPreset(lib, previewRect, lib.GetPreset(i));
+
                                 if (!isRenamingThisItem && drawLabels)
                                     GUI.Label(labelRect, GUIContent.Temp(lib.GetName(i)));
 
@@ -640,6 +641,11 @@ namespace UnityEditor
             EditorGUI.DrawRect(insertRect, new Color(0.3f, 0.3f, 1.0f));
         }
 
+        protected virtual void DrawPreset(PresetLibrary lib, Rect rect, object presetObject)
+        {
+            lib.Draw(rect, presetObject);
+        }
+
         void CreateNewPresetButton(Rect buttonRect, object newPresetObject, PresetLibrary lib, bool isOpenForEdit)
         {
             using (new EditorGUI.DisabledScope(!isOpenForEdit))
@@ -655,7 +661,7 @@ namespace UnityEditor
                 if (Event.current.type == EventType.Repaint)
                 {
                     Rect rect2 = new RectOffset(-3, -3, -3, -3).Add(buttonRect);
-                    lib.Draw(rect2, newPresetObject);
+                    DrawPreset(lib, rect2, newPresetObject);
 
                     if (buttonRect.width > 30)
                     {

@@ -159,8 +159,7 @@ namespace UnityEditor.Modules
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = editor.model.overriddenIsDifferent ||
-                    editor.model.textureCompressionIsDifferent ||
-                    editor.model.platformTextureSettings.format != TextureImporterFormat.Automatic;
+                    editor.model.textureCompressionIsDifferent;
                 TextureImporterCompression textureCompression =
                     (TextureImporterCompression)EditorGUILayout.IntPopup(kTextureCompression,
                         (int)editor.model.platformTextureSettings.textureCompression, kTextureCompressionOptions,

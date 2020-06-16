@@ -4,11 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.Profiling;
+using System.Text;
 using UnityEditor;
 using UnityEditor.Profiling;
-using System.Text;
+using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace UnityEditorInternal.Profiling
 {
@@ -22,17 +22,27 @@ namespace UnityEditorInternal.Profiling
             public static readonly GUIContent memoryUsageInEditorDisclaimer = EditorGUIUtility.TrTextContent("Memory usage in the Editor is not the same as it would be in a Player.");
         }
 
+        const string k_IconName = "Profiler.Memory";
+        const int k_DefaultOrderIndex = 3;
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("Memory");
+
         static readonly float[] k_SplitterMinSizes = new[] { 450f, 50f };
-
-        [SerializeField]
-        SplitterState m_ViewSplit;
-
-        ProfilerMemoryView m_ShowDetailedMemoryPane = (ProfilerMemoryView)EditorPrefs.GetInt(k_ViewTypeSettingsKey, (int)ProfilerMemoryView.Simple);
-
-        private MemoryTreeList m_ReferenceListView;
-        private MemoryTreeListClickable m_MemoryListView;
-        private bool m_GatherObjectReferences = true;
-        bool wantsMemoryRefresh { get { return m_MemoryListView.RequiresRefresh; } }
+        static readonly string[] k_DefaultMemoryAreaCounterNames =
+        {
+            "Total Used Memory",
+            "Texture Memory",
+            "Mesh Memory",
+            "Material Count",
+            "Object Count",
+            "GC Used Memory",
+            "GC Allocated In Frame",
+        };
+        static readonly string[] k_PS4MemoryAreaAdditionalCounterNames = new string[]
+        {
+            "GARLIC heap allocs",
+            "ONION heap allocs"
+        };
+        const string k_MemoryCountersCategoryName = "Memory";
 
         static WeakReference instance;
 
@@ -41,16 +51,32 @@ namespace UnityEditorInternal.Profiling
         const string k_SplitterRelative0SettingsKey = "Profiler.MemoryProfilerModule.Splitter.Relative[0]";
         const string k_SplitterRelative1SettingsKey = "Profiler.MemoryProfilerModule.Splitter.Relative[1]";
 
-        public override void OnEnable(IProfilerWindowController profilerWindow)
+        [SerializeField]
+        SplitterState m_ViewSplit;
+
+        ProfilerMemoryView m_ShowDetailedMemoryPane = (ProfilerMemoryView)EditorPrefs.GetInt(k_ViewTypeSettingsKey, (int)ProfilerMemoryView.Simple);
+
+        MemoryTreeList m_ReferenceListView;
+        MemoryTreeListClickable m_MemoryListView;
+        bool m_GatherObjectReferences = true;
+
+        public MemoryProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName) {}
+
+        protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        protected override string legacyPreferenceKey => "ProfilerChartMemory";
+
+        bool wantsMemoryRefresh { get { return m_MemoryListView.RequiresRefresh; } }
+
+        public override void OnEnable()
         {
-            base.OnEnable(profilerWindow);
+            base.OnEnable();
 
             instance = new WeakReference(this);
 
             if (m_ReferenceListView == null)
-                m_ReferenceListView = new MemoryTreeList(profilerWindow, null);
+                m_ReferenceListView = new MemoryTreeList(m_ProfilerWindow, null);
             if (m_MemoryListView == null)
-                m_MemoryListView = new MemoryTreeListClickable(profilerWindow, m_ReferenceListView);
+                m_MemoryListView = new MemoryTreeListClickable(m_ProfilerWindow, m_ReferenceListView);
             if (m_ViewSplit == null || !m_ViewSplit.IsValid())
                 m_ViewSplit = SplitterState.FromRelative(new[] { EditorPrefs.GetFloat(k_SplitterRelative0SettingsKey, 70f), EditorPrefs.GetFloat(k_SplitterRelative1SettingsKey, 30f) }, k_SplitterMinSizes, null);
 
@@ -93,7 +119,7 @@ namespace UnityEditorInternal.Profiling
             EditorGUILayout.EndHorizontal();
         }
 
-        public override void DrawView(Rect position)
+        public override void DrawDetailsView(Rect position)
         {
             if (m_ShowDetailedMemoryPane == ProfilerMemoryView.Simple)
                 DrawSimpleMemoryPane(position);
@@ -101,13 +127,36 @@ namespace UnityEditorInternal.Profiling
                 DrawDetailedMemoryPane(m_ViewSplit);
         }
 
-        static long GetCounterValue(FrameDataView frameData, string name)
+        protected override List<ProfilerCounterData> CollectDefaultChartCounters()
         {
-            var id = frameData.GetMarkerId(name);
-            if (id == FrameDataView.invalidMarkerId)
-                return -1;
+            var defaultChartCounters = new List<ProfilerCounterData>(k_DefaultMemoryAreaCounterNames.Length);
+            foreach (var defaultCounterName in k_DefaultMemoryAreaCounterNames)
+            {
+                defaultChartCounters.Add(new ProfilerCounterData()
+                {
+                    m_Name = defaultCounterName,
+                    m_Category = k_MemoryCountersCategoryName,
+                });
+            }
 
-            return frameData.GetCounterValueAsLong(id);
+            // Add any counters specific to native platforms.
+            var m_ActiveNativePlatformSupportModule = EditorUtility.GetActiveNativePlatformSupportModuleName();
+            if (m_ActiveNativePlatformSupportModule == "PS4")
+            {
+                var ps4ChartCounters = new List<ProfilerCounterData>(k_PS4MemoryAreaAdditionalCounterNames.Length);
+                foreach (var ps4CounterName in k_PS4MemoryAreaAdditionalCounterNames)
+                {
+                    ps4ChartCounters.Add(new ProfilerCounterData()
+                    {
+                        m_Name = ps4CounterName,
+                        m_Category = k_MemoryCountersCategoryName,
+                    });
+                }
+
+                defaultChartCounters.AddRange(ps4ChartCounters);
+            }
+
+            return defaultChartCounters;
         }
 
         void DrawSimpleMemoryPane(Rect position)
@@ -123,31 +172,31 @@ namespace UnityEditorInternal.Profiling
                     {
                         var stringBuilder = new StringBuilder(1024);
                         stringBuilder.Append($"Used Total: {EditorUtility.FormatBytes(totalUsedMemory)}   ");
-                        stringBuilder.Append($"Mono/il2cpp: {EditorUtility.FormatBytes(GetCounterValue(f, "GC Used Memory"))}   ");
-                        stringBuilder.Append($"Gfx: {EditorUtility.FormatBytes(GetCounterValue(f, "Gfx Used Memory"))}   ");
-                        stringBuilder.Append($"Audio: {EditorUtility.FormatBytes(GetCounterValue(f, "Audio Used Memory"))}   ");
-                        stringBuilder.Append($"Video: {EditorUtility.FormatBytes(GetCounterValue(f, "Video Used Memory"))}   ");
-                        stringBuilder.Append($"Profiler: {EditorUtility.FormatBytes(GetCounterValue(f, "Profiler Used Memory"))}   ");
+                        stringBuilder.Append($"Mono/il2cpp: {GetCounterValueAsBytes(f, "GC Used Memory")}   ");
+                        stringBuilder.Append($"Gfx: {GetCounterValueAsBytes(f, "Gfx Used Memory")}   ");
+                        stringBuilder.Append($"Audio: {GetCounterValueAsBytes(f, "Audio Used Memory")}   ");
+                        stringBuilder.Append($"Video: {GetCounterValueAsBytes(f, "Video Used Memory")}   ");
+                        stringBuilder.Append($"Profiler: {GetCounterValueAsBytes(f, "Profiler Used Memory")}   ");
 
-                        stringBuilder.Append($"\nReserved Total: {EditorUtility.FormatBytes(GetCounterValue(f, "Total Reserved Memory"))}   ");
-                        stringBuilder.Append($"Mono/il2cpp: {EditorUtility.FormatBytes(GetCounterValue(f, "GC Reserved Memory"))}   ");
-                        stringBuilder.Append($"Gfx: {EditorUtility.FormatBytes(GetCounterValue(f, "Gfx Reserved Memory"))}   ");
-                        stringBuilder.Append($"Audio: {EditorUtility.FormatBytes(GetCounterValue(f, "Audio Reserved Memory"))}   ");
-                        stringBuilder.Append($"Video: {EditorUtility.FormatBytes(GetCounterValue(f, "Video Reserved Memory"))}   ");
-                        stringBuilder.Append($"Profiler: {EditorUtility.FormatBytes(GetCounterValue(f, "Profiler Reserved Memory"))}   ");
+                        stringBuilder.Append($"\nReserved Total: {GetCounterValueAsBytes(f, "Total Reserved Memory")}   ");
+                        stringBuilder.Append($"Mono/il2cpp: {GetCounterValueAsBytes(f, "GC Reserved Memory")}   ");
+                        stringBuilder.Append($"Gfx: {GetCounterValueAsBytes(f, "Gfx Reserved Memory")}   ");
+                        stringBuilder.Append($"Audio: {GetCounterValueAsBytes(f, "Audio Reserved Memory")}   ");
+                        stringBuilder.Append($"Video: {GetCounterValueAsBytes(f, "Video Reserved Memory")}   ");
+                        stringBuilder.Append($"Profiler: {GetCounterValueAsBytes(f, "Profiler Reserved Memory")}   ");
 
-                        stringBuilder.Append($"\nTotal System Memory Usage: {EditorUtility.FormatBytes(GetCounterValue(f, "System Used Memory"))}   ");
+                        stringBuilder.Append($"\nTotal System Memory Usage: {GetCounterValueAsBytes(f, "System Used Memory")}   ");
 
-                        stringBuilder.Append($"\n\nTextures: {GetCounterValue(f, "Texture Count")} / {EditorUtility.FormatBytes(GetCounterValue(f, "Texture Memory"))}   ");
-                        stringBuilder.Append($"\nMeshes: {GetCounterValue(f, "Mesh Count")} / {EditorUtility.FormatBytes(GetCounterValue(f, "Mesh Memory"))}   ");
-                        stringBuilder.Append($"\nMaterials: {GetCounterValue(f, "Material Count")} / {EditorUtility.FormatBytes(GetCounterValue(f, "Material Memory"))}   ");
-                        stringBuilder.Append($"\nAnimationClips: {GetCounterValue(f, "AnimationClip Count")} / {EditorUtility.FormatBytes(GetCounterValue(f, "AnimationClip Memory"))}   ");
+                        stringBuilder.Append($"\n\nTextures: {GetCounterValue(f, "Texture Count")} / {GetCounterValueAsBytes(f, "Texture Memory")}   ");
+                        stringBuilder.Append($"\nMeshes: {GetCounterValue(f, "Mesh Count")} / {GetCounterValueAsBytes(f, "Mesh Memory")}   ");
+                        stringBuilder.Append($"\nMaterials: {GetCounterValue(f, "Material Count")} / {GetCounterValueAsBytes(f, "Material Memory")}   ");
+                        stringBuilder.Append($"\nAnimationClips: {GetCounterValue(f, "AnimationClip Count")} / {GetCounterValueAsBytes(f, "AnimationClip Memory")}   ");
                         stringBuilder.Append($"\nAssets: {GetCounterValue(f, "Asset Count")}   ");
                         stringBuilder.Append($"\nGameObjects in Scenes: {GetCounterValue(f, "Game Object Count")}   ");
                         stringBuilder.Append($"\nTotal Objects in Scenes: {GetCounterValue(f, "Scene Object Count")}   ");
                         stringBuilder.Append($"\nTotal Unity Object Count: {GetCounterValue(f, "Object Count")}   ");
 
-                        stringBuilder.Append($"\n\nGC Allocations per Frame: {GetCounterValue(f, "GC Allocation In Frame Count")} / {EditorUtility.FormatBytes(GetCounterValue(f, "GC Allocated In Frame"))}   ");
+                        stringBuilder.Append($"\n\nGC Allocations per Frame: {GetCounterValue(f, "GC Allocation In Frame Count")} / {GetCounterValueAsBytes(f, "GC Allocated In Frame")}   ");
 
                         var garlicHeapUsedMemory = GetCounterValue(f, "GARLIC heap used");
                         if (garlicHeapUsedMemory != -1)
@@ -155,11 +204,11 @@ namespace UnityEditorInternal.Profiling
                             var garlicHeapAvailable = GetCounterValue(f, "GARLIC heap available");
                             stringBuilder.Append($"\n\nGARLIC heap used: {EditorUtility.FormatBytes(garlicHeapUsedMemory)}/{EditorUtility.FormatBytes(garlicHeapAvailable + garlicHeapUsedMemory)}   ");
                             stringBuilder.Append($"({EditorUtility.FormatBytes(garlicHeapAvailable)} available)   ");
-                            stringBuilder.Append($"peak used: {EditorUtility.FormatBytes(GetCounterValue(f, "GARLIC heap peak used"))}   ");
+                            stringBuilder.Append($"peak used: {GetCounterValueAsBytes(f, "GARLIC heap peak used")}   ");
                             stringBuilder.Append($"num allocs: {GetCounterValue(f, "GARLIC heap allocs")}\n");
 
-                            stringBuilder.Append($"ONION heap used: {EditorUtility.FormatBytes(GetCounterValue(f, "ONION heap used"))}   ");
-                            stringBuilder.Append($"peak used: {EditorUtility.FormatBytes(GetCounterValue(f, "ONION heap peak used"))}   ");
+                            stringBuilder.Append($"ONION heap used: {GetCounterValueAsBytes(f, "ONION heap used")}   ");
+                            stringBuilder.Append($"peak used: {GetCounterValueAsBytes(f, "ONION heap peak used")}   ");
                             stringBuilder.Append($"num allocs: {GetCounterValue(f, "ONION heap allocs")}");
                         }
 

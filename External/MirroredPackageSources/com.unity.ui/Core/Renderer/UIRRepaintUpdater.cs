@@ -19,12 +19,6 @@ namespace UnityEngine.UIElements
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
-        public event Action<RenderChain> BeforeDrawChain
-        {
-            add { if (renderChain != null) renderChain.BeforeDrawChain += value; }
-            remove { if (renderChain != null) renderChain.BeforeDrawChain -= value; }
-        }
-
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
             if (renderChain == null)

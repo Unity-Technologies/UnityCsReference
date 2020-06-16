@@ -10,6 +10,8 @@ using UnityEditor.Experimental.AssetImporters;
 using UnityEditorInternal;
 using System.IO;
 
+using Object = UnityEngine.Object;
+
 namespace UnityEditor
 {
     [CustomEditor(typeof(MonoImporter))]
@@ -77,7 +79,7 @@ namespace UnityEditor
         static void ResetDefaultReferences(MenuCommand command)
         {
             MonoImporter importer = command.context as MonoImporter;
-            importer.SetDefaultReferences(new string[0], new UnityEngine.Object[0]);
+            importer.SetDefaultReferences(new string[0], new Object[0]);
             AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(importer));
         }
 
@@ -88,7 +90,7 @@ namespace UnityEditor
             return true;
         }
 
-        void ShowFieldInfo(Type type, MonoImporter importer, List<string> names, List<UnityEngine.Object> objects, ref bool didModify)
+        void ShowFieldInfo(Type type, MonoImporter importer, List<string> names, List<Object> objects, ref bool didModify)
         {
             // Only show default properties for types that support it (so far only MonoBehaviour derived types)
             if (!IsTypeCompatible(type))
@@ -106,10 +108,10 @@ namespace UnityEditor
                         continue;
                 }
 
-                if (field.FieldType.IsSubclassOf(typeof(UnityEngine.Object)) || field.FieldType == typeof(UnityEngine.Object))
+                if (field.FieldType.IsSubclassOf(typeof(Object)) || field.FieldType == typeof(Object))
                 {
-                    UnityEngine.Object oldTarget = importer.GetDefaultReference(field.Name);
-                    UnityEngine.Object newTarget = EditorGUILayout.ObjectField(ObjectNames.NicifyVariableName(field.Name), oldTarget, field.FieldType, false);
+                    Object oldTarget = importer.GetDefaultReference(field.Name);
+                    Object newTarget = EditorGUILayout.ObjectField(ObjectNames.NicifyVariableName(field.Name), oldTarget, field.FieldType, false);
 
                     names.Add(field.Name);
                     objects.Add(newTarget);
@@ -141,7 +143,7 @@ namespace UnityEditor
                 }
 
                 var names = new List<string>();
-                var objects = new List<UnityEngine.Object>();
+                var objects = new List<Object>();
                 var didModify = false;
 
                 // Make default reference fields show small icons
@@ -169,10 +171,17 @@ namespace UnityEditor
         private const int kMaxChars = 7000;
         [NonSerialized]
         private GUIStyle m_TextStyle;
+        private TextAsset m_TextAsset;
+        private GUIContent m_CachedPreview;
+        private string m_AssetGUID;
+        private Hash128 m_LastDependencyHash;
 
         public virtual void OnEnable()
         {
             alwaysAllowExpansion = true;
+            m_TextAsset = target as TextAsset;
+            m_AssetGUID = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(m_TextAsset));
+            CachePreview();
         }
 
         public override void OnInspectorGUI()
@@ -180,29 +189,45 @@ namespace UnityEditor
             if (m_TextStyle == null)
                 m_TextStyle = "ScriptText";
 
+            Hash128 dependencyHash = AssetDatabase.GetSourceAssetFileHash(m_AssetGUID);
+            if (m_LastDependencyHash != dependencyHash)
+            {
+                CachePreview();
+                m_LastDependencyHash = dependencyHash;
+            }
+
             bool enabledTemp = GUI.enabled;
             GUI.enabled = true;
-            TextAsset textAsset = target as TextAsset;
-            if (textAsset != null)
+            if (m_TextAsset != null)
             {
-                string text = string.Empty;
+                Rect rect = GUILayoutUtility.GetRect(m_CachedPreview, m_TextStyle);
+                rect.x = 0;
+                rect.y -= 3;
+                rect.width = GUIClip.visibleRect.width + 1;
+                GUI.Box(rect, m_CachedPreview, m_TextStyle);
+            }
+            GUI.enabled = enabledTemp;
+        }
+
+        void CachePreview()
+        {
+            string text = string.Empty;
+
+            if (m_TextAsset != null)
+            {
                 if (targets.Length > 1)
                 {
                     text = targetTitle;
                 }
-                else if (Path.GetExtension(AssetDatabase.GetAssetPath(textAsset)) != ".bytes")
+                else if (Path.GetExtension(AssetDatabase.GetAssetPath(m_TextAsset)) != ".bytes")
                 {
-                    text = textAsset.text;
-                    if (text.Length > kMaxChars)
+                    text = m_TextAsset.GetPreview(kMaxChars);
+                    if (text.Length >= kMaxChars)
                         text = text.Substring(0, kMaxChars) + "...\n\n<...etc...>";
                 }
-                Rect rect = GUILayoutUtility.GetRect(EditorGUIUtility.TempContent(text), m_TextStyle);
-                rect.x = 0;
-                rect.y -= 3;
-                rect.width = GUIClip.visibleRect.width + 1;
-                GUI.Box(rect, text, m_TextStyle);
             }
-            GUI.enabled = enabledTemp;
+
+            m_CachedPreview = new GUIContent(text);
         }
     }
 

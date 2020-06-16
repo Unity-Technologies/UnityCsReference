@@ -239,45 +239,6 @@ namespace UnityEditor
             CreateAndPlacePrimitive(PrimitiveType.Quad, menuCommand.context as GameObject);
         }
 
-        [MenuItem("GameObject/2D Object/Sprite", priority = 1)]
-        static void CreateSprite(MenuCommand menuCommand)
-        {
-            var parent = menuCommand.context as GameObject;
-            var go = ObjectFactory.CreateGameObject("New Sprite", typeof(SpriteRenderer));
-            var sprite = Selection.activeObject as Sprite;
-            if (sprite == null)
-            {
-                var texture = Selection.activeObject as Texture2D;
-                if (texture)
-                {
-                    string path = AssetDatabase.GetAssetPath(texture);
-                    sprite = AssetDatabase.LoadAllAssetsAtPath(path)
-                        .OfType<Sprite>()
-                        .FirstOrDefault();
-                    if (sprite == null)
-                    {
-                        var importer = AssetImporter.GetAtPath(path) as TextureImporter;
-                        if (importer != null && importer.textureType != TextureImporterType.Sprite)
-                        {
-                            EditorUtility.DisplayDialog(
-                                "Sprite could not be assigned!",
-                                "Can not assign a Sprite to the new SpriteRenderer because the selected Texture is not configured to generate Sprites.",
-                                "OK");
-                        }
-                    }
-                }
-            }
-            if (sprite != null)
-            {
-                go.GetComponent<SpriteRenderer>().sprite = sprite;
-            }
-            else
-            {
-                // TODO: assign a default sprite
-            }
-            Place(go, parent);
-        }
-
         [MenuItem("GameObject/Light/Directional Light", priority = 1)]
         static void CreateDirectionalLight(MenuCommand menuCommand)
         {

@@ -4,11 +4,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using UnityEditor.Utils;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEngine;
 
 namespace UnityEditor.Scripting
 {
@@ -129,6 +132,21 @@ namespace UnityEditor.Scripting
             var ext = Path.GetExtension(file).ToLower();
             ext = ext.Substring(1); //strip dot
             return ext;
+        }
+
+        internal static void Cleanup()
+        {
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+            {
+                var startInfo = new ProcessStartInfo()
+                {
+                    CreateNoWindow = true,
+                    FileName = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "RoslynScripts", "kill_csc_server.bat")
+                };
+
+                var p = new Program(startInfo);
+                p.Start();
+            }
         }
     }
 }

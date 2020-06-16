@@ -360,8 +360,14 @@ namespace UnityEngine.UIElements
         protected void InvokeStandardShaderChanged() { if (standardShaderChanged != null) standardShaderChanged(); }
         protected void InvokeStandardWorldSpaceShaderChanged() { if (standardWorldSpaceShaderChanged != null) standardWorldSpaceShaderChanged(); }
 
+        internal event Action<Material> updateMaterial;
+        internal void InvokeUpdateMaterial(Material mat) { updateMaterial?.Invoke(mat); } // TODO: Actually call this!
+
         internal event HierarchyEvent hierarchyChanged;
         internal void InvokeHierarchyChanged(VisualElement ve, HierarchyChangeType changeType) { if (hierarchyChanged != null) hierarchyChanged(ve, changeType); }
+
+        internal event Action<IPanel> beforeUpdate;
+        internal void InvokeBeforeUpdate() { beforeUpdate?.Invoke(this); }
 
         internal void UpdateElementUnderPointers()
         {
@@ -414,11 +420,7 @@ namespace UnityEngine.UIElements
         private uint m_Version = 0;
         private uint m_RepaintVersion = 0;
 
-#pragma warning disable CS0649
-        internal static Action BeforeUpdaterChange;
-        internal static Action AfterUpdaterChange;
-#pragma warning restore CS0649
-
+        ProfilerMarker m_MarkerBeforeUpdate;
         ProfilerMarker m_MarkerUpdate;
         ProfilerMarker m_MarkerLayout;
         ProfilerMarker m_MarkerBindings;
@@ -505,6 +507,7 @@ namespace UnityEngine.UIElements
         {
             if (!string.IsNullOrEmpty(m_PanelName))
             {
+                m_MarkerBeforeUpdate = new ProfilerMarker($"Panel.BeforeUpdate.{m_PanelName}");
                 m_MarkerUpdate = new ProfilerMarker($"Panel.Update.{m_PanelName}");
                 m_MarkerLayout = new ProfilerMarker($"Panel.Layout.{m_PanelName}");
                 m_MarkerBindings = new ProfilerMarker($"Panel.Bindings.{m_PanelName}");
@@ -512,6 +515,7 @@ namespace UnityEngine.UIElements
             }
             else
             {
+                m_MarkerBeforeUpdate = new ProfilerMarker($"Panel.BeforeUpdate");
                 m_MarkerUpdate = new ProfilerMarker("Panel.Update");
                 m_MarkerLayout = new ProfilerMarker("Panel.Layout");
                 m_MarkerBindings = new ProfilerMarker("Panel.Bindings");
@@ -751,6 +755,8 @@ namespace UnityEngine.UIElements
         }
 
 
+        static internal event Action<Panel> beforeAnyRepaint;
+
         public override void Repaint(Event e)
         {
             if (contextType == ContextType.Editor)
@@ -763,6 +769,13 @@ namespace UnityEngine.UIElements
                 pixelsPerPoint = GUIUtility.pixelsPerPoint;
 
             repaintData.repaintEvent = e;
+
+            using (m_MarkerBeforeUpdate.Auto())
+            {
+                InvokeBeforeUpdate();
+            }
+
+            beforeAnyRepaint?.Invoke(this);
 
             using (m_MarkerUpdate.Auto())
             {

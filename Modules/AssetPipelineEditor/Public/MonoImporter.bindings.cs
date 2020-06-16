@@ -18,15 +18,15 @@ namespace UnityEditor
         public static extern MonoScript[] GetAllRuntimeMonoScripts();
 
         [FreeFunction("MonoImporterBindings::SetMonoScriptExecutionOrder")]
-        public static extern void SetExecutionOrder(MonoScript script, int order);
+        public static extern void SetExecutionOrder([NotNull("NullExceptionObject")] MonoScript script, int order);
 
         // Call when icon set by SetIconForObject should be copied to monoImporter for persistence across project reloads
         // This function will reimport the asset and is therefore slow.
         [FreeFunction("MonoImporterBindings::CopyMonoScriptIconToImporters")]
-        internal static extern void CopyMonoScriptIconToImporters(MonoScript script);
+        internal static extern void CopyMonoScriptIconToImporters([NotNull("NullExceptionObject")] MonoScript script);
 
         [FreeFunction("MonoImporterBindings::GetExecutionOrder")]
-        public static extern int GetExecutionOrder(MonoScript script);
+        public static extern int GetExecutionOrder([NotNull("NullExceptionObject")] MonoScript script);
 
         public extern MonoScript GetScript();
 

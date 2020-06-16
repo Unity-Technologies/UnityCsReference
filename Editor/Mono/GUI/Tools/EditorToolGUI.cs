@@ -20,12 +20,17 @@ namespace UnityEditor
         static readonly EditorToolGUI.ReusableArrayPool<bool> s_BoolArrays = new EditorToolGUI.ReusableArrayPool<bool>();
         static readonly List<EditorTool> s_CustomEditorTools = new List<EditorTool>();
 
+        static class Styles
+        {
+            public static GUIStyle command = "AppCommand";
+        }
+
         public static void EditorToolbarForTarget(UObject target)
         {
             if (target == null)
                 throw new ArgumentNullException("target");
 
-            EditorToolContext.GetCustomEditorToolsForTarget(target, s_CustomEditorTools, true);
+            EditorToolManager.GetCustomEditorToolsForTarget(target, s_CustomEditorTools, true);
             EditorToolbar<EditorTool>(s_CustomEditorTools);
             s_CustomEditorTools.Clear();
         }
@@ -37,7 +42,7 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal();
             PrefixLabel(content);
-            EditorToolContext.GetCustomEditorToolsForTarget(target, s_CustomEditorTools, true);
+            EditorToolManager.GetCustomEditorToolsForTarget(target, s_CustomEditorTools, true);
             EditorToolbar<EditorTool>(s_CustomEditorTools);
             GUILayout.EndHorizontal();
             s_CustomEditorTools.Clear();
@@ -50,18 +55,18 @@ namespace UnityEditor
 
         public static void EditorToolbar<T>(IList<T> tools) where T : EditorTool
         {
-            EditorTool selected;
+            T selected;
 
-            if (EditorToolbar(EditorToolContext.activeTool, tools, out selected))
+            if (EditorToolbar(EditorToolManager.activeTool as T, tools, out selected))
             {
-                if (selected == EditorToolContext.activeTool)
-                    EditorToolContext.RestorePreviousTool();
+                if (selected == EditorToolManager.activeTool)
+                    EditorToolManager.RestorePreviousTool();
                 else
-                    EditorToolContext.activeTool = selected;
+                    EditorToolManager.activeTool = selected;
             }
         }
 
-        internal static bool EditorToolbar<T>(EditorTool selected, IList<T> tools, out EditorTool clicked) where T : EditorTool
+        internal static bool EditorToolbar<T>(T selected, IList<T> tools, out T clicked) where T : EditorTool
         {
             int toolsLength = tools.Count;
             int index = -1;
@@ -78,16 +83,16 @@ namespace UnityEditor
                     continue;
                 }
 
-                if (tools[i] == selected)
+                if (Equals(tools[i], selected))
                     index = i;
 
                 enabled[i] = tools[i].IsAvailable();
-                buttons[i] = tools[i].toolbarIcon ?? GUIContent.none;
+                buttons[i] = EditorToolUtility.GetToolbarIcon(tools[i]);
             }
 
             EditorGUI.BeginChangeCheck();
 
-            index = GUILayout.Toolbar(index, buttons, enabled, "Command");
+            index = GUILayout.Toolbar(index, buttons, enabled, Styles.command);
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -100,15 +105,87 @@ namespace UnityEditor
 
     static class EditorToolGUI
     {
+        // The largest number of previous tools to show in the history dropdown
         const int k_MaxToolHistory = 6;
+        // Number of buttons present in the tools toolbar.
+        internal const int k_ToolbarButtonCount = 7;
+        // Count of the transform tools + custom editor tool.
+        const int k_TransformToolCount = 6;
+        // The number of view tools (ViewTool enum, including ViewTool.None)
+        const int k_ViewToolCount = 5;
 
         static class Styles
         {
-            public static GUIContent recentTools = EditorGUIUtility.TrTextContent("Recent");
-            public static GUIContent selectionTools = EditorGUIUtility.TrTextContent("Selection");
-            public static GUIContent availableTools = EditorGUIUtility.TrTextContent("Available");
-            public static GUIContent noToolsAvailable = EditorGUIUtility.TrTextContent("No custom tools available");
+            const string k_ViewTooltip = "Hand Tool";
+
+            public static readonly GUIStyle command = "AppCommand";
+            public static readonly GUIStyle dropdown = "Dropdown";
+
+            public static GUIContent[] s_PivotIcons = new GUIContent[]
+            {
+                EditorGUIUtility.TrTextContentWithIcon("Center", "Toggle Tool Handle Position\n\nThe tool handle is placed at the center of the selection.", "ToolHandleCenter"),
+                EditorGUIUtility.TrTextContentWithIcon("Pivot", "Toggle Tool Handle Position\n\nThe tool handle is placed at the active object's pivot point.", "ToolHandlePivot"),
+            };
+
+            public static GUIContent[] s_PivotRotation = new GUIContent[]
+            {
+                EditorGUIUtility.TrTextContentWithIcon("Local", "Toggle Tool Handle Rotation\n\nTool handles are in the active object's rotation.", "ToolHandleLocal"),
+                EditorGUIUtility.TrTextContentWithIcon("Global", "Toggle Tool Handle Rotation\n\nTool handles are in global rotation.", "ToolHandleGlobal")
+            };
+
+            public static readonly GUIContent recentTools = EditorGUIUtility.TrTextContent("Recent");
+            public static readonly GUIContent selectionTools = EditorGUIUtility.TrTextContent("Selection");
+            public static readonly GUIContent availableTools = EditorGUIUtility.TrTextContent("Available");
+            public static readonly GUIContent noToolsAvailable = EditorGUIUtility.TrTextContent("No custom tools available");
+
+            public static readonly GUIContent[] toolIcons = new GUIContent[k_TransformToolCount * 2]
+            {
+                // First half of array is 'Off' state, second half is 'On' state
+                EditorGUIUtility.TrIconContent("MoveTool", "Move Tool"),
+                EditorGUIUtility.TrIconContent("RotateTool", "Rotate Tool"),
+                EditorGUIUtility.TrIconContent("ScaleTool", "Scale Tool"),
+                EditorGUIUtility.TrIconContent("RectTool", "Rect Tool"),
+                EditorGUIUtility.TrIconContent("TransformTool", "Move, Rotate or Scale selected objects."),
+                EditorGUIUtility.TrTextContent("Editor tool"),
+
+                EditorGUIUtility.IconContent("MoveTool On"),
+                EditorGUIUtility.IconContent("RotateTool On"),
+                EditorGUIUtility.IconContent("ScaleTool On"),
+                EditorGUIUtility.IconContent("RectTool On"),
+                EditorGUIUtility.IconContent("TransformTool On"),
+                EditorGUIUtility.TrTextContent("Editor tool")
+            };
+
+            public static readonly string[] toolControlNames = new string[k_ToolbarButtonCount]
+            {
+                "ToolbarPersistentToolsPan",
+                "ToolbarPersistentToolsTranslate",
+                "ToolbarPersistentToolsRotate",
+                "ToolbarPersistentToolsScale",
+                "ToolbarPersistentToolsRect",
+                "ToolbarPersistentToolsTransform",
+                "ToolbarPersistentToolsCustom"
+            };
+
+            public static readonly GUIContent[] s_ViewToolIcons = new GUIContent[k_ViewToolCount * 2]
+            {
+                EditorGUIUtility.TrIconContent("ViewToolOrbit", k_ViewTooltip),
+                EditorGUIUtility.TrIconContent("ViewToolMove", k_ViewTooltip),
+                EditorGUIUtility.TrIconContent("ViewToolZoom", k_ViewTooltip),
+                EditorGUIUtility.TrIconContent("ViewToolOrbit", k_ViewTooltip),
+                EditorGUIUtility.TrIconContent("ViewToolOrbit", "Orbit the Scene view."),
+                EditorGUIUtility.TrIconContent("ViewToolOrbit On", k_ViewTooltip),
+                EditorGUIUtility.TrIconContent("ViewToolMove On", k_ViewTooltip),
+                EditorGUIUtility.TrIconContent("ViewToolZoom On", k_ViewTooltip),
+                EditorGUIUtility.TrIconContent("ViewToolOrbit On", k_ViewTooltip),
+                EditorGUIUtility.TrIconContent("ViewToolOrbit On", k_ViewTooltip)
+            };
+
+            public static readonly int viewToolOffset = s_ViewToolIcons.Length / 2;
         }
+
+        public static GUIContent[] s_ShownToolIcons = new GUIContent[k_ToolbarButtonCount];
+        public static bool[] s_ShownToolEnabled = new bool[k_ToolbarButtonCount];
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal class ReusableArrayPool<T>
@@ -136,27 +213,10 @@ namespace UnityEditor
 
         static readonly List<EditorTool> s_ToolList = new List<EditorTool>();
 
-        static GUIContent[] s_PivotIcons = new GUIContent[]
-        {
-            EditorGUIUtility.TrTextContentWithIcon("Center", "Toggle Tool Handle Position\n\nThe tool handle is placed at the center of the selection.", "ToolHandleCenter"),
-            EditorGUIUtility.TrTextContentWithIcon("Pivot", "Toggle Tool Handle Position\n\nThe tool handle is placed at the active object's pivot point.", "ToolHandlePivot"),
-        };
-
-        static GUIContent[] s_PivotRotation = new GUIContent[]
-        {
-            EditorGUIUtility.TrTextContentWithIcon("Local", "Toggle Tool Handle Rotation\n\nTool handles are in the active object's rotation.", "ToolHandleLocal"),
-            EditorGUIUtility.TrTextContentWithIcon("Global", "Toggle Tool Handle Rotation\n\nTool handles are in global rotation.", "ToolHandleGlobal")
-        };
-
         static readonly List<EditorTool> s_EditorToolModes = new List<EditorTool>(8);
         public static readonly StyleRect s_ButtonRect = EditorResources.GetStyle("AppToolbar-Button").GetRect(StyleCatalogKeyword.size, StyleRect.Size(22, 22));
 
-        internal static Rect GetThinArea(Rect pos)
-        {
-            return new Rect(pos.x, 4, pos.width, s_ButtonRect.height);
-        }
-
-        internal static Rect GetThickArea(Rect pos)
+        internal static Rect GetToolbarEntryRect(Rect pos)
         {
             return new Rect(pos.x, 4, pos.width, s_ButtonRect.height);
         }
@@ -169,11 +229,11 @@ namespace UnityEditor
         internal static void DoBuiltinToolSettings(Rect rect, GUIStyle buttonLeftStyle, GUIStyle buttonRightStyle)
         {
             GUI.SetNextControlName("ToolbarToolPivotPositionButton");
-            Tools.pivotMode = (PivotMode)EditorGUI.CycleButton(new Rect(rect.x, rect.y, rect.width / 2, rect.height), (int)Tools.pivotMode, s_PivotIcons, buttonLeftStyle);
+            Tools.pivotMode = (PivotMode)EditorGUI.CycleButton(new Rect(rect.x, rect.y, rect.width / 2, rect.height), (int)Tools.pivotMode, Styles.s_PivotIcons, buttonLeftStyle);
             if (Tools.current == Tool.Scale && Selection.transforms.Length < 2)
                 GUI.enabled = false;
             GUI.SetNextControlName("ToolbarToolPivotOrientationButton");
-            PivotRotation tempPivot = (PivotRotation)EditorGUI.CycleButton(new Rect(rect.x + rect.width / 2, rect.y, rect.width / 2, rect.height), (int)Tools.pivotRotation, s_PivotRotation, buttonRightStyle);
+            PivotRotation tempPivot = (PivotRotation)EditorGUI.CycleButton(new Rect(rect.x + rect.width / 2, rect.y, rect.width / 2, rect.height), (int)Tools.pivotRotation, Styles.s_PivotRotation, buttonRightStyle);
             if (Tools.pivotRotation != tempPivot)
             {
                 Tools.pivotRotation = tempPivot;
@@ -188,11 +248,11 @@ namespace UnityEditor
                 Tools.RepaintAllToolViews();
         }
 
-        static internal void DoContextualToolbarOverlay(UnityEngine.Object target, SceneView sceneView)
+        internal static void DoContextualToolbarOverlay(UnityEngine.Object target, SceneView sceneView)
         {
             GUILayout.BeginHorizontal(GUIStyle.none, GUILayout.MinWidth(210), GUILayout.Height(30));
 
-            EditorToolContext.GetCustomEditorTools(s_EditorToolModes, false);
+            EditorToolManager.GetCustomEditorTools(s_EditorToolModes, false);
 
             if (s_EditorToolModes.Count > 0)
             {
@@ -219,7 +279,7 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
         }
 
-        internal static void DoToolContextMenu()
+        internal static void DoEditorToolMenu()
         {
             var toolHistoryMenu = new GenericMenu()
             {
@@ -229,11 +289,11 @@ namespace UnityEditor
             var foundTool = false;
 
             // Recent history
-            if (EditorToolContext.GetLastCustomTool() != null)
+            if (EditorToolManager.GetLastCustomTool() != null)
             {
                 foundTool = true;
                 toolHistoryMenu.AddDisabledItem(Styles.recentTools);
-                EditorToolContext.GetToolHistory(s_ToolList, true);
+                EditorToolManager.GetToolHistory(s_ToolList, true);
 
                 for (var i = 0; i < Math.Min(k_MaxToolHistory, s_ToolList.Count); i++)
                 {
@@ -245,7 +305,7 @@ namespace UnityEditor
                     var name = EditorToolUtility.GetToolName(tool.GetType());
 
                     if (tool.IsAvailable())
-                        toolHistoryMenu.AddItem(new GUIContent(name), false, () => { EditorToolContext.activeTool = tool; });
+                        toolHistoryMenu.AddItem(new GUIContent(name), false, () => { EditorToolManager.activeTool = tool; });
                     else
                         toolHistoryMenu.AddDisabledItem(new GUIContent(name));
                 }
@@ -253,7 +313,7 @@ namespace UnityEditor
                 toolHistoryMenu.AddSeparator("");
             }
 
-            EditorToolContext.GetCustomEditorTools(s_ToolList, false);
+            EditorToolManager.GetCustomEditorTools(s_ToolList, false);
 
             // Current selection
             if (s_ToolList.Any())
@@ -271,7 +331,7 @@ namespace UnityEditor
                     var path = new GUIContent(EditorToolUtility.GetToolMenuPath(tool));
 
                     if (tool.IsAvailable())
-                        toolHistoryMenu.AddItem(path, false, () => { EditorToolContext.activeTool = tool; });
+                        toolHistoryMenu.AddItem(path, false, () => { EditorToolManager.activeTool = tool; });
                     else
                         toolHistoryMenu.AddDisabledItem(path);
                 }
@@ -291,7 +351,7 @@ namespace UnityEditor
                     toolHistoryMenu.AddItem(
                         new GUIContent(EditorToolUtility.GetToolMenuPath(toolType)),
                         false,
-                        () => { EditorTools.EditorTools.SetActiveTool(toolType); });
+                        () => { ToolManager.SetActiveTool(toolType); });
                 }
             }
 
@@ -301,6 +361,83 @@ namespace UnityEditor
             }
 
             toolHistoryMenu.ShowAsContext();
+        }
+
+        internal static void DoToolContextMenu()
+        {
+            var menu = new GenericMenu();
+            foreach (var ctx in EditorToolUtility.availableToolContexts)
+            {
+                menu.AddItem(
+                    new GUIContent(EditorToolUtility.GetToolName(ctx)),
+                    ToolManager.activeContextType == ctx,
+                    () => { ToolManager.SetActiveContext(ctx); });
+            }
+            menu.ShowAsContext();
+        }
+
+        internal static Rect DoToolContextButton(Rect rect)
+        {
+            var icon = EditorToolUtility.GetIcon(EditorToolManager.activeToolContextType);
+            rect.x += rect.width;
+            rect.width = Styles.dropdown.CalcSize(icon).x;
+            if (EditorGUI.DropdownButton(rect, icon, FocusType.Passive, Styles.dropdown))
+                DoToolContextMenu();
+            return rect;
+        }
+
+        internal static void DoBuiltinToolbar(Rect rect)
+        {
+            EditorGUI.BeginChangeCheck();
+
+            int selectedIndex = (int)(Tools.viewToolActive ? Tool.View : Tools.current);
+
+            EditorTool lastCustomTool = EditorToolManager.GetLastCustomTool();
+
+            // Set View & Custom entries manually
+            s_ShownToolEnabled[0] = true;
+            s_ShownToolIcons[0] = Styles.s_ViewToolIcons[(int)Tools.viewTool + (selectedIndex == 0 ? Styles.viewToolOffset : 0)];
+
+            s_ShownToolEnabled[(int)Tool.Custom] = true;
+            s_ShownToolIcons[(int)Tool.Custom] = EditorToolUtility.GetToolbarIcon(lastCustomTool);
+
+            // Get enabled state for each builtin tool (or whatever the active context resolves to)
+            // Currently builtin tools always use the default icon and tooltip
+            for (int i = (int)Tool.Move; i < (int)Tool.Custom; i++)
+            {
+                s_ShownToolIcons[i] = Styles.toolIcons[i - 1 + (i == selectedIndex ? k_TransformToolCount : 0)];
+                s_ShownToolIcons[i].tooltip = Styles.toolIcons[i - 1].tooltip;
+                var tool = EditorToolUtility.GetEditorToolWithEnum((Tool)i);
+                s_ShownToolEnabled[i] = tool != null && tool.IsAvailable();
+            }
+
+            selectedIndex = GUI.Toolbar(rect, selectedIndex, s_ShownToolIcons, Styles.toolControlNames, Styles.command, GUI.ToolbarButtonSize.FitToContents, s_ShownToolEnabled);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                var evt = Event.current;
+
+                switch (selectedIndex)
+                {
+                    case (int)Tool.Custom:
+                    {
+                        if (EditorToolManager.GetLastCustomTool() == null
+                            || evt.button == 1
+                            || (evt.button == 0 && evt.modifiers == EventModifiers.Alt))
+                            DoEditorToolMenu();
+                        else
+                            goto default;
+                        break;
+                    }
+
+                    default:
+                    {
+                        Tools.current = (Tool)selectedIndex;
+                        Tools.ResetGlobalHandleRotation();
+                        break;
+                    }
+                }
+            }
         }
     }
 }

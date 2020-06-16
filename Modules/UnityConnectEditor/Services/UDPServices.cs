@@ -38,7 +38,7 @@ namespace UnityEditor.Connect
             packageName = "com.unity.purchasing.udp";
             // Due to really bad user experience, this service cannot be included in the services window.
             // See fogbugz case 1215216, with this entry removed the user experience is not worst then on previous Unity Version
-            // ServicesRepository.AddService(this);
+            ServicesRepository.AddService(this);
         }
     }
 }

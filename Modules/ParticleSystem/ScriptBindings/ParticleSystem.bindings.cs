@@ -252,6 +252,9 @@ namespace UnityEngine
         [FreeFunction(Name = "ParticleSystemScriptBindings::GetTriggerParticles")]
         extern internal static int GetTriggerParticles([NotNull] ParticleSystem ps, int type, [NotNull] List<ParticleSystem.Particle> particles);
 
+        [FreeFunction(Name = "ParticleSystemScriptBindings::GetTriggerParticlesWithData")]
+        extern internal static int GetTriggerParticlesWithData([NotNull] ParticleSystem ps, int type, [NotNull] List<ParticleSystem.Particle> particles, ref ParticleSystem.ColliderData colliderData);
+
         [FreeFunction(Name = "ParticleSystemScriptBindings::SetTriggerParticles")]
         extern internal static void SetTriggerParticles([NotNull] ParticleSystem ps, int type, [NotNull] List<ParticleSystem.Particle> particles, int offset, int count);
     }
@@ -276,6 +279,17 @@ namespace UnityEngine
         public static int GetTriggerParticles(this ParticleSystem ps, ParticleSystemTriggerEventType type, List<ParticleSystem.Particle> particles)
         {
             return ParticleSystemExtensionsImpl.GetTriggerParticles(ps, (int)type, particles);
+        }
+
+        public static int GetTriggerParticles(this ParticleSystem ps, ParticleSystemTriggerEventType type, List<ParticleSystem.Particle> particles, out ParticleSystem.ColliderData colliderData)
+        {
+            if (type == ParticleSystemTriggerEventType.Exit)
+                throw new InvalidOperationException("Querying the collider data for the Exit event is not currently supported.");
+            else if (type == ParticleSystemTriggerEventType.Outside)
+                throw new InvalidOperationException("Querying the collider data for the Outside event is not supported, because when a particle is outside the collision volume, it is always outside every collider.");
+
+            colliderData = new ParticleSystem.ColliderData();
+            return ParticleSystemExtensionsImpl.GetTriggerParticlesWithData(ps, (int)type, particles, ref colliderData);
         }
 
         public static void SetTriggerParticles(this ParticleSystem ps, ParticleSystemTriggerEventType type, List<ParticleSystem.Particle> particles, int offset, int count)

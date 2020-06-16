@@ -16,18 +16,20 @@ namespace UnityEditor
 
         public bool showMarkers = true;
 
-        public UISystemProfilerChart(Chart.ChartType type, float dataScale, int seriesCount) : base(ProfilerArea.UIDetails, type, dataScale, seriesCount)
+        public UISystemProfilerChart(Chart.ChartType type, float dataScale, float maximumScaleInterpolationValue, int seriesCount, string name, string iconName) : base(ProfilerArea.UIDetails, type, dataScale, maximumScaleInterpolationValue, seriesCount, name, iconName)
         {
         }
 
-        public void Update(int firstFrame, int historyLength)
+        public override void UpdateData(int firstEmptyFrame, int firstFrame, int frameCount)
         {
-            int count = ProfilerDriver.GetUISystemEventMarkersCount(firstFrame, historyLength);
+            base.UpdateData(firstEmptyFrame, firstFrame, frameCount);
+
+            int count = ProfilerDriver.GetUISystemEventMarkersCount(firstFrame, frameCount);
             if (count == 0)
                 return;
             m_Markers = new EventMarker[count];
             m_MarkerNames = new string[count];
-            ProfilerDriver.GetUISystemEventMarkersBatch(firstFrame, historyLength, m_Markers, m_MarkerNames);
+            ProfilerDriver.GetUISystemEventMarkersBatch(firstFrame, frameCount, m_Markers, m_MarkerNames);
         }
 
         public override int DoChartGUI(int currentFrame, bool active)

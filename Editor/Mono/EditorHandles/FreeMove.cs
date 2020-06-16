@@ -55,20 +55,18 @@ namespace UnityEditorInternal
                             if (HandleUtility.ignoreRaySnapObjects == null)
                                 Handles.SetupIgnoreRaySnapObjects();
 
-                            object hit = HandleUtility.RaySnap(HandleUtility.GUIPointToWorldRay(evt.mousePosition));
-                            if (hit != null)
+                            if (HandleUtility.PlaceObject(evt.mousePosition, out Vector3 point, out Vector3 normal))
                             {
-                                RaycastHit rh = (RaycastHit)hit;
                                 float offset = 0;
                                 if (Tools.pivotMode == PivotMode.Center)
                                 {
-                                    float geomOffset = HandleUtility.CalcRayPlaceOffset(HandleUtility.ignoreRaySnapObjects, rh.normal);
+                                    float geomOffset = HandleUtility.CalcRayPlaceOffset(HandleUtility.ignoreRaySnapObjects, normal);
                                     if (geomOffset != Mathf.Infinity)
                                     {
-                                        offset = Vector3.Dot(position, rh.normal) - geomOffset;
+                                        offset = Vector3.Dot(position, normal) - geomOffset;
                                     }
                                 }
-                                position = Handles.inverseMatrix.MultiplyPoint(rh.point + (rh.normal * offset));
+                                position = Handles.inverseMatrix.MultiplyPoint(point + (normal * offset));
                             }
                             else
                             {

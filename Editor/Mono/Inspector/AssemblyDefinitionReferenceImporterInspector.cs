@@ -121,6 +121,24 @@ namespace UnityEditor
             }
         }
 
+        [MenuItem("CONTEXT/AssemblyDefinitionReferenceImporter/Reset")]
+        internal static void ContextReset(MenuCommand command)
+        {
+            var templatePath = AssetsMenuUtility.GetScriptTemplatePath(ScriptTemplate.AsmRef_NewAssemblyReference);
+            Debug.Assert(!string.IsNullOrEmpty(templatePath));
+
+            var templateContent = File.ReadAllText(templatePath);
+            var importer = command.context as AssemblyDefinitionReferenceImporter;
+
+            if (importer != null)
+            {
+                var assetPath = importer.assetPath;
+                templateContent = ProjectWindowUtil.PreprocessScriptAssetTemplate(assetPath, templateContent);
+                File.WriteAllText(assetPath, templateContent);
+                AssetDatabase.ImportAsset(assetPath);
+            }
+        }
+
         static void LoadAssemblyDefinitionReferenceState(AssemblyDefinitionReferenceState state, string path)
         {
             var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionReferenceAsset>(path);

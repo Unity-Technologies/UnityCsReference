@@ -10,8 +10,6 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class AssetStoreListOperation : IOperation
     {
-        public string specialUniqueId => string.Empty;
-
         public string packageUniqueId => string.Empty;
 
         public string versionUniqueId => string.Empty;

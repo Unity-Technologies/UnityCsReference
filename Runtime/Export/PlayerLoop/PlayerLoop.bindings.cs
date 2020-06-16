@@ -180,6 +180,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct DirectorDeferredEvaluate {}
         [RequiredByNativeCode]
+        public struct UIElementsUpdatePanels {}
+        [RequiredByNativeCode]
         public struct UpdateNetworkManager {}
         [RequiredByNativeCode]
         public struct UpdateMasterServerInterface {}

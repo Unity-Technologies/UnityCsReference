@@ -12,6 +12,7 @@ using UnityEngine.Experimental.Rendering;
 using AnimatedBool = UnityEditor.AnimatedValues.AnimBool;
 using UnityEngine.Scripting;
 using UnityEditor.Modules;
+using UnityEditorInternal.VR;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -206,10 +207,15 @@ namespace UnityEditor
                 ProjectionType projectionType = orthographic.boolValue ? ProjectionType.Orthographic : ProjectionType.Perspective;
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = orthographic.hasMultipleDifferentValues;
-                projectionType = (ProjectionType)EditorGUILayout.EnumPopup(Styles.projection, projectionType);
+
+                var controlRect = EditorGUILayout.GetControlRect();
+                var label = EditorGUI.BeginProperty(controlRect, Styles.projection, orthographic);
+
+                projectionType = (ProjectionType)EditorGUI.EnumPopup(controlRect, label, projectionType);
                 EditorGUI.showMixedValue = false;
                 if (EditorGUI.EndChangeCheck())
                     orthographic.boolValue = (projectionType == ProjectionType.Orthographic);
+                EditorGUI.EndProperty();
 
                 if (!orthographic.hasMultipleDifferentValues)
                 {
@@ -405,7 +411,7 @@ namespace UnityEditor
 
             public void DrawVR()
             {
-                if (PlayerSettings.virtualRealitySupported)
+                if (VREditor.GetVREnabledOnTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)))
                 {
                     EditorGUILayout.PropertyField(stereoSeparation);
                     EditorGUILayout.PropertyField(stereoConvergence);
@@ -518,7 +524,7 @@ namespace UnityEditor
             var c = (Camera)target;
             m_ShowBGColorOptions.value = !clearFlagsHasMultipleValues && (c.clearFlags == CameraClearFlags.SolidColor || c.clearFlags == CameraClearFlags.Skybox);
             m_ShowOrthoOptions.value = c.orthographic;
-            m_ShowTargetEyeOption.value = targetEyeValue != (int)StereoTargetEyeMask.Both || PlayerSettings.virtualRealitySupported;
+            m_ShowTargetEyeOption.value = targetEyeValue != (int)StereoTargetEyeMask.Both || VREditor.GetVREnabledOnTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget));
 
             m_ShowBGColorOptions.valueChanged.AddListener(Repaint);
             m_ShowOrthoOptions.valueChanged.AddListener(Repaint);
@@ -667,7 +673,7 @@ namespace UnityEditor
             m_ShowOrthoOptions.target = !orthographicHasMultipleValues && c.orthographic;
 
             bool displaySubsystemPresent = displayDescriptors.Count > 0;
-            m_ShowTargetEyeOption.target = targetEyeValue != (int)StereoTargetEyeMask.Both || PlayerSettings.virtualRealitySupported || displaySubsystemPresent;
+            m_ShowTargetEyeOption.target = targetEyeValue != (int)StereoTargetEyeMask.Both || VREditor.GetVREnabledOnTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)) || displaySubsystemPresent;
 
             settings.DrawClearFlags();
 

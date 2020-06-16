@@ -420,7 +420,7 @@ namespace UnityEditorInternal
             CreateCandidateClip();
 
             IAnimationWindowPreview[] previewComponents = FetchPostProcessComponents();
-            m_UsesPostProcessComponents = previewComponents != null;
+            m_UsesPostProcessComponents = previewComponents != null && previewComponents.Length > 0;
             if (previewComponents != null)
             {
                 foreach (var component in previewComponents)

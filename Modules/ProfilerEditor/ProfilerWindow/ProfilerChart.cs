@@ -2,25 +2,26 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Diagnostics;
-using UnityEngine;
-using UnityEditor;
-using UnityEngine.Profiling;
 using System;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace UnityEditorInternal
 {
     internal class ProfilerChart : Chart
     {
-        const string kPrefCharts = "ProfilerChart";
+        public const int k_MaximumSeriesCount = 10;
+        public const float k_ChartMinClamp = 110.0f;
+        public const float k_ChartMaxClamp = 70000.0f;
+
+        const string k_ProfilerChartSettingsPreferenceKeyFormat = "ProfilerChart.{0}.ChartSettings";
 
         private static readonly GUIContent performanceWarning =
             new GUIContent("", EditorGUIUtility.LoadIcon("console.warnicon.sml"), L10n.Tr("Collecting GPU Profiler data might have overhead. Close graph if you don't need its data"));
 
-        private bool m_Active;
-
         public ProfilerArea m_Area;
-        public Chart.ChartType m_Type;
+        public ChartType m_Type;
         public float m_DataScale;
         public ChartViewData m_Data;
         public ChartSeriesViewData[] m_Series;
@@ -29,43 +30,32 @@ namespace UnityEditorInternal
         // Shared scale is only used for line charts and should only be used when every series shares the same data unit.
         public bool m_SharedScale;
 
-        private static string[] s_LocalizedChartNames = null;
+        string m_Name;
+        string m_Tooltip;
+        string m_IconName;
+        float m_MaximumScaleInterpolationValue;
 
-        public bool active
+        public ProfilerChart(ProfilerArea area, ChartType type, float dataScale, float maximumScaleInterpolationValue, int seriesCount, string name, string iconName) : base()
         {
-            get
-            {
-                return m_Active;
-            }
-            set
-            {
-                if (m_Active != value)
-                {
-                    m_Active = value;
-                    ApplyActiveState();
-                    SaveActiveState();
-                }
-            }
-        }
+            Debug.Assert(seriesCount <= k_MaximumSeriesCount);
 
-        public ProfilerChart(ProfilerArea area, Chart.ChartType type, float dataScale, int seriesCount) : base()
-        {
             labelRange = new Vector2(Mathf.Epsilon, Mathf.Infinity);
             graphRange = new Vector2(Mathf.Epsilon, Mathf.Infinity);
             m_Area = area;
             m_Type = type;
             m_DataScale = dataScale;
+            m_MaximumScaleInterpolationValue = maximumScaleInterpolationValue;
             m_Data = new ChartViewData();
             m_Series = new ChartSeriesViewData[seriesCount];
-            m_Active = ReadActiveState();
-            ApplyActiveState();
+            m_Name = name;
+            m_IconName = iconName;
+
+            var localizedTooltipFormat = LocalizationDatabase.GetLocalizedString("A chart showing performance counters related to '{0}'.");
+            m_Tooltip = string.Format(localizedTooltipFormat, name);
         }
 
-        public override void Close()
-        {
-            base.Close();
-            active = false;
-        }
+        string ChartSettingsPreferenceKey => string.Format(k_ProfilerChartSettingsPreferenceKeyFormat, m_Name);
+        bool usesCounters => ((uint)m_Area == Profiler.invalidProfilerArea);
 
         /// <summary>
         /// Callback parameter will be either true if a state change occured
@@ -76,35 +66,19 @@ namespace UnityEditorInternal
             onDoSeriesToggle = onSeriesToggle;
         }
 
-        private string GetLocalizedChartName()
+        public void SetName(string name, string legacyPreferenceKey)
         {
-            if (s_LocalizedChartNames == null)
-            {
-                s_LocalizedChartNames = new string[]
-                {
-                    LocalizationDatabase.GetLocalizedString("CPU Usage|Graph out the various CPU areas"),
-                    LocalizationDatabase.GetLocalizedString("GPU Usage|Graph out the various GPU areas"),
-                    LocalizationDatabase.GetLocalizedString("Rendering"),
-                    LocalizationDatabase.GetLocalizedString("Memory|Graph out the various memory usage areas"),
-                    LocalizationDatabase.GetLocalizedString("Audio"),
-                    LocalizationDatabase.GetLocalizedString("Video"),
-                    LocalizationDatabase.GetLocalizedString("Physics"),
-                    LocalizationDatabase.GetLocalizedString("Physics (2D)"),
-                    LocalizationDatabase.GetLocalizedString("Network Messages"),
-                    LocalizationDatabase.GetLocalizedString("Network Operations"),
-                    LocalizationDatabase.GetLocalizedString("UI"),
-                    LocalizationDatabase.GetLocalizedString("UI Details"),
-                    LocalizationDatabase.GetLocalizedString("Global Illumination|Graph of the Precomputed Realtime Global Illumination system resource usage."),
-                };
-            }
-            UnityEngine.Debug.Assert(s_LocalizedChartNames.Length == Profiler.areaCount);
-            return s_LocalizedChartNames[(int)m_Area];
+            m_Name = name;
+
+            var chartSettingsPreferenceKey = string.IsNullOrEmpty(legacyPreferenceKey) ? ChartSettingsPreferenceKey : legacyPreferenceKey;
+            SetChartSettingsNameAndUpdateAllPreferences(chartSettingsPreferenceKey);
         }
 
         protected override void DoLegendGUI(Rect position, ChartType type, ChartViewData cdata, EventType evtType, bool active)
         {
             base.DoLegendGUI(position, type, cdata, evtType, active);
 
+            // TODO Move to a GPU chart subclass would be better.
             if (m_Area == ProfilerArea.GPU)
             {
                 const float rightMmargin = 2f;
@@ -128,46 +102,142 @@ namespace UnityEditorInternal
                         m_Data.hasOverlay ?
                         "Selected" + m_Series[s].name :
                         m_Series[s].name;
-                    labels[s] = ProfilerDriver.GetFormattedCounterValue(currentFrame, m_Area, name);
+                    if (usesCounters)
+                    {
+                        labels[s] = ProfilerDriver.GetFormattedCounterValue(currentFrame, m_Series[s].category, name);
+                    }
+                    else
+                    {
+                        labels[s] = ProfilerDriver.GetFormattedCounterValue(currentFrame, m_Area, name);
+                    }
                 }
                 m_Data.AssignSelectedLabels(labels);
             }
 
             if (legendHeaderLabel == null)
             {
-                string iconName = string.Format("Profiler.{0}", System.Enum.GetName(typeof(ProfilerArea), m_Area));
-                legendHeaderLabel = EditorGUIUtility.TextContentWithIcon(GetLocalizedChartName(), iconName);
+                legendHeaderLabel = new GUIContent(m_Name, EditorGUIUtility.LoadIconRequired(m_IconName), m_Tooltip);
             }
 
             return DoGUI(m_Type, currentFrame, m_Data, active);
         }
 
-        public void LoadAndBindSettings()
+        public void LoadAndBindSettings(string legacyPreferenceKey)
         {
-            LoadAndBindSettings(kPrefCharts + m_Area, m_Data);
+            // Use the legacy preference key to maintain user settings on built-in modules.
+            var chartSettingsPreferenceKey = string.IsNullOrEmpty(legacyPreferenceKey) ? ChartSettingsPreferenceKey : legacyPreferenceKey;
+            LoadAndBindSettings(chartSettingsPreferenceKey, m_Data);
         }
 
-        private void ApplyActiveState()
+        public virtual void UpdateData(int firstEmptyFrame, int firstFrame, int frameCount)
         {
-            // Opening/Closing CPU chart should not set the CPU area as that would set Profiler.enabled.
-            if (m_Area != ProfilerArea.CPU)
-                ProfilerDriver.SetAreaEnabled(m_Area, active);
+            float totalMaxValue = 1;
+            for (int i = 0, count = m_Series.Length; i < count; ++i)
+            {
+                float maxValue;
+                if (usesCounters)
+                {
+                    ProfilerDriver.GetCounterValuesBatch(m_Series[i].category, m_Series[i].name, firstEmptyFrame, 1.0f, m_Series[i].yValues, out maxValue);
+                }
+                else
+                {
+                    ProfilerDriver.GetCounterValuesBatch(m_Area, m_Series[i].name, firstEmptyFrame, 1.0f, m_Series[i].yValues, out maxValue);
+                }
+
+                m_Series[i].yScale = m_DataScale;
+                maxValue *= m_DataScale;
+
+                // Minimum size so we don't generate nans during drawing
+                maxValue = Mathf.Max(maxValue, 0.0001F);
+
+                if (maxValue > totalMaxValue)
+                    totalMaxValue = maxValue;
+
+                if (m_Type == ChartType.Line)
+                {
+                    // Scale line charts so they never hit the top. Scale them slightly differently for each line
+                    // so that in "no stuff changing" case they will not end up being exactly the same.
+                    maxValue *= (1.05f + i * 0.05f);
+                    m_Series[i].rangeAxis = new Vector2(0f, maxValue);
+                }
+                if (usesCounters)
+                {
+                    ProfilerDriver.GetStatisticsAvailabilityStatesByCategory(m_Series[i].category, firstEmptyFrame, m_Data.dataAvailable);
+                }
+            }
+
+            if (m_SharedScale && m_Type == ChartType.Line)
+            {
+                // For some charts, every line is scaled individually, so every data series gets their own range based on their own max scale.
+                // For charts that share their scale (like the Networking charts) all series get adjusted to the total max of the chart.
+                for (int i = 0, count = m_Series.Length; i < count; ++i)
+                    m_Series[i].rangeAxis = new Vector2(0f, (1.05f + i * 0.05f) * totalMaxValue);
+                m_Data.maxValue = totalMaxValue;
+            }
+            m_Data.Assign(m_Series, firstEmptyFrame, firstFrame);
+
+            if (!usesCounters)
+            {
+                ProfilerDriver.GetStatisticsAvailabilityStates(m_Area, firstEmptyFrame, m_Data.dataAvailable);
+            }
         }
 
-        private bool ReadActiveState()
+        public void UpdateOverlayData(int firstEmptyFrame)
         {
-            if (m_Area == ProfilerArea.GPU)
-                return SessionState.GetBool(kPrefCharts + m_Area, false);
-            else
-                return EditorPrefs.GetBool(kPrefCharts + m_Area, true);
+            m_Data.hasOverlay = true;
+            int numCharts = m_Data.numSeries;
+            for (int i = 0; i < numCharts; ++i)
+            {
+                var chart = m_Data.series[i];
+                m_Data.overlays[i] = new ChartSeriesViewData(chart.name, chart.yValues.Length, chart.color);
+                for (int frameIdx = 0; frameIdx < chart.yValues.Length; ++frameIdx)
+                    m_Data.overlays[i].xValues[frameIdx] = (float)frameIdx;
+                float maxValue;
+                ProfilerDriver.GetCounterValuesBatch(ProfilerArea.CPU, UnityString.Format("Selected{0}", chart.name), firstEmptyFrame, 1.0f, m_Data.overlays[i].yValues, out maxValue);
+                m_Data.overlays[i].yScale = m_DataScale;
+            }
         }
 
-        private void SaveActiveState()
+        public void UpdateScaleValuesIfNecessary(int firstEmptyFrame, int firstFrame, int frameCount)
         {
-            if (m_Area == ProfilerArea.GPU)
-                SessionState.SetBool(kPrefCharts + m_Area, m_Active);
-            else
-                EditorPrefs.SetBool(kPrefCharts + m_Area, m_Active);
+            if (m_Type == ChartType.StackedFill)
+            {
+                ComputeChartScaleValue(firstEmptyFrame, firstFrame, frameCount);
+            }
+        }
+
+        public void ComputeChartScaleValue(int firstEmptyFrame, int firstFrame, int frameCount)
+        {
+            float timeMax = 0.0f;
+            float timeMaxExcludeFirst = 0.0f;
+            for (int k = 0; k < frameCount; k++)
+            {
+                float timeNow = 0.0F;
+                for (int j = 0; j < m_Series.Length; j++)
+                {
+                    var series = m_Series[j];
+
+                    if (series.enabled)
+                        timeNow += series.yValues[k];
+                }
+                if (timeNow > timeMax)
+                    timeMax = timeNow;
+                if (timeNow > timeMaxExcludeFirst && k + firstEmptyFrame >= firstFrame + 1)
+                    timeMaxExcludeFirst = timeNow;
+            }
+            if (timeMaxExcludeFirst != 0.0f)
+                timeMax = timeMaxExcludeFirst;
+
+            timeMax = Mathf.Clamp(timeMax * m_DataScale, k_ChartMinClamp, k_ChartMaxClamp);
+
+            // Do not apply the new scale immediately, but gradually go towards it
+            if (m_MaximumScaleInterpolationValue > 0.0f)
+                timeMax = Mathf.Lerp(m_MaximumScaleInterpolationValue, timeMax, 0.4f);
+            m_MaximumScaleInterpolationValue = timeMax;
+
+            for (int k = 0; k < m_Data.numSeries; ++k)
+                m_Data.series[k].rangeAxis = new Vector2(0f, timeMax);
+            m_Data.UpdateChartGrid(timeMax);
         }
     }
 }

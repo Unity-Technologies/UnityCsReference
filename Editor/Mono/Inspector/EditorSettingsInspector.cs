@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.Collections.LowLevel.Unsafe;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.Hardware;
@@ -19,7 +18,7 @@ namespace UnityEditor
     {
         class Content
         {
-            public static GUIContent unityRemote = EditorGUIUtility.TrTextContent("Unity Remote (Deprecated)");
+            public static GUIContent unityRemote = EditorGUIUtility.TrTextContent("Unity Remote");
             public static GUIContent device = EditorGUIUtility.TrTextContent("Device");
             public static GUIContent compression = EditorGUIUtility.TrTextContent("Compression");
             public static GUIContent resolution = EditorGUIUtility.TrTextContent("Resolution");
@@ -58,9 +57,6 @@ namespace UnityEditor
             public static GUIContent normal = EditorGUIUtility.TrTextContent("Normal");
             public static GUIContent best = EditorGUIUtility.TrTextContent("Best");
 
-            public static GUIContent internalSettings = EditorGUIUtility.TrTextContent("Internal Settings");
-            public static GUIContent internalSettingsVisible = EditorGUIUtility.TrTextContent("Internals visible in user scripts");
-
             public static GUIContent lineEndingForNewScripts = EditorGUIUtility.TrTextContent("Line Endings For New Scripts");
 
             public static GUIContent streamingSettings = EditorGUIUtility.TrTextContent("Streaming Settings");
@@ -78,6 +74,24 @@ namespace UnityEditor
             public static readonly GUIContent enterPlayModeOptionsEnabled = EditorGUIUtility.TrTextContent("Enter Play Mode Options", "Enables options when Entering Play Mode");
             public static readonly GUIContent enterPlayModeOptionsEnableDomainReload = EditorGUIUtility.TrTextContent("Reload Domain", "Enables Domain Reload when Entering Play Mode. Domain reload reinitializes game completely making loading behavior very close to the Player");
             public static readonly GUIContent enterPlayModeOptionsEnableSceneReload = EditorGUIUtility.TrTextContent("Reload Scene", "Enables Scene Reload when Entering Play Mode. Scene reload makes loading behavior and performance characteristics very close to the Player");
+
+            public static readonly GUIContent numberingScheme = EditorGUIUtility.TrTextContent("Numbering Scheme");
+
+            public static readonly GUIContent[] numberingSchemeNames =
+            {
+                EditorGUIUtility.TrTextContent("Prefab (1)", "Number in parentheses"),
+                EditorGUIUtility.TrTextContent("Prefab.1", "Number after dot"),
+                EditorGUIUtility.TrTextContent("Prefab_1", "Number after underscore")
+            };
+            public static readonly int[] numberingSchemeValues =
+            {
+                (int)EditorSettings.NamingScheme.SpaceParenthesis,
+                (int)EditorSettings.NamingScheme.Dot,
+                (int)EditorSettings.NamingScheme.Underscore
+            };
+            public static readonly GUIContent numberingHierarchyScheme = EditorGUIUtility.TrTextContent("Game Object Naming");
+            public static readonly GUIContent numberingHierarchyDigits = EditorGUIUtility.TrTextContent("Game Object Digits");
+            public static readonly GUIContent numberingProjectSpace = EditorGUIUtility.TrTextContent("Space Before Number in Asset Names");
         }
 
         internal struct PopupElement
@@ -197,6 +211,10 @@ namespace UnityEditor
 
         SerializedProperty m_EnableRoslynAnalyzers;
 
+        SerializedProperty m_GameObjectNamingDigits;
+        SerializedProperty m_GameObjectNamingScheme;
+        SerializedProperty m_AssetNamingUsesSpace;
+
         SerializedProperty m_AsyncShaderCompilation;
         SerializedProperty m_CachingShaderPreprocessor;
         SerializedProperty m_DefaultBehaviorMode;
@@ -232,6 +250,10 @@ namespace UnityEditor
             m_EnableTextureStreamingInEditMode = serializedObject.FindProperty("m_EnableTextureStreamingInEditMode");
 
             m_EnableRoslynAnalyzers = serializedObject.FindProperty("m_EnableRoslynAnalyzers");
+
+            m_GameObjectNamingDigits = serializedObject.FindProperty("m_GameObjectNamingDigits");
+            m_GameObjectNamingScheme = serializedObject.FindProperty("m_GameObjectNamingScheme");
+            m_AssetNamingUsesSpace = serializedObject.FindProperty("m_AssetNamingUsesSpace");
 
             m_AsyncShaderCompilation = serializedObject.FindProperty("m_AsyncShaderCompilation");
             m_CachingShaderPreprocessor = serializedObject.FindProperty("m_CachingShaderPreprocessor");
@@ -488,6 +510,7 @@ namespace UnityEditor
             DoStreamingSettings();
             DoShaderCompilationSettings();
             DoEnterPlayModeSettings();
+            DoNumberingSchemeSettings();
             DoRoslynAnalyzerSettings();
 
             serializedObject.ApplyModifiedProperties();
@@ -576,6 +599,7 @@ namespace UnityEditor
 
                 if (index == (int)CacheServerMode.AsPreferences)
                 {
+                    isCacheServerEnabled = false;
                     if (CacheServerPreferences.IsCacheServerV2Enabled)
                     {
                         var cacheServerIP = CacheServerPreferences.CachesServerV2Address;
@@ -584,7 +608,6 @@ namespace UnityEditor
                     }
                     else
                     {
-                        isCacheServerEnabled = false;
                         EditorGUILayout.HelpBox("Disabled", MessageType.None, false);
                     }
                 }
@@ -692,6 +715,38 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_EnableTextureStreamingInPlayMode, Content.enablePlayModeTextureStreaming);
             EditorGUILayout.PropertyField(m_EnableTextureStreamingInEditMode, Content.enableEditModeTextureStreaming);
+        }
+
+        EditorSettings.NamingScheme m_PrevGoNamingScheme;
+        int m_PrevGoNamingDigits = -1;
+        string m_GoNamingHelpText;
+        static string GetNewName(string name, List<string> names)
+        {
+            var newName = ObjectNames.GetUniqueName(names.ToArray(), name);
+            names.Add(newName);
+            return newName;
+        }
+
+        void DoNumberingSchemeSettings()
+        {
+            GUILayout.Space(10);
+            GUILayout.Label(Content.numberingScheme, EditorStyles.boldLabel);
+            EditorGUILayout.IntPopup(m_GameObjectNamingScheme, Content.numberingSchemeNames, Content.numberingSchemeValues, Content.numberingHierarchyScheme);
+            EditorGUILayout.IntSlider(m_GameObjectNamingDigits, 1, 5, Content.numberingHierarchyDigits);
+            if (m_PrevGoNamingDigits != EditorSettings.gameObjectNamingDigits ||
+                m_PrevGoNamingScheme != EditorSettings.gameObjectNamingScheme ||
+                m_GoNamingHelpText == null)
+            {
+                var names = new List<string>();
+                var n1 = "Clap";
+                var n2 = "High5";
+                m_GoNamingHelpText = $"Instances of prefab '{n1}' will become '{GetNewName(n1, names)}', '{GetNewName(n1, names)}', '{GetNewName(n1, names)}'\nInstances of prefab '{n2}' will become '{GetNewName(n2, names)}', '{GetNewName(n2, names)}', '{GetNewName(n2, names)}'";
+                m_PrevGoNamingDigits = EditorSettings.gameObjectNamingDigits;
+                m_PrevGoNamingScheme = EditorSettings.gameObjectNamingScheme;
+            }
+            EditorGUILayout.HelpBox(m_GoNamingHelpText, MessageType.Info, true);
+
+            EditorGUILayout.PropertyField(m_AssetNamingUsesSpace, Content.numberingProjectSpace);
         }
 
         private void DoRoslynAnalyzerSettings()

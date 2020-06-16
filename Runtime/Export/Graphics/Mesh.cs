@@ -1219,6 +1219,19 @@ namespace UnityEngine
             else            Debug.LogError(String.Format("Not allowed to call RecalculateTangents() on mesh '{0}'", name));
         }
 
+        public void RecalculateUVDistributionMetric(int uvSetIndex, float uvAreaThreshold = 1e-9f)
+        {
+            if (canAccess) RecalculateUVDistributionMetricImpl(uvSetIndex, uvAreaThreshold);
+            else Debug.LogError(String.Format("Not allowed to call RecalculateUVDistributionMetric() on mesh '{0}'", name));
+        }
+
+        public void RecalculateUVDistributionMetrics(float uvAreaThreshold = 1e-9f)
+        {
+            if (canAccess) RecalculateUVDistributionMetricsImpl(uvAreaThreshold);
+            else Debug.LogError(String.Format("Not allowed to call RecalculateUVDistributionMetrics() on mesh '{0}'", name));
+        }
+
+
         public void MarkDynamic()
         {
             if (canAccess)

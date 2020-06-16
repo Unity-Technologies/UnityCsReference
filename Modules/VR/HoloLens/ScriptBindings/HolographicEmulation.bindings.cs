@@ -83,7 +83,9 @@ namespace UnityEngineInternal.XR.WSA
     [NativeConditional("ENABLE_HOLOLENS_MODULE")]
     public partial class RemoteSpeechAccess
     {
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public static extern void EnableRemoteSpeech(UnityEngine.XR.WSA.RemoteDeviceVersion remoteDeviceVersion);
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public static extern void DisableRemoteSpeech();
     }
 }

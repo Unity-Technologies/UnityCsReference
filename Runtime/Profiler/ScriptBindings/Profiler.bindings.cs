@@ -31,7 +31,6 @@ namespace UnityEngine.Profiling
         GlobalIllumination,
     }
 
-
     [UsedByNativeCode]
     [MovedFrom("UnityEngine")]
     [NativeHeader("Runtime/Allocator/MemoryManager.h")]
@@ -102,6 +101,8 @@ namespace UnityEngine.Profiling
         [FreeFunction("profiler_set_area_enabled")]
         public extern static void SetAreaEnabled(ProfilerArea area, bool enabled);
 
+        // TODO
+        //[Obsolete("", false)]
         public static int areaCount
         {
             get

@@ -20,17 +20,17 @@ namespace UnityEditor
             {
                 var joint = editor.target as Joint;
 
-                if (joint.connectedBody != null)
+                if (joint.connectedBody != null || joint.connectedArticulationBody != null)
                 {
                     var bodyScene = joint.gameObject.scene;
-                    var connectedBodyScene = joint.connectedBody.gameObject.scene;
+                    var connectedBodyScene = joint.connectedBody != null ? joint.connectedBody.gameObject.scene : joint.connectedArticulationBody.gameObject.scene;
 
                     // scenes can be invalid when the joint belongs to a prefab
                     if (bodyScene.IsValid() && connectedBodyScene.IsValid())
                     {
                         if (bodyScene.GetPhysicsScene() != connectedBodyScene.GetPhysicsScene())
                         {
-                            EditorGUILayout.HelpBox("This joint will not function because it is connected to a Rigidbody in a different physics scene. This is not supported.", MessageType.Warning);
+                            EditorGUILayout.HelpBox("This joint will not function because it is connected to a body in a different physics scene. This is not supported.", MessageType.Warning);
                         }
                     }
                 }
@@ -78,7 +78,7 @@ namespace UnityEditor
             var bounds = base.GetWorldBoundsOfTarget(targetObject);
 
             // ensure joint's anchor point is included in bounds
-            var jointTool = EditorToolContext.activeTool as JointTool<T>;
+            var jointTool = EditorToolManager.activeTool as JointTool<T>;
 
             if (jointTool != null)
                 bounds.Encapsulate(jointTool.GetAngularLimitHandleMatrix((T)targetObject).MultiplyPoint3x4(Vector3.zero));
@@ -125,18 +125,28 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck())
                 {
                     var rigidbody = joint.GetComponent<Rigidbody>();
-                    if (rigidbody.isKinematic && joint.connectedBody != null)
-                        joint.connectedBody.WakeUp();
+
+                    if (rigidbody.isKinematic)
+                    {
+                        if (joint.connectedBody != null)
+                            joint.connectedBody.WakeUp();
+                        else if (joint.connectedArticulationBody != null)
+                            joint.connectedArticulationBody.WakeUp();
+                        else
+                            rigidbody.WakeUp();
+                    }
                     else
+                    {
                         rigidbody.WakeUp();
+                    }
                 }
             }
         }
 
         protected virtual void GetActors(
             T joint,
-            out Rigidbody dynamicActor,
-            out Rigidbody connectedActor,
+            out Transform dynamicPose,
+            out Transform connectedPose,
             out int jointFrameActorIndex,
             out bool rightHandedLimit
         )
@@ -144,26 +154,44 @@ namespace UnityEditor
             jointFrameActorIndex = 1;
             rightHandedLimit = false;
 
-            dynamicActor = joint.GetComponent<Rigidbody>();
-            connectedActor = joint.connectedBody;
+            var thisBody = joint.GetComponent<Rigidbody>();
 
-            if (dynamicActor.isKinematic && connectedActor != null && !connectedActor.isKinematic)
+            dynamicPose = thisBody.transform;
+
+            bool connectedToKinematic = false;
+
+            if (joint.connectedBody)
             {
-                var temp = connectedActor;
-                connectedActor = dynamicActor;
-                dynamicActor = temp;
+                connectedPose = joint.connectedBody.transform;
+                connectedToKinematic = joint.connectedBody.isKinematic;
+            }
+            else if (joint.connectedArticulationBody)
+            {
+                connectedPose = joint.connectedArticulationBody.transform;
+                connectedToKinematic = joint.connectedArticulationBody.immovable;
+            }
+            else
+            {
+                connectedPose = null;
+            }
+
+            if (thisBody.isKinematic && !connectedToKinematic)
+            {
+                var temp = dynamicPose;
+                dynamicPose = connectedPose;
+                connectedPose = temp;
             }
         }
 
         internal Matrix4x4 GetAngularLimitHandleMatrix(T joint)
         {
-            Rigidbody dynamicActor, connectedActor;
+            Transform dynamicPose, connectedPose;
             int jointFrameActorIndex;
             bool rightHandedLimit;
-            GetActors(joint, out dynamicActor, out connectedActor, out jointFrameActorIndex, out rightHandedLimit);
+            GetActors(joint, out dynamicPose, out connectedPose, out jointFrameActorIndex, out rightHandedLimit);
 
             var connectedBodyRotation =
-                connectedActor == null ? Quaternion.identity : connectedActor.transform.rotation;
+                connectedPose == null ? Quaternion.identity : connectedPose.transform.rotation;
 
             // to enhance usability, orient the limit region so the dynamic body is within it, assuming bodies were bound on opposite sides of the anchor
             var jointFrame = joint.GetLocalPoseMatrix(jointFrameActorIndex);
@@ -174,8 +202,8 @@ namespace UnityEditor
 
             // point of rotation is about the anchor of the joint body, which is not necessarily aligned to the anchor on the connected body
             var jointAnchorPosition = joint.anchor;
-            if (dynamicActor != null)
-                jointAnchorPosition = dynamicActor.transform.TransformPoint(jointAnchorPosition);
+            if (dynamicPose != null)
+                jointAnchorPosition = dynamicPose.transform.TransformPoint(jointAnchorPosition);
 
             return Matrix4x4.TRS(jointAnchorPosition, connectedBodyRotation * jointFrameOrientation, Vector3.one);
         }

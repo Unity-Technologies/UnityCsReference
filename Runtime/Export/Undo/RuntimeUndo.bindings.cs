@@ -13,7 +13,7 @@ namespace UnityEngine
     internal class RuntimeUndo
     {
         [FreeFunction("SetTransformParentUndo")]
-        extern internal static void SetTransformParent(Transform transform, Transform newParent, string name);
+        extern internal static void SetTransformParent([NotNull("NullExceptionObject")] Transform transform, Transform newParent, string name);
 
         [FreeFunction("RecordUndoDiff")]
         extern internal static void RecordObject(Object objectToUndo, string name);

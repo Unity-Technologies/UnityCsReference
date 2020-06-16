@@ -473,7 +473,10 @@ namespace UnityEditor
                             }
                             else if (enableBakedGI)
                             {
-                                EditorGUILayout.HelpBox(Styles.helpStringsMixed[m_MixedBakeMode.intValue].text + EditorGUIUtility.TrTextContent(SupportedRenderingFeatures.active.shadowmaskMessage).text, MessageType.Info);
+                                if (m_MixedBakeMode.intValue == (int)MixedLightingMode.Shadowmask)
+                                    EditorGUILayout.HelpBox(Styles.helpStringsMixed[m_MixedBakeMode.intValue].text + EditorGUIUtility.TrTextContent(SupportedRenderingFeatures.active.shadowmaskMessage).text, MessageType.Info);
+                                else
+                                    EditorGUILayout.HelpBox(Styles.helpStringsMixed[m_MixedBakeMode.intValue].text, MessageType.Info);
                             }
                         }
                     }

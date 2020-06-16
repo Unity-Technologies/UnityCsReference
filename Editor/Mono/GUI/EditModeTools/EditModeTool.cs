@@ -22,14 +22,14 @@ namespace UnityEditor
 
         void OnEnable()
         {
-            EditorTools.EditorTools.activeToolChanging += ActiveToolChanging;
-            EditorTools.EditorTools.activeToolChanged += ActiveToolChanged;
+            EditorTools.ToolManager.activeToolChanging += ActiveToolChanging;
+            EditorTools.ToolManager.activeToolChanged += ActiveToolChanged;
         }
 
         void OnDisable()
         {
-            EditorTools.EditorTools.activeToolChanging -= ActiveToolChanging;
-            EditorTools.EditorTools.activeToolChanged -= ActiveToolChanged;
+            EditorTools.ToolManager.activeToolChanging -= ActiveToolChanging;
+            EditorTools.ToolManager.activeToolChanged -= ActiveToolChanged;
         }
 
         public abstract SceneViewEditMode editMode { get; }
@@ -49,13 +49,13 @@ namespace UnityEditor
 
         void ActiveToolChanging()
         {
-            if (EditorTools.EditorTools.IsActiveTool(this))
+            if (EditorTools.ToolManager.IsActiveTool(this))
                 OnDeactivate();
         }
 
         void ActiveToolChanged()
         {
-            if (EditorTools.EditorTools.IsActiveTool(this))
+            if (EditorTools.ToolManager.IsActiveTool(this))
                 OnActivate();
         }
 

@@ -60,7 +60,7 @@ namespace UnityEditor
 
         // *undocumented*
         [FreeFunction("MonoScript_Init")]
-        private static extern void Init(MonoScript self, string scriptContents, string className, string nameSpace, string assemblyName, bool isEditorScript);
+        private static extern void Init([NotNull("NullExceptionObject")] MonoScript self, string scriptContents, string className, string nameSpace, string assemblyName, bool isEditorScript);
 
         // *undocumented*
         [NativeName("GetAssemblyName")]

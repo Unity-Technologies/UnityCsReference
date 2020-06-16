@@ -24,7 +24,7 @@ namespace UnityEditor
 
         static internal Rect GetTooltipRect() { return tooltipRect; }
         static internal string GetMouseTooltip() { return mouseTooltip; }
-        internal static bool DoToggleForward(Rect position, int id, bool value, GUIContent content, GUIStyle style)
+        internal static bool DoToggleForward(Rect position, int id, bool value, GUIContent content, GUIStyle style, bool expandWidth = true)
         {
             Event evt = Event.current;
 
@@ -36,7 +36,18 @@ namespace UnityEditor
             bool nonLeftClick = (evt.type == EventType.MouseDown && evt.button != 0);
             if (nonLeftClick)
                 evt.type = EventType.Ignore;
-            bool returnValue = DoToggle(position, id, EditorGUI.showMixedValue ? false : value, content, style);
+            bool returnValue;
+            bool computedValue = EditorGUI.showMixedValue ? false : value;
+            if (expandWidth)
+            {
+                returnValue = DoToggle(position, id, computedValue, content, style);
+            }
+            else
+            {
+                var toggleSize = style.CalcSize(content);
+                var visibleRect = new Rect(position.position, toggleSize);
+                returnValue = DoControl(visibleRect, id, computedValue, visibleRect.Contains(Event.current.mousePosition), content, style);
+            }
             if (nonLeftClick)
                 evt.type = origType;
             else if (evt.type != origType)

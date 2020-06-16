@@ -185,7 +185,7 @@ namespace UnityEditor
         public static extern bool HasStateMachineDataInPasteboard();
 
         [FreeFunction("SmartResetObject")]
-        public static extern void SmartReset(UnityEngine.Object obj);
+        public static extern void SmartReset([NotNull("NullExceptionObject")] UnityEngine.Object obj);
 
         [FreeFunction("ResolveSymlinks")]
         public static extern string ResolveSymlinks(string path);

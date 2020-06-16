@@ -108,7 +108,7 @@ namespace UnityEditor.Collaboration
             {
                 if (browser == null)
                 {
-                    browser = EditorWindow.GetWindow<ProjectBrowser>() as ProjectBrowser;
+                    browser = EditorWindow.GetWindow<ProjectBrowser>();
                     ShowInFavoriteSearchFilters();
                     browser.RepaintImmediately();
                 }

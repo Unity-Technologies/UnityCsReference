@@ -14,6 +14,36 @@ using UnityEngine.Scripting;
 
 namespace UnityEditor.Profiling
 {
+    [StructLayout(LayoutKind.Sequential)]
+    [RequiredByNativeCode]
+    public struct ProfilerCategoryInfo
+    {
+        UInt16 m_Id;
+        UnityEngine.Color32 m_Color;
+        string m_Name;
+        ProfilerCategoryFlags m_Flags;
+
+        public UInt16 id
+        {
+            get => m_Id;
+        }
+
+        public UnityEngine.Color32 color
+        {
+            get => m_Color;
+        }
+
+        public string name
+        {
+            get => m_Name;
+        }
+
+        public ProfilerCategoryFlags flags
+        {
+            get => m_Flags;
+        }
+    };
+
     [NativeHeader("Modules/ProfilerEditor/ProfilerHistory/FrameDataView.h")]
     [StructLayout(LayoutKind.Sequential)]
     public abstract class FrameDataView : IDisposable
@@ -175,6 +205,12 @@ namespace UnityEditor.Profiling
 
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern void GetMarkers(List<MarkerInfo> markerInfoList);
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern ProfilerCategoryInfo GetCategoryInfo(UInt16 id);
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern void GetAllCategories(List<ProfilerCategoryInfo> categoryInfoList);
 
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         internal static extern UnityEngine.Color32 GetMarkerCategoryColor(ushort category);

@@ -87,7 +87,7 @@ namespace UnityEditor.Animations
         extern internal MonoScript GetBehaviourMonoScript(AnimatorState state, int layerIndex, int behaviourIndex);
 
         [FreeFunction]
-        extern private static ScriptableObject ScriptingAddStateMachineBehaviourWithType(Type stateMachineBehaviourType, AnimatorController controller, AnimatorState state, int layerIndex);
+        extern private static ScriptableObject ScriptingAddStateMachineBehaviourWithType(Type stateMachineBehaviourType, [NotNull("NullExceptionObject")] AnimatorController controller, [NotNull("NullExceptionObject")] AnimatorState state, int layerIndex);
 
 
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]

@@ -32,6 +32,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.DeviceSimulator.Editor")]
 [assembly: InternalsVisibleTo("Unity.UIElements")]
 [assembly: InternalsVisibleTo("Unity.UIElements.Editor")]
+[assembly: InternalsVisibleTo("UnityEditor.UIElementsModule")]
+[assembly: InternalsVisibleTo("UnityEditor.UIElementsGameObjectsModule")]
 
 // Required for the type forwarder UnityEngine.dll
 [assembly: InternalsVisibleTo("UnityEngine")]
@@ -69,6 +71,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UI.Builder.Editor")]
 [assembly: InternalsVisibleTo("Unity.UI.Builder.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UIElements")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElementsGameObjectsModule")]
 [assembly: InternalsVisibleTo("Unity.UIElements.Editor")]
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
 

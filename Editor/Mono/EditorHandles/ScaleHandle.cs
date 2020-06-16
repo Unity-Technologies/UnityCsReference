@@ -222,7 +222,7 @@ namespace UnityEditor
                 }
             }
 
-            if (param.ShouldShow(ScaleHandleParam.Handle.XYZ) && (isHot && ids.xyz == GUIUtility.hotControl || !isHot))
+            if (param.ShouldShow(ScaleHandleParam.Handle.XYZ) && (ids.xyz == GUIUtility.hotControl || !isHot))
             {
                 color = ToActiveColorSpace(centerColor);
                 EditorGUI.BeginChangeCheck();

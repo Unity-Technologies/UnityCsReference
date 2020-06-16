@@ -24,7 +24,12 @@ namespace UnityEditor.PackageManager.UI
                     return PackageState.InProgress;
 
                 if (errors.Any())
-                    return PackageState.Error;
+                {
+                    if (errors.All(error => error.attribute == UIError.Attribute.IsWarning))
+                        return PackageState.Warning;
+                    else if (errors.Any(error => !error.HasAttribute(UIError.Attribute.IsClearable)))
+                        return PackageState.Error;
+                }
 
                 var primary = versions.primary;
                 if (primary.HasTag(PackageTag.InDevelopment))

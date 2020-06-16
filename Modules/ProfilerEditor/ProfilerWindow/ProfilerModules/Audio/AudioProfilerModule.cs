@@ -4,15 +4,19 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Profiling;
-using UnityEditor;
 
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
     internal class AudioProfilerModule : ProfilerModuleBase
     {
+        const string k_IconName = "Profiler.Audio";
+        const int k_DefaultOrderIndex = 4;
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("Audio");
+
         Vector2 m_PaneScroll_AudioChannels = Vector2.zero;
         Vector2 m_PaneScroll_AudioDSPLeft = Vector2.zero;
         Vector2 m_PaneScroll_AudioDSPRight = Vector2.zero;
@@ -54,9 +58,16 @@ namespace UnityEditorInternal.Profiling
         const string k_AudioProfilerGroupTreeViewStateSettingsKey = "Profiler.MemoryProfilerModule.AudioProfilerGroupTreeViewState";
         const string k_AudioProfilerClipTreeViewStateSettingsKey = "Profiler.MemoryProfilerModule.AudioProfilerClipTreeViewState";
 
-        public override void OnEnable(IProfilerWindowController profilerWindow)
+        public AudioProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName) {}
+
+        public override ProfilerArea area => ProfilerArea.Audio;
+
+        protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        protected override string legacyPreferenceKey => "ProfilerChartAudio";
+
+        public override void OnEnable()
         {
-            base.OnEnable(profilerWindow);
+            base.OnEnable();
 
             m_ShowDetailedAudioPane = (ProfilerAudioView)EditorPrefs.GetInt(k_ViewTypeSettingsKey, (int)ProfilerAudioView.Channels);
             m_ShowInactiveDSPChains = EditorPrefs.GetBool(k_ShowInactiveDSPChainsSettingsKey, m_ShowInactiveDSPChains);
@@ -100,7 +111,7 @@ namespace UnityEditorInternal.Profiling
             // This module still needs to be broken apart into Toolbar and View.
         }
 
-        public override void DrawView(Rect position)
+        public override void DrawDetailsView(Rect position)
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             ProfilerAudioView newShowDetailedAudioPane = m_ShowDetailedAudioPane;
@@ -252,7 +263,7 @@ namespace UnityEditorInternal.Profiling
             {
                 GUILayout.FlexibleSpace();
                 EditorGUILayout.EndHorizontal();
-                DrawOverviewText(ProfilerArea.Audio, position);
+                DrawDetailsViewText(position);
             }
         }
 
@@ -275,7 +286,7 @@ namespace UnityEditorInternal.Profiling
             var rightRect = new Rect(statsRect.xMax, totalRect.y, totalRect.width - statsRect.width, totalRect.height);
 
             // STATS
-            var content = ProfilerDriver.GetOverviewText(ProfilerArea.Audio, m_ProfilerWindow.GetActiveVisibleFrameIndex());
+            var content = ProfilerDriver.GetOverviewText(area, m_ProfilerWindow.GetActiveVisibleFrameIndex());
             var textSize = EditorStyles.wordWrappedLabel.CalcSize(GUIContent.Temp(content));
             scrollPos = GUI.BeginScrollView(statsRect, scrollPos, new Rect(0, 0, textSize.x, textSize.y));
             GUI.Label(new Rect(3, 3, textSize.x, textSize.y), content, EditorStyles.wordWrappedLabel);

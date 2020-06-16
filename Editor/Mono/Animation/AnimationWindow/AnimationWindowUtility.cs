@@ -780,7 +780,7 @@ namespace UnityEditorInternal
             string result = GetPropertyGroupName(GetPropertyDisplayName(propertyGroupName));
 
             // Workaround for uGUI RectTransform which only animates position.z
-            if (animatableObjectType == typeof(RectTransform) & result.Equals("Position"))
+            if (animatableObjectType == typeof(RectTransform) && result.Equals("Position"))
                 result = "Position (Z)";
 
             return result;

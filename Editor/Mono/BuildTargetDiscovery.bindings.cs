@@ -43,7 +43,8 @@ namespace UnityEditor
             DisableNativeHDRLightmaps       = (1 << 17),
             UsesNativeHDR                   = (1 << 18),
             // ProtectedGraphicsMem            = (1 << 19),     This was removed.
-            IsMTRenderingDisabledByDefault  = (1 << 20)
+            IsMTRenderingDisabledByDefault  = (1 << 20),
+            ConfigurableNormalMapEncoding   = (1 << 21)
         }
 
         [Flags]

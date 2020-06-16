@@ -44,6 +44,7 @@ namespace UnityEditorInternal
         SkinOnGPU,
         DrawProcedural,
         ComputeDispatch,
+        RayTracingDispatch,
         PluginEvent,
         InstancedMesh,
         BeginSubpass,
@@ -103,6 +104,14 @@ namespace UnityEditorInternal
         public int flags;
     }
 
+    // Match C++ ScriptingShaderBufferInfo memory layout!
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ShaderConstantBufferInfo
+    {
+        public string name;
+        public int flags;
+    }
+
     // Match C++ ScriptingShaderProperties memory layout!
     [StructLayout(LayoutKind.Sequential)]
     internal struct ShaderProperties
@@ -112,6 +121,7 @@ namespace UnityEditorInternal
         public ShaderMatrixInfo[] matrices;
         public ShaderTextureInfo[] textures;
         public ShaderBufferInfo[] buffers;
+        public ShaderConstantBufferInfo[] cbuffers;
     }
 
     // Match C++ ScriptingFrameDebuggerEventData memory layout!
@@ -142,6 +152,19 @@ namespace UnityEditorInternal
         public int csThreadGroupsX;
         public int csThreadGroupsY;
         public int csThreadGroupsZ;
+
+        // state for ray tracing shader dispatches
+        public int rtsInstanceID;
+        public string rtsName;
+        public string rtsShaderPassName;
+        public string rtsRayGenShaderName;
+        public string rtsAccelerationStructureName;
+        public int rtsMaxRecursionDepth;
+        public int rtsWidth;
+        public int rtsHeight;
+        public int rtsDepth;
+        public int rtsMissShaderCount;
+        public int rtsCallableShaderCount;
 
         // active render target info
         public string rtName;
@@ -259,6 +282,7 @@ namespace UnityEditor
             "GPU Skinning",
             "Draw Procedural",
             "Compute Shader",
+            "Ray Tracing Dispatch",
             "Plugin Event",
             "Draw Mesh (instanced)",
             "Begin Subpass",
@@ -296,8 +320,8 @@ namespace UnityEditor
         const string kFloatDetailedFormat = "g7";
 
         const float kShaderPropertiesIndention = 15.0f;
-        const float kNameFieldWidth = 200.0f;
-        const float kValueFieldWidth = 200.0f;
+        const float kNameFieldWidth = 250.0f;
+        const float kValueFieldWidth = 300.0f;
         const float kArrayValuePopupBtnWidth = 25.0f;
 
         // See the comments for BaseParamInfo in FrameDebuggerInternal.h
@@ -998,6 +1022,35 @@ namespace UnityEditor
             DrawShaderProperties(m_CurEventData.shaderProperties);
         }
 
+        private void DrawEventRayTracingDispatchInfo()
+        {
+            // ray tracing shader information
+            EditorGUILayout.LabelField("Ray Tracing Shader", m_CurEventData.rtsName);
+            if (GUI.Button(GUILayoutUtility.GetLastRect(), Styles.selectShaderTooltip, GUI.skin.label))
+            {
+                EditorGUIUtility.PingObject(m_CurEventData.rtsInstanceID);
+                Event.current.Use();
+            }
+            EditorGUILayout.LabelField("Ray Generation Shader", m_CurEventData.rtsRayGenShaderName);
+            EditorGUILayout.LabelField("SubShader Pass", m_CurEventData.rtsShaderPassName);
+
+            // max. recursion depth
+            string maxRecursionDepthText = string.Format("{0}", m_CurEventData.rtsMaxRecursionDepth);
+            EditorGUILayout.LabelField("Max. Recursion Depth", maxRecursionDepthText);
+
+            // dispatch size
+            string dispatchSizeText = string.Format("{0} x {1} x {2}", m_CurEventData.rtsWidth, m_CurEventData.rtsHeight, m_CurEventData.rtsDepth);
+            EditorGUILayout.LabelField("Dispatch Size", dispatchSizeText);
+
+            EditorGUILayout.LabelField("Acceleration Structure", m_CurEventData.rtsAccelerationStructureName);
+
+            EditorGUILayout.LabelField("Miss Shader Count", string.Format("{0}", m_CurEventData.rtsMissShaderCount));
+            EditorGUILayout.LabelField("Callable Shader Count", string.Format("{0}", m_CurEventData.rtsCallableShaderCount));
+
+            // properties
+            DrawShaderProperties(m_CurEventData.shaderProperties);
+        }
+
         private void DrawCurrentEvent(Rect rect, FrameDebuggerEvent[] descs)
         {
             int curEventIndex = FrameDebuggerUtility.limit - 1;
@@ -1019,12 +1072,13 @@ namespace UnityEditor
                 BuildCurEventDataStrings();
             }
 
-            // render target
-            if (isFrameEventDataValid)
-                DrawRenderTargetControls();
-
             // event type and draw call info
             FrameDebuggerEvent cur = descs[curEventIndex];
+
+            // render target
+            if (isFrameEventDataValid && cur.type != FrameEventType.RayTracingDispatch)
+                DrawRenderTargetControls();
+
             GUILayout.Label(string.Format("Event #{0}: {1}", (curEventIndex + 1), s_FrameEventTypeNames[(int)cur.type]), EditorStyles.boldLabel);
 
             if (FrameDebuggerUtility.IsRemoteEnabled() && FrameDebuggerUtility.receivingRemoteFrameEventData)
@@ -1042,6 +1096,11 @@ namespace UnityEditor
                 {
                     // a compute dispatch, display extra info
                     DrawEventComputeDispatchInfo();
+                }
+                else if (cur.type == FrameEventType.RayTracingDispatch)
+                {
+                    // a ray tracing dispatch
+                    DrawEventRayTracingDispatchInfo();
                 }
             }
 
@@ -1119,7 +1178,7 @@ namespace UnityEditor
 
                     PopupWindowWithoutFocus.Show(
                         buttonRect,
-                        new ArrayValuePopup(startIndex, numValues, 100.0f, getValueString),
+                        new ArrayValuePopup(startIndex, numValues, 1, 100.0f, getValueString),
                         new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right });
                 }
             }
@@ -1156,7 +1215,7 @@ namespace UnityEditor
 
                     PopupWindowWithoutFocus.Show(
                         buttonRect,
-                        new ArrayValuePopup(startIndex, numValues, 200.0f, getValueString),
+                        new ArrayValuePopup(startIndex, numValues, 1, 200.0f, getValueString),
                         new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right });
                 }
             }
@@ -1193,7 +1252,7 @@ namespace UnityEditor
 
                     PopupWindowWithoutFocus.Show(
                         buttonRect,
-                        new ArrayValuePopup(startIndex, numValues, 200.0f, getValueString),
+                        new ArrayValuePopup(startIndex, numValues, 5, 200.0f, getValueString),
                         new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right });
                 }
             }
@@ -1202,6 +1261,18 @@ namespace UnityEditor
         }
 
         private void OnGUIShaderPropBuffer(ShaderBufferInfo t)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(kShaderPropertiesIndention);
+
+            GUILayout.Label(t.name, EditorStyles.miniLabel, GUILayout.MinWidth(kNameFieldWidth));
+            DrawShaderPropertyFlags(t.flags);
+            GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.miniLabel, GUILayout.MinWidth(kValueFieldWidth));
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+        }
+
+        private void OnGUIShaderPropConstantBuffer(ShaderConstantBufferInfo t)
         {
             GUILayout.BeginHorizontal();
             GUILayout.Space(kShaderPropertiesIndention);
@@ -1321,6 +1392,16 @@ namespace UnityEditor
                 foreach (var d in props.buffers)
                 {
                     OnGUIShaderPropBuffer(d);
+                }
+            }
+
+            if (props.cbuffers.Length > 0)
+            {
+                GUILayout.Label("Constant Buffers", EditorStyles.boldLabel);
+
+                foreach (var d in props.cbuffers)
+                {
+                    OnGUIShaderPropConstantBuffer(d);
                 }
             }
 
@@ -1589,21 +1670,23 @@ namespace UnityEditor
             private int m_StartIndex;
             private int m_NumValues;
             private float m_WindowWidth;
+            private int m_RowCount;
 
             private static readonly GUIStyle m_Style = EditorStyles.miniLabel;
 
-            public ArrayValuePopup(int startIndex, int numValues, float windowWidth, GetValueStringDelegate getValueString)
+            public ArrayValuePopup(int startIndex, int numValues, int rowCount, float windowWidth, GetValueStringDelegate getValueString)
             {
                 m_StartIndex = startIndex;
                 m_NumValues = numValues;
                 m_WindowWidth = windowWidth;
+                m_RowCount = rowCount;
                 GetValueString = getValueString;
             }
 
             public override Vector2 GetWindowSize()
             {
                 float lineHeight = m_Style.lineHeight + m_Style.padding.vertical + m_Style.margin.top;
-                return new Vector2(m_WindowWidth, Math.Min(lineHeight * m_NumValues, 250.0f));
+                return new Vector2(m_WindowWidth, Math.Min(lineHeight * m_NumValues * m_RowCount, 250.0f));
             }
 
             public override void OnGUI(Rect rect)

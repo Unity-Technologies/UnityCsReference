@@ -61,15 +61,15 @@ namespace UnityEngine
         {
             gos = gos.OrderBy(x =>
             {
-                Renderer aRenderer = StaticBatcherGOSorter.GetRenderer(x as GameObject);
+                Renderer aRenderer = StaticBatcherGOSorter.GetRenderer(x);
                 return sorter.GetMaterialId(aRenderer);
             }).ThenBy(y =>
                 {
-                    Renderer aRenderer = StaticBatcherGOSorter.GetRenderer(y as GameObject);
+                    Renderer aRenderer = StaticBatcherGOSorter.GetRenderer(y);
                     return sorter.GetLightmapIndex(aRenderer);
                 }).ThenBy(z =>
                 {
-                    Renderer aRenderer = StaticBatcherGOSorter.GetRenderer(z as GameObject);
+                    Renderer aRenderer = StaticBatcherGOSorter.GetRenderer(z);
                     return sorter.GetRendererId(aRenderer);
                 }).ToArray();
             return gos;

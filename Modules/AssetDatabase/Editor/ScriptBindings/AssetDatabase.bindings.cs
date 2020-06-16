@@ -370,6 +370,53 @@ namespace UnityEditor
 
         extern internal static string GetUniquePathNameAtSelectedPath(string fileName);
 
+        [uei.ExcludeFromDocs]
+        public static bool CanOpenForEdit(UnityEngine.Object assetObject)
+        {
+            return CanOpenForEdit(assetObject, StatusQueryOptions.UseCachedIfPossible);
+        }
+
+        public static bool CanOpenForEdit(UnityEngine.Object assetObject, [uei.DefaultValue("StatusQueryOptions.UseCachedIfPossible")] StatusQueryOptions statusOptions)
+        {
+            string assetPath = GetAssetOrScenePath(assetObject);
+            return CanOpenForEdit(assetPath, statusOptions);
+        }
+
+        [uei.ExcludeFromDocs]
+        public static bool CanOpenForEdit(string assetOrMetaFilePath)
+        {
+            return CanOpenForEdit(assetOrMetaFilePath, StatusQueryOptions.UseCachedIfPossible);
+        }
+
+        public static bool CanOpenForEdit(string assetOrMetaFilePath, [uei.DefaultValue("StatusQueryOptions.UseCachedIfPossible")] StatusQueryOptions statusOptions)
+        {
+            string message;
+            return CanOpenForEdit(assetOrMetaFilePath, out message, statusOptions);
+        }
+
+        [uei.ExcludeFromDocs]
+        public static bool CanOpenForEdit(UnityEngine.Object assetObject, out string message)
+        {
+            return CanOpenForEdit(assetObject, out message, StatusQueryOptions.UseCachedIfPossible);
+        }
+
+        public static bool CanOpenForEdit(UnityEngine.Object assetObject, out string message, [uei.DefaultValue("StatusQueryOptions.UseCachedIfPossible")] StatusQueryOptions statusOptions)
+        {
+            string assetPath = GetAssetOrScenePath(assetObject);
+            return CanOpenForEdit(assetPath, out message, statusOptions);
+        }
+
+        [uei.ExcludeFromDocs]
+        public static bool CanOpenForEdit(string assetOrMetaFilePath, out string message)
+        {
+            return CanOpenForEdit(assetOrMetaFilePath, out message, StatusQueryOptions.UseCachedIfPossible);
+        }
+
+        public static bool CanOpenForEdit(string assetOrMetaFilePath, out string message, [uei.DefaultValue("StatusQueryOptions.UseCachedIfPossible")] StatusQueryOptions statusOptions)
+        {
+            return AssetModificationProcessorInternal.CanOpenForEdit(assetOrMetaFilePath, out message, statusOptions);
+        }
+
         [uei.ExcludeFromDocs] public static bool IsOpenForEdit(UnityEngine.Object assetObject)
         {
             return IsOpenForEdit(assetObject, StatusQueryOptions.UseCachedIfPossible);

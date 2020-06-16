@@ -167,7 +167,10 @@ namespace UnityEditor
                 if (!this.isValidDisplayNameCache)
                 {
                     this.isValidDisplayNameCache = true;
-                    m_CachedLocalizedDisplayName = L10n.Tr(displayName);
+                    using (new LocalizationGroup(m_SerializedObject.targetObject))
+                    {
+                        m_CachedLocalizedDisplayName = L10n.Tr(displayName);
+                    }
                 }
                 return m_CachedLocalizedDisplayName;
             }

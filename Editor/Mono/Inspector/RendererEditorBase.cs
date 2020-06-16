@@ -321,7 +321,6 @@ namespace UnityEditor
         private SerializedProperty m_RayTracingMode;
         private SerializedProperty m_RayTraceProcedural;
         protected SerializedProperty m_Materials;
-        private SerializedProperty m_MaterialsSize;
 
         class Styles
         {
@@ -359,7 +358,6 @@ namespace UnityEditor
             m_MotionVectors = serializedObject.FindProperty("m_MotionVectors");
             m_SkinnedMotionVectors = serializedObject.FindProperty("m_SkinnedMotionVectors");
             m_Materials = serializedObject.FindProperty("m_Materials");
-            m_MaterialsSize = serializedObject.FindProperty("m_Materials.Array.size");
 
             m_ShowMaterials = new SavedBool($"{target.GetType()}.ShowMaterials", true);
             m_ShowProbeSettings = new SavedBool($"{target.GetType()}.ShowProbeSettings", true);
@@ -518,7 +516,7 @@ namespace UnityEditor
         {
             if (SystemInfo.supportsRayTracing)
             {
-                m_ShowRayTracingSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowRayTracingSettings.value, "Ray Tracing Settings");
+                m_ShowRayTracingSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowRayTracingSettings.value, "Ray Tracing");
                 if (m_ShowRayTracingSettings.value)
                 {
                     EditorGUI.indentLevel++;

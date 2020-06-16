@@ -2,10 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEngine.Profiling;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.Profiling;
+using UnityEditorInternal.Profiling;
+using UnityEngine.Profiling;
 
 namespace UnityEditorInternal
 {
@@ -36,5 +37,11 @@ namespace UnityEditorInternal
 
         ProfilerProperty CreateProperty();
         ProfilerProperty CreateProperty(int sortType);
+
+        ProfilerModuleBase SelectedModule { get; }
+        void SelectModule(ProfilerModuleBase module);
+        void CloseModule(ProfilerModuleBase module);
+
+        void SetAreasInUse(IEnumerable<ProfilerArea> areas, bool inUse);
     }
 }

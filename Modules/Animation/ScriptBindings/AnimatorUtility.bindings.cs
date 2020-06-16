@@ -12,9 +12,9 @@ namespace UnityEngine
     public class AnimatorUtility
     {
         [FreeFunction]
-        extern public static void OptimizeTransformHierarchy(GameObject go, string[] exposedTransforms);
+        extern public static void OptimizeTransformHierarchy([NotNull("NullExceptionObject")] GameObject go, string[] exposedTransforms);
 
         [FreeFunction]
-        extern public static void DeoptimizeTransformHierarchy(GameObject go);
+        extern public static void DeoptimizeTransformHierarchy([NotNull("NullExceptionObject")] GameObject go);
     }
 }

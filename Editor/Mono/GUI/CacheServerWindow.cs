@@ -37,10 +37,11 @@ namespace UnityEditor
             var exit = false;
 
             GUILayout.BeginArea(rect, m_WindowStyle);
+            // Cache server connection url
             if (AssetDatabaseExperimental.IsCacheServerEnabled())
             {
                 var iconPosition = new Rect();
-                iconPosition.x = rect.width - m_RefreshIcon.image.width - m_WindowStyle.padding.right;
+                iconPosition.x = rect.width - (m_RefreshIcon.image.width / (Screen.dpi > 160 ? 2 : 1)) - m_WindowStyle.padding.right;
                 iconPosition.y = m_WindowStyle.padding.top;
                 iconPosition.width = m_RefreshIcon.image.width;
                 iconPosition.height = m_RefreshIcon.image.height;
@@ -58,18 +59,32 @@ namespace UnityEditor
                 {
                     style.normal.textColor = new Color(0.97f, 0.32f, 0.31f);
                 }
-                EditorGUILayout.LabelField(AssetDatabaseExperimental.GetCacheServerAddress(), style);
+
+                if (GUILayout.Button(AssetDatabaseExperimental.GetCacheServerAddress(), style))
+                {
+                    var url = $"http://{AssetDatabaseExperimental.GetCacheServerAddress()}:{AssetDatabaseExperimental.GetCacheServerPort()}";
+                    Application.OpenURL(url);
+                }
                 GUILayout.EndHorizontal();
             }
 
+            // Connection status text label
             GUILayout.BeginHorizontal();
             var statusTextStyle = new GUIStyle()
             {
-                normal = { textColor = Color.grey }
+                normal = { textColor = Color.grey },
+                fontStyle = FontStyle.Italic
             };
             EditorGUILayout.LabelField(ConnectionStatusText(), statusTextStyle);
             GUILayout.EndHorizontal();
 
+            // Divider line
+            var lineRect = EditorGUILayout.GetControlRect(GUILayout.Height(1));
+            lineRect.x -= 6;
+            lineRect.width += 12;
+            EditorGUI.DrawRect(lineRect, new Color(0.387f, 0.387f, 0.387f));
+
+            // Open project settings button/label
             GUILayout.BeginHorizontal();
             if (GUILayout.Button(m_OpenProjectSettings, "ControlLabel"))
             {
@@ -123,7 +138,8 @@ namespace UnityEditor
             int lines = AssetDatabaseExperimental.IsCacheServerEnabled() ? 3 : 2;
             int heightOfLines = (int)Math.Ceiling(EditorGUI.kSingleLineHeight * lines);
             int heightOfWindowPadding = m_WindowStyle.padding.top + m_WindowStyle.padding.bottom;
-            return new Vector2(250, heightOfLines + heightOfWindowPadding);
+            int dividerLine = 2;
+            return new Vector2(250, heightOfLines + heightOfWindowPadding + dividerLine);
         }
     }
 }

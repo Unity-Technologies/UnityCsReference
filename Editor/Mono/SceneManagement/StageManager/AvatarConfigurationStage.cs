@@ -49,7 +49,7 @@ namespace UnityEditor.SceneManagement
                 return false;
 
             // Instantiate character
-            m_GameObject = Instantiate(prefab) as GameObject;
+            m_GameObject = Instantiate(prefab);
             SceneManager.MoveGameObjectToScene(m_GameObject, scene);
 
             return true;

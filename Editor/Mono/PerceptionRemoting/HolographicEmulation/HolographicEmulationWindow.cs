@@ -114,7 +114,7 @@ namespace UnityEngine.XR.WSA
 
         private void OnEnable()
         {
-            titleContent = EditorGUIUtility.TrTextContent("Holographic");
+            titleContent = EditorGUIUtility.TrTextContent("Holographic (Deprecated)");
             m_InPlayMode = EditorApplication.isPlayingOrWillChangePlaymode;
 
             m_RemoteMachineHistory = EditorPrefs.GetString("HolographicRemoting.RemoteMachineHistory").Split(',');
@@ -319,6 +319,8 @@ namespace UnityEngine.XR.WSA
 
         void OnGUI()
         {
+            EditorGUILayout.HelpBox("Support for built-in XR is deprecated and will be retired in a future version of Unity. We recommend you use the Unity XR Plugin System, which you can install from Project Settings > XR Plugin Manager.", MessageType.Info);
+
             if (!CheckOperatingSystem())
             {
                 EditorGUILayout.HelpBox("You must be running Windows build 14318 or later to use Holographic Simulation or Remoting.", MessageType.Warning);

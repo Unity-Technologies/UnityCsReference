@@ -116,7 +116,7 @@ namespace UnityEditor
 
         void ShowEditorButtonGUI()
         {
-            GUILayout.BeginHorizontal();
+            using (new GUILayout.HorizontalScope())
             {
                 GUILayout.FlexibleSpace();
 
@@ -124,6 +124,15 @@ namespace UnityEditor
                 {
                     bool alreadySelected = selectedInParticleSystemWindow;
                     GameObject targetGameObject = (target as ParticleSystem).gameObject;
+
+                    // When editing a preset the GameObject will have the NotEditable flag.
+                    // We do not support the ParticleSystemWindow for Presets for two reasons:
+                    // - When selected the Preset editor creates a temporary GameObject which it then uses to edit the properties.
+                    // The ParticleSystemWindow also uses the Selection system which triggers a selection change, the Preset
+                    // editor cleans up the temp object and the ParticleSystemWindow is now unable to edit the system.
+                    // - A preset will only contain a single system, so there is no benefit to using the window. (case 1198545)
+                    if ((targetGameObject.hideFlags & HideFlags.NotEditable) != 0)
+                        return;
 
                     GUIContent text = null;
                     ParticleSystemWindow window = ParticleSystemWindow.GetInstance();
@@ -181,7 +190,6 @@ namespace UnityEditor
                     }
                 }
             }
-            GUILayout.EndHorizontal();
         }
 
         public override bool UseDefaultMargins() { return false; }

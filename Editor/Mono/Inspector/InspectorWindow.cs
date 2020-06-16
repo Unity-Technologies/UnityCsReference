@@ -73,13 +73,7 @@ namespace UnityEditor
             RefreshTitle();
             AddInspectorWindow(this);
 
-            LoadVisualTreeFromUxml();
-
-            m_PreviewResizer.localFrame = true;
-            m_PreviewResizer.Init("InspectorPreview");
-            m_LabelGUI.OnEnable();
-
-            CreateTracker();
+            base.OnEnable();
 
             RestoreLockStateFromSerializedData();
 
@@ -92,9 +86,6 @@ namespace UnityEditor
             m_LockTracker.lockStateChanged.AddListener(LockStateChanged);
 
             EditorApplication.projectWasLoaded += OnProjectWasLoaded;
-            EditorApplication.focusChanged += OnFocusChanged;
-
-            m_FirstInitialize = true;
         }
 
         private void OnProjectWasLoaded()

@@ -954,7 +954,7 @@ namespace UnityEngine
             return Mathf.Max(firstStyle.margin.right, midStyle.margin.left) + Mathf.Max(midStyle.margin.right, lastStyle.margin.left) + internalSpace * (xCount - 3);
         }
 
-        private static bool DoControl(Rect position, int id, bool on, bool hover, GUIContent content, GUIStyle style)
+        internal static bool DoControl(Rect position, int id, bool on, bool hover, GUIContent content, GUIStyle style)
         {
             var evt = Event.current;
             switch (evt.type)

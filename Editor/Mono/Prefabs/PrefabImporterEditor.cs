@@ -31,8 +31,16 @@ namespace UnityEditor
         double m_NextUpdate;
         List<string> m_PrefabsWithMissingScript = new List<string>();
         bool m_SavingHasFailed;
+
+        struct TrackedAsset
+        {
+            public GameObject asset;
+            public string guid;
+            public Hash128 hash;
+        }
+
         List<Component> m_TempComponentsResults = new List<Component>();
-        List<GameObject> m_DirtyPrefabAssets = new List<GameObject>();
+        List<TrackedAsset> m_DirtyPrefabAssets = new List<TrackedAsset>();
 
         public override bool showImportedObject { get { return !hasMissingScripts; } }
 
@@ -126,22 +134,27 @@ namespace UnityEditor
 
                 var rootGameObject = (GameObject)asset;
                 if (IsDirty(rootGameObject))
-                    m_DirtyPrefabAssets.Add(rootGameObject);
+                {
+                    string currentGuid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(rootGameObject));
+                    var changeTracking = new TrackedAsset()
+                    {
+                        asset = rootGameObject,
+                        guid = currentGuid,
+                        hash = AssetDatabase.GetSourceAssetFileHash(currentGuid)
+                    };
+                    m_DirtyPrefabAssets.Add(changeTracking);
+                }
             }
 
             if (m_DirtyPrefabAssets.Count > 0)
             {
-                bool sourceFileChangedAfterSaving = false;
                 AssetDatabase.StartAssetEditing();
                 try
                 {
-                    foreach (var rootGameObject in m_DirtyPrefabAssets)
+                    foreach (var trackedAsset in m_DirtyPrefabAssets)
                     {
-                        var guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(rootGameObject));
-                        var hashBeforeSaving = AssetDatabase.GetSourceAssetFileHash(guid);
-
                         bool savedSuccesfully;
-                        PrefabUtility.SavePrefabAsset(rootGameObject, out savedSuccesfully);
+                        PrefabUtility.SavePrefabAsset(trackedAsset.asset, out savedSuccesfully);
                         if (!savedSuccesfully)
                         {
                             string title = L10n.Tr("Saving Failed");
@@ -151,21 +164,28 @@ namespace UnityEditor
                             m_SavingHasFailed = true;
                             break;
                         }
-
-                        // Fix case 1239807: Prevent calling ForceRebuildInspectors() if the the user is dirtying the prefab asset on every CustomEditor::OnEnable() with a
-                        // value that is the same as before (so the artifact does not change). This fix avoids constant rebuilding of the Inspector window.
-                        sourceFileChangedAfterSaving |= AssetDatabase.GetSourceAssetFileHash(guid) != hashBeforeSaving;
                     }
                 }
                 finally
                 {
                     AssetDatabase.StopAssetEditing();
 
-                    // All inspectors needs to be rebuild to ensure property changes are reflected after saving the Prefab shown.
-                    // (Saving clears the m_DirtyIndex of the target which is used for updating inspectors via SerializedObject::UpdateIfRequiredOrScript()
-                    // and thus the cached dirty index in SerializedObject is not updated meaning the source object is not reloaded even though it changed)
-                    if (sourceFileChangedAfterSaving && rebuildInspectors)
-                        EditorUtility.ForceRebuildInspectors();
+                    if (rebuildInspectors)
+                    {
+                        // All inspectors needs to be rebuild to ensure property changes are reflected after saving the Prefab shown.
+                        // (Saving clears the m_DirtyIndex of the target which is used for updating inspectors via SerializedObject::UpdateIfRequiredOrScript()
+                        // and thus the cached dirty index in SerializedObject is not updated meaning the source object is not reloaded even though it changed)
+                        foreach (var trackedAsset in m_DirtyPrefabAssets)
+                        {
+                            // Fix case 1239807: Prevent calling ForceRebuildInspectors() if the the user is dirtying the prefab asset on every CustomEditor::OnEnable() with a
+                            // value that is the same as before (so the artifact does not change). This fix avoids constant rebuilding of the Inspector window.
+                            if (AssetDatabase.GetSourceAssetFileHash(trackedAsset.guid) != trackedAsset.hash)
+                            {
+                                EditorUtility.ForceRebuildInspectors();
+                                break;
+                            }
+                        }
+                    }
                 }
             }
         }

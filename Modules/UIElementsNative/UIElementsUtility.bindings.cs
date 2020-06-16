@@ -16,11 +16,18 @@ namespace UnityEngine.UIElements
     internal static class UIElementsRuntimeUtilityNative
     {
         internal static Action RepaintOverlayPanelsCallback;
+        internal static Action UpdateRuntimePanelsCallback;
 
         [RequiredByNativeCode]
         public static void RepaintOverlayPanels()
         {
             RepaintOverlayPanelsCallback?.Invoke();
+        }
+
+        [RequiredByNativeCode]
+        public static void UpdateRuntimePanels()
+        {
+            UpdateRuntimePanelsCallback?.Invoke();
         }
 
         public extern static void RegisterPlayerloopCallback();

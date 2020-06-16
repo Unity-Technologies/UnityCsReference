@@ -330,7 +330,7 @@ namespace UnityEditor
             }
 
             VertexSnapping.HandleMouseMove(ids.xyz);
-            if (param.ShouldShow(PositionHandleParam.Handle.XYZ) && (isHot && ids.xyz == GUIUtility.hotControl || !isHot))
+            if (param.ShouldShow(PositionHandleParam.Handle.XYZ) && (ids.xyz == GUIUtility.hotControl || !isHot))
             {
                 color = ToActiveColorSpace(centerColor);
                 GUI.SetNextControlName("FreeMoveAxis");

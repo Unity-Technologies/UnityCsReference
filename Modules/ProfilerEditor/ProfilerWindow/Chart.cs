@@ -35,6 +35,11 @@ namespace UnityEditorInternal
             LoadChartsSettings(cdata);
         }
 
+        public void DeleteSettings()
+        {
+            DeleteChartsSettings();
+        }
+
         internal enum ChartType
         {
             StackedFill,
@@ -61,6 +66,12 @@ namespace UnityEditorInternal
             public static readonly Color selectedFrameColor = new Color(1, 1, 1, 0.7f);
 
             public static readonly Color noDataSeparatorColor = new Color(.8f, .8f, .8f, 0.5f);
+
+            static Styles()
+            {
+                seriesLabel.wordWrap = false;
+                seriesLabel.clipping = TextClipping.Clip;
+            }
         }
 
         public event ChangedEventHandler closed;
@@ -69,6 +80,8 @@ namespace UnityEditorInternal
         public GUIContent legendHeaderLabel { get; set; }
         public Vector2 labelRange { get; set; }
         public Vector2 graphRange { get; set; }
+        string orderPreferenceKey => m_ChartSettingsName + "Order";
+        string visiblePreferenceKey => m_ChartSettingsName + "Visible";
 
         int m_DragItemIndex = -1;
         Vector2 m_DragDownPos;
@@ -797,8 +810,11 @@ namespace UnityEditorInternal
                 );
             }
 
-            using (new Handles.DrawingScope(cdata.series[index].color))
-                Handles.DrawAAPolyLine(k_LineWidth, series.numDataPoints, m_LineDrawingPoints);
+            if (passedFirstValidValue)
+            {
+                using (new Handles.DrawingScope(cdata.series[index].color))
+                    Handles.DrawAAPolyLine(k_LineWidth, series.numDataPoints, m_LineDrawingPoints);
+            }
         }
 
         private void DrawChartItemStacked(Rect r, int index, ChartViewData cdata, float[] stackedSampleSums)
@@ -1033,7 +1049,7 @@ namespace UnityEditorInternal
             if (string.IsNullOrEmpty(m_ChartSettingsName))
                 return;
 
-            var str = EditorPrefs.GetString(m_ChartSettingsName + "Order");
+            var str = EditorPrefs.GetString(orderPreferenceKey);
             if (!string.IsNullOrEmpty(str))
             {
                 try
@@ -1048,13 +1064,33 @@ namespace UnityEditorInternal
                 catch (FormatException) {}
             }
 
-            str = EditorPrefs.GetString(m_ChartSettingsName + "Visible");
+            str = EditorPrefs.GetString(visiblePreferenceKey);
 
             for (var i = 0; i < cdata.numSeries; i++)
             {
                 if (i < str.Length && str[i] == '0')
                     cdata.series[i].enabled = false;
             }
+        }
+
+        protected void SetChartSettingsNameAndUpdateAllPreferences(string name)
+        {
+            var orderPreference = EditorPrefs.GetString(orderPreferenceKey);
+            var visiblePreference = EditorPrefs.GetString(visiblePreferenceKey);
+
+            EditorPrefs.DeleteKey(orderPreferenceKey);
+            EditorPrefs.DeleteKey(visiblePreferenceKey);
+
+            m_ChartSettingsName = name;
+
+            EditorPrefs.SetString(orderPreferenceKey, orderPreference);
+            EditorPrefs.SetString(visiblePreferenceKey, visiblePreference);
+        }
+
+        void DeleteChartsSettings()
+        {
+            EditorPrefs.DeleteKey(orderPreferenceKey);
+            EditorPrefs.DeleteKey(visiblePreferenceKey);
         }
 
         private void SaveChartsSettingsOrder(ChartViewData cdata)
@@ -1071,7 +1107,7 @@ namespace UnityEditorInternal
                 str += cdata.order[i];
             }
 
-            EditorPrefs.SetString(m_ChartSettingsName + "Order", str);
+            EditorPrefs.SetString(orderPreferenceKey, str);
         }
 
         protected void SaveChartsSettingsEnabled(ChartViewData cdata)
@@ -1081,13 +1117,14 @@ namespace UnityEditorInternal
             for (var i = 0; i < cdata.numSeries; i++)
                 str += cdata.series[i].enabled ? '1' : '0';
 
-            EditorPrefs.SetString(m_ChartSettingsName + "Visible", str);
+            EditorPrefs.SetString(visiblePreferenceKey, str);
         }
     }
 
     internal class ChartSeriesViewData
     {
         public string name { get; private set; }
+        public string category { get; private set; }
         public Color color { get; private set; }
         public bool enabled;
         public float[] xValues { get; private set; }
@@ -1096,9 +1133,10 @@ namespace UnityEditorInternal
         public Vector2 rangeAxis { get; set; }
         public int numDataPoints { get; private set; }
 
-        public ChartSeriesViewData(string name, int numDataPoints, Color color)
+        public ChartSeriesViewData(string name, string category, int numDataPoints, Color color)
         {
             this.name = name;
+            this.category = category;
             this.color = color;
             this.numDataPoints = numDataPoints;
             xValues = new float[numDataPoints];
@@ -1106,6 +1144,9 @@ namespace UnityEditorInternal
             yScale = 1.0f;
             enabled = true;
         }
+
+        // Used by legacy areas that don't use counters and therefore don't have a category.
+        public ChartSeriesViewData(string name, int numDataPoints, Color color) : this(name, string.Empty, numDataPoints, color) {}
     }
 
     internal class ChartViewData
@@ -1185,6 +1226,30 @@ namespace UnityEditorInternal
             var domain = GetDataDomain();
             // the domain is a range of indices, logically starting at 0. The Length is therefore the (lastIndex - firstIndex + 1)
             return (int)(domain.y - domain.x) + 1;
+        }
+
+        public void UpdateChartGrid(float timeMax)
+        {
+            if (timeMax < 1500)
+            {
+                SetGrid(new float[] { 1000, 250, 100 }, new[] { "1ms (1000FPS)", "0.25ms (4000FPS)", "0.1ms (10000FPS)" });
+            }
+            else if (timeMax < 10000)
+            {
+                SetGrid(new float[] { 8333, 4000, 1000 }, new[] { "8ms (120FPS)", "4ms (250FPS)", "1ms (1000FPS)" });
+            }
+            else if (timeMax < 30000)
+            {
+                SetGrid(new float[] { 16667, 10000, 5000 }, new[] { "16ms (60FPS)", "10ms (100FPS)", "5ms (200FPS)" });
+            }
+            else if (timeMax < 100000)
+            {
+                SetGrid(new float[] { 66667, 33333, 16667 }, new[] { "66ms (15FPS)", "33ms (30FPS)", "16ms (60FPS)" });
+            }
+            else
+            {
+                SetGrid(new float[] { 500000, 200000, 66667 }, new[] { "500ms (2FPS)", "200ms (5FPS)", "66ms (15FPS)" });
+            }
         }
     }
 }

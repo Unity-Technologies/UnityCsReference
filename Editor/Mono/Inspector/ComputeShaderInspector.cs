@@ -16,6 +16,7 @@ namespace UnityEditor
         Vector2 m_ScrollPosition = Vector2.zero;
 
         private static bool s_PreprocessOnly = false;
+        private static bool s_StripLineDirectives = true;
 
         // Compute kernel information is stored split by platform, then by kernels;
         // but for the inspector we want to show kernels, then platforms they are in.
@@ -28,6 +29,7 @@ namespace UnityEditor
         internal class Styles
         {
             public static GUIContent togglePreprocess = EditorGUIUtility.TrTextContent("Preprocess only", "Show preprocessor output instead of compiled shader code");
+            public static GUIContent toggleStripLineDirective = EditorGUIUtility.TrTextContent("Strip #line directives", "Strip #line directives from preprocessor output");
             public static GUIContent showCompiled = EditorGUIUtility.TrTextContent("Show compiled code");
             public static GUIContent kernelsHeading = EditorGUIUtility.TrTextContent("Kernels:");
         }
@@ -93,15 +95,21 @@ namespace UnityEditor
         private void ShowCompiledCodeSection(ComputeShader cs)
         {
             ComputeShaderImporter importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(cs.GetInstanceID())) as ComputeShaderImporter;
+
             bool enablePreprocessOnly = EditorSettings.cachingShaderPreprocessor;
             if (importer && importer.preprocessorOverride == PreprocessorOverride.ForceCachingPreprocessor)
                 enablePreprocessOnly = true;
             using (new EditorGUI.DisabledScope(!enablePreprocessOnly))
+            {
                 s_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, s_PreprocessOnly);
+                if (s_PreprocessOnly)
+                    s_StripLineDirectives = EditorGUILayout.Toggle(Styles.toggleStripLineDirective, s_StripLineDirectives);
+            }
+
             GUILayout.Space(kSpace);
             if (GUILayout.Button(Styles.showCompiled, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
             {
-                ShaderUtil.OpenCompiledComputeShader(cs, true, enablePreprocessOnly && s_PreprocessOnly);
+                ShaderUtil.OpenCompiledComputeShader(cs, true, enablePreprocessOnly && s_PreprocessOnly, s_StripLineDirectives);
                 GUIUtility.ExitGUI();
             }
         }

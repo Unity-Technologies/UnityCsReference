@@ -4,8 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace UnityEditorInternal.Profiling
 {
@@ -42,35 +43,18 @@ namespace UnityEditorInternal.Profiling
             {GpuProfilingStatisticsAvailabilityStates.NotSupportedWithMetal , k_GpuProfilingNotSupportedWithMetal},
             };
 
-        public override void OnEnable(IProfilerWindowController profilerWindow)
-        {
-            base.OnEnable(profilerWindow);
-            m_FrameDataHierarchyView.OnEnable(this, profilerWindow, true);
-            m_FrameDataHierarchyView.dataAvailabilityMessage = null;
-            if (m_ViewType == ProfilerViewType.Timeline)
-                m_ViewType = ProfilerViewType.Hierarchy;
-        }
+        const string k_IconName = "Profiler.GPU";
+        const int k_DefaultOrderIndex = 1;
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("GPU Usage");
 
-        public override void DrawView(Rect position)
-        {
-            int selectedFrameIndex = m_ProfilerWindow.GetActiveVisibleFrameIndex();
-            if (selectedFrameIndex >= ProfilerDriver.firstFrameIndex && selectedFrameIndex <= ProfilerDriver.lastFrameIndex)
-            {
-                GpuProfilingStatisticsAvailabilityStates state = (GpuProfilingStatisticsAvailabilityStates)ProfilerDriver.GetGpuStatisticsAvailabilityState(selectedFrameIndex);
+        public GPUProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName) {}
 
-                if ((state & GpuProfilingStatisticsAvailabilityStates.Enabled) == 0)
-                    m_FrameDataHierarchyView.dataAvailabilityMessage = k_GpuProfilingDisabled;
-                else if ((state & GpuProfilingStatisticsAvailabilityStates.Gathered) == 0)
-                    m_FrameDataHierarchyView.dataAvailabilityMessage = GetStatisticsAvailabilityStateReason((int)state);
-                else
-                    m_FrameDataHierarchyView.dataAvailabilityMessage = null;
-            }
-            else
-                m_FrameDataHierarchyView.dataAvailabilityMessage = null;
-            base.DrawView(position);
-        }
+        public override ProfilerArea area => ProfilerArea.GPU;
 
-        public static string GetStatisticsAvailabilityStateReason(int statisticsAvailabilityState)
+        protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        protected override string legacyPreferenceKey => "ProfilerChartGPU";
+
+        static string GetStatisticsAvailabilityStateReason(int statisticsAvailabilityState)
         {
             GpuProfilingStatisticsAvailabilityStates state = (GpuProfilingStatisticsAvailabilityStates)statisticsAvailabilityState;
 
@@ -103,6 +87,51 @@ namespace UnityEditorInternal.Profiling
                 s_StatisticsAvailabilityStateReason[state] = combinedReason;
             }
             return s_StatisticsAvailabilityStateReason[state];
+        }
+
+        public override void OnEnable()
+        {
+            base.OnEnable();
+            m_FrameDataHierarchyView.OnEnable(this, m_ProfilerWindow, true);
+            m_FrameDataHierarchyView.dataAvailabilityMessage = null;
+            if (m_ViewType == ProfilerViewType.Timeline)
+                m_ViewType = ProfilerViewType.Hierarchy;
+        }
+
+        public override void DrawDetailsView(Rect position)
+        {
+            int selectedFrameIndex = m_ProfilerWindow.GetActiveVisibleFrameIndex();
+            if (selectedFrameIndex >= ProfilerDriver.firstFrameIndex && selectedFrameIndex <= ProfilerDriver.lastFrameIndex)
+            {
+                GpuProfilingStatisticsAvailabilityStates state = (GpuProfilingStatisticsAvailabilityStates)ProfilerDriver.GetGpuStatisticsAvailabilityState(selectedFrameIndex);
+
+                if ((state & GpuProfilingStatisticsAvailabilityStates.Enabled) == 0)
+                    m_FrameDataHierarchyView.dataAvailabilityMessage = k_GpuProfilingDisabled;
+                else if ((state & GpuProfilingStatisticsAvailabilityStates.Gathered) == 0)
+                    m_FrameDataHierarchyView.dataAvailabilityMessage = GetStatisticsAvailabilityStateReason((int)state);
+                else
+                    m_FrameDataHierarchyView.dataAvailabilityMessage = null;
+            }
+            else
+                m_FrameDataHierarchyView.dataAvailabilityMessage = null;
+            base.DrawDetailsView(position);
+        }
+
+        protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
+        {
+            var chart = base.InstantiateChart(defaultChartScale, chartMaximumScaleInterpolationValue);
+            chart.statisticsAvailabilityMessage = GetStatisticsAvailabilityStateReason;
+            return chart;
+        }
+
+        protected override bool ReadActiveState()
+        {
+            return SessionState.GetBool(activeStatePreferenceKey, false);
+        }
+
+        protected override void SaveActiveState()
+        {
+            SessionState.SetBool(activeStatePreferenceKey, isActive);
         }
     }
 }

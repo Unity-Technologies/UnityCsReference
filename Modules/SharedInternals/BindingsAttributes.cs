@@ -294,7 +294,19 @@ namespace UnityEngine.Bindings
     [VisibleToOtherModules]
     class NotNullAttribute : Attribute, IBindingsAttribute
     {
-        public NotNullAttribute()
+        public string Exception { get; set; }
+
+        public NotNullAttribute(string exception = "ArgumentNullException")
+        {
+            Exception = exception;
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Parameter)]
+    [VisibleToOtherModules]
+    class UnityTypeAttribute : Attribute, IBindingsAttribute
+    {
+        public UnityTypeAttribute()
         {
         }
     }

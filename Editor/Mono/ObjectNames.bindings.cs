@@ -18,7 +18,7 @@ namespace UnityEditor
 
         // Class name of an object.
         [FreeFunction("GetClassName_Internal")]
-        public static extern string GetClassName(UnityObject obj);
+        public static extern string GetClassName([NotNull("NullExceptionObject")] UnityObject obj);
 
         // Drag and drop title for an object.
         [FreeFunction]

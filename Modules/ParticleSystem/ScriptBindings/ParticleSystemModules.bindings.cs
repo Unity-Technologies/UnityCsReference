@@ -447,9 +447,13 @@ namespace UnityEngine
             extern public bool multiplyColliderForceByParticleSpeed { get; [NativeThrows] set; }
             extern public bool multiplyColliderForceByParticleSize { get; [NativeThrows] set; }
 
+            extern public void AddPlane(Transform transform);
+            extern public void RemovePlane(int index);
+            public void RemovePlane(Transform transform) { RemovePlaneObject(transform); }
+            extern private void RemovePlaneObject(Transform transform);
             extern public void SetPlane(int index, Transform transform);
             extern public Transform GetPlane(int index);
-            extern public int maxPlaneCount { get; }
+            extern public int planeCount { get; }
 
             [Obsolete("enableInteriorCollisions property is deprecated and is no longer required and has no effect on the particle system.", false)]
             extern public bool enableInteriorCollisions { get; [NativeThrows] set; }
@@ -465,13 +469,21 @@ namespace UnityEngine
             extern public ParticleSystemOverlapAction outside { get; [NativeThrows] set; }
             extern public ParticleSystemOverlapAction enter { get; [NativeThrows] set; }
             extern public ParticleSystemOverlapAction exit { get; [NativeThrows] set; }
+            extern public ParticleSystemColliderQueryMode colliderQueryMode { get; [NativeThrows] set; }
             extern public float radiusScale { get; [NativeThrows] set; }
 
+            [NativeThrows]
+            extern public void AddCollider(Component collider);
+            [NativeThrows]
+            extern public void RemoveCollider(int index);
+            public void RemoveCollider(Component collider) { RemoveColliderObject(collider); }
+            [NativeThrows]
+            extern private void RemoveColliderObject(Component collider);
             [NativeThrows]
             extern public void SetCollider(int index, Component collider);
             [NativeThrows]
             extern public Component GetCollider(int index);
-            extern public int maxColliderCount { get; }
+            extern public int colliderCount { get; }
         }
 
         public partial struct SubEmittersModule
@@ -487,6 +499,9 @@ namespace UnityEngine
             public void AddSubEmitter(ParticleSystem subEmitter, ParticleSystemSubEmitterType type, ParticleSystemSubEmitterProperties properties) { AddSubEmitter(subEmitter, type, properties, 1.0f); }
             [NativeThrows]
             extern public void RemoveSubEmitter(int index);
+            public void RemoveSubEmitter(ParticleSystem subEmitter) { RemoveSubEmitterObject(subEmitter); }
+            [NativeThrows]
+            extern private void RemoveSubEmitterObject(ParticleSystem subEmitter);
             [NativeThrows]
             extern public void SetSubEmitterSystem(int index, ParticleSystem subEmitter);
             [NativeThrows]

@@ -18,7 +18,7 @@ namespace UnityEngine
             public class GraphicsFormatUtility
             {
                 [FreeFunction]
-                extern internal static GraphicsFormat GetFormat(Texture texture);
+                extern internal static GraphicsFormat GetFormat([NotNull("NullExceptionObject")] Texture texture);
 
                 public static GraphicsFormat GetGraphicsFormat(TextureFormat format, bool isSRGB)
                 {

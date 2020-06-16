@@ -102,14 +102,16 @@ namespace UnityEngine.Experimental.Rendering
             Build(Vector3.zero);
         }
 
+        [Obsolete("Method Update has been deprecated. Use Build instead (UnityUpgradable) -> Build()", true)]
         public void Update()
         {
-            Update(Vector3.zero);
+            Build(Vector3.zero);
         }
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::Build", HasExplicitThis = true)]
         extern public void Build(Vector3 relativeOrigin);
 
+        [Obsolete("Method Update has been deprecated. Use Build instead (UnityUpgradable) -> Build(*)", true)]
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::Update", HasExplicitThis = true)]
         extern public void Update(Vector3 relativeOrigin);
 

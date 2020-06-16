@@ -146,22 +146,22 @@ namespace UnityEngine
         extern static void ConstructorCheck([Writable] Object self);
 
         [FreeFunction("CancelInvoke")]
-        extern static void Internal_CancelInvokeAll(MonoBehaviour self);
+        extern static void Internal_CancelInvokeAll([NotNull("NullExceptionObject")] MonoBehaviour self);
 
         [FreeFunction("IsInvoking")]
-        extern static bool Internal_IsInvokingAll(MonoBehaviour self);
+        extern static bool Internal_IsInvokingAll([NotNull("NullExceptionObject")] MonoBehaviour self);
 
         [FreeFunction]
-        extern static void InvokeDelayed(MonoBehaviour self, string methodName, float time, float repeatRate);
+        extern static void InvokeDelayed([NotNull("NullExceptionObject")] MonoBehaviour self, string methodName, float time, float repeatRate);
 
         [FreeFunction]
-        extern static void CancelInvoke(MonoBehaviour self, string methodName);
+        extern static void CancelInvoke([NotNull("NullExceptionObject")] MonoBehaviour self, string methodName);
 
         [FreeFunction]
-        extern static bool IsInvoking(MonoBehaviour self, string methodName);
+        extern static bool IsInvoking([NotNull("NullExceptionObject")] MonoBehaviour self, string methodName);
 
         [FreeFunction]
-        extern static bool IsObjectMonoBehaviour(Object obj);
+        extern static bool IsObjectMonoBehaviour([NotNull("NullExceptionObject")] Object obj);
 
         extern Coroutine StartCoroutineManaged(string methodName, object value);
 

@@ -770,7 +770,7 @@ namespace UnityEditor
                         ignoreBones = new List<string>(System.IO.File.ReadAllLines(ignorePath));
 
                     // Create instance
-                    GameObject instance = GameObject.Instantiate(modelAsset) as GameObject;
+                    GameObject instance = GameObject.Instantiate(modelAsset);
                     instance.hideFlags = HideFlags.HideAndDontSave;
 
                     // Get BoneWrapper array
@@ -867,7 +867,7 @@ namespace UnityEditor
 
         public static void CopyPose(GameObject go, GameObject source)
         {
-            GameObject instance = GameObject.Instantiate(source) as GameObject;
+            GameObject instance = GameObject.Instantiate(source);
             instance.hideFlags = HideFlags.HideAndDontSave;
             AnimatorUtility.DeoptimizeTransformHierarchy(instance);
             CopyPose(go.transform, instance.transform);

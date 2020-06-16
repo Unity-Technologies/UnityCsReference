@@ -413,15 +413,15 @@ namespace UnityEditor
             //  Active: Enabled, background for draggable bar
             //  Focused: Enabled, foreground for draggable bar
 
-            float level = (effect != null) ? Mathf.Clamp(effect.GetValueForMixLevel(m_Controller, snapshot), AudioMixerController.kMinVolume, AudioMixerController.kMaxEffect) : AudioMixerController.kMinVolume;
-            bool showLevel = (effect != null) && ((effect.IsSend() && effect.sendTarget != null) || effect.enableWetMix);
+            float level = Mathf.Clamp(effect.GetValueForMixLevel(m_Controller, snapshot), AudioMixerController.kMinVolume, AudioMixerController.kMaxEffect);
+            bool showLevel = (effect.IsSend() && effect.sendTarget != null) || effect.enableWetMix;
             if (evt.type == EventType.Repaint)
             {
                 GUIStyle style = GetEffectBarStyle(effect);
 
                 float drawLevel = (showLevel) ? ((level - AudioMixerController.kMinVolume) / (AudioMixerController.kMaxEffect - AudioMixerController.kMinVolume)) : 1.0f;
-                bool enabled = (!p.group.bypassEffects && (effect == null || !effect.bypass)) || (effect != null && effect.DisallowsBypass());
-                Color col1 = (effect != null) ? AudioMixerDrawUtils.GetEffectColor(effect) : new Color(0.0f, 0.0f, 0.0f, 0.5f);
+                bool enabled = (!p.group.bypassEffects && !effect.bypass) || effect.DisallowsBypass();
+                Color col1 = AudioMixerDrawUtils.GetEffectColor(effect);
                 if (!enabled)
                     col1 = new Color(col1.r * 0.5f, col1.g * 0.5f, col1.b * 0.5f);
 

@@ -3553,7 +3553,7 @@ namespace UnityEditor
             bool IsDragEvent = Event.current.GetTypeForControl(GUIUtility.hotControl) == EventType.MouseDrag;
             bool IsMouseUpEvent = Event.current.GetTypeForControl(GUIUtility.hotControl) == EventType.MouseUp;
 
-            EditorToolContext.OnToolGUI(this);
+            EditorToolManager.OnToolGUI(this);
 
             // If we are actually dragging the object(s) then disable 2D physics movement.
             if (EditorGUI.EndChangeCheck() && EditorApplication.isPlaying && IsDragEvent)
@@ -4025,7 +4025,7 @@ namespace UnityEditor
                 }
             }
 
-            EditorToolContext.InvokeOnSceneGUICustomEditorTools();
+            EditorToolManager.InvokeOnSceneGUICustomEditorTools();
 
             if (duringSceneGui != null)
             {

@@ -29,8 +29,8 @@ namespace UnityEditor
             if (disableEditCollider)
             {
                 EditorGUILayout.HelpBox(Styles.s_ColliderEditDisableHelp.text, MessageType.Info);
-                if (EditorTools.EditorTools.activeToolType == typeof(PolygonCollider2DTool))
-                    EditorTools.EditorTools.RestorePreviousPersistentTool();
+                if (EditorTools.ToolManager.activeToolType == typeof(PolygonCollider2DTool))
+                    EditorTools.ToolManager.RestorePreviousPersistentTool();
             }
             else
             {
@@ -84,8 +84,8 @@ namespace UnityEditor
                         DragAndDrop.AcceptDrag();
                     }
 
-                    if (EditorTools.EditorTools.activeToolType == typeof(PolygonCollider2DTool))
-                        EditorTools.EditorTools.RestorePreviousPersistentTool();
+                    if (EditorTools.ToolManager.activeToolType == typeof(PolygonCollider2DTool))
+                        EditorTools.ToolManager.RestorePreviousPersistentTool();
                 }
 
                 return;

@@ -293,7 +293,7 @@ namespace UnityEngine
 
         // Makes the object /target/ not be destroyed automatically when loading a new scene.
         [FreeFunction("GetSceneManager().DontDestroyOnLoad", ThrowsException = true)]
-        public extern static void DontDestroyOnLoad(Object target);
+        public extern static void DontDestroyOnLoad([NotNull("NullExceptionObject")] Object target);
 
         // // Should the object be hidden, saved with the scene or modifiable by the user?
         public extern HideFlags hideFlags { get; set; }
@@ -398,28 +398,28 @@ namespace UnityEngine
         extern static bool CurrentThreadIsMainThread();
 
         [FreeFunction("CloneObject")]
-        extern static Object Internal_CloneSingle(Object data);
+        extern static Object Internal_CloneSingle([NotNull("NullExceptionObject")] Object data);
 
         [FreeFunction("CloneObject")]
-        extern static Object Internal_CloneSingleWithParent(Object data, Transform parent, bool worldPositionStays);
+        extern static Object Internal_CloneSingleWithParent([NotNull("NullExceptionObject")] Object data, [NotNull("NullExceptionObject")] Transform parent, bool worldPositionStays);
 
         [FreeFunction("InstantiateObject")]
-        extern static Object Internal_InstantiateSingle(Object data, Vector3 pos, Quaternion rot);
+        extern static Object Internal_InstantiateSingle([NotNull("NullExceptionObject")] Object data, Vector3 pos, Quaternion rot);
 
         [FreeFunction("InstantiateObject")]
-        extern static Object Internal_InstantiateSingleWithParent(Object data, Transform parent, Vector3 pos, Quaternion rot);
+        extern static Object Internal_InstantiateSingleWithParent([NotNull("NullExceptionObject")] Object data, [NotNull("NullExceptionObject")] Transform parent, Vector3 pos, Quaternion rot);
 
         [FreeFunction("UnityEngineObjectBindings::ToString")]
         extern static string ToString(Object obj);
 
         [FreeFunction("UnityEngineObjectBindings::GetName")]
-        extern static string GetName(Object obj);
+        extern static string GetName([NotNull("NullExceptionObject")] Object obj);
 
         [FreeFunction("UnityEngineObjectBindings::IsPersistent")]
-        internal extern static bool IsPersistent(Object obj);
+        internal extern static bool IsPersistent([NotNull("NullExceptionObject")] Object obj);
 
         [FreeFunction("UnityEngineObjectBindings::SetName")]
-        extern static void SetName(Object obj, string name);
+        extern static void SetName([NotNull("NullExceptionObject")] Object obj, string name);
 
         [NativeMethod(Name = "UnityEngineObjectBindings::DoesObjectWithInstanceIDExist", IsFreeFunction = true, IsThreadSafe = true)]
         internal extern static bool DoesObjectWithInstanceIDExist(int instanceID);

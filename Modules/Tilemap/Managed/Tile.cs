@@ -3,15 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-
 using UnityEngine.Scripting;
 
 namespace UnityEngine.Tilemaps
 {
     [Serializable]
     [RequiredByNativeCode]
+    [HelpURL("https://docs.unity3d.com/Manual/Tilemap-TileAsset.html")]
     public class Tile : TileBase
     {
         public enum ColliderType { None = 0, Sprite = 1, Grid = 2 }

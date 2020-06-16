@@ -72,8 +72,6 @@ namespace UnityEditor
             public GUIStyle subAssetExpandButtonMedium = GetStyle("ProjectBrowserSubAssetExpandBtnMedium");
             public GUIStyle subAssetExpandButtonSmall = GetStyle("ProjectBrowserSubAssetExpandBtnSmall");
 
-            public GUIContent m_AssetStoreNotAvailableText = EditorGUIUtility.TrTextContent("The Asset Store is not available");
-
             static GUIStyle GetStyle(string styleName)
             {
                 return styleName; // Implicit construction of GUIStyle
@@ -117,15 +115,9 @@ namespace UnityEditor
         Vector2 m_LastScrollPosition = new Vector2(0, 0);
         double LastScrollTime = 0;
 
-        public bool selectedAssetStoreAsset;
-
         internal Texture m_SelectedObjectIcon = null;
 
         LocalGroup m_LocalAssets;
-
-        List<AssetStoreGroup> m_StoreAssets;
-        string m_AssetStoreError = "";
-
 
         // List of all available groups
         List<Group> m_Groups;
@@ -146,19 +138,6 @@ namespace UnityEditor
 
         bool m_ShowLocalAssetsOnly = true;
 
-
-        // Asset store resources
-        const double kQueryDelay = 0.2;
-        public bool m_RequeryAssetStore;
-
-        bool m_QueryInProgress = false;
-        int m_ResizePreviewCacheTo = 0;
-
-        string m_LastAssetStoreQuerySearchFilter = "";
-        string[] m_LastAssetStoreQueryClassName = new string[0];
-        string[] m_LastAssetStoreQueryLabels = new string[0];
-        double m_LastAssetStoreQueryChangeTime = 0.0;
-
         double m_NextDirtyCheck = 0;
 
         readonly SearchService.SearchSessionHandler m_SearchSessionHandler = new SearchService.SearchSessionHandler(SearchService.SearchEngineScope.Project);
@@ -169,13 +148,11 @@ namespace UnityEditor
         System.Action m_KeyboardInputCallback;
         System.Action m_GotKeyboardFocus;
         System.Func<Rect, float> m_DrawLocalAssetHeader;
-        System.Action m_AssetStoreSearchEnded;
 
         public System.Action repaintCallback                { get {return m_RepaintWantedCallback; } set {m_RepaintWantedCallback = value; }}
         public System.Action<bool> itemSelectedCallback     { get {return m_ItemSelectedCallback; }  set {m_ItemSelectedCallback = value; }}
         public System.Action keyboardCallback               { get {return m_KeyboardInputCallback; } set {m_KeyboardInputCallback = value; }}
         public System.Action gotKeyboardFocus               { get {return m_GotKeyboardFocus; }      set {m_GotKeyboardFocus = value; }}
-        public System.Action assetStoreSearchEnded          { get {return m_AssetStoreSearchEnded; } set {m_AssetStoreSearchEnded = value; }}
         public System.Func<Rect, float> drawLocalAssetHeader { get {return m_DrawLocalAssetHeader; }  set {m_DrawLocalAssetHeader = value; }}
 
         // Debug
@@ -186,11 +163,6 @@ namespace UnityEditor
             m_State = state;
             m_Owner = owner;
 
-            AssetStorePreviewManager.MaxCachedImages = 72; // Magic number. Will be reset on first layout.
-
-            m_StoreAssets = new List<AssetStoreGroup>();
-            m_RequeryAssetStore = false;
-
             m_LocalAssets = new LocalGroup(this, "", showNoneItem);
 
             m_Groups = new List<Group>();
@@ -199,7 +171,7 @@ namespace UnityEditor
 
         public void ShowObjectsInList(int[] instanceIDs)
         {
-            // Clear asset store search etc.
+            // Clear search, etc.
             Init(m_TotalRect, HierarchyType.Assets, new SearchFilter(), false);
 
             // Set list manually
@@ -208,7 +180,7 @@ namespace UnityEditor
 
         internal void ShowObjectsInList(int[] instanceIDs, string[] rootPaths)
         {
-            // Clear asset store search etc.
+            // Clear search, etc.
             Init(m_TotalRect, HierarchyType.Assets, new SearchFilter(), false);
 
             // Set list manually
@@ -231,33 +203,6 @@ namespace UnityEditor
 
             m_LocalAssets.UpdateFilter(hierarchyType, searchFilter, foldersFirst);
             m_LocalAssets.UpdateAssets();
-
-            foreach (AssetStoreGroup g in m_StoreAssets)
-                g.UpdateFilter(hierarchyType, searchFilter, foldersFirst);
-
-            bool isFolderBrowsing = (searchFilter.GetState() == SearchFilter.State.FolderBrowsing);
-            if (isFolderBrowsing)
-            {
-                // Do not allow asset store searching when we have folder filtering
-                m_LastAssetStoreQuerySearchFilter = "";
-                m_LastAssetStoreQueryClassName = new string[0];
-                m_LastAssetStoreQueryLabels = new string[0];
-            }
-            else
-            {
-                m_LastAssetStoreQuerySearchFilter = searchFilter.nameFilter == null ? "" : searchFilter.nameFilter;
-                bool disableClassConstraint = searchFilter.classNames == null ||
-                    System.Array.IndexOf(searchFilter.classNames, "Object") >= 0;
-                m_LastAssetStoreQueryClassName = disableClassConstraint ? new string[0] : searchFilter.classNames;
-                m_LastAssetStoreQueryLabels = searchFilter.assetLabels == null ? new string[0] : searchFilter.assetLabels;
-            }
-
-            m_LastAssetStoreQueryChangeTime = EditorApplication.timeSinceStartup;
-            m_RequeryAssetStore = true;
-
-            m_ShowLocalAssetsOnly = isFolderBrowsing || (searchFilter.GetState() != SearchFilter.State.SearchingInAssetStore);
-            m_AssetStoreError = "";
-
 
             if (checkThumbnails)
                 m_AllowThumbnails = ObjectsHaveThumbnails(hierarchyType, searchFilter);
@@ -382,203 +327,6 @@ namespace UnityEditor
             return m_KeyboardControlID == GUIUtility.keyboardControl && m_Owner.m_Parent.hasFocus;
         }
 
-        void QueryAssetStore()
-        {
-            bool searchChanged = m_RequeryAssetStore;
-            m_RequeryAssetStore = false;
-
-            // We disable Asset Store searching here. Note that we still query to get hits when searching local assets
-            if (m_ShowLocalAssetsOnly && !ShowAssetStoreHitsWhileSearchingLocalAssets())
-            {
-                return;
-            }
-
-            bool hasValidFilter = m_LastAssetStoreQuerySearchFilter != "" || m_LastAssetStoreQueryClassName.Length != 0 || m_LastAssetStoreQueryLabels.Length != 0;
-
-            // Make sure that we have only one pending asset store query
-            // No need to call Repaint() to recheck this condition later because the
-            // query callback will call that for us.
-            if (m_QueryInProgress)
-                return;
-
-            if (!hasValidFilter)
-            {
-                ClearAssetStoreGroups();
-                return;
-            }
-
-            // In order not to query prematurely we delay the query a bit to let the user type
-            // more characters in the search input box if needed.
-            if ((m_LastAssetStoreQueryChangeTime + kQueryDelay) > EditorApplication.timeSinceStartup)
-            {
-                m_RequeryAssetStore = true;
-                Repaint();
-                return;
-            }
-
-            m_QueryInProgress = true;
-
-            // Remember the filter to check for changes after we have received the reply from asset store
-            string queryFilter = m_LastAssetStoreQuerySearchFilter + m_LastAssetStoreQueryClassName + m_LastAssetStoreQueryLabels;
-
-            AssetStoreSearchResults.Callback dg = delegate(AssetStoreSearchResults results) {
-                m_QueryInProgress = false;
-
-                // If filter changed while fetching the result then requery using the new filter.
-                if (queryFilter != m_LastAssetStoreQuerySearchFilter + m_LastAssetStoreQueryClassName + m_LastAssetStoreQueryLabels)
-                    m_RequeryAssetStore = true;
-
-                if (!string.IsNullOrEmpty(results.error))
-                {
-                    if (s_Debug)
-                        Debug.LogError("Error performing Asset Store search: " + results.error);
-                    else
-                        System.Console.Write("Error performing Asset Store search: " + results.error);
-                    m_AssetStoreError = results.error;
-                    m_Groups.Clear();
-                    m_Groups.Add(m_LocalAssets);
-                    Repaint();
-
-                    if (assetStoreSearchEnded != null)
-                        assetStoreSearchEnded();
-
-                    return;
-                }
-
-                m_AssetStoreError = "";
-
-                // Clear groups and use the ones from server
-                List<string> existingGroupNames = new List<string>();
-                foreach (AssetStoreGroup g in m_StoreAssets)
-                    existingGroupNames.Add(g.Name);
-
-                m_Groups.Clear();
-                m_Groups.Add(m_LocalAssets);
-
-                foreach (AssetStoreSearchResults.Group inGroup in results.groups)
-                {
-                    existingGroupNames.Remove(inGroup.name);
-                    AssetStoreGroup group = m_StoreAssets.Find(g => g.Name == inGroup.name);
-
-                    if (group == null)
-                    {
-                        group = new AssetStoreGroup(this, inGroup.label, inGroup.name);
-                        m_StoreAssets.Add(group);
-                    }
-                    m_Groups.Add(group);
-
-                    // Set total found if initial request or different from 0
-                    if (inGroup.limit != 0)
-                    {
-                        group.ItemsAvailable = inGroup.totalFound;
-                    }
-
-                    if (inGroup.offset == 0 && inGroup.limit != 0)
-                        group.Assets = inGroup.assets;
-                    else
-                        group.Assets.AddRange(inGroup.assets);
-                }
-
-                // Remove groups not valid for this request
-                foreach (string k in existingGroupNames)
-                    m_StoreAssets.RemoveAll(g => g.Name == k);
-
-                EnsureAssetStoreGroupsAreOpenIfAllClosed();
-
-                Repaint();
-
-                if (assetStoreSearchEnded != null)
-                    assetStoreSearchEnded();
-            };
-
-            List<AssetStoreClient.SearchCount> groupsQuery = new List<AssetStoreClient.SearchCount>();
-
-            if (!searchChanged)
-            {
-                // More items for the same search criteria. Just apply offsets and limits.
-                foreach (AssetStoreGroup v in m_StoreAssets)
-                {
-                    AssetStoreClient.SearchCount t = new AssetStoreClient.SearchCount();
-                    if (v.Visible && v.NeedItems)
-                    {
-                        t.offset = v.Assets.Count;
-                        t.limit = v.ItemsWantedShown - t.offset;
-                    }
-                    t.name = v.Name;
-                    groupsQuery.Add(t);
-                }
-            }
-
-            AssetStoreClient.SearchAssets(m_LastAssetStoreQuerySearchFilter,
-                m_LastAssetStoreQueryClassName,
-                m_LastAssetStoreQueryLabels,
-                groupsQuery, dg);
-        }
-
-        void EnsureAssetStoreGroupsAreOpenIfAllClosed()
-        {
-            if (m_StoreAssets.Count > 0)
-            {
-                int numExpanded = 0;
-                foreach (var group in m_StoreAssets)
-                    if (group.Visible)
-                        numExpanded++;
-                if (numExpanded == 0)
-                    foreach (var group in m_StoreAssets)
-                        group.Visible = group.visiblePreference = true;
-            }
-        }
-
-        void RequeryAssetStore()
-        {
-            m_RequeryAssetStore = true;
-        }
-
-        void ClearAssetStoreGroups()
-        {
-            m_Groups.Clear();
-            m_Groups.Add(m_LocalAssets);
-            m_StoreAssets.Clear();
-            Repaint();
-        }
-
-        public string GetAssetStoreButtonText()
-        {
-            string buttonText = "Asset Store";
-            if (ShowAssetStoreHitsWhileSearchingLocalAssets())
-            {
-                for (int i = 0; i < m_StoreAssets.Count; ++i)
-                {
-                    if (i == 0)
-                        buttonText += ": ";
-                    else
-                        buttonText += " \u2215 "; // forward slash
-                    AssetStoreGroup group = m_StoreAssets[i];
-                    buttonText += (group.ItemsAvailable > 999 ? "999+" : group.ItemsAvailable.ToString());
-                }
-            }
-            return buttonText;
-        }
-
-        bool ShowAssetStoreHitsWhileSearchingLocalAssets()
-        {
-            return EditorPrefs.GetBool("ShowAssetStoreSearchHits", true); // See PreferencesWindow
-        }
-
-        public void ShowAssetStoreHitCountWhileSearchingLocalAssetsChanged()
-        {
-            if (ShowAssetStoreHitsWhileSearchingLocalAssets())
-            {
-                RequeryAssetStore();
-            }
-            else
-            {
-                if (m_ShowLocalAssetsOnly)
-                    ClearAssetStoreGroups(); // do not clear if we are wathcing asset store results
-            }
-            Repaint();
-        }
-
         internal float GetVisibleWidth()
         {
             return m_VisibleRect.width;
@@ -651,7 +399,6 @@ namespace UnityEditor
             HandleListArea();
             DoOffsetSelection();
             HandleUnusedEvents();
-            // GUI.Label(position, new GUIContent(AssetStorePreviewManager.StatsString()));
         }
 
         void FrameLastClickedItemIfWanted()
@@ -674,7 +421,7 @@ namespace UnityEditor
         public bool CanShowThumbnails()
         {
             //
-            //      return m_AllowThumbnails || m_StoreAssets.Find( g => g.ItemsAvailable > 0) != null;
+            //      return m_AllowThumbnails;
             // #else
             return m_AllowThumbnails;
             //
@@ -720,7 +467,7 @@ namespace UnityEditor
             IHierarchyProperty assetProperty = FilteredHierarchyProperty.CreateHierarchyPropertyForFilter(hierarchy);
             int[] empty = new int[0];
             if (assetProperty.CountRemaining(empty) == 0)
-                return true; // allow thumbnails: we prefer asset-store results as icons over list
+                return true;
 
             assetProperty.Reset();
             while (assetProperty.Next(empty))
@@ -914,28 +661,6 @@ namespace UnityEditor
             else
             {
                 m_State.m_LastClickedInstanceID = 0;
-            }
-
-            if (Selection.activeObject == null || Selection.activeObject.GetType() != typeof(AssetStoreAssetInspector))
-            {
-                selectedAssetStoreAsset = false;
-                AssetStoreAssetSelection.Clear();
-            }
-        }
-
-        void SetSelection(AssetStoreAsset assetStoreResult, bool doubleClicked)
-        {
-            m_State.m_SelectedInstanceIDs.Clear();
-
-            selectedAssetStoreAsset = true;
-            AssetStoreAssetSelection.Clear();
-            AssetStorePreviewManager.CachedAssetStoreImage item = AssetStorePreviewManager.TextureFromUrl(assetStoreResult.staticPreviewURL, assetStoreResult.name, gridSize, s_Styles.resultsGridLabel, s_Styles.resultsGrid, true);
-            Texture2D lowresPreview = item.image;
-            AssetStoreAssetSelection.AddAsset(assetStoreResult, lowresPreview);
-            if (m_ItemSelectedCallback != null)
-            {
-                Repaint();
-                m_ItemSelectedCallback(doubleClicked);
             }
         }
 
@@ -1172,36 +897,10 @@ namespace UnityEditor
                 if (IsLocalAssetsCurrentlySelected())
                     newSelection = m_LocalAssets.GetNewSelection(ref assetReference, false, true).ToArray(); // Handle multi selection
                 else
-                    newSelection = m_LocalAssets.GetNewSelection(ref assetReference, false, false).ToArray(); // If current selection is asset store asset do not allow multiselection
+                    newSelection = m_LocalAssets.GetNewSelection(ref assetReference, false, false).ToArray();
 
                 SetSelection(newSelection, false);
                 m_State.m_LastClickedInstanceID = assetReference.instanceID;
-                return;
-            }
-
-
-            selectedIdx -= m_LocalAssets.m_Grid.rows * m_LocalAssets.m_Grid.columns;
-            float offset = m_LocalAssets.Height;
-
-            foreach (AssetStoreGroup g in m_StoreAssets)
-            {
-                if (!g.Visible)
-                {
-                    offset += g.Height;
-                    continue;
-                }
-
-                AssetStoreAsset asset = g.AssetAtIndex(selectedIdx);
-                if (asset != null)
-                {
-                    Rect r = g.m_Grid.CalcRect(selectedIdx, offset);
-                    ScrollToPosition(AdjustRectForFraming(r));
-                    Repaint();
-                    SetSelection(asset, false);
-                    break;
-                }
-                selectedIdx -= g.m_Grid.rows * g.m_Grid.columns;
-                offset += g.Height;
             }
         }
 
@@ -1262,42 +961,13 @@ namespace UnityEditor
             int offsetIdx = m_LocalAssets.IndexOf(m_State.m_LastClickedInstanceID);
             if (offsetIdx != -1)
                 return offsetIdx;
-
-            offsetIdx = m_LocalAssets.m_Grid.rows * m_LocalAssets.m_Grid.columns;
-
-            // Project or builtin asset not selected. Check asset store asset.
-            if (AssetStoreAssetSelection.Count == 0)
-                return -1;
-
-            AssetStoreAsset asset = AssetStoreAssetSelection.GetFirstAsset();
-            if (asset == null)
-                return -1;
-            int assetID = asset.id;
-
-            foreach (AssetStoreGroup g in m_StoreAssets)
-            {
-                if (!g.Visible)
-                    continue;
-
-                int idx = g.IndexOf(assetID);
-                if (idx != -1)
-                    return offsetIdx + idx;
-
-                offsetIdx += g.m_Grid.rows * g.m_Grid.columns;
-            }
-
             return -1;
         }
 
         bool SkipGroup(Group group)
         {
-            // We either show local assets or asset store results here
-            if (m_ShowLocalAssetsOnly)
-            {
-                if (group is AssetStoreGroup)
-                    return true;
-            }
-            else
+            // We show local assets here
+            if (!m_ShowLocalAssetsOnly)
             {
                 if (group is LocalGroup)
                     return true;
@@ -1367,19 +1037,6 @@ namespace UnityEditor
         {
             SetupData(false);
 
-            // Requery the Asset Store to get more assets if content area has changed size
-            // so that more assets fits in there.
-
-            // We don't want asset store asset in the object selector
-            if (!IsObjectSelector() && !m_QueryInProgress)
-            {
-                bool needItems = m_StoreAssets.Exists(g => g.NeedItems);
-                if (needItems || m_RequeryAssetStore)
-                {
-                    QueryAssetStore(); // need more data to fill required rows with asset store assets
-                }
-            }
-
             // Figure out height needed to contain all assets
             float totalContentsHeight = 0f;
             foreach (Group g in m_Groups)
@@ -1389,7 +1046,7 @@ namespace UnityEditor
 
                 totalContentsHeight += g.Height;
 
-                // ShowNone is only used in object select window and we don't want asset store asset there
+                // ShowNone is only used in object select window
                 if (m_LocalAssets.ShowNone)
                     break;
             }
@@ -1426,7 +1083,7 @@ namespace UnityEditor
                     needRepaint = needRepaint || g.NeedsRepaint;
                     yOffset += g.Height;
 
-                    // ShowNone is only used in object select window and we don't want asset store asset there
+                    // ShowNone is only used in object select window
                     if (m_LocalAssets.ShowNone)
                         break;
                 }
@@ -1435,27 +1092,6 @@ namespace UnityEditor
                 if (needRepaint)
                     Repaint();
             } GUI.EndScrollView();
-
-
-            // We delay this resizing of cache until after the resized grid has been
-            // draw in order to let the cache have the correct lastUsed timestamps on the
-            // cached images. This is important when the cache is decreased in order not
-            // to dispose the wrong cache entries
-            if (m_ResizePreviewCacheTo > 0 && AssetStorePreviewManager.MaxCachedImages != m_ResizePreviewCacheTo)
-                AssetStorePreviewManager.MaxCachedImages = m_ResizePreviewCacheTo;
-
-            if (Event.current.type == EventType.Repaint)
-                AssetStorePreviewManager.AbortOlderThan(timeNow);
-
-            if (!m_ShowLocalAssetsOnly && !string.IsNullOrEmpty(m_AssetStoreError))
-            {
-                Vector2 size = EditorStyles.label.CalcSize(s_Styles.m_AssetStoreNotAvailableText);
-                Rect textRect = new Rect(m_TotalRect.x + 2f + Mathf.Max(0, (m_TotalRect.width - size.x) * 0.5f), m_TotalRect.y + 10f, size.x, 20f);
-                using (new EditorGUI.DisabledScope(true))
-                {
-                    GUI.Label(textRect, s_Styles.m_AssetStoreNotAvailableText, EditorStyles.label);
-                }
-            }
         }
 
         bool IsListMode()
@@ -1484,12 +1120,10 @@ namespace UnityEditor
                     g.ListMode = true;
                     UpdateGroupSizes(g);
 
-                    // ShowNone is only used in object select window and we don't want aiy sset store asset there
+                    // ShowNone is only used in object select window
                     if (m_LocalAssets.ShowNone)
                         break;
                 }
-
-                m_ResizePreviewCacheTo = Mathf.CeilToInt((float)m_TotalRect.height / kListLineHeight) + 10;
             }
             // we're in thumbnail mode
             else
@@ -1506,7 +1140,7 @@ namespace UnityEditor
 
                     totalHeight += g.Height;
 
-                    // ShowNone is only used in object select window and we don't want asset store asset there
+                    // ShowNone is only used in object select window
                     if (m_LocalAssets.ShowNone)
                         break;
                 }
@@ -1525,15 +1159,13 @@ namespace UnityEditor
                         g.m_Grid.InitNumRowsAndColumns(g.ItemCount, g.m_Grid.CalcRows(g.ItemsWantedShown));
                         g.UpdateHeight();
 
-                        // ShowNone is only used in object select window and we don't want asset store asset there
+                        // ShowNone is only used in object select window
                         if (m_LocalAssets.ShowNone)
                             break;
                     }
                 }
 
                 int maxVisibleItems = GetMaxNumVisibleItems();
-
-                m_ResizePreviewCacheTo = maxVisibleItems * 2;
 
                 AssetPreview.SetPreviewTextureCacheSize(maxVisibleItems * 2 + 30, GetAssetPreviewManagerID());
             }
@@ -1629,9 +1261,6 @@ namespace UnityEditor
                 Repaint();
                 m_NextDirtyCheck = EditorApplication.timeSinceStartup + 0.77;
             }
-
-            if (AssetStorePreviewManager.CheckRepaint())
-                Repaint();
         }
 
         void ClearCroppedLabelCache()

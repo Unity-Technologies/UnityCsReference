@@ -42,10 +42,10 @@ namespace UnityEditor.SceneManagement
         extern private static bool IsGameObjectInSameStageAsSceneInternal(GameObject gameObject, int sceneHandle);
 
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
-        extern private static void SetPrefabInstanceHiddenForInContextEditingInternal(GameObject gameObject, bool hide);
+        extern private static void SetPrefabInstanceHiddenForInContextEditingInternal([NotNull("NullExceptionObject")] GameObject gameObject, bool hide);
 
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
-        extern private static bool IsPrefabInstanceHiddenForInContextEditingInternal(GameObject gameObject);
+        extern private static bool IsPrefabInstanceHiddenForInContextEditingInternal([NotNull("NullExceptionObject")] GameObject gameObject);
 
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
         extern private static void EnableHidingForInContextEditingInSceneViewInternal(bool enable);
@@ -60,7 +60,6 @@ namespace UnityEditor.SceneManagement
         extern private static void SetFocusedSceneContextRenderModeInternal(StageUtility.ContextRenderMode contextRenderMode);
 
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
-        extern private static void
-        CallAwakeFromLoadOnSubHierarchyInternal(GameObject prefabInstanceRoot);
+        extern private static void CallAwakeFromLoadOnSubHierarchyInternal([NotNull("NullExceptionObject")] GameObject prefabInstanceRoot);
     }
 }

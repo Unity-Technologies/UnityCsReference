@@ -733,6 +733,7 @@ namespace UnityEditor
                     // Icon for builtin components
                     else if (HasIcon())
                         m_Thumb = AssetPreview.GetMiniTypeThumbnailFromClassID(m_ClassID);
+                    m_Thumb = EditorGUIUtility.GetSkinnedIcon(m_Thumb);
                 }
                 return m_Thumb;
             }

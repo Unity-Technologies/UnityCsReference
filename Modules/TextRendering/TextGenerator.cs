@@ -75,9 +75,6 @@ namespace UnityEngine
                 && textAnchor == other.textAnchor
                 && alignByGeometry == other.alignByGeometry
                 && resizeTextForBestFit == other.resizeTextForBestFit
-                && resizeTextMinSize == other.resizeTextMinSize
-                && resizeTextMaxSize == other.resizeTextMaxSize
-                && resizeTextForBestFit == other.resizeTextForBestFit
                 && updateBounds == other.updateBounds
                 && horizontalOverflow == other.horizontalOverflow
                 && verticalOverflow == other.verticalOverflow

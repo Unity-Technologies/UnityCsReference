@@ -465,6 +465,7 @@ namespace UnityEditor.Experimental.SceneManagement
                             if (instanceCanvas != null)
                             {
                                 dummyCanvas.sortingOrder = instanceCanvas.sortingOrder;
+                                dummyCanvas.referencePixelsPerUnit = instanceCanvas.referencePixelsPerUnit;
                             }
                         }
 
@@ -616,7 +617,7 @@ namespace UnityEditor.Experimental.SceneManagement
                 prefabObject = PrefabUtility.GetCorrespondingObjectFromSource(prefabObject);
             }
 
-            bool onlyPatchRootTransform = !s_PatchAllOverriddenProperties.value;
+            bool onlyPatchRootTransform = !showOverrides;
 
             // Run through same objects, but from innermost out so outer overrides are applied last.
             for (int i = instanceAndCorrespondingObjectChain.Count - 1; i >= 0; i--)
@@ -751,11 +752,37 @@ namespace UnityEditor.Experimental.SceneManagement
             if (m_PatchedProperties.Count == 0)
                 return;
 
+            UnityEngine.Object lastTargetInContent = null;
+            int lastTargetID = 0;
             for (int i = m_PatchedProperties.Count - 1; i >= 0; i--)
             {
-                PropertyModification mod = m_PatchedProperties[i].modification;
-                UnityEngine.Object targetInContent = m_PatchedProperties[i].targetInContent;
-                mod.ApplyToObject(targetInContent);
+                PatchedProperty patchedProperty = m_PatchedProperties[i];
+                PropertyModification mod = patchedProperty.modification;
+                UnityEngine.Object targetInContent = patchedProperty.targetInContent;
+
+                // If an object was destroyed, but later recreated with undo or redo, we have to recreate the reference to it.
+                if (targetInContent == null)
+                {
+                    // Patched properties are grouped by targetInContent, so we can easily ensure we
+                    // only make one attempt per target just by comparing with the previous target.
+                    int targetID = targetInContent.GetInstanceID();
+                    if (targetID == lastTargetID)
+                        targetInContent = lastTargetInContent;
+                    else
+                        targetInContent = UnityEditorInternal.InternalEditorUtility.GetObjectFromInstanceID(targetID);
+
+                    // Assign the struct back to the array if it worked.
+                    if (targetInContent != null)
+                    {
+                        patchedProperty.targetInContent = targetInContent;
+                        m_PatchedProperties[i] = patchedProperty;
+                    }
+                    lastTargetInContent = targetInContent;
+                    lastTargetID = targetID;
+                }
+
+                if (targetInContent != null)
+                    mod.ApplyToObject(targetInContent);
 
                 // If GameObject.active is an override, applying the value via PropertyModification
                 // is not sufficient to actually change active state of the object,
@@ -1713,18 +1740,42 @@ namespace UnityEditor.Experimental.SceneManagement
 
         internal static SavedBool s_PatchAllOverriddenProperties = new SavedBool("InContextEditingPatchOverriddenProperties", false);
 
+        internal static bool showOverrides
+        {
+            get
+            {
+                return s_PatchAllOverriddenProperties.value;
+            }
+            set
+            {
+                if (value == s_PatchAllOverriddenProperties.value)
+                    return;
+                s_PatchAllOverriddenProperties.value = value;
+
+                var stageHistory = StageNavigationManager.instance.stageHistory;
+                foreach (var stage in stageHistory)
+                {
+                    PrefabStage prefabStage = stage as PrefabStage;
+                    if (prefabStage != null)
+                        prefabStage.RefreshPatchedProperties();
+                }
+                EditorApplication.RequestRepaintAllViews();
+            }
+        }
+
+        void RefreshPatchedProperties()
+        {
+            DrivenPropertyManager.UnregisterProperties(this);
+            RecordPatchedPropertiesForContent();
+            ApplyPatchedPropertiesToContent();
+        }
+
         void VisualizeOverridesToggle()
         {
             EditorGUI.BeginChangeCheck();
-            bool patchAll = GUILayout.Toggle(s_PatchAllOverriddenProperties.value, Styles.showOverridesLabel);
+            bool patchAll = GUILayout.Toggle(showOverrides, Styles.showOverridesLabel);
             if (EditorGUI.EndChangeCheck())
-            {
-                s_PatchAllOverriddenProperties.value = patchAll;
-                DrivenPropertyManager.UnregisterProperties(this);
-                RecordPatchedPropertiesForContent();
-                ApplyPatchedPropertiesToContent();
-                EditorApplication.RequestRepaintAllViews();
-            }
+                showOverrides = patchAll;
         }
 
         void CachePrefabFolderInfo()

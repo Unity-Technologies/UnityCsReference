@@ -89,12 +89,9 @@ namespace UnityEditor
 
         public static Texture2D GetMiniTypeThumbnail(Type type)
         {
-            Texture2D tex;
             if (typeof(MonoBehaviour).IsAssignableFrom(type))
-                tex = EditorGUIUtility.LoadIcon(type.FullName.Replace('.', '/') + " Icon");
-            else
-                tex = GetMiniTypeThumbnailFromType(type);
-            return tex;
+                return EditorGUIUtility.LoadIcon(type.FullName.Replace('.', '/') + " Icon");
+            return GetMiniTypeThumbnailFromType(type);
         }
 
         [FreeFunction("AssetPreviewBindings::GetMiniTypeThumbnailFromObject")]

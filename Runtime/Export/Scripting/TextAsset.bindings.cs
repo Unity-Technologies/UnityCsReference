@@ -12,6 +12,8 @@ namespace UnityEngine
         // The raw bytes of the text asset. (RO)
         public extern byte[] bytes { get; }
 
+        extern byte[] GetPreviewBytes(int maxByteCount);
+
         extern static void Internal_CreateInstance([Writable] TextAsset self, string text);
     }
 }

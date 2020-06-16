@@ -41,6 +41,7 @@ namespace UnityEditorInternal.VR
             };
 
             public static readonly GUIContent xrSettingsTitle = EditorGUIUtility.TrTextContent("XR Settings");
+            public static readonly GUIContent deprecatedTitle = EditorGUIUtility.TrTextContent("Deprecated Settings");
 
             public static readonly GUIContent supportedCheckbox = EditorGUIUtility.TrTextContent("Virtual Reality Supported");
             public static readonly GUIContent listHeader = EditorGUIUtility.TrTextContent("Virtual Reality SDKs");
@@ -154,6 +155,17 @@ namespace UnityEditorInternal.VR
 
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying)) // switching VR flags in play mode is not supported
                 {
+                    bool addSpacing = TangoGUI(targetGroup);
+
+                    addSpacing = Stereo360CaptureGUI(targetGroup) || addSpacing;
+
+                    if (addSpacing)
+                        EditorGUILayout.Space();
+
+                    EditorGUILayout.HelpBox("Built-in XR is deprecated and will be retired in a future version of Unity. Use the new Unity XR Plugin System instead. You can find settings for Unity XR Plugin System in Project Settings under XR Plugin Management.", MessageType.Info);
+
+                    GUILayout.Label(Styles.deprecatedTitle, EditorStyles.boldLabel);
+
                     bool shouldVRDeviceSettingsBeDisabled = XRProjectSettings.GetBool(XRProjectSettings.KnownSettings.k_VRDeviceDisabled, false);
                     using (new EditorGUI.DisabledGroupScope(shouldVRDeviceSettingsBeDisabled))
                     {
@@ -174,13 +186,7 @@ namespace UnityEditorInternal.VR
 
                     SinglePassStereoGUI(targetGroup, m_StereoRenderingPath);
 
-                    TangoGUI(targetGroup);
-
                     RemotingWSAHolographicGUI(targetGroup);
-
-                    Stereo360CaptureGUI(targetGroup);
-
-                    WarnOnGraphicsAPIIncompatibility(targetGroup);
                 }
 
                 if (m_SharedSettingShown)
@@ -251,7 +257,7 @@ namespace UnityEditorInternal.VR
 
         private void SinglePassStereoGUI(BuildTargetGroup targetGroup, SerializedProperty stereoRenderingPath)
         {
-            if (!PlayerSettings.virtualRealitySupported)
+            if (!VREditor.GetVREnabledOnTargetGroup(targetGroup))
                 return;
 
             bool supportsMultiPass = IsStereoRenderingModeSupported(targetGroup, StereoRenderingPath.MultiPass);
@@ -344,10 +350,13 @@ namespace UnityEditorInternal.VR
             m_Settings.serializedObject.ApplyModifiedProperties();
         }
 
-        private void Stereo360CaptureGUI(BuildTargetGroup targetGroup)
+        private bool Stereo360CaptureGUI(BuildTargetGroup targetGroup)
         {
-            if (BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportStereo360Capture))
+            bool ret = BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportStereo360Capture);
+            if (ret)
                 EditorGUILayout.PropertyField(m_Enable360StereoCapture, Styles.stereo360CaptureCheckbox);
+
+            return ret;
         }
 
         private void AddVRDeviceMenuSelected(object userData, string[] options, int selected)
@@ -518,7 +527,7 @@ namespace UnityEditorInternal.VR
 
         private void ErrorOnVRDeviceIncompatibility(BuildTargetGroup targetGroup)
         {
-            if (!PlayerSettings.GetVirtualRealitySupported(targetGroup))
+            if (!VREditor.GetVREnabledOnTargetGroup(targetGroup))
                 return;
 
             if (targetGroup == BuildTargetGroup.Android)
@@ -531,24 +540,13 @@ namespace UnityEditorInternal.VR
             }
         }
 
-        private void WarnOnGraphicsAPIIncompatibility(BuildTargetGroup targetGroup)
+        internal bool TangoGUI(BuildTargetGroup targetGroup)
         {
-            if (targetGroup == BuildTargetGroup.Android && PlayerSettings.GetGraphicsAPIs(BuildTarget.Android).Contains(UnityEngine.Rendering.GraphicsDeviceType.Vulkan))
-            {
-                if (PlayerSettings.Android.ARCoreEnabled || PlayerSettings.virtualRealitySupported)
-                {
-                    EditorGUILayout.HelpBox("XR is currently not supported when using the Vulkan Graphics API.\nPlease go to 'Other Settings' and remove 'Vulkan' from the list of Graphics APIs.", MessageType.Warning);
-                }
-            }
-        }
+            bool ret = BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportTango);
+            if (ret) // Google Tango settings
+                EditorGUILayout.PropertyField(m_AndroidEnableTango, EditorGUIUtility.TrTextContent("ARCore Supported"));
 
-        internal void TangoGUI(BuildTargetGroup targetGroup)
-        {
-            if (!BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportTango))
-                return;
-
-            // Google Tango settings
-            EditorGUILayout.PropertyField(m_AndroidEnableTango, EditorGUIUtility.TrTextContent("ARCore Supported"));
+            return ret;
         }
 
         internal void RemotingWSAHolographicGUI(BuildTargetGroup targetGroup)

@@ -54,6 +54,6 @@ namespace UnityEngine
         extern internal static ScriptableObject CreateScriptableObjectInstanceFromType(Type type, bool applyDefaultsAndReset);
 
         [FreeFunction("Scripting::ResetAndApplyDefaultInstances")]
-        extern internal static void ResetAndApplyDefaultInstances(Object obj);
+        extern internal static void ResetAndApplyDefaultInstances([NotNull("NullExceptionObject")] Object obj);
     }
 }

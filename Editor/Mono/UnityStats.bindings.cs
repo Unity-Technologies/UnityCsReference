@@ -61,7 +61,8 @@ namespace UnityEditor
     //*undocumented*
     // Undocumented, but left public. Some people want to figure out draw calls from editor scripts to do some performance checking
     // optimizations.
-    [StaticAccessor("GetGfxDevice().GetFrameStats()", StaticAccessorType.Dot)]
+    [StaticAccessor("GfxDeviceStats::Get().GetLegacyFrameStats()", StaticAccessorType.Dot)]
+    [NativeHeader("Runtime/GfxDevice/GfxDeviceStats.h")]
     [NativeHeader("Runtime/GfxDevice/GfxDevice.h")]
     [NativeHeader("Modules/Audio/Public/AudioManager.h")]
     [NativeHeader("Runtime/Graphics/RenderTexture.h")]
@@ -114,8 +115,8 @@ namespace UnityEditor
         // The number of render texture changes made this frame.
         public static int renderTextureChanges => stateChanges.renderTexture;
 
-        [NativeName("ClientFrameTime")] public extern static float frameTime { get; }
-        [NativeName("RenderFrameTime")] public extern static float renderTime { get; }
+        [NativeName("MainThreadFrameTime")] public extern static float frameTime { get; }
+        [NativeName("RenderThreadFrameTime")] public extern static float renderTime { get; }
 
         public extern static float audioLevel { [FreeFunction("GetAudioManager().GetMasterGroupLevel")] get; }
         public extern static float audioClippingAmount { [FreeFunction("GetAudioManager().GetMasterGroupClippingAmount")] get; }

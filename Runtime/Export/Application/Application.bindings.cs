@@ -110,7 +110,7 @@ namespace UnityEngine
         }
 
         [FreeFunction]
-        public extern static bool IsPlaying(UnityEngine.Object obj);
+        public extern static bool IsPlaying([NotNull("NullExceptionObject")] UnityEngine.Object obj);
 
         public extern static bool isFocused
         {
@@ -214,13 +214,19 @@ namespace UnityEngine
         [FreeFunction("Application_Bindings::ExternalCall")]
         extern private static void Internal_ExternalCall(string script);
 
+        // unity version query: thread safety verified as the native method just returns a #DEFINE value.
+
         // The version of the Unity runtime used to play the content.
-        //Thread safety verified as the native method just returns a #DEFINE value.
         extern public static string unityVersion
         {
             [FreeFunction("Application_Bindings::GetUnityVersion", IsThreadSafe = true)]
             get;
         }
+
+        // version/minor/major as separate integers. currently used only internally
+        extern internal static int unityVersionVer { [FreeFunction("Application_Bindings::GetUnityVersionVer", IsThreadSafe = true)] get; }
+        extern internal static int unityVersionMaj { [FreeFunction("Application_Bindings::GetUnityVersionMaj", IsThreadSafe = true)] get; }
+        extern internal static int unityVersionMin { [FreeFunction("Application_Bindings::GetUnityVersionMin", IsThreadSafe = true)] get; }
 
 
         // Runtime application version.

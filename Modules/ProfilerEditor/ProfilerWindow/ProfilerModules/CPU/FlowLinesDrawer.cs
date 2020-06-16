@@ -11,285 +11,366 @@ namespace UnityEditorInternal.Profiling
 {
     internal class FlowLinesDrawer
     {
-        static readonly Vector2 k_InvalidPosition = Vector2.one * -1;
+        const int k_EarlyNextEventArrowHorizontalPadding = 8;
 
-        readonly Vector3[] m_CachedSelectedLinePoints = new Vector3[3];
-        readonly Color[] m_CachedSelectedLineColors = new Color[]
+        static readonly System.Comparison<FlowEventData> k_FlowEventStartTimeComparer = (FlowEventData x, FlowEventData y) =>
         {
-            Styles.selectedColor,
-            Styles.selectedColor,
-            Styles.selectedColor
+            var xPos = x.rect.xMin;
+            var yPos = y.rect.xMin;
+
+            // Always sort the end event using the time it was completed.
+            if (x.flowEventType == ProfilerFlowEventType.End)
+            {
+                xPos = x.rect.xMax;
+            }
+            else if (y.flowEventType == ProfilerFlowEventType.End)
+            {
+                yPos = y.rect.xMax;
+            }
+
+            return xPos.CompareTo(yPos);
         };
-        Vector2 m_BeginEventPosition = k_InvalidPosition;
-        Dictionary<int, Vector2> m_LatestNextEventPositionsPerThread = new Dictionary<int, Vector2>();
-        Dictionary<uint, Vector2> m_LatestNextEventPositionsPerFlow = new Dictionary<uint, Vector2>();
-        List<Vector2> m_EndEventPositions = new List<Vector2>();
-        Dictionary<uint, int> m_LatestEndEventPositionIndexesPerFlow = new Dictionary<uint, int>();
-        SelectedEventData m_SelectedEvent;
 
-        public bool hasSelectedEventPosition
+        static readonly System.Comparison<FlowEventData> k_FlowEventCompletionTimeComparer = (FlowEventData x, FlowEventData y) =>
         {
-            get
-            {
-                return m_SelectedEvent != null;
-            }
-        }
+            var xPos = x.rect.xMax;
+            var yPos = y.rect.xMax;
 
-        bool hasBeginEventPosition
-        {
-            get
+            // Always sort the begin event using the time it was started.
+            if (x.flowEventType == ProfilerFlowEventType.Begin)
             {
-                return (m_BeginEventPosition != k_InvalidPosition);
+                xPos = x.rect.xMin;
             }
-        }
+            else if (y.flowEventType == ProfilerFlowEventType.Begin)
+            {
+                yPos = y.rect.xMin;
+            }
 
-        bool hasAtLeastOneNextEventPosition
-        {
-            get
-            {
-                return (m_LatestNextEventPositionsPerThread.Count > 0);
-            }
-        }
+            return xPos.CompareTo(yPos);
+        };
 
-        bool hasEndEventPosition
-        {
-            get
-            {
-                return (m_EndEventPositions.Count > 0);
-            }
-        }
+        Dictionary<uint, List<FlowEventData>> m_Flows = new Dictionary<uint, List<FlowEventData>>();
+        List<Vector3> m_CachedLinePoints = new List<Vector3>();
+        HashSet<float> m_CachedParallelNextVerticalPositions = new HashSet<float>();
+        List<Vector3> m_CachedSelectionLinePoints = new List<Vector3>();
 
-        bool canDraw
-        {
-            get
-            {
-                return (hasBeginEventPosition && hasAtLeastOneNextEventPosition);
-            }
-        }
+        public bool hasSelectedEvent { get; private set; }
 
         public void AddFlowEvent(ProfilerTimelineGUI.ThreadInfo.FlowEventData flowEventData, int threadIndex, Rect sampleRect, bool isSelectedSample)
         {
             var flowEvent = flowEventData.flowEvent;
+            var flowEventId = flowEvent.FlowId;
             var flowEventType = flowEvent.FlowEventType;
-            switch (flowEventType)
+            if (!m_Flows.TryGetValue(flowEventId, out var flowEvents))
             {
-                case ProfilerFlowEventType.Begin:
-                    if (!hasBeginEventPosition)
-                    {
-                        m_BeginEventPosition = new Vector2(sampleRect.xMin, sampleRect.yMax);
-                    }
-                    break;
-
-                case ProfilerFlowEventType.Next:
-                    ProcessSampleRectForNextEvent(sampleRect, threadIndex, flowEvent.FlowId);
-                    break;
-
-                case ProfilerFlowEventType.End:
-                    ProcessSampleRectForEndEvent(sampleRect, flowEvent.FlowId);
-                    break;
-
-                default:
-                    break;
+                flowEvents = new List<FlowEventData>();
+                m_Flows[flowEventId] = flowEvents;
             }
 
-            // Only next and end events show a selected line when selected.
-            if (flowEventType != ProfilerFlowEventType.Begin)
+            flowEvents.Add(new FlowEventData() {
+                rect = sampleRect,
+                flowEventType = flowEventType,
+                isSelected = isSelectedSample
+            });
+
+            if (isSelectedSample)
             {
-                if (isSelectedSample && !hasSelectedEventPosition)
-                {
-                    Vector2 selectedFlowEventPosition = k_InvalidPosition;
-                    switch (flowEventType)
-                    {
-                        case ProfilerFlowEventType.Next:
-                            selectedFlowEventPosition = new Vector2(sampleRect.xMin, sampleRect.yMax);
-                            break;
-
-                        case ProfilerFlowEventType.End:
-                            selectedFlowEventPosition = new Vector2(sampleRect.xMax, sampleRect.yMax);
-                            break;
-
-                        default:
-                            break;
-                    }
-
-                    m_SelectedEvent = new SelectedEventData()
-                    {
-                        flowEventPosition = selectedFlowEventPosition,
-                        flowEventType = flowEventType,
-                        flowId = flowEventData.flowEvent.FlowId,
-                    };
-                }
+                hasSelectedEvent = true;
             }
         }
 
         public void Draw()
         {
-            if (!canDraw)
-            {
-                return;
-            }
-
             Handles.BeginGUI();
 
-            // Offset the line's origin to the arrow tip of the begin indicator.
-            var beginIndicatorSize = FlowIndicatorDrawer.textureVisualSize;
-            var verticalLineOrigin = new Vector2(m_BeginEventPosition.x + (beginIndicatorSize.x * 0.5f), m_BeginEventPosition.y + beginIndicatorSize.y);
-            DrawBeginToNextFlowLines(verticalLineOrigin);
-            DrawNextToEndFlowLines();
-            DrawSelectedLineIfNecessary(verticalLineOrigin);
+            foreach (var flowKvp in m_Flows)
+            {
+                var flowEvents = flowKvp.Value;
+                DrawFlow(flowEvents);
+            }
 
             Handles.EndGUI();
         }
 
-        void ProcessSampleRectForNextEvent(Rect sampleRect, int threadIndex, uint flowEventId)
+        void DrawFlow(List<FlowEventData> flowEvents)
         {
-            // Store the position of the latest next event per thread. We use this to draw a single horizontal line to the latest next event. We can use the bottom-left position (where we draw to) as samples won't overlap on a single thread.
-            var bottomLeftSampleRectPosition = new Vector2(sampleRect.xMin, sampleRect.yMax);
-            Vector2 latestNextEventPositionForThread;
-            if (m_LatestNextEventPositionsPerThread.TryGetValue(threadIndex, out latestNextEventPositionForThread))
-            {
-                if (bottomLeftSampleRectPosition.x > latestNextEventPositionForThread.x)
-                {
-                    m_LatestNextEventPositionsPerThread[threadIndex] = bottomLeftSampleRectPosition;
-                }
-            }
-            else
-            {
-                m_LatestNextEventPositionsPerThread[threadIndex] = bottomLeftSampleRectPosition;
-            }
+            m_CachedLinePoints.Clear();
+            m_CachedSelectionLinePoints.Clear();
 
-            // Store the position of the latest next event per flow. We use this when drawing each flow's end line.
-            var bottomRightSampleRectPosition = new Vector2(sampleRect.xMax, sampleRect.yMax);
-            Vector2 latestNextEventPositionForFlow;
-            if (m_LatestNextEventPositionsPerFlow.TryGetValue(flowEventId, out latestNextEventPositionForFlow))
-            {
-                if (bottomRightSampleRectPosition.x > latestNextEventPositionForFlow.x)
-                {
-                    m_LatestNextEventPositionsPerFlow[flowEventId] = bottomRightSampleRectPosition;
-                }
-            }
-            else
-            {
-                m_LatestNextEventPositionsPerFlow[flowEventId] = bottomRightSampleRectPosition;
-            }
+            ProduceLinePointsForNextFlowEventsInCollection(flowEvents, ref m_CachedLinePoints, ref m_CachedSelectionLinePoints);
+            ProduceLinePointsForParallelNextAndEndFlowEventsInCollection(flowEvents, ref m_CachedLinePoints, ref m_CachedSelectionLinePoints);
+
+            DrawLines(m_CachedLinePoints.ToArray());
+            DrawSelectedLineIfNecessary(m_CachedSelectionLinePoints.ToArray());
         }
 
-        void ProcessSampleRectForEndEvent(Rect sampleRect, uint flowEventId)
+        void ProduceLinePointsForNextFlowEventsInCollection(List<FlowEventData> flowEvents, ref List<Vector3> linePoints, ref List<Vector3> selectionLinePoints)
         {
-            var maxSampleRectPosition = new Vector2(sampleRect.xMax, sampleRect.yMax);
-            m_EndEventPositions.Add(maxSampleRectPosition);
-
-            // Store the position of the latest end event per flow. We use this when drawing each flow's end line.
-            int latestEndEventPositionIndexForFlow;
-            if (m_LatestEndEventPositionIndexesPerFlow.TryGetValue(flowEventId, out latestEndEventPositionIndexForFlow))
-            {
-                var latestEndEventPositionForFlow = m_EndEventPositions[latestEndEventPositionIndexForFlow];
-                if (maxSampleRectPosition.x > latestEndEventPositionForFlow.x)
-                {
-                    int currentIndex = m_EndEventPositions.Count - 1;
-                    m_LatestEndEventPositionIndexesPerFlow[flowEventId] = currentIndex;
-                }
-            }
-            else
-            {
-                int currentIndex = m_EndEventPositions.Count - 1;
-                m_LatestEndEventPositionIndexesPerFlow[flowEventId] = currentIndex;
-            }
-        }
-
-        void DrawBeginToNextFlowLines(Vector2 verticalLineOrigin)
-        {
-            var lowestVerticalSamplePosition = m_BeginEventPosition.y;
-            var highestVerticalSamplePosition = m_BeginEventPosition.y;
-
-            var horizontalLinePositions = CollectHorizontalBeginToNextFlowLinePositionsAndTrackVerticalRange(verticalLineOrigin.x, ref lowestVerticalSamplePosition, ref highestVerticalSamplePosition);
-            DrawLines(horizontalLinePositions);
-
-            DrawVerticalBeginToNextFlowLines(verticalLineOrigin, lowestVerticalSamplePosition, highestVerticalSamplePosition);
-        }
-
-        Vector3[] CollectHorizontalBeginToNextFlowLinePositionsAndTrackVerticalRange(float horizontalOrigin, ref float lowestVerticalSamplePosition, ref float highestVerticalSamplePosition)
-        {
-            const int pointsPerLine = 2;
-            Vector3[] linePositions = new Vector3[m_LatestNextEventPositionsPerThread.Count * pointsPerLine];
-
-            int index = 0;
-            foreach (KeyValuePair<int, Vector2> kvp in m_LatestNextEventPositionsPerThread)
-            {
-                var highestHorizontalNextEventSamplePosition = kvp.Value;
-                var origin = new Vector2(horizontalOrigin, highestHorizontalNextEventSamplePosition.y);
-                linePositions[index] = origin;
-                linePositions[index + 1] = highestHorizontalNextEventSamplePosition;
-
-                if (origin.y < lowestVerticalSamplePosition)
-                {
-                    lowestVerticalSamplePosition = origin.y;
-                }
-                else if (origin.y > highestVerticalSamplePosition)
-                {
-                    highestVerticalSamplePosition = origin.y;
-                }
-
-                index += pointsPerLine;
-            }
-
-            return linePositions;
-        }
-
-        void DrawVerticalBeginToNextFlowLines(Vector2 origin, float lowestVerticalSamplePosition, float highestVerticalSamplePosition)
-        {
-            if (lowestVerticalSamplePosition < m_BeginEventPosition.y)
-            {
-                var destination = new Vector2(origin.x, lowestVerticalSamplePosition);
-                DrawLine(origin, destination);
-            }
-
-            if (highestVerticalSamplePosition > m_BeginEventPosition.y)
-            {
-                var destination = new Vector2(origin.x, highestVerticalSamplePosition);
-                DrawLine(origin, destination);
-            }
-        }
-
-        void DrawNextToEndFlowLines()
-        {
-            if (!hasEndEventPosition)
+            if (flowEvents.Count == 0)
             {
                 return;
             }
 
-            Vector3[] linePositions = CollectLatestNextEventToLatestEndEventLinePositionsPerFlow();
-            DrawLines(linePositions);
+            // We draw next event lines in start time order.
+            SortFlowEventsInStartTimeOrder(flowEvents);
+
+            for (int i = 0; i < flowEvents.Count; i++)
+            {
+                var flowEvent = flowEvents[i];
+                var flowEventRect = flowEvent.rect;
+                switch (flowEvent.flowEventType)
+                {
+                    case ProfilerFlowEventType.Next:
+                    {
+                        var previousFlowEventIndex = i - 1;
+                        if (previousFlowEventIndex < 0)
+                        {
+                            continue;
+                        }
+
+                        var previousFlowEvent = flowEvents[previousFlowEventIndex];
+                        var previousFlowEventRect = previousFlowEvent.rect;
+                        var previousFlowEventRectXMax = previousFlowEventRect.xMax;
+                        var flowEventRectXMin = flowEventRect.xMin;
+                        var numberOfLinePointsAdded = 0;
+
+                        // Draw a right angle line when the previous event is a Begin.
+                        if (previousFlowEvent.flowEventType == ProfilerFlowEventType.Begin)
+                        {
+                            var halfBeginIndicatorSize = FlowIndicatorDrawer.textureVisualSize * 0.5f;
+                            var origin = new Vector2(previousFlowEventRect.xMin + halfBeginIndicatorSize.x, previousFlowEventRect.yMax + halfBeginIndicatorSize.y);
+                            var destination = new Vector2(flowEventRect.xMin, flowEventRect.yMax);
+                            numberOfLinePointsAdded = AddRightAngleLineToPoints(origin, destination, false, ref linePoints);
+                        }
+                        else
+                        {
+                            // Verify if the previous *completed* event was a parallel next. This allows us to draw from the last parallel next that completed, rather than the last parallel next that started.
+                            var hasPreviousCompletedFlowEvent = flowEvent.TryGetPreviousCompletedFlowEventInCollection(flowEvents, out var previousCompletedFlowEvent);
+                            var previousCompletedFlowEventWasAParallelNext = (hasPreviousCompletedFlowEvent && previousCompletedFlowEvent.flowEventType == ProfilerFlowEventType.ParallelNext);
+                            if (previousCompletedFlowEventWasAParallelNext)
+                            {
+                                // Draw a step-change style line from the previous completed flow event to this Next event.
+                                var previousCompletedFlowEventRect = previousCompletedFlowEvent.rect;
+                                var origin = previousCompletedFlowEventRect.max;
+                                var destination = new Vector2(flowEventRect.xMin, flowEventRect.yMax);
+                                numberOfLinePointsAdded = AddPointsForStepChangeFlowLineBetweenPointsToCollection(origin, destination, ref linePoints);
+                            }
+                            else
+                            {
+                                // If the previous event finished after this event started, draw from earlier in the previous event.
+                                if (previousFlowEventRectXMax > flowEventRectXMin)
+                                {
+                                    var availableSpaceX = flowEventRectXMin - previousFlowEventRect.xMin;
+                                    var offsetX = Mathf.Min(k_EarlyNextEventArrowHorizontalPadding, availableSpaceX * 0.5f);
+
+                                    var originY = previousFlowEventRect.yMax;
+                                    var destinationY = flowEventRect.yMax;
+                                    if (destinationY < originY)
+                                    {
+                                        // Draw from the top of the marker if drawing upwards.
+                                        originY = previousFlowEventRect.yMin;
+                                    }
+
+                                    var origin = new Vector2(flowEventRect.xMin - offsetX, originY);
+                                    var destination = new Vector2(flowEventRect.xMin, flowEventRect.yMax);
+                                    numberOfLinePointsAdded = AddRightAngleLineToPoints(origin, destination, false, ref linePoints);
+                                }
+                                else
+                                {
+                                    // Draw a step-change style line from the previous event to this Next event.
+                                    var origin = previousFlowEventRect.max;
+                                    var destination = new Vector2(flowEventRect.xMin, flowEventRect.yMax);
+                                    numberOfLinePointsAdded = AddPointsForStepChangeFlowLineBetweenPointsToCollection(origin, destination, ref linePoints);
+                                }
+                            }
+                        }
+
+                        // If the next event is selected, add its line points to the selection line.
+                        if (flowEvent.isSelected)
+                        {
+                            int newPointsStartIndex = linePoints.Count - numberOfLinePointsAdded;
+                            ExtractSelectionLinePointsFromEndOfCollection(linePoints, newPointsStartIndex, ref m_CachedSelectionLinePoints);
+                        }
+
+                        break;
+                    }
+                }
+            }
         }
 
-        Vector3[] CollectLatestNextEventToLatestEndEventLinePositionsPerFlow()
+        void ProduceLinePointsForParallelNextAndEndFlowEventsInCollection(List<FlowEventData> flowEvents, ref List<Vector3> linePoints, ref List<Vector3> selectionLinePoints)
         {
-            const int k_NumberOfPointsPerEndEvent = 4;
-            Vector3[] linePositions = new Vector3[m_LatestEndEventPositionIndexesPerFlow.Count * k_NumberOfPointsPerEndEvent];
-            int index = 0;
-            foreach (KeyValuePair<uint, int> latestEndEventPositionIndexKvp in m_LatestEndEventPositionIndexesPerFlow)
+            if (flowEvents.Count == 0)
             {
-                var flowId = latestEndEventPositionIndexKvp.Key;
-                var latestEndEventPositionIndex = latestEndEventPositionIndexKvp.Value;
-
-                Vector2 latestNextEventPositionForFlow;
-                if (m_LatestNextEventPositionsPerFlow.TryGetValue(flowId, out latestNextEventPositionForFlow))
-                {
-                    var latestEndEventPositionForFlow = m_EndEventPositions[latestEndEventPositionIndex];
-                    var horizontalOrigin = latestNextEventPositionForFlow;
-                    linePositions[index] = horizontalOrigin;
-                    var horizontalDestination = new Vector2(latestEndEventPositionForFlow.x, latestNextEventPositionForFlow.y);
-                    linePositions[index + 1] = horizontalDestination;
-                    var verticalOrigin = new Vector2(latestEndEventPositionForFlow.x, latestNextEventPositionForFlow.y);
-                    linePositions[index + 2] = verticalOrigin;
-                    var verticalDestination = latestEndEventPositionForFlow;
-                    linePositions[index + 3] = verticalDestination;
-                }
-
-                index += k_NumberOfPointsPerEndEvent;
+                return;
             }
 
-            return linePositions;
+            // We draw parallel next and end event lines using completion time sorting. For example, the end event line should point to last *completed* event, not the last started. We also loop backwards so we only draw one horizontal line per thread when there are multiple parallel next events on one thread.
+            SortFlowEventsInCompletionTimeOrder(flowEvents);
+
+            var halfBeginIndicatorSize = FlowIndicatorDrawer.textureVisualSize * 0.5f;
+            m_CachedParallelNextVerticalPositions.Clear();
+
+            var hasParallelNextEvents = false;
+            var firstFlowEvent = flowEvents[0];
+            var firstFlowEventRect = firstFlowEvent.rect;
+            var firstFlowEventPosition = new Vector2(firstFlowEventRect.xMin + halfBeginIndicatorSize.x, firstFlowEventRect.yMax + halfBeginIndicatorSize.y);
+            var parallelNextVerticalMin = firstFlowEventPosition.y;
+            var parallelNextVerticalMax = firstFlowEventPosition.y;
+            for (int i = flowEvents.Count - 1; i >= 0; i--)
+            {
+                var flowEvent = flowEvents[i];
+                var flowEventRect = flowEvent.rect;
+                switch (flowEvent.flowEventType)
+                {
+                    case ProfilerFlowEventType.ParallelNext:
+                    {
+                        var flowEventRectYMax = flowEventRect.yMax;
+                        var origin = new Vector2(firstFlowEventRect.xMin + halfBeginIndicatorSize.x, flowEventRectYMax);
+                        var destination = new Vector2(flowEventRect.xMin, flowEventRectYMax);
+                        if (!m_CachedParallelNextVerticalPositions.Contains(flowEventRectYMax)) // Only draw one horizontal line per thread.
+                        {
+                            linePoints.Add(origin);
+                            linePoints.Add(destination);
+
+                            m_CachedParallelNextVerticalPositions.Add(flowEventRectYMax);
+
+                            hasParallelNextEvents = true;
+                            if (flowEventRectYMax < parallelNextVerticalMin)
+                            {
+                                parallelNextVerticalMin = flowEventRectYMax;
+                            }
+                            else if (flowEventRectYMax > parallelNextVerticalMax)
+                            {
+                                parallelNextVerticalMax = flowEventRectYMax;
+                            }
+                        }
+
+                        // If the parallel next event is selected, add its line points to the selection line.
+                        if (flowEvent.isSelected)
+                        {
+                            m_CachedSelectionLinePoints.Add(firstFlowEventPosition);
+                            m_CachedSelectionLinePoints.Add(new Vector2(firstFlowEventPosition.x, origin.y));
+                            m_CachedSelectionLinePoints.Add(destination);
+                        }
+
+                        break;
+                    }
+
+                    case ProfilerFlowEventType.End:
+                    {
+                        // Draw a right-angled line from the previous event to the completion time of the end event.
+                        var previousFlowEventIndex = i - 1;
+                        if (previousFlowEventIndex < 0)
+                        {
+                            continue;
+                        }
+
+                        var previousFlowEvent = flowEvents[previousFlowEventIndex];
+                        var previousFlowEventRect = previousFlowEvent.rect;
+                        var previousFlowEventRectXMax = previousFlowEventRect.xMax;
+                        var numberOfLinePointsAdded = 0;
+
+                        var origin = previousFlowEventRect.max;
+                        var destination = flowEventRect.max;
+                        numberOfLinePointsAdded = AddRightAngleLineToPoints(origin, destination, true, ref linePoints);
+
+                        // If the end event is selected, add its line points to the selection line.
+                        if (flowEvent.isSelected)
+                        {
+                            int newPointsStartIndex = linePoints.Count - numberOfLinePointsAdded;
+                            ExtractSelectionLinePointsFromEndOfCollection(linePoints, newPointsStartIndex, ref m_CachedSelectionLinePoints);
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            if (hasParallelNextEvents)
+            {
+                // Draw vertical lines to the highest and lowest parallel next events.
+                if (!Mathf.Approximately(parallelNextVerticalMin, firstFlowEventPosition.y))
+                {
+                    linePoints.Add(firstFlowEventPosition);
+                    linePoints.Add(new Vector2(firstFlowEventPosition.x, parallelNextVerticalMin));
+                }
+
+                if (!Mathf.Approximately(parallelNextVerticalMax, firstFlowEventPosition.y))
+                {
+                    linePoints.Add(firstFlowEventPosition);
+                    linePoints.Add(new Vector2(firstFlowEventPosition.x, parallelNextVerticalMax));
+                }
+            }
+        }
+
+        void SortFlowEventsInStartTimeOrder(List<FlowEventData> flowEvents)
+        {
+            if (flowEvents.Count > 0)
+            {
+                flowEvents.Sort(k_FlowEventStartTimeComparer);
+            }
+        }
+
+        void SortFlowEventsInCompletionTimeOrder(List<FlowEventData> flowEvents)
+        {
+            if (flowEvents.Count > 0)
+            {
+                flowEvents.Sort(k_FlowEventCompletionTimeComparer);
+            }
+        }
+
+        int AddRightAngleLineToPoints(Vector2 origin, Vector2 destination, bool horizontalFirst, ref List<Vector3> linePoints)
+        {
+            int previousLinePointsCount = linePoints.Count;
+
+            Vector2 destinationMidpoint = (horizontalFirst) ? new Vector2(destination.x, origin.y) : new Vector2(origin.x, destination.y);
+            linePoints.Add(origin);
+            linePoints.Add(destinationMidpoint);
+            linePoints.Add(destinationMidpoint);
+            linePoints.Add(destination);
+
+            return linePoints.Count - previousLinePointsCount;
+        }
+
+        int AddPointsForStepChangeFlowLineBetweenPointsToCollection(Vector2 origin, Vector2 destination, ref List<Vector3> linePoints)
+        {
+            int previousLinePointsCount = linePoints.Count;
+
+            if (!Mathf.Approximately(destination.y, origin.y))
+            {
+                var horizontalADestination = new Vector2(Mathf.Lerp(origin.x, destination.x, 0.5f), origin.y);
+                linePoints.Add(origin);
+                linePoints.Add(horizontalADestination);
+
+                var verticalOrigin = horizontalADestination;
+                var verticalDestination = new Vector2(horizontalADestination.x, destination.y);
+                linePoints.Add(verticalOrigin);
+                linePoints.Add(verticalDestination);
+
+                linePoints.Add(verticalDestination);
+                linePoints.Add(destination);
+            }
+            else
+            {
+                // If the destination is at the same height as the origin, just create a single line.
+                linePoints.Add(origin);
+                linePoints.Add(destination);
+            }
+
+            return linePoints.Count - previousLinePointsCount;
+        }
+
+        void ExtractSelectionLinePointsFromEndOfCollection(List<Vector3> linePoints, int pointsStartIndex, ref List<Vector3> selectionLinePoints)
+        {
+            // The selection line is drawn as one continuous line, as opposed to the flow lines which are many individual lines. Therefore, remove all duplicate overlapping points by taking each line's starting point.
+            for (int j = pointsStartIndex; j < linePoints.Count; j += 2)
+            {
+                selectionLinePoints.Add(linePoints[j]);
+            }
+
+            // Add the last point, as there is no subsequent line beginning from here to capture this point.
+            selectionLinePoints.Add(linePoints[linePoints.Count - 1]);
         }
 
         void DrawLines(Vector3[] points)
@@ -300,75 +381,42 @@ namespace UnityEditorInternal.Profiling
             Handles.color = color;
         }
 
-        void DrawLine(Vector2 origin, Vector2 destination)
+        void DrawSelectedLineIfNecessary(Vector3[] selectedLinePositions)
         {
-            var color = Handles.color;
-            Handles.color = Styles.color;
-            Handles.DrawLine(origin, destination);
-            Handles.color = color;
+            if (m_CachedSelectionLinePoints.Count > 0)
+            {
+                Handles.DrawAAPolyLine(EditorGUIUtility.whiteTexture, Styles.selectedWidth, selectedLinePositions);
+            }
         }
 
-        void DrawSelectedLineIfNecessary(Vector2 beginEventLineOrigin)
+        struct FlowEventData
         {
-            if (hasSelectedEventPosition)
-            {
-                Vector2 selectedLineOrigin = k_InvalidPosition;
-                switch (m_SelectedEvent.flowEventType)
-                {
-                    case ProfilerFlowEventType.Next:
-                    {
-                        // If a next event is selected, draw from the begin event to the selected event.
-                        selectedLineOrigin = beginEventLineOrigin;
-                        break;
-                    }
+            public Rect rect;
+            public ProfilerFlowEventType flowEventType;
+            public bool isSelected;
 
-                    case ProfilerFlowEventType.End:
+            // Find the last flow event that completed prior to this flow event starting.
+            public bool TryGetPreviousCompletedFlowEventInCollection(List<FlowEventData> collection, out FlowEventData previousCompletedFlowEvent)
+            {
+                var hasPreviousCompletedFlowEvent = false;
+                previousCompletedFlowEvent = default;
+                foreach (var flowEvent in collection)
+                {
+                    var flowEventRect = flowEvent.rect;
+
+                    // Did it complete before we started?
+                    if (flowEventRect.xMax < rect.xMin)
                     {
-                        // If an end event is selected, draw from the last next event for this flow to the selected event.
-                        var flowId = m_SelectedEvent.flowId;
-                        Vector2 latestNextEventPositionForFlow;
-                        if (m_LatestNextEventPositionsPerFlow.TryGetValue(flowId, out latestNextEventPositionForFlow))
+                        hasPreviousCompletedFlowEvent = true;
+                        // Is it later than the previously stored value?
+                        if (flowEventRect.xMax > previousCompletedFlowEvent.rect.xMax)
                         {
-                            selectedLineOrigin = latestNextEventPositionForFlow;
+                            previousCompletedFlowEvent = flowEvent;
                         }
-
-                        break;
                     }
                 }
 
-                if (selectedLineOrigin != k_InvalidPosition)
-                {
-                    DrawSelectedLine(selectedLineOrigin);
-                }
-            }
-        }
-
-        void DrawSelectedLine(Vector2 origin)
-        {
-            Vector2 destination = m_SelectedEvent.flowEventPosition;
-
-            Vector2 midPoint = k_InvalidPosition;
-            switch (m_SelectedEvent.flowEventType)
-            {
-                case ProfilerFlowEventType.Next:
-                {
-                    midPoint = new Vector2(origin.x, destination.y);
-                    break;
-                }
-
-                case ProfilerFlowEventType.End:
-                {
-                    midPoint = new Vector2(destination.x, origin.y);
-                    break;
-                }
-            }
-
-            if (midPoint != k_InvalidPosition)
-            {
-                m_CachedSelectedLinePoints[0] = origin;
-                m_CachedSelectedLinePoints[1] = midPoint;
-                m_CachedSelectedLinePoints[2] = destination;
-                Handles.DrawAAPolyLine(EditorGUIUtility.whiteTexture, Styles.selectedWidth, m_CachedSelectedLinePoints);
+                return hasPreviousCompletedFlowEvent;
             }
         }
 
@@ -377,13 +425,6 @@ namespace UnityEditorInternal.Profiling
             public static readonly Color color = new Color(220f, 220f, 220f, 1f);
             public static readonly Color selectedColor = new Color(255f, 255f, 255f);
             public static readonly float selectedWidth = 2f;
-        }
-
-        class SelectedEventData
-        {
-            public Vector2 flowEventPosition { get; set; }
-            public ProfilerFlowEventType flowEventType { get; set; }
-            public uint flowId { get; set; }
         }
     }
 }

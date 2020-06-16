@@ -3,24 +3,34 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Profiling;
-using UnityEditor;
 
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
     internal class GlobalIlluminationProfilerModule : ProfilerModuleBase
     {
+        const string k_IconName = "Profiler.GlobalIllumination";
+        const int k_DefaultOrderIndex = 12;
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("Global Illumination");
+
+        public GlobalIlluminationProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName, Chart.ChartType.StackedFill) {}
+
+        public override ProfilerArea area => ProfilerArea.GlobalIllumination;
+
+        protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        protected override string legacyPreferenceKey => "ProfilerChartGlobalIllumination";
+
         public override void DrawToolbar(Rect position)
         {
-            DrawOtherToolbar(ProfilerArea.GlobalIllumination);
+            DrawEmptyToolbar();
         }
 
-        public override void DrawView(Rect position)
+        public override void DrawDetailsView(Rect position)
         {
-            DrawOverviewText(ProfilerArea.GlobalIllumination, position);
+            DrawDetailsViewText(position);
         }
     }
 }

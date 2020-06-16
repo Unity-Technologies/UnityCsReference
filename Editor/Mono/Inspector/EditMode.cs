@@ -32,7 +32,7 @@ namespace UnityEditorInternal
             ownerID = SessionState.GetInt(kOwnerStringKey, ownerID);
             s_EditMode = (SceneViewEditMode)SessionState.GetInt(kEditModeStringKey, (int)s_EditMode);
             Selection.selectionChanged += OnSelectionChange;
-            EditorTools.activeToolChanging += OnActiveToolWillChange;
+            ToolManager.activeToolChanging += OnActiveToolWillChange;
         }
 
         private const float k_EditColliderbuttonWidth = 33;
@@ -91,7 +91,7 @@ namespace UnityEditorInternal
 
             var editorType = editor.GetType();
 
-            return EditorToolContext.GetCustomEditorTool(x =>
+            return EditorToolManager.GetCustomEditorTool(x =>
             {
                 var tool = x as EditModeTool;
                 return tool != null
@@ -152,11 +152,11 @@ namespace UnityEditorInternal
                 ChangeEditMode(SceneViewEditMode.None, new Bounds(Vector3.zero, Vector3.positiveInfinity), null);
         }
 
-        [Obsolete("Obsolete msg (UnityUpgradable) -> UnityEditor.EditorTools.EditorTools.RestorePreviousTool()")]
+        [Obsolete("Obsolete msg (UnityUpgradable) -> UnityEditor.EditorTools.ToolManager.RestorePreviousTool()")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static void ResetToolToPrevious()
         {
-            EditorToolContext.RestorePreviousTool();
+            EditorToolManager.RestorePreviousTool();
         }
 
         [Obsolete("Use signature passing Func<Bounds> rather than Bounds.")]
@@ -255,10 +255,10 @@ namespace UnityEditorInternal
         {
             if (mode == SceneViewEditMode.None)
             {
-                var activeToolIsEditModeTool = (EditorToolContext.activeTool is EditModeTool || EditorToolContext.activeTool is NoneTool);
+                var activeToolIsEditModeTool = (EditorToolManager.activeTool is EditModeTool || EditorToolManager.activeTool is NoneTool);
 
                 if (s_EditMode != SceneViewEditMode.None && activeToolIsEditModeTool)
-                    EditorTools.RestorePreviousPersistentTool();
+                    ToolManager.RestorePreviousPersistentTool();
 
                 EditModeToolStateChanged(owner, mode);
                 return;
@@ -267,10 +267,10 @@ namespace UnityEditorInternal
             var tool = GetTool(owner, mode);
 
             if (tool != null)
-                EditorTools.SetActiveTool(tool);
+                ToolManager.SetActiveTool(tool);
             else
                 // SceneViewEditModeTool doesn't exist, use old path
-                EditorTools.SetActiveTool<NoneTool>();
+                ToolManager.SetActiveTool<NoneTool>();
 
             EditModeToolStateChanged(owner, mode);
         }

@@ -182,38 +182,6 @@ namespace UnityEditor
                 ProjectWindowUtil.ShowCreatedAsset(controller);
             }
         }
-
-        internal class DoCreateSpritePolygon : EndNameEditAction
-        {
-            public int sides;
-            public override void Action(int instanceId, string pathName, string resourceFile)
-            {
-                bool showSpriteEditorAfter = false;
-                if (sides < 0)
-                {
-                    sides = 5;
-                    showSpriteEditorAfter = true;
-                }
-
-                Sprites.SpriteUtility.CreateSpritePolygonAssetAtPath(pathName, sides);
-                if (showSpriteEditorAfter)
-                {
-                    Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(pathName);
-                    SpriteUtilityWindow.ShowSpriteEditorWindow();
-                }
-            }
-        }
-
-        internal class DoCreateSpriteAtlas : EndNameEditAction
-        {
-            public int sides;
-            public override void Action(int instanceId, string pathName, string resourceFile)
-            {
-                var spriteAtlasAsset = new SpriteAtlasAsset();
-                InternalEditorUtility.SaveToSerializedFileAndForget(new Object[] { spriteAtlasAsset }, pathName, true);
-                AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
-            }
-        }
     }
 
     public class ProjectWindowUtil
@@ -333,7 +301,7 @@ namespace UnityEditor
                 0,
                 ScriptableObject.CreateInstance<DoCreatePrefabVariant>(),
                 variantPath,
-                EditorGUIUtility.FindTexture("PrefabVariant Icon") as Texture2D,
+                EditorGUIUtility.FindTexture("PrefabVariant Icon"),
                 sourcePath);
         }
 
@@ -397,48 +365,6 @@ namespace UnityEditor
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateAudioMixer>(), "NewAudioMixer.mixer", icon, null);
         }
 
-        static private void CreateSpriteAtlas()
-        {
-            var icon = EditorGUIUtility.IconContent<SpriteAtlasAsset>().image as Texture2D;
-            DoCreateSpriteAtlas action = ScriptableObject.CreateInstance<DoCreateSpriteAtlas>();
-            StartNameEditingIfProjectWindowExists(0, action, "New Sprite Atlas.spriteatlasv2", icon, null);
-        }
-
-        static private void CreateSpritePolygon(int sides)
-        {
-            string assetName = "";
-            switch (sides)
-            {
-                case 0:
-                    assetName = "Square";
-                    break;
-                case 3:
-                    assetName = "Triangle";
-                    break;
-                case 4:
-                    assetName = "Diamond";
-                    break;
-                case 6:
-                    assetName = "Hexagon";
-                    break;
-                case 42:
-                    // http://hitchhikers.wikia.com/wiki/42
-                    assetName = "Everythingon";
-                    break;
-                case 128:
-                    assetName = "Circle";
-                    break;
-                default:
-                    assetName = "Polygon";
-                    break;
-            }
-
-            var icon = EditorGUIUtility.IconContent<Sprite>().image as Texture2D;
-            DoCreateSpritePolygon action = ScriptableObject.CreateInstance<DoCreateSpritePolygon>();
-            action.sides = sides;
-            StartNameEditingIfProjectWindowExists(0, action, assetName + ".png", icon, null);
-        }
-
         internal static string SetLineEndings(string content, LineEndingsMode lineEndingsMode)
         {
             const string windowsLineEndings = "\r\n";
@@ -475,16 +401,7 @@ namespace UnityEditor
             templateContent = SetLineEndings(templateContent, EditorSettings.lineEndingsForNewScripts);
 
             string fullPath = Path.GetFullPath(pathName);
-
-            // utf8-bom encoding was added for case 510374 in 2012. i think this was the wrong solution. BOM's are
-            // problematic for diff tools, naive readers and writers (of which we have many!), and generally not
-            // something most people think about. you wouldn't believe how many unity source files have BOM's embedded
-            // in the middle of them for no reason. copy paste problem? bad tool? unity should instead have been fixed
-            // to read all files that have no BOM as utf8 by default, and then we just strip them all, always, from
-            // files we control. perhaps we'll do this one day and this next line can be removed. -scobi
-            var encoding = new System.Text.UTF8Encoding(/*encoderShouldEmitUTF8Identifier:*/ true);
-
-            File.WriteAllText(fullPath, templateContent, encoding);
+            File.WriteAllText(fullPath, templateContent);
 
             // Import the asset
             AssetDatabase.ImportAsset(pathName);
@@ -549,7 +466,7 @@ namespace UnityEditor
             return string.Join(newline, contentLines.ToArray());
         }
 
-        internal static Object CreateScriptAssetFromTemplate(string pathName, string resourceFile)
+        internal static string PreprocessScriptAssetTemplate(string pathName, string resourceContent)
         {
             string rootNamespace = null;
 
@@ -558,7 +475,7 @@ namespace UnityEditor
                 rootNamespace = CompilationPipeline.GetAssemblyRootNamespaceFromScriptPath(pathName);
             }
 
-            string content = File.ReadAllText(resourceFile);
+            string content = resourceContent;
 
             // #NOTRIM# is a special marker that is used to mark the end of a line where we want to leave whitespace. prevent editors auto-stripping it by accident.
             content = content.Replace("#NOTRIM#", "");
@@ -585,7 +502,13 @@ namespace UnityEditor
                 content = content.Replace("#SCRIPTNAME_LOWER#", baseFileNoSpaces);
             }
 
-            return CreateScriptAssetWithContent(pathName, content);
+            return content;
+        }
+
+        internal static Object CreateScriptAssetFromTemplate(string pathName, string resourceFile)
+        {
+            string content = File.ReadAllText(resourceFile);
+            return CreateScriptAssetWithContent(pathName, PreprocessScriptAssetTemplate(pathName, content));
         }
 
         public static void StartNameEditingIfProjectWindowExists(int instanceID, EndNameEditAction endAction, string pathName, Texture2D icon, string resourceFile)

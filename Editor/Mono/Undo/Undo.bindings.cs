@@ -78,7 +78,7 @@ namespace UnityEditor
         private static extern void RegisterCompleteObjectUndoMultiple([NotNull] Object identifier, Object[] objectsToUndo, string name, int namePriority);
 
         [FreeFunction("SetTransformParentUndo")]
-        public static extern void SetTransformParent(Transform transform, Transform newParent, string name);
+        public static extern void SetTransformParent([NotNull("NullExceptionObject")] Transform transform, Transform newParent, string name);
 
         [NativeThrows]
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]

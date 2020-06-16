@@ -10,14 +10,12 @@ namespace UnityEditor
 {
     class CollisionModuleUI : ModuleUI
     {
-        // Keep in sync with CollisionModule.h
-        const int k_MaxNumPlanes = 6;
         enum CollisionTypes { Plane = 0, World = 1 }
         enum CollisionModes { Mode3D = 0, Mode2D = 1 }
         enum PlaneVizType { Grid, Solid }
 
         SerializedProperty m_Type;
-        SerializedProperty[] m_Planes = new SerializedProperty[k_MaxNumPlanes];
+        SerializedProperty m_Planes;
         SerializedMinMaxCurve m_Dampen;
         SerializedMinMaxCurve m_Bounce;
         SerializedMinMaxCurve m_LifetimeLossOnCollision;
@@ -36,7 +34,7 @@ namespace UnityEditor
         SerializedProperty m_MultiplyColliderForceByParticleSpeed;
         SerializedProperty m_MultiplyColliderForceByParticleSize;
 
-        SerializedProperty[] m_ShownPlanes;
+        ReorderableList m_PlanesList;
 
         List<Transform> m_ScenePlanes = new List<Transform>();
         static PlaneVizType m_PlaneVisualizationType = PlaneVizType.Solid;
@@ -144,18 +142,7 @@ namespace UnityEditor
 
             m_Type = GetProperty("type");
 
-            List<SerializedProperty> shownPlanes = new List<SerializedProperty>();
-            for (int i = 0; i < m_Planes.Length; ++i)
-            {
-                m_Planes[i] = GetProperty("plane" + i); // Keep name in sync with transfer func in CollisionModule.h
-                System.Diagnostics.Debug.Assert(m_Planes[i] != null);
-
-                // Always show the first plane
-                if (i == 0 || m_Planes[i].objectReferenceValue != null)
-                    shownPlanes.Add(m_Planes[i]);
-            }
-
-            m_ShownPlanes = shownPlanes.ToArray();
+            m_Planes = GetProperty("m_Planes");
 
             m_Dampen = new SerializedMinMaxCurve(this, s_Texts.dampen, "m_Dampen");
             m_Dampen.m_AllowCurves = false;
@@ -189,6 +176,12 @@ namespace UnityEditor
             m_MultiplyColliderForceByCollisionAngle = GetProperty("multiplyColliderForceByCollisionAngle");
             m_MultiplyColliderForceByParticleSpeed = GetProperty("multiplyColliderForceByParticleSpeed");
             m_MultiplyColliderForceByParticleSize = GetProperty("multiplyColliderForceByParticleSize");
+
+            m_PlanesList = new ReorderableList(m_Planes.m_SerializedObject, m_Planes, true, false, true, true);
+            m_PlanesList.headerHeight = 0;
+            m_PlanesList.drawElementCallback = DrawPlaneElementCallback;
+            m_PlanesList.elementHeight = kReorderableListElementHeight;
+            m_PlanesList.onAddCallback = OnAddPlaneElementCallback;
 
             SyncVisualization();
         }
@@ -303,32 +296,20 @@ namespace UnityEditor
         {
             m_ScenePlanes.Clear();
 
-            if (m_ParticleSystemUI.multiEdit)
+            if (m_Type.hasMultipleDifferentValues || (CollisionTypes)m_Type.intValue != CollisionTypes.Plane)
             {
-                foreach (ParticleSystem ps in m_ParticleSystemUI.m_ParticleSystems)
-                {
-                    if (ps.collision.type != ParticleSystemCollisionType.Planes)
-                        continue;
-
-                    for (int planeIndex = 0; planeIndex < k_MaxNumPlanes; planeIndex++)
-                    {
-                        var transform = ps.collision.GetPlane(planeIndex);
-                        if (transform != null && !m_ScenePlanes.Contains(transform))
-                            m_ScenePlanes.Add(transform);
-                    }
-                }
+                editingPlanes = false;
+                return;
             }
-            else
+
+            foreach (ParticleSystem ps in m_ParticleSystemUI.m_ParticleSystems)
             {
-                CollisionTypes type = (CollisionTypes)m_Type.intValue;
-                if (type != CollisionTypes.Plane)
+                if (ps.collision.type != ParticleSystemCollisionType.Planes)
+                    continue;
+
+                for (int planeIndex = 0; planeIndex < ps.collision.planeCount; planeIndex++)
                 {
-                    editingPlanes = false;
-                    return;
-                }
-                for (int i = 0; i < m_ShownPlanes.Length; ++i)
-                {
-                    Transform transform = m_ShownPlanes[i].objectReferenceValue as Transform;
+                    var transform = ps.collision.GetPlane(planeIndex);
                     if (transform != null && !m_ScenePlanes.Contains(transform))
                         m_ScenePlanes.Add(transform);
                 }
@@ -348,84 +329,49 @@ namespace UnityEditor
             return null;
         }
 
-        private bool IsListOfPlanesValid()
-        {
-            if (m_ParticleSystemUI.multiEdit)
-            {
-                for (int planeIndex = 0; planeIndex < k_MaxNumPlanes; planeIndex++)
-                {
-                    int hasPlane = -1;
-                    foreach (ParticleSystem ps in m_ParticleSystemUI.m_ParticleSystems)
-                    {
-                        int planeValue = (ps.collision.GetPlane(planeIndex) != null) ? 1 : 0;
-                        if (hasPlane == -1)
-                        {
-                            hasPlane = planeValue;
-                        }
-                        else if (planeValue != hasPlane)
-                        {
-                            return false;
-                        }
-                    }
-                }
-            }
-
-            return true;
-        }
-
         private void DoListOfPlanesGUI()
         {
-            // only show the list of planes when we can edit them safely
-            if (!IsListOfPlanesValid())
+            // only allow editing in single edit mode
+            if (m_ParticleSystemUI.multiEdit)
             {
-                EditorGUILayout.HelpBox("Plane list editing is only available when all selected systems contain the same number of planes", MessageType.Info, true);
+                EditorGUILayout.HelpBox("Trigger editing is only available when editing a single Particle System", MessageType.Info, true);
                 return;
             }
 
             EditorGUI.BeginChangeCheck();
-            int buttonPressedIndex = GUIListOfFloatObjectToggleFields(s_Texts.planes, m_ShownPlanes, null, s_Texts.createPlane, !m_ParticleSystemUI.multiEdit);
-            bool listChanged = EditorGUI.EndChangeCheck();
 
-            if (buttonPressedIndex >= 0 && !m_ParticleSystemUI.multiEdit)
-            {
-                GameObject go = CreateEmptyGameObject("Plane Transform " + (buttonPressedIndex + 1), m_ParticleSystemUI.m_ParticleSystems[0]);
-                go.transform.localPosition = new Vector3(0, 0, 10 + buttonPressedIndex); // ensure each plane is not at same pos
-                go.transform.localEulerAngles =  (new Vector3(-90, 0, 0));           // make the plane normal point towards the forward axis of the particle system
+            m_PlanesList.DoLayoutList();
 
-                m_ShownPlanes[buttonPressedIndex].objectReferenceValue = go;
-                listChanged = true;
-            }
-
-            // Minus button
-            Rect rect = GUILayoutUtility.GetRect(0, EditorGUI.kSingleLineHeight); //GUILayoutUtility.GetLastRect();
-            rect.x = rect.xMax - kPlusAddRemoveButtonWidth * 2 - kPlusAddRemoveButtonSpacing;
-            rect.width = kPlusAddRemoveButtonWidth;
-            if (m_ShownPlanes.Length > 1)
-            {
-                if (MinusButton(rect))
-                {
-                    m_ShownPlanes[m_ShownPlanes.Length - 1].objectReferenceValue = null;
-                    List<SerializedProperty> shownPlanes = new List<SerializedProperty>(m_ShownPlanes);
-                    shownPlanes.RemoveAt(shownPlanes.Count - 1);
-                    m_ShownPlanes = shownPlanes.ToArray();
-                    listChanged = true;
-                }
-            }
-
-            // Plus button
-            if (m_ShownPlanes.Length < k_MaxNumPlanes && !m_ParticleSystemUI.multiEdit)
-            {
-                rect.x += kPlusAddRemoveButtonWidth + kPlusAddRemoveButtonSpacing;
-                if (PlusButton(rect))
-                {
-                    List<SerializedProperty> shownPlanes = new List<SerializedProperty>(m_ShownPlanes);
-                    shownPlanes.Add(m_Planes[shownPlanes.Count]);
-                    m_ShownPlanes = shownPlanes.ToArray();
-                }
-            }
-
-            if (listChanged)
+            if (EditorGUI.EndChangeCheck())
                 SyncVisualization();
+        }
+
+        void OnAddPlaneElementCallback(ReorderableList list)
+        {
+            int index = m_Planes.arraySize;
+            m_Planes.InsertArrayElementAtIndex(index);
+            m_Planes.GetArrayElementAtIndex(index).objectReferenceValue = null;
+        }
+
+        void DrawPlaneElementCallback(Rect rect, int index, bool isActive, bool isFocused)
+        {
+            var plane = m_Planes.GetArrayElementAtIndex(index);
+
+            Rect objectRect = new Rect(rect.x, rect.y, rect.width - EditorGUI.kSpacing - ParticleSystemStyles.Get().plus.fixedWidth, rect.height);
+            EditorGUI.ObjectField(objectRect, plane, null, GUIContent.none, ParticleSystemStyles.Get().objectField);
+
+            if (plane.objectReferenceValue == null)
+            {
+                Rect buttonRect = new Rect(objectRect.xMax + EditorGUI.kSpacing, rect.y + 4, ParticleSystemStyles.Get().plus.fixedWidth, rect.height);
+                if (GUI.Button(buttonRect, s_Texts.createPlane, ParticleSystemStyles.Get().plus))
+                {
+                    GameObject go = CreateEmptyGameObject("Plane Transform " + (index + 1), m_ParticleSystemUI.m_ParticleSystems[0]);
+                    go.transform.localPosition = new Vector3(0, 0, 10 + index); // ensure each plane is not at same pos
+                    go.transform.localEulerAngles = (new Vector3(-90, 0, 0));           // make the plane normal point towards the forward axis of the particle system
+
+                    plane.objectReferenceValue = go.GetComponent<Transform>();
+                }
+            }
         }
 
         override public void OnSceneViewGUI()

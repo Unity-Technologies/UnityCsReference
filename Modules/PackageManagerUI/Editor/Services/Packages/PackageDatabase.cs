@@ -362,7 +362,11 @@ namespace UnityEditor.PackageManager.UI
                 return;
 
             var downloadOperation = operation as AssetStoreDownloadOperation;
-            if (downloadOperation.state == DownloadState.Completed)
+            if (downloadOperation.state == DownloadState.Error)
+                AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, downloadOperation.errorMessage, UIError.Attribute.IsClearable));
+            else if (downloadOperation.state == DownloadState.Aborted)
+                AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, downloadOperation.errorMessage ?? L10n.Tr("Download aborted"), UIError.Attribute.IsWarning | UIError.Attribute.IsClearable));
+            else if (downloadOperation.state == DownloadState.Completed)
                 m_AssetStoreClient.RefreshLocal();
             SetPackageProgress(package, PackageProgress.None);
         }
@@ -444,12 +448,13 @@ namespace UnityEditor.PackageManager.UI
             // special handling to make sure onInstallSuccess events are called correctly when special unique id is used
             for (var i = m_SpecialInstallations.Count - 1; i >= 0; i--)
             {
-                var match = packagesInstalled.FirstOrDefault(p => p.versions.installed.uniqueId.ToLower().Contains(m_SpecialInstallations[i].ToLower()));
+                var specialUniqueId = m_SpecialInstallations[i];
+                var match = packagesInstalled.FirstOrDefault(p => p.versions.installed.uniqueId.ToLower().Contains(specialUniqueId.ToLower()));
                 if (match != null)
                 {
                     onInstallSuccess(match, match.versions.installed);
                     SetPackageProgress(match, PackageProgress.None);
-                    m_SpecialInstallations.RemoveAt(i);
+                    RemoveSpecialInstallation(specialUniqueId);
                 }
             }
         }
@@ -458,13 +463,17 @@ namespace UnityEditor.PackageManager.UI
         {
             // if we don't know the package unique id before hand, we'll do some special handling
             // as we don't know what package will be installed until the installation finishes (e.g, git packages)
-            if (string.IsNullOrEmpty(operation.packageUniqueId))
+            var addOperation = operation as UpmAddOperation;
+            if (string.IsNullOrEmpty(operation.packageUniqueId) && !string.IsNullOrEmpty(addOperation.specialUniqueId))
             {
-                m_SpecialInstallations.Add(operation.specialUniqueId);
-                operation.onOperationError += (op, error) =>
+                m_SpecialInstallations.Add(addOperation.specialUniqueId);
+
+                if ((addOperation.packageTag & PackageTag.Git) != 0)
                 {
-                    m_SpecialInstallations.Remove(operation.specialUniqueId);
-                };
+                    var placeholerPackage = new PlaceholderPackage(addOperation.specialUniqueId, L10n.Tr("Adding a new GIT package"), PackageType.Installable, addOperation.packageTag, PackageProgress.Installing);
+                    OnPackagesChanged(new[] { placeholerPackage });
+                }
+                operation.onOperationError += (op, error) => RemoveSpecialInstallation(addOperation.specialUniqueId);
                 return;
             }
             SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.Installing);
@@ -477,6 +486,17 @@ namespace UnityEditor.PackageManager.UI
             };
             operation.onOperationError += OnUpmOperationError;
             operation.onOperationFinalized += OnUpmOperationFinalized;
+        }
+
+        private void RemoveSpecialInstallation(string specialUniqueId)
+        {
+            var placeHolderPackage = m_Packages.Get(specialUniqueId);
+            if (placeHolderPackage != null)
+            {
+                m_Packages.Remove(specialUniqueId);
+                onPackagesChanged?.Invoke(Enumerable.Empty<IPackage>(), new[] { placeHolderPackage }, Enumerable.Empty<IPackage>(), Enumerable.Empty<IPackage>());
+            }
+            m_SpecialInstallations.Remove(specialUniqueId);
         }
 
         private void OnUpmEmbedOperation(IOperation operation)

@@ -113,9 +113,9 @@ namespace UnityEngine
 
         public void AddClip(AnimationClip clip, string newName) { AddClip(clip, newName, Int32.MinValue, Int32.MaxValue); }
         [uei.ExcludeFromDocs] public void AddClip(AnimationClip clip, string newName, int firstFrame, int lastFrame) { AddClip(clip, newName, firstFrame, lastFrame, false); }
-        extern public void AddClip(AnimationClip clip, string newName, int firstFrame, int lastFrame, [uei.DefaultValue("false")] bool addLoopFrame);
+        extern public void AddClip([NotNull("NullExceptionObject")] AnimationClip clip, string newName, int firstFrame, int lastFrame, [uei.DefaultValue("false")] bool addLoopFrame);
 
-        extern public void RemoveClip(AnimationClip clip);
+        extern public void RemoveClip([NotNull("NullExceptionObject")] AnimationClip clip);
 
         public void RemoveClip(string clipName) { RemoveClipNamed(clipName); }
         [NativeName("RemoveClip")] extern private void RemoveClipNamed(string clipName);
@@ -199,9 +199,9 @@ namespace UnityEngine
         extern public AnimationBlendMode blendMode { get; set; }
 
         [uei.ExcludeFromDocs] public void AddMixingTransform(Transform mix) { AddMixingTransform(mix, true); }
-        extern public void AddMixingTransform(Transform mix, [uei.DefaultValue("true")] bool recursive);
+        extern public void AddMixingTransform([NotNull("NullExceptionObject")] Transform mix, [uei.DefaultValue("true")] bool recursive);
 
-        extern public void RemoveMixingTransform(Transform mix);
+        extern public void RemoveMixingTransform([NotNull("NullExceptionObject")] Transform mix);
     }
 
     [System.Serializable]

@@ -174,6 +174,14 @@ namespace UnityEditor.PackageManager.UI
             {
                 stateLabel.text = L10n.Tr("Update Available");
             }
+            else if (state == PackageState.Error)
+            {
+                stateLabel.text = L10n.Tr("Error");
+            }
+            else if (state == PackageState.Warning)
+            {
+                stateLabel.text = L10n.Tr("Warning");
+            }
             else
             {
                 stateLabel.text = string.Empty;
@@ -302,7 +310,8 @@ namespace UnityEditor.PackageManager.UI
             "This package is in development.",
             "A newer version of this package is available.",
             "",
-            "There are errors with this package. Please read the package details for further guidance."
+            "There are errors with this package. Please read the package details for further guidance.",
+            "There are warnings with this package. Please read the package details for further guidance."
         };
 
         public string GetTooltipByState(PackageState state)

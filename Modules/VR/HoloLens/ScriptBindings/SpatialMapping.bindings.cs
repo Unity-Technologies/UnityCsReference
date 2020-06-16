@@ -136,6 +136,7 @@ namespace UnityEngine.XR.WSA
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
         private static extern void Internal_Destroy(int id);
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public void SetVolumeAsAxisAlignedBox(Vector3 origin, Vector3 extents)
         {
             if (m_Observer != k_InvalidObserverId) Internal_SetVolumeAsAxisAlignedBox(m_Observer, origin, extents);
@@ -154,6 +155,7 @@ namespace UnityEngine.XR.WSA
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
         private static extern void Internal_SetVolumeAsAxisAlignedBox(int id, Vector3 origin, Vector3 extents);
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public void SetVolumeAsSphere(Vector3 origin, float radiusMeters)
         {
             if (m_Observer != k_InvalidObserverId) Internal_SetVolumeAsSphere(m_Observer, origin, radiusMeters);
@@ -162,6 +164,7 @@ namespace UnityEngine.XR.WSA
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
         private static extern void Internal_SetVolumeAsSphere(int id, Vector3 origin, float radiusMeters);
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public void SetVolumeAsOrientedBox(Vector3 origin, Vector3 extents, Quaternion orientation)
         {
             if (m_Observer != k_InvalidObserverId) Internal_SetVolumeAsOrientedBox(m_Observer, origin, extents, orientation);
@@ -170,6 +173,7 @@ namespace UnityEngine.XR.WSA
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
         private static extern void Internal_SetVolumeAsOrientedBox(int id, Vector3 origin, Vector3 extents, Quaternion orientation);
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public void SetVolumeAsFrustum(Plane[] planes)
         {
             if (planes == null)
@@ -184,6 +188,7 @@ namespace UnityEngine.XR.WSA
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
         private static extern void Internal_SetVolumeAsFrustum(int id, [NotNull] Plane[] planes);
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public void Update(SurfaceChangedDelegate onSurfaceChanged)
         {
             if (m_Observer != k_InvalidObserverId) Internal_Update(m_Observer, onSurfaceChanged);
@@ -192,6 +197,7 @@ namespace UnityEngine.XR.WSA
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
         private static extern void Internal_Update(int id, [NotNull] SurfaceChangedDelegate onSurfaceChanged);
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool RequestMeshAsync(SurfaceData dataRequest, SurfaceDataReadyDelegate onDataReady)
         {
             if (onDataReady == null)

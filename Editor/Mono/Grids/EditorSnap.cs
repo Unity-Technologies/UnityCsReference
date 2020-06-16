@@ -53,8 +53,8 @@ namespace UnityEditor
         {
             get
             {
-                return (EditorTools.EditorTools.activeToolType == typeof(MoveTool)
-                    || EditorTools.EditorTools.activeToolType == typeof(TransformTool))
+                return (EditorTools.ToolManager.activeToolType == typeof(MoveTool)
+                    || EditorTools.ToolManager.activeToolType == typeof(TransformTool))
                     && Tools.pivotRotation == PivotRotation.Global;
             }
         }

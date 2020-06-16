@@ -19,9 +19,10 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent multiplier = EditorGUIUtility.TrTextContent("Multiplier", "Used to scale the force applied to this particle system.");
+            public GUIContent multiplier = EditorGUIUtility.TrTextContent("Multiplier", "Used to scale the force applied to this Particle System.");
             public GUIContent influenceFilter = EditorGUIUtility.TrTextContent("Influence Filter", "Use either a LayerMask or a List, to decide which Force Fields affect this Particle System.");
             public GUIContent influenceMask = EditorGUIUtility.TrTextContent("Influence Mask", "Select a global mask of which GameObjects can affect this Particle System.");
+            public GUIContent createForceField = EditorGUIUtility.TrTextContent("", "Create a GameObject containing a Particle System Force Field and assign it to the list.");
 
             public GUIContent[] influenceFilters = new GUIContent[]
             {
@@ -55,6 +56,7 @@ namespace UnityEditor
             m_InfluenceListView.elementHeight = kReorderableListElementHeight;
             m_InfluenceListView.headerHeight = 0;
             m_InfluenceListView.drawElementCallback = DrawInfluenceListElementCallback;
+            m_InfluenceListView.onAddCallback = OnAddForceFieldElementCallback;
         }
 
         override public void OnInspectorGUI(InitialModuleUI initial)
@@ -104,10 +106,43 @@ namespace UnityEditor
             text += "\nExternal Forces module is enabled.";
         }
 
+        void OnAddForceFieldElementCallback(ReorderableList list)
+        {
+            int index = m_InfluenceList.arraySize;
+            m_InfluenceList.InsertArrayElementAtIndex(index);
+            m_InfluenceList.GetArrayElementAtIndex(index).objectReferenceValue = null;
+        }
+
         private void DrawInfluenceListElementCallback(Rect rect, int index, bool isActive, bool isFocused)
         {
             SerializedProperty forceField = m_InfluenceList.GetArrayElementAtIndex(index);
-            EditorGUI.ObjectField(rect, forceField, null, GUIContent.none, ParticleSystemStyles.Get().objectField);
+
+            Rect objectRect = new Rect(rect.x, rect.y, rect.width - EditorGUI.kSpacing - ParticleSystemStyles.Get().plus.fixedWidth, rect.height);
+            EditorGUI.ObjectField(objectRect, forceField, null, GUIContent.none, ParticleSystemStyles.Get().objectField);
+
+            if (forceField.objectReferenceValue == null)
+            {
+                Rect buttonRect = new Rect(objectRect.xMax + EditorGUI.kSpacing, rect.y + 4, ParticleSystemStyles.Get().plus.fixedWidth, rect.height);
+                if (GUI.Button(buttonRect, s_Texts.createForceField, ParticleSystemStyles.Get().plus))
+                {
+                    GameObject go = CreateDefaultForceField("ForceField " + (index + 1), m_ParticleSystemUI.m_ParticleSystems[0]);
+                    go.transform.localPosition = new Vector3(0, 0, 10 + index); // ensure each force field is not at the same position
+                    forceField.objectReferenceValue = go.GetComponent<ParticleSystemForceField>();
+                }
+            }
+        }
+
+        private static GameObject CreateDefaultForceField(string name, ParticleSystem parentOfGameObject)
+        {
+            GameObject go = new GameObject(name);
+            if (go)
+            {
+                if (parentOfGameObject)
+                    go.transform.parent = parentOfGameObject.transform;
+                go.AddComponent<ParticleSystemForceField>();
+                return go;
+            }
+            return null;
         }
     } // namespace UnityEditor
 }

@@ -41,7 +41,7 @@ namespace UnityEngine.Rendering
 
         extern private Camera GetCamera_Internal(int index);
 
-        extern private unsafe void DrawRenderers_Internal(IntPtr cullResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings, IntPtr renderTypes, IntPtr stateBlocks, int stateCount);
+        extern private unsafe void DrawRenderers_Internal(IntPtr cullResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings, ShaderTagId tagName, bool isPassTagName, IntPtr tagValues, IntPtr stateBlocks, int stateCount);
 
         extern private void DrawShadows_Internal(IntPtr shadowDrawingSettings);
 
@@ -54,23 +54,23 @@ namespace UnityEngine.Rendering
         [NativeThrows]
         extern private void ExecuteCommandBufferAsync_Internal(CommandBuffer commandBuffer, ComputeQueueType queueType);
 
-        extern private void SetupCameraProperties_Internal(Camera camera, bool stereoSetup, int eye);
+        extern private void SetupCameraProperties_Internal([NotNull("NullExceptionObject")] Camera camera, bool stereoSetup, int eye);
 
-        extern private void StereoEndRender_Internal(Camera camera, int eye, bool isFinalPass);
+        extern private void StereoEndRender_Internal([NotNull("NullExceptionObject")] Camera camera, int eye, bool isFinalPass);
 
-        extern private void StartMultiEye_Internal(Camera camera, int eye);
+        extern private void StartMultiEye_Internal([NotNull("NullExceptionObject")] Camera camera, int eye);
 
-        extern private void StopMultiEye_Internal(Camera camera);
+        extern private void StopMultiEye_Internal([NotNull("NullExceptionObject")] Camera camera);
 
-        extern private void DrawSkybox_Internal(Camera camera);
+        extern private void DrawSkybox_Internal([NotNull("NullExceptionObject")] Camera camera);
 
         extern private void InvokeOnRenderObjectCallback_Internal();
 
-        extern private void DrawGizmos_Internal(Camera camera, GizmoSubset gizmoSubset);
+        extern private void DrawGizmos_Internal([NotNull("NullExceptionObject")] Camera camera, GizmoSubset gizmoSubset);
 
-        extern private void DrawWireOverlay_Impl(Camera camera);
+        extern private void DrawWireOverlay_Impl([NotNull("NullExceptionObject")] Camera camera);
 
-        extern private void DrawUIOverlay_Internal(Camera camera);
+        extern private void DrawUIOverlay_Internal([NotNull("NullExceptionObject")] Camera camera);
 
         internal IntPtr Internal_GetPtr()
         {

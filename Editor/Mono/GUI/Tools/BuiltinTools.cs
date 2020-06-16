@@ -6,7 +6,6 @@ using UnityEngine;
 using UnityEditor.EditorTools;
 using UnityEditor.SceneManagement;
 using UnityEditor.Experimental.SceneManagement;
-using System.Collections.Generic;
 
 namespace UnityEditor
 {
@@ -23,7 +22,7 @@ namespace UnityEditor
 
             Rect m_Rect = new Rect(k_Padding, k_Padding, labelWidth, EditorGUIUtility.singleLineHeight);
 
-            m_Rect = EditorToolGUI.GetThinArea(m_Rect);
+            m_Rect = EditorToolGUI.GetToolbarEntryRect(m_Rect);
 
             GUI.Label(m_Rect, m_HandlePositionAndRotation);
 
@@ -31,7 +30,7 @@ namespace UnityEditor
 
             m_Rect.width = k_PivotButtonsWidth;
 
-            m_Rect = EditorToolGUI.GetThinArea(m_Rect);
+            m_Rect = EditorToolGUI.GetToolbarEntryRect(m_Rect);
 
             EditorToolGUI.DoBuiltinToolSettings(m_Rect);
         }
