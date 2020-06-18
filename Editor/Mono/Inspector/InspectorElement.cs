@@ -423,9 +423,6 @@ namespace UnityEditor.UIElements
             m_IgnoreOnInspectorGUIErrors = false;
             inspector.onGUIHandler = () =>
             {
-                if (editor && editor.target && (editor.target.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
-                    return;
-
                 // It's possible to run 2-3 frames after the tracker of this inspector window has
                 // been recreated, and with it the Editor and its SerializedObject. One example of
                 // when this happens is when the Preview window is detached from a *second* instance

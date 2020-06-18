@@ -25,20 +25,26 @@ namespace UnityEditor.PackageManager
         private string m_Url;
 
         [SerializeField]
+        [NativeName("scopes")]
+        private string[] m_Scopes;
+
+        [SerializeField]
         [NativeName("isDefault")]
         private bool m_IsDefault;
 
-        internal RegistryInfo() : this("", "", false) {}
+        internal RegistryInfo() : this("", "", new string[0], false) {}
 
-        internal RegistryInfo(string name, string url, bool isDefault)
+        internal RegistryInfo(string name, string url, string[] scopes, bool isDefault)
         {
             m_Name = name;
             m_Url = url;
+            m_Scopes = scopes;
             m_IsDefault = isDefault;
         }
 
         public string name { get { return m_Name;  } }
         public string url { get { return m_Url;  } }
+        internal string[] scopes { get { return m_Scopes; } }
         public bool isDefault { get { return m_IsDefault; } }
     }
 }

@@ -450,7 +450,7 @@ namespace UnityEditor
             Vector3 position = m_TransformOverride.position;
             for (int i = 0; i < length; i++)
             {
-                m_ClothNormalsInWorldSpace[i] = rotation * normals[i] + position;
+                m_ClothNormalsInWorldSpace[i] = (m_TransformOverride.localToWorldMatrix * normals[i]).normalized;
             }
         }
 
@@ -471,7 +471,7 @@ namespace UnityEditor
             for (int i = 0; i < length; i++)
             {
                 Vector3 distanceBetween = m_ClothParticlesInWorldSpace[i] - m_BrushPos;
-                bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], Camera.current.transform.forward) <= 0;
+                bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], SceneView.GetLastActiveSceneViewCamera().transform.forward) <= 0;
                 if (forwardFacing || state.ManipulateBackfaces)
                 {
                     if (m_SelfAndInterCollisionSelection[i] && !m_ParticleSelection[i])
@@ -815,7 +815,7 @@ namespace UnityEditor
                 state.SetCollisionSphereDistance = false;
             }
 
-            Vector3 gradientDirection = m_GradientEndPoint - m_GradientStartPoint;
+            var lineLength = Vector3.Distance(m_GradientStartPoint, m_GradientEndPoint);
 
             using (new EditorGUI.DisabledScope(numSelection == 0))
             {
@@ -830,11 +830,10 @@ namespace UnityEditor
                     {
                         if (m_ParticleSelection[i])
                         {
-                            Vector3 pointOnLine = HandleUtility.ProjectPointLine(m_ClothParticlesInWorldSpace[i], m_GradientStartPoint, m_GradientEndPoint);
-                            Vector3 gradientStartToPoint = pointOnLine - m_GradientStartPoint;
-                            float lerpParameter = gradientStartToPoint.magnitude / gradientDirection.magnitude;
-                            float maxDistanceNew = Mathf.Lerp(state.GradientStartValue, state.GradientEndValue, lerpParameter);
-                            coefficients[i].maxDistance = maxDistanceNew;
+                            Vector3 nearestPointToLine = HandleUtility.ProjectPointLine(m_ClothParticlesInWorldSpace[i], m_GradientStartPoint, m_GradientEndPoint);
+                            float lerp = Vector3.Distance(nearestPointToLine, m_GradientEndPoint) / lineLength;
+                            float distanceNew = Mathf.Lerp(state.GradientStartValue, state.GradientEndValue, 1.0f - lerp);
+                            coefficients[i].maxDistance = distanceNew;
                         }
                     }
                     cloth.coefficients = coefficients;
@@ -858,11 +857,10 @@ namespace UnityEditor
                     {
                         if (m_ParticleSelection[i])
                         {
-                            Vector3 pointOnLine = HandleUtility.ProjectPointLine(m_ClothParticlesInWorldSpace[i], m_GradientStartPoint, m_GradientEndPoint);
-                            Vector3 gradientStartToPoint = pointOnLine - m_GradientStartPoint;
-                            float lerpParameter = gradientStartToPoint.magnitude / gradientDirection.magnitude;
-                            float collisionSphereDistanceNew = Mathf.Lerp(state.GradientStartValue, state.GradientEndValue, lerpParameter);
-                            coefficients[i].collisionSphereDistance = collisionSphereDistanceNew;
+                            Vector3 nearestPointToLine = HandleUtility.ProjectPointLine(m_ClothParticlesInWorldSpace[i], m_GradientStartPoint, m_GradientEndPoint);
+                            float lerp = Vector3.Distance(nearestPointToLine, m_GradientEndPoint) / lineLength;
+                            float distanceNew = Mathf.Lerp(state.GradientStartValue, state.GradientEndValue, 1.0f - lerp);
+                            coefficients[i].collisionSphereDistance = distanceNew;
                         }
                     }
                     cloth.coefficients = coefficients;
@@ -1157,13 +1155,16 @@ namespace UnityEditor
             float maxX = Mathf.Max(m_SelectStartPoint.x, m_SelectMousePoint.x);
             float minY = Mathf.Min(m_SelectStartPoint.y, m_SelectMousePoint.y);
             float maxY = Mathf.Max(m_SelectStartPoint.y, m_SelectMousePoint.y);
-            Ray topLeft = HandleUtility.GUIPointToWorldRay(new Vector2(minX, minY));
-            Ray topRight = HandleUtility.GUIPointToWorldRay(new Vector2(maxX, minY));
-            Ray botLeft = HandleUtility.GUIPointToWorldRay(new Vector2(minX, maxY));
-            Ray botRight = HandleUtility.GUIPointToWorldRay(new Vector2(maxX, maxY));
 
-            m_GradientStartPoint = (topLeft.origin + botLeft.origin) * 0.5f;
-            m_GradientEndPoint = (topRight.origin + botRight.origin) * 0.5f;
+            var topLeftVec = new Vector2(minX, minY);
+            var topRightVec = new Vector2(maxX, minY);
+            var botLeftVec = new Vector2(minX, maxY);
+            var botRightVec = new Vector2(maxX, maxY);
+
+            Ray topLeft = HandleUtility.GUIPointToWorldRay(topLeftVec);
+            Ray topRight = HandleUtility.GUIPointToWorldRay(topRightVec);
+            Ray botLeft = HandleUtility.GUIPointToWorldRay(botLeftVec);
+            Ray botRight = HandleUtility.GUIPointToWorldRay(botRightVec);
 
             Plane top = new Plane(topRight.origin + topRight.direction, topLeft.origin + topLeft.direction, topLeft.origin);
             Plane bottom = new Plane(botLeft.origin + botLeft.direction, botRight.origin + botRight.direction, botRight.origin);
@@ -1183,6 +1184,18 @@ namespace UnityEditor
                     selectionChanged = true;
                 }
             }
+
+            var curCamm = SceneView.GetLastActiveSceneViewCamera();
+            bool wasOrtho = curCamm.orthographic;
+            curCamm.orthographic = true;
+            topLeft = HandleUtility.GUIPointToWorldRay(topLeftVec);
+            topRight = HandleUtility.GUIPointToWorldRay(topRightVec);
+            botLeft = HandleUtility.GUIPointToWorldRay(botLeftVec);
+            botRight = HandleUtility.GUIPointToWorldRay(botRightVec);
+            curCamm.orthographic = wasOrtho;
+            m_GradientStartPoint = (topLeft.origin + botLeft.origin) * 0.5f;
+            m_GradientEndPoint = (topRight.origin + botRight.origin) * 0.5f;
+
             return selectionChanged;
         }
 
@@ -1373,7 +1386,7 @@ namespace UnityEditor
             for (int i = 0; i < m_NumVerts; i++)
             {
                 Vector3 distanceBetween = m_ClothParticlesInWorldSpace[i] - m_BrushPos;
-                bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], Camera.current.transform.forward) <= 0;
+                bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], SceneView.GetLastActiveSceneViewCamera().transform.forward) <= 0;
                 if ((distanceBetween.magnitude < state.BrushRadius) && (forwardFacing || state.ManipulateBackfaces))
                 {
                     if (e.button == 0)
@@ -1599,6 +1612,7 @@ namespace UnityEditor
                     case ToolMode.Paint:
                         PaintPreSceneGUI(id);
                         break;
+
                     case ToolMode.GradientTool:
                         GradientToolPreScenGUI(id);
                         break;
@@ -1826,6 +1840,7 @@ namespace UnityEditor
                     Tools.current = Tool.None;
                     PaintGUI();
                     break;
+
                 case ToolMode.GradientTool:
                     Tools.current = Tool.None;
                     GradientToolGUI();

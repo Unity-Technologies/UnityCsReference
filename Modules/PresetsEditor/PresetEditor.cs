@@ -182,6 +182,7 @@ namespace UnityEditor.Presets
                         s_References.Add(p.GetInstanceID(), reference);
                         m_PresetsInstanceIds.Add(p.GetInstanceID());
                     }
+                    reference.reference.name = p.name;
                     reference.count++;
                     objs[index] = reference.reference;
                 }
