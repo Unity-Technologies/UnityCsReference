@@ -1105,6 +1105,9 @@
     <Compile Include="..\..\Modules\UIElements\ImmediateModeElement.cs">
       <Link>Modules\UIElements\ImmediateModeElement.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\InjectedEditor\EditorAtlasMonitor.cs">
+      <Link>Modules\UIElements\InjectedEditor\EditorAtlasMonitor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\InteractionEnums.cs">
       <Link>Modules\UIElements\InteractionEnums.cs</Link>
     </Compile>

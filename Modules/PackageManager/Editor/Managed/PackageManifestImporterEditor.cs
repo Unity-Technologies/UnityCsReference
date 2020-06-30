@@ -601,6 +601,7 @@ namespace UnityEditor.PackageManager
             try
             {
                 File.WriteAllText(assetPath, Json.Serialize(json, true));
+                Client.Resolve();
             }
             catch (IOException)
             {

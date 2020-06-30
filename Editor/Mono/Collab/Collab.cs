@@ -189,6 +189,15 @@ namespace UnityEditor.Collaboration
         }
 
         [UsedByNativeCode]
+        internal static void ShowChangesWindowView()
+        {
+            if (ShowChangesWindow != null)
+            {
+                ShowChangesWindow();
+            }
+        }
+
+        [UsedByNativeCode]
         static bool SupportsDownloads()
         {
             if (s_VersionControlInstance != null)

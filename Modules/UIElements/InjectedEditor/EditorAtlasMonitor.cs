@@ -2,18 +2,36 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
+using System;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.UIR;
 
+// The TODOs in this file will be implemented once com.unity.ui has the ability to define editor content.
+
 namespace UnityEditor.UIElements
 {
-    [InitializeOnLoad]
-    internal static class EditorAtlasMonitor
+    // TODO: Remove this.
+    internal static class EditorAtlasMonitorBridge
     {
-        static EditorAtlasMonitor()
+        public static void StaticInit()
+        {
+            EditorAtlasMonitor.StaticInit();
+        }
+
+        public static Action<string[], string[], string[], string[]>  OnPostprocessAllAssets;
+        public static Action<Texture2D> OnPostprocessTexture;
+    }
+
+    // TODO: Add [InitializeOnLoad].
+    static class EditorAtlasMonitor
+    {
+        // TODO: Remove this.
+        static TexturePostProcessor s_TexturePostProcessor = new TexturePostProcessor();
+
+        // TODO: Turn the method into a static constructor.
+        public static void StaticInit()
         {
             RenderChain.OnPreRender += OnPreRender;
         }
@@ -32,8 +50,16 @@ namespace UnityEditor.UIElements
                 VectorImageManager.MarkAllForReset();
         }
 
-        private class TexturePostProcessor : UnityEditor.AssetPostprocessor
+        // TODO: Derive from UnityEditor.AssetPostprocessor
+        private class TexturePostProcessor
         {
+            // TODO: Remove this constructor.
+            public TexturePostProcessor()
+            {
+                EditorAtlasMonitorBridge.OnPostprocessTexture = OnPostprocessTexture;
+                EditorAtlasMonitorBridge.OnPostprocessAllAssets = OnPostprocessAllAssets;
+            }
+
             public void OnPostprocessTexture(Texture2D texture)
             {
                 ++importedTexturesCount;

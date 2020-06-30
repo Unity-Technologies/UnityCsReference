@@ -91,6 +91,7 @@ namespace UnityEngine
         }
 
         public Rigidbody rigidbody { get { return collider != null ? collider.attachedRigidbody : null; }  }
+        public ArticulationBody articulationBody { get { return collider != null ? collider.attachedArticulationBody : null; }  }
 
         public Vector2 lightmapCoord
         {
@@ -330,6 +331,7 @@ namespace UnityEngine
     {
         extern public bool enabled { get; set; }
         extern public Rigidbody attachedRigidbody {[NativeMethod("GetRigidbody")] get; }
+        extern public ArticulationBody attachedArticulationBody {[NativeMethod("GetArticulationBody")] get; }
         extern public bool isTrigger { get; set; }
         extern public float contactOffset { get; set; }
         extern public Vector3 ClosestPoint(Vector3 position);

@@ -432,6 +432,16 @@ namespace UnityEditor
                 set;
             }
 
+            // Minify java code using R8 if set to true, otherwise use proguard for minification
+            [NativeProperty("AndroidMinifyWithR8", TargetType.Function)]
+            public static extern bool minifyWithR8 { get; set; }
+            // Minify java code in release build
+            [NativeProperty("AndroidMinifyRelease", TargetType.Function)]
+            public static extern bool minifyRelease { get; set; }
+            // Minify java code in development build
+            [NativeProperty("AndroidMinifyDebug", TargetType.Function)]
+            public static extern bool minifyDebug { get; set; }
+
             // Validate release App Bundle size after build
             internal static extern bool validateAppBundleSize { get; set; }
 
