@@ -24,6 +24,11 @@ namespace UnityEngine.VFX
     {
         private IntPtr m_Ptr;
         private bool m_Owner;
+
+        public VFXSpawnerState() : this(Internal_Create(), true)
+        {
+        }
+
         internal VFXSpawnerState(IntPtr ptr, bool owner)
         {
             m_Ptr = ptr;
@@ -53,7 +58,6 @@ namespace UnityEngine.VFX
         {
             return m_Ptr;
         }
-
 
         private void Release()
         {

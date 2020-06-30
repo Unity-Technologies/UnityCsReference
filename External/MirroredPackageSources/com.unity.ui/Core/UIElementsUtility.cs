@@ -234,11 +234,12 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        static List<Panel> s_PanelsIterationList = new List<Panel>();
+        static internal List<Panel> s_PanelsIterationList = new List<Panel>();
         void IUIElementsUtility.UpdateSchedulers()
         {
             // Since updating schedulers jumps into user code, the panels list might change while we're iterating,
             // we make a copy first.
+            s_PanelsIterationList.Clear();
             UIElementsUtility.GetAllPanels(s_PanelsIterationList, ContextType.Editor);
 
             foreach (var panel in s_PanelsIterationList)
@@ -367,7 +368,8 @@ namespace UnityEngine.UIElements
                     // If some buttons are already down, we generate PointerMove/MouseDown events.
                     // Otherwise we generate PointerDown/MouseDown events.
                     // See W3C pointer events recommendation: https://www.w3.org/TR/pointerevents2
-                    if (PointerDeviceState.GetPressedButtons(PointerId.mousePointerId) != 0)
+                    // Note: sometimes systemEvent.button is already pressed (systemEvent is processed multiple times).
+                    if (PointerDeviceState.HasAdditionalPressedButtons(PointerId.mousePointerId, systemEvent.button))
                     {
                         return PointerMoveEvent.GetPooled(systemEvent);
                     }
@@ -465,7 +467,6 @@ namespace UnityEngine.UIElements
 
         internal static void GetAllPanels(List<Panel> panels, ContextType contextType)
         {
-            panels.Clear();
             var iterator = GetPanelsIterator();
             while (iterator.MoveNext())
             {

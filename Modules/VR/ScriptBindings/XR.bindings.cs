@@ -8,6 +8,50 @@ using UnityEngine.Rendering;
 using System.Collections.Generic;
 using UnityEngine.Scripting;
 
+namespace UnityEngine.Experimental.XR
+{
+    // Temporary empty namespace to allow for a weird package dependency with com.unity.xr.integration-tests
+    // Remove this once that package is fixed.
+    internal enum DeleteMe
+    {
+        Please = 0
+    }
+}
+
+namespace UnityEngine.XR.WSA.Input
+{
+    // Temporary empty namespace to allow for a weird package dependency with com.unity.2d.animation.
+    // Remove this once that package is fixed.
+    internal enum DeleteMe
+    {
+        Please = 0
+    }
+}
+
+namespace UnityEngine.XR.WSA
+{
+    // Temporary empty namespace to allow for  package dependency with com.unity.xr.windowsmr.
+    // Remove this once that package is fixed.
+    public enum RemoteDeviceVersion
+    {
+        V1,
+        V2
+    }
+}
+
+namespace UnityEngineInternal.XR.WSA
+{
+    // Temporary empty namespace to allow for  package dependency with com.unity.xr.windowsmr.
+    // Remove this once that package is fixed.
+    public class RemoteSpeechAccess
+    {
+        [System.Obsolete(@"Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
+        public static void EnableRemoteSpeech(UnityEngine.XR.WSA.RemoteDeviceVersion version) {}
+        [System.Obsolete(@"Support for built-in VR will be removed in Unity 2020.2. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
+        public static void DisableRemoteSpeech() {}
+    }
+}
+
 namespace UnityEngine.XR
 {
     // Offsets must match UnityVRBlitMode in IUnityVR.h
@@ -20,14 +64,6 @@ namespace UnityEngine.XR
         OcclusionMesh = 4,
     }
 
-    // Offsets must match UnityXRTrackingOriginType in XRTypes.h
-    [Obsolete("This is obsolete, and should no longer be used.  Please use TrackingModeOriginFlags.")]
-    public enum TrackingOriginMode
-    {
-        Device,
-        Floor,
-        Unknown
-    }
     [NativeHeader("Modules/VR/ScriptBindings/XR.bindings.h")]
     [NativeHeader("Runtime/Interfaces/IVRDevice.h")]
     [NativeHeader("Modules/VR/VRModule.h")]
@@ -37,43 +73,39 @@ namespace UnityEngine.XR
     {
         extern public static bool enabled
         {
-            [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+            [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
             get;
 
             set;
         }
 
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static GameViewRenderMode gameViewRenderMode { get; set; }
 
         [NativeName("Active")]
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static bool isDeviceActive { get; }
 
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static bool showDeviceView { get; set; }
 
-        [Obsolete("renderScale is deprecated, use XRSettings.eyeTextureResolutionScale instead (UnityUpgradable) -> eyeTextureResolutionScale", false)]
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
-        extern public static float renderScale { get; set; }
-
         [NativeName("RenderScale")]
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static float eyeTextureResolutionScale { get; set; }
 
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static int eyeTextureWidth { get; }
 
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static int eyeTextureHeight { get; }
 
         [NativeName("IntermediateEyeTextureDesc")]
         [NativeConditional("ENABLE_VR", "RenderTextureDesc()")]
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static UnityEngine.RenderTextureDescriptor eyeTextureDesc { get; }
 
         [NativeName("DeviceEyeTextureDimension")]
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static TextureDimension deviceEyeTextureDimension { get; }
 
         public static float renderViewportScale
@@ -91,7 +123,7 @@ namespace UnityEngine.XR
         }
 
         [NativeName("RenderViewportScale")]
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern internal static float renderViewportScaleInternal { get; set; }
 
         [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
@@ -101,7 +133,7 @@ namespace UnityEngine.XR
         extern public static bool useOcclusionMesh { get; set; }
 
         [NativeName("DeviceName")]
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static string loadedDeviceName { get; }
 
         public static void LoadDeviceByName(string deviceName)
@@ -121,17 +153,8 @@ namespace UnityEngine.XR
             SinglePassMultiview
         }
 
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static StereoRenderingMode stereoRenderingMode { get; }
-    }
-
-    [Obsolete("This is obsolete, and should no longer be used.  Please use CommonUsages.userPresence.")]
-    public enum UserPresenceState
-    {
-        Unsupported = -1,
-        NotPresent = 0,
-        Present = 1,
-        Unknown = 2,
     }
 
     [Obsolete("This is obsolete, and should no longer be used.  Please use InputTrackingModeFlags.")]
@@ -147,24 +170,12 @@ namespace UnityEngine.XR
         [Obsolete("This is obsolete, and should no longer be used. Instead, find the active XRDisplaySubsystem and check that the running property is true (for details, see XRDevice.isPresent documentation).", true)]
         public static bool isPresent { get {throw new NotSupportedException("XRDevice is Obsolete. Instead, find the active XRDisplaySubsystem and check to see if it is running.");} }
 
-        [Obsolete("This is obsolete, and should no longer be used.  Please use CommonUsages.userPresence.")]
-        extern public static UserPresenceState userPresence { get; }
-
-        [NativeName("DeviceName")]
-        [Obsolete("family is deprecated.  Use XRSettings.loadedDeviceName instead.", false)]
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
-        extern public static string family { get; }
-
-        [NativeName("DeviceModel")]
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
-        [Obsolete("This is obsolete, and should no longer be used.  Please use InputDevice.name.")]
-        extern public static string model { get; }
 
         [NativeName("DeviceRefreshRate")]
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static float refreshRate { get; }
 
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static IntPtr GetNativePtr();
 
         [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
@@ -180,7 +191,7 @@ namespace UnityEngine.XR
         extern public static void DisableAutoXRCameraTracking([NotNull] Camera camera, bool disabled);
 
         [NativeName("UpdateEyeTextureMSAASetting")]
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static void UpdateEyeTextureMSAASetting();
 
         extern public static float fovZoomFactor
@@ -188,15 +199,10 @@ namespace UnityEngine.XR
             get;
 
             [NativeName("SetProjectionZoomFactor")]
-            [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+            [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
             set;
         }
 
-        [Obsolete("This is obsolete, and should no longer be used.  Please use XRInputSubsystem.GetTrackingOriginMode.")]
-        extern public static TrackingOriginMode trackingOriginMode
-        {
-            get;
-        }
         public static event Action<string> deviceLoaded = null;
 
         [RequiredByNativeCode]
@@ -212,79 +218,13 @@ namespace UnityEngine.XR
     [NativeConditional("ENABLE_VR")]
     public static class XRStats
     {
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static bool TryGetGPUTimeLastFrame(out float gpuTimeLastFrame);
 
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static bool TryGetDroppedFrameCount(out int droppedFrameCount);
 
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static bool TryGetFramePresentCount(out int framePresentCount);
-
-        [Obsolete("gpuTimeLastFrame is deprecated. Use XRStats.TryGetGPUTimeLastFrame instead.", false)]
-        public static float gpuTimeLastFrame
-        {
-            get
-            {
-                float result;
-                if (TryGetGPUTimeLastFrame(out result))
-                    return result;
-                return 0.0f;
-            }
-        }
     }
-}
-
-namespace UnityEngine.Experimental.XR
-{
-    [NativeConditional("ENABLE_VR")]
-    public static class Boundary
-    {
-        public enum Type
-        {
-            PlayArea,
-            TrackedArea
-        }
-
-        public static bool TryGetDimensions(out Vector3 dimensionsOut)
-        {
-            return TryGetDimensions(out dimensionsOut, Type.PlayArea);
-        }
-
-        public static bool TryGetDimensions(out Vector3 dimensionsOut, [UnityEngine.Internal.DefaultValue("Type.PlayArea")] Type boundaryType)
-        {
-            return TryGetDimensionsInternal(out dimensionsOut, boundaryType);
-        }
-
-        [NativeName("TryGetBoundaryDimensions")]
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
-        extern private static bool TryGetDimensionsInternal(out Vector3 dimensionsOut, Type boundaryType);
-
-        [NativeName("BoundaryVisible")]
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
-        extern public static bool visible { get; set; }
-
-        [NativeName("BoundaryConfigured")]
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
-        extern public static bool configured { get; }
-
-        public static bool TryGetGeometry(List<Vector3> geometry)
-        {
-            return TryGetGeometry(geometry, Type.PlayArea);
-        }
-
-        public static bool TryGetGeometry(List<Vector3> geometry, [UnityEngine.Internal.DefaultValue("Type.PlayArea")] Type boundaryType)
-        {
-            if (geometry == null)
-            {
-                throw new ArgumentNullException("geometry");
-            }
-
-            geometry.Clear();
-            return TryGetGeometryScriptingInternal(geometry, boundaryType);
-        }
-
-        extern private static bool TryGetGeometryScriptingInternal(List<Vector3> geometry, Type boundaryType);
-    }
-
 }

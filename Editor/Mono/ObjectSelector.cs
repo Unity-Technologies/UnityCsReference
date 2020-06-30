@@ -444,7 +444,10 @@ namespace UnityEditor
                         m_LastSelectedInstanceId = 0;
                     }
                     else
+                    {
                         m_LastSelectedInstanceId = selectedObj == null ? 0 : selectedObj.GetInstanceID();
+                        NotifySelectionChanged(false);
+                    }
 
                     m_EditedProperty = null;
                     NotifySelectorClosed(false);

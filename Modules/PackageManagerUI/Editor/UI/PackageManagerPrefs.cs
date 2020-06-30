@@ -13,6 +13,7 @@ namespace UnityEditor.PackageManager.UI
         private const string k_SkipRemoveConfirmationPrefs = "PackageManager.SkipRemoveConfirmation";
         private const string k_SkipDisableConfirmationPrefs = "PackageManager.SkipDisableConfirmation";
         private const string k_ShowPackageDependenciesPrefs = "PackageManager.ShowPackageDependencies";
+        private const string k_SplitterFlexGrowPrefs = "PackageManager.SplitterFlexGrowPrefs";
         private const string k_LastUsedFilterPrefsPrefix = "PackageManager.Filter_";
 
         public event Action<bool> onShowDependenciesChanged = delegate {};
@@ -57,6 +58,17 @@ namespace UnityEditor.PackageManager.UI
                 EditorPrefs.SetBool(k_ShowPackageDependenciesPrefs, value);
                 if (oldValue != value)
                     onShowDependenciesChanged(value);
+            }
+        }
+
+        public virtual float splitterFlexGrow
+        {
+            get { return EditorPrefs.GetFloat(k_SplitterFlexGrowPrefs, 0.3f); }
+            set
+            {
+                if (float.IsNaN(value) || float.IsInfinity(value))
+                    return;
+                EditorPrefs.SetFloat(k_SplitterFlexGrowPrefs, value);
             }
         }
 

@@ -34,7 +34,14 @@ namespace UnityEditor.PackageManager.UI
 
         public void Rebuild(IEnumerable<string> packageUniqueIds)
         {
-            var newVisualStates = packageUniqueIds.Select(id => GetVisualState(id) ?? new VisualState(id)).ToList();
+            var newVisualStates = packageUniqueIds.Select(id => GetVisualState(id) ?? new VisualState(id, string.Empty)).ToList();
+            m_OrderedVisualStates = newVisualStates;
+            SetupLookupTable();
+        }
+
+        public void Rebuild(IEnumerable<Tuple<string, string>> packageUniqueIdAndGroups)
+        {
+            var newVisualStates = packageUniqueIdAndGroups.Select(t => GetVisualState(t.Item1) ?? new VisualState(t.Item1, t.Item2)).ToList();
             m_OrderedVisualStates = newVisualStates;
             SetupLookupTable();
         }

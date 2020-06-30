@@ -675,10 +675,10 @@ namespace UnityEditorInternal
                 var source = wire.source;
                 var target = wire.target;
                 var info = wire.info;
-                if (info.weight != 1.0f)
+                if (info.weight != 1.0f && target != null)
                 {
                     int cx = source.x - ((xspacing + w) / 2);
-                    int cy = (target != null) ? (int)(target.y + ((cx - target.x - w * 0.5f) * (float)(source.y - target.y) / (float)(source.x - target.x - w))) : target.y;
+                    int cy = (int)(target.y + ((cx - target.x - w * 0.5f) * (float)(source.y - target.y) / (float)(source.x - target.x - w)));
                     DrawRectClipped(
                         new Rect(cx - (cw / 2), cy - (ch / 2), cw, ch),
                         new Color(1.0f, 0.3f, 0.2f, (!highlightAudibleDSPChains || source.audible) ? 1.0f : 0.4f),

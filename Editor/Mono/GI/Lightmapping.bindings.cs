@@ -281,6 +281,9 @@ namespace UnityEditor
         internal static extern string GetLightmapBakeGPUDeviceName();
 
         [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        internal static extern int GetLightmapBakeGPUDeviceIndex();
+
+        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
         extern internal static DeviceAndPlatform[] GetLightmappingGpuDevices();
 
         // Exports the current state of the scene to the dynamic GI workflow.

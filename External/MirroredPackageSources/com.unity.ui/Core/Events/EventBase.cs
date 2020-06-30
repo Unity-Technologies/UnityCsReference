@@ -44,6 +44,7 @@ namespace UnityEngine.UIElements
             PropagateToIMGUI = 128,
             Dispatched = 512,
             Processed = 1024,
+            ProcessedByFocusController = 2048,
         }
 
         static ulong s_NextEventId = 0;
@@ -116,6 +117,17 @@ namespace UnityEngine.UIElements
         public bool bubbles
         {
             get { return (propagation & EventPropagation.Bubbles) != 0; }
+            protected set
+            {
+                if (value)
+                {
+                    propagation |= EventPropagation.Bubbles;
+                }
+                else
+                {
+                    propagation &= ~EventPropagation.Bubbles;
+                }
+            }
         }
 
         /// <summary>
@@ -124,6 +136,17 @@ namespace UnityEngine.UIElements
         public bool tricklesDown
         {
             get { return (propagation & EventPropagation.TricklesDown) != 0; }
+            protected set
+            {
+                if (value)
+                {
+                    propagation |= EventPropagation.TricklesDown;
+                }
+                else
+                {
+                    propagation &= ~EventPropagation.TricklesDown;
+                }
+            }
         }
 
         // Original target. May be different than 'target' when propagating event and 'target.isCompositeRoot' is true
@@ -330,6 +353,22 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal bool processedByFocusController
+        {
+            get { return (lifeCycleStatus & LifeCycleStatus.ProcessedByFocusController) != LifeCycleStatus.None; }
+            set
+            {
+                if (value)
+                {
+                    lifeCycleStatus |= LifeCycleStatus.ProcessedByFocusController;
+                }
+                else
+                {
+                    lifeCycleStatus &= ~LifeCycleStatus.ProcessedByFocusController;
+                }
+            }
+        }
+
         internal bool stopDispatch
         {
             get { return (lifeCycleStatus & LifeCycleStatus.StopDispatch) != LifeCycleStatus.None; }
@@ -415,6 +454,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Vector2 originalMousePosition { get; private set; }
 
+
         internal EventDebugger eventLogger { get; set; }
 
         internal bool log => eventLogger != null;
@@ -458,10 +498,12 @@ namespace UnityEngine.UIElements
 
             dispatched = false;
             processed = false;
+            processedByFocusController = false;
             imguiEventIsValid = false;
             pooled = false;
 
             eventLogger = null;
+
         }
 
         /// <summary>

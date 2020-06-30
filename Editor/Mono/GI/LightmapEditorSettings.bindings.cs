@@ -193,11 +193,11 @@ namespace UnityEditor
             set { Lightmapping.GetOrCreateLightingsSettings().indirectSampleCount = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.bounces is obsolete, use Lightmapping.lightingSettings.bounces instead. ", false)]
+        [Obsolete("LightmapEditorSettings.bounces is obsolete, use Lightmapping.lightingSettings.maxBounces instead. ", false)]
         public static int bounces
         {
-            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().bounces; }
-            set { Lightmapping.GetOrCreateLightingsSettings().bounces = value; }
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().maxBounces; }
+            set { Lightmapping.GetOrCreateLightingsSettings().maxBounces = value; }
         }
 
         [Obsolete("LightmapEditorSettings.prioritizeView is obsolete, use Lightmapping.lightingSettings.prioritizeView instead. ", false)]

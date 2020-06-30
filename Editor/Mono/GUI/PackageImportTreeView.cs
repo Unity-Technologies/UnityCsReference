@@ -295,7 +295,7 @@ namespace UnityEditor
                 public static Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
                 public static GUIContent badgeNew    = EditorGUIUtility.TrIconContent("PackageBadgeNew", "This is a new Asset");
                 public static GUIContent badgeDelete = EditorGUIUtility.TrIconContent("PackageBadgeDelete", "These files will be deleted!");
-                public static GUIContent badgeWarn   = EditorGUIUtility.TrIconContent("console.warnicon", "Warning: File exists in project, but with different GUID. Will override existing asset which may be undesired.");
+                public static GUIContent badgeWarnPathConflict   = EditorGUIUtility.TrIconContent("console.warnicon", "Warning: File exists in project, but with different GUID. Will override existing asset which may be undesired.");
                 public static GUIContent badgeChange = EditorGUIUtility.TrIconContent("playLoopOff", "This file is new or has changed.");
 
                 public static GUIStyle   paddinglessStyle;
@@ -342,6 +342,7 @@ namespace UnityEditor
                 bool isFolder     = (item != null) ? item.isFolder     : true;
                 bool assetChanged = (item != null) ? item.assetChanged : false;
                 bool pathConflict = (item != null) ? item.pathConflict : false;
+                bool GUIDOverride = (item != null) ? item.existingAssetPath != string.Empty && item.existingAssetPath != item.destinationAssetPath : false;
                 bool exists       = (item != null) ? item.exists       : true;
                 bool projectAsset = (item != null) ? item.projectAsset : false;
 
@@ -364,15 +365,25 @@ namespace UnityEditor
                     // 4. Preview popup
                     DoPreviewPopup(pitem, rowRect);
 
-                    // 4.5 Warning about file clashing.
-                    if (repainting && validItem && pathConflict)
+                    // 4. Warning about file/GUID clashing.
+                    if (repainting && validItem)
                     {
-                        Rect labelRect = new Rect(rowRect.xMax - 58, rowRect.y, rowRect.height, rowRect.height);
-                        EditorGUIUtility.SetIconSize(new Vector2(rowRect.height, rowRect.height));
-                        GUI.Label(labelRect, Constants.badgeWarn, Constants.paddinglessStyle);
-                        EditorGUIUtility.SetIconSize(Vector2.zero);
+                        if (pathConflict)
+                        {
+                            Rect labelRect = new Rect(rowRect.xMax - 58, rowRect.y, rowRect.height, rowRect.height);
+                            EditorGUIUtility.SetIconSize(new Vector2(rowRect.height, rowRect.height));
+                            GUI.Label(labelRect, Constants.badgeWarnPathConflict, Constants.paddinglessStyle);
+                            EditorGUIUtility.SetIconSize(Vector2.zero);
+                        }
+                        else if (GUIDOverride)
+                        {
+                            Rect labelRect = new Rect(rowRect.xMax - 58, rowRect.y, rowRect.height, rowRect.height);
+                            EditorGUIUtility.SetIconSize(new Vector2(rowRect.height, rowRect.height));
+                            GUIContent badgeWarnGUIDConflict = EditorGUIUtility.TrIconContent("console.warnicon", "Warning: A file exists in this project with the same GUID. This Asset being imported will be assigned a new GUID. References to the asset being imported in other imported Assets will be replaced with a reference to: " + item.existingAssetPath);
+                            GUI.Label(labelRect, badgeWarnGUIDConflict, Constants.paddinglessStyle);
+                            EditorGUIUtility.SetIconSize(Vector2.zero);
+                        }
                     }
-
 
                     // 5. Optional badge ("New")
                     if (repainting && validItem && !(exists || pathConflict))

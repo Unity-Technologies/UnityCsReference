@@ -236,6 +236,8 @@ namespace UnityEngine.VFX
 
         // updates
         CameraSort                  = Update | 1,
+        PerCameraUpdate             = Update | 2,
+        PerCameraSort               = Update | 3,
 
         // outputs
         ParticlePointOutput         = Output | 0,
@@ -260,7 +262,8 @@ namespace UnityEngine.VFX
     {
         Spawner,
         Particle,
-        Mesh
+        Mesh,
+        OutputEvent
     }
 
     internal enum VFXSystemFlag

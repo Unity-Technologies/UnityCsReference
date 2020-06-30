@@ -126,8 +126,11 @@ namespace UnityEngine.UIElements
 
         static Focusable GetFirstFocusableChild(VisualElement ve)
         {
-            foreach (var child in ve.hierarchy.Children())
+            int veChildCount = ve.hierarchy.childCount;
+            for (int i = 0; i < veChildCount; ++i)
             {
+                var child = ve.hierarchy[i];
+
                 if (child.canGrabFocus)
                 {
                     return child;
@@ -153,11 +156,6 @@ namespace UnityEngine.UIElements
 
             if (evt != null && evt.target == evt.leafTarget)
             {
-                if (evt.eventTypeId == MouseDownEvent.TypeId())
-                {
-                    Focus();
-                }
-
                 focusController?.SwitchFocusOnEvent(evt);
             }
         }
@@ -169,7 +167,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// Focus ring implementations can move the focus in various direction; they can derive from this class to formalize the various ways the focus can change from one element to the other.
     /// </remarks>
-    public class FocusChangeDirection
+    public class FocusChangeDirection : IDisposable
     {
         /// <summary>
         /// Focus came from an unspecified direction, for example after a mouse down.
@@ -196,6 +194,18 @@ namespace UnityEngine.UIElements
         public static implicit operator int(FocusChangeDirection fcd)
         {
             return fcd?.m_Value ?? 0;
+        }
+
+        void IDisposable.Dispose() => Dispose();
+
+        /// <summary>
+        /// This method will be called when FocusController has finished treating this focus change directive. If the reference came from a pool, this method can be used to release the data back to the pool.
+        /// </summary>
+        protected virtual void Dispose() {}
+
+        internal virtual void ApplyTo(FocusController focusController, Focusable f)
+        {
+            focusController.SwitchFocus(f, this);
         }
     }
 
@@ -377,7 +387,7 @@ namespace UnityEngine.UIElements
             SwitchFocus(newFocusedElement, FocusChangeDirection.unspecified, bIsFocusDelegated);
         }
 
-        void SwitchFocus(Focusable newFocusedElement, FocusChangeDirection direction, bool bIsFocusDelegated = false)
+        internal void SwitchFocus(Focusable newFocusedElement, FocusChangeDirection direction, bool bIsFocusDelegated = false)
         {
             if (GetLeafFocusedElement() == newFocusedElement)
             {
@@ -418,13 +428,19 @@ namespace UnityEngine.UIElements
 
         internal Focusable SwitchFocusOnEvent(EventBase e)
         {
-            FocusChangeDirection direction = focusRing.GetFocusChangeDirection(GetLeafFocusedElement(), e);
-            if (direction != FocusChangeDirection.none)
+            if (e.processedByFocusController)
+                return GetLeafFocusedElement();
+
+            using (FocusChangeDirection direction = focusRing.GetFocusChangeDirection(GetLeafFocusedElement(), e))
             {
-                Focusable f = focusRing.GetNextFocusable(GetLeafFocusedElement(), direction);
-                SwitchFocus(f, direction);
-                // f does not have the focus yet. It will when the series of focus events will have been handled.
-                return f;
+                if (direction != FocusChangeDirection.none)
+                {
+                    Focusable f = focusRing.GetNextFocusable(GetLeafFocusedElement(), direction);
+                    direction.ApplyTo(this, f);
+                    e.processedByFocusController = true;
+                    // f does not have the focus yet. It will when the series of focus events will have been handled.
+                    return f;
+                }
             }
 
             return GetLeafFocusedElement();

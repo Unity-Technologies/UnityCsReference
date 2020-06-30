@@ -6502,7 +6502,7 @@ namespace UnityEditor
                     return false;
             }
 
-            if (!isUIElements && PropertyHandler.IsNonStringArray(property)) return false;
+            if (!isUIElements && PropertyHandler.UseReorderabelListControl(property)) return false;
 
             return property.hasVisibleChildren;
         }

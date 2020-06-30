@@ -206,7 +206,7 @@ namespace UnityEditorInternal
 
         public static void AddKeyframes(AnimationWindowState state, IList<AnimationWindowCurve> curves, AnimationKeyTime time)
         {
-            string undoLabel = "Add Key";
+            string undoLabel = L10n.Tr("Add Key");
             state.SaveKeySelection(undoLabel);
 
             state.ClearKeySelections();
@@ -230,7 +230,7 @@ namespace UnityEditorInternal
 
         public static void RemoveKeyframes(AnimationWindowState state, IList<AnimationWindowCurve> curves, AnimationKeyTime time)
         {
-            string undoLabel = "Remove Key";
+            string undoLabel = L10n.Tr("Remove Key");
             state.SaveKeySelection(undoLabel);
 
             foreach (AnimationWindowCurve curve in curves)
@@ -732,13 +732,13 @@ namespace UnityEditorInternal
         // Takes raw animation curve propertyname and makes it pretty
         public static string GetPropertyDisplayName(string propertyName)
         {
-            propertyName = propertyName.Replace("m_LocalPosition", "Position");
-            propertyName = propertyName.Replace("m_LocalScale", "Scale");
-            propertyName = propertyName.Replace("m_LocalRotation", "Rotation");
-            propertyName = propertyName.Replace("localEulerAnglesBaked", "Rotation");
-            propertyName = propertyName.Replace("localEulerAnglesRaw", "Rotation");
-            propertyName = propertyName.Replace("localEulerAngles", "Rotation");
-            propertyName = propertyName.Replace("m_Materials.Array.data", "Material Reference");
+            propertyName = propertyName.Replace("m_LocalPosition", L10n.Tr("Position"));
+            propertyName = propertyName.Replace("m_LocalScale", L10n.Tr("Scale"));
+            propertyName = propertyName.Replace("m_LocalRotation", L10n.Tr("Rotation"));
+            propertyName = propertyName.Replace("localEulerAnglesBaked", L10n.Tr("Rotation"));
+            propertyName = propertyName.Replace("localEulerAnglesRaw", L10n.Tr("Rotation"));
+            propertyName = propertyName.Replace("localEulerAngles", L10n.Tr("Rotation"));
+            propertyName = propertyName.Replace("m_Materials.Array.data", L10n.Tr("Material Reference"));
 
             propertyName = ObjectNames.NicifyVariableName(propertyName);
             propertyName = propertyName.Replace("m_", "");
@@ -984,7 +984,7 @@ namespace UnityEditorInternal
         internal static AnimationClip CreateNewClip(string gameObjectName)
         {
             // Go forward with presenting user a save clip dialog
-            string message = string.Format("Create a new animation for the game object '{0}':", gameObjectName);
+            string message = string.Format(L10n.Tr("Create a new animation for the game object '{0}':"), gameObjectName);
             string newClipDirectory = ProjectWindowUtil.GetActiveFolderPath();
             if (s_LastPathUsedForNewClip != null)
             {
@@ -994,7 +994,7 @@ namespace UnityEditorInternal
                     newClipDirectory = directoryPath;
                 }
             }
-            string newClipPath = EditorUtility.SaveFilePanelInProject("Create New Animation", "New Animation", "anim", message, newClipDirectory);
+            string newClipPath = EditorUtility.SaveFilePanelInProject(L10n.Tr("Create New Animation"), "New Animation", "anim", message, newClipDirectory);
 
             // If user canceled or save path is invalid, we can't create a clip
             if (newClipPath == "")

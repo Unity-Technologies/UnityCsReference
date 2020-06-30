@@ -70,7 +70,6 @@ namespace UnityEngine.UIElements
                 if (target.ContainsPoint(lastMousePosition))
                 {
                     Invoke(null);
-
                     target.pseudoStates |= PseudoStates.Active;
                 }
                 else
@@ -93,6 +92,7 @@ namespace UnityEngine.UIElements
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
+            target.RegisterCallback<ClickEvent>(OnClick);
         }
 
         /// <summary>
@@ -103,6 +103,7 @@ namespace UnityEngine.UIElements
             target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+            target.UnregisterCallback<ClickEvent>(OnClick);
         }
 
         /// <summary>
@@ -144,6 +145,18 @@ namespace UnityEngine.UIElements
                 ProcessUpEvent(evt, evt.localMousePosition, PointerId.mousePointerId);
         }
 
+        private void OnClick(ClickEvent evt)
+        {
+            Invoke(evt);
+        }
+
+        internal void SimulateSingleClick(EventBase evt, int delayMs = 100)
+        {
+            target.pseudoStates |= PseudoStates.Active;
+            target.schedule.Execute(() => target.pseudoStates &= ~PseudoStates.Active).ExecuteLater(delayMs);
+            Invoke(evt);
+        }
+
         /// <summary>
         /// This method processes the down event sent to the target Element.
         /// </summary>
@@ -160,7 +173,11 @@ namespace UnityEngine.UIElements
                 // Repeatable button clicks are performed on the MouseDown and at timer events
                 if (target.ContainsPoint(localPosition))
                 {
-                    Invoke(evt);
+                    using (ClickEvent clickEvt = ClickEvent.GetPooled(evt))
+                    {
+                        clickEvt.target = target;
+                        target.SendEvent(clickEvt);
+                    }
                 }
 
                 if (m_Repeater == null)
@@ -219,7 +236,11 @@ namespace UnityEngine.UIElements
                 // Non repeatable button clicks are performed on the MouseUp
                 if (target.ContainsPoint(localPosition))
                 {
-                    Invoke(evt);
+                    using (ClickEvent clickEvt = ClickEvent.GetPooled(evt))
+                    {
+                        clickEvt.target = target;
+                        target.SendEvent(clickEvt);
+                    }
                 }
             }
 

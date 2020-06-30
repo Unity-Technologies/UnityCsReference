@@ -15,6 +15,7 @@ namespace UnityEditor
     [NativeAsStruct]
     internal class ImportPackageItem
     {
+        public string existingAssetPath;
         public string exportedAssetPath;
         public string destinationAssetPath;
         public string sourceFolder;

@@ -127,9 +127,18 @@ namespace UnityEditor
 
         private bool IsValidHierarchyInstanceID(int instanceID)
         {
-            bool isScene = SceneHierarchy.IsSceneHeaderInHierarchyWindow(EditorSceneManager.GetSceneByHandle(instanceID));
-            bool isGameObject = InternalEditorUtility.GetTypeWithoutLoadingObject(instanceID) == typeof(GameObject);
-            return isScene || isGameObject;
+            //Get is persistent without loading object
+            var obj = InternalEditorUtility.GetObjectFromInstanceID(instanceID);
+            if (obj != null ? EditorUtility.IsPersistent(obj) : AssetDatabase.Contains(instanceID))
+                return false;
+
+            if (SceneHierarchy.IsSceneHeaderInHierarchyWindow(EditorSceneManager.GetSceneByHandle(instanceID)))
+                return true;
+
+            if (InternalEditorUtility.GetTypeWithoutLoadingObject(instanceID) == typeof(GameObject))
+                return true;
+
+            return false;
         }
 
         HierarchyProperty FindHierarchyProperty(int instanceID)

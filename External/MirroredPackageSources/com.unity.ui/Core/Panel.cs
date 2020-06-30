@@ -182,6 +182,25 @@ namespace UnityEngine.UIElements
         ContextualMenuManager contextualMenuManager { get; }
     }
 
+    /// <summary>
+    /// Interface for classes implementing UI runtime panels.
+    /// </summary>
+    internal interface IRuntimePanel
+    {
+        /// <summary>
+        /// Sets the focus controller for this panel.
+        /// </summary>
+        FocusController focusController { get; set; }
+        /// <summary>
+        /// Sets the event interpreter for this panel.
+        /// </summary>
+        IEventInterpreter eventInterpreter { get; set; }
+        /// <summary>
+        /// Sets the event dispatcher for this panel.
+        /// </summary>
+        EventDispatcher dispatcher { get; set; }
+    }
+
     abstract class BaseVisualElementPanel : IPanel
     {
         public abstract EventInterests IMGUIEventInterests { get; set; }
@@ -190,6 +209,7 @@ namespace UnityEngine.UIElements
         public abstract GetViewDataDictionary getViewDataDictionary { get; set; }
         public abstract int IMGUIContainersCount { get; set; }
         public abstract FocusController focusController { get; set; }
+        public abstract IEventInterpreter eventInterpreter { get; set; }
         public abstract IMGUIContainer rootIMGUIContainer { get; set; }
 
         protected BaseVisualElementPanel()
@@ -281,9 +301,27 @@ namespace UnityEngine.UIElements
             get { return m_PixelsPerPoint * m_Scale; }
         }
 
+        private float m_SortingPriority = 0;
+        public float sortingPriority
+        {
+            get => m_SortingPriority;
+
+            set
+            {
+                if (!Mathf.Approximately(m_SortingPriority, value))
+                {
+                    m_SortingPriority = value;
+                    if (contextType == ContextType.Player)
+                    {
+                        UIElementsRuntimeUtility.SetPanelOrderingDirty();
+                    }
+                }
+            }
+        }
+
         internal PanelClearFlags clearFlags { get; set; } = PanelClearFlags.All;
 
-        internal bool duringLayoutPhase {get; set;}
+        internal bool duringLayoutPhase { get; set; }
 
         internal bool isDirty
         {
@@ -301,13 +339,14 @@ namespace UnityEngine.UIElements
 
         // Need virtual for tests
         internal virtual RepaintData repaintData { get; set; }
+
         // Need virtual for tests
         internal virtual ICursorManager cursorManager { get; set; }
         public ContextualMenuManager contextualMenuManager { get; internal set; }
 
         //IPanel
         public abstract VisualElement visualTree { get; }
-        public abstract EventDispatcher dispatcher { get; protected set; }
+        public abstract EventDispatcher dispatcher { get; set; }
 
         internal void SendEvent(EventBase e, DispatchMode dispatchMode = DispatchMode.Queued)
         {
@@ -354,17 +393,34 @@ namespace UnityEngine.UIElements
         }
 
         internal abstract Shader standardShader { get; set; }
-        internal virtual Shader standardWorldSpaceShader { get { return null; } set {} }
+
+        internal virtual Shader standardWorldSpaceShader
+        {
+            get { return null; }
+            set {}
+        }
 
         internal event Action standardShaderChanged, standardWorldSpaceShaderChanged;
-        protected void InvokeStandardShaderChanged() { if (standardShaderChanged != null) standardShaderChanged(); }
-        protected void InvokeStandardWorldSpaceShaderChanged() { if (standardWorldSpaceShaderChanged != null) standardWorldSpaceShaderChanged(); }
+
+        protected void InvokeStandardShaderChanged()
+        {
+            if (standardShaderChanged != null) standardShaderChanged();
+        }
+
+        protected void InvokeStandardWorldSpaceShaderChanged()
+        {
+            if (standardWorldSpaceShaderChanged != null) standardWorldSpaceShaderChanged();
+        }
 
         internal event Action<Material> updateMaterial;
         internal void InvokeUpdateMaterial(Material mat) { updateMaterial?.Invoke(mat); } // TODO: Actually call this!
 
         internal event HierarchyEvent hierarchyChanged;
-        internal void InvokeHierarchyChanged(VisualElement ve, HierarchyChangeType changeType) { if (hierarchyChanged != null) hierarchyChanged(ve, changeType); }
+
+        internal void InvokeHierarchyChanged(VisualElement ve, HierarchyChangeType changeType)
+        {
+            if (hierarchyChanged != null) hierarchyChanged(ve, changeType);
+        }
 
         internal event Action<IPanel> beforeUpdate;
         internal void InvokeBeforeUpdate() { beforeUpdate?.Invoke(this); }
@@ -395,6 +451,7 @@ namespace UnityEngine.UIElements
         {
             scheduler.UpdateScheduledEvents();
             ValidateLayout();
+            UpdateAnimations();
             UpdateBindings();
         }
     }
@@ -427,12 +484,12 @@ namespace UnityEngine.UIElements
         ProfilerMarker m_MarkerAnimations;
         static ProfilerMarker s_MarkerPickAll = new ProfilerMarker("Panel.PickAll");
 
-        public override VisualElement visualTree
+        public sealed override VisualElement visualTree
         {
             get { return m_RootContainer; }
         }
 
-        public override EventDispatcher dispatcher { get; protected set; }
+        public sealed override EventDispatcher dispatcher { get; set; }
 
         TimerEventScheduler m_Scheduler;
 
@@ -454,7 +511,9 @@ namespace UnityEngine.UIElements
 
         public override GetViewDataDictionary getViewDataDictionary { get; set; }
 
-        public override FocusController focusController { get; set; }
+        public sealed override FocusController focusController { get; set; }
+
+        public sealed override IEventInterpreter eventInterpreter { get; set; } = EventInterpreter.s_Instance;
 
         public override EventInterests IMGUIEventInterests { get; set; }
 
@@ -661,6 +720,7 @@ namespace UnityEngine.UIElements
                     {
                         return result;
                     }
+
                     returnedChild = result;
                 }
             }
@@ -701,6 +761,7 @@ namespace UnityEngine.UIElements
         }
 
         private bool m_ValidatingLayout = false;
+
         public override void ValidateLayout()
         {
             // Reentrancy proofing: ValidateLayout() could be in the code path of updaters.
@@ -760,7 +821,8 @@ namespace UnityEngine.UIElements
         public override void Repaint(Event e)
         {
             if (contextType == ContextType.Editor)
-                Debug.Assert(GUIClip.Internal_GetCount() == 0, "UIElement is not compatible with IMGUI GUIClips, only GUIClip.ParentClipScope");
+                Debug.Assert(GUIClip.Internal_GetCount() == 0,
+                    "UIElement is not compatible with IMGUI GUIClips, only GUIClip.ParentClipScope");
 
             m_RepaintVersion = version;
 
@@ -803,9 +865,9 @@ namespace UnityEngine.UIElements
         }
     }
 
-    internal class RuntimePanel : Panel
+    internal abstract class BaseRuntimePanel : Panel, IRuntimePanel
     {
-        public RuntimePanel(ScriptableObject ownerObject, EventDispatcher dispatcher = null)
+        protected BaseRuntimePanel(ScriptableObject ownerObject, EventDispatcher dispatcher = null)
             : base(ownerObject, ContextType.Player, dispatcher) {}
 
         private Shader m_StandardWorldSpaceShader;
@@ -836,6 +898,7 @@ namespace UnityEngine.UIElements
                     renderChain.drawInCameras = value;
             }
         }
+
         internal RenderTexture targetTexture = null; // Render panel to a texture
         internal Matrix4x4 panelToWorld = Matrix4x4.identity;
 

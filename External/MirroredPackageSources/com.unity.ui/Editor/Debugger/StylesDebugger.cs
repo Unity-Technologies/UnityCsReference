@@ -191,8 +191,8 @@ namespace UnityEditor.UIElements.Debugger
 
         private void InitClassList()
         {
-            Action refresh = () => m_ClassList.list = m_SelectedElement.GetClasses().ToList();
-            m_ClassList = new ReorderableList(m_SelectedElement.GetClasses().ToList(), typeof(string), false, true, true, true);
+            Action refresh = () => m_ClassList.list = m_SelectedElement.GetClassesForIteration().ToList();
+            m_ClassList = new ReorderableList(m_SelectedElement.GetClassesForIteration().ToList(), typeof(string), false, true, true, true);
             m_ClassList.onRemoveCallback = _ =>
             {
                 m_SelectedElement.RemoveFromClassList((string)m_ClassList.list[m_ClassList.index]);
@@ -393,6 +393,19 @@ namespace UnityEditor.UIElements.Debugger
                 string name = AssetDatabase.GetAssetPath(sheet);
                 if (string.IsNullOrEmpty(name) || sheet.isUnityStyleSheet)
                     name = sheet.name;
+
+                void RecursivePrintStyleSheetNames(StyleSheet importedSheet)
+                {
+                    for (int i = 0; i < importedSheet.imports.Length; i++)
+                    {
+                        var thisImportedSheet = importedSheet.imports[i].styleSheet;
+                        name += "\n(" + thisImportedSheet.name + ")";
+                        matchingContext.styleSheetStack.Add(thisImportedSheet);
+                        RecursivePrintStyleSheetNames(thisImportedSheet);
+                    }
+                }
+
+                RecursivePrintStyleSheetNames(sheet);
 
                 selectedElementStylesheets.Add(name);
                 matchingContext.styleSheetStack.Add(sheet);

@@ -125,33 +125,19 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnError(UIError error)
         {
-            try
-            {
-                this.error = error;
-                var message = L10n.Tr("Cannot perform upm operation");
-                message += string.IsNullOrEmpty(error.message) ? "." : $": {error.message} [{error.errorCode}].";
+            this.error = error;
+            var message = L10n.Tr("Cannot perform upm operation");
+            message += string.IsNullOrEmpty(error.message) ? "." : $": {error.message} [{error.errorCode}].";
 
-                Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {message}");
-                onOperationError?.Invoke(this, error);
-            }
-            catch (Exception exception)
-            {
-                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] An error occurred while reporting an error in an operation: {0}"), exception.Message));
-            }
+            Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {message}");
+            onOperationError?.Invoke(this, error);
         }
 
         private void OnSuccess()
         {
-            try
-            {
-                onProcessResult(m_Request);
-                m_LastSuccessTimestamp = m_Timestamp;
-                onOperationSuccess?.Invoke(this);
-            }
-            catch (Exception exception)
-            {
-                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] An error occurred while completing an operation: {0}"), exception.Message));
-            }
+            onProcessResult(m_Request);
+            m_LastSuccessTimestamp = m_Timestamp;
+            onOperationSuccess?.Invoke(this);
         }
 
         private void OnFinalize()

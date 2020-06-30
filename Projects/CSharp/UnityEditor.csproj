@@ -2509,9 +2509,6 @@
     <Compile Include="..\..\Editor\Mono\PackageUtility.bindings.cs">
       <Link>Editor\Mono\PackageUtility.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\PerceptionRemoting\HolographicEmulation\HolographicEmulationWindow.cs">
-      <Link>Editor\Mono\PerceptionRemoting\HolographicEmulation\HolographicEmulationWindow.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Performance.bindings.cs">
       <Link>Editor\Mono\Performance.bindings.cs</Link>
     </Compile>
@@ -2590,9 +2587,6 @@
     <Compile Include="..\..\Editor\Mono\PlayerSettingsTVOS.bindings.cs">
       <Link>Editor\Mono\PlayerSettingsTVOS.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\PlayerSettingsVRGoogle.bindings.cs">
-      <Link>Editor\Mono\PlayerSettingsVRGoogle.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\PlayerSettingsVulkan.bindings.cs">
       <Link>Editor\Mono\PlayerSettingsVulkan.bindings.cs</Link>
     </Compile>
@@ -2604,9 +2598,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\PlayerSettingsWebGL.bindings.cs">
       <Link>Editor\Mono\PlayerSettingsWebGL.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\PlayerSettingsWindowsMR.bindings.cs">
-      <Link>Editor\Mono\PlayerSettingsWindowsMR.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\PlayerSettingsXboxOne.bindings.cs">
       <Link>Editor\Mono\PlayerSettingsXboxOne.bindings.cs</Link>
@@ -3342,6 +3333,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Undo.cs">
       <Link>Editor\Mono\Undo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Undo\EditorObjectChangeEvents.cs">
+      <Link>Editor\Mono\Undo\EditorObjectChangeEvents.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Undo\Undo.bindings.cs">
       <Link>Editor\Mono\Undo\Undo.bindings.cs</Link>
@@ -4567,6 +4561,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetails.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDetails.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageGroup.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageGroup.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageItem.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageItem.cs</Link>
     </Compile>
@@ -5089,6 +5086,12 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Video\VideoProfilerModule.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Video\VideoProfilerModule.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\VirtualTexturing\VirtualTexturingProfilerModule.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\VirtualTexturing\VirtualTexturingProfilerModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\VirtualTexturing\VirtualTexturingProfilerView.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\VirtualTexturing\VirtualTexturingProfilerView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uGui\UIDetailsProfilerModule.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uGui\UIDetailsProfilerModule.cs</Link>
     </Compile>
@@ -5118,6 +5121,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerWindow.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerWindowAnalytics.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerWindowAnalytics.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\Public\FrameDataView.bindings.cs">
       <Link>Modules\ProfilerEditor\Public\FrameDataView.bindings.cs</Link>
@@ -5854,32 +5860,8 @@
     <Compile Include="..\..\Modules\VFXEditor\Public\VisualEffectEditorDefault.cs">
       <Link>Modules\VFXEditor\Public\VisualEffectEditorDefault.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VREditor\Mono\GoogleVR\VRCustomOptionsGoogleVR.cs">
-      <Link>Modules\VREditor\Mono\GoogleVR\VRCustomOptionsGoogleVR.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VREditor\Mono\Lumin\VRCustomOptionsLumin.cs">
-      <Link>Modules\VREditor\Mono\Lumin\VRCustomOptionsLumin.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VREditor\Mono\Oculus\VRCustomOptionsOculus.cs">
-      <Link>Modules\VREditor\Mono\Oculus\VRCustomOptionsOculus.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VREditor\Mono\PlayerSettingsEditorVR.cs">
-      <Link>Modules\VREditor\Mono\PlayerSettingsEditorVR.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VREditor\Mono\VRCustomOptions.cs">
-      <Link>Modules\VREditor\Mono\VRCustomOptions.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\VREditor\Mono\VREditor.cs">
       <Link>Modules\VREditor\Mono\VREditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VREditor\Mono\VRModule.cs">
-      <Link>Modules\VREditor\Mono\VRModule.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VREditor\Mono\WindowsHolographic\VRCustomOptionsWindowsHolographic.cs">
-      <Link>Modules\VREditor\Mono\WindowsHolographic\VRCustomOptionsWindowsHolographic.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VREditor\Mono\XRPackageSettings.cs">
-      <Link>Modules\VREditor\Mono\XRPackageSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\VREditor\ScriptBindings\VREditor.bindings.cs">
       <Link>Modules\VREditor\ScriptBindings\VREditor.bindings.cs</Link>
@@ -5901,18 +5883,6 @@
     </Compile>
     <Compile Include="..\..\Modules\XREditor\Build\XRBuildUtilities.bindings.cs">
       <Link>Modules\XREditor\Build\XRBuildUtilities.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XREditor\Transition\IVRDeviceSettingsTransition.cs">
-      <Link>Modules\XREditor\Transition\IVRDeviceSettingsTransition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XREditor\Transition\VRDeviceSettingsTransitionTargetGroupAttribute.cs">
-      <Link>Modules\XREditor\Transition\VRDeviceSettingsTransitionTargetGroupAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XREditor\Transition\VRDeviceTransition.cs">
-      <Link>Modules\XREditor\Transition\VRDeviceTransition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XREditor\Transition\WindowsMRDeviceSettingsTransition.cs">
-      <Link>Modules\XREditor\Transition\WindowsMRDeviceSettingsTransition.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>

@@ -132,6 +132,12 @@ namespace UnityEditor.Profiling
                     areas.Add(ProfilerArea.GlobalIllumination);
                     break;
                 }
+
+                case "VirtualTexturing":
+                {
+                    areas.Add(ProfilerArea.VirtualTexturing);
+                    break;
+                }
             }
 
             return areas;

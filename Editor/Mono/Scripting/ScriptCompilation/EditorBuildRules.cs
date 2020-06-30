@@ -36,7 +36,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public class GenerateChangedScriptAssembliesArgs
         {
             public Dictionary<string, string> AllSourceFiles { get; set; }
-            public Dictionary<string, string> DirtySourceFiles { get; set; }
             public IEnumerable<TargetAssembly> DirtyTargetAssemblies { get; set; }
             public IEnumerable<string> DirtyPrecompiledAssemblies { get; set; }
             public string ProjectDirectory { get; set; }
@@ -270,6 +269,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         var customTargetAssembly = entry.Value;
                         if (customTargetAssembly.ExplicitPrecompiledReferences.Contains(dirtyPrecompiledAssembly))
                         {
+                            if (!IsCompatibleWithPlatformAndDefines(customTargetAssembly, args.Settings))
+                                continue;
+
                             dirtyTargetAssemblies[customTargetAssembly] = new DirtyTargetAssembly(DirtySource.DirtyReference);
                             break;
                         }
@@ -288,58 +290,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     var targetAssembly = allTargetAssemblies.First(a => a.Filename == assemblyFilename);
                     dirtyTargetAssemblies[targetAssembly] = new DirtyTargetAssembly(DirtySource.DirtyAssembly);
                 }
-
-            // Collect all dirty TargetAssemblies
-            foreach (var entry in args.DirtySourceFiles)
-            {
-                var dirtySourceFile = entry.Key;
-                var assemblyName = entry.Value;
-                var targetAssembly = GetTargetAssembly(dirtySourceFile, assemblyName, args.ProjectDirectory, args.Assemblies.CustomTargetAssemblies);
-
-                if (targetAssembly == null)
-                {
-                    args.NotCompiledScripts.Add(dirtySourceFile);
-                    continue;
-                }
-
-                if (!IsCompatibleWithPlatformAndDefines(targetAssembly, args.Settings))
-                    continue;
-
-                DirtyTargetAssembly dirtyTargetAssembly;
-
-                var scriptExtension = ScriptCompilers.GetExtensionOfSourceFile(dirtySourceFile);
-                SupportedLanguage scriptLanguage = null;
-
-                try
-                {
-                    scriptLanguage = ScriptCompilers.GetLanguageFromExtension(scriptExtension);
-                }
-                catch (Exception e)
-                {
-                    // UnityScript/Boo support has been disabled but not removed,
-                    // so we log the exception and skip the source file.
-                    UnityEngine.Debug.Log(e);
-                    continue;
-                }
-
-                if (!dirtyTargetAssemblies.TryGetValue(targetAssembly, out dirtyTargetAssembly))
-                {
-                    dirtyTargetAssembly = new DirtyTargetAssembly(DirtySource.DirtyScript);
-                    dirtyTargetAssemblies[targetAssembly] = dirtyTargetAssembly;
-
-                    if (targetAssembly.Type == TargetAssemblyType.Custom)
-                        targetAssembly.Language = scriptLanguage;
-                }
-
-                dirtyTargetAssembly.SourceFiles.Add(AssetPath.Combine(args.ProjectDirectory, dirtySourceFile));
-
-                if (targetAssembly.Language == null && targetAssembly.Type == TargetAssemblyType.Custom)
-                    targetAssembly.Language = scriptLanguage;
-
-                // If there are mixed languages in a custom script folder, mark the assembly to not be compiled.
-                if (scriptLanguage != targetAssembly.Language)
-                    args.NotCompiledTargetAssemblies.Add(targetAssembly);
-            }
 
             bool isAnyCustomScriptAssemblyDirty = dirtyTargetAssemblies.Any(entry =>
             {
@@ -394,7 +344,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
             while (dirtyAssemblyCount > 0);
 
-            // Add any non-dirty source files that belong to dirty TargetAssemblies
+            // Add any source files that belong to dirty TargetAssemblies
             foreach (var entry in args.AllSourceFiles)
             {
                 var sourceFile = entry.Key;
@@ -407,7 +357,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     continue;
                 }
 
-                if (!IsCompatibleWithPlatformAndDefines(targetAssembly, args.Settings))
+                DirtyTargetAssembly dirtyTargetAssembly;
+                if (!dirtyTargetAssemblies.TryGetValue(targetAssembly, out dirtyTargetAssembly))
                     continue;
 
                 var scriptExtension = ScriptCompilers.GetExtensionOfSourceFile(sourceFile);
@@ -416,13 +367,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (targetAssembly.Language == null && targetAssembly.Type == TargetAssemblyType.Custom)
                     targetAssembly.Language = scriptLanguage;
 
-                // If there are mixed languages in a custom script folder, mark the assembly to not be compiled.
-                if (scriptLanguage != targetAssembly.Language)
-                    args.NotCompiledTargetAssemblies.Add(targetAssembly);
-
-                DirtyTargetAssembly dirtyTargetAssembly;
-                if (dirtyTargetAssemblies.TryGetValue(targetAssembly, out dirtyTargetAssembly))
-                    dirtyTargetAssembly.SourceFiles.Add(AssetPath.Combine(args.ProjectDirectory, sourceFile));
+                dirtyTargetAssembly.SourceFiles.Add(AssetPath.Combine(args.ProjectDirectory, sourceFile));
             }
 
             // Remove any target assemblies which have no source files associated with them.
@@ -430,9 +375,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             foreach (var entry in dirtyTargetAssemblies)
             {
-                if (entry.Value.SourceFiles.Count == 0 && entry.Key.Type == TargetAssemblyType.Custom)
+                var targetAssembly = entry.Key;
+                if (!IsCompatibleWithPlatformAndDefines(targetAssembly, args.Settings))
                 {
-                    noScriptsCustomTargetAssemblies.Add(entry.Key);
+                    throw new InvalidOperationException($"{targetAssembly.Filename}: is not compatible with {args.Settings.BuildTarget}.");
+                }
+                if (entry.Value.SourceFiles.Count == 0 && targetAssembly.Type == TargetAssemblyType.Custom)
+                {
+                    noScriptsCustomTargetAssemblies.Add(targetAssembly);
                 }
             }
 
@@ -706,6 +656,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             bool assemblyEditorOnly = (scriptAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
             bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
             bool excludeUnityModules = unityReferencesOptions == UnityReferencesOptions.ExcludeModules;
+            bool isOverridingUnityAssembly = false;
 
             // Add Unity assemblies (UnityEngine.dll, UnityEditor.dll) referencees.
             if (unityAssemblies == null)
@@ -719,7 +670,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                     // This scriptAssembly is overriding this unityAssembly so it should probably not depend on itself.
                     if (unityAssemblyFileName == scriptAssembly.Filename)
+                    {
+                        isOverridingUnityAssembly = true;
                         continue;
+                    }
 
                     // Custom targets may override Unity references, do not add them to avoid duplicated references.
                     if (predefinedCustomTargetReferences != null && predefinedCustomTargetReferences.Contains(unityAssemblyFileName))
@@ -759,6 +713,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     }
                 }
             }
+
+            // UserOverride assemblies should not have a dependency on Editor assemblies.
+            if (isOverridingUnityAssembly && !assemblyEditorOnly)
+                references = references.Where(r => !r.Contains("UnityEditor")).ToList();
 
             return references;
         }

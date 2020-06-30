@@ -148,9 +148,6 @@ namespace UnityEditorInternal
 
                 if (UnityEditor.CrashReporting.CrashReportingSettings.enabled)
                     args.Add("--engine-stripping-flag=EnableCrashReporting");
-
-                if (UnityEditorInternal.VR.VRModule.ShouldInjectVRDependenciesForBuildTarget(runInformation.target))
-                    args.Add("--engine-stripping-flag=EnableVR");
             }
 
             var modulesAssetPath = runInformation.ModulesAssetFilePath;
@@ -638,6 +635,7 @@ namespace UnityEditorInternal
                         platform = "Android";
                         architecture = "";
                         break;
+                    case BuildTarget.CloudRendering:
                     case BuildTarget.StandaloneLinux64:
                         platform = "Linux";
                         architecture = "x64";

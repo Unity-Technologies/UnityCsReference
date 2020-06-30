@@ -230,6 +230,7 @@ namespace UnityEngine.UIElements
             protected override void ExecuteDefaultActionAtTarget(EventBase evt)
             {
                 base.ExecuteDefaultActionAtTarget(evt);
+
                 if (evt == null)
                 {
                     return;
@@ -271,6 +272,14 @@ namespace UnityEngine.UIElements
                     {
                         parentTextField.value = text;
                     }
+                }
+                // Prevent duplicated navigation events, since we're observing KeyDownEvents instead
+                else if (eventInterpreter.IsActivationEvent(evt) || eventInterpreter.IsCancellationEvent(evt) ||
+                         eventInterpreter.IsNavigationEvent(evt, out var direction) &&
+                         direction != NavigationDirection.Previous && direction != NavigationDirection.Next)
+                {
+                    evt.StopPropagation();
+                    evt.PreventDefault();
                 }
             }
 

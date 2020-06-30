@@ -493,7 +493,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        static ImportErrorCode ConvertErrorCode(URIValidationResult result)
+        new static ImportErrorCode ConvertErrorCode(URIValidationResult result)
         {
             switch (result)
             {

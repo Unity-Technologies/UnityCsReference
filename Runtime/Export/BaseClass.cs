@@ -123,7 +123,9 @@ namespace UnityEngine
         // Lumin
         Lumin = 33,
         // BJM
-        Stadia = 34
+        Stadia = 34,
+        // Cloud Rendering
+        CloudRendering = 35
     }
 
     // The language the user's operating system is running in. Returned by Application.systemLanguage.

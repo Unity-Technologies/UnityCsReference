@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace UnityEngine.UIElements
 {
@@ -100,7 +101,8 @@ namespace UnityEngine.UIElements
         internal override float ParseStringToValue(string stringValue)
         {
             float result;
-            if (float.TryParse(stringValue, out result))
+
+            if (float.TryParse(stringValue.Replace(",", "."), NumberStyles.Float, CultureInfo.InvariantCulture, out result))
             {
                 return result;
             }

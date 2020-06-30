@@ -69,6 +69,22 @@ namespace UnityEngine.UIElements
         }
     }
 
+    internal static class StringListPool
+    {
+        static ObjectPool<List<string>> pool = new ObjectPool<List<string>>(20);
+
+        public static List<string> Get()
+        {
+            return pool.Get();
+        }
+
+        public static void Release(List<string> elements)
+        {
+            elements.Clear();
+            pool.Release(elements);
+        }
+    }
+
     /// <summary>
     /// Base class for objects that are part of the UIElements visual tree.
     /// </summary>
@@ -226,7 +242,11 @@ namespace UnityEngine.UIElements
         /// </summary>
         public object userData
         {
-            get { return GetPropertyInternal(userDataPropertyKey); }
+            get
+            {
+                TryGetPropertyInternal(userDataPropertyKey, out object value);
+                return value;
+            }
             set { SetPropertyInternal(userDataPropertyKey, value); }
         }
 
@@ -253,6 +273,14 @@ namespace UnityEngine.UIElements
         public override FocusController focusController
         {
             get { return panel?.focusController; }
+        }
+
+        /// <summary>
+        /// Return the event interpreter for this element.
+        /// </summary>
+        internal IEventInterpreter eventInterpreter
+        {
+            get { return elementPanel?.eventInterpreter ?? EventInterpreter.s_Instance; }
         }
 
         /// <summary>
@@ -815,7 +843,15 @@ namespace UnityEngine.UIElements
 
         internal List<string> classList
         {
-            get { return m_ClassList; }
+            get
+            {
+                if (ReferenceEquals(m_ClassList, s_EmptyClassList))
+                {
+                    m_ClassList = StringListPool.Get();
+                }
+
+                return m_ClassList;
+            }
         }
 
         internal string fullTypeName
@@ -1547,10 +1583,17 @@ namespace UnityEngine.UIElements
             return m_ClassList;
         }
 
+        // needed to avoid boxing allocation when iterating on the list.
+        internal List<string> GetClassesForIteration()
+        {
+            return m_ClassList;
+        }
+
         public void ClearClassList()
         {
             if (m_ClassList.Count > 0)
             {
+                StringListPool.Release(m_ClassList);
                 m_ClassList = s_EmptyClassList;
                 IncrementVersion(VersionChangeType.StyleSheet);
             }
@@ -1560,7 +1603,7 @@ namespace UnityEngine.UIElements
         {
             if (m_ClassList == s_EmptyClassList)
             {
-                m_ClassList = new List<string>() { className };
+                m_ClassList = StringListPool.Get();
             }
             else
             {
@@ -1574,10 +1617,9 @@ namespace UnityEngine.UIElements
                 {
                     m_ClassList.Capacity += 1;
                 }
-
-                m_ClassList.Add(className);
             }
 
+            m_ClassList.Add(className);
             IncrementVersion(VersionChangeType.StyleSheet);
         }
 
@@ -1585,6 +1627,11 @@ namespace UnityEngine.UIElements
         {
             if (m_ClassList.Remove(className))
             {
+                if (m_ClassList.Count == 0)
+                {
+                    StringListPool.Release(m_ClassList);
+                    m_ClassList = s_EmptyClassList;
+                }
                 IncrementVersion(VersionChangeType.StyleSheet);
             }
         }
@@ -1654,7 +1701,8 @@ namespace UnityEngine.UIElements
         internal object GetProperty(PropertyName key)
         {
             CheckUserKeyArgument(key);
-            return GetPropertyInternal(key);
+            TryGetPropertyInternal(key, out object value);
+            return value;
         }
 
         internal void SetProperty(PropertyName key, object value)
@@ -1663,19 +1711,27 @@ namespace UnityEngine.UIElements
             SetPropertyInternal(key, value);
         }
 
-        object GetPropertyInternal(PropertyName key)
+        internal bool HasProperty(PropertyName key)
         {
+            CheckUserKeyArgument(key);
+            return TryGetPropertyInternal(key, out var tmp);
+        }
+
+        bool TryGetPropertyInternal(PropertyName key, out object value)
+        {
+            value = null;
             if (m_PropertyBag != null)
             {
                 for (int i = 0; i < m_PropertyBag.Count; ++i)
                 {
                     if (m_PropertyBag[i].Key == key)
                     {
-                        return m_PropertyBag[i].Value;
+                        value = m_PropertyBag[i].Value;
+                        return true;
                     }
                 }
             }
-            return null;
+            return false;
         }
 
         static void CheckUserKeyArgument(PropertyName key)

@@ -254,5 +254,8 @@ namespace UnityEditor
 
         [ThreadSafe]
         internal static extern void SignalTick();
+
+        [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
+        internal static extern void UpdateInteractionModeSettings();
     }
 }

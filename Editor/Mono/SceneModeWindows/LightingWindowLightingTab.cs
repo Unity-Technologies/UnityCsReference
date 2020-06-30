@@ -52,13 +52,11 @@ namespace UnityEditor
         SavedBool m_ShowWorkflowSettings;
         SavedBool m_ShowProbeDebugSettings;
         Vector2 m_ScrollPosition = Vector2.zero;
-
+        string m_LightmappingDeviceIndex = "lightmappingDeviceIndex";
         LightingWindowBakeSettings m_BakeSettings;
 
         SerializedObject m_LightmapSettings;
         SerializedProperty m_LightingSettingsAsset;
-
-        int m_LightmapDeviceAndPlatform;
 
         SerializedObject lightmapSettings
         {
@@ -82,12 +80,6 @@ namespace UnityEditor
 
             m_ShowWorkflowSettings = new SavedBool("LightingWindow.ShowWorkflowSettings", true);
             m_ShowProbeDebugSettings = new SavedBool("LightingWindow.ShowProbeDebugSettings", false);
-
-            string configDeviceAndPlatform = EditorUserSettings.GetConfigValue("lightmappingDeviceAndPlatform");
-            if (configDeviceAndPlatform != null)
-                m_LightmapDeviceAndPlatform = Int32.Parse(configDeviceAndPlatform);
-            else
-                EditorUserSettings.SetConfigValue("lightmappingDeviceAndPlatform", "0");
         }
 
         public void OnDisable()
@@ -147,30 +139,30 @@ namespace UnityEditor
                         int[] lightmappingDeviceIndices = Enumerable.Range(0, devicesAndPlatforms.Length).ToArray();
                         GUIContent[] lightmappingDeviceStrings = devicesAndPlatforms.Select(x => new GUIContent(x.name)).ToArray();
 
+                        int bakingDeviceAndPlatform = -1;
+                        string configDeviceAndPlatform = EditorUserSettings.GetConfigValue(m_LightmappingDeviceIndex);
+                        if (configDeviceAndPlatform != null)
+                        {
+                            bakingDeviceAndPlatform = Int32.Parse(configDeviceAndPlatform);
+                            bakingDeviceAndPlatform = Mathf.Clamp(bakingDeviceAndPlatform, 0, devicesAndPlatforms.Length - 1); // Removing a GPU and rebooting invalidates the saved value.
+                        }
+                        else
+                            bakingDeviceAndPlatform = Lightmapping.GetLightmapBakeGPUDeviceIndex();
+
+                        Debug.Assert(bakingDeviceAndPlatform != -1);
+
+                        EditorGUI.BeginChangeCheck();
                         using (new EditorGUI.DisabledScope(devicesAndPlatforms.Length < 2))
                         {
-                            m_LightmapDeviceAndPlatform = EditorGUILayout.IntPopup(Styles.progressiveGPUBakingDevice, m_LightmapDeviceAndPlatform, lightmappingDeviceStrings, lightmappingDeviceIndices);
+                            bakingDeviceAndPlatform = EditorGUILayout.IntPopup(Styles.progressiveGPUBakingDevice, bakingDeviceAndPlatform, lightmappingDeviceStrings, lightmappingDeviceIndices);
                         }
-
-                        string configDeviceAndPlatform = EditorUserSettings.GetConfigValue("lightmappingDeviceAndPlatform");
-                        int oldDeviceAndPlatform = 0;
-
-                        if (configDeviceAndPlatform != null)
-                            oldDeviceAndPlatform = Int32.Parse(configDeviceAndPlatform);
-
-                        if (oldDeviceAndPlatform != m_LightmapDeviceAndPlatform)
+                        if (EditorGUI.EndChangeCheck())
                         {
                             if (EditorUtility.DisplayDialog("Warning", Styles.progressiveGPUChangeWarning.text, "OK", "Cancel"))
                             {
-                                EditorUserSettings.SetConfigValue("lightmappingDeviceAndPlatform", m_LightmapDeviceAndPlatform.ToString());
-                                DeviceAndPlatform selectedDeviceAndPlatform = devicesAndPlatforms[m_LightmapDeviceAndPlatform];
-
+                                EditorUserSettings.SetConfigValue(m_LightmappingDeviceIndex, bakingDeviceAndPlatform.ToString());
+                                DeviceAndPlatform selectedDeviceAndPlatform = devicesAndPlatforms[bakingDeviceAndPlatform];
                                 EditorApplication.CloseAndRelaunch(new string[] { "-OpenCL-PlatformAndDeviceIndices", selectedDeviceAndPlatform.platformId.ToString(), selectedDeviceAndPlatform.deviceId.ToString() });
-                            }
-                            else
-                            {
-                                EditorUserSettings.SetConfigValue("lightmappingDeviceAndPlatform", oldDeviceAndPlatform.ToString());
-                                m_LightmapDeviceAndPlatform = oldDeviceAndPlatform;
                             }
                         }
                     }

@@ -31,7 +31,8 @@ namespace UnityEditor
             "",
             "https://docs-redirects.test.it.unity3d.com",
             "https://docs-redirects.stg.it.unity3d.com",
-            "https://docs-redirects.prd.it.unity3d.com"
+            "https://docs-redirects.prd.it.unity3d.com",
+            "http://docs-redirects.unity.com"
         };
 
         internal enum DocRedirectionServer
@@ -39,12 +40,13 @@ namespace UnityEditor
             None,
             Test,
             Staging,
-            Production
+            Production,
+            PublicRedirect
         }
 
         internal static DocRedirectionServer docRedirectionServer
         {
-            get => (DocRedirectionServer)EditorPrefs.GetInt("Help.docRedirectionServer", (int)DocRedirectionServer.Production);
+            get => (DocRedirectionServer)EditorPrefs.GetInt("Help.docRedirectionServer", (int)DocRedirectionServer.PublicRedirect);
             set
             {
                 EditorPrefs.SetInt("Help.docRedirectionServer", (int)value);

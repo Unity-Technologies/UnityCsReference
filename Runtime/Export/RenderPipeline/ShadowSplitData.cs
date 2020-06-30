@@ -20,6 +20,7 @@ namespace UnityEngine.Rendering
         internal fixed byte m_CullingPlanes[k_MaximumCullingPlaneCount * Plane.size];
         Vector4 m_CullingSphere;
         float m_ShadowCascadeBlendCullingFactor;
+        private float m_CullingNearPlane;
 
         public int cullingPlaneCount
         {

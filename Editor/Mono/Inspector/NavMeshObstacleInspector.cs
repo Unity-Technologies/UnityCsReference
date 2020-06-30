@@ -19,6 +19,16 @@ namespace UnityEditor
         private SerializedProperty m_TimeToStationary;
         private SerializedProperty m_CarveOnlyStationary;
 
+        static class Styles
+        {
+            public static readonly GUIContent Shape = EditorGUIUtility.TrTextContent("Shape", "The shape of the obstacle, applied to both carving and avoidance.");
+            public static readonly GUIContent Center = EditorGUIUtility.TrTextContent("Center", "The center of the obstacle, specified in the object's local space.");
+            public static readonly GUIContent Size = EditorGUIUtility.TrTextContent("Size", "The size of the obstacle, measured in the object's local space.");
+            public static readonly GUIContent Carve = EditorGUIUtility.TrTextContent("Carve", "This obstacle cuts a hole in the NavMesh around it.");
+            public static readonly GUIContent Radius = EditorGUIUtility.TrTextContent("Radius", "Radius of the obstacle's capsule shape.");
+            public static readonly GUIContent Height = EditorGUIUtility.TrTextContent("Height", "Height of the obstacle's capsule shape.");
+        }
+
         void OnEnable()
         {
             m_Shape = serializedObject.FindProperty("m_Shape");
@@ -35,7 +45,7 @@ namespace UnityEditor
             serializedObject.Update();
 
             EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(m_Shape);
+            EditorGUILayout.PropertyField(m_Shape, Styles.Shape);
             if (EditorGUI.EndChangeCheck())
             {
                 serializedObject.ApplyModifiedProperties();
@@ -43,14 +53,14 @@ namespace UnityEditor
                 serializedObject.Update();
             }
 
-            EditorGUILayout.PropertyField(m_Center);
+            EditorGUILayout.PropertyField(m_Center, Styles.Center);
 
             if (m_Shape.enumValueIndex == 0)
             {
                 // NavMeshObstacleShape : kObstacleShapeCapsule
                 EditorGUI.BeginChangeCheck();
-                float radius = EditorGUILayout.FloatField("Radius", m_Extents.vector3Value.x);
-                float height = EditorGUILayout.FloatField("Height", m_Extents.vector3Value.y * 2.0f);
+                float radius = EditorGUILayout.FloatField(Styles.Radius, m_Extents.vector3Value.x);
+                float height = EditorGUILayout.FloatField(Styles.Height, m_Extents.vector3Value.y * 2.0f);
                 if (EditorGUI.EndChangeCheck())
                 {
                     m_Extents.vector3Value = new Vector3(radius, height / 2.0f, radius);
@@ -61,14 +71,14 @@ namespace UnityEditor
                 // NavMeshObstacleShape : kObstacleShapeBox
                 EditorGUI.BeginChangeCheck();
                 Vector3 size = m_Extents.vector3Value * 2.0f;
-                size = EditorGUILayout.Vector3Field("Size", size);
+                size = EditorGUILayout.Vector3Field(Styles.Size, size);
                 if (EditorGUI.EndChangeCheck())
                 {
                     m_Extents.vector3Value = size / 2.0f;
                 }
             }
 
-            EditorGUILayout.PropertyField(m_Carve);
+            EditorGUILayout.PropertyField(m_Carve, Styles.Carve);
 
             if (m_Carve.boolValue)
             {

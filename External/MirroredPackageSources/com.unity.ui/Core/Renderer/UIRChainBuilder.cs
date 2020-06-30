@@ -848,7 +848,7 @@ namespace UnityEngine.UIElements.UIR
                 if (renderChain == null || renderChain.m_StaticIndex < 0 || renderChain.m_FirstCommand == null)
                     continue;
 
-                RuntimePanel rtp = (RuntimePanel)p;
+                BaseRuntimePanel rtp = (BaseRuntimePanel)p;
                 Material standardMaterial = renderChain.GetStandardWorldSpaceMaterial();
                 RenderNodeData rndSource = new RenderNodeData();
                 rndSource.device = renderChain.device;
@@ -906,7 +906,7 @@ namespace UnityEngine.UIElements.UIR
             } // For each panel
         }
 
-        private unsafe static void OnRegisterIntermediateRendererMat(RuntimePanel rtp, RenderChain renderChain, ref RenderNodeData rnd, Camera camera, int sameDistanceSortPriority)
+        private unsafe static void OnRegisterIntermediateRendererMat(BaseRuntimePanel rtp, RenderChain renderChain, ref RenderNodeData rnd, Camera camera, int sameDistanceSortPriority)
         {
             int renderNodeIndex = renderChain.m_ActiveRenderNodes++;
             if (renderNodeIndex < renderChain.m_RenderNodesData.Count)

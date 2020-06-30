@@ -231,7 +231,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     FastLookup(styleSheet.orderedNameSelectors, matchedSelectors, context, element.name, ref record);
                 }
 
-                foreach (string @class in element.classList)
+                foreach (string @class in element.GetClassesForIteration())
                 {
                     FastLookup(styleSheet.orderedClassSelectors, matchedSelectors, context, @class, ref record);
                 }

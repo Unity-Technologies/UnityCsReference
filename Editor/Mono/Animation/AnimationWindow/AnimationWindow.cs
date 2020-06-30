@@ -4,8 +4,6 @@
 
 using System;
 using UnityEngine;
-using UnityEditor;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEditorInternal;
 using Object = UnityEngine.Object;
@@ -13,11 +11,11 @@ using Object = UnityEngine.Object;
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Animation", useTypeNameAsIconName = true)]
-    internal class AnimationWindow : EditorWindow, IHasCustomMenu
+    public sealed class AnimationWindow : EditorWindow, IHasCustomMenu
     {
         // Active Animation windows
         private static List<AnimationWindow> s_AnimationWindows = new List<AnimationWindow>();
-        public static List<AnimationWindow> GetAllAnimationWindows() { return s_AnimationWindows; }
+        internal static List<AnimationWindow> GetAllAnimationWindows() { return s_AnimationWindows; }
 
         private AnimEditor m_AnimEditor;
 
@@ -50,7 +48,159 @@ namespace UnityEditor
             }
         }
 
-        public void ForceRefresh()
+        public AnimationClip animationClip
+        {
+            get
+            {
+                if (m_AnimEditor != null)
+                {
+                    return m_AnimEditor.state.activeAnimationClip;
+                }
+                return null;
+            }
+            set
+            {
+                if (m_AnimEditor != null)
+                {
+                    m_AnimEditor.state.activeAnimationClip = value;
+                }
+            }
+        }
+
+        public bool previewing
+        {
+            get
+            {
+                if (m_AnimEditor != null)
+                {
+                    return m_AnimEditor.state.previewing;
+                }
+                return false;
+            }
+            set
+            {
+                if (m_AnimEditor != null)
+                {
+                    if (value)
+                        m_AnimEditor.state.StartPreview();
+                    else
+                        m_AnimEditor.state.StopPreview();
+                }
+            }
+        }
+
+        public bool canPreview
+        {
+            get
+            {
+                if (m_AnimEditor != null)
+                {
+                    return m_AnimEditor.state.canPreview;
+                }
+
+                return false;
+            }
+        }
+
+        public bool recording
+        {
+            get
+            {
+                if (m_AnimEditor != null)
+                {
+                    return m_AnimEditor.state.recording;
+                }
+                return false;
+            }
+            set
+            {
+                if (m_AnimEditor != null)
+                {
+                    if (value)
+                        m_AnimEditor.state.StartRecording();
+                    else
+                        m_AnimEditor.state.StopRecording();
+                }
+            }
+        }
+
+        public bool canRecord
+        {
+            get
+            {
+                if (m_AnimEditor != null)
+                {
+                    return m_AnimEditor.state.canRecord;
+                }
+
+                return false;
+            }
+        }
+
+        public bool playing
+        {
+            get
+            {
+                if (m_AnimEditor != null)
+                {
+                    return m_AnimEditor.state.playing;
+                }
+                return false;
+            }
+            set
+            {
+                if (m_AnimEditor != null)
+                {
+                    if (value)
+                        m_AnimEditor.state.StartPlayback();
+                    else
+                        m_AnimEditor.state.StopPlayback();
+                }
+            }
+        }
+
+        public float time
+        {
+            get
+            {
+                if (m_AnimEditor != null)
+                {
+                    return m_AnimEditor.state.currentTime;
+                }
+                return 0.0f;
+            }
+            set
+            {
+                if (m_AnimEditor != null)
+                {
+                    m_AnimEditor.state.currentTime = value;
+                }
+            }
+        }
+
+        public int frame
+        {
+            get
+            {
+                if (m_AnimEditor != null)
+                {
+                    return m_AnimEditor.state.currentFrame;
+                }
+                return 0;
+            }
+            set
+            {
+                if (m_AnimEditor != null)
+                {
+                    m_AnimEditor.state.currentFrame = value;
+                }
+            }
+        }
+
+        private AnimationWindow()
+        {}
+
+        internal void ForceRefresh()
         {
             if (m_AnimEditor != null)
             {
@@ -58,7 +208,7 @@ namespace UnityEditor
             }
         }
 
-        public void OnEnable()
+        void OnEnable()
         {
             if (m_AnimEditor == null)
             {
@@ -77,7 +227,7 @@ namespace UnityEditor
             Undo.undoRedoPerformed += UndoRedoPerformed;
         }
 
-        public void OnDisable()
+        void OnDisable()
         {
             s_AnimationWindows.Remove(this);
             m_AnimEditor.OnDisable();
@@ -85,12 +235,12 @@ namespace UnityEditor
             Undo.undoRedoPerformed -= UndoRedoPerformed;
         }
 
-        public void OnDestroy()
+        void OnDestroy()
         {
             DestroyImmediate(m_AnimEditor);
         }
 
-        public void Update()
+        void Update()
         {
             if (m_AnimEditor == null)
                 return;
@@ -98,7 +248,7 @@ namespace UnityEditor
             m_AnimEditor.Update();
         }
 
-        public void OnGUI()
+        void OnGUI()
         {
             if (m_AnimEditor == null)
                 return;
@@ -107,7 +257,7 @@ namespace UnityEditor
             m_AnimEditor.OnAnimEditorGUI(this, position);
         }
 
-        public void OnSelectionChange()
+        internal void OnSelectionChange()
         {
             if (m_AnimEditor == null)
                 return;
@@ -148,18 +298,18 @@ namespace UnityEditor
             }
         }
 
-        public void OnFocus()
+        void OnFocus()
         {
             OnSelectionChange();
         }
 
-        public void OnControllerChange()
+        internal void OnControllerChange()
         {
             // Refresh selectedItem to update selected clips.
             OnSelectionChange();
         }
 
-        public void OnLostFocus()
+        void OnLostFocus()
         {
             if (m_AnimEditor != null)
                 m_AnimEditor.OnLostFocus();
@@ -177,12 +327,12 @@ namespace UnityEditor
             return false;
         }
 
-        public bool EditGameObject(GameObject gameObject)
+        internal bool EditGameObject(GameObject gameObject)
         {
             return EditGameObjectInternal(gameObject, (IAnimationWindowControl)null);
         }
 
-        public bool EditAnimationClip(AnimationClip animationClip)
+        internal bool EditAnimationClip(AnimationClip animationClip)
         {
             if (state.linkedWithSequencer == true)
                 return false;
@@ -191,14 +341,14 @@ namespace UnityEditor
             return true;
         }
 
-        public bool EditSequencerClip(AnimationClip animationClip, Object sourceObject, IAnimationWindowControl controlInterface)
+        internal bool EditSequencerClip(AnimationClip animationClip, Object sourceObject, IAnimationWindowControl controlInterface)
         {
             EditAnimationClipInternal(animationClip, sourceObject, controlInterface);
             state.linkedWithSequencer = true;
             return true;
         }
 
-        public void UnlinkSequencer()
+        internal void UnlinkSequencer()
         {
             if (state.linkedWithSequencer)
             {
@@ -246,7 +396,7 @@ namespace UnityEditor
                 m_AnimEditor.OnSelectionUpdated();
         }
 
-        protected virtual void ShowButton(Rect r)
+        void ShowButton(Rect r)
         {
             if (m_LockButtonStyle == null)
                 m_LockButtonStyle = "IN LockButton";
@@ -307,7 +457,7 @@ namespace UnityEditor
             Repaint();
         }
 
-        public virtual void AddItemsToMenu(GenericMenu menu)
+        public void AddItemsToMenu(GenericMenu menu)
         {
             m_LockTracker.AddItemsToMenu(menu, m_AnimEditor.stateDisabled);
         }

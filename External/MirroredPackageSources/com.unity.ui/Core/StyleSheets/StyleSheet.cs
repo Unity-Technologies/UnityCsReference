@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using TableType = System.Collections.Generic.Dictionary<string, UnityEngine.UIElements.StyleComplexSelector>;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -70,6 +71,23 @@ namespace UnityEngine.UIElements
         [SerializeField]
         internal Object[] assets;
 
+        [Serializable]
+        internal struct ImportStruct
+        {
+            public StyleSheet styleSheet;
+            public string[] mediaQueries;
+        }
+
+        [SerializeField]
+        internal ImportStruct[] imports;
+
+        [SerializeField]
+        List<StyleSheet> m_FlattenedImportedStyleSheets;
+        internal List<StyleSheet> flattenedRecursiveImports
+        {
+            get { return m_FlattenedImportedStyleSheets; }
+        }
+
         [SerializeField]
         private int m_ContentHash;
 
@@ -137,6 +155,28 @@ namespace UnityEngine.UIElements
         void OnEnable()
         {
             SetupReferences();
+        }
+
+        internal void FlattenImportedStyleSheetsRecursive()
+        {
+            m_FlattenedImportedStyleSheets = new List<StyleSheet>();
+            FlattenImportedStyleSheetsRecursive(this);
+        }
+
+        void FlattenImportedStyleSheetsRecursive(StyleSheet sheet)
+        {
+            if (sheet.imports == null)
+                return;
+
+            for (var i = 0; i < sheet.imports.Length; i++)
+            {
+                var importedStyleSheet = sheet.imports[i].styleSheet;
+                if (importedStyleSheet == null)
+                    continue;
+
+                FlattenImportedStyleSheetsRecursive(importedStyleSheet);
+                m_FlattenedImportedStyleSheets.Add(importedStyleSheet);
+            }
         }
 
         void SetupReferences()

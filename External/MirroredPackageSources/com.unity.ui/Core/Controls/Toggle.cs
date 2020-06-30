@@ -81,7 +81,7 @@ namespace UnityEngine.UIElements
 
             // Set-up the label and text...
             text = null;
-            this.AddManipulator(new Clickable(OnClickEvent));
+            this.AddManipulator(new PointerClickable(OnClickEvent));
         }
 
         /// <summary>
@@ -134,9 +134,21 @@ namespace UnityEngine.UIElements
 
         void OnClickEvent(EventBase evt)
         {
-            if ((evt as MouseUpEvent)?.button == (int)MouseButton.LeftMouse)
+            if (evt.eventTypeId == MouseUpEvent.TypeId())
             {
-                OnClick();
+                var ce = (IMouseEvent)evt;
+                if (ce.button == (int)MouseButton.LeftMouse)
+                {
+                    OnClick();
+                }
+            }
+            else if (evt.eventTypeId == PointerUpEvent.TypeId() || evt.eventTypeId == ClickEvent.TypeId())
+            {
+                var ce = (IPointerEvent)evt;
+                if (ce.button == (int)MouseButton.LeftMouse)
+                {
+                    OnClick();
+                }
             }
         }
 
@@ -154,8 +166,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (((evt as KeyDownEvent)?.keyCode == KeyCode.KeypadEnter) ||
-                ((evt as KeyDownEvent)?.keyCode == KeyCode.Return))
+            if (eventInterpreter.IsActivationEvent(evt))
             {
                 OnClick();
                 evt.StopPropagation();

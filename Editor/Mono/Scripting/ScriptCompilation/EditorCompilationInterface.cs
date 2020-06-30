@@ -354,12 +354,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static bool AreAllScriptsDirty()
-        {
-            return Instance.AreAllScriptsDirty();
-        }
-
-        [RequiredByNativeCode]
         public static bool ArePrecompiledAssembliesDirty()
         {
             return Instance.ArePrecompiledAssembliesDirty();

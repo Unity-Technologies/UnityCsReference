@@ -36,6 +36,7 @@ namespace UnityEditor.UIElements.Debugger
         private DebuggerSearchBarFilter m_CurrentFilter;
 
         private DebuggerTreeView m_ParentTreeView;
+        private TextField m_SearchTextField;
 
         private Label m_CountLabel;
         private Label m_FieldHelpLabel;
@@ -53,12 +54,12 @@ namespace UnityEditor.UIElements.Debugger
             m_FieldHelpLabel.AddToClassList("unity-treeview-searchbar-label-help");
             Add(m_FieldHelpLabel);
 
-            var field = new TextField();
-            field.AddToClassList("unity-treeview-searchbar-field");
-            field.RegisterValueChangedCallback(PerformSearch);
-            field.RegisterCallback<KeyDownEvent>((e) =>
+            m_SearchTextField = new TextField();
+            m_SearchTextField.AddToClassList("unity-treeview-searchbar-field");
+            m_SearchTextField.RegisterValueChangedCallback(PerformSearch);
+            m_SearchTextField.RegisterCallback<KeyDownEvent>((e) =>
             {
-                var targetField = field;
+                var targetField = m_SearchTextField;
                 if (e.keyCode == KeyCode.F3 || e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter)
                 {
                     if (e.modifiers == EventModifiers.Shift)
@@ -74,7 +75,7 @@ namespace UnityEditor.UIElements.Debugger
                     m_ParentTreeView.Focus();
                 }
             }, TrickleDown.TrickleDown);
-            Add(field);
+            Add(m_SearchTextField);
 
             m_CountLabel = new Label();
             m_CountLabel.AddToClassList("unity-treeview-searchbar-label");
@@ -90,6 +91,11 @@ namespace UnityEditor.UIElements.Debugger
             nextButton.AddToClassList("unity-treeview-searchbar-button");
             nextButton.AddToClassList("unity-treeview-searchbar-button-next");
             Add(nextButton);
+        }
+
+        public void ClearSearch()
+        {
+            m_SearchTextField.value = string.Empty;
         }
 
         private void SelectNext()

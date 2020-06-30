@@ -12,6 +12,9 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class SimplePage : BasePage
     {
+        private const string k_UnityPackageGroupName = "Unity";
+        private const string k_OtherPackageGroupName = "Other";
+
         [SerializeField]
         private VisualStateList m_VisualStateList = new VisualStateList();
 
@@ -72,6 +75,16 @@ namespace UnityEditor.PackageManager.UI
             RefreshVisualStates();
         }
 
+        private string GetGroupName(IPackage package)
+        {
+            if (package.Is(PackageType.BuiltIn) || package.Is(PackageType.AssetStore))
+                return string.Empty;
+            else if (package.Is(PackageType.Unity))
+                return tab == PackageFilterTab.UnityRegistry ? string.Empty : L10n.Tr(k_UnityPackageGroupName);
+            else
+                return string.IsNullOrEmpty(package.versions.primary?.author) ? L10n.Tr(k_OtherPackageGroupName) : package.versions.primary?.author;
+        }
+
         private void RebuildOrderedVisualStates()
         {
             var packages = m_PackageDatabase.allPackages
@@ -85,10 +98,10 @@ namespace UnityEditor.PackageManager.UI
             else // displayName
                 orderedPackages = packages.OrderBy(p => p.versions.primary?.displayName ?? p.name);
 
-            var orderedPackageIds = m_Filters?.isReverseOrder ?? false ?
-                orderedPackages.Reverse().Select(p => p.uniqueId) :
-                orderedPackages.Select(p => p.uniqueId);
-            m_VisualStateList.Rebuild(orderedPackageIds);
+            var orderedPackageIdAndGroups = m_Filters?.isReverseOrder ?? false ?
+                orderedPackages.Reverse().Select(p => new Tuple<string, string>(p.uniqueId, GetGroupName(p))) :
+                orderedPackages.Select(p => new Tuple<string, string>(p.uniqueId, GetGroupName(p)));
+            m_VisualStateList.Rebuild(orderedPackageIdAndGroups);
         }
 
         private void RefreshVisualStates()

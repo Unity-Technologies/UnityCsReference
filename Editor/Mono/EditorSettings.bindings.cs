@@ -145,6 +145,9 @@ namespace UnityEditor
         public static extern SceneAsset prefabUIEnvironment { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern bool prefabModeAllowAutoSave { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern SpritePackerMode spritePackerMode { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]

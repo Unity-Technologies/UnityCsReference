@@ -37,17 +37,32 @@ namespace UnityEditor.PackageManager.UI
             return element.resolvedStyle.visibility == Visibility.Visible && element.resolvedStyle.display != DisplayStyle.None;
         }
 
-        public static VisualElement FindNextSibling(VisualElement element, bool reverseOrder)
+        public static VisualElement FindNextSibling(VisualElement element, bool reverseOrder, Func<VisualElement, bool> matchFunc = null)
         {
             if (element == null)
                 return null;
 
             var parent = element.parent;
             var index = parent.IndexOf(element);
-            var newIndex = reverseOrder ? index - 1 : index + 1;
-            if (newIndex >= parent.childCount || newIndex < 0)
-                return null;
-            return parent.ElementAt(newIndex);
+            if (reverseOrder)
+            {
+                for (var i = index - 1; i >= 0; i--)
+                {
+                    var nextElement = parent.ElementAt(i);
+                    if (matchFunc == null || matchFunc(nextElement))
+                        return nextElement;
+                }
+            }
+            else
+            {
+                for (var i = index + 1; i < parent.childCount; i++)
+                {
+                    var nextElement = parent.ElementAt(i);
+                    if (matchFunc == null || matchFunc(nextElement))
+                        return nextElement;
+                }
+            }
+            return null;
         }
 
         public static void ScrollIfNeeded(ScrollView container, VisualElement target)

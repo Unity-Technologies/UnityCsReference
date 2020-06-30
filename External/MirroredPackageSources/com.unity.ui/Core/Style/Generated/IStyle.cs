@@ -88,13 +88,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Bottom distance from the element's box during layout.
         /// </summary>
-        /// <remarks>
-        /// Also see positionType property.
-        /// </remarks>
         StyleLength bottom { get; set; }
         /// <summary>
         /// Color to use when drawing the text of an element.
         /// </summary>
+        /// <remarks>
+        /// This property is inherited by default.
+        /// </remarks>
         StyleColor color { get; set; }
         /// <summary>
         /// Mouse cursor to display when the mouse pointer is over an element.
@@ -104,9 +104,8 @@ namespace UnityEngine.UIElements
         /// Defines how an element is displayed in the layout.
         /// </summary>
         /// <remarks>
-        /// Unlike the <see cref="IStyle.visibility"/> property, this property affects the layout of the element.
-        ///                              This is a convenient way to hide an element without removing it from the hierarchy (when using the <see cref="DisplayStyle.None"/>).
-        ///
+        /// Unlike the visibility property, this property affects the layout of the element.
+        /// This is a convenient way to hide an element without removing it from the hierarchy (when using the <see cref="DisplayStyle.None"/>).
         /// </remarks>
         StyleEnum<DisplayStyle> display { get; set; }
         /// <summary>
@@ -118,7 +117,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         StyleEnum<FlexDirection> flexDirection { get; set; }
         /// <summary>
-        /// Specifies how much the item will grow relative to the rest of the flexible items inside the same container.
+        /// Specifies how the item will shrink relative to the rest of the flexible items inside the same container.
         /// </summary>
         StyleFloat flexGrow { get; set; }
         /// <summary>
@@ -132,6 +131,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Font size to draw the element's text.
         /// </summary>
+        /// <remarks>
+        /// This property is inherited by default.
+        /// </remarks>
         StyleLength fontSize { get; set; }
         /// <summary>
         /// Fixed height of an element for the layout.
@@ -144,9 +146,6 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Left distance from the element's box during layout.
         /// </summary>
-        /// <remarks>
-        /// Also see positionType property.
-        /// </remarks>
         StyleLength left { get; set; }
         /// <summary>
         /// Space reserved for the bottom edge of the margin during the layout phase.
@@ -211,15 +210,12 @@ namespace UnityEngine.UIElements
         /// Element's positioning in its parent container.
         /// </summary>
         /// <remarks>
-        /// This property is used in conjunction with position left, top, right and bottom properties.
+        /// This property is used in conjunction with left, top, right and bottom properties.
         /// </remarks>
         StyleEnum<Position> position { get; set; }
         /// <summary>
         /// Right distance from the element's box during layout.
         /// </summary>
-        /// <remarks>
-        /// Also see positionType property.
-        /// </remarks>
         StyleLength right { get; set; }
         /// <summary>
         /// The element's text overflow mode.
@@ -228,12 +224,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Top distance from the element's box during layout.
         /// </summary>
-        /// <remarks>
-        /// Also see positionType property.
-        /// </remarks>
         StyleLength top { get; set; }
         /// <summary>
-        /// Tinting color for the element's backgroundImage
+        /// Tinting color for the element's backgroundImage.
         /// </summary>
         StyleColor unityBackgroundImageTintColor { get; set; }
         /// <summary>
@@ -243,10 +236,16 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Font to draw the element's text.
         /// </summary>
+        /// <remarks>
+        /// This property is inherited by default.
+        /// </remarks>
         StyleFont unityFont { get; set; }
         /// <summary>
-        /// Size of the 9-slice's bottom edge when painting an element's background image.
+        /// Font style and weight (normal, bold, italic) to draw the element's text.
         /// </summary>
+        /// <remarks>
+        /// This property is inherited by default.
+        /// </remarks>
         StyleEnum<FontStyle> unityFontStyleAndWeight { get; set; }
         /// <summary>
         /// Specifies which box the element content is clipped against.
@@ -271,6 +270,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Horizontal and vertical text alignment in the element's box.
         /// </summary>
+        /// <remarks>
+        /// This property is inherited by default.
+        /// </remarks>
         StyleEnum<TextAnchor> unityTextAlign { get; set; }
         /// <summary>
         /// The element's text overflow position.
@@ -279,10 +281,16 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Specifies whether or not an element is visible.
         /// </summary>
+        /// <remarks>
+        /// This property is inherited by default.
+        /// </remarks>
         StyleEnum<Visibility> visibility { get; set; }
         /// <summary>
         /// Word wrapping over multiple lines if not enough space is available to draw the text of an element.
         /// </summary>
+        /// <remarks>
+        /// This property is inherited by default.
+        /// </remarks>
         StyleEnum<WhiteSpace> whiteSpace { get; set; }
         /// <summary>
         /// Fixed width of an element for the layout.

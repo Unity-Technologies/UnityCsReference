@@ -120,5 +120,21 @@ namespace UnityEngine.UIElements
             }
             return MeasureTextSize(textToMeasure, desiredWidth, widthMode, desiredHeight, heightMode);
         }
+
+        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        {
+            base.ExecuteDefaultActionAtTarget(evt);
+
+            if (evt == null)
+            {
+                return;
+            }
+
+            if (eventInterpreter.IsActivationEvent(evt))
+            {
+                clickable.SimulateSingleClick(evt);
+                evt.StopPropagation();
+            }
+        }
     }
 }

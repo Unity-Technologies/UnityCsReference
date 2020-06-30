@@ -118,6 +118,12 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\TreeViewItem.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\TreeViewItem.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\TwoPaneSplitView.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\TwoPaneSplitView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\TwoPaneSplitViewResizer.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\TwoPaneSplitViewResizer.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\VisualTreeBindingsUpdater.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\VisualTreeBindingsUpdater.cs</Link>
     </Compile>
@@ -162,6 +168,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\EventDispatcher.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\EventDispatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\EventInterpreter.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\EventInterpreter.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\CaptureEvents.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\CaptureEvents.cs</Link>
@@ -1705,62 +1714,8 @@
     <Compile Include="..\..\Modules\VFX\Public\ScriptBindings\VisualEffect.bindings.cs">
       <Link>Modules\VFX\Public\ScriptBindings\VisualEffect.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VR\HoloLens\HolographicEmulation\HolographicRemoting.cs">
-      <Link>Modules\VR\HoloLens\HolographicEmulation\HolographicRemoting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\GestureRecognizer.bindings.cs">
-      <Link>Modules\VR\HoloLens\ScriptBindings\GestureRecognizer.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\HolographicAutomation.bindings.cs">
-      <Link>Modules\VR\HoloLens\ScriptBindings\HolographicAutomation.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\HolographicAutomationUtils.cs">
-      <Link>Modules\VR\HoloLens\ScriptBindings\HolographicAutomationUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\HolographicEmulation.bindings.cs">
-      <Link>Modules\VR\HoloLens\ScriptBindings\HolographicEmulation.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\HolographicSettings.bindings.cs">
-      <Link>Modules\VR\HoloLens\ScriptBindings\HolographicSettings.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\HolographicSettings.deprecated.cs">
-      <Link>Modules\VR\HoloLens\ScriptBindings\HolographicSettings.deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\InteractionManager.bindings.cs">
-      <Link>Modules\VR\HoloLens\ScriptBindings\InteractionManager.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\InteractionManager.deprecated.cs">
-      <Link>Modules\VR\HoloLens\ScriptBindings\InteractionManager.deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\SpatialMapping.bindings.cs">
-      <Link>Modules\VR\HoloLens\ScriptBindings\SpatialMapping.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\WorldAnchor.bindings.cs">
-      <Link>Modules\VR\HoloLens\ScriptBindings\WorldAnchor.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\WorldAnchorStore.bindings.cs">
-      <Link>Modules\VR\HoloLens\ScriptBindings\WorldAnchorStore.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\WorldAnchorStoreBatch.bindings.cs">
-      <Link>Modules\VR\HoloLens\ScriptBindings\WorldAnchorStoreBatch.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\WorldManager.bindings.cs">
-      <Link>Modules\VR\HoloLens\ScriptBindings\WorldManager.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\ScriptBindings\VR.deprecated.cs">
-      <Link>Modules\VR\ScriptBindings\VR.deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\ScriptBindings\VRNode.deprecated.cs">
-      <Link>Modules\VR\ScriptBindings\VRNode.deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\ScriptBindings\VRNodeState.deprecated.cs">
-      <Link>Modules\VR\ScriptBindings\VRNodeState.deprecated.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\VR\ScriptBindings\XR.bindings.cs">
       <Link>Modules\VR\ScriptBindings\XR.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\Test\VRTestMock.bindings.cs">
-      <Link>Modules\VR\Test\VRTestMock.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Vehicles\Vehicles.bindings.cs">
       <Link>Modules\Vehicles\Vehicles.bindings.cs</Link>

@@ -508,6 +508,23 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         public static extern bool virtualRealitySupported { get; set; }
 
+        [NativeHeader("Runtime/Misc/PlayerSettings.h")]
+        [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+        internal class PlayerSettings360StereoCapture
+        {
+            public static extern bool enable360StereoCapture
+            {
+                get;
+                set;
+            }
+        }
+
+        public static bool enable360StereoCapture
+        {
+            get { return PlayerSettings360StereoCapture.enable360StereoCapture; }
+            set { PlayerSettings360StereoCapture.enable360StereoCapture = value; }
+        }
+
         [Obsolete("singlePassStereoRendering will be deprecated. Use stereoRenderingPath instead.")]
         public static bool singlePassStereoRendering
         {

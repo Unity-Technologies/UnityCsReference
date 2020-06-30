@@ -10,98 +10,19 @@ using UnityEngine.Scripting;
 
 namespace UnityEditorInternal.VR
 {
-    [RequiredByNativeCode]
-    [StructLayout(LayoutKind.Sequential)]
-    [NativeType(CodegenOptions = CodegenOptions.Custom)]
-    public partial struct VRDeviceInfoEditor
-    {
-        public string deviceNameKey;
-        public string deviceNameUI;
-        public string externalPluginName;
-        public bool supportsEditorMode;
-        public bool inListByDefault;
-    }
-
     [NativeHeader("Modules/VREditor/VREditor.bindings.h")]
     public sealed partial class VREditor
     {
-        extern public static VRDeviceInfoEditor[] GetAllVRDeviceInfo(BuildTargetGroup targetGroup);
-
-        extern public static VRDeviceInfoEditor[] GetAllVRDeviceInfoByTarget(BuildTarget target);
-
         extern public static bool GetVREnabledOnTargetGroup(BuildTargetGroup targetGroup);
 
         extern public static void SetVREnabledOnTargetGroup(BuildTargetGroup targetGroup, bool value);
 
-        extern public static string[] GetVREnabledDevicesOnTargetGroup(BuildTargetGroup targetGroup);
-
-        extern public static string[] GetVREnabledDevicesOnTarget(BuildTarget target);
 
         [NativeMethod("SetVREnabledDevicesOnTargetGroup")]
         extern public static void NativeSetVREnabledDevicesOnTargetGroup(BuildTargetGroup targetGroup, string[] devices);
         public static void SetVREnabledDevicesOnTargetGroup(BuildTargetGroup targetGroup, string[] devices)
         {
             NativeSetVREnabledDevicesOnTargetGroup(targetGroup, devices);
-            SetDeviceListDirty(targetGroup);
-        }
-    }
-}
-
-namespace UnityEditorInternal
-{
-    [NativeHeader("Runtime/Misc/PlayerSettings.h")]
-    [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
-    internal class PlayerSettingsOculus
-    {
-        public static extern bool sharedDepthBuffer
-        {
-            [NativeMethod("GetOculusSharedDepthBufferEnabled")]
-            get;
-            [NativeMethod("SetOculusSharedDepthBufferEnabled")]
-            set;
-        }
-
-        public static extern bool dashSupport
-        {
-            [NativeMethod("GetOculusDashSupportEnabled")]
-            get;
-            [NativeMethod("SetOculusDashSupportEnabled")]
-            set;
-        }
-
-        public static extern bool lowOverheadMode
-        {
-            [NativeMethod("GetOculusLowOverheadModeEnabled")]
-            get;
-            [NativeMethod("SetOculusLowOverheadModeEnabled")]
-            set;
-        }
-
-        public static extern bool protectedContext
-        {
-            [NativeMethod("GetOculusProtectedContextEnabled")]
-            get;
-            [NativeMethod("SetOculusProtectedContextEnabled")]
-            set;
-        }
-
-        public static extern bool v2Signing
-        {
-            [NativeMethod("GetOculusV2SigningEnabled")]
-            get;
-            [NativeMethod("SetOculusV2SigningEnabled")]
-            set;
-        }
-    }
-
-    [NativeHeader("Runtime/Misc/PlayerSettings.h")]
-    [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
-    internal class PlayerSettings360StereoCapture
-    {
-        public static extern bool enable360StereoCapture
-        {
-            get;
-            set;
         }
     }
 }
@@ -112,51 +33,22 @@ namespace UnityEditor
 {
     partial class PlayerSettings
     {
-        public class VROculus
+        // TODO: Delete this once Windows MR XR Plugin package removes it's dependency on it.
+        [Obsolete("This API is deprecated and will be removed in 2020.2.", false)]
+        public static class VRWindowsMixedReality
         {
-            [Obsolete("This API is obsolete, and should no longer be used. Please update to the Unity Oculus XR Plugin package.")]
-            public static bool sharedDepthBuffer
+            [Obsolete("This API is deprecated and will be removed in 2020.2.", false)]
+            public enum DepthBufferFormat
             {
-                get { return UnityEditorInternal.PlayerSettingsOculus.sharedDepthBuffer; }
-                set { UnityEditorInternal.PlayerSettingsOculus.sharedDepthBuffer = value; }
+                DepthBufferFormat16Bit = 0,
+                DepthBufferFormat24Bit = 1
             }
 
-            [Obsolete("This API is obsolete, and should no longer be used. Please update to the Unity Oculus XR Plugin package.")]
-            public static bool dashSupport
-            {
-                get { return UnityEditorInternal.PlayerSettingsOculus.dashSupport; }
-                set { UnityEditorInternal.PlayerSettingsOculus.dashSupport = value; }
-            }
+            [Obsolete("This API is deprecated and will be removed in 2020.2.", false)]
+            public static DepthBufferFormat depthBufferFormat { get; set; }
 
-            [Obsolete("This API is obsolete, and should no longer be used. Please update to the Unity Oculus XR Plugin package.")]
-            public static bool lowOverheadMode
-            {
-                get { return UnityEditorInternal.PlayerSettingsOculus.lowOverheadMode; }
-                set { UnityEditorInternal.PlayerSettingsOculus.lowOverheadMode = value; }
-            }
-
-            [Obsolete("This API is obsolete, and should no longer be used. Please update to the Unity Oculus XR Plugin package.")]
-            public static bool protectedContext
-            {
-                get { return UnityEditorInternal.PlayerSettingsOculus.protectedContext; }
-                set { UnityEditorInternal.PlayerSettingsOculus.protectedContext = value; }
-            }
-
-            [Obsolete("This API is obsolete, and should no longer be used. Please update to the Unity Oculus XR Plugin package.")]
-            public static bool v2Signing
-            {
-                get { return UnityEditorInternal.PlayerSettingsOculus.v2Signing; }
-                set { UnityEditorInternal.PlayerSettingsOculus.v2Signing = value; }
-            }
-        }
-    }
-
-    partial class PlayerSettings
-    {
-        public static bool enable360StereoCapture
-        {
-            get { return UnityEditorInternal.PlayerSettings360StereoCapture.enable360StereoCapture; }
-            set { UnityEditorInternal.PlayerSettings360StereoCapture.enable360StereoCapture = value; }
+            [Obsolete("This API is deprecated and will be removed in 2020.2.", false)]
+            public static bool depthBufferSharingEnabled { get; set; }
         }
     }
 }

@@ -72,16 +72,25 @@ namespace UnityEditor
 
         private class Styles
         {
-            public readonly GUIContent m_AgentRadiusContent = EditorGUIUtility.TrTextContent("Agent Radius", "How close to the walls navigation mesh exist.");
-            public readonly GUIContent m_AgentHeightContent = EditorGUIUtility.TrTextContent("Agent Height", "How much vertical clearance space must exist.");
-            public readonly GUIContent m_AgentSlopeContent = EditorGUIUtility.TrTextContent("Max Slope", "Maximum slope the agent can walk up.");
-            public readonly GUIContent m_AgentDropContent = EditorGUIUtility.TrTextContent("Drop Height", "Maximum agent drop height.");
+            // Agents tab
+            public readonly GUIContent m_AgentNameContent = EditorGUIUtility.TrTextContent("Name", "The identifier for a set of values of the agent characteristics.");
+            public readonly GUIContent m_AgentRadiusContent = EditorGUIUtility.TrTextContent("Radius", "The minimum distance to the walls where the navigation mesh can exist.");
+            public readonly GUIContent m_AgentHeightContent = EditorGUIUtility.TrTextContent("Height", "How much vertical clearance space must exist.");
             public readonly GUIContent m_AgentClimbContent = EditorGUIUtility.TrTextContent("Step Height", "The height of discontinuities in the level the agent can climb over (i.e. steps and stairs).");
-            public readonly GUIContent m_AgentJumpContent = EditorGUIUtility.TrTextContent("Jump Distance", "Maximum agent jump distance.");
-            public readonly GUIContent m_AgentPlacementContent = EditorGUIUtility.TrTextContent("Height Mesh", "Generate an accurate height mesh for precise agent placement (slower).");
-            public readonly GUIContent m_MinRegionAreaContent = EditorGUIUtility.TrTextContent("Min Region Area", "Minimum area that a navmesh region can be.");
-            public readonly GUIContent m_ManualCellSizeContent = EditorGUIUtility.TrTextContent("Manual Voxel Size", "Enable to set voxel size manually.");
-            public readonly GUIContent m_CellSizeContent = EditorGUIUtility.TrTextContent("Voxel Size", "Specifies at the voxelization resolution at which the NavMesh is build.");
+            public readonly GUIContent m_AgentSlopeContent = EditorGUIUtility.TrTextContent("Max Slope", "Maximum slope the agent can walk up.");
+
+            // Bake tab
+            public readonly GUIContent m_BakeRadiusContent = EditorGUIUtility.TrTextContent("Agent Radius", "The minimum distance to the walls where the navigation mesh can exist.");
+            public readonly GUIContent m_BakeHeightContent = EditorGUIUtility.TrTextContent("Agent Height", "How much vertical clearance space must exist.");
+            public readonly GUIContent m_BakeSlopeContent = EditorGUIUtility.TrTextContent("Max Slope", "Maximum slope the agent can walk up.");
+            public readonly GUIContent m_BakeClimbContent = EditorGUIUtility.TrTextContent("Step Height", "The height of discontinuities in the level the agent can climb over (i.e. steps and stairs).");
+            public readonly GUIContent m_BakeDropContent = EditorGUIUtility.TrTextContent("Drop Height", "Maximum agent drop height.");
+            public readonly GUIContent m_BakeJumpContent = EditorGUIUtility.TrTextContent("Jump Distance", "Maximum agent jump distance.");
+            public readonly GUIContent m_BakeManualCellSizeContent = EditorGUIUtility.TrTextContent("Manual Voxel Size", "Enable to set voxel size manually.");
+            public readonly GUIContent m_BakeCellSizeContent = EditorGUIUtility.TrTextContent("Voxel Size", "Specifies the voxelization resolution at which the NavMesh is build.");
+            public readonly GUIContent m_BakeMinRegionAreaContent = EditorGUIUtility.TrTextContent("Min Region Area", "Minimum area that a navmesh region can be.");
+            public readonly GUIContent m_BakePlacementContent = EditorGUIUtility.TrTextContent("Height Mesh", "Generate an accurate height mesh for precise agent placement (slower).");
+
             public readonly GUIContent m_LearnAboutComponent = EditorGUIUtility.TrTextContent("Learn instead about the component workflow.", "Components available for building and using navmesh data for different agent types.");
 
             public readonly GUIContent m_AgentSizeHeader = EditorGUIUtility.TrTextContent("Baked Agent Size");
@@ -804,7 +813,7 @@ namespace UnityEditor
             NavMeshEditorHelpers.DrawAgentDiagram(agentDiagramRect, m_AgentRadius.floatValue, m_AgentHeight.floatValue, m_AgentClimb.floatValue, m_AgentSlope.floatValue);
 
             //Agent Settings
-            var radius = EditorGUILayout.FloatField(s_Styles.m_AgentRadiusContent, m_AgentRadius.floatValue);
+            var radius = EditorGUILayout.FloatField(s_Styles.m_BakeRadiusContent, m_AgentRadius.floatValue);
             if (radius >= 0.001f && !Mathf.Approximately(radius - m_AgentRadius.floatValue, 0.0f))
             {
                 m_AgentRadius.floatValue = radius;
@@ -818,19 +827,19 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox("The agent radius you've set is really small, this can slow down the build.\nIf you intended to allow the agent to move close to the borders and walls, please adjust voxel size in advaced settings to ensure correct bake.", MessageType.Warning);
             }
 
-            var height = EditorGUILayout.FloatField(s_Styles.m_AgentHeightContent, m_AgentHeight.floatValue);
+            var height = EditorGUILayout.FloatField(s_Styles.m_BakeHeightContent, m_AgentHeight.floatValue);
             if (height >= 0.001f && !Mathf.Approximately(height - m_AgentHeight.floatValue, 0.0f))
                 m_AgentHeight.floatValue = height;
 
             const float kMaxSlopeAngle = 60.0f;
-            EditorGUILayout.Slider(m_AgentSlope, 0.0f, kMaxSlopeAngle, s_Styles.m_AgentSlopeContent);
+            EditorGUILayout.Slider(m_AgentSlope, 0.0f, kMaxSlopeAngle, s_Styles.m_BakeSlopeContent);
             if (m_AgentSlope.floatValue > kMaxSlopeAngle)
             {
                 EditorGUILayout.HelpBox("The maximum slope should be set to less than " + kMaxSlopeAngle + " degrees to prevent NavMesh build artifacts on slopes. ", MessageType.Warning);
             }
 
             //Step height
-            var newClimb = EditorGUILayout.FloatField(s_Styles.m_AgentClimbContent, m_AgentClimb.floatValue);
+            var newClimb = EditorGUILayout.FloatField(s_Styles.m_BakeClimbContent, m_AgentClimb.floatValue);
             if (newClimb >= 0.0f && !Mathf.Approximately(m_AgentClimb.floatValue - newClimb, 0.0f))
                 m_AgentClimb.floatValue = newClimb;
 
@@ -862,12 +871,12 @@ namespace UnityEditor
             EditorGUILayout.LabelField(s_Styles.m_OffmeshHeader, EditorStyles.boldLabel);
 
             //Drop height
-            var newDropHeight =  EditorGUILayout.FloatField(s_Styles.m_AgentDropContent, m_LedgeDropHeight.floatValue);
+            var newDropHeight =  EditorGUILayout.FloatField(s_Styles.m_BakeDropContent, m_LedgeDropHeight.floatValue);
             if (newDropHeight >= 0.0f && !Mathf.Approximately(newDropHeight - m_LedgeDropHeight.floatValue, 0.0f))
                 m_LedgeDropHeight.floatValue = newDropHeight;
 
             //Jump distance
-            var newJumpDistance = EditorGUILayout.FloatField(s_Styles.m_AgentJumpContent, m_MaxJumpAcrossDistance.floatValue);
+            var newJumpDistance = EditorGUILayout.FloatField(s_Styles.m_BakeJumpContent, m_MaxJumpAcrossDistance.floatValue);
             if (newJumpDistance >= 0.0f && !Mathf.Approximately(newJumpDistance - m_MaxJumpAcrossDistance.floatValue, 0.0f))
                 m_MaxJumpAcrossDistance.floatValue = newJumpDistance;
 
@@ -881,7 +890,7 @@ namespace UnityEditor
                 EditorGUI.indentLevel++;
 
                 // Cell size
-                var manualCellSize = EditorGUILayout.Toggle(s_Styles.m_ManualCellSizeContent, m_ManualCellSize.boolValue);
+                var manualCellSize = EditorGUILayout.Toggle(s_Styles.m_BakeManualCellSizeContent, m_ManualCellSize.boolValue);
                 if (manualCellSize != m_ManualCellSize.boolValue)
                 {
                     m_ManualCellSize.boolValue = manualCellSize;
@@ -895,7 +904,7 @@ namespace UnityEditor
                 EditorGUI.indentLevel++;
                 using (new EditorGUI.DisabledScope(!m_ManualCellSize.boolValue))
                 {
-                    var cellSize = EditorGUILayout.FloatField(s_Styles.m_CellSizeContent, m_CellSize.floatValue);
+                    var cellSize = EditorGUILayout.FloatField(s_Styles.m_BakeCellSizeContent, m_CellSize.floatValue);
                     if (cellSize > 0.0f && !Mathf.Approximately(cellSize - m_CellSize.floatValue, 0.0f))
                     {
                         m_CellSize.floatValue = Math.Max(0.01f, cellSize);
@@ -943,14 +952,14 @@ namespace UnityEditor
                 EditorGUILayout.Space();
 
                 // Min region area
-                var minRegionArea = EditorGUILayout.FloatField(s_Styles.m_MinRegionAreaContent, m_MinRegionArea.floatValue);
+                var minRegionArea = EditorGUILayout.FloatField(s_Styles.m_BakeMinRegionAreaContent, m_MinRegionArea.floatValue);
                 if (minRegionArea >= 0.0f && minRegionArea != m_MinRegionArea.floatValue)
                     m_MinRegionArea.floatValue = minRegionArea;
 
                 EditorGUILayout.Space();
 
                 //Height mesh
-                var accurate = EditorGUILayout.Toggle(s_Styles.m_AgentPlacementContent, m_AccuratePlacement.boolValue);
+                var accurate = EditorGUILayout.Toggle(s_Styles.m_BakePlacementContent, m_AccuratePlacement.boolValue);
                 if (accurate != m_AccuratePlacement.boolValue) m_AccuratePlacement.boolValue = accurate;
 
                 EditorGUI.indentLevel--;
@@ -1002,13 +1011,13 @@ namespace UnityEditor
                 Rect agentDiagramRect = EditorGUILayout.GetControlRect(false, kDiagramHeight);
                 NavMeshEditorHelpers.DrawAgentDiagram(agentDiagramRect, radiusProp.floatValue, heightProp.floatValue, stepHeightProp.floatValue, maxSlopeProp.floatValue);
 
-                EditorGUILayout.PropertyField(nameProp, EditorGUIUtility.TempContent("Name"));
-                EditorGUILayout.PropertyField(radiusProp, EditorGUIUtility.TempContent("Radius"));
-                EditorGUILayout.PropertyField(heightProp, EditorGUIUtility.TempContent("Height"));
-                EditorGUILayout.PropertyField(stepHeightProp, EditorGUIUtility.TempContent("Step Height"));
+                EditorGUILayout.PropertyField(nameProp, s_Styles.m_AgentNameContent);
+                EditorGUILayout.PropertyField(radiusProp, s_Styles.m_AgentRadiusContent);
+                EditorGUILayout.PropertyField(heightProp, s_Styles.m_AgentHeightContent);
+                EditorGUILayout.PropertyField(stepHeightProp, s_Styles.m_AgentClimbContent);
 
                 const float kMaxSlopeAngle = 60.0f;
-                EditorGUILayout.Slider(maxSlopeProp, 0.0f, kMaxSlopeAngle, EditorGUIUtility.TempContent("Max Slope"));
+                EditorGUILayout.Slider(maxSlopeProp, 0.0f, kMaxSlopeAngle, s_Styles.m_AgentSlopeContent);
             }
 
             EditorGUILayout.Space();

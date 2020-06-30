@@ -12,8 +12,8 @@ namespace UnityEngine.UIElements
         {
             m_Target = target;
 
-            m_Target.RegisterCallback<PointerDownEvent>(OnPointerDownEvent);
-            m_Target.RegisterCallback<PointerUpEvent>(OnPointerUpEvent);
+            m_Target.RegisterCallback<PointerDownEvent>(OnPointerDownEvent, TrickleDown.TrickleDown);
+            m_Target.RegisterCallback<PointerUpEvent>(OnPointerUpEvent, TrickleDown.TrickleDown);
             m_Target.RegisterCallback<PointerLeaveEvent>(OnPointerLeaveEvent);
             m_Target.RegisterCallback<PointerMoveEvent>(OnPointerMoveEvent);
 
@@ -45,6 +45,11 @@ namespace UnityEngine.UIElements
         protected abstract void OnDrop(Vector3 pointerPosition);
         protected abstract void ClearDragAndDropUI();
 
+        internal void OnPointerUp()
+        {
+            m_CanStartDrag = false;
+        }
+
         private void OnPointerDownEvent(PointerDownEvent evt)
         {
             if (evt.button != (int)MouseButton.LeftMouse)
@@ -62,7 +67,7 @@ namespace UnityEngine.UIElements
 
         private void OnPointerUpEvent(PointerUpEvent evt)
         {
-            m_CanStartDrag = false;
+            OnPointerUp();
         }
 
         private void OnPointerLeaveEvent(PointerLeaveEvent evt)

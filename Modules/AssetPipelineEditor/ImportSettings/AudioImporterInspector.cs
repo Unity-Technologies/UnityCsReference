@@ -431,7 +431,8 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_Ambisonic);
             }
 
-            BuildPlatform[] validPlatforms = BuildPlatforms.instance.GetValidPlatforms().ToArray();
+            // We need to sort them so every extraDataTarget have them ordered correctly and we can use serializedProperties.
+            BuildPlatform[] validPlatforms = BuildPlatforms.instance.GetValidPlatforms().OrderBy(platform => platform.targetGroup).ToArray();
             GUILayout.Space(10);
             int shownSettingsPage = EditorGUILayout.BeginPlatformGrouping(validPlatforms, Style.DefaultPlatform);
 

@@ -41,21 +41,17 @@ namespace UnityEditor.PackageManager.UI
         {
             versionLabel.text = version.version?.ToString() ?? version.versionString;
             var primary = package.versions.primary;
-            Label stateLabel = null;
+            var stateText = string.Empty;
             if (version == primary)
             {
                 if (version.isInstalled)
-                    stateLabel = new Label(L10n.Tr("Currently Installed"));
+                    stateText = L10n.Tr("Currently Installed");
                 else if (version.HasTag(PackageTag.Downloadable) && version.isAvailableOnDisk)
-                    stateLabel = new Label(L10n.Tr("Currently Downloaded"));
+                    stateText = L10n.Tr("Currently Downloaded");
             }
             else if (version == package.versions.recommended)
-                stateLabel = new Label(L10n.Tr("Update Available"));
-            if (stateLabel != null)
-            {
-                stateLabel.tooltip = stateLabel.text;
-                stateContainer.Add(stateLabel);
-            }
+                stateText = L10n.Tr("Update Available");
+            stateLabel.text = stateText;
 
             var tagLabel = PackageTagLabel.CreateTagLabel(version, true);
             if (tagLabel != null)
@@ -63,6 +59,7 @@ namespace UnityEditor.PackageManager.UI
         }
 
         private VisualElementCache cache { get; set; }
+        private Label stateLabel { get { return cache.Get<Label>("stateLabel"); } }
         private Label versionLabel { get { return cache.Get<Label>("versionLabel"); } }
         private VisualElement stateContainer { get { return cache.Get<VisualElement>("stateContainer"); } }
     }

@@ -96,15 +96,6 @@ namespace UnityEditor
             if (CrashReporting.CrashReportingSettings.enabled)
                 AddNativeModuleInStrippingInfo("CrashReporting", "Required by Crash Reporting Service (See Services Window)", strippingInfo, nativeModules, "class/PlayerSettings");
 
-            if (UnityEditorInternal.VR.VRModule.ShouldInjectVRDependenciesForBuildTarget(target))
-            {
-                const string moduleName = "VR";
-                const string requiredMessage = "Required because VR is enabled in PlayerSettings";
-                nativeModules.Add(moduleName);
-                strippingInfo.RegisterDependency(StrippingInfo.ModuleName(moduleName), requiredMessage);
-                strippingInfo.SetIcon(requiredMessage, "class/PlayerSettings");
-            }
-
             foreach (string module in ModuleMetadata.GetModuleNames())
             {
                 if (!ModuleMetadata.IsStrippableModule(module))

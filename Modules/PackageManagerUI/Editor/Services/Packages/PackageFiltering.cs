@@ -16,6 +16,8 @@ namespace UnityEditor.PackageManager.UI
         public virtual event Action<PackageFilterTab> onFilterTabChanged = delegate {};
         public virtual event Action<string> onSearchTextChanged = delegate {};
 
+        public virtual PackageFilterTab? previousFilterTab { get; private set; } = null;
+
         [SerializeField]
         private PackageFilterTab m_CurrentFilterTab;
         public virtual PackageFilterTab currentFilterTab
@@ -26,6 +28,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (value != m_CurrentFilterTab)
                 {
+                    previousFilterTab = m_CurrentFilterTab;
                     m_CurrentFilterTab = value;
                     onFilterTabChanged?.Invoke(m_CurrentFilterTab);
                 }
@@ -65,11 +68,12 @@ namespace UnityEditor.PackageManager.UI
             {
                 case PackageFilterTab.BuiltIn:
                     return package.Is(PackageType.BuiltIn);
-                case PackageFilterTab.All:
-                    return package.Is(PackageType.Installable) && (package.isDiscoverable || (package.versions.installed?.isDirectDependency ?? false));
+                case PackageFilterTab.UnityRegistry:
+                    return package.Is(PackageType.Installable) && package.Is(PackageType.Unity) && (package.isDiscoverable || (package.versions.installed?.isDirectDependency ?? false));
+                case PackageFilterTab.MyRegistries:
+                    return package.Is(PackageType.Installable) && package.Is(PackageType.ScopedRegistry) && (package.isDiscoverable || (package.versions.installed?.isDirectDependency ?? false));
                 case PackageFilterTab.InProject:
-                    return !package.Is(PackageType.BuiltIn) && package.versions.installed != null
-                        && (showDependencies || package.versions.installed.isDirectDependency);
+                    return !package.Is(PackageType.BuiltIn) && (package.progress == PackageProgress.Installing || (package.versions.installed != null && (showDependencies || package.versions.installed.isDirectDependency)));
                 case PackageFilterTab.AssetStore:
                     return isLoggedIn && package.Is(PackageType.AssetStore);
                 default:

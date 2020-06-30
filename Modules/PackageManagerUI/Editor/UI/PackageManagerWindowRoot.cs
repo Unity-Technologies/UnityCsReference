@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEditor.Scripting.ScriptCompilation;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -12,10 +10,8 @@ namespace UnityEditor.PackageManager.UI
 {
     internal class PackageManagerWindowRoot : VisualElement
     {
-        [NonSerialized]
         private string m_PackageToSelectOnLoaded;
 
-        [NonSerialized]
         private PackageFilterTab? m_FilterToSelectAfterLoad;
 
         private ResourceLoader m_ResourceLoader;
@@ -74,6 +70,9 @@ namespace UnityEditor.PackageManager.UI
             packageManagerToolbar.SetEnabled(!m_PackageDatabase.isEmpty);
             packageDetails.packageToolbarContainer.SetEnabled(!m_PackageDatabase.isEmpty);
 
+            leftColumnContainer.style.flexGrow = m_PackageManagerPrefs.splitterFlexGrow;
+            rightColumnContainer.style.flexGrow = 1 - m_PackageManagerPrefs.splitterFlexGrow;
+
             m_PageManager.onRefreshOperationFinish += OnRefreshOperationFinish;
             m_PageManager.onRefreshOperationStart += OnRefreshOperationStart;
             m_PageManager.onRefreshOperationError += OnRefreshOperationError;
@@ -91,8 +90,8 @@ namespace UnityEditor.PackageManager.UI
             if (m_PageManager.GetRefreshTimestamp(newTab) == 0)
                 DelayRefresh(newTab);
 
-            if (newTab != PackageFilterTab.All && m_PageManager.GetRefreshTimestamp(PackageFilterTab.All) == 0)
-                DelayRefresh(PackageFilterTab.All);
+            if (newTab != PackageFilterTab.UnityRegistry && m_PageManager.GetRefreshTimestamp(PackageFilterTab.UnityRegistry) == 0)
+                DelayRefresh(PackageFilterTab.UnityRegistry);
 
             EditorApplication.focusChanged += OnFocusChanged;
             m_Selection.onSelectionChanged += RefreshSelectedInInspectorClass;
@@ -168,6 +167,8 @@ namespace UnityEditor.PackageManager.UI
 
             EditorApplication.focusChanged -= OnFocusChanged;
             m_Selection.onSelectionChanged -= RefreshSelectedInInspectorClass;
+
+            m_PackageManagerPrefs.splitterFlexGrow = leftColumnContainer.resolvedStyle.flexGrow;
         }
 
         public void OnDestroy()
@@ -222,7 +223,7 @@ namespace UnityEditor.PackageManager.UI
 
             if (package != null || m_FilterToSelectAfterLoad != null)
             {
-                var tab = m_FilterToSelectAfterLoad ?? PackageFilterTab.All;
+                var tab = m_FilterToSelectAfterLoad ?? PackageFilterTab.UnityRegistry;
 
                 m_PackageFiltering.currentFilterTab = tab;
                 if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
@@ -289,7 +290,7 @@ namespace UnityEditor.PackageManager.UI
                             packageToSelect = null;
                         }
                         else
-                            filterTab = PackageFilterTab.All;
+                            filterTab = PackageFilterTab.UnityRegistry;
                     }
                 }
 
@@ -310,6 +311,7 @@ namespace UnityEditor.PackageManager.UI
         private PackageDetails packageDetails { get { return cache.Get<PackageDetails>("packageDetails"); } }
         private PackageManagerToolbar packageManagerToolbar { get { return cache.Get<PackageManagerToolbar>("topMenuToolbar"); } }
         private PackageStatusBar packageStatusbar { get { return cache.Get<PackageStatusBar>("packageStatusBar"); } }
-        private VisualSplitter mainContainer { get { return cache.Get<VisualSplitter>("mainContainer"); } }
+        private VisualElement leftColumnContainer { get { return cache.Get<VisualElement>("leftColumnContainer"); } }
+        private VisualElement rightColumnContainer { get { return cache.Get<VisualElement>("rightColumnContainer"); } }
     }
 }

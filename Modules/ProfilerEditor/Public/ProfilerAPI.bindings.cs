@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEditor;
 using UnityEditor.Profiling;
 using UnityEngine.Bindings;
 using UnityEngine.Profiling;
@@ -313,6 +314,37 @@ namespace UnityEditorInternal
         static void InvokeProfileLoaded()
         {
             profileLoaded?.Invoke();
+        }
+
+        internal static event Action<ProfilerAnalyticsSaveLoadData> profilerCaptureLoaded;
+
+        [RequiredByNativeCode]
+        static void InvokeProfilerCaptureLoaded(ProfilerAnalyticsSaveLoadData data)
+        {
+            profilerCaptureLoaded?.Invoke(data);
+        }
+
+        internal static event Action<ProfilerAnalyticsSaveLoadData> profilerCaptureSaved;
+
+        [RequiredByNativeCode]
+        static void InvokeProfilerCaptureSaved(ProfilerAnalyticsSaveLoadData data)
+        {
+            profilerCaptureSaved?.Invoke(data);
+        }
+
+        internal static event Action<ProfilerAnalyticsConnectionData> profilerConnected;
+
+        [RequiredByNativeCode]
+        static void InvokeProfilerConnected(ProfilerAnalyticsConnectionData data)
+        {
+            profilerConnected?.Invoke(data);
+        }
+
+        internal static event Action<bool> profilingStateChange;
+        [RequiredByNativeCode]
+        static void InvokeProfilingStateChange(bool state)
+        {
+            profilingStateChange?.Invoke(state);
         }
 
         [Obsolete("ResetHistory is deprecated, use ClearAllFrames instead.")]

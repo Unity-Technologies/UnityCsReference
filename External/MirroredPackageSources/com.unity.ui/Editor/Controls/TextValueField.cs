@@ -32,7 +32,11 @@ namespace UnityEditor.UIElements
         public string formatString
         {
             get { return textValueInput.formatString; }
-            set { textValueInput.formatString = value; }
+            set
+            {
+                textValueInput.formatString = value;
+                SetValueWithoutNotify(this.value);
+            }
         }
 
         protected TextValueField(int maxLength, TextValueInput textValueInput)

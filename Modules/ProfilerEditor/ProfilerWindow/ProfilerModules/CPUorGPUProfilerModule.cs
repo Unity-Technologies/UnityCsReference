@@ -179,6 +179,10 @@ namespace UnityEditorInternal.Profiling
                 return;
 
             m_ViewType = viewtype;
+
+            ProfilerWindowAnalytics.AddNewView(m_ViewType == ProfilerViewType.Timeline
+                ? ProfilerWindowAnalytics.profilerCPUModuleTimeline
+                : ProfilerWindowAnalytics.profilerCPUModuleHierarchy);
         }
 
         public override void Clear()
