@@ -120,8 +120,7 @@ namespace UnityEditor
         bool m_EnableOldAssetTree = true;
         bool m_FocusSearchField;
         string m_SelectedPath;
-        List<GUIContent> m_SelectedPathSplitted = new List<GUIContent>();
-        float m_LastListWidth;
+        GUIContent m_SelectedPathContent = new GUIContent();
         bool m_DidSelectSearchResult = false;
         bool m_ItemSelectedByRightClickThisEvent = false;
         bool m_InternalSelectionChange = false; // to know when selection change originated in project view itself
@@ -405,6 +404,11 @@ namespace UnityEditor
         {
             if (Initialized())
                 return;
+
+            if (s_Styles == null)
+            {
+                s_Styles = new Styles();
+            }
 
             m_FocusSearchField = false;
 
@@ -1055,8 +1059,17 @@ namespace UnityEditor
                 }
             }
 
-            // By clearing we auto refresh it when needed (in an OnGUI code path because we need Styles)
-            m_SelectedPathSplitted.Clear();
+            if (!string.IsNullOrEmpty(m_SelectedPath))
+            {
+                m_SelectedPathContent = new GUIContent(m_SelectedPath, AssetDatabase.GetCachedIcon(m_SelectedPath))
+                {
+                    tooltip = m_SelectedPath
+                };
+            }
+            else
+            {
+                m_SelectedPathContent = new GUIContent();
+            }
         }
 
         static void OpenSelectedFolders()
@@ -1736,63 +1749,6 @@ namespace UnityEditor
             }
         }
 
-        void RefreshSplittedSelectedPath()
-        {
-            if (s_Styles == null)
-                s_Styles = new Styles();
-
-            m_SelectedPathSplitted.Clear();
-
-            if (String.IsNullOrEmpty(m_SelectedPath))
-            {
-                m_SelectedPathSplitted.Add(new GUIContent());
-            }
-            else
-            {
-                string displayPath = m_SelectedPath;
-
-                if (m_SearchFilter.GetState() == SearchFilter.State.FolderBrowsing)
-                {
-                    m_SelectedPathSplitted.Add(new GUIContent(displayPath, AssetDatabase.GetCachedIcon(m_SelectedPath)));
-                }
-                else
-                {
-                    float availableWidth = position.width - m_DirectoriesAreaWidth - k_SliderWidth - 16f;
-                    Vector2 stringSize = s_Styles.selectedPathLabel.CalcSize(GUIContent.Temp(displayPath));
-                    if (stringSize.x + 25f > availableWidth)
-                    {
-                        var split = displayPath.Split('/');
-                        var splitPath = m_SelectedPath.Split('/');
-                        var curPath = string.Empty;
-                        for (var i = 0; i < split.Length; ++i)
-                        {
-                            curPath += splitPath[i];
-                            var icon = AssetDatabase.GetCachedIcon(curPath);
-
-                            m_SelectedPathSplitted.Add(new GUIContent(split[i], icon));
-                            curPath += "/";
-                        }
-                    }
-                    else
-                    {
-                        m_SelectedPathSplitted.Add(new GUIContent(displayPath, AssetDatabase.GetCachedIcon(m_SelectedPath)));
-                    }
-                }
-            }
-        }
-
-        float GetBottomBarHeight()
-        {
-            if (m_SelectedPathSplitted.Count == 0)
-                RefreshSplittedSelectedPath();
-
-            // Only show bottom bar in one column mode when searching
-            if (m_ViewMode == ViewMode.OneColumn && !m_SearchFilter.IsSearching())
-                return 0f;
-
-            return k_BottomBarHeight * m_SelectedPathSplitted.Count;
-        }
-
         float GetListHeaderHeight()
         {
             return m_SearchFilter.GetState() == SearchFilter.State.EmptySearchFilter ? 0f : k_ToolbarHeight;
@@ -1800,22 +1756,21 @@ namespace UnityEditor
 
         void CalculateRects()
         {
-            float bottomBarHeight = GetBottomBarHeight();
             float listHeaderHeight = GetListHeaderHeight();
             if (m_ViewMode == ViewMode.OneColumn)
             {
-                m_ListAreaRect = new Rect(0, EditorGUI.kWindowToolbarHeight + listHeaderHeight, position.width, position.height - k_ToolbarHeight - listHeaderHeight - bottomBarHeight);
-                m_TreeViewRect = new Rect(0, EditorGUI.kWindowToolbarHeight, position.width, position.height - k_ToolbarHeight - bottomBarHeight);
-                m_BottomBarRect = new Rect(0, position.height - bottomBarHeight, position.width, bottomBarHeight);
+                m_ListAreaRect = new Rect(0, EditorGUI.kWindowToolbarHeight + listHeaderHeight, position.width, position.height - k_ToolbarHeight - listHeaderHeight - k_BottomBarHeight);
+                m_TreeViewRect = new Rect(0, EditorGUI.kWindowToolbarHeight, position.width, position.height - k_ToolbarHeight - k_BottomBarHeight);
+                m_BottomBarRect = new Rect(0, position.height - k_BottomBarHeight, position.width, k_BottomBarHeight);
                 m_ListHeaderRect = new Rect(0, EditorGUI.kWindowToolbarHeight, position.width, listHeaderHeight);
             }
             else //if (m_ViewMode == ViewMode.TwoColumns)
             {
                 float listWidth = position.width - m_DirectoriesAreaWidth;
 
-                m_ListAreaRect = new Rect(m_DirectoriesAreaWidth, EditorGUI.kWindowToolbarHeight + listHeaderHeight, listWidth, position.height - k_ToolbarHeight - listHeaderHeight - bottomBarHeight);
+                m_ListAreaRect = new Rect(m_DirectoriesAreaWidth, EditorGUI.kWindowToolbarHeight + listHeaderHeight, listWidth, position.height - k_ToolbarHeight - listHeaderHeight - k_BottomBarHeight);
                 m_TreeViewRect = new Rect(0, EditorGUI.kWindowToolbarHeight, m_DirectoriesAreaWidth, position.height - k_ToolbarHeight);
-                m_BottomBarRect = new Rect(m_DirectoriesAreaWidth, position.height - bottomBarHeight, listWidth, bottomBarHeight);
+                m_BottomBarRect = new Rect(m_DirectoriesAreaWidth, position.height - k_BottomBarHeight, listWidth, k_BottomBarHeight);
                 m_ListHeaderRect = new Rect(m_ListAreaRect.x, EditorGUI.kWindowToolbarHeight, m_ListAreaRect.width, listHeaderHeight);
             }
         }
@@ -1864,7 +1819,7 @@ namespace UnityEditor
             m_ItemSelectedByRightClickThisEvent = false;
 
             // Size splitterRects for different areas of the browser
-            ResizeHandling(position.width, position.height - k_ToolbarHeight);
+            ResizeHandling(position.height - k_ToolbarHeight);
             CalculateRects();
 
             Event evt = Event.current;
@@ -2157,7 +2112,7 @@ namespace UnityEditor
             return 0;
         }
 
-        void ResizeHandling(float width, float height)
+        void ResizeHandling(float height)
         {
             if (m_ViewMode == ViewMode.OneColumn)
                 return;
@@ -2166,12 +2121,6 @@ namespace UnityEditor
             Rect dragRect = new Rect(m_DirectoriesAreaWidth, EditorGUI.kWindowToolbarHeight, k_ResizerWidth, height);
             dragRect = EditorGUIUtility.HandleHorizontalSplitter(dragRect, position.width, k_MinDirectoriesAreaWidth, k_MinWidthTwoColumns - k_MinDirectoriesAreaWidth);
             m_DirectoriesAreaWidth = dragRect.x;
-
-            // Refresh selected path indicator for new width
-            float listWidth = position.width - m_DirectoriesAreaWidth;
-            if (listWidth != m_LastListWidth)
-                RefreshSplittedSelectedPath();
-            m_LastListWidth = listWidth;
         }
 
         void ButtonSaveFilter()
@@ -2588,9 +2537,15 @@ namespace UnityEditor
 
             // Background
             GUI.Label(rect, GUIContent.none, s_Styles.bottomBarBg);
-            Rect sliderRect = new Rect(rect.x + rect.width - k_SliderWidth - 16f
-                , rect.y + rect.height - (m_BottomBarRect.height + EditorGUI.kSingleLineHeight) / 2, k_SliderWidth, m_BottomBarRect.height);
-            IconSizeSlider(sliderRect);
+
+            // Icons are fixed size in One Column mode, so only show icon size slider in Two Columns mode
+            if (m_ViewMode == ViewMode.TwoColumns)
+            {
+                Rect sliderRect = new Rect(rect.x + rect.width - k_SliderWidth - 16f
+                    , rect.y + rect.height - (m_BottomBarRect.height + EditorGUI.kSingleLineHeight) / 2, k_SliderWidth,
+                    m_BottomBarRect.height);
+                IconSizeSlider(sliderRect);
+            }
 
             // File path
             EditorGUIUtility.SetIconSize(new Vector2(16, 16)); // If not set we see icons scaling down if text is being cropped
@@ -2598,13 +2553,13 @@ namespace UnityEditor
             rect.width -= k_Margin * 2;
             rect.x += k_Margin;
             rect.height = k_BottomBarHeight;
-            for (int i = m_SelectedPathSplitted.Count - 1; i >= 0; --i)
+
+            if (m_ViewMode == ViewMode.TwoColumns)
             {
-                if (i == 0)
-                    rect.width = rect.width - k_SliderWidth - 14f;
-                GUI.Label(rect, m_SelectedPathSplitted[i], s_Styles.selectedPathLabel);
-                rect.y += k_BottomBarHeight;
+                rect.width -= k_SliderWidth + 14f;
             }
+
+            GUI.Label(rect, m_SelectedPathContent, s_Styles.selectedPathLabel);
             EditorGUIUtility.SetIconSize(new Vector2(0, 0));
         }
 

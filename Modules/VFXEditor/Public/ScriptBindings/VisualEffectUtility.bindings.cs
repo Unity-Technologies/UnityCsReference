@@ -18,9 +18,10 @@ namespace UnityEditor.VFX
     [NativeHeader("Modules/VFXEditor/Public/VisualEffectUtility.h")]
     internal static class VisualEffectUtility
     {
+        //TODO : Remove this internal function once all reference in package test has been removed
         static public VFXSpawnerState GetSpawnerState(VisualEffect effect, uint systemIndex)
         {
-            var vfxSpawnerState = new VFXSpawnerState(VFXSpawnerState.Internal_Create(), true);
+            var vfxSpawnerState = new VFXSpawnerState();
             GetSpawnerState(effect, vfxSpawnerState.GetPtr(), systemIndex);
             return vfxSpawnerState;
         }

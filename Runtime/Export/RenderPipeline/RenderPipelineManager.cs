@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Scripting;
 
@@ -69,7 +70,7 @@ namespace UnityEngine.Rendering
         }
 
         [RequiredByNativeCode]
-        static void DoRenderLoop_Internal(RenderPipelineAsset pipe, IntPtr loopPtr, AtomicSafetyHandle safety)
+        static void DoRenderLoop_Internal(RenderPipelineAsset pipe, IntPtr loopPtr, List<Camera.RenderRequest> renderRequests, AtomicSafetyHandle safety)
         {
             PrepareRenderPipeline(pipe);
             if (currentPipeline == null)
@@ -80,7 +81,11 @@ namespace UnityEngine.Rendering
 
             Array.Clear(s_Cameras, 0, s_Cameras.Length);
             GetCameras(loop);
-            currentPipeline.InternalRender(loop, s_Cameras);
+
+            if (renderRequests == null)
+                currentPipeline.InternalRender(loop, s_Cameras);
+            else
+                currentPipeline.InternalRenderWithRequests(loop, s_Cameras, renderRequests);
 
             Array.Clear(s_Cameras, 0, s_Cameras.Length);
         }

@@ -10,8 +10,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
     internal enum DirtySource
     {
         None = 0,
-        DirtyScript = 1,
-        DirtyAssembly = 2,
-        DirtyReference = 3,
+        DirtyAssembly = 1,
+        DirtyReference = 2,
     }
 }

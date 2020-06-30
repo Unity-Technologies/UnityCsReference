@@ -80,7 +80,7 @@ namespace UnityEditor.UIElements.StyleSheets
             m_Builder.AddValue(path, StyleValueType.ResourcePath);
         }
 
-        static StyleSheetImportErrorCode ConvertErrorCode(URIValidationResult result)
+        static protected StyleSheetImportErrorCode ConvertErrorCode(URIValidationResult result)
         {
             switch (result)
             {
@@ -368,12 +368,64 @@ namespace UnityEditor.UIElements.StyleSheets
 
     internal class StyleSheetImporterImpl : StyleValueImporter
     {
+        static readonly Parser s_Parser = new Parser();
+        static readonly HashSet<string> s_StyleSheetsWithCircularImportDependencies = new HashSet<string>();
+        static readonly HashSet<string> s_StyleSheetsUnsortedDependencies = new HashSet<string>();
+        static readonly List<string> s_StyleSheetProjectRelativeImportPaths = new List<string>();
+
         public StyleSheetImporterImpl(AssetImportContext context) : base(context)
         {
         }
 
         public StyleSheetImporterImpl() : base()
         {
+        }
+
+        internal static string[] PopulateDependencies(string assetPath)
+        {
+            s_StyleSheetsUnsortedDependencies.Clear();
+            s_StyleSheetsUnsortedDependencies.Add(assetPath);
+            s_StyleSheetsWithCircularImportDependencies.Remove(assetPath);
+
+            var dependencies = new List<string>();
+            PopulateDependencies(assetPath, dependencies);
+            return dependencies.ToArray();
+        }
+
+        internal static void PopulateDependencies(string assetPath, List<string> dependencies)
+        {
+            var contents = File.ReadAllText(assetPath);
+
+            if (string.IsNullOrEmpty(contents))
+                return;
+
+            var styleSheet = s_Parser.Parse(contents);
+            var importDirectivesCount = styleSheet.ImportDirectives.Count;
+
+            s_StyleSheetProjectRelativeImportPaths.Clear();
+            for (var i = 0; i < importDirectivesCount; ++i)
+            {
+                var importedPath = styleSheet.ImportDirectives[i].Href;
+                var importResult = URIHelpers.ValidAssetURL(assetPath, importedPath, out _, out var projectRelativePath);
+                if (importResult == URIValidationResult.OK)
+                {
+                    if (!s_StyleSheetProjectRelativeImportPaths.Contains(projectRelativePath))
+                        s_StyleSheetProjectRelativeImportPaths.Add(projectRelativePath);
+                }
+            }
+
+            foreach (var projectRelativeImportPath in s_StyleSheetProjectRelativeImportPaths)
+            {
+                if (s_StyleSheetsUnsortedDependencies.Contains(projectRelativeImportPath))
+                {
+                    s_StyleSheetsWithCircularImportDependencies.Add(projectRelativeImportPath);
+                    throw new InvalidDataException("Circular @import dependencies");
+                }
+
+                s_StyleSheetsUnsortedDependencies.Add(projectRelativeImportPath);
+                PopulateDependencies(projectRelativeImportPath, dependencies);
+                dependencies.Add(projectRelativeImportPath);
+            }
         }
 
         protected virtual void OnImportError(StyleSheetImportErrors errors)
@@ -440,6 +492,48 @@ namespace UnityEditor.UIElements.StyleSheets
             if (success)
             {
                 m_Builder.BuildTo(asset);
+
+                if (!s_StyleSheetsWithCircularImportDependencies.Contains(assetPath))
+                {
+                    var importDirectivesCount = styleSheet.ImportDirectives.Count;
+                    asset.imports = new UnityStyleSheet.ImportStruct[importDirectivesCount];
+                    for (int i = 0; i < importDirectivesCount; ++i)
+                    {
+                        var importedPath = styleSheet.ImportDirectives[i].Href;
+
+                        string projectRelativePath, errorMessage;
+
+                        URIValidationResult importResult = URIHelpers.ValidAssetURL(assetPath, importedPath, out errorMessage, out projectRelativePath);
+
+                        UnityStyleSheet importedStyleSheet = null;
+                        if (importResult != URIValidationResult.OK)
+                            m_Errors.AddSemanticError(ConvertErrorCode(importResult), errorMessage);
+                        else
+                        {
+                            importedStyleSheet = DeclareDependencyAndLoad(projectRelativePath) as UnityStyleSheet;
+                            m_Context.DependsOnImportedAsset(projectRelativePath);
+                        }
+
+                        asset.imports[i] = new UnityStyleSheet.ImportStruct
+                        {
+                            styleSheet = importedStyleSheet,
+                            mediaQueries = styleSheet.ImportDirectives[i].Media.ToArray()
+                        };
+                    }
+
+                    if (importDirectivesCount > 0)
+                    {
+                        asset.FlattenImportedStyleSheetsRecursive();
+                    }
+                }
+                else
+                {
+                    asset.imports = new UnityStyleSheet.ImportStruct[0];
+                    var errorMsg = $"The {assetPath} contains circular @import dependencies. All @import directives will be ignored for this StyleSheet.";
+                    Debug.LogError(errorMsg);
+                    m_Errors.AddInternalError(errorMsg);
+                }
+
                 OnImportSuccess(asset);
             }
 

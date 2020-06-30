@@ -338,8 +338,17 @@ namespace UnityEditor.Experimental.SceneManagement
 
         internal bool autoSave
         {
-            get { return !m_TemporarilyDisableAutoSave && StageNavigationManager.instance.autoSave; }
-            set { m_TemporarilyDisableAutoSave = false; StageNavigationManager.instance.autoSave = value; }
+            get
+            {
+                return EditorSettings.prefabModeAllowAutoSave && !m_TemporarilyDisableAutoSave && StageNavigationManager.instance.autoSave;
+            }
+            set
+            {
+                if (!EditorSettings.prefabModeAllowAutoSave)
+                    return;
+                m_TemporarilyDisableAutoSave = false;
+                StageNavigationManager.instance.autoSave = value;
+            }
         }
 
         internal bool temporarilyDisableAutoSave
@@ -1644,7 +1653,7 @@ namespace UnityEditor.Experimental.SceneManagement
                 VisualizeOverridesToggle();
                 GUILayout.Space(15);
             }
-            AutoSaveButtons(sceneView);
+            SaveButtons(sceneView);
         }
 
         internal override void PlaceGameObjectInStage(GameObject rootGameObject)
@@ -1789,7 +1798,7 @@ namespace UnityEditor.Experimental.SceneManagement
             return !m_IsPrefabInValidAssetFolder || m_IsPrefabInImmutableFolder;
         }
 
-        void AutoSaveButtons(SceneView sceneView)
+        void SaveButtons(SceneView sceneView)
         {
             if (IsPrefabInImmutableFolder())
             {
@@ -1815,6 +1824,7 @@ namespace UnityEditor.Experimental.SceneManagement
                 }
             }
 
+            if (EditorSettings.prefabModeAllowAutoSave)
             {
                 bool autoSaveForScene = autoSave;
                 EditorGUI.BeginChangeCheck();

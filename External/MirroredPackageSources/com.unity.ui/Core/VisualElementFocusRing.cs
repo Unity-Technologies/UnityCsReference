@@ -33,6 +33,44 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
+    /// Define focus change to specific target for the VisualElementFocusRing.
+    /// </summary>
+    internal class VisualElementFocusChangeTarget : FocusChangeDirection
+    {
+        static readonly ObjectPool<VisualElementFocusChangeTarget> Pool = new ObjectPool<VisualElementFocusChangeTarget>();
+
+        /// <summary>
+        /// Gets a VisualElementFocusChangeTarget from the pool and initializes it with the given target. Use this function instead of creating new VisualElementFocusChangeTarget. Results obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
+        /// </summary>
+        public static VisualElementFocusChangeTarget GetPooled(Focusable target)
+        {
+            var r = Pool.Get();
+            r.target = target;
+            return r;
+        }
+
+        protected override void Dispose()
+        {
+            Pool.Release(this);
+        }
+
+        internal override void ApplyTo(FocusController focusController, Focusable f)
+        {
+            f.Focus(); // Call Focus() virtual method when an element is clicked or otherwise focused explicitly.
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public VisualElementFocusChangeTarget() : base(unspecified) {}
+
+        /// <summary>
+        /// The target to which the focus should be moved.
+        /// </summary>
+        public Focusable target { get; private set; }
+    }
+
+    /// <summary>
     /// Implementation of a linear focus ring. Elements are sorted according to their focusIndex.
     /// </summary>
     public class VisualElementFocusRing : IFocusRing
@@ -295,12 +333,23 @@ namespace UnityEngine.UIElements
             // We could implement an extendable adapter system to convert event to a focus change direction.
             // This would enable new event sources to change the focus.
 
+            if (e.eventTypeId == PointerDownEvent.TypeId())
+            {
+                if (e.target is Focusable focusable)
+                    return VisualElementFocusChangeTarget.GetPooled(focusable);
+            }
+
             if (currentFocusable is IMGUIContainer && e.imguiEvent != null)
             {
                 // Let IMGUIContainer manage the focus change.
                 return FocusChangeDirection.none;
             }
 
+            return GetKeyDownFocusChangeDirection(e);
+        }
+
+        internal static FocusChangeDirection GetKeyDownFocusChangeDirection(EventBase e)
+        {
             if (e.eventTypeId == KeyDownEvent.TypeId())
             {
                 KeyDownEvent kde = e as KeyDownEvent;
@@ -330,68 +379,71 @@ namespace UnityEngine.UIElements
             {
                 return currentFocusable;
             }
-            else
-            {
-                DoUpdate();
 
-                if (m_FocusRing.Count == 0)
+            if (direction is VisualElementFocusChangeTarget changeTarget)
+            {
+                return changeTarget.target;
+            }
+
+            DoUpdate();
+
+            if (m_FocusRing.Count == 0)
+            {
+                return null;
+            }
+
+            int index = 0;
+            if (direction == VisualElementFocusChangeDirection.right)
+            {
+                index = GetFocusableInternalIndex(currentFocusable) + 1;
+
+                if (currentFocusable != null && index == 0)
                 {
-                    return null;
+                    // currentFocusable was not found in the ring. Use the element tree to find the next focusable.
+                    return GetNextFocusableInTree(currentFocusable as VisualElement);
                 }
 
-                int index = 0;
-                if (direction == VisualElementFocusChangeDirection.right)
+                if (index == m_FocusRing.Count)
                 {
-                    index = GetFocusableInternalIndex(currentFocusable) + 1;
-
-                    if (currentFocusable != null && index == 0)
-                    {
-                        // currentFocusable was not found in the ring. Use the element tree to find the next focusable.
-                        return GetNextFocusableInTree(currentFocusable as VisualElement);
-                    }
-
+                    index = 0;
+                }
+                // FIXME: Element could be unrelated to delegator; should we detect this case and return null?
+                // Spec is not very clear on this.
+                while (m_FocusRing[index].m_Focusable.delegatesFocus)
+                {
+                    index++;
                     if (index == m_FocusRing.Count)
                     {
-                        index = 0;
-                    }
-                    // FIXME: Element could be unrelated to delegator; should we detect this case and return null?
-                    // Spec is not very clear on this.
-                    while (m_FocusRing[index].m_Focusable.delegatesFocus)
-                    {
-                        index++;
-                        if (index == m_FocusRing.Count)
-                        {
-                            return null;
-                        }
+                        return null;
                     }
                 }
-                else if (direction == VisualElementFocusChangeDirection.left)
-                {
-                    index = GetFocusableInternalIndex(currentFocusable) - 1;
-
-                    if (currentFocusable != null && index == -2)
-                    {
-                        // currentFocusable was not found in the ring. Use the element tree to find the previous focusable.
-                        return GetPreviousFocusableInTree(currentFocusable as VisualElement);
-                    }
-
-                    if (index < 0)
-                    {
-                        index = m_FocusRing.Count - 1;
-                    }
-
-                    while (m_FocusRing[index].m_Focusable.delegatesFocus)
-                    {
-                        index--;
-                        if (index == -1)
-                        {
-                            return null;
-                        }
-                    }
-                }
-
-                return m_FocusRing[index].m_Focusable;
             }
+            else if (direction == VisualElementFocusChangeDirection.left)
+            {
+                index = GetFocusableInternalIndex(currentFocusable) - 1;
+
+                if (currentFocusable != null && index == -2)
+                {
+                    // currentFocusable was not found in the ring. Use the element tree to find the previous focusable.
+                    return GetPreviousFocusableInTree(currentFocusable as VisualElement);
+                }
+
+                if (index < 0)
+                {
+                    index = m_FocusRing.Count - 1;
+                }
+
+                while (m_FocusRing[index].m_Focusable.delegatesFocus)
+                {
+                    index--;
+                    if (index == -1)
+                    {
+                        return null;
+                    }
+                }
+            }
+
+            return m_FocusRing[index].m_Focusable;
         }
 
         internal static Focusable GetNextFocusableInTree(VisualElement currentFocusable)

@@ -222,7 +222,15 @@ namespace UnityEditor.MPE
 
         public static void Log(string msg)
         {
-            var req = CreateRequestMsg(k_LogMsg, null, -1, -1, msg, null);
+            Log(msg, LogType.Log);
+        }
+
+        public static void Log(string msg, LogType logType)
+        {
+            Dictionary<string, string> newMsg = new Dictionary<string, string>();
+            newMsg.Add("logMsg", msg);
+            newMsg.Add("logType", logType.ToString());
+            var req = CreateRequestMsg(k_LogMsg, null, -1, -1, newMsg, null);
             m_Client.Send(req);
         }
 

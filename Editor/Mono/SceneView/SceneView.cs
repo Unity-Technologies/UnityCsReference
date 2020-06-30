@@ -244,6 +244,8 @@ namespace UnityEditor
         {
             get
             {
+                if (GUISkin.current == null)
+                    return 0;
                 var _toolbarHeight = showToolbar ? EditorGUI.kWindowToolbarHeight.value : 0;
                 return (m_StageHandling != null && m_StageHandling.isShowingBreadcrumbBar)
                     ? m_StageHandling.breadcrumbHeight + _toolbarHeight

@@ -225,7 +225,7 @@ namespace UnityEditor
 
         internal static void SetInterpolation(AnimationClip clip, EditorCurveBinding[] curveBindings, Mode newInterpolationMode)
         {
-            Undo.RegisterCompleteObjectUndo(clip, "Rotation Interpolation");
+            Undo.RegisterCompleteObjectUndo(clip, L10n.Tr("Rotation Interpolation"));
 
             if (clip.legacy && newInterpolationMode == Mode.RawEuler)
             {
@@ -269,7 +269,7 @@ namespace UnityEditor
                 oldCurvesBindings.Add(removeCurve);
             }
 
-            Undo.RegisterCompleteObjectUndo(clip, "Rotation Interpolation");
+            Undo.RegisterCompleteObjectUndo(clip, L10n.Tr("Rotation Interpolation"));
 
             foreach (EditorCurveBinding binding in oldCurvesBindings)
                 AnimationUtility.SetEditorCurve(clip, binding, null);

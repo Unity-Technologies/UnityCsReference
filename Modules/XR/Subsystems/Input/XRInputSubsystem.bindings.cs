@@ -16,7 +16,8 @@ namespace UnityEngine.XR
         Unknown = 0,
         Device = 1,
         Floor = 2,
-        TrackingReference = 4
+        TrackingReference = 4,
+        Unbounded = 8
     }
 
     [NativeType(Header = "Modules/XR/Subsystems/Input/XRInputSubsystem.h")]

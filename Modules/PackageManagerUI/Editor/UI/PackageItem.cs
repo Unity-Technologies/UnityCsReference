@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.UIElements;
@@ -11,8 +10,8 @@ namespace UnityEditor.PackageManager.UI
 {
     internal class PackageItem : VisualElement, ISelectableItem
     {
-        // Note that the height here is only the height of the main item (i.e, verison list is not expanded)
-        internal const float k_MainItemHeight = 38.0f;
+        // Note that the height here is only the height of the main item (i.e, version list is not expanded)
+        internal const float k_MainItemHeight = 25.0f;
         private const string k_SelectedClassName = "selected";
         private const string k_ExpandedClassName = "expanded";
 
@@ -23,6 +22,8 @@ namespace UnityEditor.PackageManager.UI
 
         public IPackageVersion targetVersion { get { return package?.versions.primary; } }
         public VisualElement element { get { return this; } }
+
+        internal PackageGroup packageGroup { get; set; }
 
         private IPackageVersion selectedVersion
         {
@@ -44,7 +45,7 @@ namespace UnityEditor.PackageManager.UI
             m_PageManager = pageManager;
         }
 
-        public PackageItem(ResourceLoader resourceLoader, PageManager pageManager, IPackage package)
+        public PackageItem(ResourceLoader resourceLoader, PageManager pageManager, IPackage package, VisualState state)
         {
             ResolveDependencies(resourceLoader, pageManager);
 
@@ -55,23 +56,21 @@ namespace UnityEditor.PackageManager.UI
             mainItem.OnLeftClick(SelectMainItem);
             seeAllVersionsLabel.OnLeftClick(SeeAllVersionsClick);
             arrowExpander.RegisterValueChangedCallback(ToggleExpansion);
-            nameLabel.ShowTextTooltipOnSizeChange();
 
             UpdateExpanderUI(false);
 
             SetPackage(package);
-            UpdateVisualState();
+            UpdateVisualState(state);
         }
 
-        public void UpdateVisualState(VisualState newVisualState = null)
+        public void UpdateVisualState(VisualState newVisualState)
         {
             var seeAllVersionsOld = visualState?.seeAllVersions ?? false;
             var selectedVersionIdOld = visualState?.selectedVersionId ?? string.Empty;
 
-            visualState = newVisualState?.Clone() ?? visualState ?? new VisualState(package?.uniqueId);
+            visualState = newVisualState?.Clone() ?? visualState ?? new VisualState(package?.uniqueId, string.Empty);
 
-            if (UIUtils.IsElementVisible(this) != visualState.visible)
-                UIUtils.SetElementDisplay(this, visualState.visible);
+            EnableInClassList("invisible", !visualState.visible);
 
             if (selectedVersion != null && visualState != null && selectedVersion != targetVersion)
                 visualState.seeAllVersions = visualState.seeAllVersions || !package.versions.key.Contains(selectedVersion);
@@ -111,9 +110,11 @@ namespace UnityEditor.PackageManager.UI
             }
 
             nameLabel.text = displayVersion.displayName;
+            versionLabel.text = displayVersion.versionString;
 
             var expandable = !package.Is(PackageType.BuiltIn);
             UIUtils.SetElementDisplay(arrowExpander, expandable);
+            UIUtils.SetElementDisplay(versionLabel, expandable);
             UIUtils.SetElementDisplay(expanderHidden, !expandable);
             if (!expandable && UIUtils.IsElementVisible(versionsContainer))
                 UpdateExpanderUI(false);
@@ -147,46 +148,12 @@ namespace UnityEditor.PackageManager.UI
                 m_CurrentStateClass = stateClass;
 
                 stateIcon.tooltip = GetTooltipByState(state);
-
-                RefreshStateLabel(state);
             }
             else
             {
                 StartSpinner();
                 spinner.tooltip = GetTooltipByProgress(package.progress);
             }
-        }
-
-        private void RefreshStateLabel(PackageState state)
-        {
-            if (state == PackageState.Installed || state == PackageState.InstalledAsDependency || state == PackageState.InDevelopment)
-            {
-                if (package.Is(PackageType.BuiltIn))
-                    stateLabel.text = L10n.Tr("Enabled");
-                else
-                {
-                    var installedVersion = package.versions.installed;
-                    var versionText = installedVersion.version?.ToString() ?? installedVersion.versionString;
-                    stateLabel.text = string.Format(L10n.Tr("Installed {0}"), versionText);
-                }
-            }
-            else if (state == PackageState.UpdateAvailable)
-            {
-                stateLabel.text = L10n.Tr("Update Available");
-            }
-            else if (state == PackageState.Error)
-            {
-                stateLabel.text = L10n.Tr("Error");
-            }
-            else if (state == PackageState.Warning)
-            {
-                stateLabel.text = L10n.Tr("Warning");
-            }
-            else
-            {
-                stateLabel.text = string.Empty;
-            }
-            stateLabel.tooltip = stateLabel.text;
         }
 
         private void RefreshVersions()
@@ -206,34 +173,21 @@ namespace UnityEditor.PackageManager.UI
             for (var i = versions.Count - 1; i >= 0; i--)
                 versionList.Add(new PackageVersionItem(package, versions[i]));
 
-            var showToolbar = !seeAllVersions && allVersions.Count > keyVersions.Count;
-            UIUtils.SetElementDisplay(versionToolbar, showToolbar);
-
-            FixVersionListStyle(versions);
-        }
-
-        // TODO: Hard-code until scrollView can size to its content
-        // Note: ListItemMaxHeight is used because there is an issue with VisualElement where at construction time,
-        //          styling is not yet applied and max height returns 0 even though the stylesheet has it at 156.
-        private void FixVersionListStyle(List<IPackageVersion> versions)
-        {
-            const int listItemSpacing = 22 + 2 + 2;
-            const int listItemMaxHeight = 156;
-
-            var maxHeight = Math.Max(versionList.style.maxHeight.value.value, listItemMaxHeight);
-            versionList.style.minHeight = Math.Min(versions.Count * listItemSpacing, maxHeight);
+            var seeAllVersionsLabelVisible = !seeAllVersions && allVersions.Count > keyVersions.Count;
+            UIUtils.SetElementDisplay(seeAllVersionsLabel, seeAllVersionsLabelVisible);
 
             // Hack until ScrollList has a better way to do the same -- Vertical scroll bar is not yet visible
             var maxNumberOfItemBeforeScrollbar = 6;
-            versionList.EnableClass("hasScrollBar", versions.Count > maxNumberOfItemBeforeScrollbar);
+            versionList.EnableInClassList("hasScrollBar", versions.Count > maxNumberOfItemBeforeScrollbar);
         }
 
         public void RefreshSelection()
         {
             var selectedVersion = this.selectedVersion;
-            mainItem.EnableClass(k_SelectedClassName, selectedVersion != null);
+            EnableInClassList(k_SelectedClassName, selectedVersion != null);
+            mainItem.EnableInClassList(k_SelectedClassName, selectedVersion != null);
             foreach (var version in versionItems)
-                version.EnableClass(k_SelectedClassName, selectedVersion == version.targetVersion);
+                version.EnableInClassList(k_SelectedClassName, selectedVersion == version.targetVersion);
         }
 
         public void SelectMainItem()
@@ -261,7 +215,7 @@ namespace UnityEditor.PackageManager.UI
 
         internal void UpdateExpanderUI(bool expanded)
         {
-            mainItem.EnableClass(k_ExpandedClassName, expanded);
+            mainItem.EnableInClassList(k_ExpandedClassName, expanded);
             arrowExpander.value = expanded;
             UIUtils.SetElementDisplay(versionsContainer, expanded);
         }
@@ -287,11 +241,10 @@ namespace UnityEditor.PackageManager.UI
 
         private Label nameLabel { get { return cache.Get<Label>("packageName"); } }
         private Label seeAllVersionsLabel { get { return cache.Get<Label>("seeAllVersions"); } }
-        private VisualElement versionToolbar { get { return cache.Get<VisualElement>("versionsToolbar"); } }
         private VisualElement tagContainer => cache.Get<VisualElement>("tagContainer");
         private VisualElement mainItem { get { return cache.Get<VisualElement>("mainItem"); } }
         private VisualElement stateIcon { get { return cache.Get<VisualElement>("stateIcon"); } }
-        private Label stateLabel { get { return cache.Get<Label>("stateLabel"); } }
+        private Label versionLabel { get { return cache.Get<Label>("versionLabel"); } }
         private LoadingSpinner spinner { get { return cache.Get<LoadingSpinner>("packageSpinner"); } }
         private Toggle arrowExpander { get { return cache.Get<Toggle>("arrowExpander"); } }
         private Label expanderHidden { get { return cache.Get<Label>("expanderHidden"); } }
@@ -305,7 +258,6 @@ namespace UnityEditor.PackageManager.UI
             // Keep the error message for `installed` and `installedAsDependency` the same for now as requested by the designer
             "This package is installed.",
             "This package is available for download.",
-            "This package is available to be added to your project.",
             "This package is available for import.",
             "This package is in development.",
             "A newer version of this package is available.",

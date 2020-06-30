@@ -535,6 +535,13 @@ namespace UnityEngine.UIElements
             return e;
         }
 
+        internal static WheelEvent GetPooled(Vector3 delta)
+        {
+            WheelEvent e = GetPooled();
+            e.delta = delta;
+            return e;
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>

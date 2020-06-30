@@ -100,118 +100,146 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Interface for pointer events.
+    /// This interface describes properties available to pointer events.
     /// </summary>
     public interface IPointerEvent
     {
         /// <summary>
-        /// Identifies the pointer that sends the event.
+        /// Gets the identifier of the pointer that sends the event.
         /// </summary>
         /// <remarks>
-        /// If the mouse sends the event, this property is set to 0. If a touchscreen device sends the event, this property is set to the finger ID, which ranges from 1 to the number of touches the device supports.
+        /// If the mouse sends the event, the identifier is set to 0. If a touchscreen device sends the event, the identifier
+        /// is set to the finger ID, which ranges from 1 to the number of touches the device supports.
         /// </remarks>
         int pointerId { get; }
         /// <summary>
-        /// The type of pointer that created this event. This value is taken from the value defined in `PointerType`.
-        /// </summary>
-        string pointerType { get; }
-        /// <summary>
-        /// Returns true if the pointer is a primary pointer
+        /// Gets the type of pointer that created the event.
         /// </summary>
         /// <remarks>
-        /// A primary pointer is a pointer that manipulates the mouse cursor. The mouse pointer is always a primary pointer. For touch events, the first finger that touches the screen is the primary pointer. Once processed, pointer events from primary pointers generate compatibility mouse events.
+        /// This value is taken from the values defined in `PointerType`.
+        /// </remarks>
+        string pointerType { get; }
+        /// <summary>
+        /// Gets a boolean value that indicates whether the pointer is a primary pointer. True means the pointer is a primary
+        /// pointer. False means it isn't.
+        /// </summary>
+        /// <remarks>
+        /// A primary pointer is a pointer that manipulates the mouse cursor. The mouse pointer is always a primary pointer. For touch
+        /// events, the first finger that touches the screen is the primary pointer. Once it is processed, a pointer event from a primary
+        /// pointer generates compatibility mouse events.
         /// </remarks>
         bool isPrimary { get; }
         /// <summary>
-        /// Integer that indicates which mouse button is pressed: 0 is the left button, 1 is the right button, 2 is the middle button.
+        /// Gets a value that indicates which mouse button was pressed: 0 is the left button, 1 is the right button, 2 is the
+        /// middle button.
         /// </summary>
         int button { get; }
         /// <summary>
-        /// A bitmask that describes the currently pressed buttons.
+        /// Gets a bitmask that describes the buttons that are currently pressed.
         /// </summary>
         /// <remarks>
-        /// Pressing a mouse button sets a bit; releasing the button clears it. The left mouse button sets/clears Bit 0. The right mouse button sets/clears Bit 1. The middle mouse button sets/clears Bit 2. Additional buttons set/clear other bits.
+        /// Pressing a mouse button sets a bit. Releasing the button clears the bit. The left mouse button sets/clears Bit 0.
+        /// The right mouse button sets/clears Bit 1. The middle mouse button sets/clears Bit 2. Additional buttons set/clear
+        /// other bits.
         /// </remarks>
         int pressedButtons { get; }
 
         /// <summary>
-        /// The pointer position in the Screen or World coordinate system.
+        /// Gets the pointer position in the Screen or World coordinate system.
         /// </summary>
         Vector3 position { get; }
         /// <summary>
-        /// The pointer position in the current target coordinate system.
+        /// Gets the pointer position in the current target's coordinate system.
         /// </summary>
         Vector3 localPosition { get; }
         /// <summary>
-        /// The difference between the pointer's position during the previous mouse event and its position during the current mouse event.
+        /// Gets the difference between the pointer's position during the previous mouse event and its position during the
+        /// current mouse event.
         /// </summary>
         Vector3 deltaPosition { get; }
         /// <summary>
-        /// The amount of time that has passed since the last recorded change in pointer values, in seconds.
+        /// Gets the amount of time that has elapsed since the last recorded change in pointer values, in seconds.
         /// </summary>
         float deltaTime { get; }
         /// <summary>
-        /// The number of times the button is pressed.
+        /// Gets the number of times the button was pressed.
         /// </summary>
         int clickCount { get; }
         /// <summary>
-        /// The amount of pressure currently applied by a touch. If the device does not report pressure, the value of this property is 1.0f.
+        /// Gets the amount of pressure currently applied by a touch.
         /// </summary>
+        /// <remarks>
+        /// If the device does not report pressure, the value of this property is 1.0f.
+        /// </remarks>
         float pressure { get; }
         /// <summary>
-        /// The pressure applied to an additional pressure-sensitive control on the stylus.
+        /// Gets the pressure applied to an additional pressure-sensitive control on the stylus.
         /// </summary>
         float tangentialPressure { get; }
         /// <summary>
-        /// Angle of the stylus relative to the surface, in radians
+        /// Gets the angle of the stylus relative to the surface, in radians
         /// </summary>
         /// <remarks>
         /// A value of 0 indicates that the stylus is parallel to the surface. A value of pi/2 indicates that it is perpendicular to the surface.
         /// </remarks>
         float altitudeAngle { get; }
         /// <summary>
-        /// Angle of the stylus relative to the x-axis, in radians.
+        /// Gets the angle of the stylus relative to the x-axis, in radians.
         /// </summary>
         /// <remarks>
         /// A value of 0 indicates that the stylus is pointed along the x-axis of the device.
         /// </remarks>
         float azimuthAngle { get; }
         /// <summary>
-        /// The rotation of the stylus around its axis, in radians.
+        /// Gets the rotation of the stylus around its axis, in radians.
         /// </summary>
         float twist { get; }
         /// <summary>
-        /// An estimate of the radius of a touch. Add `radiusVariance` to get the maximum touch radius, subtract it to get the minimum touch radius.
+        /// Gets an estimate of the radius of a touch.
         /// </summary>
+        /// <remarks>
+        /// Add `radiusVariance` to get the maximum touch radius, subtract it to get the minimum touch radius.
+        /// </remarks>
         Vector2 radius { get; }
         /// <summary>
-        /// Determines the accuracy of the touch radius. Add this value to the radius to get the maximum touch radius, subtract it to get the minimum touch radius.
+        /// Gets the accuracy of the touch radius.
         /// </summary>
+        /// <remarks>
+        /// Add this value to the radius to get the maximum touch radius, subtract it to get the minimum touch radius.
+        /// </remarks>
         Vector2 radiusVariance { get; }
 
         /// <summary>
-        /// Flags that hold pressed modifier keys (Alt, Ctrl, Shift, Windows/Cmd).
+        /// Gets flags that indicate whether modifier keys (Alt, Ctrl, Shift, Windows/Cmd) are pressed.
         /// </summary>
         EventModifiers modifiers { get; }
         /// <summary>
-        /// Returns true if the Shift key is pressed.
+        /// Gets a boolean value that indicates whether the Shift key is pressed. True means the Shift key is pressed.
+        /// False means it isn't.
         /// </summary>
         bool shiftKey { get; }
         /// <summary>
-        /// Returns true if the Ctrl key is pressed.
+        /// Gets a boolean value that indicates whether the Ctrl key is pressed. True means the Ctrl key is pressed.
+        /// False means it isn't.
         /// </summary>
         bool ctrlKey { get; }
         /// <summary>
-        /// Returns true if the Windows/Cmd key is pressed.
+        /// Gets a boolean value that indicates whether the Windows/Cmd key is pressed. True means the Windows/Cmd key
+        /// is pressed. False means it isn't.
         /// </summary>
         bool commandKey { get; }
         /// <summary>
-        /// Returns true if the Alt key is pressed.
+        /// Gets a boolean value that indicates whether the Alt key is pressed. True means the Alt key is pressed.
+        /// False means it isn't.
         /// </summary>
         bool altKey { get; }
         /// <summary>
-        /// Returns true if the platform-specific action key is pressed. This key is Cmd on macOS, and Ctrl on all other platforms.
+        /// Gets a boolean value that indicates whether the platform-specific action key is pressed. True means the action
+        /// key is pressed. False means it isn't.
         /// </summary>
+        /// <remarks>
+        /// The platform-specific action key is Cmd on macOS, and Ctrl on all other platforms.
+        /// </remarks>
         bool actionKey { get; }
     }
 
@@ -223,105 +251,137 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Base class for pointer events.
+    /// This is the base class for pointer events.
     /// </summary>
     /// <remarks>
     /// Pointer events are sent by the mouse, touchscreen, or digital pens.
+    ///
+    /// By default, pointer events trickle down the hierarchy of VisualElements, and then bubble up
+    /// back to the root. They are cancellable at any stage of the propagation.
+    ///
+    /// A cycle of pointer events occurs as follows:
+    ///   - The user presses a mouse button, touches the screen, or otherwise causes a <see cref="PointerDownEvent"/> to be sent.
+    ///   - If the user changes the pointer's state, a <see cref="PointerMoveEvent"/> is sent. Many PointerMove events can be sent.
+    ///   - If the user doesn't change the pointer's state for a specific amount of time, a <see cref="PointerStationaryEvent"/> is sent.
+    ///   - If the user cancels the loop, a <see cref="PointerCancelEvent"/> is sent.
+    ///   - If the user doesn't cancel the loop, and either releases the last button pressed or releases the last touch, a <see cref="PointerUpEvent"/> is sent.
+    ///   - If the initial PointerDownEvent and the PointerUpEvent occur on the same VisualElement, a <see cref="ClickEvent"/> is sent.
+    ///
     /// </remarks>
     public abstract class PointerEventBase<T> : EventBase<T>, IPointerEvent, IPointerEventInternal
         where T : PointerEventBase<T>, new()
     {
         /// <summary>
-        /// Identifies the pointer that sends the event.
+        /// Gets the identifier of the pointer that sent the event.
         /// </summary>
         /// <remarks>
-        /// If the mouse sends the event, this property is set to 0. If a touchscreen device sends the event, this property is set to the finger ID, which ranges from 1 to the number of touches the device supports.
+        /// If the mouse sends the event, the identifier is set to 0. If a touchscreen device sends the event, the identifier
+        /// is set to the finger ID, which ranges from 1 to the number of touches the device supports.
         /// </remarks>
         public int pointerId { get; protected set; }
         /// <summary>
-        /// The type of pointer that created this event. This value is taken from the value defined in `PointerType`.
-        /// </summary>
-        public string pointerType { get; protected set; }
-        /// <summary>
-        /// Returns true if the pointer is a primary pointer
+        /// Gets the type of pointer that created the event.
         /// </summary>
         /// <remarks>
-        /// A primary pointer is a pointer that manipulates the mouse cursor. The mouse pointer is always a primary pointer. For touch events, the first finger that touches the screen is the primary pointer. Once processed, pointer events from primary pointers generate compatibility mouse events.
+        /// This value is taken from the values defined in `PointerType`.
+        /// </remarks>
+        public string pointerType { get; protected set; }
+        /// <summary>
+        /// Gets a boolean value that indicates whether the pointer is a primary pointer. True means the pointer is a primary
+        /// pointer. False means it isn't.
+        /// </summary>
+        /// <remarks>
+        /// A primary pointer is a pointer that manipulates the mouse cursor. The mouse pointer is always a primary pointer. For touch
+        /// events, the first finger that touches the screen is the primary pointer. Once it is processed, a pointer event from a primary
+        /// pointer generates compatibility mouse events.
         /// </remarks>
         public bool isPrimary { get; protected set; }
         /// <summary>
-        /// Integer that indicates which mouse button is pressed: 0 is the left button, 1 is the right button, 2 is the middle button.
+        /// Gets a value that indicates which mouse button was pressed: 0 is the left button, 1 is the right button, 2 is the middle button.
         /// </summary>
         public int button { get; protected set; }
         /// <summary>
-        /// A bitmask that describes the currently pressed buttons.
+        /// Gets a bitmask that describes the buttons that are currently pressed.
         /// </summary>
         /// <remarks>
-        /// Pressing a mouse button sets a bit; releasing the button clears it. The left mouse button sets/clears Bit 0. The right mouse button sets/clears Bit 1. The middle mouse button sets/clears Bit 2. Additional buttons set/clear other bits.
+        /// Pressing a mouse button sets a bit. Releasing the button clears the bit. The left mouse button sets/clears Bit 0.
+        /// The right mouse button sets/clears Bit 1. The middle mouse button sets/clears Bit 2. Additional buttons set/clear
+        /// other bits.
         /// </remarks>
         public int pressedButtons { get; protected set; }
         /// <summary>
-        /// The pointer position in the Screen or World coordinate system.
+        /// Gets the pointer position in the Screen or World coordinate system.
         /// </summary>
         public Vector3 position { get; protected set; }
         /// <summary>
-        /// The pointer position in the current target coordinate system.
+        /// Gets the pointer position in the current target's coordinate system.
         /// </summary>
         public Vector3 localPosition { get; protected set; }
         /// <summary>
-        /// The difference between the pointer's position during the previous mouse event and its position during the current mouse event.
+        /// Gets the difference between the pointer's position during the previous mouse event and its position during the
+        /// current mouse event.
         /// </summary>
         public Vector3 deltaPosition { get; protected set; }
         /// <summary>
-        /// The amount of time that has passed since the last recorded change in pointer values, in seconds.
+        /// Gets the amount of time that has elapsed since the last recorded change in pointer values, in seconds.
         /// </summary>
         public float deltaTime { get; protected set; }
         /// <summary>
-        /// The number of times the button is pressed.
+        /// Gets the number of times the button was pressed.
         /// </summary>
         public int clickCount { get; protected set; }
         /// <summary>
-        /// The amount of pressure currently applied by a touch. If the device does not report pressure, the value of this property is 1.0f.
+        /// Gets the amount of pressure currently applied by a touch.
         /// </summary>
+        /// <remarks>
+        /// If the device does not report pressure, the value of this property is 1.0f.
+        /// </remarks>
         public float pressure { get; protected set; }
         /// <summary>
-        /// The pressure applied to an additional pressure-sensitive control on the stylus.
+        /// Gets the pressure applied to an additional pressure-sensitive control on the stylus.
         /// </summary>
         public float tangentialPressure { get; protected set; }
         /// <summary>
-        /// Angle of the stylus relative to the surface, in radians
+        /// Gets the angle of the stylus relative to the surface, in radians
         /// </summary>
         /// <remarks>
         /// A value of 0 indicates that the stylus is parallel to the surface. A value of pi/2 indicates that it is perpendicular to the surface.
         /// </remarks>
         public float altitudeAngle { get; protected set; }
         /// <summary>
-        /// Angle of the stylus relative to the x-axis, in radians.
+        /// Gets the angle of the stylus relative to the x-axis, in radians.
         /// </summary>
         /// <remarks>
         /// A value of 0 indicates that the stylus is pointed along the x-axis of the device.
         /// </remarks>
         public float azimuthAngle { get; protected set; }
         /// <summary>
-        /// The rotation of the stylus around its axis, in radians.
+        /// Gets the rotation of the stylus around its axis, in radians.
         /// </summary>
         public float twist { get; protected set; }
         /// <summary>
-        /// An estimate of the radius of a touch. Add `radiusVariance` to get the maximum touch radius, subtract it to get the minimum touch radius.
+        /// Gets an estimate of the radius of a touch.
         /// </summary>
+        /// <remarks>
+        /// Add `radiusVariance` to get the maximum touch radius, subtract it to get the minimum touch radius.
+        /// </remarks>
         public Vector2 radius { get; protected set; }
         /// <summary>
-        /// Determines the accuracy of the touch radius. Add this value to the radius to get the maximum touch radius, subtract it to get the minimum touch radius.
+        /// Gets the accuracy of the touch radius.
         /// </summary>
+        /// <remarks>
+        /// Add this value to the radius to get the maximum touch radius, subtract it to get the minimum touch radius.
+        /// </remarks>
         public Vector2 radiusVariance { get; protected set; }
 
         /// <summary>
-        /// Flags that hold pressed modifier keys (Alt, Ctrl, Shift, Windows/Cmd).
+        /// Gets flags that indicate whether modifier keys (Alt, Ctrl, Shift, Windows/Cmd) are pressed.
         /// </summary>
         public EventModifiers modifiers { get; protected set; }
 
         /// <summary>
-        /// Returns true if the Shift key is pressed.
+        /// Gets a boolean value that indicates whether the Shift key is pressed. True means the Shift key is pressed.
+        /// False means it isn't.
         /// </summary>
         public bool shiftKey
         {
@@ -329,7 +389,8 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns true if the Ctrl key is pressed.
+        /// Gets a boolean value that indicates whether the Ctrl key is pressed. True means the Ctrl key is pressed.
+        /// False means it isn't.
         /// </summary>
         public bool ctrlKey
         {
@@ -337,7 +398,8 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns true if the Windows/Cmd key is pressed.
+        /// Gets a boolean value that indicates whether the Windows/Cmd key is pressed. True means the Windows/Cmd key
+        /// is pressed. False means it isn't.
         /// </summary>
         public bool commandKey
         {
@@ -345,7 +407,8 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns true if the Alt key is pressed.
+        /// Gets a boolean value that indicates whether the Alt key is pressed. True means the Alt key is pressed.
+        /// False means it isn't.
         /// </summary>
         public bool altKey
         {
@@ -353,8 +416,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns true if the platform-specific action key is pressed. This key is Cmd on macOS, and Ctrl on all other platforms.
+        /// Gets a boolean value that indicates whether the platform-specific action key is pressed. True means the action
+        /// key is pressed. False means it isn't.
         /// </summary>
+        /// <remarks>
+        /// The platform-specific action key is Cmd on macOS, and Ctrl on all other platforms.
+        /// </remarks>
         public bool actionKey
         {
             get
@@ -415,8 +482,11 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// The current target of the event. The current target is the element in the propagation path for which event handlers are currently being executed.
+        /// Gets the current target of the event.
         /// </summary>
+        /// <remarks>
+        /// The current target is the element in the propagation path for which event handlers are currently being executed.
+        /// </remarks>
         public override IEventHandler currentTarget
         {
             get { return base.currentTarget; }
@@ -449,7 +519,8 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
+        /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events.
+        /// Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
         /// </summary>
         /// <param name="systemEvent">An IMGUI mouse event.</param>
         /// <returns>An initialized event.</returns>
@@ -529,7 +600,8 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
+        /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events.
+        /// Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
         /// </summary>
         /// <param name="touch">A <see cref="Touch"/> structure from the InputManager.</param>
         /// <param name="modifiers">The modifier keys held down during the event.</param>
@@ -607,7 +679,8 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
+        /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events.
+        /// Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
         /// </summary>
         /// <param name="triggerEvent">The event that sent this event.</param>
         /// <returns>An initialized event.</returns>
@@ -646,6 +719,49 @@ namespace UnityEngine.UIElements
             return e;
         }
 
+        internal static T GetPooled(IMouseEvent triggerEvent)
+        {
+            T e = GetPooled();
+            if (triggerEvent != null)
+            {
+                e.pointerId = PointerId.mousePointerId;
+                e.pointerType = PointerType.mouse;
+                e.isPrimary = true;
+                e.button = triggerEvent.button;
+                e.pressedButtons = triggerEvent.pressedButtons;
+                e.position = triggerEvent.mousePosition;
+                e.localPosition = triggerEvent.mousePosition;
+                e.deltaPosition = triggerEvent.mouseDelta;
+                e.deltaTime = default;
+                e.clickCount = triggerEvent.clickCount;
+                e.pressure = triggerEvent.pressedButtons == 0 ? 0 : 0.5f;
+                e.tangentialPressure = default;
+
+                e.altitudeAngle = default;
+                e.azimuthAngle = default;
+                e.twist = default;
+                e.radius = default;
+                e.radiusVariance = default;
+
+                e.modifiers = triggerEvent.modifiers;
+
+                if (triggerEvent is IMouseEventInternal mouseEventInternal)
+                {
+                    ((IPointerEventInternal)e).triggeredByOS = mouseEventInternal.triggeredByOS;
+                }
+            }
+            return e;
+        }
+
+        internal new static T GetPooled(EventBase e)
+        {
+            if (e is IPointerEvent p)
+                return GetPooled(p);
+            if (e is IMouseEvent m)
+                return GetPooled(m);
+            return EventBase<T>.GetPooled(e);
+        }
+
         protected internal override void PreDispatch(IPanel panel)
         {
             base.PreDispatch(panel);
@@ -679,10 +795,16 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Event sent when a pointer is pressed.
+    /// This event is sent when a pointer is pressed.
     /// </summary>
     /// <remarks>
-    /// PointerDownEvent is sent the first time a finger touches the screen or a mouse button is pressed. Touching the screen with more fingers or pressing additional buttons triggers PointerMoveEvents.
+    /// A PointerDownEvent is sent the first time a finger touches the screen or a mouse button is
+    /// pressed. Additional button presses and touches with additional fingers trigger PointerMoveEvents.
+    ///
+    /// A PointerDownEvent uses the default pointer event propagation path: it trickles down, bubbles up and
+    /// can be cancelled.
+    ///
+    /// See <see cref="PointerEventBase{T}"/> to see how PointerDownEvent relates to other pointer events.
     /// </remarks>
     public sealed class PointerDownEvent : PointerEventBase<PointerDownEvent>
     {
@@ -731,8 +853,17 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Event sent when a pointer changes state.
+    /// This event is sent when a pointer changes state.
     /// </summary>
+    /// <remarks>
+    /// The state of a pointer changes when one or more of its properties changes after a <see cref="PointerDownEvent"/> but before a
+    /// <see cref="PointerUpEvent"/>. For example if its position or pressure change, or a different button is pressed.
+    ///
+    /// A PointerMoveEvent uses the default pointer event propagation path: it trickles down, bubbles up and
+    /// can be cancelled.
+    ///
+    /// See <see cref="PointerEventBase{T}"/> to see how PointerMoveEvent relates to other pointer events.
+    /// </remarks>
     public sealed class PointerMoveEvent : PointerEventBase<PointerMoveEvent>
     {
         /// <summary>
@@ -792,8 +923,17 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// An event sent when a pointer does not change for a set amount of time determined by the operating system.
+    /// This event is sent when a pointer does not change for a set amount of time, determined by the operating system.
     /// </summary>
+    /// <remarks>
+    /// After a <see cref="PointerDownEvent"/> is sent, this event is sent if a <see cref="PointerMoveEvent"/> or
+    /// a <see cref="PointerUpEvent"/> is not sent before a set amount of time.
+    ///
+    /// A PointerStationaryEvent uses the default pointer event propagation path: it trickles down, bubbles up
+    /// and can be cancelled.
+    ///
+    /// See <see cref="PointerEventBase{T}"/> to see how PointerStationaryEvent relates to other pointer events.
+    /// </remarks>
     public sealed class PointerStationaryEvent : PointerEventBase<PointerStationaryEvent>
     {
         /// <summary>
@@ -820,8 +960,16 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Event sent when the last depressed button of a pointer is released.
+    /// This event is sent when a pointer's last pressed button is released.
     /// </summary>
+    /// <remarks>
+    /// The last pressed button may or may not be the same button that triggered the <see cref="PointerDownEvent"/>.
+    ///
+    /// A PointerUpEvent uses the default pointer event propagation path: it is trickled down, bubbled up
+    /// and can be cancelled.
+    ///
+    /// See <see cref="PointerEventBase{T}"/> to see how PointerUpEvent relates to other pointer events.
+    /// </remarks>
     public sealed class PointerUpEvent : PointerEventBase<PointerUpEvent>
     {
         /// <summary>
@@ -871,8 +1019,13 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Event sent when pointer interaction is cancelled.
+    /// This event is sent when pointer interaction is cancelled.
     /// </summary>
+    /// <remarks>
+    /// A PointerCancelEvent can trickle down or bubble up, but cannot be cancelled.
+    ///
+    /// See <see cref="PointerEventBase{T}"/> to see how PointerCancelEvent relates to other pointer events.
+    /// </remarks>
     public sealed class PointerCancelEvent : PointerEventBase<PointerCancelEvent>
     {
         /// <summary>
@@ -921,23 +1074,31 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// The event sent when the left mouse button is clicked.
+    /// This event is sent when the left mouse button is clicked.
     /// </summary>
     /// <remarks>
-    /// A click consists of a mouse down event followed by a mouse up event on the same VisualElement. The mouse might move between the two events.
+    /// A click consists of a mouse down event followed by a mouse up event on the same VisualElement.
+    /// The mouse might move between the two events but the move is ignored as long as the mouse down
+    /// and mouse up events occur on the same VisualElement.
+    ///
+    /// A ClickEvent uses the default pointer event propagation path: it trickles down, bubbles up
+    /// and can be cancelled.
+    ///
+    /// See <see cref="PointerEventBase{T}"/> to see how ClickEvent relates to other pointer events.
+    ///
     /// </remarks>
     public sealed class ClickEvent : PointerEventBase<ClickEvent>
     {
         internal static ClickEvent GetPooled(PointerUpEvent pointerEvent, int clickCount)
         {
-            var evt = PointerEventBase<ClickEvent>.GetPooled(pointerEvent);
+            var evt = PointerEventBase<ClickEvent>.GetPooled((IPointerEvent)pointerEvent);
             evt.clickCount = clickCount;
             return evt;
         }
     }
 
     /// <summary>
-    /// Event sent when a pointer enters a VisualElement or one of its descendant.
+    /// This event is sent when a pointer enters a VisualElement or one of its descendants.
     /// </summary>
     public sealed class PointerEnterEvent : PointerEventBase<PointerEnterEvent>
     {
@@ -965,7 +1126,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Event sent when a pointer exits an element and all of its descendant.
+    /// This event is sent when a pointer exits an element and all of its descendants.
     /// </summary>
     public sealed class PointerLeaveEvent : PointerEventBase<PointerLeaveEvent>
     {
@@ -993,14 +1154,14 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Event sent when a pointer enters a VisualElement.
+    /// This event is sent when a pointer enters an element.
     /// </summary>
     public sealed class PointerOverEvent : PointerEventBase<PointerOverEvent>
     {
     }
 
     /// <summary>
-    /// Event sent when a pointer exits an element.
+    /// This event is sent when a pointer exits an element.
     /// </summary>
     public sealed class PointerOutEvent : PointerEventBase<PointerOutEvent>
     {

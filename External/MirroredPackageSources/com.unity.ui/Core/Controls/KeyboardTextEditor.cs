@@ -70,6 +70,7 @@ namespace UnityEngine.UIElements
             GUIUtility.imeCompositionMode = IMECompositionMode.Auto;
         }
 
+        //TODO: replace by PointerDownEvent
         void OnMouseDown(MouseDownEvent evt)
         {
             textInputField.SyncTextEngine();
@@ -212,6 +213,7 @@ namespace UnityEngine.UIElements
             editorEngine.UpdateScrollOffset();
         }
 
+        private readonly Event m_ImguiEvent = new Event();
         void OnKeyDown(KeyDownEvent evt)
         {
             if (!textInputField.hasFocus)
@@ -220,8 +222,10 @@ namespace UnityEngine.UIElements
             textInputField.SyncTextEngine();
             m_Changed = false;
 
+            evt.GetEquivalentImguiEvent(m_ImguiEvent);
+
             // Check for action keys.
-            if (editorEngine.HandleKeyEvent(evt.imguiEvent, textInputField.isReadOnly))
+            if (editorEngine.HandleKeyEvent(m_ImguiEvent, textInputField.isReadOnly))
             {
                 if (textInputField.text != editorEngine.text)
                 {

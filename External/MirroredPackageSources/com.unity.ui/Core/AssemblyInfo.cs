@@ -38,6 +38,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor")]
 [assembly: InternalsVisibleTo("UnityEditor.UIElementsModule")]
 [assembly: InternalsVisibleTo("Unity.UIElements")]
+[assembly: InternalsVisibleTo("Unity.UIElements.InputSystem")]
 [assembly: InternalsVisibleTo("Unity.UIElements.Editor")]
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.PlayModeTests")]

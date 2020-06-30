@@ -75,21 +75,6 @@ namespace UnityEditor.Modules
                 }
             }
 
-            string checkVREnabled = config.Get("vr-enabled");
-            if (String.IsNullOrEmpty(checkVREnabled) || String.Compare("0", checkVREnabled, true) == 0)
-            {
-                bool isVrEnabled = UnityEditorInternal.VR.VREditor.GetVREnabledOnTargetGroup(BuildPipeline.GetBuildTargetGroup(target));
-                config.Set("vr-enabled", isVrEnabled ? "1" : "0");
-                if (isVrEnabled)
-                {
-                    string[] vrDevices = UnityEditorInternal.VR.VREditor.GetVREnabledDevicesOnTarget(target);
-                    if (vrDevices.Length > 0)
-                    {
-                        string vrDeviceList = String.Join(",", vrDevices);
-                        config.Set("vr-device-list", vrDeviceList);
-                    }
-                }
-            }
             config.Set("hdr-display-enabled", PlayerSettings.useHDRDisplay ? "1" : "0");
             if (BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", target))
             {

@@ -209,8 +209,30 @@ namespace UnityEditor
         public extern int[] FindAllAncestors(int[] instanceIDs);
         [FreeFunction("HierarchyPropertyBindings::ClearSceneObjectsFilter")]
         public static extern void ClearSceneObjectsFilter();
+
+        internal static void ClearSceneObjectsFilterInScene(Scene[] scenes)
+        {
+            if (scenes == null)
+                throw new ArgumentNullException(nameof(scenes));
+            ClearSceneObjectsFilterInScene(scenes.Select(s => s.handle).ToArray());
+        }
+
+        [FreeFunction("HierarchyPropertyBindings::ClearSceneObjectsFilterInScene")]
+        internal static extern void ClearSceneObjectsFilterInScene([NotNull] int[] sceneHandles);
+
         [FreeFunction("HierarchyPropertyBindings::FilterSingleSceneObject")]
         public static extern void FilterSingleSceneObject(int instanceID, bool otherVisibilityState);
+
+        internal static void FilterSingleSceneObjectInScene(int instanceID, bool otherVisibilityState, Scene[] scenes)
+        {
+            if (scenes == null)
+                throw new ArgumentNullException(nameof(scenes));
+            FilterSingleSceneObjectInScene(instanceID, otherVisibilityState, scenes.Select(s => s.handle).ToArray());
+        }
+
+        [FreeFunction("HierarchyPropertyBindings::FilterSingleSceneObjectInScene")]
+        internal static extern void FilterSingleSceneObjectInScene(int instanceID, bool otherVisibilityState, [NotNull] int[] sceneHandles);
+
         [FreeFunction("HierarchyPropertyBindings::SetFilteredVisibility", HasExplicitThis = true)]
         internal extern void SetFilteredVisibility(bool visible);
     }

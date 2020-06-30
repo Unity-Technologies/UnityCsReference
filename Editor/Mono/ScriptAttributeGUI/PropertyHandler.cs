@@ -178,14 +178,16 @@ namespace UnityEditor
             }
             else
             {
-                if (IsNonStringArray(property))
+                if (UseReorderabelListControl(property))
                 {
                     ReorderableListWrapper reorderableList;
                     string key = ReorderableListWrapper.GetPropertyIdentifier(property);
 
                     if (!s_reorderableLists.TryGetValue(key, out reorderableList))
                     {
-                        throw new IndexOutOfRangeException($"collection with name \"{property.name}\" doesn't have ReorderableList assigned to it.");
+                        // Manual layout controls don't call GetHeight() method so we need to have a way to initialized list as we prepare to render it here
+                        reorderableList = new ReorderableListWrapper(property, true);
+                        s_reorderableLists[key] = reorderableList;
                     }
 
                     reorderableList.Property = property;
@@ -260,7 +262,7 @@ namespace UnityEditor
         {
             float height = 0;
 
-            if (IsNonStringArray(property))
+            if (UseReorderabelListControl(property))
             {
                 ReorderableListWrapper reorderableList;
                 string key = ReorderableListWrapper.GetPropertyIdentifier(property);
@@ -268,7 +270,7 @@ namespace UnityEditor
                 // If collection doesn't have a ReorderableList assigned to it, create one and assign it
                 if (!s_reorderableLists.TryGetValue(key, out reorderableList))
                 {
-                    reorderableList = new ReorderableListWrapper(property, IsArrayReorderable(property));
+                    reorderableList = new ReorderableListWrapper(property, true);
                     s_reorderableLists[key] = reorderableList;
                 }
 
@@ -383,7 +385,7 @@ namespace UnityEditor
             }
         }
 
-        internal static bool IsNonStringArray(SerializedProperty property)
+        static bool IsNonStringArray(SerializedProperty property)
         {
             // Strings should not be represented with ReorderableList, they will use custom drawer therefore we don't treat them as other arrays
             return property.isArray && property.propertyType != SerializedPropertyType.String;
@@ -414,7 +416,9 @@ namespace UnityEditor
                 }
             }
 
-            return TypeCache.GetFieldsWithAttribute(typeof(ReorderableAttribute)).Any(f => f.Equals(listInfo));
+            return !TypeCache.GetFieldsWithAttribute(typeof(NonReorderableAttribute)).Any(f => f.Equals(listInfo));
         }
+
+        internal static bool UseReorderabelListControl(SerializedProperty property) => IsNonStringArray(property) && IsArrayReorderable(property);
     }
 }

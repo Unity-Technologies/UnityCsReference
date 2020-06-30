@@ -17,6 +17,8 @@ namespace UnityEngine.SceneManagement
             Unloading = 3
         }
 
+        internal Scene(int handle) { m_Handle = handle; }
+
         [SerializeField]
         [HideInInspector]
         private int m_Handle;

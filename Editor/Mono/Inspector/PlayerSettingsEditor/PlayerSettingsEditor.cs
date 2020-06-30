@@ -53,7 +53,6 @@ namespace UnityEditor
             public static readonly GUIContent recordingInfo = EditorGUIUtility.TrTextContent("Reordering the list will switch editor to the first available platform");
             public static readonly GUIContent notApplicableInfo = EditorGUIUtility.TrTextContent("Not applicable for this platform.");
             public static readonly GUIContent sharedBetweenPlatformsInfo = EditorGUIUtility.TrTextContent("* Shared setting between multiple platforms.");
-            public static readonly GUIContent vrOrientationInfo = EditorGUIUtility.TrTextContent("Virtual Reality Support is enabled. Upon entering VR mode, landscape left orientation will be the default orientation unless only landscape right is available.");
 
             public static readonly GUIContent cursorHotspot = EditorGUIUtility.TrTextContent("Cursor Hotspot");
             public static readonly GUIContent defaultCursor = EditorGUIUtility.TrTextContent("Default Cursor");
@@ -80,7 +79,6 @@ namespace UnityEditor
             public static readonly GUIContent optimizationTitle = EditorGUIUtility.TrTextContent("Optimization");
             public static readonly GUIContent loggingTitle = EditorGUIUtility.TrTextContent("Stack Trace*");
             public static readonly GUIContent legacyTitle = EditorGUIUtility.TrTextContent("Legacy");
-            public static readonly GUIContent legacyXRTitle = EditorGUIUtility.TrTextContent("XR Settings (Deprecated)");
             public static readonly GUIContent publishingSettingsTitle = EditorGUIUtility.TrTextContent("Publishing Settings");
 
             public static readonly GUIContent bakeCollisionMeshes = EditorGUIUtility.TrTextContent("Prebake Collision Meshes*", "Bake collision data into the meshes on build time");
@@ -745,12 +743,12 @@ namespace UnityEditor
 
                     bool enabled = GUI.enabled;
 
-                    if (targetGroup == BuildTargetGroup.WebGL || targetGroup == BuildTargetGroup.WSA)
+                    if (targetGroup == BuildTargetGroup.WebGL)
                     {
                         ShowNoSettings();
                         EditorGUILayout.Space();
                     }
-                    else
+                    else if (targetGroup != BuildTargetGroup.WSA) // UWP does this in its editor extension
                     {
                         // Get icons and icon sizes for selected platform (or default)
                         Texture2D[] icons = PlayerSettings.GetAllIconsForPlatform(platformName);
@@ -931,11 +929,6 @@ namespace UnityEditor
                         GUILayout.Label(SettingsContent.orientationTitle, EditorStyles.boldLabel);
 
                         EditorGUILayout.PropertyField(m_DefaultScreenOrientation, SettingsContent.defaultScreenOrientation);
-
-                        if (VREditor.GetVREnabledOnTargetGroup(targetGroup))
-                        {
-                            EditorGUILayout.HelpBox(SettingsContent.vrOrientationInfo.text, MessageType.Warning);
-                        }
 
                         if (m_DefaultScreenOrientation.enumValueIndex == (int)UIOrientation.AutoRotation)
                         {
@@ -2637,14 +2630,6 @@ namespace UnityEditor
             GUILayout.Label(SettingsContent.legacyTitle, EditorStyles.boldLabel);
 
             EditorGUILayout.PropertyField(m_LegacyClampBlendShapeWeights, SettingsContent.legacyClampBlendShapeWeights);
-
-            // ARCore - legacy way to enable
-            if (BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, BuildTargetDiscovery.VRAttributes.SupportTango))
-            {
-                EditorGUILayout.Space();
-                GUILayout.Label(SettingsContent.legacyXRTitle, EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(m_AndroidEnableTango, EditorGUIUtility.TrTextContent("ARCore Supported"));
-            }
 
             EditorGUILayout.Space();
         }

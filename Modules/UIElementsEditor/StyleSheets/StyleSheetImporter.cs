@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.IO;
 using UnityEngine;
 using UnityEditor.Experimental.AssetImporters;
@@ -12,7 +13,7 @@ namespace UnityEditor.UIElements.StyleSheets
 {
     // Make sure style sheets importer after allowed dependent assets: textures, fonts and json
     // Has to be higher then AssetImportOrder.kImportOrderLate
-    [ScriptedImporter(version: 10, ext: "uss", importQueueOffset: 1100)]
+    [ScriptedImporter(version: 11, ext: "uss", importQueueOffset: 1100)]
     [ExcludeFromPreset]
     class StyleSheetImporter : ScriptedImporter
     {
@@ -25,6 +26,25 @@ namespace UnityEditor.UIElements.StyleSheets
         {
             "Packages/com.unity.shadergraph"
         };
+
+        static string[] GatherDependenciesFromSourceFile(string assetPath)
+        {
+            var contents = File.ReadAllText(assetPath);
+            if (string.IsNullOrEmpty(contents))
+            {
+                return new string[] {};
+            }
+
+            try
+            {
+                return StyleSheetImporterImpl.PopulateDependencies(assetPath);
+            }
+            catch (Exception)
+            {
+                // We want to be silent here, all USS syntax errors will be reported during the actual import.
+                return new string[] {};
+            }
+        }
 
         public override void OnImportAsset(AssetImportContext ctx)
         {

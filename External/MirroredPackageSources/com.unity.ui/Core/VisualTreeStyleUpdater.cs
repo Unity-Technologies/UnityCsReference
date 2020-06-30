@@ -206,13 +206,20 @@ namespace UnityEngine.UIElements
             }
 
             int originalStyleSheetCount = m_StyleMatchingContext.styleSheetStack.Count;
-
             if (element.styleSheetList != null)
             {
-                for (var index = 0; index < element.styleSheetList.Count; index++)
+                for (var i = 0; i < element.styleSheetList.Count; i++)
                 {
-                    var styleSheetData = element.styleSheetList[index];
-                    m_StyleMatchingContext.styleSheetStack.Add(styleSheetData);
+                    var addedStyleSheet = element.styleSheetList[i];
+                    if (addedStyleSheet.flattenedRecursiveImports != null)
+                    {
+                        for (var j = 0; j < addedStyleSheet.flattenedRecursiveImports.Count; j++)
+                        {
+                            m_StyleMatchingContext.styleSheetStack.Add(addedStyleSheet.flattenedRecursiveImports[j]);
+                        }
+                    }
+
+                    m_StyleMatchingContext.styleSheetStack.Add(addedStyleSheet);
                 }
             }
 
@@ -249,7 +256,6 @@ namespace UnityEngine.UIElements
             }
 
             Recurse(element, depth);
-
 
             if (m_StyleMatchingContext.styleSheetStack.Count > originalStyleSheetCount)
             {

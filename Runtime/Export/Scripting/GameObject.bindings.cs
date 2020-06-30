@@ -385,8 +385,16 @@ namespace UnityEngine
             get;
         }
 
+        public extern ulong sceneCullingMask
+        {
+            [FreeFunction(Name = "GameObjectBindings::GetSceneCullingMask", HasExplicitThis = true)]
+            get;
+        }
+
         [FreeFunction(Name = "GameObjectBindings::CalculateBounds", HasExplicitThis = true)]
         internal extern Bounds CalculateBounds();
+
+        internal extern int IsMarkedVisible();
 
         public GameObject gameObject { get { return this; } }
     }

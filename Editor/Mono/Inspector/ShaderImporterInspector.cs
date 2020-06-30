@@ -51,6 +51,23 @@ namespace UnityEditor
             ShowOpenButton(new[] { assetTarget });
         }
 
+        protected override bool needsApplyRevert
+        {
+            // The shader include files are handled by shader importer & inspector but there are no
+            // properties for them to tweak atm. So we can ignore the apply/revert mechanism for them.
+            get
+            {
+                var importer = target as ShaderImporter;
+                if (importer == null)
+                    return false;
+
+                if (importer.GetShader() == null)
+                    return false;
+
+                return base.needsApplyRevert;
+            }
+        }
+
         protected override Type extraDataType => typeof(ShaderProperties);
 
         protected override void InitializeExtraDataInstance(Object extraTarget, int targetIndex)

@@ -252,7 +252,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     var messages = compiler.GetCompilerMessages();
                     var messagesList = messages.ToList();
 
-                    assembly.HasCompileErrors = messagesList.Any(m => m.type == CompilerMessageType.Error);
+                    var assemblyHasCompileErrors = messagesList.Any(m => m.type == CompilerMessageType.Error);
                     compiledAssemblies.Add(assembly, messagesList.ToArray());
 
                     bool havePostProcessors = ilPostProcessing != null && ilPostProcessing.HasPostProcessors;
@@ -302,7 +302,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     }
 
                     if (!CompileErrors)
-                        CompileErrors = assembly.HasCompileErrors;
+                        CompileErrors = assemblyHasCompileErrors;
 
                     try
                     {
@@ -598,7 +598,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 // Most expensive checks at the bottom.
                 if (UseReferenceAssemblies &&
                     BuildingForEditor &&
-                    !pendingAssembly.HasCompileErrors &&
                     pendingAssembly.DirtySource == DirtySource.DirtyReference &&
                     unchangedAssemblyReferencesCount > 0 &&
                     unchangedAssemblyReferencesCount == pendingAssembly.ScriptAssemblyReferences.Length &&

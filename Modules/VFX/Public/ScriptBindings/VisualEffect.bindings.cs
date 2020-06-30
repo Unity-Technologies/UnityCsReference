@@ -52,6 +52,18 @@ namespace UnityEngine.VFX
         }
     }
 
+    public struct VFXOutputEventArgs
+    {
+        public int nameId { get; }
+        public VFXEventAttribute eventAttribute { get; }
+
+        public VFXOutputEventArgs(int nameId, VFXEventAttribute eventAttribute)
+        {
+            this.nameId = nameId;
+            this.eventAttribute = eventAttribute;
+        }
+    }
+
     [NativeHeader("Modules/VFX/Public/ScriptBindings/VisualEffectBindings.h")]
     [NativeHeader("Modules/VFX/Public/VisualEffect.h")]
     [RequireComponent(typeof(Transform))]
@@ -93,7 +105,7 @@ namespace UnityEngine.VFX
         {
             if (eventAttribute != null && eventAttribute.vfxAsset != visualEffectAsset)
             {
-                throw new InvalidOperationException("Invalid VFXEventAttribute provided to VisualEffect, has been created with another VisualEffectAsset");
+                throw new InvalidOperationException("Invalid VFXEventAttribute provided to VisualEffect. It has been created with another VisualEffectAsset. Use CreateVFXEventAttribute.");
             }
         }
 
@@ -206,9 +218,29 @@ namespace UnityEngine.VFX
 
         [FreeFunction(Name = "VisualEffectBindings::HasSystemFromScript", HasExplicitThis = true)] extern public bool HasSystem(int nameID);
         [FreeFunction(Name = "VisualEffectBindings::GetParticleSystemInfo", HasExplicitThis = true, ThrowsException = true)] extern public VFXParticleSystemInfo GetParticleSystemInfo(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::GetSpawnSystemInfo", HasExplicitThis = true, ThrowsException = true)] extern private void GetSpawnSystemInfo(int nameID, IntPtr spawnerState);
+
+        public void GetSpawnSystemInfo(int nameID, VFXSpawnerState spawnState)
+        {
+            if (spawnState == null)
+                throw new NullReferenceException("GetSpawnSystemInfo expects a non null VFXSpawnerState.");
+            IntPtr ptr = spawnState.GetPtr();
+            if (ptr == IntPtr.Zero)
+                throw new NullReferenceException("GetSpawnSystemInfo use an unexpected not owned VFXSpawnerState.");
+            GetSpawnSystemInfo(nameID, ptr);
+        }
+
+        public VFXSpawnerState GetSpawnSystemInfo(int nameID)
+        {
+            var spawnState = new VFXSpawnerState();
+            GetSpawnSystemInfo(nameID, spawnState);
+            return spawnState;
+        }
 
         [FreeFunction(Name = "VisualEffectBindings::GetSystemNamesFromScript", HasExplicitThis = true)] extern public void GetSystemNames([NotNull] List<string> names);
         [FreeFunction(Name = "VisualEffectBindings::GetParticleSystemNamesFromScript", HasExplicitThis = true)] extern public void GetParticleSystemNames([NotNull] List<string> names);
+        [FreeFunction(Name = "VisualEffectBindings::GetOutputEventNamesFromScript", HasExplicitThis = true)] extern public void GetOutputEventNames([NotNull] List<string> names);
+        [FreeFunction(Name = "VisualEffectBindings::GetSpawnSystemNamesFromScript", HasExplicitThis = true)] extern public void GetSpawnSystemNames([NotNull] List<string> names);
 
         public void ResetOverride(string name)
         {
@@ -413,12 +445,38 @@ namespace UnityEngine.VFX
             return GetParticleSystemInfo(Shader.PropertyToID(name));
         }
 
+        public VFXSpawnerState GetSpawnSystemInfo(string name)
+        {
+            return GetSpawnSystemInfo(Shader.PropertyToID(name));
+        }
+
         extern public int aliveParticleCount { get; }
 
         extern public void Simulate(float stepDeltaTime, uint stepCount = 1);
 
         //Could be exposed publicly but requires a specific function from bindings which doesn't call BaseObject::Reset (because it also resets the awake flags)
         //extern internal void Reset();
+
+        private VFXEventAttribute m_cachedEventAttribute;
+        [RequiredByNativeCode]
+        private static VFXEventAttribute InvokeGetCachedEventAttributeForOutputEvent_Internal(VisualEffect source)
+        {
+            //If outputEventReceived is null, skip this behavior, InvokeOutputEventReceived_Internal will be not triggered
+            if (source.outputEventReceived == null)
+                return null;
+
+            if (source.m_cachedEventAttribute == null)
+                source.m_cachedEventAttribute = source.CreateVFXEventAttribute();
+            return source.m_cachedEventAttribute;
+        }
+
+        public Action<VFXOutputEventArgs> outputEventReceived;
+        [RequiredByNativeCode]
+        private static void InvokeOutputEventReceived_Internal(VisualEffect source, int eventNameId)
+        {
+            var evt = new VFXOutputEventArgs(eventNameId, source.m_cachedEventAttribute);
+            source.outputEventReceived.Invoke(evt);
+        }
     }
 
     // Bindings for VFXRenderer is needed but we dont want it to be accessible to users

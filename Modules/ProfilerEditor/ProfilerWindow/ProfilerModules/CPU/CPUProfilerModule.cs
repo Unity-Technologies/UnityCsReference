@@ -43,10 +43,18 @@ namespace UnityEditorInternal.Profiling
         {
             if (m_TimelineGUI != null && m_ViewType == ProfilerViewType.Timeline)
             {
+                if (Event.current.isKey)
+                    ProfilerWindowAnalytics.RecordViewKeyboardEvent(ProfilerWindowAnalytics.profilerCPUModuleTimeline);
+                if (Event.current.isMouse && position.Contains(Event.current.mousePosition))
+                    ProfilerWindowAnalytics.RecordViewMouseEvent(ProfilerWindowAnalytics.profilerCPUModuleTimeline);
                 m_TimelineGUI.DoGUI(m_ProfilerWindow.GetActiveVisibleFrameIndex(), position, fetchData, ref updateViewLive);
             }
             else
             {
+                if (Event.current.isKey)
+                    ProfilerWindowAnalytics.RecordViewKeyboardEvent(ProfilerWindowAnalytics.profilerCPUModuleHierarchy);
+                if (Event.current.isMouse && position.Contains(Event.current.mousePosition))
+                    ProfilerWindowAnalytics.RecordViewMouseEvent(ProfilerWindowAnalytics.profilerCPUModuleHierarchy);
                 base.DrawDetailsView(position);
             }
         }

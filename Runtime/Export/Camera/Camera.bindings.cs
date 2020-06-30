@@ -3,10 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
+using UnityEngine.Rendering;
 using uei = UnityEngine.Internal;
 
 using OpaqueSortMode = UnityEngine.Rendering.OpaqueSortMode;
@@ -268,10 +270,51 @@ namespace UnityEngine
             return RenderToCubemapEyeImpl(cubemap, faceMask, stereoEye);
         }
 
+        public enum RenderRequestMode
+        {
+            None = 0,
+            ObjectId = 1,
+            Depth = 2,
+            Normals = 3,
+            WorldPosition = 4,
+            EntityId = 5,
+        }
+
+        public struct RenderRequest
+        {
+            readonly RenderRequestMode m_CameraRenderMode;
+            readonly RenderTexture m_ResultRT;
+
+            public RenderRequest(RenderRequestMode mode, RenderTexture rt)
+            {
+                m_CameraRenderMode = mode;
+                m_ResultRT = rt;
+            }
+
+            public bool isValid => m_CameraRenderMode != 0 && m_ResultRT != null;
+
+            public RenderRequestMode mode => m_CameraRenderMode;
+            public RenderTexture result => m_ResultRT;
+        }
+
         [FreeFunction("CameraScripting::Render", HasExplicitThis = true)]            extern public void Render();
         [FreeFunction("CameraScripting::RenderWithShader", HasExplicitThis = true)]  extern public void RenderWithShader(Shader shader, string replacementTag);
         [FreeFunction("CameraScripting::RenderDontRestore", HasExplicitThis = true)] extern public void RenderDontRestore();
 
+        public void SubmitRenderRequests(List<RenderRequest> renderRequests)
+        {
+            if (renderRequests == null || renderRequests.Count == 0)
+                throw new ArgumentException($"{nameof(SubmitRenderRequests)} has been invoked with invalid renderRequests");
+
+            if (GraphicsSettings.currentRenderPipeline == null)
+            {
+                Debug.LogWarning("Trying to invoke 'SubmitRenderRequests' when no SRP is set. A scriptable render pipeline is needed for this function call");
+                return;
+            }
+            SubmitRenderRequestsInternal(renderRequests);
+        }
+
+        [FreeFunction("CameraScripting::SubmitRenderRequests", HasExplicitThis = true)]  extern private void SubmitRenderRequestsInternal(object requests);
         [FreeFunction("CameraScripting::SetupCurrent")] extern public static void SetupCurrent(Camera cur);
         [FreeFunction("CameraScripting::CopyFrom", HasExplicitThis = true)] extern public void CopyFrom(Camera other);
 

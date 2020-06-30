@@ -24,7 +24,6 @@ namespace UnityEditorInternal
         GUIContent m_Header;
         float m_HeaderHeight;
         string m_DisplayName;
-        bool m_Foldout = true;
         bool m_Reorderable = false;
         bool m_IsNotInPrefabContextModeWithOverrides = false;
 
@@ -114,7 +113,7 @@ namespace UnityEditorInternal
 
         public float GetHeight()
         {
-            return m_HeaderHeight + (m_Foldout && m_ReorderableList != null ? Constants.kHeaderPadding + m_ReorderableList.GetHeight() : 0.0f);
+            return m_HeaderHeight + (Property.isExpanded && m_ReorderableList != null ? Constants.kHeaderPadding + m_ReorderableList.GetHeight() : 0.0f);
         }
 
         public void Draw(Rect r)
@@ -140,7 +139,7 @@ namespace UnityEditorInternal
             }
 
             EditorGUI.BeginChangeCheck();
-            m_Foldout = EditorGUI.BeginFoldoutHeaderGroup(headerRect, m_Foldout, m_Header);
+            Property.isExpanded = EditorGUI.BeginFoldoutHeaderGroup(headerRect, Property.isExpanded, m_Header);
             EditorGUI.EndFoldoutHeaderGroup();
             if (EditorGUI.EndChangeCheck()) m_ReorderableList.ClearCacheRecursive();
 
@@ -176,7 +175,7 @@ namespace UnityEditorInternal
                 Event.current.Use();
             }
 
-            if (m_Foldout)
+            if (Property.isExpanded)
             {
                 r.y += m_HeaderHeight + Constants.kHeaderPadding;
                 r.height -= m_HeaderHeight + Constants.kHeaderPadding;

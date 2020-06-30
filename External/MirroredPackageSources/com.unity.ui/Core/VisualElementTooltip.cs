@@ -11,6 +11,9 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public partial class VisualElement
     {
+        //PropertyName to store in property bag.
+        internal static readonly PropertyName tooltipPropertyKey = new PropertyName("--unity-tooltip");
+
         /// <summary>
         /// Text to display inside an information box after the user hovers the element for a small amount of time.
         /// </summary>
@@ -18,30 +21,30 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                string userArg;
-                TryGetUserArgs<TooltipEvent, string>(OnTooltip, TrickleDown.NoTrickleDown, out userArg);
-                return userArg ?? string.Empty;
+                string tooltipText = GetProperty(tooltipPropertyKey) as string;
+
+                return tooltipText ?? String.Empty;
             }
             set
             {
-                if (string.IsNullOrEmpty(value))
+                if (!HasProperty(tooltipPropertyKey))
                 {
-                    UnregisterCallback<TooltipEvent, string>(OnTooltip);
+                    RegisterCallback<TooltipEvent>(evt => OnTooltip(evt));
                 }
-                else
-                {
-                    RegisterCallback<TooltipEvent, string>(OnTooltip, value);
-                }
+
+                SetProperty(tooltipPropertyKey, value);
             }
         }
 
-        static void OnTooltip(TooltipEvent e, string tooltip)
+        static void OnTooltip(TooltipEvent e)
         {
             VisualElement element = e.currentTarget as VisualElement;
-            if (element != null)
+            if (element != null && !string.IsNullOrEmpty(element.tooltip))
+            {
                 e.rect = element.worldBound;
-            e.tooltip = tooltip;
-            e.StopImmediatePropagation();
+                e.tooltip = element.tooltip;
+                e.StopImmediatePropagation();
+            }
         }
     }
 }

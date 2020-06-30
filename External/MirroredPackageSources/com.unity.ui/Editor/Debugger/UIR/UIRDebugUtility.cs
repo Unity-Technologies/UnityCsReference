@@ -38,7 +38,7 @@ namespace UnityEditor.UIElements.Debugger
         {
             string t = ve.GetType() == typeof(VisualElement) ? String.Empty : (ve.GetType().Name + " ");
             string n = String.IsNullOrEmpty(ve.name) ? String.Empty : ("#" + ve.name + " ");
-            string res = t + n + (ve.GetClasses().Any() ? ("." + string.Join(",.", ve.GetClasses().ToArray())) : String.Empty);
+            string res = t + n + (ve.GetClassesForIteration().Any() ? ("." + string.Join(",.", ve.GetClassesForIteration().ToArray())) : String.Empty);
             if (res == String.Empty)
                 return ve.GetType().Name;
             if (ve.renderHints != RenderHints.None)

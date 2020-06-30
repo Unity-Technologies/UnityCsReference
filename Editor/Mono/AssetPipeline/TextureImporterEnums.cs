@@ -297,9 +297,9 @@ namespace UnityEditor
         Default = 0,
         [System.Obsolete("Use Default (UnityUpgradable) -> Default")]
         Image = 0,
-        NormalMap = 1,
         [System.Obsolete("Use NormalMap (UnityUpgradable) -> NormalMap")]
         Bump = 1,
+        NormalMap = 1,
         GUI = 2,
         Sprite = 8,
         Cursor = 7,
@@ -313,7 +313,8 @@ namespace UnityEditor
         HDRI = 9,
         [System.Obsolete("Use Default instead. All texture types now have an Advanced foldout (UnityUpgradable) -> Default")]
         Advanced = 5,
-        SingleChannel = 10
+        SingleChannel = 10,
+        Shadowmask = 11,
     }
 
     public enum TextureImporterCompression

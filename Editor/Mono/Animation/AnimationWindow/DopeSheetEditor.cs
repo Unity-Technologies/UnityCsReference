@@ -563,13 +563,13 @@ namespace UnityEditorInternal
 
             AnimationKeyTime mouseKeyTime = AnimationKeyTime.Time(state.PixelToTime(Event.current.mousePosition.x, AnimationWindowState.SnapMode.SnapToClipFrame), state.frameRate);
 
-            string str = "Add Key";
+            string str = L10n.Tr("Add Key");
             if (dopeline.isEditable && hoveringKeys.Count == 0)
                 menu.AddItem(new GUIContent(str), false, AddKeyToDopeline, new AddKeyToDopelineContext {dopeline = dopeline, time = mouseKeyTime});
             else
                 menu.AddDisabledItem(new GUIContent(str));
 
-            str = state.selectedKeys.Count > 1 ? "Delete Keys" : "Delete Key";
+            str = state.selectedKeys.Count > 1 ? L10n.Tr("Delete Keys") : L10n.Tr("Delete Key");
             if (dopeline.isEditable && (state.selectedKeys.Count > 0 || hoveringKeys.Count > 0))
                 menu.AddItem(new GUIContent(str), false, DeleteKeys, state.selectedKeys.Count > 0 ? state.selectedKeys : hoveringKeys);
             else
@@ -1175,7 +1175,7 @@ namespace UnityEditorInternal
             if (DragAndDrop.objectReferences.Length == 0 || targetCurve == null)
                 return;
 
-            string undoLabel = "Drop Key";
+            string undoLabel = L10n.Tr("Drop Key");
             state.SaveKeySelection(undoLabel);
 
             state.ClearSelections();

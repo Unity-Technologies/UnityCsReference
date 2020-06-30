@@ -520,105 +520,126 @@ namespace UnityEngine.UIElements
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {
             if (evt.destinationPanel == null)
-            {
                 return;
-            }
 
-            if (evt.destinationPanel.contextType == ContextType.Editor)
-            {
-                m_ScrollView.contentContainer.RegisterCallback<MouseDownEvent>(OnMouseDown);
-                m_ScrollView.contentContainer.RegisterCallback<MouseUpEvent>(OnMouseUp);
-            }
-            else if (evt.destinationPanel.contextType == ContextType.Player)
-            {
-                m_ScrollView.contentContainer.RegisterCallback<PointerDownEvent>(OnPointerDown);
-                m_ScrollView.contentContainer.RegisterCallback<PointerUpEvent>(OnPointerUp);
-            }
-
+            m_ScrollView.contentContainer.RegisterCallback<PointerDownEvent>(OnPointerDown);
+            m_ScrollView.contentContainer.RegisterCallback<PointerUpEvent>(OnPointerUp);
             m_ScrollView.contentContainer.RegisterCallback<KeyDownEvent>(OnKeyDown);
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             if (evt.originPanel == null)
-            {
                 return;
-            }
 
-            if (evt.originPanel.contextType == ContextType.Editor)
-            {
-                m_ScrollView.contentContainer.UnregisterCallback<MouseDownEvent>(OnMouseDown);
-                m_ScrollView.contentContainer.UnregisterCallback<MouseUpEvent>(OnMouseUp);
-            }
-            else if (evt.originPanel.contextType == ContextType.Player)
-            {
-                m_ScrollView.contentContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown);
-                m_ScrollView.contentContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp);
-            }
-
+            m_ScrollView.contentContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown);
+            m_ScrollView.contentContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp);
             m_ScrollView.contentContainer.UnregisterCallback<KeyDownEvent>(OnKeyDown);
+        }
+
+        private bool ProcessNavigationEvent(EventBase evt, out bool shouldScroll)
+        {
+            shouldScroll = false;
+
+            if (evt == null || !HasValidDataAndBindings())
+            {
+                return false;
+            }
+
+            if (IsSelectAllEvent(evt))
+            {
+                SelectAll();
+                return true;
+            }
+
+            if (eventInterpreter.IsCancellationEvent(evt))
+            {
+                ClearSelection();
+                return true;
+            }
+
+            if (eventInterpreter.IsActivationEvent(evt))
+            {
+#pragma warning disable 618
+                if (selectedIndex >= 0 && selectedIndex < m_ItemsSource.Count)
+                    onItemChosen?.Invoke(m_ItemsSource[selectedIndex]);
+#pragma warning restore 618
+                onItemsChosen?.Invoke(m_SelectedItems);
+                shouldScroll = true;
+                return true;
+            }
+
+            if (eventInterpreter.IsNavigationEvent(evt, out var direction))
+            {
+                shouldScroll = true;
+                switch (direction)
+                {
+                    case NavigationDirection.Up:
+                        if (selectedIndex > 0)
+                        {
+                            selectedIndex--;
+                            return true;
+                        }
+                        break; // Allow focus to move outside the ListView
+                    case NavigationDirection.Down:
+                        if (selectedIndex + 1 < itemsSource.Count)
+                        {
+                            selectedIndex++;
+                            return true;
+                        }
+                        break; // Allow focus to move outside the ListView
+                    case NavigationDirection.Home:
+                        selectedIndex = 0;
+                        return true;
+                    case NavigationDirection.End:
+                        selectedIndex = itemsSource.Count - 1;
+                        return true;
+                    case NavigationDirection.PageDown:
+                        selectedIndex = Math.Min(itemsSource.Count - 1, selectedIndex + (int)(m_LastHeight / resolvedItemHeight));
+                        return true;
+                    case NavigationDirection.PageUp:
+                        selectedIndex = Math.Max(0, selectedIndex - (int)(m_LastHeight / resolvedItemHeight));
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        static bool IsSelectAllEvent(EventBase evt)
+        {
+            if (evt.eventTypeId == KeyDownEvent.TypeId())
+            {
+                var keyDownEvent = (KeyDownEvent)evt;
+                if (keyDownEvent.keyCode == KeyCode.A && keyDownEvent.actionKey)
+                    return true;
+            }
+            return false;
+        }
+
+        private void ProcessAnyEvent(EventBase evt)
+        {
+            if (ProcessNavigationEvent(evt, out bool shouldScroll))
+            {
+                evt.StopPropagation();
+                evt.PreventDefault();
+                if (shouldScroll)
+                {
+                    ScrollToItem(selectedIndex);
+                }
+            }
         }
 
         public void OnKeyDown(KeyDownEvent evt)
         {
-            if (evt == null || !HasValidDataAndBindings())
-                return;
+            ProcessAnyEvent(evt);
+        }
 
-            var shouldStopPropagation = true;
-            var shouldScroll = true;
-
-            switch (evt.keyCode)
-            {
-                case KeyCode.UpArrow:
-                    if (selectedIndex > 0)
-                        selectedIndex = selectedIndex - 1;
-                    break;
-                case KeyCode.DownArrow:
-                    if (selectedIndex + 1 < itemsSource.Count)
-                        selectedIndex = selectedIndex + 1;
-                    break;
-                case KeyCode.Home:
-                    selectedIndex = 0;
-                    break;
-                case KeyCode.End:
-                    selectedIndex = itemsSource.Count - 1;
-                    break;
-                case KeyCode.Return:
-#pragma warning disable 618
-                    onItemChosen?.Invoke(m_ItemsSource[selectedIndex]);
-#pragma warning restore 618
-                    onItemsChosen?.Invoke(m_SelectedItems);
-                    break;
-                case KeyCode.PageDown:
-                    selectedIndex = Math.Min(itemsSource.Count - 1, selectedIndex + (int)(m_LastHeight / resolvedItemHeight));
-                    break;
-                case KeyCode.PageUp:
-                    selectedIndex = Math.Max(0, selectedIndex - (int)(m_LastHeight / resolvedItemHeight));
-                    break;
-                case KeyCode.A:
-                    if (evt.actionKey)
-                    {
-                        SelectAll();
-                        shouldScroll = false;
-                    }
-                    break;
-                case KeyCode.Escape:
-                    ClearSelection();
-                    shouldScroll = false;
-                    break;
-                default:
-                    shouldStopPropagation = false;
-                    shouldScroll = false;
-                    break;
-            }
-
-            if (shouldStopPropagation)
-                evt.StopPropagation();
-
-            if (shouldScroll)
-            {
-                ScrollToItem(selectedIndex);
-            }
+        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        {
+            ProcessAnyEvent(evt);
+            if (!evt.isPropagationStopped)
+                base.ExecuteDefaultActionAtTarget(evt);
         }
 
         /// <summary>
@@ -659,17 +680,6 @@ namespace UnityEngine.UIElements
 
                 m_ScrollView.scrollOffset =  new Vector2(m_ScrollView.scrollOffset.x, yScrollOffset);
             }
-        }
-
-        private void OnMouseDown(MouseDownEvent evt)
-        {
-            if (!HasValidDataAndBindings())
-                return;
-
-            if (evt.button != (int)MouseButton.LeftMouse)
-                return;
-
-            DoSelect(evt.localMousePosition, evt.clickCount, evt.actionKey, evt.shiftKey);
         }
 
         private long m_TouchDownTime = 0;
@@ -714,6 +724,18 @@ namespace UnityEngine.UIElements
                 if (delay < 500 && delta.sqrMagnitude <= 100)
                 {
                     DoSelect(evt.localPosition, evt.clickCount, evt.actionKey, evt.shiftKey);
+                }
+            }
+            else
+            {
+                var clickedIndex = (int)(evt.localPosition.y / itemHeight);
+                if (selectionType == SelectionType.Multiple
+                    && !evt.shiftKey
+                    && !evt.actionKey
+                    && m_SelectedIndices.Count > 1
+                    && m_SelectedIndices.Contains(clickedIndex))
+                {
+                    ProcessSingleClick(clickedIndex);
                 }
             }
         }
@@ -767,8 +789,8 @@ namespace UnityEngine.UIElements
                     }
                     else if (selectionType == SelectionType.Multiple && m_SelectedIndices.Contains(clickedIndex))
                     {
-                        // Do noting, selection will be processed OnMouseUp
-                        // If drag and drop will be started listview dragger will capture the mouse and ListView will not receive the mouse up event
+                        // Do noting, selection will be processed OnPointerUp.
+                        // If drag and drop will be started ListViewDragger will capture the mouse and ListView will not receive the mouse up event.
                     }
                     else // single
                     {
@@ -791,19 +813,6 @@ namespace UnityEngine.UIElements
         {
             m_RangeSelectionOrigin = clickedIndex;
             SetSelection(clickedIndex);
-        }
-
-        private void OnMouseUp(MouseUpEvent evt)
-        {
-            var clickedIndex = (int)(evt.localMousePosition.y / itemHeight);
-            if (selectionType == SelectionType.Multiple
-                && !evt.shiftKey
-                && !evt.actionKey
-                && m_SelectedIndices.Count > 1
-                && m_SelectedIndices.Contains(clickedIndex))
-            {
-                ProcessSingleClick(clickedIndex);
-            }
         }
 
         internal void SelectAll()
@@ -1018,6 +1027,17 @@ namespace UnityEngine.UIElements
             OverwriteFromViewData(this, key);
         }
 
+        protected override void ExecuteDefaultAction(EventBase evt)
+        {
+            base.ExecuteDefaultAction(evt);
+
+            // We always need to know when pointer up event occurred to reset DragEventsProcessor flags.
+            // Some controls may capture the mouse, but the ListView is a composite root (isCompositeRoot),
+            // and will always receive ExecuteDefaultAction despite what the actual event target is.
+            if (evt.eventTypeId == PointerUpEvent.TypeId())
+                m_Dragger?.OnPointerUp();
+        }
+
         private void OnScroll(float offset)
         {
             if (!HasValidDataAndBindings())
@@ -1185,6 +1205,7 @@ namespace UnityEngine.UIElements
 
                         item.AddToClassList("unity-listview-item");
                         item.style.position = Position.Relative;
+                        item.style.flexBasis = StyleKeyword.Initial;
                         item.style.marginTop = 0f;
                         item.style.marginBottom = 0f;
                         item.style.flexGrow = 0f;
@@ -1268,8 +1289,11 @@ namespace UnityEngine.UIElements
             }
 
             var index = m_LastItemIndex;
-            foreach (var child in m_EmptyRows.hierarchy.Children())
+
+            int emptyRowCount = m_EmptyRows.hierarchy.childCount;
+            for (int i = 0; i < emptyRowCount; ++i)
             {
+                var child = m_EmptyRows.hierarchy[i];
                 index++;
                 child.style.height = pixelAlignedItemHeight;
                 child.EnableInClassList(itemAlternativeBackgroundUssClassName, index % 2 == 1);

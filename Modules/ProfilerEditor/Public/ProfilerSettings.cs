@@ -39,7 +39,8 @@ namespace UnityEditor.Profiling
             {
                 if (m_FrameCount == 0)
                 {
-                    m_FrameCount = EditorPrefs.GetInt(k_FrameCountSettingKey, kMinFrameCount);
+                    var value = EditorPrefs.GetInt(k_FrameCountSettingKey, kMinFrameCount);
+                    m_FrameCount = Mathf.Clamp(value, 0, kMaxFrameCount);
                     ProfilerDriver.SetMaxFrameHistoryLength(m_FrameCount);
                 }
 
@@ -47,6 +48,9 @@ namespace UnityEditor.Profiling
             }
             set
             {
+                if (value < 0 || value > kMaxFrameCount)
+                    throw new ArgumentOutOfRangeException(nameof(frameCount), value, $"must be between {0} and {kMaxFrameCount}");
+
                 if (value != m_FrameCount)
                 {
                     m_FrameCount = value;

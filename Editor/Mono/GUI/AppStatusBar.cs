@@ -167,9 +167,9 @@ namespace UnityEditor
                 if (m_DrawExtraFeatures)
                     DrawSpecialModeLabel();
                 DrawProgressBar();
+                DrawDebuggerToggle();
                 if (m_DrawExtraFeatures)
                 {
-                    DrawDebuggerToggle();
                     DrawCacheServerToggle();
                     DrawBakeMode();
                 }

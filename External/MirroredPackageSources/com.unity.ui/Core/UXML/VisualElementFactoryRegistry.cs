@@ -79,6 +79,7 @@ namespace UnityEngine.UIElements
                 new HelpBox.UxmlFactory(),
                 new PopupWindow.UxmlFactory(),
                 new ListView.UxmlFactory(),
+                new TwoPaneSplitView.UxmlFactory(),
                 new TreeView.UxmlFactory(),
                 new Foldout.UxmlFactory(),
                 new BindableElement.UxmlFactory(),

@@ -191,6 +191,8 @@ namespace UnityEngine
 
         public virtual bool supportsConservativeRaster => EditorSystemInfo.supportsConservativeRaster;
 
+        public virtual bool supportsMultiview => EditorSystemInfo.supportsMultiview;
+
         public virtual bool IsFormatSupported(GraphicsFormat format, FormatUsage usage)
         {
             return EditorSystemInfo.IsFormatSupported(format, usage);

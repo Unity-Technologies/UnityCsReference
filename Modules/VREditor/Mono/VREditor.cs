@@ -9,116 +9,21 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditorInternal.VR;
 
-namespace UnityEditorInternal.VR
-{
-    partial class VREditor
-    {
-        private static Dictionary<BuildTargetGroup, bool> dirtyDeviceLists = new Dictionary<BuildTargetGroup, bool>();
-
-        public static bool IsDeviceListDirty(BuildTargetGroup targetGroup)
-        {
-            if (dirtyDeviceLists.ContainsKey(targetGroup))
-                return dirtyDeviceLists[targetGroup];
-
-            return false;
-        }
-
-        private static void SetDeviceListDirty(BuildTargetGroup targetGroup)
-        {
-            if (dirtyDeviceLists.ContainsKey(targetGroup))
-                dirtyDeviceLists[targetGroup] = true;
-            else
-                dirtyDeviceLists.Add(targetGroup, true);
-        }
-
-        public static void ClearDeviceListDirty(BuildTargetGroup targetGroup)
-        {
-            if (dirtyDeviceLists.ContainsKey(targetGroup))
-                dirtyDeviceLists[targetGroup] = false;
-        }
-
-        public static VRDeviceInfoEditor[] GetEnabledVRDeviceInfo(BuildTargetGroup targetGroup)
-        {
-            string[] enabledVRDevices = GetVREnabledDevicesOnTargetGroup(targetGroup);
-            return GetAllVRDeviceInfo(targetGroup).Where(d => enabledVRDevices.Contains(d.deviceNameKey)).ToArray();
-        }
-
-        public static VRDeviceInfoEditor[] GetEnabledVRDeviceInfo(BuildTarget target)
-        {
-            string[] enabledVRDevices = GetVREnabledDevicesOnTarget(target);
-            return GetAllVRDeviceInfoByTarget(target).Where(d => enabledVRDevices.Contains(d.deviceNameKey)).ToArray();
-        }
-
-        public static bool IsVRDeviceEnabledForBuildTarget(BuildTarget target, string deviceName)
-        {
-            string[] vrDevices = GetVREnabledDevicesOnTarget(target);
-            foreach (string device in vrDevices)
-            {
-                if (device == deviceName)
-                    return true;
-            }
-            return false;
-        }
-
-        public static string[] GetAvailableVirtualRealitySDKs(BuildTargetGroup targetGroup)
-        {
-            VRDeviceInfoEditor[] deviceInfos = GetAllVRDeviceInfo(targetGroup);
-            string[] sdks = new string[deviceInfos.Length];
-
-            for (int i = 0; i < deviceInfos.Length; ++i)
-            {
-                sdks[i] = deviceInfos[i].deviceNameKey;
-            }
-
-            return sdks;
-        }
-
-        // APIs Exposed to PlayerSettings for Scripting Reference
-        public static string[] GetVirtualRealitySDKs(BuildTargetGroup targetGroup)
-        {
-            return GetVREnabledDevicesOnTargetGroup(targetGroup);
-        }
-
-        public static void SetVirtualRealitySDKs(BuildTargetGroup targetGroup, string[] sdks)
-        {
-            SetVREnabledDevicesOnTargetGroup(targetGroup, sdks);
-            SetDeviceListDirty(targetGroup);
-        }
-    }
-}
-
 namespace UnityEditor
 {
     partial class PlayerSettings
     {
-        [Obsolete("This API is obsolete, and should no longer be used. Please use XRManagerSettings in the XR Management package instead.")]
-        public static string[] GetAvailableVirtualRealitySDKs(BuildTargetGroup targetGroup)
-        {
-            return VREditor.GetAvailableVirtualRealitySDKs(targetGroup);
-        }
-
-        [Obsolete("This API is obsolete, and should no longer be used. Please use XRManagerSettings in the XR Management package instead.")]
+        // TODO: This needs to be removed once we stop XR Plug-in Management from auto upgrading/checking.
+        [Obsolete("This API is deprecated and will be removed prior to shipping 2020.2", false)]
         public static bool GetVirtualRealitySupported(BuildTargetGroup targetGroup)
         {
-            return VREditor.GetVREnabledOnTargetGroup(targetGroup);
+            return false;
         }
 
-        [Obsolete("This API is obsolete, and should no longer be used. Please use XRManagerSettings in the XR Management package instead.")]
+        // TODO: This needs to be removed once we stop XR Plug-in Management from auto upgrading/checking.
+        [Obsolete("This API is deprecated and will be removed prior to shipping 2020.2", false)]
         public static void SetVirtualRealitySupported(BuildTargetGroup targetGroup, bool value)
         {
-            VREditor.SetVREnabledOnTargetGroup(targetGroup, value);
-        }
-
-        [Obsolete("This API is obsolete, and should no longer be used. Please use XRManagerSettings in the XR Management package instead.")]
-        public static string[] GetVirtualRealitySDKs(BuildTargetGroup targetGroup)
-        {
-            return VREditor.GetVirtualRealitySDKs(targetGroup);
-        }
-
-        [Obsolete("This API is obsolete, and should no longer be used. Please use XRManagerSettings in the XR Management package instead.")]
-        public static void SetVirtualRealitySDKs(BuildTargetGroup targetGroup, string[] sdks)
-        {
-            VREditor.SetVirtualRealitySDKs(targetGroup, sdks);
         }
     }
 }

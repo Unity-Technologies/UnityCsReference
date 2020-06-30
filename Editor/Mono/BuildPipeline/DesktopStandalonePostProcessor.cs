@@ -466,9 +466,11 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     protected abstract void DeleteDestination(BuildPostProcessArgs args);
 
-    protected static bool UseMono => !UseIl2Cpp || IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildTargetGroup.Standalone);
+    protected virtual bool UseMono => !UseIl2Cpp || IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildTargetGroup.Standalone);
 
-    protected static void DeleteUnusedMono(string dataFolder, BuildReport report)
+    protected virtual bool UseIl2Cpp => PlayerSettings.GetScriptingBackend(BuildTargetGroup.Standalone) == ScriptingImplementation.IL2CPP;
+
+    protected void DeleteUnusedMono(string dataFolder, BuildReport report)
     {
         // Mono is built by the il2cpp builder, so we dont need the libs copied
         if (!UseMono)
@@ -487,8 +489,6 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
     {
         return (args.options & BuildOptions.InstallInBuildFolder) != 0;
     }
-
-    protected static bool UseIl2Cpp => PlayerSettings.GetScriptingBackend(BuildTargetGroup.Standalone) == ScriptingImplementation.IL2CPP;
 
     protected virtual bool GetCreateSolution(BuildPostProcessArgs args) { return false; }
 

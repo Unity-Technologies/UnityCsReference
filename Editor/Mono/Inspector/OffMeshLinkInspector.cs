@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -20,6 +21,17 @@ namespace UnityEditor
         private SerializedProperty m_Activated;
         private SerializedProperty m_AutoUpdatePositions;
 
+        static class Styles
+        {
+            public static readonly GUIContent Start = EditorGUIUtility.TrTextContent("Start", "The transform representing the start position of the link.");
+            public static readonly GUIContent End = EditorGUIUtility.TrTextContent("End", "The transform representing the end position of the link.");
+            public static readonly GUIContent CostOverride = EditorGUIUtility.TrTextContent("Cost Override", "A positive value here modifies the cost of the link that is normally given by Navigation Area.");
+            public static readonly GUIContent BiDirectional = EditorGUIUtility.TrTextContent("Bidirectional", "When selected, agents can traverse the link also from End to Start, otherwise only from Start to End.");
+            public static readonly GUIContent Activated = EditorGUIUtility.TrTextContent("Activated", "Makes the link available for pathfinding.");
+            public static readonly GUIContent AutoUpdatePositions = EditorGUIUtility.TrTextContent("Auto Update Positions", "Automatically update the link's endpoints to match the positions of the Start and End transforms.");
+            public static readonly GUIContent NavigationArea = EditorGUIUtility.TrTextContent("Navigation Area", "It assigns a specific cost to the link. Only NavMeshAgents with this area type in their Area Mask are allowed to pass through it.");
+        }
+
         void OnEnable()
         {
             m_AreaIndex = serializedObject.FindProperty("m_AreaIndex");
@@ -35,12 +47,12 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            EditorGUILayout.PropertyField(m_Start);
-            EditorGUILayout.PropertyField(m_End);
-            EditorGUILayout.PropertyField(m_CostOverride);
-            EditorGUILayout.PropertyField(m_BiDirectional);
-            EditorGUILayout.PropertyField(m_Activated);
-            EditorGUILayout.PropertyField(m_AutoUpdatePositions);
+            EditorGUILayout.PropertyField(m_Start, Styles.Start);
+            EditorGUILayout.PropertyField(m_End, Styles.End);
+            EditorGUILayout.PropertyField(m_CostOverride, Styles.CostOverride);
+            EditorGUILayout.PropertyField(m_BiDirectional, Styles.BiDirectional);
+            EditorGUILayout.PropertyField(m_Activated, Styles.Activated);
+            EditorGUILayout.PropertyField(m_AutoUpdatePositions, Styles.AutoUpdatePositions);
 
             SelectNavMeshArea();
 
@@ -65,7 +77,7 @@ namespace UnityEditor
                 }
             }
 
-            var area = EditorGUILayout.Popup("Navigation Area", areaIndex, areaNames);
+            var area = EditorGUILayout.Popup(Styles.NavigationArea, areaIndex, areaNames);
             EditorGUI.showMixedValue = false;
 
             if (EditorGUI.EndChangeCheck())

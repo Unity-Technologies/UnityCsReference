@@ -83,13 +83,20 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Color to use when drawing the text of an element.
         /// </summary>
+        /// <remarks>
+        /// This property is inherited by default.
+        /// </remarks>
         Color color { get; }
         /// <summary>
         /// Defines how an element is displayed in the layout.
         /// </summary>
+        /// <remarks>
+        /// Unlike the visibility property, this property affects the layout of the element.
+        /// This is a convenient way to hide an element without removing it from the hierarchy (when using the <see cref="DisplayStyle.None"/>).
+        /// </remarks>
         DisplayStyle display { get; }
         /// <summary>
-        /// Initial main size of a flex item, on the main flex axis. The final layout mught be smaller or larger, according to the flex shrinking and growing determined by the other flex properties.
+        /// Initial main size of a flex item, on the main flex axis. The final layout mught be smaller or larger, according to the flex shrinking and growing determined by the flex property.
         /// </summary>
         StyleFloat flexBasis { get; }
         /// <summary>
@@ -97,7 +104,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         FlexDirection flexDirection { get; }
         /// <summary>
-        /// Specifies how much the item will grow relative to the rest of the flexible items inside the same container.
+        /// Specifies how the item will shrink relative to the rest of the flexible items inside the same container.
         /// </summary>
         float flexGrow { get; }
         /// <summary>
@@ -111,6 +118,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Font size to draw the element's text.
         /// </summary>
+        /// <remarks>
+        /// This property is inherited by default.
+        /// </remarks>
         float fontSize { get; }
         /// <summary>
         /// Fixed height of an element for the layout.
@@ -143,30 +153,18 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Maximum height for an element, when it is flexible or measures its own size.
         /// </summary>
-        /// <remarks>
-        /// Default value is <see cref="StyleKeyword.None"/>.
-        /// </remarks>
         StyleFloat maxHeight { get; }
         /// <summary>
         /// Maximum width for an element, when it is flexible or measures its own size.
         /// </summary>
-        /// <remarks>
-        /// Default value is <see cref="StyleKeyword.Auto"/>.
-        /// </remarks>
         StyleFloat maxWidth { get; }
         /// <summary>
         /// Minimum height for an element, when it is flexible or measures its own size.
         /// </summary>
-        /// <remarks>
-        /// Default value is <see cref="StyleKeyword.None"/>.
-        /// </remarks>
         StyleFloat minHeight { get; }
         /// <summary>
         /// Minimum width for an element, when it is flexible or measures its own size.
         /// </summary>
-        /// <remarks>
-        /// Default value is <see cref="StyleKeyword.Auto"/>.
-        /// </remarks>
         StyleFloat minWidth { get; }
         /// <summary>
         /// Specifies the transparency of an element.
@@ -195,7 +193,7 @@ namespace UnityEngine.UIElements
         /// Element's positioning in its parent container.
         /// </summary>
         /// <remarks>
-        /// This property is used in conjunction with position left, top, right and bottom properties.
+        /// This property is used in conjunction with left, top, right and bottom properties.
         /// </remarks>
         Position position { get; }
         /// <summary>
@@ -211,7 +209,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         float top { get; }
         /// <summary>
-        /// Tinting color for the element's backgroundImage
+        /// Tinting color for the element's backgroundImage.
         /// </summary>
         Color unityBackgroundImageTintColor { get; }
         /// <summary>
@@ -221,10 +219,16 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Font to draw the element's text.
         /// </summary>
+        /// <remarks>
+        /// This property is inherited by default.
+        /// </remarks>
         Font unityFont { get; }
         /// <summary>
         /// Font style and weight (normal, bold, italic) to draw the element's text.
         /// </summary>
+        /// <remarks>
+        /// This property is inherited by default.
+        /// </remarks>
         FontStyle unityFontStyleAndWeight { get; }
         /// <summary>
         /// Size of the 9-slice's bottom edge when painting an element's background image.
@@ -245,6 +249,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Horizontal and vertical text alignment in the element's box.
         /// </summary>
+        /// <remarks>
+        /// This property is inherited by default.
+        /// </remarks>
         TextAnchor unityTextAlign { get; }
         /// <summary>
         /// The element's text overflow position.
@@ -253,10 +260,16 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Specifies whether or not an element is visible.
         /// </summary>
+        /// <remarks>
+        /// This property is inherited by default.
+        /// </remarks>
         Visibility visibility { get; }
         /// <summary>
         /// Word wrapping over multiple lines if not enough space is available to draw the text of an element.
         /// </summary>
+        /// <remarks>
+        /// This property is inherited by default.
+        /// </remarks>
         WhiteSpace whiteSpace { get; }
         /// <summary>
         /// Fixed width of an element for the layout.

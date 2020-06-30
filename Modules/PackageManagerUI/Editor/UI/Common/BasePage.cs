@@ -22,6 +22,9 @@ namespace UnityEditor.PackageManager.UI
         protected List<string> m_SelectedUniqueIds = new List<string>();
 
         [SerializeField]
+        private List<string> m_CollapsedGroups = new List<string>();
+
+        [SerializeField]
         protected PackageFilterTab m_Tab;
         public PackageFilterTab tab => m_Tab;
 
@@ -107,6 +110,12 @@ namespace UnityEditor.PackageManager.UI
 
         public abstract VisualState GetVisualState(string packageUniqueId);
 
+        public VisualState GetSelectedVisualState()
+        {
+            var selectedUniqueId = m_SelectedUniqueIds.FirstOrDefault();
+            return string.IsNullOrEmpty(selectedUniqueId) ? null : GetVisualState(selectedUniqueId);
+        }
+
         public IPackageVersion GetSelectedVersion()
         {
             IPackage package;
@@ -167,6 +176,22 @@ namespace UnityEditor.PackageManager.UI
         }
 
         public abstract void SetSeeAllVersions(string packageUniqueId, bool value);
+
+        public bool IsGroupExpanded(string groupName)
+        {
+            return !m_CollapsedGroups.Contains(groupName);
+        }
+
+        public void SetGroupExpanded(string groupName, bool value)
+        {
+            var groupExpanded = !m_CollapsedGroups.Contains(groupName);
+            if (groupExpanded == value)
+                return;
+            if (value)
+                m_CollapsedGroups.Remove(groupName);
+            else
+                m_CollapsedGroups.Add(groupName);
+        }
 
         public bool Contains(IPackage package)
         {

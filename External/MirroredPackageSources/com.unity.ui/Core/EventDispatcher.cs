@@ -137,7 +137,7 @@ namespace UnityEngine.UIElements
             get
             {
                 if (s_EditorEventDispatcher == null)
-                    s_EditorEventDispatcher = new EventDispatcher();
+                    s_EditorEventDispatcher = CreateDefault();
 
                 return s_EditorEventDispatcher;
             }
@@ -150,19 +150,40 @@ namespace UnityEngine.UIElements
 
         private DebuggerEventDispatchingStrategy m_DebuggerEventDispatchingStrategy;
 
-        internal EventDispatcher()
+        private static readonly IEventDispatchingStrategy[] s_EditorStrategies =
+        {
+            new PointerCaptureDispatchingStrategy(),
+            new MouseCaptureDispatchingStrategy(),
+            new KeyboardEventDispatchingStrategy(),
+            new PointerEventDispatchingStrategy(),
+            new MouseEventDispatchingStrategy(),
+            new CommandEventDispatchingStrategy(),
+            new IMGUIEventDispatchingStrategy(),
+            new DefaultDispatchingStrategy(),
+        };
+
+        internal static EventDispatcher CreateDefault()
+        {
+            return new EventDispatcher(s_EditorStrategies);
+        }
+
+        internal static EventDispatcher CreateForRuntime(IList<IEventDispatchingStrategy> strategies)
+        {
+            return new EventDispatcher(strategies);
+        }
+
+        // Remove once PanelDebug stops using it.
+        [Obsolete("Please use EventDispatcher.CreateDefault().")]
+        internal EventDispatcher() : this(s_EditorStrategies)
+        {
+        }
+
+        private EventDispatcher(IList<IEventDispatchingStrategy> strategies)
         {
             m_DispatchingStrategies = new List<IEventDispatchingStrategy>();
             m_DebuggerEventDispatchingStrategy = new DebuggerEventDispatchingStrategy();
             m_DispatchingStrategies.Add(m_DebuggerEventDispatchingStrategy);
-            m_DispatchingStrategies.Add(new PointerCaptureDispatchingStrategy());
-            m_DispatchingStrategies.Add(new MouseCaptureDispatchingStrategy());
-            m_DispatchingStrategies.Add(new KeyboardEventDispatchingStrategy());
-            m_DispatchingStrategies.Add(new PointerEventDispatchingStrategy());
-            m_DispatchingStrategies.Add(new MouseEventDispatchingStrategy());
-            m_DispatchingStrategies.Add(new CommandEventDispatchingStrategy());
-            m_DispatchingStrategies.Add(new IMGUIEventDispatchingStrategy());
-            m_DispatchingStrategies.Add(new DefaultDispatchingStrategy());
+            m_DispatchingStrategies.AddRange(strategies);
 
             m_Queue = k_EventQueuePool.Get();
         }
@@ -331,7 +352,10 @@ namespace UnityEngine.UIElements
 
                 evt.PostDispatch(panel);
 
-                m_ClickDetector.ProcessEvent(evt);
+                if (!evt.isPropagationStopped)
+                {
+                    m_ClickDetector.ProcessEvent(evt);
+                }
 
                 Debug.Assert(imguiEventIsInitiallyUsed || evt.isPropagationStopped || e == null || e.rawType != EventType.Used, "Event is used but not stopped.");
             }

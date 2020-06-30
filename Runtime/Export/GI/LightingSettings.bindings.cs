@@ -183,13 +183,20 @@ namespace UnityEngine
         [NativeName("PVRSampleCount")]
         public extern int indirectSampleCount { get; set; }
 
-        // Amount of light bounce used for the path tracer.
+        [System.Obsolete("Use LightingSettings.maxBounces instead. (UnityUpgradable) -> UnityEngine.LightingSettings.maxBounces", false)]
         [NativeName("PVRBounces")]
         public extern int bounces { get; set; }
 
-        // Choose at which bounce we start to apply russian roulette to the ray
-        [NativeName("PVRRussianRouletteStartBounce")]
+        [NativeName("PVRBounces")]
+        public extern int maxBounces { get; set; }
+
+        [System.Obsolete("Use LightingSettings.minBounces instead. (UnityUpgradable) -> UnityEngine.LightingSettings.minBounces", false)]
+        [NativeName("PVRMinBounces")]
         public extern int russianRouletteStartBounce { get; set; }
+
+        // Choose at which bounce we start to apply russian roulette to the ray
+        [NativeName("PVRMinBounces")]
+        public extern int minBounces { get; set; }
 
         // Is view prioritisation enabled?
         [NativeName("PVRCulling")]

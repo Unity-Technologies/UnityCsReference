@@ -50,9 +50,6 @@ namespace UnityEditor.PackageManager.UI
                 if (primary.HasTag(PackageTag.Downloadable))
                     return PackageState.DownloadAvailable;
 
-                if (primary.HasTag(PackageTag.Installable))
-                    return PackageState.InstallAvailable;
-
                 return PackageState.None;
             }
         }

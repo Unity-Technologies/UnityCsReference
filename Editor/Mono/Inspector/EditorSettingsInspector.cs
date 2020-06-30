@@ -70,6 +70,12 @@ namespace UnityEditor
             public static GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation", "Enables async shader compilation in Game and Scene view. Async compilation for custom editor tools can be achieved via script API and is not affected by this option.");
             public static GUIContent cachingShaderPreprocessor = EditorGUIUtility.TrTextContent("Caching Preprocessor", "Enables caching shader preprocessor with advanced functionality.");
 
+            public static GUIContent prefabMode = EditorGUIUtility.TrTextContent("Prefab Mode");
+            public static GUIContent prefabModeAllowAutoSave = EditorGUIUtility.TrTextContent("Allow Auto Save", "When enabled, an Auto Save toggle is displayed in Prefab Mode which you can turn on or off. This is the default. When disabled, there is no Auto Save in Prefab Mode in this project and the toggle is not displayed.");
+            public static GUIContent prefabModeEditingEnvironments = EditorGUIUtility.TrTextContent("Editing Environments");
+            public static GUIContent prefabModeRegularEnvironment = EditorGUIUtility.TrTextContent("Regular Environment");
+            public static GUIContent prefabModeUIEnvironment = EditorGUIUtility.TrTextContent("UI Environment");
+
             public static readonly GUIContent enterPlayModeSettings = EditorGUIUtility.TrTextContent("Enter Play Mode Settings");
             public static readonly GUIContent enterPlayModeOptionsEnabled = EditorGUIUtility.TrTextContent("Enter Play Mode Options", "Enables options when Entering Play Mode");
             public static readonly GUIContent enterPlayModeOptionsEnableDomainReload = EditorGUIUtility.TrTextContent("Reload Domain", "Enables Domain Reload when Entering Play Mode. Domain reload reinitializes game completely making loading behavior very close to the Player");
@@ -222,6 +228,7 @@ namespace UnityEditor
         SerializedProperty m_SerializeInlineMappingsOnOneLine;
         SerializedProperty m_PrefabRegularEnvironment;
         SerializedProperty m_PrefabUIEnvironment;
+        SerializedProperty m_PrefabModeAllowAutoSave;
         SerializedProperty m_UseLegacyProbeSampleCount;
         SerializedProperty m_DisableCookiesInLightmapper;
         SerializedProperty m_SpritePackerMode;
@@ -272,6 +279,9 @@ namespace UnityEditor
 
             m_PrefabUIEnvironment = serializedObject.FindProperty("m_PrefabUIEnvironment");
             Assert.IsNotNull(m_PrefabUIEnvironment);
+
+            m_PrefabModeAllowAutoSave = serializedObject.FindProperty("m_PrefabModeAllowAutoSave");
+            Assert.IsNotNull(m_PrefabModeAllowAutoSave);
 
             m_UseLegacyProbeSampleCount = serializedObject.FindProperty("m_UseLegacyProbeSampleCount");
             Assert.IsNotNull(m_UseLegacyProbeSampleCount);
@@ -417,13 +427,25 @@ namespace UnityEditor
             GUILayout.Space(10);
 
             GUI.enabled = true;
-            GUILayout.Label("Prefab Editing Environments", EditorStyles.boldLabel);
+            GUILayout.Label(Content.prefabMode, EditorStyles.boldLabel);
             GUI.enabled = editorEnabled;
 
             {
                 EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(m_PrefabModeAllowAutoSave, Content.prefabModeAllowAutoSave);
+                if (EditorGUI.EndChangeCheck() && m_IsGlobalSettings)
+                {
+                    EditorSettings.prefabModeAllowAutoSave = m_PrefabModeAllowAutoSave.boolValue;
+                }
+            }
+
+            GUILayout.Label(Content.prefabModeEditingEnvironments, EditorStyles.label);
+
+            EditorGUI.indentLevel++;
+            {
+                EditorGUI.BeginChangeCheck();
                 var scene = m_PrefabRegularEnvironment.objectReferenceValue as SceneAsset;
-                scene = (SceneAsset)EditorGUILayout.ObjectField("Regular Environment", scene, typeof(SceneAsset), false);
+                scene = (SceneAsset)EditorGUILayout.ObjectField(Content.prefabModeRegularEnvironment, scene, typeof(SceneAsset), false);
                 if (EditorGUI.EndChangeCheck())
                 {
                     m_PrefabRegularEnvironment.objectReferenceValue = scene;
@@ -436,7 +458,7 @@ namespace UnityEditor
             {
                 EditorGUI.BeginChangeCheck();
                 var scene = m_PrefabUIEnvironment.objectReferenceValue as SceneAsset;
-                scene = (SceneAsset)EditorGUILayout.ObjectField("UI Environment", scene, typeof(SceneAsset), false);
+                scene = (SceneAsset)EditorGUILayout.ObjectField(Content.prefabModeUIEnvironment, scene, typeof(SceneAsset), false);
                 if (EditorGUI.EndChangeCheck())
                 {
                     m_PrefabUIEnvironment.objectReferenceValue = scene;
@@ -446,6 +468,7 @@ namespace UnityEditor
                     }
                 }
             }
+            EditorGUI.indentLevel--;
 
             GUILayout.Space(10);
 

@@ -378,10 +378,8 @@ namespace UnityEditor
                 m_AvatarPreview.timeControl.Update();
         }
 
-        internal void OnEnable()
+        public void InitClipTime()
         {
-            m_Clip = target as AnimationClip;
-
             //case 790259: The length of the clip will be changed by this inspector, so we can't use it for sampling
             m_InitialClipLength = m_Clip.stopTime - m_Clip.startTime;
 
@@ -419,6 +417,11 @@ namespace UnityEditor
 
             if (m_EventManipulationHandler == null)
                 m_EventManipulationHandler = new EventManipulationHandler(m_EventTimeArea);
+        }
+
+        internal void OnEnable()
+        {
+            m_Clip = target as AnimationClip;
         }
 
         void OnDisable()

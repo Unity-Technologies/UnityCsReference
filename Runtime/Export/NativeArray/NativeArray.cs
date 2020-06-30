@@ -629,6 +629,8 @@ namespace Unity.Collections
                 }
             }
 
+            public int Length => m_Length;
+
             [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
             void CheckElementReadAccess(int index)
             {

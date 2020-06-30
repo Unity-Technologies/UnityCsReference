@@ -23,7 +23,7 @@ namespace UnityEditor.UIElements.Debugger
         {
             get
             {
-                return m_TreeView.items;
+                return m_TreeView?.items;
             }
         }
 
@@ -198,6 +198,7 @@ namespace UnityEditor.UIElements.Debugger
             m_Container.Add(m_TreeView);
 
             hierarchyHasChanged = false;
+            m_SearchBar.ClearSearch();
         }
 
         private TreeViewItem<VisualElement> FindElement(IEnumerable<ITreeViewItem> list, VisualElement element)

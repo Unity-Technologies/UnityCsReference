@@ -45,6 +45,18 @@ namespace UnityEditorInternal
         private readonly static Color k_KeyColorForNonCurves = new Color(0.7f, 0.7f, 0.7f, 0.5f);
         private readonly static Color k_LeftoverCurveColor = Color.yellow;
 
+        private static readonly string k_DefaultValue = L10n.Tr(" (Default Value)");
+        private static readonly string k_TransformPosition = L10n.Tr("Transform position, rotation and scale can't be partially animated. This value will be animated to the default value");
+        private static readonly string k_Missing = L10n.Tr(" (Missing!)");
+        private static readonly string k_GameObjectComponentMissing = L10n.Tr("The GameObject or Component is missing ({0})");
+        private static readonly string k_DuplicateGameObjectName = L10n.Tr(" (Duplicate GameObject name!)");
+        private static readonly string k_TargetForCurveIsAmbigous = L10n.Tr("Target for curve is ambiguous since there are multiple GameObjects with same name ({0})");
+        private static readonly string k_RemoveProperties = L10n.Tr("Remove Properties");
+        private static readonly string k_RemoveProperty = L10n.Tr("Remove Property");
+        private static readonly string k_AddKey = L10n.Tr("Add Key");
+        private static readonly string k_DeleteKey = L10n.Tr("Delete Key");
+        private static readonly string k_RemoveCurve = L10n.Tr("Remove Curve");
+
         internal static int s_WasInsideValueRectFrame = -1;
 
         public AnimationWindowHierarchyGUI(TreeViewController treeView, AnimationWindowState state)
@@ -243,18 +255,18 @@ namespace UnityEditorInternal
                 string tooltipText = "";
                 if (isPhantom)
                 {
-                    warningText = " (Default Value)";
-                    tooltipText = "Transform position, rotation and scale can't be partially animated. This value will be animated to the default value";
+                    warningText = k_DefaultValue;
+                    tooltipText = k_TransformPosition;
                 }
                 if (isLeftOverCurve)
                 {
-                    warningText = " (Missing!)";
-                    tooltipText = "The GameObject or Component is missing (" + node.path + ")";
+                    warningText = k_Missing;
+                    tooltipText = string.Format(k_GameObjectComponentMissing, node.path);
                 }
                 if (isAmbiguous)
                 {
-                    warningText = " (Duplicate GameObject name!)";
-                    tooltipText = "Target for curve is ambiguous since there are multiple GameObjects with same name (" + node.path + ")";
+                    warningText = k_DuplicateGameObjectName;
+                    tooltipText = string.Format(k_TargetForCurveIsAmbigous, node.path);
                 }
 
                 Color oldColor = lineStyle.normal.textColor;
@@ -286,6 +298,7 @@ namespace UnityEditorInternal
                 SetStyleTextColor(lineStyle, textColor);
 
                 rect.xMin += (int)(indent + foldoutStyleWidth + lineStyle.margin.left);
+                rect.yMin = rect.y + (rect.height - EditorGUIUtility.singleLineHeight) / 2;
                 GUI.Label(rect, Styles.content, lineStyle);
 
                 SetStyleTextColor(lineStyle, oldColor);
@@ -431,7 +444,7 @@ namespace UnityEditorInternal
         {
             rect = new Rect(
                 rect.xMax - k_RowRightOffset - 12,
-                rect.yMin + 2,
+                rect.yMin + 2 + (rect.height - EditorGUIUtility.singleLineHeight) / 2,
                 22, 12);
 
             // case 767863.
@@ -474,7 +487,7 @@ namespace UnityEditorInternal
             }
 
             Texture icon = hasKey ? CurveUtility.GetIconKey() : CurveUtility.GetIconCurve();
-            rect = new Rect(rect.xMax - k_RowRightOffset - (icon.width / 2) - 5, rect.yMin + k_ColorIndicatorTopMargin, icon.width, icon.height);
+            rect = new Rect(rect.xMax - k_RowRightOffset - (icon.width / 2) - 5, rect.yMin + k_ColorIndicatorTopMargin + (rect.height - EditorGUIUtility.singleLineHeight) / 2, icon.width, icon.height);
             GUI.DrawTexture(rect, icon, ScaleMode.ScaleToFit, true, 1);
 
             GUI.color = originalColor;
@@ -531,7 +544,7 @@ namespace UnityEditorInternal
             GenericMenu menu = new GenericMenu();
 
             // Remove curves
-            GUIContent removePropertyContent = new GUIContent(curves.Count > 1 || forceGroupRemove ? "Remove Properties" : "Remove Property");
+            GUIContent removePropertyContent = new GUIContent(curves.Count > 1 || forceGroupRemove ? k_RemoveProperties : k_RemoveProperty);
             if (!enabled)
                 menu.AddDisabledItem(removePropertyContent);
             else
@@ -582,13 +595,13 @@ namespace UnityEditorInternal
 
                 string str;
 
-                str = "Add Key";
+                str = k_AddKey;
                 if (allHaveKeys || !enabled)
                     menu.AddDisabledItem(new GUIContent(str));
                 else
                     menu.AddItem(new GUIContent(str), false, AddKeysAtCurrentTime, curves);
 
-                str = "Delete Key";
+                str = k_DeleteKey;
                 if (noneHaveKeys || !enabled)
                     menu.AddDisabledItem(new GUIContent(str));
                 else
@@ -634,7 +647,7 @@ namespace UnityEditorInternal
 
         private void RemoveCurvesFromNodes(List<AnimationWindowHierarchyNode> nodes)
         {
-            string undoLabel = "Remove Curve";
+            string undoLabel = k_RemoveCurve;
             state.SaveKeySelection(undoLabel);
 
             foreach (var node in nodes)

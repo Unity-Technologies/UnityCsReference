@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Collections.ObjectModel;
 using UnityEditor.Accessibility;
 using UnityEditor.Networking.PlayerConnection;
@@ -16,6 +18,7 @@ using UnityEngine;
 using UnityEngine.Networking.PlayerConnection;
 using UnityEngine.Profiling;
 using UnityEngine.Scripting;
+using Debug = UnityEngine.Debug;
 
 namespace UnityEditor
 {
@@ -298,6 +301,10 @@ namespace UnityEditor
             UserAccessiblitySettings.colorBlindConditionChanged += OnSettingsChanged;
             ProfilerUserSettings.settingsChanged += OnSettingsChanged;
             ProfilerDriver.profileLoaded += OnProfileLoaded;
+            ProfilerDriver.profilerCaptureSaved += ProfilerWindowAnalytics.SendSaveLoadEvent;
+            ProfilerDriver.profilerCaptureLoaded += ProfilerWindowAnalytics.SendSaveLoadEvent;
+            ProfilerDriver.profilerConnected += ProfilerWindowAnalytics.SendConnectionEvent;
+            ProfilerDriver.profilingStateChange += ProfilerWindowAnalytics.ProfilingStateChange;
 
             if (ModuleEditorWindow.TryGetOpenInstance(out var moduleEditorWindow))
             {
@@ -520,6 +527,10 @@ namespace UnityEditor
             UserAccessiblitySettings.colorBlindConditionChanged -= OnSettingsChanged;
             ProfilerUserSettings.settingsChanged -= OnSettingsChanged;
             ProfilerDriver.profileLoaded -= OnProfileLoaded;
+            ProfilerDriver.profilerCaptureSaved -= ProfilerWindowAnalytics.SendSaveLoadEvent;
+            ProfilerDriver.profilerCaptureLoaded -= ProfilerWindowAnalytics.SendSaveLoadEvent;
+            ProfilerDriver.profilerConnected -= ProfilerWindowAnalytics.SendConnectionEvent;
+            ProfilerDriver.profilingStateChange -= ProfilerWindowAnalytics.ProfilingStateChange;
         }
 
         void SaveViewSettings()
@@ -551,6 +562,7 @@ namespace UnityEditor
 
             // This event gets called every time when some other window is maximized and then unmaximized
             ProfilerDriver.enabled = m_Recording;
+
             ProfilerDriver.profileEditor = SessionState.GetBool(kProfilerEditorTargetModeEnabledSessionKey,
                 ProfilerUserSettings.defaultTargetMode == ProfilerEditorTargetMode.Editmode || ProfilerDriver.profileEditor);
 
@@ -589,7 +601,11 @@ namespace UnityEditor
         {
             // set the real state of profiler. OnDestroy is called not only when window is destroyed, but also when maximized state is changed
             if (Profiler.supported)
+            {
                 ProfilerDriver.enabled = m_Recording;
+            }
+
+            ProfilerWindowAnalytics.OnProfilerWindowFocused();
         }
 
         void OnLostFocus()
@@ -604,6 +620,8 @@ namespace UnityEditor
                     module.OnLostFocus();
                 }
             }
+
+            ProfilerWindowAnalytics.OnProfilerWindowLostFocus();
         }
 
         public virtual void AddItemsToMenu(GenericMenu menu)
@@ -718,6 +736,7 @@ namespace UnityEditor
             bool currentDeep = ProfilerDriver.deepProfiling;
             if (currentDeep == deep)
                 return;
+
 
             if (ProfilerDriver.IsConnectionEditor())
             {
@@ -840,6 +859,7 @@ namespace UnityEditor
             if (selected.Length != 0)
             {
                 EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, selected);
+
                 if (ProfilerDriver.LoadProfile(selected, keepExistingData))
                 {
                     // Stop current profiling if data was loaded successfully
@@ -1100,6 +1120,12 @@ namespace UnityEditor
 
         void OnGUI()
         {
+            if (Event.current.isMouse)
+                ProfilerWindowAnalytics.RecordProfilerSessionMouseEvent();
+
+            if (Event.current.isKey)
+                ProfilerWindowAnalytics.RecordProfilerSessionKeyboardEvent();
+
             CheckForPlatformModuleChange();
             InitializeIfNeeded();
 

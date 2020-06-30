@@ -16,10 +16,11 @@ namespace UnityEditor.PackageManager.UI
 
         private static readonly RefreshOptions[] k_RefreshOptionsByTab =
         {
-            RefreshOptions.UpmList | RefreshOptions.UpmSearch,                  // PackageFilterTab.All
+            RefreshOptions.UpmList | RefreshOptions.UpmSearch,                  // PackageFilterTab.UnityRegistry
             RefreshOptions.UpmList,                                             // PackageFilterTab.InProject
             RefreshOptions.UpmListOffline | RefreshOptions.UpmSearchOffline,    // PackageFilterTab.BuiltIn
-            RefreshOptions.Purchased                                            // PackageFilterTab.AssetStore
+            RefreshOptions.Purchased,                                           // PackageFilterTab.AssetStore
+            RefreshOptions.UpmList | RefreshOptions.UpmSearch,                  // PackageFilterTab.MyRegistries
         };
 
         public virtual event Action<IPackageVersion> onSelectionChanged = delegate {};
@@ -188,7 +189,7 @@ namespace UnityEditor.PackageManager.UI
                     }
                 });
             }
-            else if (filterTab == PackageFilterTab.All)
+            else if (filterTab == PackageFilterTab.UnityRegistry || filterTab == PackageFilterTab.MyRegistries)
             {
                 page = new SimplePage(m_PackageDatabase, m_PackageFiltering, filterTab, new PageCapability
                 {
@@ -325,6 +326,16 @@ namespace UnityEditor.PackageManager.UI
             GetPageFromTab().SetExpanded(package, value);
         }
 
+        public virtual bool IsGroupExpanded(string groupName)
+        {
+            return GetPageFromTab().IsGroupExpanded(groupName);
+        }
+
+        public virtual void SetGroupExpanded(string groupName, bool value)
+        {
+            GetPageFromTab().SetGroupExpanded(groupName, value);
+        }
+
         public virtual PackageFilterTab FindTab(IPackage package, IPackageVersion version = null)
         {
             var page = GetPageFromTab();
@@ -347,7 +358,10 @@ namespace UnityEditor.PackageManager.UI
                 return page.tab;
             }
 
-            return PackageFilterTab.All;
+            if (package?.Is(PackageType.Unity) == true)
+                return PackageFilterTab.UnityRegistry;
+
+            return PackageFilterTab.MyRegistries;
         }
 
         private void OnInstalledOrUninstalled(IPackage package, IPackageVersion installedVersion = null)
@@ -377,6 +391,14 @@ namespace UnityEditor.PackageManager.UI
             // When the filter tab is changed, on a page level, the selection hasn't changed because selection is kept for each filter
             // However, the active selection is still changed if you look at package manager as a whole
             OnPageSelectionChanged(page.GetSelectedVersion());
+
+            if (m_PackageFiltering.previousFilterTab != null)
+            {
+                var previousPage = GetPage((PackageFilterTab)m_PackageFiltering.previousFilterTab);
+                var selectedGoup = previousPage.GetSelectedVisualState()?.groupName;
+                if (!string.IsNullOrEmpty(selectedGoup))
+                    previousPage.SetGroupExpanded(selectedGoup, true);
+            }
         }
 
         private static void UpdateSearchTextOnPage(IPage page, string searchText)

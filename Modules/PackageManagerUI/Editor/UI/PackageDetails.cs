@@ -40,6 +40,7 @@ namespace UnityEditor.PackageManager.UI
         private const string k_EmptyDescriptionClass = "empty";
 
         private string previewInfoReadMoreUrl => $"https://docs.unity3d.com/{m_Application?.shortUnityVersion}/Documentation/Manual/pack-preview.html";
+        private string scopedRegistryInfoReadMoreUrl => $"https://docs.unity3d.com/{m_Application?.shortUnityVersion}/Documentation/Manual/upm-scoped.html";
 
         internal enum PackageAction
         {
@@ -179,6 +180,7 @@ namespace UnityEditor.PackageManager.UI
             detailImages?.RegisterCallback<GeometryChangedEvent>(ImagesGeometryChangeEvent);
 
             previewInfoBox.Q<Button>().clickable.clicked += () => m_Application.OpenURL(previewInfoReadMoreUrl);
+            scopedRegistryInfoBox.Q<Button>().clickable.clicked += () => m_Application.OpenURL(scopedRegistryInfoReadMoreUrl);
 
             root.Query<TextField>().ForEach(t =>
             {
@@ -344,7 +346,7 @@ namespace UnityEditor.PackageManager.UI
                     detailVersion.SetValueWithoutNotify(string.Format(L10n.Tr("Version {0} - {1}"), versionString, releaseDateString));
                 UIUtils.SetElementDisplay(detailVersion, !package.Is(PackageType.BuiltIn) && !string.IsNullOrEmpty(versionString));
 
-                UIUtils.SetElementDisplay(previewInfoBox, displayVersion.HasTag(PackageTag.Preview));
+                UIUtils.SetElementDisplay(previewInfoBox, package.Is(PackageType.Unity) && displayVersion.HasTag(PackageTag.Preview));
 
                 foreach (var tag in k_VisibleTags)
                     UIUtils.SetElementDisplay(GetTagLabel(tag.ToString()), displayVersion.HasTag(tag));
@@ -353,7 +355,7 @@ namespace UnityEditor.PackageManager.UI
                 sampleList.SetPackageVersion(displayVersion);
 
                 RefreshAuthor();
-
+                RefreshRegistry();
                 RefreshReleaseDetails();
 
                 UIUtils.SetElementDisplay(customContainer, true);
@@ -366,7 +368,6 @@ namespace UnityEditor.PackageManager.UI
                 RefreshSupportingImages();
 
                 RefreshPackageActionButtons();
-                RefreshImportButtons();
                 RefreshSourcePath();
 
                 // Here Do logic for Download/Cancel/Pause/Resume
@@ -433,7 +434,7 @@ namespace UnityEditor.PackageManager.UI
         private void RefreshDescription()
         {
             var hasDescription = !string.IsNullOrEmpty(displayVersion.description);
-            detailDesc.EnableClass(k_EmptyDescriptionClass, !hasDescription);
+            detailDesc.EnableInClassList(k_EmptyDescriptionClass, !hasDescription);
             detailDesc.style.maxHeight = int.MaxValue;
             detailDesc.SetValueWithoutNotify(hasDescription ? displayVersion.description : L10n.Tr("There is no description for this package."));
             UIUtils.SetElementDisplay(detailDescMore, false);
@@ -458,6 +459,19 @@ namespace UnityEditor.PackageManager.UI
                     UIUtils.SetElementDisplay(detailAuthorLink, false);
                     detailAuthorText.SetValueWithoutNotify(displayVersion.author);
                 }
+            }
+        }
+
+        private void RefreshRegistry()
+        {
+            var registry = displayVersion.packageInfo?.registry;
+            var showRegistry = registry != null;
+            UIUtils.SetElementDisplay(detailRegistryContainer, showRegistry);
+            if (showRegistry)
+            {
+                UIUtils.SetElementDisplay(scopedRegistryInfoBox, !registry.isDefault);
+                detailRegistryName.text = registry.isDefault ? "Unity" : registry.name;
+                detailRegistryName.tooltip = registry.url;
             }
         }
 
@@ -805,54 +819,67 @@ namespace UnityEditor.PackageManager.UI
             if (downloadable)
             {
                 var operation = m_AssetStoreDownloadManager.GetDownloadOperation(displayVersion.packageUniqueId);
-                var isPaused = operation?.state == DownloadState.Paused;
-                var isPausing = operation?.state == DownloadState.Pausing;
-                var isInPause = operation?.isInPause == true;
-                var isInProgress = operation?.isInProgress == true;
-                var isDownloadRequested = operation?.state == DownloadState.DownloadRequested;
+
                 var isResumeRequested = operation?.state == DownloadState.ResumeRequested;
-                var state = package.state;
-
-                var showDownloadButton = operation == null || (!isInProgress && !isResumeRequested && !isInPause);
-                UIUtils.SetElementDisplay(downloadButton, showDownloadButton);
-                if (showDownloadButton)
-                {
-                    var action = state == PackageState.UpdateAvailable ? PackageAction.Upgrade : PackageAction.Download;
-                    downloadButton.text = GetButtonText(action, isInProgress);
-
-                    var alreadyDownloaded = displayVersion.isAvailableOnDisk && state != PackageState.InProgress && state != PackageState.UpdateAvailable;
-                    RefreshButtonStatusAndTooltip(downloadButton, action,
-                        new ButtonDisableCondition(alreadyDownloaded, L10n.Tr("This package has already been downloaded to disk.")),
-                        new ButtonDisableCondition(isDownloadRequested, L10n.Tr("The download request has been sent. Please wait for the download to start.")),
-                        new ButtonDisableCondition(!m_Application.isInternetReachable, L10n.Tr("You need to restore your network connection to perform this action.")),
-                        disableIfCompiling);
-                }
-
-                var showPauseButton = isInProgress || isPausing;
-                UIUtils.SetElementDisplay(pauseButton, showPauseButton);
-                if (showPauseButton)
-                {
-                    RefreshButtonStatusAndTooltip(pauseButton, PackageAction.Pause,
-                        new ButtonDisableCondition(isPausing, L10n.Tr("The pause request has been sent. Please wait for the download to pause.")),
-                        disableIfCompiling);
-                }
-
-                var showResumeButton = isPaused || isResumeRequested;
+                var showResumeButton = operation?.state == DownloadState.Paused || isResumeRequested;
                 UIUtils.SetElementDisplay(resumeButton, showResumeButton);
                 if (showResumeButton)
                 {
                     RefreshButtonStatusAndTooltip(resumeButton, PackageAction.Resume,
-                        new ButtonDisableCondition(isResumeRequested, L10n.Tr("The resume request has been sent. Please wait for the download to resume.")),
+                        new ButtonDisableCondition(isResumeRequested,
+                            L10n.Tr("The resume request has been sent. Please wait for the download to resume.")),
                         disableIfCompiling);
                 }
 
-                var showCancelButton = !showDownloadButton && (showPauseButton || showResumeButton);
+                var isPausing = operation?.state == DownloadState.Pausing;
+                var showPauseButton = operation?.isInProgress == true || isPausing;
+                UIUtils.SetElementDisplay(pauseButton, showPauseButton);
+                if (showPauseButton)
+                {
+                    RefreshButtonStatusAndTooltip(pauseButton, PackageAction.Pause,
+                        new ButtonDisableCondition(isPausing,
+                            L10n.Tr("The pause request has been sent. Please wait for the download to pause.")),
+                        disableIfCompiling);
+                }
+
+                var showCancelButton = showPauseButton || showResumeButton;
                 UIUtils.SetElementDisplay(cancelButton, showCancelButton);
                 if (showCancelButton)
                 {
                     RefreshButtonStatusAndTooltip(cancelButton, PackageAction.Cancel,
-                        new ButtonDisableCondition(isResumeRequested, L10n.Tr("A resume request has been sent for this download. You cannot cancel this download until it is resumed.")),
+                        new ButtonDisableCondition(isResumeRequested,
+                            L10n.Tr("A resume request has been sent. You cannot cancel this download until it is resumed.")),
                         disableIfCompiling);
+                }
+
+                var state = package.state;
+                var isAvailableOnDisk = displayVersion?.isAvailableOnDisk ?? false;
+                var hasUpdateAvailable = state == PackageState.UpdateAvailable;
+                var isLatestVersionOnDisk = isAvailableOnDisk && !hasUpdateAvailable;
+                var isDownloadRequested = operation?.state == DownloadState.DownloadRequested;
+                var showDownloadButton = !isLatestVersionOnDisk && (isDownloadRequested || operation == null || !showCancelButton);
+                UIUtils.SetElementDisplay(downloadButton, showDownloadButton);
+                if (showDownloadButton)
+                {
+                    var action = hasUpdateAvailable ? PackageAction.Upgrade : PackageAction.Download;
+                    downloadButton.text = GetButtonText(action);
+
+                    RefreshButtonStatusAndTooltip(downloadButton, action,
+                        new ButtonDisableCondition(isDownloadRequested,
+                            L10n.Tr("The download request has been sent. Please wait for the download to start.")),
+                        disableIfCompiling,
+                        new ButtonDisableCondition(!m_Application.isInternetReachable,
+                            L10n.Tr("You need to restore your network connection to perform this action.")),
+                        disableIfCompiling);
+                }
+
+                var importable = displayVersion?.HasTag(PackageTag.Importable) ?? false;
+                var showImportButton = !showCancelButton && importable && isAvailableOnDisk && package.state != PackageState.InProgress;
+                UIUtils.SetElementDisplay(importButton, showImportButton);
+                if (showImportButton)
+                {
+                    importButton.text = GetButtonText(PackageAction.Import);
+                    RefreshButtonStatusAndTooltip(importButton, PackageAction.Import, disableIfCompiling);
                 }
 
                 downloadProgress.UpdateProgress(operation);
@@ -864,21 +891,8 @@ namespace UnityEditor.PackageManager.UI
                 UIUtils.SetElementDisplay(pauseButton, false);
                 UIUtils.SetElementDisplay(resumeButton, false);
                 UIUtils.SetElementDisplay(downloadProgress, false);
+                UIUtils.SetElementDisplay(importButton, false);
             }
-        }
-
-        private void RefreshImportButtons()
-        {
-            var importable = displayVersion?.HasTag(PackageTag.Importable) ?? false;
-            UIUtils.SetElementDisplay(importButton, importable);
-            if (!importable)
-                return;
-
-            importButton.text = GetButtonText(PackageAction.Import);
-
-            RefreshButtonStatusAndTooltip(importButton, PackageAction.Import,
-                new ButtonDisableCondition(!displayVersion.isAvailableOnDisk, L10n.Tr("You need to download the package before you can import assets into your project.")),
-                disableIfCompiling);
         }
 
         private class ButtonDisableCondition
@@ -1138,7 +1152,7 @@ namespace UnityEditor.PackageManager.UI
         private void ImportClick()
         {
             m_PackageDatabase.Import(package);
-            RefreshImportButtons();
+            RefreshDownloadStatesButtons();
 
             PackageManagerWindowAnalytics.SendEvent("import", package.uniqueId);
         }
@@ -1202,6 +1216,9 @@ namespace UnityEditor.PackageManager.UI
         private VisualElement detailAuthorContainer { get { return cache.Get<VisualElement>("detailAuthorContainer"); } }
         private TextField detailAuthorText { get { return cache.Get<TextField>("detailAuthorText"); } }
         private Button detailAuthorLink { get { return cache.Get<Button>("detailAuthorLink"); } }
+        private VisualElement detailRegistryContainer { get { return cache.Get<VisualElement>("detailRegistryContainer"); } }
+        private HelpBox scopedRegistryInfoBox { get { return cache.Get<HelpBox>("scopedRegistryInfoBox"); } }
+        private Label detailRegistryName { get { return cache.Get<Label>("detailRegistryName"); } }
         private VisualElement customContainer { get { return cache.Get<VisualElement>("detailCustomContainer"); } }
         private PackageSampleList sampleList { get { return cache.Get<PackageSampleList>("detailSampleList"); } }
         private PackageDependencies dependencies { get { return cache.Get<PackageDependencies>("detailDependencies"); } }
@@ -1210,8 +1227,8 @@ namespace UnityEditor.PackageManager.UI
         private VisualElement packageToolbarLeftArea { get { return cache.Get<VisualElement>("leftItems"); } }
         internal Button updateButton { get { return cache.Get<Button>("update"); } }
         internal Button removeButton { get { return cache.Get<Button>("remove"); } }
-        private Button importButton { get { return cache.Get<Button>("import"); } }
-        private Button downloadButton { get { return cache.Get<Button>("download"); } }
+        internal Button importButton { get { return cache.Get<Button>("import"); } }
+        internal Button downloadButton { get { return cache.Get<Button>("download"); } }
         private Button cancelButton { get { return cache.Get<Button>("cancel"); } }
         internal Button pauseButton { get { return cache.Get<Button>("pause"); } }
         internal Button resumeButton { get { return cache.Get<Button>("resume"); } }

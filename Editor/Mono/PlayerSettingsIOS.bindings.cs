@@ -124,6 +124,7 @@ namespace UnityEditor
         ImageAndBackgroundConstant = 4,
 
         CustomXib = 2,
+        CustomStoryboard = 5,
 
         [Obsolete("Launch Images are no longer supported by Apple. (UnityUpgradable) -> Default", true)]
         None = 3,

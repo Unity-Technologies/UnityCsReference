@@ -104,7 +104,7 @@ namespace UnityEditor.UIElements.Debugger
             if (!String.IsNullOrEmpty(elementText))
                 elt.SetAttributeValue("text", elementText);
 
-            var classes = ve.GetClasses();
+            var classes = ve.GetClassesForIteration();
             if (classes.Any())
                 elt.SetAttributeValue("class", string.Join(" ", classes.ToArray()));
 

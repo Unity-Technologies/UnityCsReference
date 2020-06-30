@@ -223,6 +223,10 @@ namespace UnityEditor
         string CreateNewLibraryCallback(string libraryName, PresetFileLocation fileLocation)
         {
             string defaultPath = PresetLibraryLocations.GetDefaultFilePathForFileLocation(fileLocation);
+
+            if (libraryName.StartsWith("\\") || libraryName.StartsWith("/"))
+                libraryName = libraryName.Substring(1);
+
             string pathWithoutExtension = Path.Combine(defaultPath, libraryName);
             if (CreateNewLibrary(pathWithoutExtension) != null)
                 currentLibraryWithoutExtension = pathWithoutExtension;

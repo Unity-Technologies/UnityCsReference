@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine.Rendering;
 
 namespace UnityEngine.Rendering
@@ -10,6 +11,7 @@ namespace UnityEngine.Rendering
     public abstract class RenderPipeline
     {
         protected abstract void Render(ScriptableRenderContext context, Camera[] cameras);
+        protected virtual void ProcessRenderRequests(ScriptableRenderContext context, Camera camera, List<Camera.RenderRequest> renderRequests) {}
 
         protected static void BeginFrameRendering(ScriptableRenderContext context, Camera[] cameras)
         {
@@ -35,7 +37,16 @@ namespace UnityEngine.Rendering
         {
             if (disposed)
                 throw new ObjectDisposedException(string.Format("{0} has been disposed. Do not call Render on disposed a RenderPipeline.", this));
+
             Render(context, cameras);
+        }
+
+        internal void InternalRenderWithRequests(ScriptableRenderContext context, Camera[] cameras, List<Camera.RenderRequest> renderRequests)
+        {
+            if (disposed)
+                throw new ObjectDisposedException(string.Format("{0} has been disposed. Do not call Render on disposed a RenderPipeline.", this));
+
+            ProcessRenderRequests(context, (cameras == null || cameras.Length == 0) ? null : cameras[0], renderRequests);
         }
 
         public bool disposed { get; private set; }

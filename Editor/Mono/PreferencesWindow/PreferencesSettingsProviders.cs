@@ -73,6 +73,7 @@ namespace UnityEditor
             public static readonly GUIContent codeCoverageEnabled = EditorGUIUtility.TrTextContent("Enable Code Coverage", "Check this to enable Code Coverage. Code Coverage lets you see how much of your code is executed when it is run. Note that Code Coverage lowers Editor performance.");
             public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("Create Objects at Origin", "Enable this preference to instantiate new 3D objects at World coordinates 0,0,0. Disable it to instantiate them at the Scene pivot (in front of the Scene view Camera).");
             public static readonly GUIContent applicationFrameThrottling = EditorGUIUtility.TrTextContent("Frame Throttling (milliseconds)", "The number of milliseconds the Editor can idle between frames.");
+            public static readonly GUIContent inputMaxProcessTime = EditorGUIUtility.TrTextContent("Input Throttling (milliseconds)", "The maximum number of milliseconds the Editor will take to process user inputs.");
             public static readonly GUIContent interactionMode = EditorGUIUtility.TrTextContent("Interaction Mode", "Specifies how long the Editor can idle before it updates.");
             public static readonly GUIContent[] interactionModes =
             {
@@ -687,8 +688,10 @@ namespace UnityEditor
             const int defaultIdleTimeMs = 4;
             const string idleTimePrefKeyName = "ApplicationIdleTime";
             const string interactionModePrefKeyName = "InteractionMode";
+            const string inputMaxProcessTimeKeyName = "InputMaxProcessTime";
             var monitorRefreshDelayMs = (int)(1f / Math.Max(Screen.currentResolution.refreshRate, 1) * 1000f);
             var idleTimeMs = EditorPrefs.GetInt(idleTimePrefKeyName, defaultIdleTimeMs);
+            var inputMaxProcessTime = EditorPrefs.GetInt(inputMaxProcessTimeKeyName, 100);
             var interactionModeOption = (InteractionMode)EditorPrefs.GetInt(interactionModePrefKeyName, (int)InteractionMode.Default);
 
             if (Event.current.type == EventType.MouseDown)
@@ -702,6 +705,7 @@ namespace UnityEditor
                 {
                     EditorPrefs.DeleteKey(idleTimePrefKeyName);
                     EditorPrefs.DeleteKey(interactionModePrefKeyName);
+                    EditorApplication.UpdateInteractionModeSettings();
                 }
             }
             else if (interactionModeOption == InteractionMode.NoThrottling)
@@ -710,6 +714,7 @@ namespace UnityEditor
                 {
                     EditorPrefs.SetInt(idleTimePrefKeyName, 0);
                     EditorPrefs.SetInt(interactionModePrefKeyName, (int)interactionModeOption);
+                    EditorApplication.UpdateInteractionModeSettings();
                 }
             }
             else if (interactionModeOption == InteractionMode.MonitorRefreshRate)
@@ -718,15 +723,20 @@ namespace UnityEditor
                 {
                     EditorPrefs.SetInt(idleTimePrefKeyName, monitorRefreshDelayMs);
                     EditorPrefs.SetInt(interactionModePrefKeyName, (int)interactionModeOption);
+                    EditorApplication.UpdateInteractionModeSettings();
                 }
             }
             else
             {
                 idleTimeMs = EditorGUILayout.IntSlider(GeneralProperties.applicationFrameThrottling, idleTimeMs, 0, 33);
+                if (Application.platform == RuntimePlatform.WindowsEditor)
+                    inputMaxProcessTime = EditorGUILayout.IntSlider(GeneralProperties.inputMaxProcessTime, inputMaxProcessTime, 1, 200);
                 if (EditorGUI.EndChangeCheck())
                 {
                     EditorPrefs.SetInt(idleTimePrefKeyName, idleTimeMs);
+                    EditorPrefs.SetInt(inputMaxProcessTimeKeyName, inputMaxProcessTime);
                     EditorPrefs.SetInt(interactionModePrefKeyName, (int)interactionModeOption);
+                    EditorApplication.UpdateInteractionModeSettings();
                 }
             }
         }

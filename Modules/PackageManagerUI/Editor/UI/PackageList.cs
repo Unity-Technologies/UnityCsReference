@@ -33,10 +33,8 @@ namespace UnityEditor.PackageManager.UI
             m_PageManager = container.Resolve<PageManager>();
         }
 
-        internal IEnumerable<PackageItem> packageItems
-        {
-            get { return itemsList.Children().Cast<PackageItem>(); }
-        }
+        internal IEnumerable<PackageItem> packageItems => packageGroups.SelectMany(group => group.packageItems);
+        internal IEnumerable<PackageGroup> packageGroups => itemsList.Children().Cast<PackageGroup>();
 
         public PackageList()
         {
@@ -91,11 +89,6 @@ namespace UnityEditor.PackageManager.UI
             m_PageManager.onListUpdate -= OnListUpdate;
 
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
-        }
-
-        private PackageItem GetPackageItem(IPackage package)
-        {
-            return GetPackageItem(package?.uniqueId);
         }
 
         private PackageItem GetPackageItem(string packageUniqueId)
@@ -239,7 +232,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnPackageProgressUpdate(IPackage package)
         {
-            GetPackageItem(package)?.RefreshState();
+            GetPackageItem(package?.uniqueId)?.RefreshState();
         }
 
         private void OnRefreshOperationStart()
@@ -309,32 +302,55 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        private PackageItem AddOrUpdatePackageItem(IPackage package)
+        private void AddOrUpdatePackageItem(VisualState state, IPackage package = null)
         {
+            package = package ?? m_PackageDatabase.GetPackage(state?.packageUniqueId);
             if (package == null)
-                return null;
+                return;
 
-            var item = GetPackageItem(package);
+            var item = GetPackageItem(state.packageUniqueId);
             if (item != null)
+            {
                 item.SetPackage(package);
+                item.UpdateVisualState(state);
+            }
             else
             {
-                item = new PackageItem(m_ResourceLoader, m_PageManager, package);
-                itemsList.Add(item);
+                var group = GetOrCreateGroup(state.groupName);
+                item = group.AddPackageItem(package, state);
                 m_PackageItemsLookup[package.uniqueId] = item;
             }
-            return item;
         }
 
-        private PackageItem RemovePackageItem(IPackage package)
+        private PackageGroup GetOrCreateGroup(string groupName)
         {
-            var item = GetPackageItem(package);
+            var group = packageGroups.FirstOrDefault(g => g.name == groupName);
+            if (group != null)
+                return group;
+
+            var hidden = string.IsNullOrEmpty(groupName);
+            var expanded = m_PageManager.IsGroupExpanded(groupName);
+            group = new PackageGroup(m_ResourceLoader, m_PageManager, groupName, expanded, hidden);
+            if (!hidden)
+            {
+                group.onGroupToggle += value =>
+                {
+                    if (value && group.Contains(GetSelectedItem()))
+                        EditorApplication.delayCall += () => ScrollIfNeeded();
+                };
+            }
+            itemsList.Add(group);
+            return group;
+        }
+
+        private void RemovePackageItem(string packageUniqueId)
+        {
+            var item = GetPackageItem(packageUniqueId);
             if (item != null)
             {
-                itemsList.Remove(item);
-                m_PackageItemsLookup.Remove(package.uniqueId);
+                item.packageGroup.Remove(item);
+                m_PackageItemsLookup.Remove(packageUniqueId);
             }
-            return item;
         }
 
         private void OnVisualStateChange(IEnumerable<VisualState> visualStates)
@@ -345,6 +361,9 @@ namespace UnityEditor.PackageManager.UI
             foreach (var state in visualStates)
                 GetPackageItem(state.packageUniqueId)?.UpdateVisualState(state);
 
+            foreach (var group in packageGroups)
+                group.RefreshHeaderVisibility();
+
             RefreshList(true);
         }
 
@@ -354,83 +373,118 @@ namespace UnityEditor.PackageManager.UI
             m_PackageItemsLookup.Clear();
 
             foreach (var visualState in page.visualStates)
-            {
-                var package = m_PackageDatabase.GetPackage(visualState.packageUniqueId);
-                var packageItem = AddOrUpdatePackageItem(package);
-                packageItem?.UpdateVisualState(visualState);
-            }
+                AddOrUpdatePackageItem(visualState);
+
+            foreach (var group in packageGroups)
+                group.RefreshHeaderVisibility();
 
             RefreshList(true);
         }
 
-        private void OnListUpdate(IPage page, IEnumerable<IPackage> addedOrUpated, IEnumerable<IPackage> removed, bool reorder)
+        private void OnListUpdate(IPage page, IEnumerable<IPackage> addedOrUpdated, IEnumerable<IPackage> removed, bool reorder)
         {
-            addedOrUpated = addedOrUpated ?? Enumerable.Empty<IPackage>();
+            addedOrUpdated = addedOrUpdated ?? Enumerable.Empty<IPackage>();
             removed = removed ?? Enumerable.Empty<IPackage>();
 
             var numItems = m_PackageItemsLookup.Count;
             foreach (var package in removed)
-                RemovePackageItem(package);
+                RemovePackageItem(package?.uniqueId);
 
             var itemsRemoved = numItems != m_PackageItemsLookup.Count;
             numItems = m_PackageItemsLookup.Count;
 
-            foreach (var package in addedOrUpated)
+            foreach (var package in addedOrUpdated)
             {
-                var packageItem = AddOrUpdatePackageItem(package);
-                var visualState = page.GetVisualState(package.uniqueId);
-                packageItem.UpdateVisualState(visualState);
+                var visualState = page.GetVisualState(package.uniqueId) ?? new VisualState(package.uniqueId, string.Empty);
+                AddOrUpdatePackageItem(visualState, package);
             }
             var itemsAdded = numItems != m_PackageItemsLookup.Count;
 
             if (reorder)
             {
                 // re-order if there are any added or updated items
-                itemsList.Clear();
+                foreach (var group in packageGroups)
+                    group.ClearPackageItems();
+
                 foreach (var state in page.visualStates)
-                    itemsList.Add(GetPackageItem(state.packageUniqueId));
+                {
+                    var packageItem = GetPackageItem(state.packageUniqueId);
+                    packageItem.packageGroup.AddPackageItem(packageItem);
+                }
+
                 m_PackageItemsLookup = packageItems.ToDictionary(item => item.package.uniqueId, item => item);
             }
 
             if (itemsRemoved || itemsAdded)
+            {
+                foreach (var group in packageGroups)
+                    group.RefreshHeaderVisibility();
+
                 RefreshList(true);
+            }
         }
 
         internal bool SelectNext(bool reverseOrder)
         {
+            var nextElement = FindNextVisibleSelectableItem(reverseOrder);
+            if (nextElement != null)
+            {
+                m_PageManager.SetSelected(nextElement.package, nextElement.targetVersion);
+                foreach (var scrollView in UIUtils.GetParentsOfType<ScrollView>(nextElement.element))
+                    ScrollIfNeeded(scrollView, nextElement.element);
+                return true;
+            }
+            return false;
+        }
+
+        private ISelectableItem FindNextVisibleSelectableItem(bool reverseOrder)
+        {
             var selectedVersion = m_PageManager.GetSelectedVersion();
             var packageItem = GetPackageItem(selectedVersion?.packageUniqueId);
             if (packageItem == null)
-                return false;
+                return null;
 
-            // If the PackageItem is expanded, we want to start the search in the version list of the PackageItem
+            // First we try to look for the next visible options within all the versions of the current package when the list is expanded
             if (packageItem.visualState.expanded)
             {
                 var versionItem = packageItem.versionItems.FirstOrDefault(v => v.targetVersion == selectedVersion);
-                var nextVersionItem = UIUtils.FindNextSibling(versionItem, reverseOrder) as PackageVersionItem;
+                var nextVersionItem = UIUtils.FindNextSibling(versionItem, reverseOrder, UIUtils.IsElementVisible) as PackageVersionItem;
                 if (nextVersionItem != null)
-                {
-                    m_PageManager.SetSelected(nextVersionItem.package, nextVersionItem.targetVersion, true);
-                    return true;
-                }
+                    return nextVersionItem;
             }
 
-            // Otherwise we just select the next PackageItem
-            var nextPackageItem = UIUtils.FindNextSibling(packageItem, reverseOrder) as PackageItem;
+            var nextPackageItem = FindNextVisiblePackageItem(packageItem, reverseOrder);
             if (nextPackageItem == null)
-                return false;
+                return null;
 
             if (nextPackageItem.visualState.expanded)
             {
-                var versionItem = reverseOrder ? nextPackageItem.versionItems.LastOrDefault() : nextPackageItem.versionItems.FirstOrDefault();
-                if (versionItem != null)
-                {
-                    m_PageManager.SetSelected(versionItem.package, versionItem.targetVersion, true);
-                    return true;
-                }
+                var nextVersionItem = reverseOrder ? nextPackageItem.versionItems.LastOrDefault() : nextPackageItem.versionItems.FirstOrDefault();
+                if (nextVersionItem != null)
+                    return nextVersionItem;
             }
-            m_PageManager.SetSelected(nextPackageItem.package, nextPackageItem.targetVersion, true);
-            return true;
+            return nextPackageItem;
+        }
+
+        private static PackageItem FindNextVisiblePackageItem(PackageItem packageItem, bool reverseOrder)
+        {
+            PackageItem nextVisibleItem = null;
+            if (packageItem.packageGroup.expanded)
+                nextVisibleItem = UIUtils.FindNextSibling(packageItem, reverseOrder, UIUtils.IsElementVisible) as PackageItem;
+
+            if (nextVisibleItem == null)
+            {
+                Func<VisualElement, bool> expandedNonEmptyGroup = (element) =>
+                {
+                    var group = element as PackageGroup;
+                    return group.expanded && group.packageItems.Any(p => UIUtils.IsElementVisible(p));
+                };
+                var nextGroup = UIUtils.FindNextSibling(packageItem.packageGroup, reverseOrder, expandedNonEmptyGroup) as PackageGroup;
+                if (nextGroup != null)
+                    nextVisibleItem = reverseOrder ? nextGroup.packageItems.LastOrDefault(p => UIUtils.IsElementVisible(p))
+                        : nextGroup.packageItems.FirstOrDefault(p => UIUtils.IsElementVisible(p));
+            }
+            return nextVisibleItem;
         }
 
         private VisualElementCache cache { get; set; }

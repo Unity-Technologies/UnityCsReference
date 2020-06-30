@@ -217,6 +217,12 @@ namespace UnityEditor
         CurveWrapper[] m_AnimationCurves;
 
         static int s_SelectKeyHash = "SelectKeys".GetHashCode();
+        private static readonly string k_DeleteKeys = L10n.Tr("Delete Keys");
+        private static readonly string k_DeleteKey = L10n.Tr("Delete Key");
+        private static readonly string k_EditKeys = L10n.Tr("Edit Keys...");
+        private static readonly string k_EditKey = L10n.Tr("Edit Key...");
+        private static readonly string k_EditCurve = L10n.Tr("Edit Curve");
+        private static readonly string k_AddKey = L10n.Tr("Add Key");
 
         public delegate void CallbackFunction();
 
@@ -1105,8 +1111,8 @@ namespace UnityEditor
                         m_MenuManager = new CurveMenuManager(this);
                         GenericMenu menu = new GenericMenu();
 
-                        string deleteKeyLabel = keyList.Count > 1 ? "Delete Keys" : "Delete Key";
-                        string editKeyLabel = keyList.Count > 1 ? "Edit Keys..." : "Edit Key...";
+                        string deleteKeyLabel = keyList.Count > 1 ? k_DeleteKeys : k_DeleteKey;
+                        string editKeyLabel = keyList.Count > 1 ? k_EditKeys : k_EditKey;
 
                         if (isEditable)
                         {
@@ -1290,7 +1296,7 @@ namespace UnityEditor
 
                         if (m_SelectedTangentPoint != null)
                         {
-                            SaveKeySelection("Edit Curve");
+                            SaveKeySelection(k_EditCurve);
 
                             GUIUtility.hotControl = tangentId;
                             evt.Use();
@@ -1390,9 +1396,9 @@ namespace UnityEditor
         {
             string undoLabel;
             if (selectedCurves.Count > 1)
-                undoLabel = "Delete Keys";
+                undoLabel = k_DeleteKeys;
             else
-                undoLabel = "Delete Key";
+                undoLabel = k_DeleteKey;
 
             SaveKeySelection(undoLabel);
 
@@ -1427,9 +1433,9 @@ namespace UnityEditor
 
             string undoLabel;
             if (keyList.Count > 1)
-                undoLabel = "Delete Keys";
+                undoLabel = k_DeleteKeys;
             else
-                undoLabel = "Delete Key";
+                undoLabel = k_DeleteKey;
 
             SaveKeySelection(undoLabel);
 
@@ -1903,7 +1909,7 @@ namespace UnityEditor
 
         void CreateKeyFromClick(object obj)
         {
-            string undoLabel = "Add Key";
+            string undoLabel = k_AddKey;
             SaveKeySelection(undoLabel);
 
             List<int> ids = CreateKeyFromClick((Vector2)obj);
@@ -2333,7 +2339,7 @@ namespace UnityEditor
                         }
                         else
                         {
-                            SaveKeySelection("Add Key");
+                            SaveKeySelection(k_AddKey);
 
                             List<int> curveIds = CreateKeyFromClick(Event.current.mousePosition);
                             if (curveIds.Count > 0)
@@ -3052,7 +3058,7 @@ namespace UnityEditor
 
         void MakeCurveBackups()
         {
-            SaveKeySelection("Edit Curve");
+            SaveKeySelection(k_EditCurve);
 
             m_CurveBackups = new List<SavedCurve>();
             int lastCurveID = -1;

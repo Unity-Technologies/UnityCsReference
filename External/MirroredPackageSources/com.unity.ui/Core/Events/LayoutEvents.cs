@@ -1,12 +1,16 @@
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Event sent after layout calculations, when the position or the dimension of an element changes. This event cannot be cancelled, it does not trickle down, and it does not bubble up.
+    /// This event is sent after layout calculations, when the position or the dimension of an element changes.
     /// </summary>
+    /// <remarks>
+    /// This event does not trickle down or bubble up. It cannot be cancelled.
+    /// </remarks>
     public class GeometryChangedEvent : EventBase<GeometryChangedEvent>
     {
         /// <summary>
-        /// Gets an event from the event pool and initializes the event with the specified values. Use this method instead of instancing new events. Use Dispose() to release events back to the event pool.
+        /// Gets an event from the event pool, and initializes it with the specified values. Use this method
+        /// instead of instancing new events. Use Dispose() to release events back to the event pool.
         /// </summary>
         /// <param name="oldRect">The old dimensions of the element.</param>
         /// <param name="newRect">The new dimensions of the element.</param>
@@ -36,11 +40,11 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// The old dimensions of the element.
+        /// Gets the element's old dimensions.
         /// </summary>
         public Rect oldRect { get; private set; }
         /// <summary>
-        /// The new dimensions of the element.
+        /// Gets the elements's new dimensions.
         /// </summary>
         public Rect newRect { get; private set; }
 

@@ -18,7 +18,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
     {
         internal class PostProcessorOutputParser : CSharpCompilerOutputParserBase
         {
-            private static Regex sCompilerOutput = new Regex(@"\s*(?<filename>.*)\((?<line>\d+),(?<column>\d+)\):\s*(?<type>warning|error)\s*(?<message>.*)", RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+            private static Regex sCompilerOutput = new Regex(@"\s*(?<filename>[^:]*)\((?<line>\d+),(?<column>\d+)\):\s*(?<type>warning|error)\s*(?<message>.*)", RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 
             protected override Regex GetOutputRegex()
             {
@@ -119,7 +119,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var assemblyFolderPaths = ilPostProcessing.AssemblySearchPaths;
 
             var outputDirectory = AssetPath.GetFullPath(tempOutputDirectory);
-            var postProcessorPaths = ilPostProcessing.PostProcessorAssemblyPaths;
+            // ILPostProcessor might not exist if it is not compiled due to define constraints.
+            var postProcessorPaths = ilPostProcessing.PostProcessorAssemblyPaths.Where(p => AssetPath.Exists(p)).ToArray();
 
             var arguments = new List<string>
             {

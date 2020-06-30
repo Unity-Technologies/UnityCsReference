@@ -33,18 +33,33 @@ namespace UnityEngine.Rendering
     [UsedByNativeCode]
     unsafe public struct BatchCullingContext
     {
+        [Obsolete("Please use the other constructor instead")]
         public BatchCullingContext(NativeArray<Plane> inCullingPlanes, NativeArray<BatchVisibility> inOutBatchVisibility, NativeArray<int> outVisibleIndices, LODParameters inLodParameters)
         {
             cullingPlanes = inCullingPlanes;
             batchVisibility = inOutBatchVisibility;
             visibleIndices = outVisibleIndices;
             lodParameters = inLodParameters;
+            cullingMatrix = Matrix4x4.identity;
+            nearPlane = 0.0f;
+        }
+
+        public BatchCullingContext(NativeArray<Plane> inCullingPlanes, NativeArray<BatchVisibility> inOutBatchVisibility, NativeArray<int> outVisibleIndices, LODParameters inLodParameters, Matrix4x4 inCullingMatrix, float inNearPlane)
+        {
+            cullingPlanes = inCullingPlanes;
+            batchVisibility = inOutBatchVisibility;
+            visibleIndices = outVisibleIndices;
+            lodParameters = inLodParameters;
+            cullingMatrix = inCullingMatrix;
+            nearPlane = inNearPlane;
         }
 
         readonly public NativeArray<Plane> cullingPlanes;
         public NativeArray<BatchVisibility> batchVisibility;
         public NativeArray<int> visibleIndices;
         readonly public LODParameters lodParameters;
+        readonly public Matrix4x4 cullingMatrix;
+        readonly public float nearPlane;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -53,12 +68,14 @@ namespace UnityEngine.Rendering
     unsafe struct BatchRendererCullingOutput
     {
         public JobHandle           cullingJobsFence;
+        public Matrix4x4           cullingMatrix;
         public Plane*              cullingPlanes;
         public BatchVisibility*    batchVisibility;
         public int*                visibleIndices;
         public int                 cullingPlanesCount;
         public int                 batchVisibilityCount;
         public int                 visibleIndicesCount;
+        public float               nearPlane;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -241,7 +258,7 @@ namespace UnityEngine.Rendering
 
             try
             {
-                context.cullingJobsFence = group.m_PerformCulling(group, new BatchCullingContext(cullingPlanes, batchVisibility, visibleIndices, lodParameters));
+                context.cullingJobsFence = group.m_PerformCulling(group, new BatchCullingContext(cullingPlanes, batchVisibility, visibleIndices, lodParameters, context.cullingMatrix, context.nearPlane));
             }
             finally
             {
