@@ -63,32 +63,12 @@ namespace UnityEditor.UIElements
             contextualMenuManager = s_ContextualMenuManager;
             panelDebug = new PanelDebug(this);
             standardShader = EditorShader;
-            UpdateDrawChainRegistration(true);
+            updateMaterial += OnUpdateMaterial;
         }
 
-        void UpdateDrawChainRegistration(bool register)
+        static void OnUpdateMaterial(Material mat)
         {
-            var updater = GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;
-            if (updater != null)
-            {
-                if (register)
-                    updater.BeforeDrawChain += OnBeforeDrawChain;
-                else
-                    updater.BeforeDrawChain -= OnBeforeDrawChain;
-            }
-        }
-
-        static void OnBeforeDrawChain(UnityEngine.UIElements.UIR.RenderChain renderChain)
-        {
-            Material mat = renderChain.GetStandardMaterial();
             mat.SetFloat(s_EditorColorSpaceID, QualitySettings.activeColorSpace == ColorSpace.Linear ? 1 : 0);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (!disposed)
-                UpdateDrawChainRegistration(false);
-            base.Dispose(disposing);
         }
     }
 }

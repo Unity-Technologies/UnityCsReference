@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq;
+using UnityEngine.Bindings;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
 
@@ -110,9 +111,8 @@ namespace UnityEditor.PackageManager
             return new PackRequest(operationId, status);
         }
 
-        internal static void Resolve()
-        {
-            NativeClient.Resolve();
-        }
+        [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
+        [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
+        public static extern void Resolve();
     }
 }

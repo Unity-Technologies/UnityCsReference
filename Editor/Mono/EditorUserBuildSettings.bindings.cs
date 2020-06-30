@@ -230,7 +230,9 @@ namespace UnityEditor
         iOSDeploy = 2,
     }
 
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    // We used this value to control if minification is enabled and what tool to use separately for release and debug builds.
+    // With the Android Gradle Plugin changes in 3.4 the tool which will be used is the same for release and debug now
+    [Obsolete("AndroidMinification enum is obsolete.", true)]
     public enum AndroidMinification
     {
         None = 0,
@@ -401,10 +403,6 @@ namespace UnityEditor
         public static extern AndroidBuildSystem androidBuildSystem { get; set; }
 
         public static extern AndroidBuildType androidBuildType { get; set; }
-
-        public static extern AndroidMinification androidDebugMinification { get; set; }
-
-        public static extern AndroidMinification androidReleaseMinification { get; set; }
 
         [Obsolete("androidUseLegacySdkTools has been deprecated. It does not have any effect.")]
         public static extern bool androidUseLegacySdkTools { get; set; }

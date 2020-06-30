@@ -30,6 +30,7 @@ namespace UnityEditor
             private const string activeAssetPipelineVersionTooltip = "The active asset import pipeline is chosen at startup by inspecting the following sources by priority: Environment variable, command line argument (-adb2), local per project editor settings, builtin default. In the case of creating a new project, the default pipeline is selected by the dropdown above and will have a priority one higher than the builtin default.";
             public static readonly GUIContent cacheServerDefaultMode = new GUIContent("Cache Server Default Mode", "Specifies if cache server should be enabled or disabled by default. This can be overridden per project in editor settings.");
             public static readonly GUIContent cacheServerIPLabel = new GUIContent("Default IP address", "This IP address is used for the cache server if not overridden in the editor settings per project.");
+            public static readonly GUIContent cacheServerLearnMore = new GUIContent("Learn more...", "Go to cacheserver documentation.");
         }
 
         internal static class Styles
@@ -303,6 +304,13 @@ namespace UnityEditor
                     GUILayout.Space(44);
                     break;
             }
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button(Properties.cacheServerLearnMore, EditorStyles.linkLabel))
+            {
+                Application.OpenURL("https://docs.unity3d.com/Manual/UnityAccelerator.html#UsingWithAssetPipeline");
+            }
+            GUILayout.EndHorizontal();
         }
 
         private static void OnPreferencesReadGUI()

@@ -10,7 +10,6 @@ namespace UnityEditor.PackageManager.UI
         Installed,
         InstalledAsDependency,
         DownloadAvailable,
-        InstallAvailable,
         ImportAvailable,
         InDevelopment,
         UpdateAvailable,

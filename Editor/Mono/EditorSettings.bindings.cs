@@ -259,5 +259,19 @@ namespace UnityEditor
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool cacheServerEnableTls { get; set; }
+
+        public enum NamingScheme
+        {
+            SpaceParenthesis = 0,
+            Dot,
+            Underscore
+            // note: C++ code has more, but we don't want to expose them for Hierarchy naming
+        }
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern int gameObjectNamingDigits { get; set; }
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern NamingScheme gameObjectNamingScheme { get; set; }
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern bool assetNamingUsesSpace { get; set; }
     }
 }
