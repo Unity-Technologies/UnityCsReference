@@ -985,9 +985,6 @@
     <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreContext.cs">
       <Link>Editor\Mono\AssetStore\AssetStoreContext.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreInstaBuyWindow.cs">
-      <Link>Editor\Mono\AssetStore\AssetStoreInstaBuyWindow.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreLoginWIndow.cs">
       <Link>Editor\Mono\AssetStore\AssetStoreLoginWIndow.cs</Link>
     </Compile>
