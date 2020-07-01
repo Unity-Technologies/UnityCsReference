@@ -31,8 +31,6 @@ namespace UnityEditor.PackageManager.UI
         {
             UpdateStatusMessage(PackageFiltering.instance.currentFilterTab);
 
-            PackageDatabase.instance.onUpdateTimeChange += SetUpdateTimestamp;
-
             PackageDatabase.instance.onRefreshOperationStart += () =>
             {
                 if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
@@ -66,7 +64,6 @@ namespace UnityEditor.PackageManager.UI
 
         public void OnDisable()
         {
-            PackageDatabase.instance.onUpdateTimeChange -= SetUpdateTimestamp;
             PackageDatabase.instance.onRefreshOperationFinish -= UpdateStatusMessage;
             PackageFiltering.instance.onFilterTabChanged -= UpdateStatusMessage;
             ApplicationUtil.instance.onInternetReachabilityChange -= OnInternetReachabilityChange;
@@ -85,13 +82,6 @@ namespace UnityEditor.PackageManager.UI
             return $"Last update {dt.ToString("MMM d, HH:mm", CultureInfo.CreateSpecificCulture("en-US"))}";
         }
 
-        private void SetUpdateTimestamp(long lastUpdateTimestamp)
-        {
-            // Only refresh update time after a search operation successfully returns while online
-            if (ApplicationUtil.instance.isInternetReachable && lastUpdateTimestamp != 0)
-                SetUpdateTimeLabel(GetUpdateTimeLabel(lastUpdateTimestamp));
-        }
-
         private void SetUpdateTimeLabel(string lastUpdateTime)
         {
             if (!string.IsNullOrEmpty(lastUpdateTime))
@@ -107,9 +97,13 @@ namespace UnityEditor.PackageManager.UI
                 errorMessage = L10n.Tr(k_OfflineErrorMessage);
 
             if (!string.IsNullOrEmpty(errorMessage))
+            {
                 SetStatusMessage(StatusType.Error, errorMessage);
-            else
-                SetUpdateTimeLabel(PackageDatabase.instance.lastUpdateTimestamp != 0 ? GetUpdateTimeLabel(PackageDatabase.instance.lastUpdateTimestamp) : string.Empty);
+                return;
+            }
+
+            var timestamp = PackageDatabase.instance.GetRefreshTimestamp(tab);
+            SetUpdateTimeLabel(timestamp != 0 ? GetUpdateTimeLabel(timestamp) : string.Empty);
         }
 
         private void SetStatusMessage(StatusType status, string message)

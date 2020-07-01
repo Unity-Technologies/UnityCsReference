@@ -209,6 +209,7 @@ namespace UnityEditor.VersionControl
                 {
                     asset = new Asset(path);
                 }
+                assetList.Add(asset);
             }
 
             return CheckCallbackAndCheckout(assetList, mode, changeset);

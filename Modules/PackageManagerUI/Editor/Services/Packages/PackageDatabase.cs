@@ -16,10 +16,36 @@ namespace UnityEditor.PackageManager.UI
         static IPackageDatabase s_Instance = null;
         public static IPackageDatabase instance { get { return s_Instance ?? PackageDatabaseInternal.instance; } }
 
+        public static RefreshOptions GetRefreshOptionsFromFilterTab(PackageFilterTab tab)
+        {
+            var options = RefreshOptions.None;
+            switch (tab)
+            {
+                case PackageFilterTab.All:
+                    options |= RefreshOptions.UpmList;
+                    options |= RefreshOptions.UpmSearch;
+                    break;
+                case PackageFilterTab.Local:
+                    options |= RefreshOptions.UpmList;
+                    break;
+                case PackageFilterTab.Modules:
+                    options |= RefreshOptions.UpmSearchOffline;
+                    options |= RefreshOptions.UpmListOffline;
+                    break;
+                case PackageFilterTab.AssetStore:
+                    options |= RefreshOptions.Purchased;
+                    break;
+                case PackageFilterTab.InDevelopment:
+                    options |= RefreshOptions.UpmList;
+                    break;
+            }
+
+            return options;
+        }
+
         [Serializable]
         private class PackageDatabaseInternal : ScriptableSingleton<PackageDatabaseInternal>, IPackageDatabase, ISerializationCallbackReceiver
         {
-            public event Action<long> onUpdateTimeChange;
             public event Action<IPackage, IPackageVersion> onInstallSuccess = delegate {};
             public event Action<IPackage> onUninstallSuccess = delegate {};
             public event Action<IPackage> onPackageOperationStart = delegate {};
@@ -44,6 +70,12 @@ namespace UnityEditor.PackageManager.UI
             [SerializeField]
             private List<AssetStorePackage> m_SerializedAssetStorePackages = new List<AssetStorePackage>();
 
+            [SerializeField]
+            private RefreshOptions[] m_SerializedRefreshTimestampsKeys = new RefreshOptions[0];
+
+            [SerializeField]
+            private long[] m_SerializedRefreshTimestampsValues = new long[0];
+
             [NonSerialized]
             private List<IOperation> m_RefreshOperationsInProgress = new List<IOperation>();
 
@@ -64,8 +96,7 @@ namespace UnityEditor.PackageManager.UI
             public IEnumerable<IPackage> assetStorePackages { get { return m_Packages.Values.Where(p => p is AssetStorePackage); } }
             public IEnumerable<IPackage> upmPackages { get { return m_Packages.Values.Where(p => p is UpmPackage); } }
 
-            private long m_LastUpdateTimestamp = 0;
-            public long lastUpdateTimestamp { get { return m_LastUpdateTimestamp; } }
+            private Dictionary<RefreshOptions, long> m_RefreshTimestamps = new Dictionary<RefreshOptions, long>();
 
             private PackageDatabaseInternal()
             {
@@ -159,6 +190,9 @@ namespace UnityEditor.PackageManager.UI
 
                 foreach (var p in m_SerializedAssetStorePackages)
                     m_Packages[p.uniqueId] = p;
+
+                for (var i = 0; i < m_SerializedRefreshTimestampsKeys.Length; i++)
+                    m_RefreshTimestamps[m_SerializedRefreshTimestampsKeys[i]] = m_SerializedRefreshTimestampsValues[i];
             }
 
             public void OnBeforeSerialize()
@@ -173,6 +207,9 @@ namespace UnityEditor.PackageManager.UI
                     else if (package is UpmPackage)
                         m_SerializedUpmPackages.Add((UpmPackage)package);
                 }
+
+                m_SerializedRefreshTimestampsKeys = m_RefreshTimestamps.Keys.ToArray();
+                m_SerializedRefreshTimestampsValues = m_RefreshTimestamps.Values.ToArray();
             }
 
             public void AddPackageError(IPackage package, Error error)
@@ -200,9 +237,12 @@ namespace UnityEditor.PackageManager.UI
 
                 UpmClient.instance.onPackagesChanged += OnPackagesChanged;
                 UpmClient.instance.onPackageVersionUpdated += OnUpmPackageVersionUpdated;
+
                 UpmClient.instance.onListOperation += OnUpmListOrSearchOperation;
+                UpmClient.instance.onListOperation += OnUpmListOperation;
                 UpmClient.instance.onSearchAllOperation += OnUpmListOrSearchOperation;
                 UpmClient.instance.onSearchAllOperation += OnUpmSearchAllOperation;
+
                 UpmClient.instance.onAddOperation += OnUpmAddOperation;
                 UpmClient.instance.onEmbedOperation += OnUpmEmbedOperation;
                 UpmClient.instance.onRemoveOperation += OnUpmRemoveOperation;
@@ -228,9 +268,12 @@ namespace UnityEditor.PackageManager.UI
 
                 UpmClient.instance.onPackagesChanged -= OnPackagesChanged;
                 UpmClient.instance.onPackageVersionUpdated -= OnUpmPackageVersionUpdated;
+
                 UpmClient.instance.onListOperation -= OnUpmListOrSearchOperation;
+                UpmClient.instance.onListOperation -= OnUpmListOperation;
                 UpmClient.instance.onSearchAllOperation -= OnUpmListOrSearchOperation;
                 UpmClient.instance.onSearchAllOperation -= OnUpmSearchAllOperation;
+
                 UpmClient.instance.onAddOperation -= OnUpmAddOperation;
                 UpmClient.instance.onEmbedOperation -= OnUpmEmbedOperation;
                 UpmClient.instance.onRemoveOperation -= OnUpmRemoveOperation;
@@ -261,10 +304,21 @@ namespace UnityEditor.PackageManager.UI
                 m_SerializedAssetStorePackages = new List<AssetStorePackage>();
                 m_SpecialInstallations.Clear();
 
+                m_RefreshTimestamps.Clear();
+                InitializeRefreshTimestamps();
                 m_RefreshOperationsInProgress.Clear();
-                m_LastUpdateTimestamp = 0;
 
                 RegisterEvents();
+            }
+
+            private void InitializeRefreshTimestamps()
+            {
+                foreach (RefreshOptions filter in Enum.GetValues(typeof(RefreshOptions)))
+                {
+                    if (m_RefreshTimestamps.ContainsKey(filter))
+                        continue;
+                    m_RefreshTimestamps[filter] = 0;
+                }
             }
 
             private void OnDownloadProgress(DownloadProgress progress)
@@ -292,6 +346,7 @@ namespace UnityEditor.PackageManager.UI
 
             private void OnAssetStoreOperationFinish()
             {
+                m_RefreshTimestamps[RefreshOptions.Purchased] = DateTime.Now.Ticks;
                 onRefreshOperationFinish?.Invoke(PackageFilterTab.AssetStore);
             }
 
@@ -434,12 +489,19 @@ namespace UnityEditor.PackageManager.UI
 
             private void OnUpmSearchAllOperation(IOperation operation)
             {
-                if (!operation.isOfflineMode)
-                    operation.onOperationSuccess += () =>
-                    {
-                        m_LastUpdateTimestamp = operation.timestamp;
-                        onUpdateTimeChange?.Invoke(operation.timestamp);
-                    };
+                var refreshOption = operation.isOfflineMode ? RefreshOptions.UpmSearchOffline : RefreshOptions.UpmSearch;
+                operation.onOperationSuccess += () => UpdateTimestamp(refreshOption, operation);
+            }
+
+            private void OnUpmListOperation(IOperation operation)
+            {
+                var refreshOption = operation.isOfflineMode ? RefreshOptions.UpmListOffline : RefreshOptions.UpmList;
+                operation.onOperationSuccess += () => UpdateTimestamp(refreshOption, operation);
+            }
+
+            private void UpdateTimestamp(RefreshOptions refreshOption, IOperation operation)
+            {
+                m_RefreshTimestamps[refreshOption] = operation.timestamp;
             }
 
             private void OnUpmListOrSearchOperation(IOperation operation)
@@ -556,6 +618,27 @@ namespace UnityEditor.PackageManager.UI
                 {
                     AssetDatabase.ImportPackage(path, true);
                 }
+            }
+
+            public virtual long GetRefreshTimestamp(PackageFilterTab? tab = null)
+            {
+                var filterTab = tab ?? PackageFiltering.instance.currentFilterTab;
+                return GetRefreshTimestamp(GetRefreshOptionsFromFilterTab(filterTab));
+            }
+
+            private long GetRefreshTimestamp(RefreshOptions option)
+            {
+                var result = 0L;
+                foreach (var item in m_RefreshTimestamps)
+                {
+                    if ((option & item.Key) == 0)
+                        continue;
+                    if (result == 0)
+                        result = item.Value;
+                    else if (result > item.Value && item.Value > 0)
+                        result = item.Value;
+                }
+                return result;
             }
         }
     }

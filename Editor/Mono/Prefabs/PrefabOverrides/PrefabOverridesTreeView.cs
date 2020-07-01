@@ -648,7 +648,7 @@ namespace UnityEditor
                 GUILayout.BeginHorizontal(Styles.headerGroupStyle);
                 GUILayout.FlexibleSpace();
 
-                if (GUILayout.Button(Styles.revertContent, EditorStyles.miniButton, GUILayout.Width(50)))
+                if (GUILayout.Button(Styles.revertContent, EditorStyles.miniButton, GUILayout.Width(55)))
                 {
                     m_Modification.Revert();
                     UpdateAndClose();
@@ -657,7 +657,7 @@ namespace UnityEditor
 
                 using (new EditorGUI.DisabledScope(m_Unappliable))
                 {
-                    Rect applyRect = GUILayoutUtility.GetRect(GUIContent.none, "MiniPulldown", GUILayout.Width(50));
+                    Rect applyRect = GUILayoutUtility.GetRect(GUIContent.none, "MiniPulldown", GUILayout.Width(55));
                     if (EditorGUI.DropdownButton(applyRect, Styles.applyContent, FocusType.Passive))
                     {
                         GenericMenu menu = new GenericMenu();

@@ -155,7 +155,7 @@ namespace UnityEditor.PackageManager.UI
             private void OnFilterChanged(PackageFilterTab filterTab)
             {
                 var page = GetPageFromFilterTab(filterTab);
-                if (!page.isAlreadyFetched)
+                if (PackageDatabase.instance.GetRefreshTimestamp(page.tab) == 0)
                     Refresh(filterTab);
 
                 page.RebuildList();
@@ -182,36 +182,9 @@ namespace UnityEditor.PackageManager.UI
                 return GetPageFromFilterTab().GetVisualState(package?.uniqueId);
             }
 
-            private static RefreshOptions GetRefreshOptionsFromFilterTab(PackageFilterTab tab)
-            {
-                var options = RefreshOptions.None;
-                switch (tab)
-                {
-                    case PackageFilterTab.All:
-                        options |= RefreshOptions.UpmList;
-                        options |= RefreshOptions.UpmSearch;
-                        break;
-                    case PackageFilterTab.Local:
-                        options |= RefreshOptions.UpmList;
-                        break;
-                    case PackageFilterTab.Modules:
-                        options |= RefreshOptions.UpmSearchOffline;
-                        options |= RefreshOptions.UpmListOffline;
-                        break;
-                    case PackageFilterTab.AssetStore:
-                        options |= RefreshOptions.Purchased;
-                        break;
-                    case PackageFilterTab.InDevelopment:
-                        options |= RefreshOptions.UpmList;
-                        break;
-                }
-
-                return options;
-            }
-
             public void Refresh(PackageFilterTab tab)
             {
-                Refresh(GetRefreshOptionsFromFilterTab(tab));
+                Refresh(PackageDatabase.GetRefreshOptionsFromFilterTab(tab));
             }
 
             public void Refresh(RefreshOptions options)
@@ -220,7 +193,7 @@ namespace UnityEditor.PackageManager.UI
                 // such that we don't lose any callbacks events
                 RegisterEvents();
                 if ((options & RefreshOptions.CurrentFilter) != 0)
-                    options |= GetRefreshOptionsFromFilterTab(PackageFiltering.instance.currentFilterTab);
+                    options |= PackageDatabase.GetRefreshOptionsFromFilterTab(PackageFiltering.instance.currentFilterTab);
 
                 if ((options & RefreshOptions.UpmSearchOffline) != 0)
                     UpmClient.instance.SearchAll(true);

@@ -9,8 +9,6 @@ namespace UnityEditor.PackageManager.UI
 {
     internal interface IPackageDatabase
     {
-        event Action<long> onUpdateTimeChange;
-
         // args 1,2, 3 are added, removed and preUpdated, and postUpdated packages respectively
         event Action<IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>> onPackagesChanged;
 
@@ -57,8 +55,6 @@ namespace UnityEditor.PackageManager.UI
         void Embed(IPackageVersion package);
         void RemoveEmbedded(IPackage package);
 
-        long lastUpdateTimestamp { get; }
-
         IEnumerable<IPackage> allPackages { get; }
         IEnumerable<IPackage> assetStorePackages { get; }
         IEnumerable<IPackage> upmPackages { get; }
@@ -79,5 +75,7 @@ namespace UnityEditor.PackageManager.UI
         IEnumerable<IPackageVersion> GetDependentVersions(IPackageVersion version);
 
         IEnumerable<IPackage> packagesInError { get; }
+
+        long GetRefreshTimestamp(PackageFilterTab? tab = null);
     }
 }
