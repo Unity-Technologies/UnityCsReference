@@ -239,11 +239,21 @@ namespace UnityEditor
             extern public static void UpdateAllowedProductId(int idx, string id);
 
             // *undocumented*
+            [Obsolete("Starting May 11th 2020 any new base game submission releasing digital only, " +
+                "digital and disc, or disc only, should not include a ratings element in the " +
+                "AppxManifest. This ratings policy update applies to all Xbox supported ratings. " +
+                "New base submissions that come in on or after this date will be " +
+                "rejected by your Microsoft Representative if a ratings element is present.", false)]
             [NativeMethod("SetXboxOneGameRating")]
             [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
             extern public static void SetGameRating(string name, int value);
 
             // *undocumented*
+            [Obsolete("Starting May 11th 2020 any new base game submission releasing digital only, " +
+                "digital and disc, or disc only, should not include a ratings element in the " +
+                "AppxManifest. This ratings policy update applies to all Xbox supported ratings. " +
+                "New base submissions that come in on or after this date will be " +
+                "rejected by your Microsoft Representative if a ratings element is present.", false)]
             [NativeMethod("GetXboxOneGameRating")]
             [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
             extern public static int GetGameRating(string name);

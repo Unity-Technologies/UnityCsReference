@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -84,6 +85,34 @@ namespace UnityEngine.TextCore.LowLevel
 
             return c;
         }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return base.Equals(obj);
+        }
+
+        public bool Equals(GlyphValueRecord other)
+        {
+            return base.Equals(other);
+        }
+
+        public static bool operator==(GlyphValueRecord lhs, GlyphValueRecord rhs)
+        {
+            return lhs.m_XPlacement == rhs.m_XPlacement &&
+                lhs.m_YPlacement == rhs.m_YPlacement &&
+                lhs.m_XAdvance == rhs.m_XAdvance &&
+                lhs.m_YAdvance == rhs.m_YAdvance;
+        }
+
+        public static bool operator!=(GlyphValueRecord lhs, GlyphValueRecord rhs)
+        {
+            return !(lhs == rhs);
+        }
     }
 
     /// <summary>
@@ -134,6 +163,7 @@ namespace UnityEngine.TextCore.LowLevel
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
+    [DebuggerDisplay("First glyphIndex = {m_FirstAdjustmentRecord.m_GlyphIndex},  Second glyphIndex = {m_SecondAdjustmentRecord.m_GlyphIndex}")]
     internal struct GlyphPairAdjustmentRecord
     {
         /// <summary>
@@ -157,5 +187,16 @@ namespace UnityEngine.TextCore.LowLevel
         [SerializeField]
         [NativeName("secondAdjustmentRecord")]
         private GlyphAdjustmentRecord m_SecondAdjustmentRecord;
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="firstAdjustmentRecord">First glyph adjustment record.</param>
+        /// <param name="secondAdjustmentRecord">Second glyph adjustment record.</param>
+        public GlyphPairAdjustmentRecord(GlyphAdjustmentRecord firstAdjustmentRecord, GlyphAdjustmentRecord secondAdjustmentRecord)
+        {
+            m_FirstAdjustmentRecord = firstAdjustmentRecord;
+            m_SecondAdjustmentRecord = secondAdjustmentRecord;
+        }
     }
 }

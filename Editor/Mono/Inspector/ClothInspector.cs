@@ -447,20 +447,6 @@ namespace UnityEditor
             }
         }
 
-        void CleanSelectionMeshState()
-        {
-            if (m_ParticleSelection == null || m_ParticleRectSelection == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < m_ParticleRectSelection.Length; ++i)
-            {
-                m_ParticleRectSelection[i] = false;
-                m_ParticleSelection[i] = false;
-            }
-        }
-
         void InitSelfAndInterCollisionSelection()
         {
             m_SelfAndInterCollisionSelection = new bool[m_NumVerts];
@@ -1620,8 +1606,6 @@ namespace UnityEditor
 
                 case ToolMode.Paint:
                     Tools.current = Tool.None;
-                    //Clean the selection state so paint mode does not get into an invalid state
-                    CleanSelectionMeshState();
                     PaintGUI();
                     break;
             }
