@@ -128,6 +128,7 @@ namespace UnityEditor
         bool m_IsAssetRoot;
         bool m_AllOfSamePrefabType = true;
         GUIContent m_OpenPrefabContent;
+        GUIContent m_SelectedObjectCountContent;
 
         public void OnEnable()
         {
@@ -143,6 +144,7 @@ namespace UnityEditor
             m_StaticEditorFlags = serializedObject.FindProperty("m_StaticEditorFlags");
             m_Icon = serializedObject.FindProperty("m_Icon");
 
+            SetSelectedObjectCountLabelContent();
             CalculatePrefabStatus();
 
             m_PreviewCache = new Dictionary<int, Texture>();
@@ -198,6 +200,11 @@ namespace UnityEditor
             }
         }
 
+        internal void SetSelectedObjectCountLabelContent()
+        {
+            m_SelectedObjectCountContent = new GUIContent($"({targets.Length})", $"{targets.Length} Objects Selected");
+        }
+
         internal void OnDisable()
         {
             foreach (var previewData in m_PreviewInstances.Values)
@@ -211,6 +218,7 @@ namespace UnityEditor
             base.OnForceReloadInspector();
             CalculatePrefabStatus();
             ReloadPreviewInstances();
+            SetSelectedObjectCountLabelContent();
         }
 
         void ClearPreviewCache()
@@ -313,6 +321,12 @@ namespace UnityEditor
                         {
                             // Name
                             EditorGUILayout.DelayedTextField(m_Name, GUIContent.none, EditorStyles.boldTextField);
+                        }
+
+                        if (targets.Length > 1)
+                        {
+                            var maxW = GUI.skin.label.CalcSize(m_SelectedObjectCountContent).x;
+                            GUILayout.Label(m_SelectedObjectCountContent, GUILayout.MaxWidth(maxW));
                         }
 
                         // Static flags toggle

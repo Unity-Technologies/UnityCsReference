@@ -8,9 +8,12 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 using Object = UnityEngine.Object;
+using UnityEditor.Experimental;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEditor.Experimental.AssetImporters
+namespace UnityEditor.AssetImporters
 {
+    [MovedFrom("UnityEditor.Experimental.AssetImporters")]
     public abstract partial class AssetImporterEditor : Editor
     {
         /// <summary>
@@ -916,6 +919,7 @@ namespace UnityEditor.Experimental.AssetImporters
         }
     }
 
+    [MovedFrom("UnityEditor.Experimental.AssetImporters")]
     internal class AssetImporterEditorPostProcessAsset : AssetPostprocessor
     {
         public static event Action<string, string> OnAssetbundleNameChanged;

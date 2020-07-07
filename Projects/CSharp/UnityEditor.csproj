@@ -3121,6 +3121,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ReferenceAssemblyHelpers.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\ReferenceAssemblyHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\RoslynAnalysisRunner.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\RoslynAnalysisRunner.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ScriptAssembly.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\ScriptAssembly.cs</Link>
     </Compile>
@@ -4714,6 +4717,9 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\AddRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\AddRequest.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\AddScopedRegistryRequest.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Requests\AddScopedRegistryRequest.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\EmbedRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\EmbedRequest.cs</Link>
     </Compile>
@@ -4735,6 +4741,9 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\RemoveRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\RemoveRequest.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\RemoveScopedRegistryRequest.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Requests\RemoveScopedRegistryRequest.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\Request.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\Request.cs</Link>
     </Compile>
@@ -4746,6 +4755,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\SearchRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\SearchRequest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\UpdateScopedRegistryRequest.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Requests\UpdateScopedRegistryRequest.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchCapabilities.cs">
       <Link>Modules\PackageManager\Editor\Managed\Search\SearchCapabilities.cs</Link>
@@ -4770,6 +4782,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\StatusCode.cs">
       <Link>Modules\PackageManager\Editor\Managed\StatusCode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\UpdateScopedRegistryOptions.cs">
+      <Link>Modules\PackageManager\Editor\Managed\UpdateScopedRegistryOptions.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\VersionsInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\VersionsInfo.cs</Link>
@@ -5925,6 +5940,9 @@
     </Reference>
     <Reference Include="ExCSS.Unity">
       <HintPath>..\..\External\ExCSS\builds\builds\lib\net35\ExCSS.Unity.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.IL2CPP.BeeSettings">
+      <HintPath>..\..\External\il2cpp\builds\BeeRunner\Unity.IL2CPP.BeeSettings.dll</HintPath>
     </Reference>
     <ProjectReference Include="UnityEngine.csproj">
       <Project>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</Project>

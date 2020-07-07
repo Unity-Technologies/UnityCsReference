@@ -177,10 +177,6 @@ namespace UnityEditor
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool cachingShaderPreprocessor { get; set; }
 
-        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
-        public static extern bool enableRoslynAnalysis { get; set; }
-
-
         public static string[] projectGenerationUserExtensions
         {
             get

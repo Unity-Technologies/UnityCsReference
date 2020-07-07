@@ -33,32 +33,35 @@ namespace UnityEditor.SceneTemplate
         {
             var hasCloneableDependencies = false;
             var tempDepInfos = new Dictionary<string, List<AnalyticDepInfo>>();
-
-            foreach (var dep in template.dependencies)
+            if (template.dependencies != null)
             {
-                if (dep.instantiationMode == TemplateInstantiationMode.Clone)
-                    hasCloneableDependencies = true;
-
-                if (!dep.dependency || dep.dependency == null)
-                    continue;
-
-                if (tempDepInfos.TryGetValue(dep.dependency.GetType().ToString(), out var infosPerType))
+                foreach (var dep in template.dependencies)
                 {
-                    var foundInfo = infosPerType.Find(info => info._instantiationMode == dep.instantiationMode);
-                    if (foundInfo != null)
+                    if (dep.instantiationMode == TemplateInstantiationMode.Clone)
+                        hasCloneableDependencies = true;
+
+                    if (!dep.dependency || dep.dependency == null)
+                        continue;
+
+                    var typeName = dep.dependency.GetType().FullName;
+                    if (tempDepInfos.TryGetValue(typeName, out var infosPerType))
                     {
-                        foundInfo.count++;
+                        var foundInfo = infosPerType.Find(info => info._instantiationMode == dep.instantiationMode);
+                        if (foundInfo != null)
+                        {
+                            foundInfo.count++;
+                        }
+                        else
+                        {
+                            infosPerType.Add(new AnalyticDepInfo(dep));
+                        }
                     }
                     else
                     {
+                        infosPerType = new List<AnalyticDepInfo>();
                         infosPerType.Add(new AnalyticDepInfo(dep));
+                        tempDepInfos.Add(typeName, infosPerType);
                     }
-                }
-                else
-                {
-                    infosPerType = new List<AnalyticDepInfo>();
-                    infosPerType.Add(new AnalyticDepInfo(dep));
-                    tempDepInfos.Add(dep.dependency.GetType().ToString(), infosPerType);
                 }
             }
 

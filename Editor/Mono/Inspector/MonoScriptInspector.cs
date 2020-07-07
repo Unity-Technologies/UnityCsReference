@@ -6,7 +6,7 @@ using UnityEngine;
 using System.Reflection;
 using System.Collections.Generic;
 using System;
-using UnityEditor.Experimental.AssetImporters;
+using UnityEditor.AssetImporters;
 using UnityEditorInternal;
 using System.IO;
 

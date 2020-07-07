@@ -13,12 +13,22 @@ namespace UnityEditor.PackageManager.UI
     {
         protected VisualElement rootVisualElement { get; private set; }
 
+        internal const string k_PackageManagerSettingsPath = "Project/Package Manager";
         const string k_GeneralServicesTemplatePath = "UXML/PackageManager/PackageManagerProjectSettings.uxml";
         protected VisualTreeAsset m_GeneralTemplate;
 
         private static readonly string k_Message =
             "Preview packages are in the early stage of development and not yet ready for production.\n" +
             "We recommend using these only for testing purpose and to give us direct feedback.";
+
+        private PackageManagerProjectSettingsProxy m_SettingsProxy;
+        private ApplicationProxy m_ApplicationProxy;
+        private void ResolveDependencies()
+        {
+            var container = ServicesContainer.instance;
+            m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
+            m_ApplicationProxy = container.Resolve<ApplicationProxy>();
+        }
 
         internal static class StylesheetPath
         {
@@ -34,9 +44,6 @@ namespace UnityEditor.PackageManager.UI
         public PackageManagerProjectSettingsProvider(string path, SettingsScope scopes, IEnumerable<string> keywords = null)
             : base(path, scopes, keywords)
         {
-            path = "Project/Package Manager";
-            scopes = SettingsScope.Project;
-            keywords = new List<string>(new[] { "enable", "package", "preview" });
             activateHandler = (s, element) =>
             {
                 // Create a child to make sure all the style sheets are not added to the root.
@@ -57,36 +64,57 @@ namespace UnityEditor.PackageManager.UI
 
                 cache = new VisualElementCache(rootVisualElement);
 
+                ResolveDependencies();
+
+                SetExpanded(m_SettingsProxy.advancedSettingsExpanded);
+                advancedSettingsFoldout.RegisterValueChangedCallback(changeEvent =>
+                {
+                    if (changeEvent.target == advancedSettingsFoldout)
+                        SetExpanded(changeEvent.newValue);
+                });
+
                 previewInfoBox.Q<Button>().clickable.clicked += () =>
                 {
-                    var applicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
-                    applicationProxy.OpenURL($"https://docs.unity3d.com/{applicationProxy.shortUnityVersion}/Documentation/Manual/pack-preview.html");
+                    m_ApplicationProxy.OpenURL($"https://docs.unity3d.com/{m_ApplicationProxy.shortUnityVersion}/Documentation/Manual/pack-preview.html");
                 };
 
-                var settings = ServicesContainer.instance.Resolve<PackageManagerProjectSettingsProxy>();
-                enablePreviewPackages.SetValueWithoutNotify(settings.enablePreviewPackages);
-
+                enablePreviewPackages.SetValueWithoutNotify(m_SettingsProxy.enablePreviewPackages);
                 enablePreviewPackages.RegisterValueChangedCallback(changeEvent =>
                 {
-                    enablePreviewPackages.SetValueWithoutNotify(changeEvent.newValue);
                     var newValue = changeEvent.newValue;
 
-                    if (newValue != settings.enablePreviewPackages)
+                    if (newValue != m_SettingsProxy.enablePreviewPackages)
                     {
                         var saveIt = true;
-                        if (newValue && !settings.oneTimeWarningShown)
+                        if (newValue && !m_SettingsProxy.oneTimeWarningShown)
                         {
                             if (EditorUtility.DisplayDialog(L10n.Tr("Package Manager"), L10n.Tr(k_Message), L10n.Tr("I understand"), L10n.Tr("Cancel")))
-                                settings.oneTimeWarningShown = true;
+                                m_SettingsProxy.oneTimeWarningShown = true;
                             else
                                 saveIt = false;
                         }
 
                         if (saveIt)
                         {
-                            settings.enablePreviewPackages = newValue;
-                            settings.Save();
+                            m_SettingsProxy.enablePreviewPackages = newValue;
+                            m_SettingsProxy.Save();
+                            PackageManagerWindowAnalytics.SendEvent("togglePreviewPackages");
                         }
+                    }
+                    enablePreviewPackages.SetValueWithoutNotify(m_SettingsProxy.enablePreviewPackages);
+                });
+
+                enablePackageDependencies.SetValueWithoutNotify(m_SettingsProxy.enablePackageDependencies);
+                enablePackageDependencies.RegisterValueChangedCallback(changeEvent =>
+                {
+                    enablePackageDependencies.SetValueWithoutNotify(changeEvent.newValue);
+                    var newValue = changeEvent.newValue;
+
+                    if (newValue != m_SettingsProxy.enablePackageDependencies)
+                    {
+                        m_SettingsProxy.enablePackageDependencies = newValue;
+                        m_SettingsProxy.Save();
+                        PackageManagerWindowAnalytics.SendEvent("toggleDependencies");
                     }
                 });
             };
@@ -95,12 +123,22 @@ namespace UnityEditor.PackageManager.UI
         [SettingsProvider]
         public static SettingsProvider CreateProjectSettingsProvider()
         {
-            return new PackageManagerProjectSettingsProvider("Project/Package Manager", SettingsScope.Project, new List<string>(new[] { "enable", "package", "preview" }));
+            return new PackageManagerProjectSettingsProvider(k_PackageManagerSettingsPath, SettingsScope.Project, new List<string>(new[] { "enable", "package", "preview" }));
+        }
+
+        private void SetExpanded(bool expanded)
+        {
+            if (advancedSettingsFoldout.value != expanded)
+                advancedSettingsFoldout.value = expanded;
+            if (m_SettingsProxy.advancedSettingsExpanded != expanded)
+                m_SettingsProxy.advancedSettingsExpanded = expanded;
         }
 
         private VisualElementCache cache { get; set; }
 
         private HelpBox previewInfoBox { get { return cache.Get<HelpBox>("previewInfoBox"); } }
         private Toggle enablePreviewPackages { get { return rootVisualElement.Q<Toggle>("enablePreviewPackages"); } }
+        private Toggle enablePackageDependencies { get { return rootVisualElement.Q<Toggle>("enableDependencies"); } }
+        private Foldout advancedSettingsFoldout { get { return rootVisualElement.Q<Foldout>("advancedSettingsFoldout"); } }
     }
 }

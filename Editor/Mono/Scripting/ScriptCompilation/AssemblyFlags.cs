@@ -24,6 +24,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         NoEngineReferences = (1 << 9),
         SuppressCompilerWarnings = (1 << 10),
         UserOverride = (1 << 11),
-        UserOverrideCandidate = (1 << 12)
+        UserOverrideCandidate = (1 << 12),
+        CandidateForCompilingWithRoslynAnalyzers = 1 << 13,
     }
 }

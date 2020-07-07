@@ -24,6 +24,8 @@ namespace UnityEditor.Compilation
 
     public class ScriptCompilerOptions
     {
+        public string RoslynAnalyzerRulesetPath { get; set; }
+        public string[] RoslynAnalyzerDllPaths { get; set; }
         public bool AllowUnsafeCode { get; set; }
         public bool EmitReferenceAssembly { get; set; }
 
@@ -38,6 +40,19 @@ namespace UnityEditor.Compilation
             AllowUnsafeCode = false;
             ApiCompatibilityLevel = ApiCompatibilityLevel.NET_4_6;
             ResponseFiles = new string[0];
+            RoslynAnalyzerDllPaths = new string[0];
+        }
+
+        internal ScriptCompilerOptions(ScriptCompilerOptions scriptCompilerOptions)
+        {
+            ResponseFiles = new List<string>(scriptCompilerOptions.ResponseFiles).ToArray();
+            RoslynAnalyzerDllPaths = new List<string>(scriptCompilerOptions.RoslynAnalyzerDllPaths).ToArray();
+            RoslynAnalyzerRulesetPath = scriptCompilerOptions.RoslynAnalyzerRulesetPath;
+            UseDeterministicCompilation = scriptCompilerOptions.UseDeterministicCompilation;
+            EmitReferenceAssembly = scriptCompilerOptions.EmitReferenceAssembly;
+            AllowUnsafeCode = scriptCompilerOptions.AllowUnsafeCode;
+            CodeOptimization = scriptCompilerOptions.CodeOptimization;
+            ApiCompatibilityLevel = scriptCompilerOptions.ApiCompatibilityLevel;
         }
     }
 
@@ -71,7 +86,7 @@ namespace UnityEditor.Compilation
         public Assembly[] assemblyReferences { get; internal set; }
         public string[] compiledAssemblyReferences { get; private set; }
         public AssemblyFlags flags { get; private set; }
-        public ScriptCompilerOptions compilerOptions { get; private set; }
+        public ScriptCompilerOptions compilerOptions { get; internal set; }
 
         public string[] allReferences { get { return assemblyReferences.Select(a => a.outputPath).Concat(compiledAssemblyReferences).ToArray(); } }
 

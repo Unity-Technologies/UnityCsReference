@@ -7,13 +7,15 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.Scripting;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEditor.Experimental.AssetImporters
+namespace UnityEditor.AssetImporters
 {
     // Class Concept: Root, abstract class for all Asset importers implemented in C#.
     [ExtensionOfNativeClass]
     [Preserve]
     [UsedByNativeCode]
+    [MovedFrom("UnityEditor.Experimental.AssetImporters")]
     public abstract class ScriptedImporter : AssetImporter
     {
         // Called by native code to invoke the import handling code of the specialized scripted importer class.
@@ -114,6 +116,7 @@ namespace UnityEditor.Experimental.AssetImporters
 
     // Class Concept: Class attribute that describes Scriptable importers and their static characteristics.
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
+    [MovedFrom("UnityEditor.Experimental.AssetImporters")]
     public class ScriptedImporterAttribute : Attribute
     {
         public int version { get; private set; }
@@ -170,4 +173,11 @@ namespace UnityEditor.Experimental.AssetImporters
             this.overrideFileExtensions = overrideExts;
         }
     }
+}
+
+// The following block is to make sure scripts with unnecessary using directive of Experimental.AssetImporters compile
+// Should be removed after API updater addresses this kind of migration.
+namespace UnityEditor.Experimental.AssetImporters
+{
+    class PlaceholderEmptyClassForDeprecatedExperimentalAssetImporters {}
 }

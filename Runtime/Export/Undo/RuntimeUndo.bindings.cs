@@ -12,8 +12,13 @@ namespace UnityEngine
     [NativeHeader("Editor/Src/Undo/Undo.h")]
     internal class RuntimeUndo
     {
+        internal void SetTransformParentUndo(Transform transform, Transform newParent, string name)
+        {
+            SetTransformParent(transform, newParent, true, name);
+        }
+
         [FreeFunction("SetTransformParentUndo")]
-        extern internal static void SetTransformParent([NotNull("NullExceptionObject")] Transform transform, Transform newParent, string name);
+        extern internal static void SetTransformParent([NotNull("NullExceptionObject")] Transform transform, Transform newParent, bool worldPositionStays, string name);
 
         [FreeFunction("RecordUndoDiff")]
         extern internal static void RecordObject(Object objectToUndo, string name);

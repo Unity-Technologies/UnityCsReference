@@ -24,14 +24,41 @@ namespace UnityEditor.Scripting.Compilers
             return message;
         }
 
-        internal static protected CompilerMessage CreateCompilerMessageFromMatchedRegex(string line, Match m, string erroridentifier)
+        internal static protected CompilerMessage CreateCompilerMessageFromMatchedRegex(string line, Match m, string errorId, string informationId = null)
         {
-            CompilerMessage message;
-            message.file = m.Groups["filename"].Value;
+            CompilerMessage message = new CompilerMessage();
+
+            if (m.Groups["filename"].Success)
+            {
+                message.file = m.Groups["filename"].Value;
+            }
+
+            if (m.Groups["line"].Success)
+            {
+                message.line = Int32.Parse(m.Groups["line"].Value);
+            }
+            if (m.Groups["column"].Success)
+            {
+                message.column = Int32.Parse(m.Groups["column"].Value);
+            }
+
             message.message = line;
-            message.line = Int32.Parse(m.Groups["line"].Value);
-            message.column = Int32.Parse(m.Groups["column"].Value);
-            message.type = (m.Groups["type"].Value == erroridentifier) ? CompilerMessageType.Error : CompilerMessageType.Warning;
+
+            string messageType = m.Groups["type"].Value;
+
+            if (messageType == errorId)
+            {
+                message.type = CompilerMessageType.Error;
+            }
+            else if (!string.IsNullOrEmpty(informationId) && messageType == informationId)
+            {
+                message.type = CompilerMessageType.Information;
+            }
+            else
+            {
+                message.type = CompilerMessageType.Warning;
+            }
+
             message.normalizedStatus = default(NormalizedCompilerStatus);
             message.assemblyName = "n/a";
 
@@ -50,6 +77,7 @@ namespace UnityEditor.Scripting.Compilers
             var regex = GetOutputRegex();
             var internalErrorRegex = GetInternalErrorOutputRegex();
 
+
             foreach (var line in errorOutput)
             {
                 //Jamplus can fail with enormous lines in the stdout, parsing of which can take 30! seconds.
@@ -63,7 +91,7 @@ namespace UnityEditor.Scripting.Compilers
                     if (!m.Success)
                         continue;
                 }
-                CompilerMessage message = CreateCompilerMessageFromMatchedRegex(line, m, GetErrorIdentifier());
+                CompilerMessage message = CreateCompilerMessageFromMatchedRegex(line, m, GetErrorIdentifier(), GetInformationIdentifier());
                 message.normalizedStatus = NormalizedStatusFor(m);
                 message.assemblyName = assemblyName;
 
@@ -85,6 +113,11 @@ namespace UnityEditor.Scripting.Compilers
         }
 
         protected abstract string GetErrorIdentifier();
+
+        protected virtual string GetInformationIdentifier()
+        {
+            return "info";
+        }
 
         protected abstract Regex GetOutputRegex();
         protected virtual Regex GetInternalErrorOutputRegex() { return null; }

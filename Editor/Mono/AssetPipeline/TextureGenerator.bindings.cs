@@ -9,10 +9,12 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEditor.Experimental.AssetImporters
+namespace UnityEditor.AssetImporters
 {
     [StructLayout(LayoutKind.Sequential)]
+    [MovedFrom("UnityEditor.Experimental.AssetImporters")]
     public struct SpriteImportData
     {
         private string m_Name;
@@ -35,6 +37,7 @@ namespace UnityEditor.Experimental.AssetImporters
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    [MovedFrom("UnityEditor.Experimental.AssetImporters")]
     public struct TextureGenerationOutput
     {
         [NativeName("texture")]
@@ -58,6 +61,7 @@ namespace UnityEditor.Experimental.AssetImporters
 
     [StructLayout(LayoutKind.Sequential)]
     [NativeAsStruct]
+    [MovedFrom("UnityEditor.Experimental.AssetImporters")]
     public class SourceTextureInformation
     {
         [NativeName("width")]
@@ -76,6 +80,7 @@ namespace UnityEditor.Experimental.AssetImporters
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    [MovedFrom("UnityEditor.Experimental.AssetImporters")]
     public struct TextureGenerationSettings
     {
         [NativeName("assetPath")]
@@ -227,6 +232,7 @@ namespace UnityEditor.Experimental.AssetImporters
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporterTypes.h")]
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporter.bindings.h")]
     [NativeHeader("Runtime/Serialize/BuildTarget.h")]
+    [MovedFrom("UnityEditor.Experimental.AssetImporters")]
     public static unsafe class TextureGenerator
     {
         public static TextureGenerationOutput GenerateTexture(TextureGenerationSettings settings, NativeArray<Color32> colorBuffer)

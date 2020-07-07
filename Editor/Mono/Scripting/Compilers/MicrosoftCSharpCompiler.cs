@@ -98,6 +98,16 @@ namespace UnityEditor.Scripting.Compilers
                 arguments.Add("/define:" + define);
             }
 
+            foreach (string path in assembly.CompilerOptions.RoslynAnalyzerDllPaths)
+            {
+                arguments.Add($"/analyzer:\"{PrepareFileName(path)}\"");
+            }
+
+            if (!String.IsNullOrEmpty(assembly.CompilerOptions.RoslynAnalyzerRulesetPath))
+            {
+                arguments.Add($"/ruleset:\"{assembly.CompilerOptions.RoslynAnalyzerRulesetPath}\"");
+            }
+
             Array.Sort(assembly.Files, StringComparer.Ordinal);
             foreach (var source in assembly.Files)
             {
@@ -165,7 +175,7 @@ namespace UnityEditor.Scripting.Compilers
             process = program;
         }
 
-        protected string[] GetStreamContainingCompilerMessages()
+        internal string[] GetStreamContainingCompilerMessages()
         {
             return GetStandardOutput();
         }

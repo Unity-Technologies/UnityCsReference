@@ -5,8 +5,11 @@
 using System.IO;
 using UnityEditor.AssetImporters;
 using UnityEngine;
-namespace UnityEditor.Experimental.AssetImporters
+using UnityEngine.Scripting.APIUpdating;
+
+namespace UnityEditor.AssetImporters
 {
+    [MovedFrom("UnityEditor.Experimental.AssetImporters")]
     public class FBXMaterialDescriptionPreprocessor : AssetPostprocessor
     {
         static readonly uint k_Version = 1;

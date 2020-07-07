@@ -656,7 +656,7 @@ namespace UnityEditor.Experimental
         extern public static void ClearImporterOverride(string path);
 
         public static void SetImporterOverride<T>(string path)
-            where T : Experimental.AssetImporters.ScriptedImporter
+            where T : UnityEditor.AssetImporters.ScriptedImporter
         {
             SetImporterOverrideInternal(path, typeof(T));
         }

@@ -33,6 +33,8 @@ namespace UnityEditor.PackageManager.UI
         private PackageManagerPrefs m_PackageManagerPrefs;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
+        private PackageManagerProjectSettingsProxy m_SettingsProxy;
+
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
@@ -43,6 +45,7 @@ namespace UnityEditor.PackageManager.UI
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
+            m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
         }
 
         public PackageManagerToolbar()
@@ -208,6 +211,36 @@ namespace UnityEditor.PackageManager.UI
             SetCurrentSearch(string.Empty);
             SetFilter(filter);
             PackageManagerWindowAnalytics.SendEvent("changeFilter");
+        }
+
+        private void SetupAdvancedMenu()
+        {
+            toolbarSettingsMenu.tooltip = L10n.Tr("Advanced");
+            toolbarSettingsMenu.menu.AppendAction(L10n.Tr("Advanced Project Settings"), a =>
+            {
+                if (!m_SettingsProxy.advancedSettingsExpanded)
+                {
+                    m_SettingsProxy.advancedSettingsExpanded = true;
+                    m_SettingsProxy.Save();
+                }
+                SettingsWindow.Show(SettingsScope.Project, PackageManagerProjectSettingsProvider.k_PackageManagerSettingsPath);
+                PackageManagerWindowAnalytics.SendEvent("advancedProjectSettings");
+            });
+
+            toolbarSettingsMenu.menu.AppendSeparator();
+
+            toolbarSettingsMenu.menu.AppendAction(L10n.Tr("Reset Packages to defaults"), a =>
+            {
+                EditorApplication.ExecuteMenuItem(k_ResetPackagesMenuPath);
+                m_PageManager.Refresh(RefreshOptions.UpmListOffline);
+                PackageManagerWindowAnalytics.SendEvent("resetToDefaults");
+            });
+
+            PackageManagerExtensions.ExtensionCallback(() =>
+            {
+                foreach (var extension in PackageManagerExtensions.MenuExtensions)
+                    extension.OnAdvancedMenuCreate(toolbarSettingsMenu.menu);
+            });
         }
 
         private void SetupAddMenu()
@@ -393,35 +426,6 @@ namespace UnityEditor.PackageManager.UI
             };
         }
 
-        private void SetupAdvancedMenu()
-        {
-            advancedMenu.menu.AppendAction(L10n.Tr("Show dependencies"), a =>
-            {
-                ToggleDependencies();
-                PackageManagerWindowAnalytics.SendEvent("toggleDependencies");
-            }, a => m_PackageManagerPrefs.showPackageDependencies ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
-
-            advancedMenu.menu.AppendSeparator();
-
-            advancedMenu.menu.AppendAction(L10n.Tr("Reset Packages to defaults"), a =>
-            {
-                EditorApplication.ExecuteMenuItem(k_ResetPackagesMenuPath);
-                m_PageManager.Refresh(RefreshOptions.UpmListOffline);
-                PackageManagerWindowAnalytics.SendEvent("resetToDefaults");
-            }, a => DropdownMenuAction.Status.Normal);
-
-            PackageManagerExtensions.ExtensionCallback(() =>
-            {
-                foreach (var extension in PackageManagerExtensions.MenuExtensions)
-                    extension.OnAdvancedMenuCreate(advancedMenu.menu);
-            });
-        }
-
-        private void ToggleDependencies()
-        {
-            m_PackageManagerPrefs.showPackageDependencies = !m_PackageManagerPrefs.showPackageDependencies;
-        }
-
         private VisualElementCache cache { get; set; }
 
         private ToolbarMenu addMenu { get { return cache.Get<ToolbarMenu>("toolbarAddMenu"); }}
@@ -429,7 +433,7 @@ namespace UnityEditor.PackageManager.UI
         private ToolbarMenu orderingMenu { get { return cache.Get<ToolbarMenu>("toolbarOrderingMenu"); } }
         private ToolbarWindowMenu filtersMenu { get { return cache.Get<ToolbarWindowMenu>("toolbarFiltersMenu"); } }
         private ToolbarButton clearFiltersButton { get { return cache.Get<ToolbarButton>("toolbarClearFiltersButton"); } }
-        private ToolbarMenu advancedMenu { get { return cache.Get<ToolbarMenu>("toolbarAdvancedMenu"); } }
         private ToolbarSearchField searchToolbar { get { return cache.Get<ToolbarSearchField>("toolbarSearch"); } }
+        private ToolbarMenu toolbarSettingsMenu { get { return cache.Get<ToolbarMenu>("toolbarSettingsMenu"); } }
     }
 }

@@ -15,6 +15,33 @@ namespace UnityEditorInternal
 {
     internal class ProfilerFrameDataTreeView : TreeView
     {
+        class CallDelay
+        {
+            float m_DelayTarget;
+            Action m_OnSearchChanged;
+
+            public void Start(Action searchChanged, float delayTime)
+            {
+                m_DelayTarget = Time.realtimeSinceStartup + delayTime;
+                m_OnSearchChanged = searchChanged;
+            }
+
+            public void Trigger()
+            {
+                if (!IsDone || m_OnSearchChanged == null)
+                    return;
+
+                m_OnSearchChanged.Invoke();
+                m_OnSearchChanged = null;
+                m_DelayTarget = 0;
+            }
+
+            public bool IsDone
+            {
+                get { return Time.realtimeSinceStartup >= m_DelayTarget; }
+            }
+        }
+
         public static readonly GUIContent kFrameTooltip = EditorGUIUtility.TrTextContent("", "Press 'F' to frame selection");
 
         const int kMaxPooledRowsCount = 1000000;
@@ -48,6 +75,14 @@ namespace UnityEditorInternal
         List<int> m_ReusableChildrenIds = new List<int>(1024);
         [NonSerialized]
         Stack<LinkedListNode<TreeTraversalState>> m_TreeTraversalStatePool = new Stack<LinkedListNode<TreeTraversalState>>();
+
+        const float k_SearchDelayTime = 0.350f; //350ms
+        [NonSerialized]
+        CallDelay m_DelayedSearch = new CallDelay();
+        [NonSerialized]
+        string m_prevSearchPattern = null;
+        [NonSerialized]
+        bool m_ShouldExecuteDelayedSearch = false;
 
         public delegate void SelectionChangedCallback(int id);
         public event SelectionChangedCallback selectionChanged;
@@ -166,7 +201,10 @@ namespace UnityEditorInternal
                 m_FrameDataView.Sort(m_MultiColumnHeader.sortedProfilerColumn, m_MultiColumnHeader.sortedProfilerColumnAscending);
 
             if (needReload || needSorting)
+            {
+                m_ShouldExecuteDelayedSearch = true;
                 Reload();
+            }
         }
 
         void AddExpandedChildrenRecursively(TreeViewItem item, ExpandedMarkerIdHierarchy expandedHierarchy)
@@ -381,17 +419,46 @@ namespace UnityEditorInternal
                 return m_Rows;
 
             var newExpandedIds = m_ExpandedMarkersHierarchy == null ? null : new List<int>(state.expandedIDs.Count);
-            if (!string.IsNullOrEmpty(searchString))
+            bool requestedDelayedSearch = false;
+
+            bool patternEmpty = string.IsNullOrEmpty(searchString);
+
+            if (patternEmpty)
+                m_prevSearchPattern = searchString;
+
+            if (!patternEmpty)
             {
-                Search(root, searchString, m_Rows);
+                if (m_prevSearchPattern != searchString)
+                {
+                    m_prevSearchPattern = searchString;
+                    requestedDelayedSearch = true;
+                    m_ShouldExecuteDelayedSearch = false;
+                    m_DelayedSearch.Start(() =>
+                    {
+                        m_ShouldExecuteDelayedSearch = true;
+                        Reload();
+                        EditorApplication.update -= m_DelayedSearch.Trigger;
+                    }, k_SearchDelayTime);
+
+                    EditorApplication.update -= m_DelayedSearch.Trigger;
+                    EditorApplication.update += m_DelayedSearch.Trigger;
+                }
+                else if (m_ShouldExecuteDelayedSearch)
+                {
+                    m_ShouldExecuteDelayedSearch = false;
+                    Search(root, searchString, m_Rows);
+                }
             }
             else
             {
                 AddAllChildren((FrameDataTreeViewItem)root, m_ExpandedMarkersHierarchy, m_Rows, newExpandedIds);
             }
 
-            MigrateExpandedState(newExpandedIds);
-            MigrateSelectedState(false);
+            if (!requestedDelayedSearch)
+            {
+                MigrateExpandedState(newExpandedIds);
+                MigrateSelectedState(false);
+            }
 
             return m_Rows;
         }

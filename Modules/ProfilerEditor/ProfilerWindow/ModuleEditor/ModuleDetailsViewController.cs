@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
+using Unity.Profiling;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Profiling.ModuleEditor
@@ -31,7 +31,7 @@ namespace UnityEditor.Profiling.ModuleEditor
         const string k_UssSelector_DragAndDropTargetHover = "drag-and-drop__drop-target--hover";
 
         const string k_AllCountersTreeViewDataKey = "all-counters__tree-view__data-key";
-        const float k_MaximumTitleWidth = 210f;
+        const int k_MaximumTitleLength = 40;
 
         // Data
         ModuleData m_Module;
@@ -77,7 +77,11 @@ namespace UnityEditor.Profiling.ModuleEditor
             m_ChartCountersListView.bindItem = BindListViewItem;
             m_ChartCountersListView.selectionType = SelectionType.Multiple;
             m_ChartCountersListView.reorderable = true;
-            m_ChartCountersListView.GetDragAndDropController().onItemMoved += OnListViewItemMoved;
+            var dragAndDropController = m_ChartCountersListView.GetDragAndDropController();
+            if (dragAndDropController != null)
+            {
+                dragAndDropController.onItemMoved += OnListViewItemMoved;
+            }
             m_DeleteModuleButton.text = LocalizationDatabase.GetLocalizedString("Delete Module");
             m_DeleteModuleButton.clicked += DeleteModule;
 
@@ -103,6 +107,7 @@ namespace UnityEditor.Profiling.ModuleEditor
         public void SetModule(ModuleData module)
         {
             m_Module = module;
+            m_ChartCountersListView.ClearSelection();
 
             if (m_Module.isEditable)
             {
@@ -146,19 +151,28 @@ namespace UnityEditor.Profiling.ModuleEditor
 
         void LoadAllCounters()
         {
-            var counterCollector = new CounterCollector();
-            var unityCounters = counterCollector.LoadUnityCounters();
-            var userCounters = counterCollector.LoadUserCounters();
+            using (ProfilerMarkers.k_LoadAllCounters.Auto())
+            {
+                ProfilerMarkers.k_FetchCounters.Begin();
+                var counterCollector = new CounterCollector();
+                var unityCounters = counterCollector.LoadUnityCounters();
+                var userCounters = counterCollector.LoadUserCounters();
+                ProfilerMarkers.k_FetchCounters.End();
 
-            // Format counter data for display in tree view.
-            m_TreeDataItems = new List<ITreeViewItem>();
-            TreeViewItemData.ResetNextId();
-            AddCounterGroupToTreeDataItems(unityCounters, "Unity", m_TreeDataItems);
-            AddCounterGroupToTreeDataItems(userCounters, "User", m_TreeDataItems);
+                // Format counter data for display in tree view.
+                ProfilerMarkers.k_FormatCountersForDisplay.Begin();
+                m_TreeDataItems = new List<ITreeViewItem>();
+                TreeViewItemData.ResetNextId();
+                AddCounterGroupToTreeDataItems(unityCounters, "Unity", m_TreeDataItems);
+                AddCounterGroupToTreeDataItems(userCounters, "User", m_TreeDataItems);
+                ProfilerMarkers.k_FormatCountersForDisplay.End();
 
-            // Update tree view UI.
-            m_AllCountersTreeView.rootItems = m_TreeDataItems;
-            m_AllCountersTreeView.Refresh();
+                // Update tree view UI.
+                ProfilerMarkers.k_RebuildCountersUI.Begin();
+                m_AllCountersTreeView.rootItems = m_TreeDataItems;
+                m_AllCountersTreeView.Refresh();
+                ProfilerMarkers.k_RebuildCountersUI.End();
+            }
         }
 
         void AddCounterGroupToTreeDataItems(SortedDictionary<string, List<string>> counterDictionary, string groupName, List<ITreeViewItem> treeDataItems)
@@ -227,8 +241,7 @@ namespace UnityEditor.Profiling.ModuleEditor
         void OnTitleChanged(ChangeEvent<string> evt)
         {
             var newValue = evt.newValue;
-            var textSize = TextElement.MeasureVisualElementTextSize(m_TitleTextField.visualInput, newValue, 0, VisualElement.MeasureMode.Undefined, 0, VisualElement.MeasureMode.Undefined, m_TitleTextField.textHandle);
-            if (textSize.x > k_MaximumTitleWidth)
+            if (newValue.Length > k_MaximumTitleLength)
             {
                 m_TitleTextField.SetValueWithoutNotify(evt.previousValue);
                 return;
@@ -330,7 +343,15 @@ namespace UnityEditor.Profiling.ModuleEditor
 
         void DeleteModule()
         {
-            onDeleteModule.Invoke(m_Module);
+            var title = LocalizationDatabase.GetLocalizedString("Delete Module");
+            var localizedMessageFormat = LocalizationDatabase.GetLocalizedString("Are you sure you want to delete the module '{0}'?");
+            var message = string.Format(localizedMessageFormat, m_Module.name);
+            var delete = LocalizationDatabase.GetLocalizedString("Delete");
+            var cancel = LocalizationDatabase.GetLocalizedString("Cancel");
+            if (EditorUtility.DisplayDialog(title, message, delete, cancel))
+            {
+                onDeleteModule.Invoke(m_Module);
+            }
         }
 
         void SelectAllChartCounters()
@@ -351,6 +372,14 @@ namespace UnityEditor.Profiling.ModuleEditor
         void OnListViewItemMoved(ItemMoveArgs<object> args)
         {
             m_Module.SetUpdatedEditedStateForOrderIndexChange();
+        }
+
+        static class ProfilerMarkers
+        {
+            public static readonly ProfilerMarker k_LoadAllCounters = new ProfilerMarker("ModuleEditor.LoadAllCounters");
+            public static readonly ProfilerMarker k_FetchCounters = new ProfilerMarker("ModuleEditor.FetchCounters");
+            public static readonly ProfilerMarker k_FormatCountersForDisplay = new ProfilerMarker("ModuleEditor.FormatCountersForDisplay");
+            public static readonly ProfilerMarker k_RebuildCountersUI = new ProfilerMarker("ModuleEditor.RebuildCountersUI");
         }
 
         class TreeViewItemData : TreeViewItem<string>

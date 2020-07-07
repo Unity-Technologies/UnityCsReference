@@ -72,7 +72,7 @@ namespace UnityEditor.PackageManager.UI
             importButtonContainer.Clear();
             samplesListLowWidth.Clear();
 
-            var samples = m_PackageDatabase.GetSamples(version);
+            var samples = version.isInstalled ? m_PackageDatabase.GetSamples(version) : Enumerable.Empty<Sample>();
             if (samples?.Any() != true)
             {
                 UIUtils.SetElementDisplay(this, false);

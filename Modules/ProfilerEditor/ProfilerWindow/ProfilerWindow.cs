@@ -1264,6 +1264,13 @@ namespace UnityEditor
             PersistDynamicModulesToEditorPrefs();
             UpdateModules();
             Repaint();
+
+            if (ModuleEditorWindow.TryGetOpenInstance(out var moduleEditorWindow))
+            {
+                moduleEditorWindow.Close();
+                moduleEditorWindow = ModuleEditorWindow.Present(m_Modules);
+                moduleEditorWindow.onChangesConfirmed += OnModuleEditorChangesConfirmed;
+            }
         }
 
         void OnModuleEditorChangesConfirmed(ReadOnlyCollection<ModuleData> modules, ReadOnlyCollection<ModuleData> deletedModules)
@@ -1333,8 +1340,7 @@ namespace UnityEditor
             int updatedModuleIndex = IndexOfModuleWithName(currentProfilerModuleName);
             if (updatedModuleIndex < 0)
             {
-                Debug.LogError($"Unable to update module '{currentProfilerModuleName}'.");
-                return;
+                throw new IndexOutOfRangeException($"Unable to update module '{currentProfilerModuleName}' at index '{updatedModuleIndex}'.");
             }
 
             var module = m_Modules[updatedModuleIndex];
@@ -1356,12 +1362,6 @@ namespace UnityEditor
         {
             var currentProfilerModuleName = moduleData.currentProfilerModuleName;
             int deletedModuleIndex = IndexOfModuleWithName(currentProfilerModuleName);
-            if (deletedModuleIndex < 0)
-            {
-                Debug.LogError($"Unable to delete module '{currentProfilerModuleName}'.");
-                return;
-            }
-
             DeleteProfilerModuleAtIndex(deletedModuleIndex);
         }
 
@@ -1369,8 +1369,7 @@ namespace UnityEditor
         {
             if (index < 0 || index >= m_Modules.Count)
             {
-                Debug.LogError($"Unable to delete module at index '{index}'.");
-                return;
+                throw new IndexOutOfRangeException($"Unable to delete module at index '{index}'.");
             }
 
             var moduleToDelete = m_Modules[index];

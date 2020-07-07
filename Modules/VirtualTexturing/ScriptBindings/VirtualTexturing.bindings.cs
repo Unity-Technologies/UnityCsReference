@@ -163,6 +163,13 @@ namespace UnityEngine.Rendering
             public uint sizeInMegaBytes;
         };
 
+        [NativeHeader("Modules/VirtualTexturing/Public/VirtualTexturingFilterMode.h")]
+        public enum FilterMode
+        {
+            Bilinear = 1,
+            Trilinear = 2
+        }
+
         [NativeHeader("Modules/VirtualTexturing/ScriptBindings/VirtualTexturing.bindings.h")]
         [StaticAccessor("VirtualTexturing::Streaming", StaticAccessorType.DoubleColon)]
         public static class Streaming
@@ -227,6 +234,7 @@ namespace UnityEngine.Rendering
                 public int maxActiveRequests;
                 public int tilesize;
                 public GraphicsFormat[] layers;
+                public FilterMode filterMode;
                 internal int borderSize;
                 internal int gpuGeneration;
                 internal int flags;
@@ -240,6 +248,14 @@ namespace UnityEngine.Rendering
                     if (layers == null || layers.Length > MaxNumLayers)
                     {
                         throw new ArgumentException($"layers is either invalid or has too many layers (maxNumLayers: {MaxNumLayers})");
+                    }
+                    if (gpuGeneration == 1 && filterMode != FilterMode.Bilinear)
+                    {
+                        throw new ArgumentException("Filter mode invalid for GPU PVT; only FilterMode.Bilinear is currently supported");
+                    }
+                    if (gpuGeneration == 0 && (filterMode != FilterMode.Bilinear) && (filterMode != FilterMode.Trilinear))
+                    {
+                        throw new ArgumentException("Filter mode invalid for CPU PVT; only FilterMode.Bilinear and FilterMode.Trilinear are currently supported");
                     }
                     GraphicsFormat[] supportedFormatsCPU =
                     {
@@ -461,9 +477,28 @@ namespace UnityEngine.Rendering
             [NativeHeader("Modules/VirtualTexturing/ScriptBindings/VirtualTexturing.bindings.h")]
             public struct CPUTextureStackRequestLayerParameters
             {
-                public int scanlineSize;
-                public int dataSize;
-                [NativeDisableUnsafePtrRestriction] unsafe public void* data;
+                internal int _scanlineSize;
+                internal int dataSize;
+                [NativeDisableUnsafePtrRestriction] unsafe internal void* data;
+
+                internal int _mipScanlineSize;
+                internal int mipDataSize;
+                [NativeDisableUnsafePtrRestriction] unsafe internal void* mipData;
+
+                // Accessors
+                public NativeArray<T> GetData<T>() where T : struct
+                {
+                    unsafe { return NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(data, dataSize, Allocator.None); }
+                }
+
+                public NativeArray<T> GetMipData<T>() where T : struct
+                {
+                    unsafe { return NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(mipData, mipDataSize, Allocator.None); }
+                }
+
+                public int scanlineSize => _scanlineSize;
+                public int mipScanlineSize => _mipScanlineSize;
+                public bool requiresCachedMip => mipDataSize != 0;
             }
 
             [StructLayout(LayoutKind.Sequential)]
@@ -525,40 +560,6 @@ namespace UnityEngine.Rendering
                             return layer3;
                     }
                     throw new IndexOutOfRangeException();
-                }
-
-                public void CopyPixelDataToLayer<T>(NativeArray<T> colorData, int layerIdx, GraphicsFormat format) where T : struct
-                {
-                    var layer = GetLayer(layerIdx);
-
-                    NativeArray<T> dstDataAsColor;
-                    AtomicSafetyHandle safety = AtomicSafetyHandle.Create();
-                    unsafe
-                    {
-                        dstDataAsColor = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(layer.data, layer.dataSize, Allocator.None);
-                        NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref dstDataAsColor, safety);
-                    }
-
-                    var dstWidth = layer.scanlineSize / UnsafeUtility.SizeOf<T>();
-                    int scanLines = height / (int)GraphicsFormatUtility.GetBlockHeight(format);
-                    int pitch = (width * (int)GraphicsFormatUtility.GetBlockSize(format)) / ((int)GraphicsFormatUtility.GetBlockWidth(format) * UnsafeUtility.SizeOf<T>());
-
-                    if (scanLines * pitch > colorData.Length)
-                    {
-                        throw new ArgumentException($"Could not copy from ColorData in layer {layer}, {format}. The Provided source array is smaller than the tile content.");
-                    }
-
-                    if ((scanLines - 1) * dstWidth + pitch > dstDataAsColor.Length)
-                    {
-                        throw new ArgumentException($"Trying to write outside of the layer {layer} data buffer bounds. Is the provided format {format} correct?");
-                    }
-
-                    for (int i = 0; i < scanLines; ++i)
-                    {
-                        NativeArray<T>.Copy(colorData, i * pitch, dstDataAsColor, i * dstWidth, pitch);
-                    }
-                    dstDataAsColor.Dispose();
-                    AtomicSafetyHandle.Release(safety);
                 }
             }
 

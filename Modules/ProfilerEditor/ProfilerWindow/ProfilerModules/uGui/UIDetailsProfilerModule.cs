@@ -26,6 +26,7 @@ namespace UnityEditorInternal.Profiling
 
         protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
         {
+            // [Coverity Defect 53724] Intentionally not calling the base class here to instantiate a custom chart type.
             m_Chart = new UISystemProfilerChart(m_ChartType, defaultChartScale, chartMaximumScaleInterpolationValue, m_ChartCounters.Count, name, m_IconName);
             return m_Chart;
         }

@@ -79,10 +79,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public ScriptCompilerOptions CompilerOptions { get; set; }
         public string GeneratedResponseFile { get; set; }
         public DirtySource DirtySource { get; set; }
+        // Indicates whether the assembly had compile errors on last compilation
+        public bool HasCompileErrors { get; set; }
+        internal TargetAssemblyType TargetAssemblyType { get; set; }
 
         public ScriptAssembly()
         {
             DirtySource = DirtySource.None;
+            CompilerOptions = new ScriptCompilerOptions();
         }
 
         public string FullPath { get { return AssetPath.Combine(OutputDirectory, Filename); } }

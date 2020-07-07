@@ -187,6 +187,7 @@ namespace UnityEditor
             public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code", "Allow compilation of unsafe code for predefined assemblies (Assembly-CSharp.dll, etc.)");
             public static readonly GUIContent useDeterministicCompilation = EditorGUIUtility.TrTextContent("Use Deterministic Compilation", "Compile with -deterministic compilation flag");
             public static readonly GUIContent useReferenceAssembclies = EditorGUIUtility.TrTextContent("Use Roslyn Reference Assemblies", "Skips compilation of assembly references if the metadata of the modified assembly does not change.");
+            public static readonly GUIContent enableRoslynAnalyzers = EditorGUIUtility.TrTextContent("Enable Roslyn Analyzers", "User-written scripts will be compiled with Roslyn analyzer DLLs that are present in the project.");
             public static readonly GUIContent activeInputHandling = EditorGUIUtility.TrTextContent("Active Input Handling*");
             public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager (Old)"), EditorGUIUtility.TrTextContent("Input System Package (New)"), EditorGUIUtility.TrTextContent("Both") };
             public static readonly GUIContent normalMapEncodingLabel = EditorGUIUtility.TrTextContent("Normal Map Encoding");
@@ -368,6 +369,7 @@ namespace UnityEditor
         // Scripting
         SerializedProperty m_UseDeterministicCompilation;
         SerializedProperty m_UseReferenceAssemblies;
+        SerializedProperty m_EnableRoslynAnalyzers;
 
         // Localization Cache
         string m_LocalizedTargetName;
@@ -477,6 +479,7 @@ namespace UnityEditor
             m_GCIncremental                 = FindPropertyAssert("gcIncremental");
             m_UseDeterministicCompilation = FindPropertyAssert("useDeterministicCompilation");
             m_UseReferenceAssemblies = FindPropertyAssert("useReferenceAssemblies");
+            m_EnableRoslynAnalyzers = FindPropertyAssert("enableRoslynAnalyzers");
 
             m_DefaultScreenWidth            = FindPropertyAssert("defaultScreenWidth");
             m_DefaultScreenHeight           = FindPropertyAssert("defaultScreenHeight");
@@ -2424,6 +2427,15 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck())
                 {
                     PlayerSettings.UseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
+                }
+            }
+
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(m_EnableRoslynAnalyzers, SettingsContent.enableRoslynAnalyzers);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    PlayerSettings.EnableRoslynAnalyzers = m_EnableRoslynAnalyzers.boolValue;
                 }
             }
 

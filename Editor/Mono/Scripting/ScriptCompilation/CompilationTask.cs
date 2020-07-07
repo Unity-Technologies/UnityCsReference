@@ -10,6 +10,7 @@ using System.Linq;
 using UnityEditor.Scripting.Compilers;
 using UnityEngine.Profiling;
 using Unity.Scripting.Compilation;
+using UnityEngine;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -17,7 +18,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
     enum CompilationTaskOptions
     {
         None = 0,
-        StopOnFirstError = (1 << 0)
+        StopOnFirstError = (1 << 0),
+        RoslynAnalyzers = 1 << 1
     }
 
     // CompilationTask represents one complete rebuild of all the ScriptAssembly's that are passed in the constructor.
@@ -30,11 +32,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             Running = 1,
             Finished = 2
         }
-
-        List<ScriptAssembly> pendingAssemblies;
         HashSet<ScriptAssembly> codeGenAssemblies;
         HashSet<ScriptAssembly> compiledCodeGenAssemblies = new HashSet<ScriptAssembly>();
         HashSet<ScriptAssembly> notCompiledCodeGenAssemblies = new HashSet<ScriptAssembly>();
+        HashSet<ScriptAssembly> pendingAssemblies;
         Dictionary<ScriptAssembly, CompilerMessage[]> compiledAssemblies = new Dictionary<ScriptAssembly, CompilerMessage[]>();
         Dictionary<ScriptAssembly, CompilerMessage[]> processedAssemblies = new Dictionary<ScriptAssembly, CompilerMessage[]>();
         Dictionary<ScriptAssembly, ScriptCompilerBase> compilerTasks = new Dictionary<ScriptAssembly, ScriptCompilerBase>();
@@ -80,6 +81,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
+        public bool TryRemovePendingAssembly(string assemblyName)
+        {
+            return pendingAssemblies.RemoveWhere(p => string.Equals(p.Filename, assemblyName, StringComparison.Ordinal)) == 1;
+        }
+
         public CompilationTask(ScriptAssembly[] scriptAssemblies,
                                ScriptAssembly[] codeGenAssemblies,
                                string buildOutputDirectory,
@@ -91,7 +97,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                                CompilerFactory compilerFactory)
         {
             this.scriptAssemblies = scriptAssemblies;
-            pendingAssemblies = new List<ScriptAssembly>();
+            pendingAssemblies = new HashSet<ScriptAssembly>();
 
             if (codeGenAssemblies != null)
                 this.codeGenAssemblies = new HashSet<ScriptAssembly>(codeGenAssemblies);
@@ -101,9 +107,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // Try to queue codegen assemblies for compilation first,
             // so they get compiled as soon as possible.
             if (codeGenAssemblies != null && codeGenAssemblies.Count() > 0)
-                pendingAssemblies.AddRange(codeGenAssemblies);
+                pendingAssemblies.UnionWith(codeGenAssemblies);
 
-            pendingAssemblies.AddRange(scriptAssemblies);
+            pendingAssemblies.UnionWith(scriptAssemblies);
 
             CompileErrors = false;
             this.buildOutputDirectory = buildOutputDirectory;
@@ -116,12 +122,29 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             try
             {
-                logWriter = File.CreateText(LogFilePath);
+                if ((this.compilationTaskOptions & CompilationTaskOptions.RoslynAnalyzers) == 0)
+                {
+                    logWriter = File.CreateText(LogFilePath);
+                }
             }
             catch (Exception e)
             {
                 Console.WriteLine($"Could not create text file {LogFilePath}\n{e}");
             }
+        }
+
+        public static CompilationTask RoslynAnalysis(ScriptAssembly[] scriptAssemblies, string buildOutputDirectory)
+        {
+            return new CompilationTask(
+                scriptAssemblies,
+                codeGenAssemblies: null,
+                buildOutputDirectory: buildOutputDirectory,
+                context: "Asynchronous Compilation With Roslyn Analyzers",
+                EditorScriptCompilationOptions.BuildingForEditor,
+                CompilationTaskOptions.StopOnFirstError | CompilationTaskOptions.RoslynAnalyzers,
+                maxConcurrentCompilers: SystemInfo.processorCount,
+                ilPostProcessing: null,
+                new CompilerFactory(new CompilerFactoryHelper()));
         }
 
         public ScriptAssembly[] ScriptAssemblies
@@ -252,12 +275,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     var messages = compiler.GetCompilerMessages();
                     var messagesList = messages.ToList();
 
-                    var assemblyHasCompileErrors = messagesList.Any(m => m.type == CompilerMessageType.Error);
                     compiledAssemblies.Add(assembly, messagesList.ToArray());
 
                     bool havePostProcessors = ilPostProcessing != null && ilPostProcessing.HasPostProcessors;
                     bool isCodeGenAssembly = codeGenAssemblies.Contains(assembly);
                     bool hasCompileErrors = messagesList.Any(m => m.type == CompilerMessageType.Error);
+
+                    assembly.HasCompileErrors = hasCompileErrors;
 
                     if (isCodeGenAssembly)
                     {
@@ -302,7 +326,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     }
 
                     if (!CompileErrors)
-                        CompileErrors = assemblyHasCompileErrors;
+                        CompileErrors = assembly.HasCompileErrors;
 
                     try
                     {
@@ -455,6 +479,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 var messagesList = postProcessorTask.GetCompilerMessages();
 
+                postProcessorTask.Assembly.HasCompileErrors = messagesList.Any(m => m.type == CompilerMessageType.Error);
+
                 // OnCompilationFinished callbacks might add more compiler messages
                 OnCompilationFinished?.Invoke(postProcessorTask.Assembly, messagesList);
                 processedAssemblies.Add(postProcessorTask.Assembly, messagesList.ToArray());
@@ -511,7 +537,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             foreach (var compilerTask in compilerTasks)
             {
                 var compilerAssembly = compilerTask.Key;
-
                 if (compilerAssembly.ScriptAssemblyReferences.Contains(assembly))
                     return true;
             }
@@ -688,6 +713,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             try
             {
+                if ((this.compilationTaskOptions & CompilationTaskOptions.RoslynAnalyzers) != 0)
+                {
+                    return;
+                }
+
                 if (startInfo == null)
                 {
                     logWriter.WriteLine(message);

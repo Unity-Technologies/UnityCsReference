@@ -18,6 +18,9 @@ namespace UnityEditor.PackageManager
         [FreeFunction("PackageManager::Add::StartOperation")]
         private static extern NativeStatusCode Add([Out] out long operationId, string packageId);
 
+        [FreeFunction("PackageManager::AddScopedRegistry::StartOperation")]
+        private static extern NativeStatusCode AddScopedRegistry([Out] out long operationId, string name, string url, string[] scopes);
+
         [FreeFunction("PackageManager::Embed::StartOperation")]
         private static extern NativeStatusCode Embed([Out] out long operationId, string packageId);
 
@@ -39,6 +42,9 @@ namespace UnityEditor.PackageManager
         [FreeFunction("PackageManager::Remove::StartOperation")]
         private static extern NativeStatusCode Remove([Out] out long operationId, string packageId);
 
+        [FreeFunction("PackageManager::RemoveScopedRegistry::StartOperation")]
+        private static extern NativeStatusCode RemoveScopedRegistry([Out] out long operationId, string registryName);
+
         [FreeFunction("PackageManager::ResetToEditorDefaults::StartOperation")]
         private static extern NativeStatusCode ResetToEditorDefaults([Out] out long operationId);
 
@@ -47,6 +53,9 @@ namespace UnityEditor.PackageManager
 
         [FreeFunction("PackageManager::Search::StartOperation")]
         private static extern NativeStatusCode Search([Out] out long operationId, SearchOptions options);
+
+        [FreeFunction("PackageManager::UpdateScopedRegistry::StartOperation")]
+        private static extern NativeStatusCode UpdateScopedRegistry([Out] out long operationId, string registryName, UpdateScopedRegistryOptions options);
     }
 
     [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]

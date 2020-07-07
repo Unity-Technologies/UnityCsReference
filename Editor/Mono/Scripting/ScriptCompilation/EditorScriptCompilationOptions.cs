@@ -21,5 +21,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         BuildingForHeadlessPlayer = 1 << 7,
         BuildingUseReferenceAssemblies = 1 << 8,
         BuildingUseDeterministicCompilation = 1 << 9,
+        BuildingWithRoslynAnalysis = 1 << 10,
     }
 }

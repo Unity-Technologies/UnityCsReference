@@ -26,6 +26,13 @@ namespace UnityEditor.PackageManager.Requests
         private static extern PackageInfo GetOperationData(long operationId);
     }
 
+    internal partial class AddScopedRegistryRequest
+    {
+        [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
+        [StaticAccessor("PackageManager::AddScopedRegistry", StaticAccessorType.DoubleColon)]
+        private static extern RegistryInfo GetOperationData(long operationId);
+    }
+
     public partial class EmbedRequest
     {
         [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
@@ -73,5 +80,12 @@ namespace UnityEditor.PackageManager.Requests
         [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
         [StaticAccessor("PackageManager::GetPackageInfo", StaticAccessorType.DoubleColon)]
         private static extern PackageInfo[] GetOperationData(long operationId);
+    }
+
+    internal partial class UpdateScopedRegistryRequest
+    {
+        [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
+        [StaticAccessor("PackageManager::UpdateScopedRegistry", StaticAccessorType.DoubleColon)]
+        private static extern RegistryInfo GetOperationData(long operationId);
     }
 }

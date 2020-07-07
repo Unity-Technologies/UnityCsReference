@@ -8,11 +8,12 @@ using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using UnityEngine.Scripting.APIUpdating;
 using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
+using UnityEditor.Experimental;
 
-
-namespace UnityEditor.Experimental.AssetImporters
+namespace UnityEditor.AssetImporters
 {
     /// Universal structure that holds all the data relevant to importing an asset, including temporary data that needs to be shared across stages that make on any given importer's pipeline.
     ///
@@ -21,6 +22,7 @@ namespace UnityEditor.Experimental.AssetImporters
     /// various parts that make up an importers pipeline. This container simply transports information from one "stage" to the other. Each stage is free to add/delete/alter the content of the container
     [RequiredByNativeCode]
     [NativeHeader("Editor/Src/AssetPipeline/AssetImportContext.h")]
+    [MovedFrom("UnityEditor.Experimental.AssetImporters")]
     public class AssetImportContext
     {
         // The bindings generator is setting the instance pointer in this field

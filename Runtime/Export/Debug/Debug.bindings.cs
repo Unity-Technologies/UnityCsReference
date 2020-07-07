@@ -146,6 +146,25 @@ namespace UnityEngine
             unityLogger.LogFormat(LogType.Error, context, format, args);
         }
 
+        internal static void LogError(string message, string fileName, int lineNumber, int columnNumber)
+        {
+            LogCompilerError(message, fileName, lineNumber, columnNumber);
+        }
+
+        internal static void LogWarning(string message, string fileName, int lineNumber, int columnNumber)
+        {
+            LogCompilerWarning(message, fileName, lineNumber, columnNumber);
+        }
+
+        internal static void LogInfo(string message, string fileName, int lineNumber, int columnNumber)
+        {
+            LogInformation(message, fileName, lineNumber, columnNumber);
+        }
+
+        private static extern void LogCompilerWarning(string message, string fileName, int lineNumber, int columnNumber);
+        private static extern void LogCompilerError(string message, string fileName, int lineNumber, int columnNumber);
+        private static extern void LogInformation(string message, string fileName, int lineNumber, int columnNumber);
+
         // Clears errors from the developer console.
         public static extern void ClearDeveloperConsole();
 

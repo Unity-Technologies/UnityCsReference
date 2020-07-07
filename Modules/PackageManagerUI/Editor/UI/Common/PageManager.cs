@@ -569,7 +569,7 @@ namespace UnityEditor.PackageManager.UI
             m_PackageFiltering.onFilterTabChanged += OnFilterChanged;
             m_PackageFiltering.onSearchTextChanged += OnSearchTextChanged;
 
-            m_PackageManagerPrefs.onShowDependenciesChanged += OnShowDependenciesChanged;
+            m_SettingsProxy.onEnablePackageDependenciesChanged += OnShowDependenciesChanged;
 
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
             m_Selection.onSelectionChanged += OnEditorSelectionChanged;
@@ -591,7 +591,7 @@ namespace UnityEditor.PackageManager.UI
             m_PackageFiltering.onFilterTabChanged -= OnFilterChanged;
             m_PackageFiltering.onSearchTextChanged -= OnSearchTextChanged;
 
-            m_PackageManagerPrefs.onShowDependenciesChanged -= OnShowDependenciesChanged;
+            m_SettingsProxy.onEnablePackageDependenciesChanged -= OnShowDependenciesChanged;
 
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
             m_Selection.onSelectionChanged -= OnEditorSelectionChanged;

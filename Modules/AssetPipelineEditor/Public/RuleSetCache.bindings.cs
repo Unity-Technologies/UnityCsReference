@@ -14,22 +14,38 @@ namespace UnityEditor
     [ExcludeFromPreset]
     internal sealed class RuleSetFileCache
     {
-        [FreeFunction("GetAllRuleSetFilePaths")]
-        internal static extern string[] GetAllPaths();
+        [FreeFunction("GetAllRuleSetFilePaths")] internal static extern string[] GetAllPaths();
+        [FreeFunction] internal static extern string GetRuleSetFilePathInRootFolder(string ruleSetFileNameWithoutExtension);
+        [FreeFunction] internal static extern string GetRuleSetFilePathForScriptAssembly(string scriptAssemblyOriginPath);
 
         internal static string GetPathForAssembly(string scriptAssemblyOriginPath)
         {
-            if (Path.IsPathRooted(scriptAssemblyOriginPath)
-                || !scriptAssemblyOriginPath.StartsWith("assets\\", StringComparison.InvariantCultureIgnoreCase)
-                && !scriptAssemblyOriginPath.StartsWith("assets/", StringComparison.InvariantCultureIgnoreCase))
+            if (String.IsNullOrEmpty(scriptAssemblyOriginPath))
             {
-                throw new ArgumentException($"{nameof(scriptAssemblyOriginPath)} must be relative to the project directory and inside the Assets folder.");
+                return default;
             }
-            scriptAssemblyOriginPath = scriptAssemblyOriginPath.ConvertSeparatorsToUnity().TrimTrailingSlashes();
-            return GetPathForScriptAssembly(scriptAssemblyOriginPath);
-        }
 
-        [FreeFunction("GetRuleSetFilePath")]
-        internal static extern string GetPathForScriptAssembly(string scriptAssemblyOriginPath);
+            if (Path.IsPathRooted(scriptAssemblyOriginPath))
+            {
+                scriptAssemblyOriginPath = Paths.GetPathRelativeToProjectDirectory(scriptAssemblyOriginPath);
+
+                if (String.IsNullOrEmpty(scriptAssemblyOriginPath))
+                {
+                    throw new ArgumentException($"'{nameof(scriptAssemblyOriginPath)}' must be either the Assets folder itself, or nested within it. " +
+                        "You may provide either the full path, or the path relative to the project directory, as an argument to this method.");
+                }
+            }
+
+            string formattedPath = scriptAssemblyOriginPath.ConvertSeparatorsToUnity().TrimTrailingSlashes();
+
+            if (!formattedPath.StartsWith("assets", StringComparison.InvariantCultureIgnoreCase))
+            {
+                throw new ArgumentException($"'{nameof(scriptAssemblyOriginPath)}' must be either the Assets folder itself, or nested within it. " +
+                    "You may provide either the full path, or the path relative to the project directory, as an argument to this method.");
+            }
+
+            string ruleSetFilePath = GetRuleSetFilePathForScriptAssembly(formattedPath);
+            return String.IsNullOrEmpty(ruleSetFilePath) ? GetRuleSetFilePathInRootFolder("Default") : ruleSetFilePath;
+        }
     }
 }

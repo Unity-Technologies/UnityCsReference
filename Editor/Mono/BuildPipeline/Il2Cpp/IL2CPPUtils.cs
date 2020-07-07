@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Runtime.InteropServices;
+using Unity.IL2CPP.BeeSettings;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Player;
@@ -79,16 +80,16 @@ namespace UnityEditorInternal
             return builder;
         }
 
-        internal static IL2CPPBuilder RunCompileAndLink(string tempFolder, string stagingAreaData, IIl2CppPlatformProvider platformProvider, Action<string> modifyOutputBeforeCompile, RuntimeClassRegistry runtimeClassRegistry)
+        internal static IL2CPPBuilder RunCompileAndLink(string tempFolder, string stagingAreaData, IIl2CppPlatformProvider platformProvider, Action<string> modifyOutputBeforeCompile, RuntimeClassRegistry runtimeClassRegistry, string il2cppBuildCacheSource)
         {
             var builder = new IL2CPPBuilder(tempFolder, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(platformProvider.target)));
-            builder.RunCompileAndLink();
+            builder.RunCompileAndLink(il2cppBuildCacheSource);
             return builder;
         }
 
         internal static void CopyEmbeddedResourceFiles(string tempFolder, string destinationFolder)
         {
-            foreach (var file in Directory.GetFiles(Paths.Combine(IL2CPPBuilder.GetCppOutputPath(tempFolder), "Data", "Resources")).Where(f => f.EndsWith("-resources.dat")))
+            foreach (var file in Directory.GetFiles(Paths.Combine(IL2CPPBuilder.GetCppOutputDirectory(tempFolder), "Data", "Resources")).Where(f => f.EndsWith("-resources.dat")))
                 File.Copy(file, Paths.Combine(destinationFolder, Path.GetFileName(file)), true);
         }
 
@@ -107,13 +108,13 @@ namespace UnityEditorInternal
 
         internal static void CopyMetadataFiles(string tempFolder, string destinationFolder)
         {
-            foreach (var file in Directory.GetFiles(Paths.Combine(IL2CPPBuilder.GetCppOutputPath(tempFolder), "Data", "Metadata")).Where(f => f.EndsWith(BinaryMetadataSuffix)))
+            foreach (var file in Directory.GetFiles(Paths.Combine(IL2CPPBuilder.GetCppOutputDirectory(tempFolder), "Data", "Metadata")).Where(f => f.EndsWith(BinaryMetadataSuffix)))
                 File.Copy(file, Paths.Combine(destinationFolder, Path.GetFileName(file)), true);
         }
 
         internal static void CopyConfigFiles(string tempFolder, string destinationFolder)
         {
-            var sourceFolder = Paths.Combine(IL2CPPBuilder.GetCppOutputPath(tempFolder), "Data", "etc");
+            var sourceFolder = Paths.Combine(IL2CPPBuilder.GetCppOutputDirectory(tempFolder), "Data", "etc");
             FileUtil.CopyDirectoryRecursive(sourceFolder, destinationFolder);
         }
 
@@ -351,7 +352,8 @@ namespace UnityEditorInternal
 
         public void Run()
         {
-            var outputDirectory = GetCppOutputDirectoryInStagingArea();
+            var buildCacheDirectory = GetCppOutputDirectory(m_PlatformProvider.il2cppBuildCacheDirectory);
+            var additionalCppFilesDirectory = GetAdditionalCppFilesDirectory(m_PlatformProvider.il2cppBuildCacheDirectory);
             var managedDir = Path.GetFullPath(Path.Combine(m_StagingAreaData, "Managed"));
 
             // Make all assemblies in Staging/Managed writable for stripping.
@@ -371,75 +373,63 @@ namespace UnityEditorInternal
                 managedStrippingLevel = ManagedStrippingLevel.Low;
             AssemblyStripper.StripAssemblies(managedDir, m_PlatformProvider.CreateUnityLinkerPlatformProvider(), m_PlatformProvider, m_RuntimeClassRegistry, managedStrippingLevel);
 
-            // The IL2CPP editor integration here is responsible to give il2cpp.exe an empty directory to use.
-            FileUtil.CreateOrCleanDirectory(outputDirectory);
+            Directory.CreateDirectory(m_TempFolder);
+            Directory.CreateDirectory(buildCacheDirectory);
+
+            // Need to clean out the AdditionalCppFiles directory because a platform could do pretty much anything
+            // in a "modifyOutputBeforeCompile" callback method, and so we need to provide a fresh directory. Bee will
+            // still check the hash of these files before doing a build, so writing them again won't cause a recompile.
+            if (Directory.Exists(additionalCppFilesDirectory))
+                Directory.Delete(additionalCppFilesDirectory, true);
+            Directory.CreateDirectory(additionalCppFilesDirectory);
 
             if (m_ModifyOutputBeforeCompile != null)
-                m_ModifyOutputBeforeCompile(outputDirectory);
+                m_ModifyOutputBeforeCompile(additionalCppFilesDirectory);
 
             var pipelineData = new Il2CppBuildPipelineData(m_PlatformProvider.target, managedDir);
 
-            ConvertPlayerDlltoCpp(pipelineData, outputDirectory, managedDir, m_PlatformProvider.supportsManagedDebugging);
-
-            var compiler = m_PlatformProvider.CreateNativeCompiler();
-            if (compiler != null && m_PlatformProvider.CreateIl2CppNativeCodeBuilder() == null)
-            {
-                var nativeLibPath = OutputFileRelativePath();
-
-                var includePaths = new List<string>(m_PlatformProvider.includePaths);
-                includePaths.Add(outputDirectory);
-
-                m_PlatformProvider.CreateNativeCompiler().CompileDynamicLibrary(
-                    nativeLibPath,
-                    NativeCompiler.AllSourceFilesIn(outputDirectory),
-                    includePaths,
-                    m_PlatformProvider.libraryPaths,
-                    new string[0]);
-            }
+            ConvertPlayerDlltoCpp(pipelineData, buildCacheDirectory, m_PlatformProvider.supportsManagedDebugging);
         }
 
-        public void RunCompileAndLink()
+        public void RunCompileAndLink(string il2cppBuildCacheSource)
         {
             var il2CppNativeCodeBuilder = m_PlatformProvider.CreateIl2CppNativeCodeBuilder();
             if (il2CppNativeCodeBuilder != null)
             {
                 Il2CppNativeCodeBuilderUtils.ClearAndPrepareCacheDirectory(il2CppNativeCodeBuilder);
 
+                var buildCacheNativeOutputFile = Path.Combine(GetNativeOutputDirectory(m_PlatformProvider.il2cppBuildCacheDirectory), m_PlatformProvider.nativeLibraryFileName);
                 var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
                 var compilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup);
-                var arguments = Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, OutputFileRelativePath(), m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, compilerConfiguration).ToList();
+                var arguments = Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, buildCacheNativeOutputFile, m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, compilerConfiguration).ToList();
 
                 var additionalArgs = IL2CPPUtils.GetAdditionalArguments();
                 if (!string.IsNullOrEmpty(additionalArgs))
                     arguments.Add(additionalArgs);
 
                 arguments.Add($"--map-file-parser={CommandLineFormatter.PrepareFileName(GetMapFileParserPath())}");
-                arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(GetShortPathName(Path.GetFullPath(GetCppOutputDirectoryInStagingArea())))}");
+                arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(GetShortPathName(Path.GetFullPath(GetCppOutputDirectory(il2cppBuildCacheSource))))}");
                 arguments.Add(string.Format("--dotnetprofile=\"{0}\"", IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))));
                 arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
                 Action<ProcessStartInfo> setupStartInfo = il2CppNativeCodeBuilder.SetupStartInfo;
-                var managedDir = Path.GetFullPath(Path.Combine(m_StagingAreaData, "Managed"));
 
-                RunIl2CppWithArguments(arguments, setupStartInfo, managedDir);
+                RunIl2CppWithArguments(arguments, setupStartInfo);
             }
         }
 
-        private string OutputFileRelativePath()
+        private static string GetNativeOutputDirectory(string directory)
         {
-            var nativeLibPath = Path.Combine(GetShortPathName(m_StagingAreaData), "Native");
-            Directory.CreateDirectory(nativeLibPath);
-            nativeLibPath = Path.Combine(nativeLibPath, m_PlatformProvider.nativeLibraryFileName);
-            return nativeLibPath;
+            return Path.Combine(directory, "Native");
         }
 
-        public string GetCppOutputDirectoryInStagingArea()
+        public static string GetAdditionalCppFilesDirectory(string directory)
         {
-            return GetCppOutputPath(m_TempFolder);
+            return Path.Combine(directory, "additionalCppFiles");
         }
 
-        public static string GetCppOutputPath(string tempFolder)
+        public static string GetCppOutputDirectory(string directory)
         {
-            return Path.Combine(tempFolder, "il2cppOutput");
+            return Path.Combine(directory, "il2cppOutput");
         }
 
         public static string GetMapFileParserPath()
@@ -460,7 +450,7 @@ namespace UnityEditorInternal
                 processor.OnBeforeConvertRun(report, data);
         }
 
-        private void ConvertPlayerDlltoCpp(Il2CppBuildPipelineData data, string outputDirectory, string workingDirectory, bool platformSupportsManagedDebugging)
+        private void ConvertPlayerDlltoCpp(Il2CppBuildPipelineData data, string outputDirectory, bool platformSupportsManagedDebugging)
         {
             ProcessBuildPipelineOnBeforeConvertRun(m_PlatformProvider.buildReport, data);
 
@@ -494,10 +484,15 @@ namespace UnityEditorInternal
             var il2CppNativeCodeBuilder = m_PlatformProvider.CreateIl2CppNativeCodeBuilder();
             if (il2CppNativeCodeBuilder != null)
             {
+                var buildCacheNativeOutputFile = Path.Combine(GetNativeOutputDirectory(m_PlatformProvider.il2cppBuildCacheDirectory), m_PlatformProvider.nativeLibraryFileName);
                 var compilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup);
                 Il2CppNativeCodeBuilderUtils.ClearAndPrepareCacheDirectory(il2CppNativeCodeBuilder);
-                arguments.AddRange(Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, OutputFileRelativePath(), m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, compilerConfiguration));
+                arguments.AddRange(Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, buildCacheNativeOutputFile, m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, compilerConfiguration));
             }
+
+            // Additional files can take any form, depending on platform, so pass anything in the additional files directory
+            foreach (var additionalCppFile in Directory.GetFiles(GetAdditionalCppFilesDirectory(m_PlatformProvider.il2cppBuildCacheDirectory)))
+                arguments.Add($"--additional-cpp={CommandLineFormatter.PrepareFileName(GetShortPathName(Path.GetFullPath(additionalCppFile)))}");
 
             arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
             foreach (var buildingArgument in IL2CPPUtils.GetBuildingIL2CPPArguments(m_PlatformProvider, buildTargetGroup))
@@ -546,29 +541,53 @@ namespace UnityEditorInternal
                 arguments.Add($"--extra-types-file={CommandLineFormatter.PrepareFileName(tempFile)}");
             }
 
-            RunIl2CppWithArguments(arguments, setupStartInfo, workingDirectory);
+            RunIl2CppWithArguments(arguments, setupStartInfo);
         }
 
-        private void RunIl2CppWithArguments(List<string> arguments, Action<ProcessStartInfo> setupStartInfo, string workingDirectory)
+        private void RunIl2CppWithArguments(List<string> arguments, Action<ProcessStartInfo> setupStartInfo)
         {
             var args = arguments.Aggregate(String.Empty, (current, arg) => current + arg + " ");
 
-            var useNetCore = ShouldUseIl2CppCore();
-            string il2CppPath = useNetCore ? GetIl2CppCoreExe() : GetIl2CppExe();
-
-            Console.WriteLine("Invoking il2cpp with arguments: " + args);
-
+            BeeSettingsIl2Cpp il2cppSettings = new BeeSettingsIl2Cpp();
             CompilerOutputParserBase il2cppOutputParser = m_PlatformProvider.CreateIl2CppOutputParser();
             if (il2cppOutputParser == null)
                 il2cppOutputParser = new Il2CppOutputParser();
 
-            if (useNetCore)
-            {
-                Runner.RunNetCoreProgram(il2CppPath, args, workingDirectory, il2cppOutputParser, setupStartInfo);
-            }
+            if (ShouldUseIl2CppCore())
+                il2cppSettings.ToolPath = GetIl2CppCoreExe();
+            else if (Application.platform == RuntimePlatform.WindowsEditor)
+                il2cppSettings.ToolPath = GetIl2CppExe();
             else
+                il2cppSettings.ToolPath = $"{GetMonoBleedingEdgeExe()} {GetIl2CppExe()}";
+
+            il2cppSettings.Arguments.AddRange(arguments);
+            il2cppSettings.Serialize(m_PlatformProvider.il2cppBuildCacheDirectory);
+
+            FileUtil.CopyDirectoryRecursive(GetIl2CppBeeArtifactsDirectory(), $"{m_PlatformProvider.il2cppBuildCacheDirectory}/artifacts", true);
+            void SetupTundraAndStartInfo(ProcessStartInfo startInfo)
             {
-                Runner.RunManagedProgram(il2CppPath, args, workingDirectory, il2cppOutputParser, setupStartInfo);
+                if (setupStartInfo != null)
+                    setupStartInfo(startInfo);
+                startInfo.EnvironmentVariables.Add("TUNDRA_EXECUTABLE", GetIl2CppTundraExe());
+                startInfo.EnvironmentVariables.Add("MONO_EXECUTABLE", GetMonoBleedingEdgeExe());
+            }
+
+            Console.WriteLine("Invoking il2cpp with arguments: " + args);
+            Runner.RunManagedProgram(GetIl2CppBeeExe(), "--useprebuiltbuildprogram", m_PlatformProvider.il2cppBuildCacheDirectory, il2cppOutputParser, SetupTundraAndStartInfo);
+
+            // Copy IL2CPP outputs to StagingArea
+            var nativeOutputDirectoryInBuildCache = GetNativeOutputDirectory(m_PlatformProvider.il2cppBuildCacheDirectory);
+            if (Directory.Exists(nativeOutputDirectoryInBuildCache))
+                FileUtil.CopyDirectoryRecursive(nativeOutputDirectoryInBuildCache, GetNativeOutputDirectory(m_StagingAreaData));
+
+            // Copy Generated C++ files and Data directory to StagingArea.
+            // This directory will only be present when using "--convert-to-cpp" with IL2CPP.
+            var cppOutputDirectoryInBuildCache = GetCppOutputDirectory(m_PlatformProvider.il2cppBuildCacheDirectory);
+            var cppOutputDirectoryInStagingArea = GetCppOutputDirectory(m_TempFolder);
+            if (Directory.Exists(cppOutputDirectoryInBuildCache))
+            {
+                FileUtil.CreateOrCleanDirectory(cppOutputDirectoryInStagingArea);
+                FileUtil.CopyDirectoryRecursive(cppOutputDirectoryInBuildCache, cppOutputDirectoryInStagingArea);
             }
         }
 
@@ -580,6 +599,34 @@ namespace UnityEditorInternal
         private string GetIl2CppCoreExe()
         {
             return IL2CPPUtils.GetIl2CppFolder() + "/build/deploy/netcoreapp3.0/il2cpp" + (Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "");
+        }
+
+        private string GetIl2CppBeeExe()
+        {
+            return IL2CPPUtils.GetIl2CppFolder() + "/BeeRunner/bee.exe";
+        }
+
+        private string GetIl2CppBeeArtifactsDirectory()
+        {
+            return IL2CPPUtils.GetIl2CppFolder() + "/BeeRunner/artifacts";
+        }
+
+        private string GetIl2CppTundraExe()
+        {
+            if (Application.platform == RuntimePlatform.OSXEditor)
+                return IL2CPPUtils.GetIl2CppFolder() + "/BeeRunner/tundra/tundra-mac-x64/tundra2";
+            if (Application.platform == RuntimePlatform.LinuxEditor)
+                return IL2CPPUtils.GetIl2CppFolder() + "/BeeRunner/tundra/tundra-linux-x64/tundra2";
+
+            return IL2CPPUtils.GetIl2CppFolder() + "/BeeRunner/tundra/tundra-win-x64/tundra2.exe";
+        }
+
+        private string GetMonoBleedingEdgeExe()
+        {
+            var path = MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge");
+            path = Path.Combine(path, "bin");
+            path = Path.Combine(path, "mono");
+            return path;
         }
 
         private bool ShouldUseIl2CppCore()
@@ -627,6 +674,7 @@ namespace UnityEditorInternal
         bool allowDebugging { get; }
         bool scriptsOnlyBuild { get; }
         string baselibLibraryDirectory { get; }
+        string il2cppBuildCacheDirectory { get; }
 
         BuildReport buildReport { get; }
         string[] includePaths { get; }
@@ -730,6 +778,11 @@ namespace UnityEditorInternal
         public string baselibLibraryDirectory
         {
             get { return _baselibLibraryDirectory; }
+        }
+
+        public virtual string il2cppBuildCacheDirectory
+        {
+            get { return $"Library/Il2cppBuildCache/{target}"; }
         }
 
         public BuildReport buildReport { get; private set; }

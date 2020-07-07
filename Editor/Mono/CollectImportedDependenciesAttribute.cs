@@ -8,11 +8,13 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine.Scripting;
 using static UnityEditor.AttributeHelper;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEditor.Experimental.AssetImporters
+namespace UnityEditor.AssetImporters
 {
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
+    [MovedFrom("UnityEditor.Experimental.AssetImporters")]
     public class CollectImportedDependenciesAttribute : Attribute
     {
         private Type m_ImporterType;
