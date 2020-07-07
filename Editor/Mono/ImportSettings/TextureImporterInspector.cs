@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEditor.Build;
 using System.Collections.Generic;
 using System;
-using UnityEditor.Experimental.AssetImporters;
+using UnityEditor.AssetImporters;
 using Object = UnityEngine.Object;
 using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
 

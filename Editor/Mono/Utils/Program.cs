@@ -4,8 +4,10 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Threading;
 using UnityEngine;
 
@@ -60,29 +62,39 @@ namespace UnityEditor.Utils
 
         public void LogProcessStartInfo()
         {
-            if (_process != null)
-                LogProcessStartInfo(_process.StartInfo);
-            else
-                Console.WriteLine("Failed to retrieve process startInfo");
+            foreach (string line in RetrieveProcessStartInfo())
+            {
+                Console.WriteLine(line);
+            }
+        }
+
+        public List<string> RetrieveProcessStartInfo()
+        {
+            return _process != null
+                ? RetrieveProcessStartInfo(_process.StartInfo)
+                : new List<string> {"Failed to retrieve process startInfo"};
         }
 
         //please dont kill this code.
-        private static void LogProcessStartInfo(ProcessStartInfo si)
+        private static List<string> RetrieveProcessStartInfo(ProcessStartInfo si)
         {
-            Console.WriteLine("Filename: " + si.FileName);
-            Console.WriteLine("Arguments: " + si.Arguments);
+            List<string> processStartInfo = new List<string> {"Filename: " + si.FileName, "Arguments: " + si.Arguments};
 
             foreach (DictionaryEntry envVar in si.EnvironmentVariables)
                 if (envVar.Key.ToString().StartsWith("MONO"))
-                    Console.WriteLine("{0}: {1}", envVar.Key, envVar.Value);
+                {
+                    processStartInfo.Add($"{envVar.Key}: {envVar.Value}");
+                }
 
             int responsefileindex = si.Arguments.IndexOf("Temp/UnityTempFile");
             if (responsefileindex > 0)
             {
                 var responsefile = si.Arguments.Substring(responsefileindex);
-                Console.WriteLine("Responsefile: " + responsefile + " Contents: ");
-                Console.WriteLine(System.IO.File.ReadAllText(responsefile));
+                processStartInfo.Add($"Responsefile: {responsefile} Contents: ");
+                processStartInfo.Add(File.ReadAllText(responsefile));
             }
+
+            return processStartInfo;
         }
 
         public string GetAllOutput()

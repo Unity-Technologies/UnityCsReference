@@ -97,7 +97,10 @@ namespace UnityEditor.Scripting.Compilers
         /// The message is an error. The compilation has failed.
         Error = 0,
         /// The message is an warning only. If there are no error messages, the compilation has completed successfully.
-        Warning = 1
+        Warning = 1,
+        // This message type is required because "Info" is an accepted action type in Microsoft rule set files:
+        // https://docs.microsoft.com/en-us/visualstudio/code-quality/working-in-the-code-analysis-rule-set-editor?view=vs-2019
+        Information = 2
     }
 
     /// This struct should be returned from GetCompilerMessages() on ScriptCompilerBase implementations

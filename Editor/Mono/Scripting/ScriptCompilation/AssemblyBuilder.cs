@@ -101,9 +101,16 @@ namespace UnityEditor.Compilation
             var scriptAssembly = editorCompilation.CreateScriptAssembly(this);
 
 
-            compilationTask = new CompilationTask(new[] { scriptAssembly }, null, scriptAssembly.OutputDirectory, this,
-                EditorScriptCompilationOptions.BuildingEmpty, CompilationTaskOptions.StopOnFirstError, 1,
-                editorCompilation.ILPostProcessing, new CompilerFactory(new CompilerFactoryHelper()));
+            compilationTask = new CompilationTask(
+                new[] { scriptAssembly },
+                codeGenAssemblies: null,
+                scriptAssembly.OutputDirectory,
+                context: this,
+                EditorScriptCompilationOptions.BuildingEmpty,
+                CompilationTaskOptions.StopOnFirstError,
+                maxConcurrentCompilers: 1,
+                editorCompilation.ILPostProcessing,
+                new CompilerFactory(new CompilerFactoryHelper()));
 
             compilationTask.OnCompilationTaskStarted += (context) =>
             {

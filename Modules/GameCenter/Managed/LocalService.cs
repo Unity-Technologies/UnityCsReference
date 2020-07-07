@@ -59,16 +59,16 @@ namespace UnityEngine.SocialPlatforms.Impl
     public class UserProfile : IUserProfile
     {
         protected string m_UserName;
-        protected string m_teamID;
-        protected string m_gameID;
+        protected string m_ID;
         protected bool m_IsFriend;
         protected UserState m_State;
         protected Texture2D m_Image;
+        string m_gameID;
 
         public UserProfile()
         {
             m_UserName = "Uninitialized";
-            m_teamID = "0";
+            m_ID = "0";
             m_IsFriend = false;
             m_State = UserState.Offline;
             m_Image = new Texture2D(32, 32);
@@ -81,7 +81,7 @@ namespace UnityEngine.SocialPlatforms.Impl
         public UserProfile(string name, string teamId, string gameId, bool friend, UserState state, Texture2D image)
         {
             m_UserName = name;
-            m_teamID = teamId;
+            m_ID = teamId;
             m_gameID = gameId;
             m_IsFriend = friend;
             m_State = state;
@@ -103,7 +103,7 @@ namespace UnityEngine.SocialPlatforms.Impl
 
         public void SetUserID(string id)
         {
-            m_teamID = id;
+            m_ID = id;
         }
 
         public void SetUserGameID(string id)
@@ -127,7 +127,7 @@ namespace UnityEngine.SocialPlatforms.Impl
         }
 
         public string userName { get { return m_UserName; } }
-        public string id { get { return m_teamID; } }
+        public string id { get { return m_ID; } }
         public string gameId { get { return m_gameID; } }
         public bool isFriend { get { return m_IsFriend; } }
         public UserState state { get { return m_State; } }

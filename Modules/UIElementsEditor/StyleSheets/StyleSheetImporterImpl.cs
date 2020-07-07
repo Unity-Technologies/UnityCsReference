@@ -14,7 +14,7 @@ using UnityStyleSheet = UnityEngine.UIElements.StyleSheet;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using ExCSS;
-using UnityEditor.Experimental.AssetImporters;
+using UnityEditor.AssetImporters;
 
 namespace UnityEditor.UIElements.StyleSheets
 {

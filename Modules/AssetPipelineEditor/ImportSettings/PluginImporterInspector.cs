@@ -12,7 +12,7 @@ using UnityEditor.Modules;
 using UnityEditor.Build;
 using UnityEditor.Callbacks;
 using UnityEditor.Compilation;
-using UnityEditor.Experimental.AssetImporters;
+using UnityEditor.AssetImporters;
 using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor

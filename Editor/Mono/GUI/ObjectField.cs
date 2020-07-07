@@ -585,15 +585,20 @@ namespace UnityEditor
                 s_Styles = new Styles();
 
             // Toolbar
-            GUILayout.BeginArea(new Rect(rect.x, rect.y, rect.width, kToolbarHeight), s_Styles.toolbar);
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            m_Editor.OnPreviewSettings();
-            EditorGUILayout.EndHorizontal();
-            GUILayout.EndArea();
+            Rect toolbarRect = EditorGUILayout.BeginHorizontal(GUIContent.none, s_Styles.toolbar, GUILayout.Height(kToolbarHeight));
+            {
+                GUILayout.FlexibleSpace();
+                Rect contentRect = EditorGUILayout.BeginHorizontal();
+                m_Editor.OnPreviewSettings();
+                EditorGUILayout.EndHorizontal();
 
-            const float kMaxSettingsWidth = 240f;
-            GUI.Label(new Rect(rect.x + 5f, rect.y, rect.width - kMaxSettingsWidth, kToolbarHeight), m_ObjectName, s_Styles.toolbarText);
+                const float kPadding = 5f;
+                Rect labelRect = new Rect(toolbarRect.x + kPadding, toolbarRect.y, toolbarRect.width - contentRect.width - 2 * kPadding, toolbarRect.height);
+                Vector2 labelSize = s_Styles.toolbarText.CalcSize(m_ObjectName);
+                labelRect.width = Mathf.Min(labelRect.width, labelSize.x);
+                GUI.Label(labelRect, m_ObjectName, s_Styles.toolbarText);
+            }
+            EditorGUILayout.EndHorizontal();
 
             // Object preview
             Rect previewRect = new Rect(rect.x, rect.y + kToolbarHeight, rect.width, rect.height - kToolbarHeight);
@@ -602,7 +607,7 @@ namespace UnityEditor
 
         public override Vector2 GetWindowSize()
         {
-            return new Vector2(400f, 300f + kToolbarHeight);
+            return new Vector2(600f, 300f + kToolbarHeight);
         }
     }
 }

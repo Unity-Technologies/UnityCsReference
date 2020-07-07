@@ -103,6 +103,7 @@ namespace UnityEngine.iOS
 
         extern public static string defaultSoundName    { get; }
 
+        [NativeThrows]
         extern public IDictionary userInfo              { get; set; }
 
         public extern bool hasAction {[NativeName("HasAction")] get; [NativeName("HasAction")] set; }
@@ -130,7 +131,7 @@ namespace UnityEngine.iOS
         extern public string alertTitle                 { get; }
         extern public string soundName                  { get; }
         extern public int    applicationIconBadgeNumber { get; }
-        extern public IDictionary userInfo              { get; }
+        extern public IDictionary userInfo              { [NativeThrows] get; }
 
         public extern bool hasAction {[NativeName("HasAction")] get; }
     }

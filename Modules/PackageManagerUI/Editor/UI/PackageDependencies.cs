@@ -15,12 +15,14 @@ namespace UnityEditor.PackageManager.UI
 
         private ResourceLoader m_ResourceLoader;
         private PackageManagerPrefs m_PackageManagerPrefs;
+        private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private PackageDatabase m_PackageDatabase;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
+            m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
         }
 
@@ -116,7 +118,7 @@ namespace UnityEditor.PackageManager.UI
         {
             var dependencies = version?.dependencies;
             var reverseDependencies = m_PackageDatabase.GetReverseDependencies(version);
-            var showDependency = m_PackageManagerPrefs.showPackageDependencies && (dependencies != null || reverseDependencies != null);
+            var showDependency = m_SettingsProxy.enablePackageDependencies && (dependencies != null || reverseDependencies != null);
             UIUtils.SetElementDisplay(this, showDependency);
             if (!showDependency)
                 return;

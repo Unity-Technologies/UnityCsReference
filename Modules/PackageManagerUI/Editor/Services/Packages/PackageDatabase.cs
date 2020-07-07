@@ -191,43 +191,6 @@ namespace UnityEditor.PackageManager.UI
             return dependsOnPackage;
         }
 
-        private IEnumerable<Sample> GetSamplesFromPackageInfo(PackageInfo packageInfo)
-        {
-            if (string.IsNullOrEmpty(packageInfo?.resolvedPath))
-                return Enumerable.Empty<Sample>();
-
-            var jsonPath = Path.Combine(packageInfo.resolvedPath, "package.json");
-            if (!m_IOProxy.FileExists(jsonPath))
-                return Enumerable.Empty<Sample>();
-
-            try
-            {
-                var packageJson = Json.Deserialize(m_IOProxy.FileReadAllText(jsonPath)) as Dictionary<string, object>;
-                var samples = packageJson.GetList<IDictionary<string, object>>("samples");
-                return samples?.Select(sample =>
-                {
-                    var displayName = sample.GetString("displayName");
-                    var path = sample.GetString("path");
-                    var description = sample.GetString("description");
-                    var interactiveImport = sample.Get("interactiveImport", false);
-
-                    var resolvedSamplePath = Path.Combine(packageInfo.resolvedPath, path);
-                    var importPath = IOUtils.CombinePaths(
-                        Application.dataPath,
-                        "Samples",
-                        IOUtils.SanitizeFileName(packageInfo.displayName),
-                        packageInfo.version,
-                        IOUtils.SanitizeFileName(displayName)
-                    );
-                    return new Sample(m_IOProxy, m_AssetDatabase, displayName, description, resolvedSamplePath, importPath, interactiveImport);
-                });
-            }
-            catch (Exception)
-            {
-                return Enumerable.Empty<Sample>();
-            }
-        }
-
         public virtual IEnumerable<Sample> GetSamples(IPackageVersion version)
         {
             if (version?.packageInfo == null || version.packageInfo.version != version.version?.ToString())
@@ -236,7 +199,7 @@ namespace UnityEditor.PackageManager.UI
             if (m_ParsedSamples.TryGetValue(version.uniqueId, out var parsedSamples))
                 return parsedSamples;
 
-            var samples = GetSamplesFromPackageInfo(version.packageInfo);
+            var samples = Sample.FindByPackage(version.packageInfo, m_IOProxy, m_AssetDatabase);
             m_ParsedSamples[version.uniqueId] = samples;
             return samples;
         }

@@ -34,9 +34,6 @@ namespace UnityEditor.PackageManager.Requests
         internal RemoveRequest(long operationId, NativeStatusCode initialStatus, string packageName)
             : base(operationId, initialStatus)
         {
-            if (String.IsNullOrEmpty(packageName?.Trim()))
-                throw new ArgumentNullException(nameof(packageName));
-
             m_PackageIdOrName = packageName;
         }
     }

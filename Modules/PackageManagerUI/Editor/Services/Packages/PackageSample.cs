@@ -7,6 +7,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -82,6 +83,47 @@ namespace UnityEditor.PackageManager.UI
             this.interactiveImport = interactiveImport;
         }
 
+        internal static IEnumerable<Sample> FindByPackage(PackageInfo package, IOProxy ioProxy, AssetDatabaseProxy assetDatabaseProxy)
+        {
+            if (package != null)
+            {
+                if (string.IsNullOrEmpty(package?.resolvedPath))
+                    return Enumerable.Empty<Sample>();
+
+                var jsonPath = Path.Combine(package.resolvedPath, "package.json");
+                if (!ioProxy.FileExists(jsonPath))
+                    return Enumerable.Empty<Sample>();
+
+                try
+                {
+                    var packageJson = Json.Deserialize(ioProxy.FileReadAllText(jsonPath)) as Dictionary<string, object>;
+                    var samples = packageJson.GetList<IDictionary<string, object>>("samples");
+                    return samples?.Select(sample =>
+                    {
+                        var displayName = sample.GetString("displayName");
+                        var path = sample.GetString("path");
+                        var description = sample.GetString("description");
+                        var interactiveImport = sample.Get("interactiveImport", false);
+
+                        var resolvedSamplePath = Path.Combine(package.resolvedPath, path);
+                        var importPath = IOUtils.CombinePaths(
+                            Application.dataPath,
+                            "Samples",
+                            IOUtils.SanitizeFileName(package.displayName),
+                            package.version,
+                            IOUtils.SanitizeFileName(displayName)
+                        );
+                        return new Sample(ioProxy, assetDatabaseProxy, displayName, description, resolvedSamplePath, importPath, interactiveImport);
+                    });
+                }
+                catch (Exception)
+                {
+                    return Enumerable.Empty<Sample>();
+                }
+            }
+            return Enumerable.Empty<Sample>();
+        }
+
         /// <summary>
         /// Given a package of a specific version, find a list of samples in that package.
         /// </summary>
@@ -90,14 +132,16 @@ namespace UnityEditor.PackageManager.UI
         /// <returns>A list of samples in the given package</returns>
         public static IEnumerable<Sample> FindByPackage(string packageName, string packageVersion)
         {
-            var packageDatabase = ServicesContainer.instance.Resolve<PackageDatabase>();
-            var package = packageDatabase.GetPackage(packageName);
-            if (package != null)
+            var upmCache = ServicesContainer.instance.Resolve<UpmCache>();
+            if (upmCache.installedPackageInfos.Count() == 0)
+                upmCache.SetInstalledPackageInfos(PackageInfo.GetAll());
+
+            var package = upmCache.GetInstalledPackageInfo(packageName);
+            if (package.version == packageVersion || packageVersion?.Length == 0)
             {
-                var version = package.versions.installed;
-                if (!string.IsNullOrEmpty(packageVersion))
-                    version = package.versions.FirstOrDefault(v => v.version?.ToString() == packageVersion);
-                return packageDatabase.GetSamples(version);
+                var ioProxy = ServicesContainer.instance.Resolve<IOProxy>();
+                var assetDatabaseProxy = ServicesContainer.instance.Resolve<AssetDatabaseProxy>();
+                return FindByPackage(package, ioProxy, assetDatabaseProxy);
             }
             return Enumerable.Empty<Sample>();
         }

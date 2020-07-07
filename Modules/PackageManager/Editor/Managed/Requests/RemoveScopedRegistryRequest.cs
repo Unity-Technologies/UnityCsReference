@@ -8,23 +8,18 @@ using UnityEngine;
 namespace UnityEditor.PackageManager.Requests
 {
     [Serializable]
-    internal sealed partial class PerformSearchRequest : Request<SearchResults>
+    internal sealed class RemoveScopedRegistryRequest : Request
     {
         /// <summary>
         /// Constructor to support serialization
         /// </summary>
-        private PerformSearchRequest()
+        private RemoveScopedRegistryRequest()
         {
         }
 
-        internal PerformSearchRequest(long operationId, NativeStatusCode initialStatus)
+        internal RemoveScopedRegistryRequest(long operationId, NativeStatusCode initialStatus)
             : base(operationId, initialStatus)
         {
-        }
-
-        protected override SearchResults GetResult()
-        {
-            return GetOperationData(Id);
         }
     }
 }

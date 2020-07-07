@@ -17,7 +17,7 @@ using UnityEngine.UIElements;
 using UnityEditor.SceneManagement;
 
 using Object = UnityEngine.Object;
-using AssetImporterEditor = UnityEditor.Experimental.AssetImporters.AssetImporterEditor;
+using AssetImporterEditor = UnityEditor.AssetImporters.AssetImporterEditor;
 using JetBrains.Annotations;
 
 namespace UnityEditor

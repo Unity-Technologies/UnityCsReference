@@ -5,7 +5,7 @@
 using UnityEngine;
 using UnityEngine.Bindings;
 
-namespace UnityEditor.Experimental.AssetImporters
+namespace UnityEditor.AssetImporters
 {
     [NativeHeader("Modules/AssetPipelineEditor/ImportSettings/AssetImporterEditorUtility.h")]
     public abstract partial class AssetImporterEditor

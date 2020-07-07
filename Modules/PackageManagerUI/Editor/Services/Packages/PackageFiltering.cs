@@ -55,11 +55,11 @@ namespace UnityEditor.PackageManager.UI
         [NonSerialized]
         private UnityConnectProxy m_UnityConnect;
         [NonSerialized]
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        public void ResolveDependencies(UnityConnectProxy unityConnect, PackageManagerPrefs packageManagerPrefs)
+        private PackageManagerProjectSettingsProxy m_SettingsProxy;
+        public void ResolveDependencies(UnityConnectProxy unityConnect, PackageManagerProjectSettingsProxy settingsProxy)
         {
             m_UnityConnect = unityConnect;
-            m_PackageManagerPrefs = packageManagerPrefs;
+            m_SettingsProxy = settingsProxy;
         }
 
         internal static bool FilterByTab(IPackage package, PackageFilterTab tab, bool showDependencies, bool isLoggedIn)
@@ -131,7 +131,7 @@ namespace UnityEditor.PackageManager.UI
 
         public virtual bool FilterByCurrentTab(IPackage package)
         {
-            return FilterByTab(package, currentFilterTab, m_PackageManagerPrefs.showPackageDependencies, m_UnityConnect.isUserLoggedIn);
+            return FilterByTab(package, currentFilterTab, m_SettingsProxy.enablePackageDependencies, m_UnityConnect.isUserLoggedIn);
         }
 
         public virtual void SetCurrentFilterTabWithoutNotify(PackageFilterTab tab)

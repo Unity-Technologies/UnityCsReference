@@ -41,6 +41,12 @@ namespace UnityEditor.SceneTemplate
 
         public bool addToDefaults;
 
+        void OnEnable()
+        {
+            if (dependencies == null)
+                dependencies = new DependencyInfo[0];
+        }
+
         internal void BindScene(SceneAsset scene)
         {
             templateScene = scene;

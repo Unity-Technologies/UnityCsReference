@@ -63,9 +63,6 @@ namespace UnityEditor
             public static GUIContent enablePlayModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Play Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Play Mode");
             public static GUIContent enableEditModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Edit Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Edit Mode");
 
-            public static GUIContent roslynAnalyzerSettings = EditorGUIUtility.TrTextContent("Roslyn Analyzer Settings");
-            public static GUIContent enableRoslynAnalyzers = EditorGUIUtility.TrTextContent("Enable Roslyn Analyzers");
-
             public static GUIContent shaderCompilation = EditorGUIUtility.TrTextContent("Shader Compilation");
             public static GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation", "Enables async shader compilation in Game and Scene view. Async compilation for custom editor tools can be achieved via script API and is not affected by this option.");
             public static GUIContent cachingShaderPreprocessor = EditorGUIUtility.TrTextContent("Caching Preprocessor", "Enables caching shader preprocessor with advanced functionality.");
@@ -534,7 +531,6 @@ namespace UnityEditor
             DoShaderCompilationSettings();
             DoEnterPlayModeSettings();
             DoNumberingSchemeSettings();
-            DoRoslynAnalyzerSettings();
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -770,14 +766,6 @@ namespace UnityEditor
             EditorGUILayout.HelpBox(m_GoNamingHelpText, MessageType.Info, true);
 
             EditorGUILayout.PropertyField(m_AssetNamingUsesSpace, Content.numberingProjectSpace);
-        }
-
-        private void DoRoslynAnalyzerSettings()
-        {
-            GUILayout.Space(10);
-            GUILayout.Label(Content.roslynAnalyzerSettings, EditorStyles.boldLabel);
-
-            EditorGUILayout.PropertyField(m_EnableRoslynAnalyzers, Content.enableRoslynAnalyzers);
         }
 
         private void DoShaderCompilationSettings()

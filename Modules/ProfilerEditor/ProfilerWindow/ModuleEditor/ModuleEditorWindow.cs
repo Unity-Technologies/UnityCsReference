@@ -79,20 +79,19 @@ namespace UnityEditor.Profiling.ModuleEditor
             BuildWindow();
         }
 
-        void OnDestroy()
+        void OnGUI()
         {
-            if (HasUnsavedChanges())
+            var currentEvent = Event.current;
+            if (currentEvent.type == EventType.Repaint)
             {
-                var title = LocalizationDatabase.GetLocalizedString("Unsaved Changes");
-                var message = LocalizationDatabase.GetLocalizedString("Do you want to save the changes you made before closing?");
-                var save = LocalizationDatabase.GetLocalizedString("Save");
-                var dontSave = LocalizationDatabase.GetLocalizedString("Don't Save");
-                bool saveBeforeClosing = EditorUtility.DisplayDialog(title, message, save, dontSave);
-                if (saveBeforeClosing)
-                {
-                    ConfirmChanges(false);
-                }
+                hasUnsavedChanges = HasUnsavedChanges();
             }
+        }
+
+        public override void SaveChanges()
+        {
+            base.SaveChanges();
+            ConfirmChanges(false);
         }
 
         void BuildWindow()
@@ -113,6 +112,8 @@ namespace UnityEditor.Profiling.ModuleEditor
             m_ModuleDetailsViewController.onDeleteModule += DeleteModule;
             m_ModuleDetailsViewController.onConfirmChanges += ConfirmChanges;
             m_ModuleDetailsViewController.onModuleNameChanged += OnModuleNameChanged;
+
+            saveChangesMessage = LocalizationDatabase.GetLocalizedString("Do you want to save the changes you made before closing?");
 
             if (m_SelectedIndex != k_InvalidIndex)
             {
@@ -231,7 +232,6 @@ namespace UnityEditor.Profiling.ModuleEditor
 
         bool HasUnsavedChanges()
         {
-            // If changes have been confirmed, we don't consider the changes 'unsaved'.
             if (m_ChangesHaveBeenConfirmed)
             {
                 return false;
@@ -265,6 +265,7 @@ namespace UnityEditor.Profiling.ModuleEditor
             var names = new List<string>(m_Modules.Count);
             foreach (var module in m_Modules)
             {
+                // Is there a duplicate name?
                 var name = module.name;
                 if (!names.Contains(name))
                 {
@@ -276,10 +277,17 @@ namespace UnityEditor.Profiling.ModuleEditor
                     break;
                 }
 
+                // Is the name valid?
                 if (string.IsNullOrEmpty(name))
                 {
                     localizedErrorDescription = LocalizationDatabase.GetLocalizedString($"All modules must have a name.");
                     break;
+                }
+
+                // Does the module have at least one counter?
+                if (module.chartCounters.Count == 0)
+                {
+                    localizedErrorDescription = LocalizationDatabase.GetLocalizedString($"The module '{name}' has no counters. All modules must have at least one counter.");
                 }
             }
 

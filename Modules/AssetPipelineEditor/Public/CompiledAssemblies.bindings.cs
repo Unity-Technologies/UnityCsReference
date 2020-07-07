@@ -7,15 +7,16 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    // This class will be needed by the Roslyn analysis runner
     [NativeHeader("Editor/Src/ScriptCompilation/CompiledAssemblies.bindings.h")]
     [ExcludeFromPreset]
     internal sealed class CompiledAssemblyCache
     {
-        [FreeFunction] internal static extern string[] GetAllPaths();
-        [FreeFunction] internal static extern void AddPaths(string[] paths);
-        [FreeFunction] internal static extern void AddPath(string path);
-        [FreeFunction] internal static extern void RemovePath(string path);
-        [FreeFunction("RemoveAllPaths")] internal static extern void Clear();
+        [StaticAccessor("CompiledAssembliesBindings", StaticAccessorType.DoubleColon)] internal static extern string[] GetAllPaths();
+        [StaticAccessor("CompiledAssembliesBindings", StaticAccessorType.DoubleColon)] internal static extern bool Contains(string path);
+
+        // The path gets added even if it already exists in the cache
+        [StaticAccessor("CompiledAssembliesBindings", StaticAccessorType.DoubleColon)] internal static extern void AddPath(string path);
+        [StaticAccessor("CompiledAssembliesBindings", StaticAccessorType.DoubleColon)] internal static extern void RemovePath(string path);
+        [StaticAccessor("CompiledAssembliesBindings", StaticAccessorType.DoubleColon)] internal static extern void RemoveAllPaths();
     }
 }

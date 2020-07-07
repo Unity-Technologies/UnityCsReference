@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -31,6 +32,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public Dictionary<string, TargetAssembly> CustomTargetAssemblies { get; set; }
             public TargetAssembly[] PredefinedAssembliesCustomTargetReferences { get; set; }
             public string[] EditorAssemblyReferences { get; set; }
+            public string[] RoslynAnalyzerDllPaths { get; set; }
         }
 
         public class GenerateChangedScriptAssembliesArgs
@@ -186,9 +188,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return customTargetAssembliesDict;
         }
 
-        public static ScriptAssembly[] GetAllScriptAssemblies(Dictionary<string, string> allSourceFiles,
-            String projectDirectory, ScriptAssemblySettings settings, CompilationAssemblies assemblies,
-            HashSet<String> runUpdaterAssemblies, TargetAssemblyType onlyIncludeType = TargetAssemblyType.Undefined)
+        public static ScriptAssembly[] GetAllScriptAssemblies(
+            Dictionary<string, string> allSourceFiles,
+            String projectDirectory,
+            ScriptAssemblySettings settings,
+            CompilationAssemblies assemblies,
+            HashSet<String> runUpdaterAssemblies,
+            TargetAssemblyType onlyIncludeType = TargetAssemblyType.Undefined,
+            Func<TargetAssembly, bool> targetAssemblyCondition = null)
         {
             if (allSourceFiles == null || allSourceFiles.Count == 0)
                 return new ScriptAssembly[0];
@@ -205,6 +212,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     continue;
 
                 if (!IsCompatibleWithPlatformAndDefines(targetAssembly, settings))
+                    continue;
+
+                if (targetAssemblyCondition != null && !targetAssemblyCondition(targetAssembly))
                     continue;
 
                 // Optionally only include specific TargetAssemblyType assemblies.
@@ -399,8 +409,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return scriptAssemblies;
         }
 
-        internal static ScriptAssembly[] ToScriptAssemblies(IDictionary<TargetAssembly, DirtyTargetAssembly> targetAssemblies, ScriptAssemblySettings settings,
-            CompilationAssemblies assemblies, HashSet<string> runUpdaterAssemblies)
+        internal static ScriptAssembly[] ToScriptAssemblies(
+            IDictionary<TargetAssembly, DirtyTargetAssembly> targetAssemblies,
+            ScriptAssemblySettings settings,
+            CompilationAssemblies assemblies,
+            HashSet<string> runUpdaterAssemblies)
         {
             var scriptAssemblies = new ScriptAssembly[targetAssemblies.Count];
 
@@ -436,10 +449,29 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 scriptAssembly.Defines = targetAssembly.Defines == null ? compilerDefines : targetAssembly.Defines.Concat(compilerDefines).ToArray();
                 scriptAssembly.Files = dirtyTargetAssembly.SourceFiles.ToArray();
 
-                if (targetAssembly.Type == TargetAssemblyType.Predefined)
-                    scriptAssembly.CompilerOptions = settings.PredefinedAssembliesCompilerOptions;
+                scriptAssembly.TargetAssemblyType = targetAssembly.Type;
+
+                if (scriptAssembly.TargetAssemblyType == TargetAssemblyType.Predefined)
+                    scriptAssembly.CompilerOptions = new ScriptCompilerOptions(settings.PredefinedAssembliesCompilerOptions);
                 else
                     scriptAssembly.CompilerOptions = targetAssembly.CompilerOptions;
+
+                if ((settings.CompilationOptions & EditorScriptCompilationOptions.BuildingWithRoslynAnalysis) != 0
+                    && PlayerSettings.EnableRoslynAnalyzers
+                    && (scriptAssembly.Flags & AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers) != 0)
+                {
+                    scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths = assemblies.RoslynAnalyzerDllPaths;
+                    scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath =
+                        scriptAssembly.TargetAssemblyType == TargetAssemblyType.Predefined
+                        ? RuleSetFileCache.GetRuleSetFilePathInRootFolder(Path.ChangeExtension(scriptAssembly.Filename, null))
+                        : RuleSetFileCache.GetPathForAssembly(scriptAssembly.OriginPath);
+                    scriptAssembly.CompilerOptions.EmitReferenceAssembly = false;
+                }
+                else
+                {
+                    scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths = new string[0];
+                    scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath = string.Empty;
+                }
 
                 var editorOnlyTargetAssembly = (targetAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
 
@@ -475,8 +507,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             foreach (var entry in targetAssemblies)
             {
                 var scriptAssembly = scriptAssemblies[index++];
-                AddScriptAssemblyReferences(ref scriptAssembly, entry.Key, settings,
-                    assemblies, targetToScriptAssembly);
+                AddScriptAssemblyReferences(ref scriptAssembly, entry.Key, settings, assemblies, targetToScriptAssembly);
 
                 if (UnityCodeGenHelpers.IsCodeGen(entry.Key.Filename)
                     ||  UnityCodeGenHelpers.IsCodeGenTest(entry.Key.Filename)
@@ -805,7 +836,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 var runtimeFirstPass = new TargetAssembly("Assembly-" + languageName + "-firstpass" + ".dll",
                     language,
-                    AssemblyFlags.FirstPass | AssemblyFlags.UserAssembly,
+                    AssemblyFlags.FirstPass | AssemblyFlags.UserAssembly | AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers,
                     TargetAssemblyType.Predefined,
                     null,
                     null,
@@ -815,7 +846,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 var runtime = new TargetAssembly("Assembly-" + languageName + ".dll",
                     language,
-                    AssemblyFlags.UserAssembly,
+                    AssemblyFlags.UserAssembly | AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers,
                     TargetAssemblyType.Predefined,
                     null,
                     null,
@@ -825,7 +856,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 var editorFirstPass = new TargetAssembly("Assembly-" + languageName + "-Editor-firstpass" + ".dll",
                     language,
-                    AssemblyFlags.EditorOnly | AssemblyFlags.FirstPass | AssemblyFlags.UserAssembly,
+                    AssemblyFlags.EditorOnly | AssemblyFlags.FirstPass | AssemblyFlags.UserAssembly | AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers,
                     TargetAssemblyType.Predefined,
                     null,
                     null,
@@ -835,7 +866,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 var editor = new TargetAssembly("Assembly-" + languageName + "-Editor" + ".dll",
                     language,
-                    AssemblyFlags.EditorOnly | AssemblyFlags.UserAssembly,
+                    AssemblyFlags.EditorOnly | AssemblyFlags.UserAssembly | AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers,
                     TargetAssemblyType.Predefined,
                     null,
                     null,

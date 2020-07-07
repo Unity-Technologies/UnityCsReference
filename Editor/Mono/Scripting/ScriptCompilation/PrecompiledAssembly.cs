@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEditor.Compilation;
@@ -32,6 +31,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public abstract PrecompiledAssembly[] CachedEditorPrecompiledAssemblies { get; }
         public abstract PrecompiledAssembly[] CachedUnityAssemblies { get; }
         public abstract void Dirty();
+        public abstract string[] GetRoslynAnalyzerPaths();
 
         protected virtual PrecompiledAssembly[] GetUnityAssembliesInternal(bool isEditor, BuildTarget buildTarget)
         {
@@ -116,8 +116,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return GetPrecompiledAssembliesDictionary(isEditor, buildTargetGroup, buildTarget).Values.ToArray();
         }
 
-        [FreeFunction("GetAllRoslynAnalyzerPaths")]
-        internal static extern string[] GetRoslynAnalyzerPaths();
+        public override string[] GetRoslynAnalyzerPaths()
+        {
+            return GetAllRoslynAnalyzerPaths();
+        }
+
+        [FreeFunction] internal static extern string[] GetAllRoslynAnalyzerPaths();
 
         public override Dictionary<string, PrecompiledAssembly> GetPrecompiledAssembliesDictionary(bool isEditor, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
         {

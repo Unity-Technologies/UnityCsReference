@@ -35,6 +35,13 @@ namespace UnityEditor.PackageManager
             return new AddRequest(operationId, status);
         }
 
+        internal static AddScopedRegistryRequest AddScopedRegistry(string name, string url, string[] scopes)
+        {
+            long operationId;
+            var status = AddScopedRegistry(out operationId, name, url, scopes);
+            return new AddScopedRegistryRequest(operationId, status);
+        }
+
         public static EmbedRequest Embed(string packageName)
         {
             var packageInfo = PackageInfo.GetAll().FirstOrDefault(p => p.name == packageName);
@@ -64,9 +71,22 @@ namespace UnityEditor.PackageManager
 
         public static RemoveRequest Remove(string packageName)
         {
+            if (string.IsNullOrEmpty(packageName?.Trim()))
+                throw new ArgumentNullException(nameof(packageName));
+
             long operationId;
             var status = Remove(out operationId, packageName);
             return new RemoveRequest(operationId, status, packageName);
+        }
+
+        internal static RemoveScopedRegistryRequest RemoveScopedRegistry(string registryName)
+        {
+            if (string.IsNullOrEmpty(registryName?.Trim()))
+                throw new ArgumentNullException(nameof(registryName));
+
+            long operationId;
+            var status = RemoveScopedRegistry(out operationId, registryName);
+            return new RemoveScopedRegistryRequest(operationId, status);
         }
 
         public static SearchRequest Search(string packageIdOrName, bool offlineMode)
@@ -100,7 +120,7 @@ namespace UnityEditor.PackageManager
         {
             long operationId;
             var status = Search(out operationId, options);
-            return new PerformSearchRequest(operationId, status, options);
+            return new PerformSearchRequest(operationId, status);
         }
 
         public static ResetToEditorDefaultsRequest ResetToEditorDefaults()
@@ -115,6 +135,13 @@ namespace UnityEditor.PackageManager
             long operationId;
             var status = Pack(out operationId, packageFolder, targetFolder);
             return new PackRequest(operationId, status);
+        }
+
+        internal static UpdateScopedRegistryRequest UpdateScopedRegistry(string registryName, UpdateScopedRegistryOptions options)
+        {
+            long operationId;
+            var status = UpdateScopedRegistry(out operationId, registryName, options);
+            return new UpdateScopedRegistryRequest(operationId, status);
         }
     }
 }

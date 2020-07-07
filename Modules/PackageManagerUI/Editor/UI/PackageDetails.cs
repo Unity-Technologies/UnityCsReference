@@ -133,6 +133,7 @@ namespace UnityEditor.PackageManager.UI
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
         private IOProxy m_IOProxy;
+        private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
@@ -142,6 +143,7 @@ namespace UnityEditor.PackageManager.UI
             m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
             m_AssetStoreCache = container.Resolve<AssetStoreCache>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
+            m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
             m_IOProxy = container.Resolve<IOProxy>();
@@ -215,7 +217,7 @@ namespace UnityEditor.PackageManager.UI
 
             m_PageManager.onSelectionChanged += OnSelectionChanged;
 
-            m_PackageManagerPrefs.onShowDependenciesChanged += (value) => RefreshDependencies();
+            m_SettingsProxy.onEnablePackageDependenciesChanged += (value) => RefreshDependencies();
 
             // manually call the callback function once on initialization to refresh the UI
             OnSelectionChanged(m_PageManager.GetSelectedVersion());

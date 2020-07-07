@@ -64,6 +64,11 @@ namespace UnityEditor.Scripting.Compilers
             return _errorIdentifier;
         }
 
+        protected override string GetInformationIdentifier()
+        {
+            return default;
+        }
+
         protected override Regex GetOutputRegex()
         {
             return sErrorRegexWithSourceInformation;

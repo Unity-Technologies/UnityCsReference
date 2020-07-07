@@ -316,7 +316,7 @@ namespace UnityEditor.SceneTemplate
                 return;
 
             var templateItems = CreateGridViewItems();
-            m_GridView = new GridView(templateItems, "Scene Templates in Project", k_ListViewRowHeight, 64, 256, 4 / 3);
+            m_GridView = new GridView(templateItems, "Scene Templates in Project", k_ListViewRowHeight, 64, 256, 4f / 3f);
             m_GridView.wrapAroundKeyboardNavigation = true;
             m_GridView.sizeLevel = EditorPrefs.GetFloat(GetKeyName(nameof(m_GridView.sizeLevel)), 128);
             rootContainer.Add(m_GridView);
@@ -528,7 +528,7 @@ namespace UnityEditor.SceneTemplate
         private void LoadSessionPreferences()
         {
             var lastTemplateAssetPath = EditorPrefs.GetString(GetKeyName(nameof(m_LastSelectedTemplate)), null);
-            if (!string.IsNullOrEmpty(lastTemplateAssetPath) && m_SceneTemplateInfos != null)
+            if (!string.IsNullOrEmpty(lastTemplateAssetPath))
             {
                 m_LastSelectedTemplate = m_SceneTemplateInfos.Find(info => info.Equals(lastTemplateAssetPath));
             }

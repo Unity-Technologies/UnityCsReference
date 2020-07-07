@@ -40,7 +40,11 @@ namespace UnityEditor.Profiling.ModuleEditor
             m_ListView.bindItem = BindListViewItem;
             m_ListView.selectionType = SelectionType.Single;
             m_ListView.reorderable = true;
-            m_ListView.GetDragAndDropController().onItemMoved += OnListViewItemMoved;
+            var dragAndDropController = m_ListView.GetDragAndDropController();
+            if (dragAndDropController != null)
+            {
+                dragAndDropController.onItemMoved += OnListViewItemMoved;
+            }
             m_ListView.onSelectionChange += OnListViewSelectionChange;
             m_ListView.itemsSource = m_Modules;
 

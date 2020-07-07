@@ -8,7 +8,12 @@ namespace UnityEditor.Scripting.Compilers
 {
     internal class MicrosoftCSharpCompilerOutputParser : CSharpCompilerOutputParserBase
     {
-        private static Regex sCompilerOutput = new Regex(@"\s*(?<filename>.*)\((?<line>\d+),(?<column>\d+)\):\s*(?<type>warning|error)\s*(?<id>[^:]*):\s*(?<message>.*)", RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+        private static Regex sCompilerOutput = new Regex(@"\s*(?<filename>[^\(]*)(\((?<line>\d+),(?<column>\d+)\))*:\s*(?<type>warning|error|info)\s*(?<id>[^:]*):\s*(?<message>.*)", RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+
+        protected override string GetInformationIdentifier()
+        {
+            return "info";
+        }
 
         protected override Regex GetOutputRegex()
         {

@@ -8,7 +8,7 @@ using System.Linq;
 using UnityEditor.Compilation;
 using UnityEngine;
 using UnityEditorInternal;
-using UnityEditor.Experimental.AssetImporters;
+using UnityEditor.AssetImporters;
 using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor

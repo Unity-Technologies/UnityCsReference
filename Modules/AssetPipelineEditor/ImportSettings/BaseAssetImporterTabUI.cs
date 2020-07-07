@@ -5,7 +5,7 @@
 using System;
 using UnityEngine;
 using Object = UnityEngine.Object;
-using UnityEditor.Experimental.AssetImporters;
+using UnityEditor.AssetImporters;
 namespace UnityEditor
 {
     internal abstract class BaseAssetImporterTabUI

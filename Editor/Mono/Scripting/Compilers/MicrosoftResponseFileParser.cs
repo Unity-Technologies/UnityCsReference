@@ -23,7 +23,7 @@ namespace UnityEditor.Scripting.Compilers
             responseFilePath = Paths.ConvertSeparatorsToUnity(responseFilePath);
             projectDirectory = Paths.ConvertSeparatorsToUnity(projectDirectory);
 
-            var relativeResponseFilePath = GetRelativePath(responseFilePath, projectDirectory);
+            var relativeResponseFilePath = Paths.GetPathRelativeToProjectDirectory(responseFilePath);
             var responseFile = AssetDatabase.LoadAssetAtPath<TextAsset>(relativeResponseFilePath);
 
             if (!responseFile && File.Exists(responseFilePath))
@@ -55,16 +55,6 @@ namespace UnityEditor.Scripting.Compilers
                 responseFile.name,
                 projectDirectory,
                 systemReferenceDirectories);
-        }
-
-        static string GetRelativePath(string responseFilePath, string projectDirectory)
-        {
-            if (Path.IsPathRooted(responseFilePath) && responseFilePath.Contains(projectDirectory))
-            {
-                responseFilePath = responseFilePath.Substring(projectDirectory.Length + 1);
-            }
-
-            return responseFilePath;
         }
 
         static ResponseFileData ParseResponseFileText(

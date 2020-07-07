@@ -301,7 +301,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         FileUtil.MoveFileOrDirectory(args.stagingAreaDataManaged, Paths.Combine(args.stagingArea, projectName, "Managed"));
 
         // Move il2cpp data
-        var il2cppOutputPath = IL2CPPBuilder.GetCppOutputPath(args.stagingAreaData);
+        var il2cppOutputPath = IL2CPPBuilder.GetCppOutputDirectory(args.stagingAreaData);
         var il2cppDataSource = Path.Combine(il2cppOutputPath, "Data");
         var il2cppDataTarget = Path.Combine(args.stagingAreaData, "il2cpp_data");
 

@@ -11,6 +11,8 @@ namespace UnityEditor.PackageManager.UI
     internal class PackageManagerProjectSettings : ScriptableSingleton<PackageManagerProjectSettings>
     {
         public event Action<bool> onEnablePreviewPackagesChanged = delegate {};
+        public event Action<bool> onEnablePackageDependenciesChanged = delegate {};
+        public event Action<bool> onAdvancedSettingsExpanded = delegate {};
 
         [SerializeField]
         private bool m_EnablePreviewPackages;
@@ -24,6 +26,37 @@ namespace UnityEditor.PackageManager.UI
                 {
                     m_EnablePreviewPackages = value;
                     onEnablePreviewPackagesChanged?.Invoke(m_EnablePreviewPackages);
+                }
+            }
+        }
+
+        [SerializeField]
+        private bool m_EnablePackageDependencies;
+
+        public bool enablePackageDependencies
+        {
+            get { return m_EnablePackageDependencies; }
+            set
+            {
+                if (value != m_EnablePackageDependencies)
+                {
+                    m_EnablePackageDependencies = value;
+                    onEnablePackageDependenciesChanged?.Invoke(m_EnablePackageDependencies);
+                }
+            }
+        }
+
+        [SerializeField]
+        private bool m_AdvancedSettingsExpanded = true;
+        public virtual bool advancedSettingsExpanded
+        {
+            get { return m_AdvancedSettingsExpanded; }
+            set
+            {
+                if (value != m_AdvancedSettingsExpanded)
+                {
+                    m_AdvancedSettingsExpanded = value;
+                    onEnablePackageDependenciesChanged?.Invoke(m_AdvancedSettingsExpanded);
                 }
             }
         }

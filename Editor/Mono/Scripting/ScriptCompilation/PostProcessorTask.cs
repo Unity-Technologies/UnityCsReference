@@ -20,6 +20,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             private static Regex sCompilerOutput = new Regex(@"\s*(?<filename>[^:]*)\((?<line>\d+),(?<column>\d+)\):\s*(?<type>warning|error)\s*(?<message>.*)", RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 
+            protected override string GetInformationIdentifier()
+            {
+                return default;
+            }
+
             protected override Regex GetOutputRegex()
             {
                 return sCompilerOutput;

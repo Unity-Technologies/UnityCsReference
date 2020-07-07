@@ -36,7 +36,6 @@ namespace UnityEditor.PackageManager.UI
                 packageId = Regex.Replace(packageId, "(?<package>[^@]+)@(?<protocol>[^:]+):.+", "${package}@${protocol}");
 
             var packageFiltering = ServicesContainer.instance.Resolve<PackageFiltering>();
-            var packageManagerPrefs = ServicesContainer.instance.Resolve<PackageManagerPrefs>();
             var settingsProxy = ServicesContainer.instance.Resolve<PackageManagerProjectSettingsProxy>();
 
             var parameters = new PackageManagerWindowAnalytics
@@ -46,7 +45,7 @@ namespace UnityEditor.PackageManager.UI
                 search_text = packageFiltering.currentSearchText,
                 filter_name = packageFiltering.currentFilterTab.ToString(),
                 window_docked = EditorWindow.GetWindowDontShow<PackageManagerWindow>()?.docked ?? false,
-                dependencies_visible = packageManagerPrefs.showPackageDependencies,
+                dependencies_visible = settingsProxy.enablePackageDependencies,
                 preview_visible = settingsProxy.enablePreviewPackages,
                 t_since_start = (long)(EditorApplication.timeSinceStartup * 1E6),
                 ts = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond

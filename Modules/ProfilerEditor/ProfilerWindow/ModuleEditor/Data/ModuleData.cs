@@ -11,7 +11,7 @@ namespace UnityEditor.Profiling.ModuleEditor
     [System.Serializable]
     class ModuleData
     {
-        public static int k_MaximumChartCountersCount = UnityEditorInternal.ProfilerChart.k_MaximumSeriesCount;
+        public const int k_MaximumChartCountersCount = UnityEditorInternal.ProfilerChart.k_MaximumSeriesCount;
 
         [SerializeField] string m_Name;
         [SerializeField] List<ProfilerCounterData> m_ChartCounters = new List<ProfilerCounterData>();
