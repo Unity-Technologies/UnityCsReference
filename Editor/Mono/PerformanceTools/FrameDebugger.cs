@@ -1176,7 +1176,7 @@ namespace UnityEditor
             GUILayout.Label(t.name, EditorStyles.miniLabel, GUILayout.MinWidth(kNameFieldWidth));
             DrawShaderPropertyFlags(t.flags);
 
-            Rect valueRect = GUILayoutUtility.GetRect(GUIContent.none, GUI.skin.label, GUILayout.MinWidth(kValueFieldWidth));
+            Rect valueRect = GUILayoutUtility.GetRect(GUIContent.none, GUI.skin.label, GUILayout.MinWidth(30));
 
             // display texture similar to ObjectField, just without much of interaction or styling:
             Event evt = Event.current;
@@ -1187,26 +1187,20 @@ namespace UnityEditor
             if (t.value != null && previewRect.Contains(evt.mousePosition))
                 GUI.Label(previewRect, GUIContent.Temp(string.Empty, m_CurEventDataStrings.texturePropertyTooltips[idx]));
 
-            if (evt.type == EventType.Repaint)
+            if (t.value != null)
             {
-                // preview and a label
-                Rect textRect = valueRect;
-                textRect.xMin += previewRect.width;
-
-                if (t.value != null)
-                {
-                    // for 2D textures, we want to display them directly as a preview (this will make render textures display their contents);
-                    // but for cube maps and other non-2D types DrawPreview does not do anything useful right now, so get their asset type
-                    // icon at least
-                    Texture previewTexture = t.value;
-                    if (previewTexture.dimension != TextureDimension.Tex2D)
-                        previewTexture = AssetPreview.GetMiniThumbnail(previewTexture);
-                    EditorGUI.DrawPreviewTexture(previewRect, previewTexture);
-                }
-
-                GUI.Label(textRect, t.value != null ? t.value.name : t.textureName);
+                // for 2D textures, we want to display them directly as a preview (this will make render textures display their contents);
+                // but for cube maps and other non-2D types DrawPreview does not do anything useful right now, so get their asset type
+                // icon at least
+                Texture previewTexture = t.value;
+                if (previewTexture.dimension != TextureDimension.Tex2D)
+                    previewTexture = AssetPreview.GetMiniThumbnail(previewTexture);
+                EditorGUI.DrawPreviewTexture(previewRect, previewTexture);
             }
-            else if (evt.type == EventType.MouseDown)
+
+            GUILayout.Label(t.value != null ? t.value.name : t.textureName, GUILayout.ExpandWidth(true));
+
+            if (evt.type == EventType.MouseDown)
             {
                 // ping or show preview of texture when clicked
                 if (valueRect.Contains(evt.mousePosition))

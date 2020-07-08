@@ -75,7 +75,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             skipSetupChecks = (1 << 0),
         }
 
-        abstract class UnitySpecificCompilerMessageProcessor
+        internal abstract class UnitySpecificCompilerMessageProcessor
         {
             public abstract bool IsInterestedInMessage(CompilerMessage m);
             public abstract void PostprocessMessage(ref CompilerMessage m);
@@ -108,6 +108,29 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public override void PostprocessMessage(ref CompilerMessage m)
             {
                 m.message += ". " + unityUnsafeMessage;
+            }
+        }
+
+        internal class DeterministicAssemblyVersionErrorProcessor : UnitySpecificCompilerMessageProcessor
+        {
+            public override bool IsInterestedInMessage(CompilerMessage message)
+            {
+                if (message.type != CompilerMessageType.Error)
+                {
+                    return false;
+                }
+
+                if (message.message.IndexOf("error CS8357", StringComparison.Ordinal) >= 0)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+
+            public override void PostprocessMessage(ref CompilerMessage message)
+            {
+                message.message = "Deterministic compilation failed. You can disable Deterministic builds in Player Settings\n" + message.message;
             }
         }
 
@@ -1682,6 +1705,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 compilationTaskOptions |= CompilationTaskOptions.RunPostProcessors;
             }
 
+            // Do not overwrite IsCodeGenAssemblyChanged if it was
+            // set to true during a previous failed compilation within
+            // the same domain.
+            if (IsCodeGenAssemblyChanged == false)
+            {
+                IsCodeGenAssemblyChanged = pendingCodeGenAssembly;
+            }
+
             // Compile to tempBuildDirectory
             compilationTask = new CompilationTask(scriptAssemblies,
                 tempBuildDirectory,
@@ -1704,14 +1735,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             compilationTask.OnCompilationTaskFinished += (context) =>
             {
-                // Do not overwrite IsCodeGenAssemblyChanged if it was
-                // set to true during a previous failed compilation within
-                // the same domain.
-                if (IsCodeGenAssemblyChanged == false)
-                {
-                    IsCodeGenAssemblyChanged = pendingCodeGenAssembly;
-                }
-
                 InvokeCompilationFinished(context);
 
                 var stopwatch = stopWatchDict[context];
@@ -1823,7 +1846,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var processors = new List<UnitySpecificCompilerMessageProcessor>()
             {
                 new UnsafeErrorProcessor(assembly, this),
-                new ModuleReferenceErrorProcessor()
+                new ModuleReferenceErrorProcessor(),
+                new DeterministicAssemblyVersionErrorProcessor(),
             };
 
             if (!messages.Any(m => processors.Any(p => p.IsInterestedInMessage(m))))
@@ -1922,6 +1946,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if ((options & EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode) == EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode)
                 predefinedAssembliesCompilerOptions.AllowUnsafeCode = true;
+
+            if ((options & EditorScriptCompilationOptions.BuildingUseDeterministicCompilation) == EditorScriptCompilationOptions.BuildingUseDeterministicCompilation)
+                predefinedAssembliesCompilerOptions.UseDeterministicCompilation = true;
+
             predefinedAssembliesCompilerOptions.ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
 
             ICompilationExtension compilationExtension = null;

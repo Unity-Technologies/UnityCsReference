@@ -50,6 +50,11 @@ namespace UnityEditor.Scripting.Compilers
                 arguments.Add("/unsafe");
             }
 
+            if (assembly.CompilerOptions.UseDeterministicCompilation)
+            {
+                arguments.Add("/deterministic");
+            }
+
             arguments.Add("/debug:portable");
 
             if (assembly.CompilerOptions.CodeOptimization == CodeOptimization.Release)
@@ -63,21 +68,31 @@ namespace UnityEditor.Scripting.Compilers
 
             FillCompilerOptions(arguments, assembly.BuildTarget);
 
-            foreach (var reference in assembly.ScriptAssemblyReferences)
+            string[] scriptAssemblyReferences = new string[assembly.ScriptAssemblyReferences.Length];
+            for (var index = 0; index < assembly.ScriptAssemblyReferences.Length; index++)
             {
-                arguments.Add("/reference:" + PrepareFileName(AssetPath.Combine(assembly.OutputDirectory, reference.Filename)));
+                var reference = assembly.ScriptAssemblyReferences[index];
+                scriptAssemblyReferences[index] = "/reference:" +
+                    PrepareFileName(AssetPath.Combine(assembly.OutputDirectory,
+                    reference.Filename));
             }
+            Array.Sort(scriptAssemblyReferences, StringComparer.Ordinal);
+            arguments.AddRange(scriptAssemblyReferences);
 
+            Array.Sort(assembly.References, StringComparer.Ordinal);
             foreach (var reference in assembly.References)
             {
                 arguments.Add("/reference:" + PrepareFileName(reference));
             }
 
-            foreach (var define in assembly.Defines.Distinct())
+            var defines = assembly.Defines.Distinct().ToArray();
+            Array.Sort(defines, StringComparer.Ordinal);
+            foreach (var define in defines)
             {
                 arguments.Add("/define:" + define);
             }
 
+            Array.Sort(assembly.Files, StringComparer.Ordinal);
             foreach (var source in assembly.Files)
             {
                 var f = PrepareFileName(source);

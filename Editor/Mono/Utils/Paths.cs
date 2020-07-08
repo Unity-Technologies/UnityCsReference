@@ -122,7 +122,8 @@ namespace UnityEditor.Utils
 
         public static bool AreEqual(string pathA, string pathB, bool ignoreCase)
         {
-            if (pathA == "" && pathB == "")
+            if (pathA == "" && pathB == "" ||
+                pathA == null && pathB == null)
                 return true;
 
             if (String.IsNullOrEmpty(pathA) || String.IsNullOrEmpty(pathB))

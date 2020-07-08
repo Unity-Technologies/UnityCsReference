@@ -104,7 +104,7 @@ namespace UnityEditor.PackageManager.UI
         {
             var dependencies = version?.dependencies;
             var reverseDependencies = PackageDatabase.instance.GetReverseDependencies(version);
-            var showDependency = PackageManagerPrefs.instance.showPackageDependencies && (dependencies != null || reverseDependencies != null);
+            var showDependency = PackageManagerProjectSettings.instance.enablePackageDependencies && (dependencies != null || reverseDependencies != null);
             UIUtils.SetElementDisplay(this, showDependency);
             if (!showDependency)
                 return;

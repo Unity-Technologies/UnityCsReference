@@ -20,10 +20,11 @@ namespace UnityEditor.PackageManager.UI
         {
             private static readonly RefreshOptions[] k_RefreshOptionsByTab =
             {
-                RefreshOptions.UpmList | RefreshOptions.UpmSearch,                  // PackageFilterTab.All
+                RefreshOptions.UpmList | RefreshOptions.UpmSearch,                  // PackageFilterTab.UnityRegistry
                 RefreshOptions.UpmList,                                             // PackageFilterTab.InProject
                 RefreshOptions.UpmListOffline | RefreshOptions.UpmSearchOffline,    // PackageFilterTab.BuiltIn
-                RefreshOptions.Purchased                                            // PackageFilterTab.AssetStore
+                RefreshOptions.Purchased,                                           // PackageFilterTab.AssetStore
+                RefreshOptions.UpmList | RefreshOptions.UpmSearch,                  // PackageFilterTab.MyRegistries
             };
 
             public event Action<IPackageVersion> onSelectionChanged = delegate {};
@@ -70,7 +71,7 @@ namespace UnityEditor.PackageManager.UI
             public bool isInitialized => m_Initialized;
 
             [SerializeField]
-            private PackageSelectionObject.Data[] m_SerializedPackageSelectionData = new PackageSelectionObject.Data[0];
+            private int[] m_SerializedPackageSelectionInstanceIds = new int[0];
 
             [NonSerialized]
             private Dictionary<string, PackageSelectionObject> m_PackageSelectionObjects = new Dictionary<string, PackageSelectionObject>();
@@ -84,6 +85,8 @@ namespace UnityEditor.PackageManager.UI
                 m_SerializedRefreshTimestampsValues = m_RefreshTimestamps.Values.ToArray();
                 m_SerializedRefreshErrorsKeys = m_RefreshErrors.Keys.ToArray();
                 m_SerializedRefreshErrorsValues = m_RefreshErrors.Values.ToArray();
+
+                m_SerializedPackageSelectionInstanceIds = m_PackageSelectionObjects.Select(kp => kp.Value.GetInstanceID()).ToArray();
             }
 
             public void OnAfterDeserialize()
@@ -101,45 +104,24 @@ namespace UnityEditor.PackageManager.UI
                     m_RefreshErrors[m_SerializedRefreshErrorsKeys[i]] = m_SerializedRefreshErrorsValues[i];
             }
 
-            public PackageSelectionObject CreatePackageSelectionObject(IPackage package, IPackageVersion version = null)
+            public virtual PackageSelectionObject GetPackageSelectionObject(IPackage package, IPackageVersion version = null, bool createIfNotFound = false)
             {
                 if (package == null)
                     return null;
 
                 version = version ?? package.versions.primary;
                 var packageSelectionObject = m_PackageSelectionObjects.Get(version.uniqueId);
-                if (packageSelectionObject != null)
-                    return packageSelectionObject;
-
-                packageSelectionObject = CreateInstance<PackageSelectionObject>();
-                packageSelectionObject.name = version.uniqueId;
-                packageSelectionObject.m_Data = new PackageSelectionObject.Data
+                if (packageSelectionObject == null && createIfNotFound)
                 {
-                    name = version.uniqueId,
-                    displayName = version.displayName,
-                    packageUniqueId = package.uniqueId,
-                    versionUniqueId = version.uniqueId
-                };
-
-                m_PackageSelectionObjects[version.uniqueId] = packageSelectionObject;
-                return packageSelectionObject;
-            }
-
-            private void OnEnable()
-            {
-                m_PackageSelectionObjects = new Dictionary<string, PackageSelectionObject>();
-                foreach (var data in m_SerializedPackageSelectionData)
-                {
-                    var packageSelectionObject = CreateInstance<PackageSelectionObject>();
-                    packageSelectionObject.name = data.name;
-                    packageSelectionObject.m_Data = data;
-                    m_PackageSelectionObjects[packageSelectionObject.name] = packageSelectionObject;
+                    packageSelectionObject = ScriptableObject.CreateInstance<PackageSelectionObject>();
+                    packageSelectionObject.hideFlags = HideFlags.DontSave;
+                    packageSelectionObject.name = version.uniqueId;
+                    packageSelectionObject.displayName = version.displayName;
+                    packageSelectionObject.packageUniqueId = package.uniqueId;
+                    packageSelectionObject.versionUniqueId = version.uniqueId;
+                    m_PackageSelectionObjects[version.uniqueId] = packageSelectionObject;
                 }
-            }
-
-            private void OnDisable()
-            {
-                m_SerializedPackageSelectionData = m_PackageSelectionObjects.Select(kp => kp.Value.m_Data).ToArray();
+                return packageSelectionObject;
             }
 
             private IPage GetPageFromTab(PackageFilterTab? tab = null)
@@ -174,7 +156,7 @@ namespace UnityEditor.PackageManager.UI
                         }
                     });
                 }
-                else if (filterTab == PackageFilterTab.All)
+                else if (filterTab == PackageFilterTab.UnityRegistry || filterTab == PackageFilterTab.MyRegistries)
                 {
                     page = new SimplePage(filterTab, new PageCapability
                     {
@@ -295,7 +277,7 @@ namespace UnityEditor.PackageManager.UI
                 var currentPackageSelection = ApplicationUtil.instance.activeSelection as PackageSelectionObject;
                 if (forceSelectInInspector || currentPackageSelection != null)
                 {
-                    var packageSelectionObject = CreatePackageSelectionObject(package, version);
+                    var packageSelectionObject = GetPackageSelectionObject(package, version, true);
                     if (ApplicationUtil.instance.activeSelection != packageSelectionObject)
                         ApplicationUtil.instance.activeSelection = packageSelectionObject;
                 }
@@ -309,6 +291,16 @@ namespace UnityEditor.PackageManager.UI
             public void SetExpanded(IPackage package, bool value)
             {
                 GetPageFromTab().SetExpanded(package, value);
+            }
+
+            public bool IsGroupExpanded(string groupName)
+            {
+                return GetPageFromTab().IsGroupExpanded(groupName);
+            }
+
+            public void SetGroupExpanded(string groupName, bool value)
+            {
+                GetPageFromTab().SetGroupExpanded(groupName, value);
             }
 
             public PackageFilterTab FindTab(IPackage package, IPackageVersion version = null)
@@ -326,7 +318,10 @@ namespace UnityEditor.PackageManager.UI
                 if (version?.isInstalled == true || package?.versions?.installed != null)
                     return PackageFilterTab.InProject;
 
-                return PackageFilterTab.All;
+                if (package?.Is(PackageType.Unity) == true)
+                    return PackageFilterTab.UnityRegistry;
+
+                return PackageFilterTab.MyRegistries;
             }
 
             private void OnInstalledOrUninstalled(IPackage package, IPackageVersion installedVersion = null)
@@ -356,6 +351,14 @@ namespace UnityEditor.PackageManager.UI
                 // When the filter tab is changed, on a page level, the selection hasn't changed because selection is kept for each filter
                 // However, if you look at package manager as a whole
                 OnPageSelectionChanged(page.GetSelectedVersion());
+
+                if (PackageFiltering.instance.previousFilterTab != null)
+                {
+                    var previousPage = GetPage((PackageFilterTab)PackageFiltering.instance.previousFilterTab);
+                    var selectedGoup = previousPage.GetSelectedVisualState()?.groupName;
+                    if (!string.IsNullOrEmpty(selectedGoup))
+                        previousPage.SetGroupExpanded(selectedGoup, true);
+                }
             }
 
             private static void UpdateSearchTextOnPage(IPage page, string searchText)
@@ -378,6 +381,16 @@ namespace UnityEditor.PackageManager.UI
             private void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
             {
                 GetPageFromTab().OnPackagesChanged(added, removed, preUpdate, postUpdate);
+
+                foreach (var package in removed)
+                {
+                    var packageSelectionObject = GetPackageSelectionObject(package);
+                    if (packageSelectionObject != null)
+                    {
+                        m_PackageSelectionObjects.Remove(packageSelectionObject.versionUniqueId);
+                        UnityEngine.Object.DestroyImmediate(packageSelectionObject);
+                    }
+                }
             }
 
             private void OnProductListFetched(AssetStorePurchases productList, bool fetchDetailsCalled)
@@ -416,14 +429,25 @@ namespace UnityEditor.PackageManager.UI
                 UnregisterEvents();
                 RegisterEvents();
 
+                if ((options & RefreshOptions.UpmSearch) != 0)
+                {
+                    UpmClient.instance.SearchAll();
+                    // Since the SearchAll online call now might return error and an empty list, we want to trigger a `SearchOffline` call if
+                    // we detect that SearchOffline has not been called before. That way we will have some offline result to show to the user instead of nothing
+                    if (!m_RefreshTimestamps.TryGetValue(RefreshOptions.UpmSearchOffline, out var value) || value == 0)
+                        options |= RefreshOptions.UpmSearchOffline;
+                }
                 if ((options & RefreshOptions.UpmSearchOffline) != 0)
                     UpmClient.instance.SearchAll(true);
-                if ((options & RefreshOptions.UpmSearch) != 0)
-                    UpmClient.instance.SearchAll();
+                if ((options & RefreshOptions.UpmList) != 0)
+                {
+                    UpmClient.instance.List();
+                    // Do the same logic for the List operations as the Search operations
+                    if (!m_RefreshTimestamps.TryGetValue(RefreshOptions.UpmListOffline, out var value) || value == 0)
+                        options |= RefreshOptions.UpmListOffline;
+                }
                 if ((options & RefreshOptions.UpmListOffline) != 0)
                     UpmClient.instance.List(true);
-                if ((options & RefreshOptions.UpmList) != 0)
-                    UpmClient.instance.List();
                 if ((options & RefreshOptions.Purchased) != 0)
                 {
                     var queryArgs = new PurchasesQueryArgs
@@ -495,6 +519,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 m_Initialized = true;
                 InitializeRefreshTimestamps();
+                InitializeSelectionObjects();
                 RegisterEvents();
             }
 
@@ -521,7 +546,7 @@ namespace UnityEditor.PackageManager.UI
                 PackageFiltering.instance.onFilterTabChanged += OnFilterChanged;
                 PackageFiltering.instance.onSearchTextChanged += OnSearchTextChanged;
 
-                PackageManagerPrefs.instance.onShowDependenciesChanged += OnShowDependenciesChanged;
+                PackageManagerProjectSettings.instance.onEnablePackageDependenciesChanged += OnShowDependenciesChanged;
 
                 ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
                 ApplicationUtil.instance.onEditorSelectionChanged += OnEditorSelectionChanged;
@@ -548,7 +573,7 @@ namespace UnityEditor.PackageManager.UI
                 PackageFiltering.instance.onFilterTabChanged -= OnFilterChanged;
                 PackageFiltering.instance.onSearchTextChanged -= OnSearchTextChanged;
 
-                PackageManagerPrefs.instance.onShowDependenciesChanged -= OnShowDependenciesChanged;
+                PackageManagerProjectSettings.instance.onEnablePackageDependenciesChanged -= OnShowDependenciesChanged;
 
                 ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
                 ApplicationUtil.instance.onEditorSelectionChanged -= OnEditorSelectionChanged;
@@ -562,6 +587,7 @@ namespace UnityEditor.PackageManager.UI
 
                 m_RefreshTimestamps.Clear();
                 InitializeRefreshTimestamps();
+                InitializeSelectionObjects();
 
                 ClearPages();
 
@@ -581,6 +607,16 @@ namespace UnityEditor.PackageManager.UI
                         continue;
 
                     m_RefreshTimestamps[filter] = 0;
+                }
+            }
+
+            private void InitializeSelectionObjects()
+            {
+                foreach (var id in m_SerializedPackageSelectionInstanceIds)
+                {
+                    var packageSelectionObject = UnityEngine.Object.FindObjectFromInstanceID(id) as PackageSelectionObject;
+                    if (packageSelectionObject != null)
+                        m_PackageSelectionObjects[packageSelectionObject.name] = packageSelectionObject;
                 }
             }
 
@@ -609,6 +645,19 @@ namespace UnityEditor.PackageManager.UI
             private void OnRefreshOperationSuccess(IOperation operation)
             {
                 m_RefreshTimestamps[operation.refreshOptions] = operation.timestamp;
+                if (operation.refreshOptions == RefreshOptions.UpmSearch)
+                {
+                    // when an online operation successfully returns with a timestamp newer than the offline timestamp, we update the offline timestamp as well
+                    // since we merge the online & offline result in the PackageDatabase and it's the newer ones that are being shown
+                    if (!m_RefreshTimestamps.TryGetValue(RefreshOptions.UpmSearchOffline, out var value) || value < operation.timestamp)
+                        m_RefreshTimestamps[RefreshOptions.UpmSearchOffline] = operation.timestamp;
+                }
+                else if (operation.refreshOptions == RefreshOptions.UpmList)
+                {
+                    // Do the same logic for the List operations as the Search operations
+                    if (!m_RefreshTimestamps.TryGetValue(RefreshOptions.UpmListOffline, out var value) || value < operation.timestamp)
+                        m_RefreshTimestamps[RefreshOptions.UpmListOffline] = operation.timestamp;
+                }
                 if (m_RefreshErrors.ContainsKey(operation.refreshOptions))
                     m_RefreshErrors.Remove(operation.refreshOptions);
             }
@@ -638,7 +687,7 @@ namespace UnityEditor.PackageManager.UI
                 {
                     if ((option & item.Key) == 0)
                         continue;
-                    if (item.Value == 0)
+                    if (item.Value == 0 && !m_RefreshErrors.ContainsKey(item.Key))
                         return false;
                 }
                 return true;

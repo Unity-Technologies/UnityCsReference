@@ -16,7 +16,7 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class UpmPackageVersion : BasePackageVersion
     {
-        static readonly string k_UnityPrefix = "com.unity.";
+        private const string k_UnityPrefix = "com.unity.";
 
         [SerializeField]
         private PackageInfo m_PackageInfo;
@@ -37,6 +37,26 @@ namespace UnityEditor.PackageManager.UI
         [SerializeField]
         private string m_Author;
         public override string author => m_Author;
+
+        public bool isUnityPackage
+        {
+            get
+            {
+                if (HasTag(PackageTag.Bundled))
+                    return true;
+
+                if (HasTag(PackageTag.Git | PackageTag.Local | PackageTag.InDevelopment))
+                    return false;
+
+                var registry = m_PackageInfo?.registry;
+                if (registry?.isDefault != true || string.IsNullOrEmpty(registry?.url))
+                    return false;
+
+                return new Uri(registry.url).Host.EndsWith(".unity.com", StringComparison.InvariantCultureIgnoreCase);
+            }
+        }
+
+        public bool isFromScopedRegistry => m_PackageInfo?.registry?.isDefault == false;
 
         [SerializeField]
         private bool m_IsFullyFetched;
@@ -155,8 +175,7 @@ namespace UnityEditor.PackageManager.UI
             if (HasTag(PackageTag.Bundled) && m_PackageInfo.datePublished == null)
                 m_PublishedDateTicks = new DateTime(1970, 1, 1).Ticks + InternalEditorUtility.GetUnityVersionDate() * TimeSpan.TicksPerSecond;
 
-            m_Author = string.IsNullOrEmpty(m_PackageInfo.author.name) &&
-                m_PackageInfo.name.StartsWith(k_UnityPrefix) ? "Unity Technologies Inc." : m_PackageInfo.author.name;
+            m_Author = string.IsNullOrEmpty(m_PackageInfo.author.name) && name.StartsWith(k_UnityPrefix) ? "Unity Technologies Inc." : m_PackageInfo.author.name;
 
             if (HasTag(PackageTag.BuiltIn))
                 m_Description = UpmPackageDocs.SplitBuiltinDescription(this)[0];

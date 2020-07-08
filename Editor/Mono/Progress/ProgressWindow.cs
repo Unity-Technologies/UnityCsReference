@@ -37,6 +37,9 @@ namespace UnityEditor
         private Toggle m_FilterFailed;
         private Toggle m_FilterSuccess;
         private Toggle m_FilterCancelled;
+        private double m_LastUpdate;
+
+        const double k_CheckUnresponsiveDelayInSecond = 1.0;
 
         [MenuItem("Window/General/Progress", priority = 50)]
         public static void ShowDetails()
@@ -155,9 +158,18 @@ namespace UnityEditor
             CheckUnresponsive();
         }
 
+        private void Update()
+        {
+            var now = EditorApplication.timeSinceStartup;
+            if (Progress.running && (now - m_LastUpdate) > k_CheckUnresponsiveDelayInSecond)
+            {
+                CheckUnresponsive();
+                m_LastUpdate = now;
+            }
+        }
+
         private void OnDisable()
         {
-            EditorApplication.delayCall -= CheckUnresponsive;
             Progress.added -= OperationWasAdded;
             Progress.removed -= OperationWasRemoved;
             Progress.updated -= OperationWasUpdated;
@@ -165,15 +177,10 @@ namespace UnityEditor
 
         private void CheckUnresponsive()
         {
-            EditorApplication.delayCall -= CheckUnresponsive;
-
             foreach (var progressElement in m_Elements)
             {
                 progressElement.CheckUnresponsive();
             }
-
-            if (Progress.running)
-                EditorApplication.delayCall += CheckUnresponsive;
         }
 
         private void OperationWasAdded(Progress.Item[] ops)
@@ -208,11 +215,7 @@ namespace UnityEditor
                 }
             }
 
-            EditorApplication.delayCall += () =>
-            {
-                UpdateNbTasks();
-                CheckUnresponsive();
-            };
+            CheckUnresponsive();
         }
 
         private void OperationWasUpdated(Progress.Item[] ops)

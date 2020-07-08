@@ -46,6 +46,7 @@ namespace UnityEditor.PackageManager.UI
         private const string k_EmptyDescriptionClass = "empty";
 
         private string previewInfoReadMoreUrl => $"https://docs.unity3d.com/{ApplicationUtil.instance.shortUnityVersion}/Documentation/Manual/pack-preview.html";
+        private string scopedRegistryInfoReadMoreUrl => $"https://docs.unity3d.com/{ApplicationUtil.instance.shortUnityVersion}/Documentation/Manual/upm-scoped.html";
 
         internal enum PackageAction
         {
@@ -115,6 +116,7 @@ namespace UnityEditor.PackageManager.UI
             detailImages?.RegisterCallback<GeometryChangedEvent>(ImagesGeometryChangeEvent);
 
             previewInfoBox.Q<Button>().clickable.clicked += () => ApplicationUtil.instance.OpenURL(previewInfoReadMoreUrl);
+            scopedRegistryInfoBox.Q<Button>().clickable.clicked += () => ApplicationUtil.instance.OpenURL(scopedRegistryInfoReadMoreUrl);
 
             root.Query<TextField>().ForEach(t =>
             {
@@ -147,7 +149,7 @@ namespace UnityEditor.PackageManager.UI
 
             PageManager.instance.onSelectionChanged += OnSelectionChanged;
 
-            PackageManagerPrefs.instance.onShowDependenciesChanged += (value) => RefreshDependencies();
+            PackageManagerProjectSettings.instance.onEnablePackageDependenciesChanged += (value) => RefreshDependencies();
 
             // manually call the callback function once on initialization to refresh the UI
             OnSelectionChanged(PageManager.instance.GetSelectedVersion());
@@ -246,7 +248,7 @@ namespace UnityEditor.PackageManager.UI
                     detailVersion.SetValueWithoutNotify(string.Format(ApplicationUtil.instance.GetTranslationForText("Version {0} - {1}"), versionString, releaseDateString));
                 UIUtils.SetElementDisplay(detailVersion, !package.Is(PackageType.BuiltIn) && !string.IsNullOrEmpty(versionString));
 
-                UIUtils.SetElementDisplay(previewInfoBox, displayVersion.HasTag(PackageTag.Preview));
+                UIUtils.SetElementDisplay(previewInfoBox, package.Is(PackageType.Unity) && displayVersion.HasTag(PackageTag.Preview));
 
                 foreach (var tag in k_VisibleTags)
                     UIUtils.SetElementDisplay(GetTagLabel(tag.ToString()), displayVersion.HasTag(tag));
@@ -255,7 +257,7 @@ namespace UnityEditor.PackageManager.UI
                 sampleList.SetPackageVersion(displayVersion);
 
                 RefreshAuthor();
-
+                RefreshRegistry();
                 RefreshReleaseDetails();
 
                 UIUtils.SetElementDisplay(customContainer, true);
@@ -331,7 +333,7 @@ namespace UnityEditor.PackageManager.UI
         private void RefreshDescription()
         {
             var hasDescription = !string.IsNullOrEmpty(displayVersion.description);
-            detailDesc.EnableClass(k_EmptyDescriptionClass, !hasDescription);
+            detailDesc.EnableInClassList(k_EmptyDescriptionClass, !hasDescription);
             detailDesc.style.maxHeight = int.MaxValue;
             detailDesc.SetValueWithoutNotify(hasDescription ? displayVersion.description : ApplicationUtil.instance.GetTranslationForText("There is no description for this package."));
             UIUtils.SetElementDisplay(detailDescMore, false);
@@ -356,6 +358,19 @@ namespace UnityEditor.PackageManager.UI
                     UIUtils.SetElementDisplay(detailAuthorLink, false);
                     detailAuthorText.SetValueWithoutNotify(displayVersion.author);
                 }
+            }
+        }
+
+        private void RefreshRegistry()
+        {
+            var registry = displayVersion.packageInfo?.registry;
+            var showRegistry = registry != null;
+            UIUtils.SetElementDisplay(detailRegistryContainer, showRegistry);
+            if (showRegistry)
+            {
+                UIUtils.SetElementDisplay(scopedRegistryInfoBox, !registry.isDefault);
+                detailRegistryName.text = registry.isDefault ? "Unity" : registry.name;
+                detailRegistryName.tooltip = registry.url;
             }
         }
 
@@ -948,6 +963,9 @@ namespace UnityEditor.PackageManager.UI
         private VisualElement detailAuthorContainer { get { return cache.Get<VisualElement>("detailAuthorContainer"); } }
         private TextField detailAuthorText { get { return cache.Get<TextField>("detailAuthorText"); } }
         private Button detailAuthorLink { get { return cache.Get<Button>("detailAuthorLink"); } }
+        private VisualElement detailRegistryContainer { get { return cache.Get<VisualElement>("detailRegistryContainer"); } }
+        private HelpBox scopedRegistryInfoBox { get { return cache.Get<HelpBox>("scopedRegistryInfoBox"); } }
+        private Label detailRegistryName { get { return cache.Get<Label>("detailRegistryName"); } }
         private VisualElement customContainer { get { return cache.Get<VisualElement>("detailCustomContainer"); } }
         private PackageSampleList sampleList { get { return cache.Get<PackageSampleList>("detailSampleList"); } }
         private PackageDependencies dependencies { get { return cache.Get<PackageDependencies>("detailDependencies"); } }

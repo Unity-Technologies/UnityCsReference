@@ -6,9 +6,10 @@ namespace UnityEditor.PackageManager.UI
 {
     internal enum PackageFilterTab
     {
-        All = 0,
+        UnityRegistry = 0,
         InProject,
         BuiltIn,
-        AssetStore
+        AssetStore,
+        MyRegistries
     }
 }

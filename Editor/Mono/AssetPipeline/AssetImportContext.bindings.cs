@@ -67,6 +67,19 @@ namespace UnityEditor.Experimental.AssetImporters
         [NativeName("DependsOnSourceAsset")]
         private extern void DependsOnSourceAssetInternal(string path);
 
+        public void DependsOnSourceAsset(GUID guid)
+        {
+            if (guid.Empty())
+            {
+                throw new ArgumentNullException("guid", "Cannot add dependency on empty GUID.");
+            }
+
+            DependsOnSourceAssetInternalGUID(guid);
+        }
+
+        [NativeName("DependsOnSourceAsset")]
+        private extern void DependsOnSourceAssetInternalGUID(GUID guid);
+
         internal void DependsOnImportedAsset(string path)
         {
             if (string.IsNullOrEmpty(path))
@@ -79,6 +92,32 @@ namespace UnityEditor.Experimental.AssetImporters
 
         [NativeName("DependsOnImportedAsset")]
         private extern void DependsOnImportedAssetInternal(string path);
+
+        public void DependsOnArtifact(GUID guid)
+        {
+            if (guid.Empty())
+            {
+                throw new ArgumentNullException("guid", "Cannot add dependency on empty GUID.");
+            }
+
+            DependsOnArtifactInternalGUID(guid);
+        }
+
+        [NativeName("DependsOnArtifact")]
+        private extern void DependsOnArtifactInternalGUID(GUID guid);
+
+        public void DependsOnArtifact(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentNullException("path", "Cannot add dependency on invalid path.");
+            }
+
+            DependsOnArtifactInternalPath(path);
+        }
+
+        [NativeName("DependsOnArtifact")]
+        private extern void DependsOnArtifactInternalPath(string path);
 
         public void DependsOnCustomDependency(string dependency)
         {

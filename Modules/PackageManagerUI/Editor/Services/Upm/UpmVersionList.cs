@@ -59,7 +59,7 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        public IPackageVersion latest => m_Versions.Last();
+        public IPackageVersion latest => m_Versions.LastOrDefault();
 
         public IPackageVersion recommended
         {

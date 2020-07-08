@@ -35,6 +35,10 @@ namespace UnityEditor.PackageManager.UI
 
         VisualState GetVisualState(IPackage package);
 
+        bool IsGroupExpanded(string groupName);
+
+        void SetGroupExpanded(string groupName, bool value);
+
         void Setup();
 
         void RegisterEvents();
@@ -62,6 +66,6 @@ namespace UnityEditor.PackageManager.UI
 
         void LoadMore(int numberOfPackages);
 
-        PackageSelectionObject CreatePackageSelectionObject(IPackage package, IPackageVersion version = null);
+        PackageSelectionObject GetPackageSelectionObject(IPackage package, IPackageVersion version = null, bool createIfNotFound = false);
     }
 }

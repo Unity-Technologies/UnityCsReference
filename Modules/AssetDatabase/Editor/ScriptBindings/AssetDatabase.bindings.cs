@@ -55,6 +55,14 @@ namespace UnityEditor
         ImportDelayed = 1 << 1
     }
 
+    internal enum AssetDatabasePreventExecution
+    {
+        kNoAssetDatabaseRestriction = 0,
+        kImporting = 1 << 0,
+        kImportingAsset = 1 << 1,
+        kPreventCustomDependencyChanges = 1 << 2
+    }
+
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabase.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseUtility.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/ScriptBindings/AssetDatabase.bindings.h")]

@@ -71,11 +71,16 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
         {
-            // If nothing in the change list is related to `in development` packages
-            // we can skip the whole database scan to save some time
-            var changed = added.Concat(removed).Concat(preUpdate).Concat(postUpdate);
-            if (!changed.Any(p => p.versions.installed?.HasTag(PackageTag.InDevelopment) ?? false))
-                return;
+            if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.MyRegistries)
+            {
+                // we can skip the whole database scan to save some time
+                var changed = added.Concat(removed).Concat(preUpdate).Concat(postUpdate);
+                if (!changed.Any(p => p.Is(PackageType.ScopedRegistry)))
+                    return;
+
+                if (!PackageDatabase.instance.allPackages.Any(p => p.Is(PackageType.ScopedRegistry)))
+                    SetFilter(PackageFilterTab.UnityRegistry);
+            }
         }
 
         private void OnUserLoginStateChange(bool loggedIn)
@@ -120,8 +125,11 @@ namespace UnityEditor.PackageManager.UI
             var displayName = string.Empty;
             switch (filter)
             {
-                case PackageFilterTab.All:
-                    displayName = "All";
+                case PackageFilterTab.UnityRegistry:
+                    displayName = "Unity Registry";
+                    break;
+                case PackageFilterTab.MyRegistries:
+                    displayName = "My Registries";
                     break;
                 case PackageFilterTab.InProject:
                     displayName = "In Project";
@@ -187,6 +195,37 @@ namespace UnityEditor.PackageManager.UI
             PackageManagerWindowAnalytics.SendEvent("changeFilter");
         }
 
+        private void SetupAdvancedMenu()
+        {
+            toolbarSettingsMenu.tooltip = L10n.Tr("Advanced");
+            toolbarSettingsMenu.menu.AppendAction(L10n.Tr("Advanced Project Settings"), a =>
+            {
+                var projectSettings = PackageManagerProjectSettings.instance;
+                if (!projectSettings.advancedSettingsExpanded)
+                {
+                    projectSettings.advancedSettingsExpanded = true;
+                    projectSettings.Save();
+                }
+                SettingsWindow.Show(SettingsScope.Project, PackageManagerProjectSettingsProvider.k_PackageManagerSettingsPath);
+                PackageManagerWindowAnalytics.SendEvent("advancedProjectSettings");
+            });
+
+            toolbarSettingsMenu.menu.AppendSeparator();
+
+            toolbarSettingsMenu.menu.AppendAction(L10n.Tr("Reset Packages to defaults"), a =>
+            {
+                EditorApplication.ExecuteMenuItem(ApplicationUtil.k_ResetPackagesMenuPath);
+                PageManager.instance.Refresh(RefreshOptions.UpmListOffline);
+                PackageManagerWindowAnalytics.SendEvent("resetToDefaults");
+            });
+
+            PackageManagerExtensions.ExtensionCallback(() =>
+            {
+                foreach (var extension in PackageManagerExtensions.MenuExtensions)
+                    extension.OnAdvancedMenuCreate(toolbarSettingsMenu.menu);
+            });
+        }
+
         private void SetupAddMenu()
         {
             addMenu.menu.AppendAction(ApplicationUtil.instance.GetTranslationForText("Add package from disk..."), a =>
@@ -238,32 +277,32 @@ namespace UnityEditor.PackageManager.UI
             });
         }
 
+        private void AddFilterTabToDropdownMenu(PackageFilterTab tab, Action<DropdownMenuAction> action = null, Func<DropdownMenuAction, DropdownMenuAction.Status> actionStatusCallback = null)
+        {
+            action = action ?? (a => SetFilterFromMenu(tab));
+            actionStatusCallback = actionStatusCallback ?? (a => PackageFiltering.instance.currentFilterTab == tab ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+            filterTabsMenu.menu.AppendAction(L10n.Tr(GetFilterDisplayName(tab)), action, actionStatusCallback);
+        }
+
         private void SetupFilterTabsMenu()
         {
             filterTabsMenu.menu.MenuItems().Clear();
             filterTabsMenu.ShowTextTooltipOnSizeChange(-16);
 
-            filterTabsMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.All), a =>
+            AddFilterTabToDropdownMenu(PackageFilterTab.UnityRegistry);
+            AddFilterTabToDropdownMenu(PackageFilterTab.MyRegistries, null, a =>
             {
-                SetFilterFromMenu(PackageFilterTab.All);
-            }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.All ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
-
-            filterTabsMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.InProject), a =>
-            {
-                SetFilterFromMenu(PackageFilterTab.InProject);
-            }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.InProject ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
-
+                if (!PackageDatabase.instance.allPackages.Any(p => p.Is(PackageType.ScopedRegistry)))
+                    return DropdownMenuAction.Status.Hidden;
+                else if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.MyRegistries)
+                    return DropdownMenuAction.Status.Checked;
+                return DropdownMenuAction.Status.Normal;
+            });
+            AddFilterTabToDropdownMenu(PackageFilterTab.InProject);
             filterTabsMenu.menu.AppendSeparator();
-            filterTabsMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.AssetStore), a =>
-            {
-                SetFilterFromMenu(PackageFilterTab.AssetStore);
-            }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
-
+            AddFilterTabToDropdownMenu(PackageFilterTab.AssetStore);
             filterTabsMenu.menu.AppendSeparator();
-            filterTabsMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.BuiltIn), a =>
-            {
-                SetFilterFromMenu(PackageFilterTab.BuiltIn);
-            }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.BuiltIn ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+            AddFilterTabToDropdownMenu(PackageFilterTab.BuiltIn);
 
             PackageManagerExtensions.ExtensionCallback(() =>
             {
@@ -361,35 +400,6 @@ namespace UnityEditor.PackageManager.UI
             };
         }
 
-        private void SetupAdvancedMenu()
-        {
-            advancedMenu.menu.AppendAction(ApplicationUtil.instance.GetTranslationForText("Show dependencies"), a =>
-            {
-                ToggleDependencies();
-                PackageManagerWindowAnalytics.SendEvent("toggleDependencies");
-            }, a => PackageManagerPrefs.instance.showPackageDependencies ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
-
-            advancedMenu.menu.AppendSeparator();
-
-            advancedMenu.menu.AppendAction(ApplicationUtil.instance.GetTranslationForText("Reset Packages to defaults"), a =>
-            {
-                EditorApplication.ExecuteMenuItem(ApplicationUtil.k_ResetPackagesMenuPath);
-                PageManager.instance.Refresh(RefreshOptions.UpmListOffline);
-                PackageManagerWindowAnalytics.SendEvent("resetToDefaults");
-            }, a => DropdownMenuAction.Status.Normal);
-
-            PackageManagerExtensions.ExtensionCallback(() =>
-            {
-                foreach (var extension in PackageManagerExtensions.MenuExtensions)
-                    extension.OnAdvancedMenuCreate(advancedMenu.menu);
-            });
-        }
-
-        private void ToggleDependencies()
-        {
-            PackageManagerPrefs.instance.showPackageDependencies = !PackageManagerPrefs.instance.showPackageDependencies;
-        }
-
         private VisualElementCache cache { get; set; }
 
         private ToolbarMenu addMenu { get { return cache.Get<ToolbarMenu>("toolbarAddMenu"); }}
@@ -397,7 +407,7 @@ namespace UnityEditor.PackageManager.UI
         private ToolbarMenu orderingMenu { get { return cache.Get<ToolbarMenu>("toolbarOrderingMenu"); } }
         private ToolbarWindowMenu filtersMenu { get { return cache.Get<ToolbarWindowMenu>("toolbarFiltersMenu"); } }
         private ToolbarButton clearFiltersButton { get { return cache.Get<ToolbarButton>("toolbarClearFiltersButton"); } }
-        private ToolbarMenu advancedMenu { get { return cache.Get<ToolbarMenu>("toolbarAdvancedMenu"); } }
         private ToolbarSearchField searchToolbar { get { return cache.Get<ToolbarSearchField>("toolbarSearch"); } }
+        private ToolbarMenu toolbarSettingsMenu { get { return cache.Get<ToolbarMenu>("toolbarSettingsMenu"); } }
     }
 }

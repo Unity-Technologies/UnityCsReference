@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
@@ -24,6 +23,8 @@ namespace UnityEditor.PackageManager.UI
         public IPackageVersion targetVersion { get { return package?.versions.primary; } }
         public VisualElement element { get { return this; } }
 
+        internal PackageGroup packageGroup { get; set; }
+
         private IPackageVersion selectedVersion
         {
             get
@@ -36,14 +37,7 @@ namespace UnityEditor.PackageManager.UI
 
         internal IEnumerable<PackageVersionItem> versionItems { get { return versionList.Children().Cast<PackageVersionItem>(); } }
 
-        // the item is only expandable when there are more than one versions
-        private bool expandable { get { return package?.versions.Skip(1).Any() ?? false; } }
-
-        public PackageItem() : this(null)
-        {
-        }
-
-        public PackageItem(IPackage package)
+        public PackageItem(IPackage package, VisualState state)
         {
             var root = Resources.GetTemplate("PackageItem.uxml");
             Add(root);
@@ -56,18 +50,17 @@ namespace UnityEditor.PackageManager.UI
             UpdateExpanderUI(false);
 
             SetPackage(package);
-            UpdateVisualState();
+            UpdateVisualState(state);
         }
 
-        public void UpdateVisualState(VisualState newVisualState = null)
+        public void UpdateVisualState(VisualState newVisualState)
         {
             var seeAllVersionsOld = visualState?.seeAllVersions ?? false;
             var selectedVersionIdOld = visualState?.selectedVersionId ?? string.Empty;
 
-            visualState = newVisualState?.Clone() ?? visualState ?? new VisualState(package?.uniqueId);
+            visualState = newVisualState?.Clone() ?? visualState ?? new VisualState(package?.uniqueId, string.Empty);
 
-            if (UIUtils.IsElementVisible(this) != visualState.visible)
-                UIUtils.SetElementDisplay(this, visualState.visible);
+            EnableInClassList("invisible", !visualState.visible);
 
             if (selectedVersion != null && visualState != null && selectedVersion != targetVersion)
                 visualState.seeAllVersions = visualState.seeAllVersions || !package.versions.key.Contains(selectedVersion);
@@ -181,9 +174,10 @@ namespace UnityEditor.PackageManager.UI
         public void RefreshSelection()
         {
             var selectedVersion = this.selectedVersion;
-            mainItem.EnableClass(k_SelectedClassName, selectedVersion != null);
+            EnableInClassList(k_SelectedClassName, selectedVersion != null);
+            mainItem.EnableInClassList(k_SelectedClassName, selectedVersion != null);
             foreach (var version in versionItems)
-                version.EnableClass(k_SelectedClassName, selectedVersion == version.targetVersion);
+                version.EnableInClassList(k_SelectedClassName, selectedVersion == version.targetVersion);
         }
 
         public void SelectMainItem()
@@ -211,7 +205,7 @@ namespace UnityEditor.PackageManager.UI
 
         internal void UpdateExpanderUI(bool expanded)
         {
-            mainItem.EnableClass(k_ExpandedClassName, expanded);
+            mainItem.EnableInClassList(k_ExpandedClassName, expanded);
             arrowExpander.value = expanded;
             UIUtils.SetElementDisplay(versionsContainer, expanded);
         }

@@ -27,6 +27,7 @@ namespace UnityEditor.PackageManager.UI
         bool isFullyLoaded { get; }
 
         VisualState GetVisualState(string packageUniqueId);
+        VisualState GetSelectedVisualState();
         void LoadMore(int numberOfPackages);
         void ClearFilters();
         void UpdateFilters(PageFilters filters);
@@ -46,6 +47,8 @@ namespace UnityEditor.PackageManager.UI
         void SetExpanded(IPackage package, bool value);
         void SetSeeAllVersions(string packageUniqueId, bool value);
         void SetSeeAllVersions(IPackage package, bool value);
+        bool IsGroupExpanded(string groupName);
+        void SetGroupExpanded(string groupName, bool value);
 
         bool Contains(IPackage package);
         bool Contains(string packageUniqueId);

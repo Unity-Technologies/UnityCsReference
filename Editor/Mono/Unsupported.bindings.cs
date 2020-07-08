@@ -255,5 +255,10 @@ namespace UnityEditor
 
         [NativeMethod("ClearPasteboard")]
         internal static extern void ClearPasteboard();
+
+        public static UnityEngine.Object GetRenderSettings()
+        {
+            return RenderSettings.GetRenderSettings();
+        }
     }
 }

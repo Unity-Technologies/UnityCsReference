@@ -18,14 +18,6 @@ namespace UnityEditor.PackageManager.UI
             });
         }
 
-        public static void EnableClass(this VisualElement element, string classname, bool enable)
-        {
-            element.RemoveFromClassList(classname);
-
-            if (enable)
-                element.AddToClassList(classname);
-        }
-
         /// <summary>
         /// Utility method when toggling between two classes based on boolean
         /// </summary>

@@ -21,11 +21,13 @@ namespace UnityEditor.PackageManager.UI
             {
                 case PackageFilterTab.BuiltIn:
                     return package.Is(PackageType.BuiltIn);
-                case PackageFilterTab.All:
-                    return package.Is(PackageType.Installable) && (package.isDiscoverable || (package.versions.installed?.isDirectDependency ?? false));
+                case PackageFilterTab.UnityRegistry:
+                    return package.Is(PackageType.Installable) && package.Is(PackageType.Unity) && (package.isDiscoverable || (package.versions.installed?.isDirectDependency ?? false));
+                case PackageFilterTab.MyRegistries:
+                    return package.Is(PackageType.Installable) && package.Is(PackageType.ScopedRegistry) && (package.isDiscoverable || (package.versions.installed?.isDirectDependency ?? false));
                 case PackageFilterTab.InProject:
                     return !package.Is(PackageType.BuiltIn) && package.versions.installed != null
-                        && (PackageManagerPrefs.instance.showPackageDependencies || package.versions.installed.isDirectDependency);
+                        && (PackageManagerProjectSettings.instance.enablePackageDependencies || package.versions.installed.isDirectDependency);
                 case PackageFilterTab.AssetStore:
                     return ApplicationUtil.instance.isUserLoggedIn && package.Is(PackageType.AssetStore);
                 default:
@@ -77,6 +79,8 @@ namespace UnityEditor.PackageManager.UI
             public event Action<PackageFilterTab> onFilterTabChanged = delegate {};
             public event Action<string> onSearchTextChanged = delegate {};
 
+            public PackageFilterTab? previousFilterTab { get; private set; } = null;
+
             [SerializeField]
             private PackageFilterTab m_CurrentFilterTab;
             public PackageFilterTab currentFilterTab
@@ -87,6 +91,7 @@ namespace UnityEditor.PackageManager.UI
                 {
                     if (value != m_CurrentFilterTab)
                     {
+                        previousFilterTab = m_CurrentFilterTab;
                         m_CurrentFilterTab = value;
                         onFilterTabChanged?.Invoke(m_CurrentFilterTab);
                     }
