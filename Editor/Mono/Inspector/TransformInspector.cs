@@ -54,6 +54,9 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox(s_Contents.floatingPointWarning, MessageType.Warning);
 
             serializedObject.ApplyModifiedProperties();
+
+            //resetting label width as it is carried over to other windows
+            EditorGUIUtility.labelWidth = 0;
         }
 
         private void Inspector3D()

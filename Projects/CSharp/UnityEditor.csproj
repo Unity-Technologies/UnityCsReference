@@ -4456,6 +4456,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetails.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDetails.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageGroup.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageGroup.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageItem.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageItem.cs</Link>
     </Compile>

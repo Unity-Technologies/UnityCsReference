@@ -239,7 +239,7 @@ namespace UnityEditor
         internal static bool IsCppPluginFile(string assetPath)
         {
             var extension = Path.GetExtension(assetPath).ToLower();
-            return extension == ".cpp" || extension == ".c" || extension == ".h";
+            return extension == ".cpp" || extension == ".c" || extension == ".h" || extension == ".mm" || extension == ".m";
         }
     }
 }

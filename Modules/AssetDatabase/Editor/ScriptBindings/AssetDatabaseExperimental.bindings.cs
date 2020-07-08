@@ -225,9 +225,11 @@ namespace UnityEditor.Experimental
         }
 
         [FreeFunction("AssetDatabaseExperimental::RegisterCustomDependency")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kPreventCustomDependencyChanges, PreventExecutionSeverity.PreventExecution_ManagedException, "Custom dependencies can only be changed when the assetdatabase is not importing.")]
         public extern static void RegisterCustomDependency(string dependency, Hash128 hashOfValue);
 
         [FreeFunction("AssetDatabaseExperimental::UnregisterCustomDependencyPrefixFilter")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kPreventCustomDependencyChanges, PreventExecutionSeverity.PreventExecution_ManagedException, "Custom dependencies can only be removed when the assetdatabase is not importing.")]
         public extern static UInt32 UnregisterCustomDependencyPrefixFilter(string prefixFilter);
 
         [FreeFunction("AssetDatabase::IsAssetImportProcess")]

@@ -55,10 +55,11 @@ namespace UnityEditor
         private GUIContent m_ProgressStatus = new GUIContent();
         private GUIContent m_ProgressPercentageStatus = new GUIContent();
         private bool m_CurrentProgressNotResponding = false;
-        private float m_LastElapsedTime = 0f;
 
         private ManagedDebuggerToggle m_ManagedDebuggerToggle = null;
         private CacheServerToggle m_CacheServerToggle = null;
+        const double k_CheckUnresponsiveFrequencyInSecond = 0.5;
+        private double m_LastUpdate;
 
         private bool showBakeMode
         {
@@ -73,7 +74,7 @@ namespace UnityEditor
         {
             get
             {
-                return Progress.running && m_LastElapsedTime > 0.5f;
+                return Progress.running;
             }
         }
 
@@ -114,14 +115,21 @@ namespace UnityEditor
             }
         }
 
-        private void DelayCheckProgressUnresponsive()
+        private void ScheduleCheckProgressUnresponsive()
         {
-            EditorApplication.update -= CheckProgressUnresponsive;
-            EditorApplication.CallDelayed(CheckProgressUnresponsive, 0.250);
+            EditorApplication.tick -= CheckProgressUnresponsive;
+            EditorApplication.tick += CheckProgressUnresponsive;
         }
 
         private void CheckProgressUnresponsive()
         {
+            var now = EditorApplication.timeSinceStartup;
+            if (now - m_LastUpdate < k_CheckUnresponsiveFrequencyInSecond)
+                return;
+
+            EditorApplication.tick -= CheckProgressUnresponsive;
+
+            m_LastUpdate = now;
             if (Progress.running)
             {
                 var unresponsiveItem = Progress.EnumerateItems().FirstOrDefault(item => !item.responding);
@@ -133,7 +141,7 @@ namespace UnityEditor
                 else
                 {
                     m_CurrentProgressNotResponding = false;
-                    DelayCheckProgressUnresponsive();
+                    ScheduleCheckProgressUnresponsive();
                 }
             }
             else
@@ -345,14 +353,13 @@ namespace UnityEditor
             var taskCount = Progress.GetRunningProgressCount();
             if (taskCount == 0)
             {
-                m_LastElapsedTime = 0f;
                 m_ProgressStatus.text = String.Empty;
                 m_ProgressPercentageStatus.text = String.Empty;
             }
             else
             {
-                var currentItem = progressItems[0];
-                if (!String.IsNullOrEmpty(currentItem.description))
+                var currentItem = progressItems.FirstOrDefault();
+                if (currentItem != null && !String.IsNullOrEmpty(currentItem.description))
                     m_ProgressStatus.tooltip = currentItem.name + "\r\n" + currentItem.description;
                 m_ProgressPercentageStatus.text = Progress.globalProgress.ToString("P", percentageFormat);
 
@@ -366,13 +373,9 @@ namespace UnityEditor
                 if (taskCount > 1)
                     m_ProgressStatus.text = $"Multiple tasks ({taskCount}){remainingTimeText}";
                 else
-                    m_ProgressStatus.text = $"{currentItem.name}{remainingTimeText}";
+                    m_ProgressStatus.text = $"{currentItem?.name}{remainingTimeText}";
 
-                m_LastElapsedTime = Mathf.Max(m_LastElapsedTime, currentItem.elapsedTime);
-                if (m_CurrentProgressNotResponding)
-                    m_LastElapsedTime = float.MaxValue;
-
-                DelayCheckProgressUnresponsive();
+                ScheduleCheckProgressUnresponsive();
             }
 
             RepaintProgress(progressItems);

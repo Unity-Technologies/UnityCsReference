@@ -31,6 +31,7 @@ namespace UnityEditor.PackageManager.UI
             m_VersionList = new UpmVersionList();
             m_Errors = new List<UIError>();
             m_Type = type;
+            RefreshUnityType();
         }
 
         public UpmPackage(PackageInfo info, bool isInstalled, bool isDiscoverable)
@@ -41,11 +42,13 @@ namespace UnityEditor.PackageManager.UI
             m_IsDiscoverable = isDiscoverable;
             m_VersionList = new UpmVersionList(info, isInstalled);
             m_Type = versions.primary.HasTag(PackageTag.BuiltIn) ? PackageType.BuiltIn : PackageType.Installable;
+            RefreshUnityType();
         }
 
         internal void UpdateVersions(IEnumerable<UpmPackageVersion> updatedVersions)
         {
             m_VersionList = new UpmVersionList(updatedVersions);
+            RefreshUnityType();
             ClearErrors();
         }
 
@@ -53,6 +56,14 @@ namespace UnityEditor.PackageManager.UI
         public void AddInstalledVersion(UpmPackageVersion newVersion)
         {
             m_VersionList.AddInstalledVersion(newVersion);
+            RefreshUnityType();
+        }
+
+        private void RefreshUnityType()
+        {
+            var primaryUpmVersion = versions?.primary as UpmPackageVersion;
+            _ = primaryUpmVersion?.isUnityPackage ?? false ? m_Type |= PackageType.Unity : m_Type &= ~PackageType.Unity;
+            _ = primaryUpmVersion?.isFromScopedRegistry ?? false ? m_Type |= PackageType.ScopedRegistry : m_Type &= ~PackageType.ScopedRegistry;
         }
 
         public override IPackage Clone()

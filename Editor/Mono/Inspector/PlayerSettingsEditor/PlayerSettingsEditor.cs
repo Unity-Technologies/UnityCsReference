@@ -182,6 +182,7 @@ namespace UnityEditor
             public static readonly GUIContent apiCompatibilityLevel_NET_4_6 = EditorGUIUtility.TrTextContent(".NET 4.x");
             public static readonly GUIContent apiCompatibilityLevel_NET_Standard_2_0 = EditorGUIUtility.TrTextContent(".NET Standard 2.0");
             public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code", "Allow compilation of unsafe code for predefined assemblies (Assembly-CSharp.dll, etc.)");
+            public static readonly GUIContent useDeterministicCompilation = EditorGUIUtility.TrTextContent("Use deterministic compilation", "Compiling with Deterministic compilation flag");
             public static readonly GUIContent activeInputHandling = EditorGUIUtility.TrTextContent("Active Input Handling*");
             public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager (Old)"), EditorGUIUtility.TrTextContent("Input System Package (New)"), EditorGUIUtility.TrTextContent("Both") };
             public static readonly GUIContent lightmapEncodingLabel = EditorGUIUtility.TrTextContent("Lightmap Encoding", "Affects the encoding scheme and compression format of the lightmaps.");
@@ -356,6 +357,9 @@ namespace UnityEditor
 
         SerializedProperty m_VirtualTexturingSupportEnabled;
 
+        // Scripting
+        SerializedProperty m_UseDeterministicCompilation;
+
         // Localization Cache
         string m_LocalizedTargetName;
 
@@ -457,6 +461,7 @@ namespace UnityEditor
 
             m_AllowUnsafeCode               = FindPropertyAssert("allowUnsafeCode");
             m_GCIncremental                 = FindPropertyAssert("gcIncremental");
+            m_UseDeterministicCompilation = FindPropertyAssert("useDeterministicCompilation");
 
             m_DefaultScreenWidth            = FindPropertyAssert("defaultScreenWidth");
             m_DefaultScreenHeight           = FindPropertyAssert("defaultScreenHeight");
@@ -2300,6 +2305,14 @@ namespace UnityEditor
                 }
             }
 
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(m_UseDeterministicCompilation, SettingsContent.useDeterministicCompilation);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    PlayerSettings.UseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
+                }
+            }
             // Active input handling
             int inputOption = (!m_EnableInputSystem.boolValue) ? 0 : m_DisableInputManager.boolValue ? 1 : 2;
             int oldInputOption = inputOption;

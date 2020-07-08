@@ -5,94 +5,134 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
 {
-    internal static class PackageManagerProjectSettingsProvider
+    internal class PackageManagerProjectSettingsProvider : SettingsProvider
     {
+        protected VisualElement rootVisualElement { get; private set; }
+
+        internal const string k_PackageManagerSettingsPath = "Project/Package Manager";
+        const string k_GeneralServicesTemplatePath = "UXML/PackageManager/PackageManagerProjectSettings.uxml";
+        protected VisualTreeAsset m_GeneralTemplate;
+
         private static readonly string k_Message =
             "Preview packages are in the early stage of development and not yet ready for production.\n" +
             "We recommend using these only for testing purpose and to give us direct feedback.";
 
-        private static class Styles
+        private PackageManagerProjectSettings m_Settings;
+
+        internal static class StylesheetPath
         {
-            public static readonly GUIContent EnablePreviewPackagesLabel = new GUIContent(
-                L10n.Tr("Enable Preview Packages"));
+            internal static readonly string projectSettings = "StyleSheets/PackageManager/PackageManagerProjectSettings.uss";
+            internal static readonly string projectSettingsDark = "StyleSheets/PackageManager/Dark.uss";
+            internal static readonly string projectSettingsLight = "StyleSheets/PackageManager/Light.uss";
+            internal static readonly string packageManagerCommon = "StyleSheets/PackageManager/Common.uss";
+            internal static readonly string stylesheetCommon = "StyleSheets/Extensions/base/common.uss";
+            internal static readonly string stylesheetDark = "StyleSheets/Extensions/base/dark.uss";
+            internal static readonly string stylesheetLight = "StyleSheets/Extensions/base/light.uss";
+        }
 
-            public static readonly GUIStyle verticalStyle;
-            public static readonly GUIStyle linkLabel;
-            public static readonly GUIStyle textLabel;
-
-            static Styles()
+        public PackageManagerProjectSettingsProvider(string path, SettingsScope scopes, IEnumerable<string> keywords = null)
+            : base(path, scopes, keywords)
+        {
+            activateHandler = (s, element) =>
             {
-                verticalStyle  = new GUIStyle(EditorStyles.inspectorFullWidthMargins);
-                verticalStyle.margin = new RectOffset(10, 10, 10, 10);
+                // Create a child to make sure all the style sheets are not added to the root.
+                rootVisualElement = new ScrollView();
+                rootVisualElement.AddStyleSheetPath(StylesheetPath.projectSettings);
+                rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? StylesheetPath.projectSettingsDark : StylesheetPath.projectSettingsLight);
+                rootVisualElement.AddStyleSheetPath(StylesheetPath.packageManagerCommon);
+                rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? StylesheetPath.stylesheetDark : StylesheetPath.stylesheetLight);
+                rootVisualElement.AddStyleSheetPath(StylesheetPath.stylesheetCommon);
 
-                linkLabel = new GUIStyle(EditorStyles.linkLabel);
-                linkLabel.fontSize = EditorStyles.miniLabel.fontSize;
-                linkLabel.wordWrap = true;
+                element.Add(rootVisualElement);
 
-                textLabel = new GUIStyle(EditorStyles.miniLabel);
-                textLabel.wordWrap = true;
-            }
+                m_GeneralTemplate = EditorGUIUtility.Load(k_GeneralServicesTemplatePath) as VisualTreeAsset;
+
+                VisualElement newVisualElement = new VisualElement();
+                m_GeneralTemplate.CloneTree(newVisualElement);
+                rootVisualElement.Add(newVisualElement);
+
+                cache = new VisualElementCache(rootVisualElement);
+
+                m_Settings = PackageManagerProjectSettings.instance;
+
+                SetExpanded(m_Settings.advancedSettingsExpanded);
+                advancedSettingsFoldout.RegisterValueChangedCallback(changeEvent =>
+                {
+                    if (changeEvent.target == advancedSettingsFoldout)
+                        SetExpanded(changeEvent.newValue);
+                });
+
+                previewInfoBox.Q<Button>().clickable.clicked += () =>
+                {
+                    var unityVersionParts = Application.unityVersion.Split('.');
+                    Application.OpenURL($"https://docs.unity3d.com/{unityVersionParts[0]}.{unityVersionParts[1]}/Documentation/Manual/pack-preview.html");
+                };
+
+                enablePreviewPackages.SetValueWithoutNotify(m_Settings.enablePreviewPackages);
+                enablePreviewPackages.RegisterValueChangedCallback(changeEvent =>
+                {
+                    var newValue = changeEvent.newValue;
+
+                    if (newValue != m_Settings.enablePreviewPackages)
+                    {
+                        var saveIt = true;
+                        if (newValue && !m_Settings.oneTimeWarningShown)
+                        {
+                            if (EditorUtility.DisplayDialog(L10n.Tr("Package Manager"), L10n.Tr(k_Message), L10n.Tr("I understand"), L10n.Tr("Cancel")))
+                                m_Settings.oneTimeWarningShown = true;
+                            else
+                                saveIt = false;
+                        }
+
+                        if (saveIt)
+                        {
+                            m_Settings.enablePreviewPackages = newValue;
+                            m_Settings.Save();
+                            PackageManagerWindowAnalytics.SendEvent("togglePreviewPackages");
+                        }
+                    }
+                    enablePreviewPackages.SetValueWithoutNotify(m_Settings.enablePreviewPackages);
+                });
+
+                enablePackageDependencies.SetValueWithoutNotify(m_Settings.enablePackageDependencies);
+                enablePackageDependencies.RegisterValueChangedCallback(changeEvent =>
+                {
+                    enablePackageDependencies.SetValueWithoutNotify(changeEvent.newValue);
+                    var newValue = changeEvent.newValue;
+
+                    if (newValue != m_Settings.enablePackageDependencies)
+                    {
+                        m_Settings.enablePackageDependencies = newValue;
+                        m_Settings.Save();
+                        PackageManagerWindowAnalytics.SendEvent("toggleDependencies");
+                    }
+                });
+            };
         }
 
         [SettingsProvider]
-        internal static SettingsProvider CreateProjectSettingsProvider()
+        public static SettingsProvider CreateProjectSettingsProvider()
         {
-            var provider = new SettingsProvider("Project/Package Manager", SettingsScope.Project)
-            {
-                guiHandler = searchContext =>
-                {
-                    var settings = PackageManagerProjectSettings.instance;
-
-                    using (new EditorGUILayout.VerticalScope(Styles.verticalStyle))
-                    {
-                        var newValue = EditorGUILayout.Toggle(Styles.EnablePreviewPackagesLabel, settings.enablePreviewPackages);
-                        if (newValue != settings.enablePreviewPackages)
-                        {
-                            var saveIt = true;
-                            if (newValue && !settings.oneTimeWarningShown)
-                            {
-                                if (EditorUtility.DisplayDialog(L10n.Tr("Package Manager"), L10n.Tr(k_Message), L10n.Tr("I understand"), L10n.Tr("Cancel")))
-                                    settings.oneTimeWarningShown = true;
-                                else
-                                    saveIt = false;
-                            }
-
-                            if (saveIt)
-                            {
-                                settings.enablePreviewPackages = newValue;
-                                settings.Save();
-                            }
-                        }
-
-                        GUILayout.Space(15);
-                        HelpBox(L10n.Tr(k_Message), L10n.Tr("Read more"), () =>
-                        {
-                            var unityVersionParts = Application.unityVersion.Split('.');
-                            Application.OpenURL($"https://docs.unity3d.com/{unityVersionParts[0]}.{unityVersionParts[1]}/Documentation/Manual/pack-preview.html");
-                        });
-                    }
-                },
-
-                keywords = new List<string>(new[] { "enable", "package", "preview" })
-            };
-
-            return provider;
+            return new PackageManagerProjectSettingsProvider(k_PackageManagerSettingsPath, SettingsScope.Project, new List<string>(new[] { "enable", "package", "preview" }));
         }
 
-        private static void HelpBox(string message, string link, Action linkClicked)
+        private void SetExpanded(bool expanded)
         {
-            GUILayout.BeginHorizontal(EditorStyles.helpBox);
-            GUILayout.Label(EditorGUIUtility.GetHelpIcon(MessageType.Info), GUILayout.ExpandWidth(false));
-            GUILayout.BeginVertical();
-            GUILayout.Label(message, Styles.textLabel);
-            if (GUILayout.Button(link, Styles.linkLabel))
-                linkClicked?.Invoke();
-            EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Link);
-            GUILayout.EndVertical();
-            GUILayout.EndHorizontal();
+            if (advancedSettingsFoldout.value != expanded)
+                advancedSettingsFoldout.value = expanded;
+            if (m_Settings.advancedSettingsExpanded != expanded)
+                m_Settings.advancedSettingsExpanded = expanded;
         }
+
+        private VisualElementCache cache { get; set; }
+
+        private HelpBox previewInfoBox { get { return cache.Get<HelpBox>("previewInfoBox"); } }
+        private Toggle enablePreviewPackages { get { return rootVisualElement.Q<Toggle>("enablePreviewPackages"); } }
+        private Toggle enablePackageDependencies { get { return rootVisualElement.Q<Toggle>("enableDependencies"); } }
+        private Foldout advancedSettingsFoldout { get { return rootVisualElement.Q<Foldout>("advancedSettingsFoldout"); } }
     }
 }

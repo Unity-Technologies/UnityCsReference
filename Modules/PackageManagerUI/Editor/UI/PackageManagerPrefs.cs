@@ -17,11 +17,7 @@ namespace UnityEditor.PackageManager.UI
         {
             private const string k_SkipRemoveConfirmationPrefs = "PackageManager.SkipRemoveConfirmation";
             private const string k_SkipDisableConfirmationPrefs = "PackageManager.SkipDisableConfirmation";
-            private const string k_ShowPackageDependenciesPrefs = "PackageManager.ShowPackageDependencies";
             private const string k_LastUsedFilterPrefsPrefix = "PackageManager.Filter_";
-
-
-            public event Action<bool> onShowDependenciesChanged = delegate {};
 
             private static string projectIdentifier
             {
@@ -51,18 +47,6 @@ namespace UnityEditor.PackageManager.UI
             {
                 get { return EditorPrefs.GetBool(k_SkipDisableConfirmationPrefs, false); }
                 set { EditorPrefs.SetBool(k_SkipDisableConfirmationPrefs, value); }
-            }
-
-            public bool showPackageDependencies
-            {
-                get { return EditorPrefs.GetBool(k_ShowPackageDependenciesPrefs, false); }
-                set
-                {
-                    var oldValue = showPackageDependencies;
-                    EditorPrefs.SetBool(k_ShowPackageDependenciesPrefs, value);
-                    if (oldValue != value)
-                        onShowDependenciesChanged(value);
-                }
             }
 
             public PackageFilterTab? lastUsedPackageFilter

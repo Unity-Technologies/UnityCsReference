@@ -10,13 +10,9 @@ namespace UnityEditor.PackageManager.UI
     {
         bool dismissPreviewPackagesInUse { get; set; }
 
-        event Action<bool> onShowDependenciesChanged;
-
         bool skipRemoveConfirmation { get; set; }
 
         bool skipDisableConfirmation { get; set; }
-
-        bool showPackageDependencies { get; set; }
 
         PackageFilterTab? lastUsedPackageFilter { get; set; }
 

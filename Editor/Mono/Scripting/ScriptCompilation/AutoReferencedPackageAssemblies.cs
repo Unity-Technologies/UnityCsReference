@@ -13,13 +13,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
     {
         static HashSet<string> runtimeAssemblyNames = new HashSet<string>(new[]
         {
-            "UnityEngine.UI.dll"
+            "UnityEngine.UI.dll",
+            "UnityEngine.UIElementsModule.dll",
+            "UnityEngine.AccessibilityModule.dll"
         },
             StringComparer.Ordinal);
 
         static HashSet<string> editorAssemblyNames = new HashSet<string>(new[]
         {
-            "UnityEditor.UI.dll"
+            "UnityEditor.UI.dll",
+            "UnityEditor.UIElementsModule.dll"
         },
             StringComparer.Ordinal);
 

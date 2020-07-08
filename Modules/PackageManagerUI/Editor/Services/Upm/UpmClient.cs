@@ -159,7 +159,7 @@ namespace UnityEditor.PackageManager.UI
                 var operation = offlineMode ? m_ListOfflineOperation : m_ListOperation;
                 if (operation.isInProgress)
                     operation.Cancel();
-                var errorMessage = offlineMode ? ApplicationUtil.instance.GetTranslationForText("Error fetching package list.") : ApplicationUtil.instance.GetTranslationForText("Error fetching package list offline.");
+                var errorMessage = offlineMode ? ApplicationUtil.instance.GetTranslationForText("Error fetching package list offline.") : ApplicationUtil.instance.GetTranslationForText("Error fetching package list.");
                 if (offlineMode)
                     operation.ListOffline(m_ListOperation.lastSuccessTimestamp);
                 else
@@ -238,7 +238,7 @@ namespace UnityEditor.PackageManager.UI
                 var operation = offlineMode ? m_SearchOfflineOperation : m_SearchOperation;
                 if (operation.isInProgress)
                     operation.Cancel();
-                var errorMessage = offlineMode ? ApplicationUtil.instance.GetTranslationForText("Error searching for packages.") : ApplicationUtil.instance.GetTranslationForText("Error searching for packages offline.");
+                var errorMessage = offlineMode ? ApplicationUtil.instance.GetTranslationForText("Error searching for packages offline.") : ApplicationUtil.instance.GetTranslationForText("Error searching for packages.");
                 if (offlineMode)
                     operation.SearchAllOffline(m_SearchOperation.lastSuccessTimestamp);
                 else

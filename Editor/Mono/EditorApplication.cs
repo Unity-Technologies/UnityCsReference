@@ -169,6 +169,7 @@ namespace UnityEditor
 
         // Delegate for generic updates.
         public static CallbackFunction update;
+        internal static event CallbackFunction tick;
 
         public static event Func<bool> wantsToQuit;
 
@@ -184,14 +185,14 @@ namespace UnityEditor
             {
                 if ((DateTime.Now - startTime).TotalSeconds < delaySeconds)
                     return;
-                update -= delayedHandler;
+                tick -= delayedHandler;
                 action();
             });
-            update += delayedHandler;
+            tick += delayedHandler;
             if (delaySeconds == 0f)
                 SignalTick();
 
-            return () => update -= delayedHandler;
+            return () => tick -= delayedHandler;
         }
 
         // Each time an object is (or a group of objects are) created, renamed, parented, unparented or destroyed this callback is raised.
@@ -315,23 +316,15 @@ namespace UnityEditor
             return desc.title;
         }
 
-        static int m_UpdateHash;
-        static Delegate[] m_UpdateInvocationList;
-
         [RequiredByNativeCode]
-        static void Internal_CallUpdateFunctions()
+        internal static void Internal_CallUpdateFunctions()
         {
             if (update == null)
                 return;
+
             if (Profiler.enabled && !ProfilerDriver.deepProfiling)
             {
-                var currentUpdateHash = update.GetHashCode();
-                if (currentUpdateHash != m_UpdateHash)
-                {
-                    m_UpdateInvocationList = update.GetInvocationList();
-                    m_UpdateHash = currentUpdateHash;
-                }
-                foreach (var cb in m_UpdateInvocationList)
+                foreach (var cb in update.GetInvocationList())
                 {
                     var marker = new ProfilerMarker(cb.Method.Name);
                     marker.Begin();
@@ -340,20 +333,24 @@ namespace UnityEditor
                 }
             }
             else
-            {
-                update.Invoke();
-            }
+                update();
         }
 
         [RequiredByNativeCode]
-        static void Internal_CallDelayFunctions()
+        internal static void Internal_InvokeTickEvents()
+        {
+            tick?.Invoke();
+        }
+
+        [RequiredByNativeCode]
+        internal static void Internal_CallDelayFunctions()
         {
             CallbackFunction delay = delayCall;
             delayCall = null;
             delay?.Invoke();
         }
 
-        static void Internal_SwitchSkin()
+        internal static void Internal_SwitchSkin()
         {
             EditorGUIUtility.Internal_SwitchSkin();
         }

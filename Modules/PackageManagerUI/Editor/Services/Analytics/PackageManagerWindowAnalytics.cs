@@ -42,7 +42,7 @@ namespace UnityEditor.PackageManager.UI
                 search_text = PackageFiltering.instance.currentSearchText,
                 filter_name = PackageFiltering.instance.currentFilterTab.ToString(),
                 window_docked = EditorWindow.GetWindowDontShow<PackageManagerWindow>()?.docked ?? false,
-                dependencies_visible = PackageManagerPrefs.instance.showPackageDependencies,
+                dependencies_visible = PackageManagerProjectSettings.instance.enablePackageDependencies,
                 preview_visible = PackageManagerProjectSettings.instance.enablePreviewPackages,
                 t_since_start = (long)(EditorApplication.timeSinceStartup * 1E6),
                 ts = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond

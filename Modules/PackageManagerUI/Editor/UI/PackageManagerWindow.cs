@@ -97,8 +97,8 @@ namespace UnityEditor.PackageManager.UI
                 if (PageManager.instance.GetRefreshTimestamp(newTab) == 0)
                     DelayRefresh(newTab);
 
-                if (newTab != PackageFilterTab.All && PageManager.instance.GetRefreshTimestamp(PackageFilterTab.All) == 0)
-                    DelayRefresh(PackageFilterTab.All);
+                if (newTab != PackageFilterTab.UnityRegistry && PageManager.instance.GetRefreshTimestamp(PackageFilterTab.UnityRegistry) == 0)
+                    DelayRefresh(PackageFilterTab.UnityRegistry);
 
                 mainContainer.leftWidth = m_SplitPaneLeftWidth;
                 mainContainer.onSizeChanged += width => { m_SplitPaneLeftWidth = width; };
@@ -238,7 +238,7 @@ namespace UnityEditor.PackageManager.UI
 
             if (package != null || m_FilterToSelectAfterLoad != null)
             {
-                var tab = m_FilterToSelectAfterLoad ?? PackageFilterTab.All;
+                var tab = m_FilterToSelectAfterLoad ?? PackageFilterTab.UnityRegistry;
                 PackageFiltering.instance.currentFilterTab = tab;
                 if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
                 {
@@ -375,7 +375,7 @@ namespace UnityEditor.PackageManager.UI
                             packageIdOrDisplayName = null;
                         }
                         else
-                            filterTab = PackageFilterTab.All;
+                            filterTab = PackageFilterTab.UnityRegistry;
                     }
                 }
 
