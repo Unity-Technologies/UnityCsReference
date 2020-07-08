@@ -456,11 +456,8 @@ namespace UnityEditor
             SceneView.RepaintAll();
         }
 
-        private void InternalOnSceneView()
+        void InternalOnSceneView()
         {
-            if (!m_EditingPositions)
-                return;
-
             switch (EditMode.editMode)
             {
                 case EditMode.SceneViewEditMode.LineRendererEdit:
@@ -483,19 +480,13 @@ namespace UnityEditor
             }
         }
 
-        public void OnSceneGUI()
+        public void OnSceneGUIDelegate(SceneView sceneView)
         {
-            if (Event.current.type != EventType.Repaint)
+            if (m_EditingPositions)
                 InternalOnSceneView();
 
             if (!sceneViewEditing)
                 DrawSimplifyPreview();
-        }
-
-        public void OnSceneGUIDelegate(SceneView sceneView)
-        {
-            if (Event.current.type == EventType.Repaint)
-                InternalOnSceneView();
         }
 
         public bool HasFrameBounds()

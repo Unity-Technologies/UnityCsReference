@@ -426,13 +426,14 @@ namespace UnityEditor
         {
             EditorGUILayout.LabelField("Generate .csproj files for:");
             EditorGUI.indentLevel++;
-            SettingsButton(ProjectGenerationFlag.Embedded, "Embedded packages", "");
-            SettingsButton(ProjectGenerationFlag.Local, "Local packages", "");
-            SettingsButton(ProjectGenerationFlag.Registry, "Registry packages", "");
-            SettingsButton(ProjectGenerationFlag.Git, "Git packages", "");
-            SettingsButton(ProjectGenerationFlag.BuiltIn, "Built-in packages", "");
-            SettingsButton(ProjectGenerationFlag.LocalTarBall, "Local tarball", "");
-            SettingsButton(ProjectGenerationFlag.Unknown, "Packages from unknown sources", "");
+            SettingsButton(ProjectGenerationFlag.Embedded, "Embedded packages");
+            SettingsButton(ProjectGenerationFlag.Local, "Local packages");
+            SettingsButton(ProjectGenerationFlag.Registry, "Registry packages");
+            SettingsButton(ProjectGenerationFlag.Git, "Git packages");
+            SettingsButton(ProjectGenerationFlag.BuiltIn, "Built-in packages");
+            SettingsButton(ProjectGenerationFlag.LocalTarBall, "Local tarball");
+            SettingsButton(ProjectGenerationFlag.Unknown, "Packages from unknown sources");
+            SettingsButton(ProjectGenerationFlag.PlayerAssemblies, "Player projects", "For each player project generate an additional csproj with the name 'project-player.csproj'");
             RegenerateProjectFiles();
             EditorGUI.indentLevel--;
         }
@@ -447,7 +448,7 @@ namespace UnityEditor
             }
         }
 
-        void SettingsButton(ProjectGenerationFlag preference, string guiMessage, string toolTip)
+        void SettingsButton(ProjectGenerationFlag preference, string guiMessage, string toolTip = "")
         {
             var prevValue = SyncVS.Synchronizer.AssemblyNameProvider.HasFlag(preference);
             var newValue = EditorGUILayout.Toggle(new GUIContent(guiMessage, toolTip), prevValue);
