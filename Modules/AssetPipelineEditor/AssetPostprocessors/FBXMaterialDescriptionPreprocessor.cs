@@ -43,9 +43,11 @@ namespace UnityEditor.Experimental.AssetImporters
         {
             float classIdA;
             float classIdB;
+            string orgMtl;
             description.TryGetProperty("ClassIDa", out classIdA);
             description.TryGetProperty("ClassIDb", out classIdB);
-            return classIdA == 1030429932 && classIdB == -559038463;
+            description.TryGetProperty("ORIGINAL_MTL", out orgMtl);
+            return (classIdA == 1030429932 && classIdB == -559038463) || ((classIdA == 2121471519 && classIdB == 1660373836) && (orgMtl == "PHYSICAL_MTL"));
         }
 
         static bool IsMayaArnoldStandardSurfaceMaterial(MaterialDescription description)
@@ -59,9 +61,11 @@ namespace UnityEditor.Experimental.AssetImporters
         {
             float classIdA;
             float classIdB;
+            string orgMtl;
             description.TryGetProperty("ClassIDa", out classIdA);
             description.TryGetProperty("ClassIDb", out classIdB);
-            return classIdA == 2121471519 && classIdB == 1660373836;
+            description.TryGetProperty("ORIGINAL_MTL", out orgMtl);
+            return (classIdA == 2121471519 && classIdB == 1660373836) && (orgMtl != "PHYSICAL_MTL");
         }
 
         static bool IsAutodeskInteractiveMaterial(MaterialDescription description)
