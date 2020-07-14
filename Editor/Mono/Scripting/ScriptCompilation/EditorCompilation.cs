@@ -178,6 +178,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         string outputDirectory;
         CompilationSetupErrorFlags setupErrorFlags = CompilationSetupErrorFlags.none;
         List<Compilation.AssemblyBuilder> assemblyBuilders = new List<Compilation.AssemblyBuilder>();
+        HashSet<string> changedAssemblies = new HashSet<string>();
 
         static readonly string EditorTempPath = "Temp";
 
@@ -234,6 +235,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
+        public string[] GetChangedAssemblies()
+        {
+            return changedAssemblies.ToArray();
+        }
+
         public void DirtyAllScripts()
         {
             areAllScriptsDirty = true;
@@ -282,6 +288,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public void DirtyPrecompiledAssembly(string path)
         {
+            var filename = AssetPath.GetFileName(path);
+
+            changedAssemblies.Add(filename);
+
             var precompiledAssembly = GetPrecompiledAssemblyFromPath(path);
 
             if (!precompiledAssembly.HasValue)
@@ -1113,6 +1123,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 var assemblyOutputPath = AssetPath.Combine(scriptAssemblySettings.OutputDirectory, assembly.Filename);
                 Console.WriteLine("- Finished compile {0}", assemblyOutputPath);
+
+                changedAssemblies.Add(assembly.Filename);
 
                 if (runScriptUpdaterAssemblies.Contains(assembly.Filename))
                     runScriptUpdaterAssemblies.Remove(assembly.Filename);
