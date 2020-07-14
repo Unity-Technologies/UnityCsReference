@@ -25,6 +25,10 @@ namespace UnityEngine.Experimental.Rendering
 
         extern private void Submit_Internal();
 
+        extern private int GetNumberOfCameras_Internal();
+
+        extern private Camera GetCamera_Internal(int index);
+
         extern private void DrawRenderers_Internal(FilterResults renderers, ref DrawRendererSettings drawSettings, FilterRenderersSettings filterSettings);
 
         extern private void DrawRenderers_StateBlock_Internal(FilterResults renderers, ref DrawRendererSettings drawSettings, FilterRenderersSettings filterSettings, RenderStateBlock stateBlock);

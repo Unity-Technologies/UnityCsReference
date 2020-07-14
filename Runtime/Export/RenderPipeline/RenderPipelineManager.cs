@@ -11,6 +11,8 @@ namespace UnityEngine.Experimental.Rendering
     public static class RenderPipelineManager
     {
         private static IRenderPipelineAsset s_CurrentPipelineAsset;
+        static Camera[] s_Cameras = new Camera[0];
+        static int s_CameraCapacity = 0;
 
         public static IRenderPipeline currentPipeline { get; private set; }
 
@@ -26,15 +28,34 @@ namespace UnityEngine.Experimental.Rendering
             }
         }
 
+        private static void GetCameras(ScriptableRenderContext context)
+        {
+            int numCams = context.GetNumberOfCameras();
+            if (numCams != s_CameraCapacity)
+            {
+                Array.Resize(ref s_Cameras, numCams);
+                s_CameraCapacity = numCams;
+            }
+
+            for (int i = 0; i < numCams; ++i)
+            {
+                s_Cameras[i] = context.GetCamera(i);
+            }
+        }
+
         [RequiredByNativeCode]
-        private static void DoRenderLoop_Internal(IRenderPipelineAsset pipe, Camera[] cameras, IntPtr loopPtr)
+        static void DoRenderLoop_Internal(IRenderPipelineAsset pipe, IntPtr loopPtr)
         {
             PrepareRenderPipeline(pipe);
             if (currentPipeline == null)
                 return;
 
             ScriptableRenderContext loop = new ScriptableRenderContext(loopPtr);
-            currentPipeline.Render(loop, cameras);
+            Array.Clear(s_Cameras, 0, s_Cameras.Length);
+            GetCameras(loop);
+            currentPipeline.Render(loop, s_Cameras);
+
+            Array.Clear(s_Cameras, 0, s_Cameras.Length);
         }
 
         private static void PrepareRenderPipeline(IRenderPipelineAsset pipe)

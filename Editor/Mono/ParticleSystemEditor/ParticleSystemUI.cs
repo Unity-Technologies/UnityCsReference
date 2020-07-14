@@ -183,17 +183,18 @@ namespace UnityEditor
                     {
                         // Get preview of material or mesh
                         ParticleSystemRenderer renderer = m_ParticleSystems[0].GetComponent<ParticleSystemRenderer>();
+
+                        bool isEditable = (m_ParticleSystems[0].gameObject.hideFlags & HideFlags.NotEditable) == 0;
+
                         float iconSize = 21;
                         Rect iconRect = new Rect(moduleHeaderRect.x + 4, moduleHeaderRect.y + 2, iconSize, iconSize);
-
                         if (isRepaintEvent && renderer != null)
                         {
                             bool iconRendered = false;
+                            int instanceID = 0;
 
                             if (!multiEdit)
                             {
-                                int instanceID = 0;
-
                                 if (renderer.renderMode == ParticleSystemRenderMode.Mesh)
                                 {
                                     if (renderer.mesh != null)
@@ -229,15 +230,21 @@ namespace UnityEditor
                                         m_CachedMaterialDirtyCount = EditorUtility.GetDirtyIndex(instanceID);
                                     }
                                 }
+                            }
 
-                                if (instanceID != 0)
+                            if (multiEdit || !isEditable)
+                            {
+                                // Presets should use the default material.
+                                instanceID = Material.GetDefaultParticleMaterial().GetInstanceID();
+                            }
+
+                            if (instanceID != 0)
+                            {
+                                Texture2D icon = AssetPreview.GetAssetPreview(instanceID);
+                                if (icon != null)
                                 {
-                                    Texture2D icon = AssetPreview.GetAssetPreview(instanceID);
-                                    if (icon != null)
-                                    {
-                                        GUI.DrawTexture(iconRect, icon, ScaleMode.StretchToFill, true);
-                                        iconRendered = true;
-                                    }
+                                    GUI.DrawTexture(iconRect, icon, ScaleMode.StretchToFill, true);
+                                    iconRendered = true;
                                 }
                             }
 
@@ -249,7 +256,9 @@ namespace UnityEditor
                         }
 
                         // Select gameObject when clicking on icon
-                        if (!multiEdit && EditorGUI.DropdownButton(iconRect, GUIContent.none, FocusType.Passive, GUIStyle.none))
+                        // Don't attempt to select if the system is a preset. It will select the temporary object causing the
+                        // preset to deselect and destroy the particle system. (case 1198545)
+                        if (!multiEdit && EditorGUI.DropdownButton(iconRect, GUIContent.none, FocusType.Passive, GUIStyle.none) && isEditable)
                         {
                             // Toggle selected particle system from selection
                             if (EditorGUI.actionKey)

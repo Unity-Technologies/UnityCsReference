@@ -25,6 +25,18 @@ namespace UnityEngine.Experimental.Rendering
             Submit_Internal();
         }
 
+        internal int GetNumberOfCameras()
+        {
+            CheckValid();
+            return GetNumberOfCameras_Internal();
+        }
+
+        internal Camera GetCamera(int index)
+        {
+            CheckValid();
+            return GetCamera_Internal(index);
+        }
+
         public void DrawRenderers(FilterResults renderers, ref DrawRendererSettings drawSettings, FilterRenderersSettings filterSettings)
         {
             CheckValid();
