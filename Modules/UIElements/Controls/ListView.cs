@@ -821,6 +821,17 @@ namespace UnityEngine.UIElements
             OverwriteFromViewData(this, key);
         }
 
+        protected override void ExecuteDefaultAction(EventBase evt)
+        {
+            base.ExecuteDefaultAction(evt);
+
+            // We always need to know when pointer up event occurred to reset DragEventsProcessor flags.
+            // Some controls may capture the mouse, but the ListView is a composite root (isCompositeRoot),
+            // and will always receive ExecuteDefaultAction despite what the actual event target is.
+            if (evt.eventTypeId == PointerUpEvent.TypeId())
+                m_Dragger?.OnPointerUp();
+        }
+
         private void OnScroll(float offset)
         {
             if (!HasValidDataAndBindings())
