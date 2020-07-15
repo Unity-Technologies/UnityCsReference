@@ -3823,6 +3823,9 @@
     <Compile Include="..\..\Modules\AdaptivePerformance\Editor\AdaptivePerformanceInstaller.cs">
       <Link>Modules\AdaptivePerformance\Editor\AdaptivePerformanceInstaller.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AssetDatabase\Editor\Public\PreviewImporter.bindings.cs">
+      <Link>Modules\AssetDatabase\Editor\Public\PreviewImporter.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabase.bindings.cs">
       <Link>Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabase.bindings.cs</Link>
     </Compile>
@@ -4728,6 +4731,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\GetRegistriesRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\GetRegistriesRequest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\ListBuiltInPackagesRequest.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Requests\ListBuiltInPackagesRequest.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\ListRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\ListRequest.cs</Link>

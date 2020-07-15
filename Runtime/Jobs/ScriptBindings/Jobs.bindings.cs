@@ -36,9 +36,13 @@ namespace Unity.Jobs.LowLevel.Unsafe
     public enum ScheduleMode
     {
         Run          = 0,
-        Batched      = 1
+        [Obsolete("Batched is obsolete, use Parallel or Single depending on job type. (UnityUpgradable) -> Parallel", false)]
+        Batched      = 1,
+        Parallel     = 1,
+        Single       = 2,
     }
 
+    [Obsolete("Reflection data is now universal between job types. The parameter can be removed.", false)]
     public enum JobType
     {
         Single      = 0,
@@ -96,16 +100,28 @@ namespace Unity.Jobs.LowLevel.Unsafe
         unsafe public static extern void PatchBufferMinMaxRanges(IntPtr bufferRangePatchData, void* jobdata, int startIndex, int rangeSize);
 
         [FreeFunction(ThrowsException = true)]
-        private static extern IntPtr CreateJobReflectionData(Type wrapperJobType, Type userJobType, JobType jobType, object managedJobFunction0, object managedJobFunction1, object managedJobFunction2);
+        private static extern IntPtr CreateJobReflectionData(Type wrapperJobType, Type userJobType, object managedJobFunction0, object managedJobFunction1, object managedJobFunction2);
 
+        [Obsolete("JobType is obsolete. The parameter should be removed. (UnityUpgradable) -> !1")]
         public static IntPtr CreateJobReflectionData(Type type, JobType jobType, object managedJobFunction0, object managedJobFunction1 = null, object managedJobFunction2 = null)
         {
-            return CreateJobReflectionData(type, type, jobType, managedJobFunction0, managedJobFunction1, managedJobFunction2);
+            return CreateJobReflectionData(type, type, managedJobFunction0, managedJobFunction1, managedJobFunction2);
         }
 
+        public static IntPtr CreateJobReflectionData(Type type, object managedJobFunction0, object managedJobFunction1 = null, object managedJobFunction2 = null)
+        {
+            return CreateJobReflectionData(type, type, managedJobFunction0, managedJobFunction1, managedJobFunction2);
+        }
+
+        [Obsolete("JobType is obsolete. The parameter should be removed. (UnityUpgradable) -> !2")]
         public static IntPtr CreateJobReflectionData(Type wrapperJobType, Type userJobType, JobType jobType, object managedJobFunction0)
         {
-            return CreateJobReflectionData(wrapperJobType, userJobType, jobType, managedJobFunction0, null, null);
+            return CreateJobReflectionData(wrapperJobType, userJobType, managedJobFunction0, null, null);
+        }
+
+        public static IntPtr CreateJobReflectionData(Type wrapperJobType, Type userJobType, object managedJobFunction0)
+        {
+            return CreateJobReflectionData(wrapperJobType, userJobType, managedJobFunction0, null, null);
         }
 
         public static extern bool IsExecutingJob {[NativeMethod(IsFreeFunction = true, IsThreadSafe = true)] get; }

@@ -554,11 +554,11 @@ namespace UnityEditorInternal
                 il2cppOutputParser = new Il2CppOutputParser();
 
             if (ShouldUseIl2CppCore())
-                il2cppSettings.ToolPath = GetIl2CppCoreExe();
+                il2cppSettings.ToolPath = $"{EscapeSpacesInPath(GetIl2CppCoreExe())}";
             else if (Application.platform == RuntimePlatform.WindowsEditor)
-                il2cppSettings.ToolPath = GetIl2CppExe();
+                il2cppSettings.ToolPath = $"{EscapeSpacesInPath(GetIl2CppExe())}";
             else
-                il2cppSettings.ToolPath = $"{GetMonoBleedingEdgeExe()} {GetIl2CppExe()}";
+                il2cppSettings.ToolPath = $"{EscapeSpacesInPath(GetMonoBleedingEdgeExe())} {EscapeSpacesInPath(GetIl2CppExe())}";
 
             il2cppSettings.Arguments.AddRange(arguments);
             il2cppSettings.Serialize(m_PlatformProvider.il2cppBuildCacheDirectory);
@@ -568,8 +568,11 @@ namespace UnityEditorInternal
             {
                 if (setupStartInfo != null)
                     setupStartInfo(startInfo);
+
+                // For some reason, TUNDRA_EXECUTABLE needs to be unescaped in order to be found on OSX,
+                // but MONO_EXECUTABLE needs to be escaped in order to be found on OSX
                 startInfo.EnvironmentVariables.Add("TUNDRA_EXECUTABLE", GetIl2CppTundraExe());
-                startInfo.EnvironmentVariables.Add("MONO_EXECUTABLE", GetMonoBleedingEdgeExe());
+                startInfo.EnvironmentVariables.Add("MONO_EXECUTABLE", EscapeSpacesInPath(GetMonoBleedingEdgeExe()));
             }
 
             Console.WriteLine("Invoking il2cpp with arguments: " + args);
@@ -591,42 +594,47 @@ namespace UnityEditorInternal
             }
         }
 
+        private string EscapeSpacesInPath(string path)
+        {
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+                return CommandLineFormatter.EscapeCharsWindows(path);
+            return CommandLineFormatter.EscapeCharsQuote(path);
+        }
+
         private string GetIl2CppExe()
         {
-            return IL2CPPUtils.GetIl2CppFolder() + "/build/deploy/net471/il2cpp.exe";
+            return $"{IL2CPPUtils.GetIl2CppFolder()}/build/deploy/net471/il2cpp.exe";
         }
 
         private string GetIl2CppCoreExe()
         {
-            return IL2CPPUtils.GetIl2CppFolder() + "/build/deploy/netcoreapp3.0/il2cpp" + (Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "");
+            return $"{IL2CPPUtils.GetIl2CppFolder()}/build/deploy/netcoreapp3.0/il2cpp{(Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "")}";
         }
 
         private string GetIl2CppBeeExe()
         {
-            return IL2CPPUtils.GetIl2CppFolder() + "/BeeRunner/bee.exe";
+            return $"{IL2CPPUtils.GetIl2CppFolder()}/BeeRunner/bee.exe";
         }
 
         private string GetIl2CppBeeArtifactsDirectory()
         {
-            return IL2CPPUtils.GetIl2CppFolder() + "/BeeRunner/artifacts";
+            return $"{IL2CPPUtils.GetIl2CppFolder()}/BeeRunner/artifacts";
         }
 
         private string GetIl2CppTundraExe()
         {
             if (Application.platform == RuntimePlatform.OSXEditor)
-                return IL2CPPUtils.GetIl2CppFolder() + "/BeeRunner/tundra/tundra-mac-x64/tundra2";
+                return $"{IL2CPPUtils.GetIl2CppFolder()}/BeeRunner/tundra/tundra-mac-x64/tundra2";
             if (Application.platform == RuntimePlatform.LinuxEditor)
-                return IL2CPPUtils.GetIl2CppFolder() + "/BeeRunner/tundra/tundra-linux-x64/tundra2";
+                return $"{IL2CPPUtils.GetIl2CppFolder()}/BeeRunner/tundra/tundra-linux-x64/tundra2";
 
-            return IL2CPPUtils.GetIl2CppFolder() + "/BeeRunner/tundra/tundra-win-x64/tundra2.exe";
+            return $"{IL2CPPUtils.GetIl2CppFolder()}/BeeRunner/tundra/tundra-win-x64/tundra2.exe";
         }
 
         private string GetMonoBleedingEdgeExe()
         {
-            var path = MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge");
-            path = Path.Combine(path, "bin");
-            path = Path.Combine(path, "mono");
-            return path;
+            var path = Path.Combine(MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge"), "bin");
+            return Path.Combine(path, "mono");
         }
 
         private bool ShouldUseIl2CppCore()

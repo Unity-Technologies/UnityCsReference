@@ -5,11 +5,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using JetBrains.Annotations;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.VersionControl;
@@ -479,9 +477,10 @@ namespace UnityEditor
             int layoutMenuItemPriority = 20;
 
             // Get user saved layouts
+            string[] layoutPaths = new string[0];
             if (Directory.Exists(layoutsModePreferencesPath))
             {
-                var layoutPaths = Directory.GetFiles(layoutsModePreferencesPath).Where(path => path.EndsWith(".wlt")).ToArray();
+                layoutPaths = Directory.GetFiles(layoutsModePreferencesPath).Where(path => path.EndsWith(".wlt")).ToArray();
                 foreach (var layoutPath in layoutPaths)
                 {
                     var name = Path.GetFileNameWithoutExtension(layoutPath);
@@ -507,11 +506,15 @@ namespace UnityEditor
             layoutMenuItemPriority += 500;
 
             Menu.AddMenuItem("Window/Layouts/Save Layout...", "", false, layoutMenuItemPriority++, SaveGUI, null);
-            Menu.AddMenuItem("Window/Layouts/Delete Layout...", "", false, layoutMenuItemPriority++, DeleteGUI, null);
-            Menu.AddMenuItem("Window/Layouts/Revert Factory Settings...", "", false, layoutMenuItemPriority++, () => RevertFactorySettings(false), null);
-
-            Menu.AddMenuItem("Window/Layouts/More/Save to disk...", "", false, 998, () => SaveToFile(), null);
-            Menu.AddMenuItem("Window/Layouts/More/Load from disk...", "", false, 999, () => LoadFromFile(), null);
+            Menu.AddMenuItem("Window/Layouts/Save Layout to File...", "", false, layoutMenuItemPriority++, SaveToFile, null);
+            Menu.AddMenuItem("Window/Layouts/Load Layout from File...", "", false, layoutMenuItemPriority++, LoadFromFile, null);
+            Menu.AddMenuItem("Window/Layouts/Delete Layout/", "", false, layoutMenuItemPriority++, null, null);
+            foreach (var layoutPath in layoutPaths)
+            {
+                var name = Path.GetFileNameWithoutExtension(layoutPath);
+                Menu.AddMenuItem("Window/Layouts/Delete Layout/" + name, "", false, layoutMenuItemPriority++, () => DeleteWindowLayout(layoutPath), null);
+            }
+            Menu.AddMenuItem("Window/Layouts/Reset All Layouts", "", false, layoutMenuItemPriority++, () => ResetAllLayouts(false), null);
         }
 
         internal static EditorWindow FindEditorWindowOfType(Type type)
@@ -700,7 +703,7 @@ namespace UnityEditor
             if (maximizedHostView == null)
             {
                 Debug.LogError("Host view was not found");
-                RevertFactorySettings();
+                ResetAllLayouts();
                 return;
             }
 
@@ -709,7 +712,7 @@ namespace UnityEditor
             if (newWindows.Length < 2)
             {
                 Debug.Log("Maximized serialized file backup not found");
-                RevertFactorySettings();
+                ResetAllLayouts();
                 return;
             }
 
@@ -719,7 +722,7 @@ namespace UnityEditor
             if (oldRoot == null)
             {
                 Debug.Log("Maximization failed because the root split view was not found");
-                RevertFactorySettings();
+                ResetAllLayouts();
                 return;
             }
 
@@ -727,7 +730,7 @@ namespace UnityEditor
             if (parentWindow == null)
             {
                 Debug.Log("Maximization failed because the root split view has no container window");
-                RevertFactorySettings();
+                ResetAllLayouts();
                 return;
             }
 
@@ -785,7 +788,7 @@ namespace UnityEditor
             catch (Exception ex)
             {
                 Debug.Log("Maximization failed: " + ex);
-                RevertFactorySettings();
+                ResetAllLayouts();
             }
 
             try
@@ -950,6 +953,33 @@ namespace UnityEditor
             ContainerWindow.SetFreezeDisplay(false);
 
             win.OnMaximized();
+        }
+
+        static void DeleteWindowLayout(string path)
+        {
+            var name = Path.GetFileNameWithoutExtension(path);
+            if (!EditorUtility.DisplayDialog("Delete Layout", $"Delete window layout '{name}'?", "Delete", "Cancel"))
+                return;
+
+            DeleteWindowLayoutImpl(name, path);
+        }
+
+        [UsedImplicitly] // used by SaveLayoutTests.cs
+        internal static void DeleteNamedWindowLayoutNoDialog(string name)
+        {
+            var path = Path.Combine(layoutsModePreferencesPath, name + ".wlt");
+            DeleteWindowLayoutImpl(name, path);
+        }
+
+        static void DeleteWindowLayoutImpl(string name, string path)
+        {
+            if (Toolbar.lastLoadedLayoutName == name)
+                Toolbar.lastLoadedLayoutName = null;
+
+            File.Delete(path);
+            ReloadWindowLayoutMenu();
+            EditorUtility.Internal_UpdateAllMenus();
+            ShortcutIntegration.instance.RebuildShortcuts();
         }
 
         public static bool LoadWindowLayout(string path, bool newProjectLayoutWasCreated)
@@ -1154,7 +1184,7 @@ namespace UnityEditor
                         EditorApplication.Exit(0);
                         break;
                     case 2:
-                        RevertFactorySettings();
+                        ResetAllLayouts();
                         break;
                 }
 
@@ -1307,22 +1337,10 @@ namespace UnityEditor
             }
         }
 
-        internal static View FindMainView()
+        // ReSharper disable once MemberCanBePrivate.Global - used by SaveLayoutTests.cs
+        internal static void SaveGUI()
         {
-            UnityEngine.Object[] containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
-            foreach (ContainerWindow window in containers)
-            {
-                if (window.showMode == ShowMode.MainWindow)
-                    return window.rootView;
-            }
-
-            Debug.LogError("No Main View found!");
-            return null;
-        }
-
-        public static void SaveGUI()
-        {
-            UnityEditor.SaveWindowLayout.Show(FindMainView().screenPosition);
+            UnityEditor.SaveWindowLayout.ShowWindow();
         }
 
         public static void LoadFromFile()
@@ -1332,7 +1350,7 @@ namespace UnityEditor
                 return;
 
             if (LoadWindowLayout(layoutFilePath, false))
-                Debug.Log("Loaded layout from " + layoutFilePath);
+                Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, "Loaded layout from " + layoutFilePath);
         }
 
         public static void SaveToFile()
@@ -1342,18 +1360,13 @@ namespace UnityEditor
                 return;
 
             SaveWindowLayout(layoutFilePath);
-            Debug.Log("Saved layout to " + layoutFilePath);
+            EditorUtility.RevealInFinder(layoutFilePath);
         }
 
-        public static void DeleteGUI()
-        {
-            DeleteWindowLayout.Show(FindMainView().screenPosition);
-        }
-
-        public static void RevertFactorySettings(bool quitOnCancel = true)
+        public static void ResetAllLayouts(bool quitOnCancel = true)
         {
             if (!EditorUtility.DisplayDialog("Revert All Window Layouts",
-                "Unity is about to delete all window layout and restore them to the default settings",
+                "Unity is about to delete all window layouts and restore them to the default settings",
                 "Continue", quitOnCancel ? "Quit" : "Cancel"))
             {
                 if (quitOnCancel)
@@ -1377,58 +1390,26 @@ namespace UnityEditor
     internal class SaveWindowLayout : EditorWindow
     {
         bool m_DidFocus;
-        const int k_Offset = 20;
         const int k_Width = 200;
         const int k_Height = 48;
         const int k_HelpBoxHeight = 40;
 
-        static readonly ReadOnlyCollection<char> k_InvalidChars = new ReadOnlyCollection<char>(Path.GetInvalidFileNameChars());
-        static StringBuilder s_CurrentInvalidChars = new StringBuilder(k_InvalidChars.Count);
-        static string s_InvalidCharsFormatString = L10n.Tr("Invalid characters: {0}");
-        static string s_LayoutName = Toolbar.lastLoadedLayoutName;
+        static readonly string k_InvalidChars = EditorUtility.GetInvalidFilenameChars();
+        static readonly string s_InvalidCharsFormatString = L10n.Tr("Invalid characters: {0}");
+        string m_CurrentInvalidChars = "";
+        string m_LayoutName = Toolbar.lastLoadedLayoutName;
 
-        internal static SaveWindowLayout Show(Rect r)
+        internal static SaveWindowLayout ShowWindow()
         {
-            SaveWindowLayout w = GetWindowWithRect<SaveWindowLayout>(new Rect(r.xMax - (k_Width - k_Offset), r.y + k_Offset, k_Width, k_Height), true, L10n.Tr("Save Layout"));
-            w.m_Parent.window.m_DontSaveToLayout = true;
+            SaveWindowLayout w = GetWindowDontShow<SaveWindowLayout>();
+            w.minSize = w.maxSize = new Vector2(k_Width, k_Height);
+            w.ShowAuxWindow();
             return w;
         }
 
-        private static void UpdateCurrentInvalidChars()
+        void UpdateCurrentInvalidChars()
         {
-            s_CurrentInvalidChars.Clear();
-            // This approach will get the invalid characters in the layout name in they order they appear.
-            // This approach would help locate invalid characters faster (in theory) and makes more sense to display them this way if a few unique characters were being typed in a row.
-
-            // We loop through the characters in the name of the layout.
-            for (int i = 0; i < s_LayoutName.Length; ++i)
-            {
-                bool wasAdded = false;
-                bool isInvalidChr = false;
-
-                // We loop through the invalid characters, trying to see if the current character in the layout name is invalid.
-                for (int j = 0; j < k_InvalidChars.Count && !isInvalidChr; ++j)
-                {
-                    if (s_LayoutName[i] == k_InvalidChars[j])
-                    {
-                        isInvalidChr = true;
-
-                        // We loop through the invalid characters to see if the current invalid character was already added.
-                        for (int k = 0; k < s_CurrentInvalidChars.Length && !wasAdded; ++k)
-                        {
-                            if (s_CurrentInvalidChars[k] == k_InvalidChars[j])
-                            {
-                                wasAdded = true;
-                            }
-                        }
-                    }
-                }
-
-                if (!wasAdded && isInvalidChr)
-                {
-                    s_CurrentInvalidChars.Append(s_LayoutName[i]);
-                }
-            }
+            m_CurrentInvalidChars = new string(m_LayoutName.Intersect(k_InvalidChars).Distinct().ToArray());
         }
 
         void OnEnable()
@@ -1441,10 +1422,16 @@ namespace UnityEditor
             GUILayout.Space(5);
             Event evt = Event.current;
             bool hitEnter = evt.type == EventType.KeyDown && (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter);
+            bool hitEscape = evt.type == EventType.KeyDown && (evt.keyCode == KeyCode.Escape);
+            if (hitEscape)
+            {
+                Close();
+                GUIUtility.ExitGUI();
+            }
             GUI.SetNextControlName("m_PreferencesName");
             EditorGUI.BeginChangeCheck();
-            s_LayoutName = EditorGUILayout.TextField(s_LayoutName);
-            s_LayoutName = s_LayoutName.TrimEnd();
+            m_LayoutName = EditorGUILayout.TextField(m_LayoutName);
+            m_LayoutName = m_LayoutName.TrimEnd();
             if (EditorGUI.EndChangeCheck())
             {
                 UpdateCurrentInvalidChars();
@@ -1456,9 +1443,9 @@ namespace UnityEditor
                 EditorGUI.FocusTextInControl("m_PreferencesName");
             }
 
-            if (s_CurrentInvalidChars.Length != 0)
+            if (m_CurrentInvalidChars.Length != 0)
             {
-                EditorGUILayout.HelpBox(string.Format(s_InvalidCharsFormatString, s_CurrentInvalidChars), MessageType.Warning);
+                EditorGUILayout.HelpBox(string.Format(s_InvalidCharsFormatString, m_CurrentInvalidChars), MessageType.Warning);
                 minSize = new Vector2(k_Width, k_Height + k_HelpBoxHeight);
             }
             else
@@ -1466,7 +1453,7 @@ namespace UnityEditor
                 minSize = new Vector2(k_Width, k_Height);
             }
 
-            bool canSaveLayout = s_LayoutName.Length > 0 && s_CurrentInvalidChars.Length == 0;
+            bool canSaveLayout = m_LayoutName.Length > 0 && m_CurrentInvalidChars.Length == 0;
             EditorGUI.BeginDisabled(!canSaveLayout);
 
             if (GUILayout.Button("Save") || hitEnter && canSaveLayout)
@@ -1476,8 +1463,16 @@ namespace UnityEditor
                 if (!Directory.Exists(WindowLayout.layoutsModePreferencesPath))
                     Directory.CreateDirectory(WindowLayout.layoutsModePreferencesPath);
 
-                string path = Path.Combine(WindowLayout.layoutsModePreferencesPath, s_LayoutName + ".wlt");
-                Toolbar.lastLoadedLayoutName = s_LayoutName;
+                string path = Path.Combine(WindowLayout.layoutsModePreferencesPath, m_LayoutName + ".wlt");
+                if (File.Exists(path))
+                {
+                    if (!EditorUtility.DisplayDialog("Overwrite layout?",
+                        "Do you want to overwrite '" + m_LayoutName + "' layout?",
+                        "Overwrite", "Cancel"))
+                        GUIUtility.ExitGUI();
+                }
+
+                Toolbar.lastLoadedLayoutName = m_LayoutName;
                 WindowLayout.SaveWindowLayout(path);
                 WindowLayout.ReloadWindowLayoutMenu();
                 EditorUtility.Internal_UpdateAllMenus();
@@ -1490,69 +1485,6 @@ namespace UnityEditor
             }
 
             EditorGUI.EndDisabled();
-        }
-    }
-
-    [EditorWindowTitle(title = "Delete Layout")]
-    internal class DeleteWindowLayout : EditorWindow
-    {
-        internal string[] m_Paths;
-        const int k_MaxLayoutNameLength = 15;
-        const int k_Offset = 20;
-        const int k_Width = 200;
-        const int k_Height = 175;
-        Vector2 m_ScrollPos;
-
-        internal static DeleteWindowLayout Show(Rect r)
-        {
-            DeleteWindowLayout w = GetWindowWithRect<DeleteWindowLayout>(new Rect(r.xMax - (k_Width - k_Offset), r.y + k_Offset, k_Width, k_Height), true, L10n.Tr("Delete Layout"));
-            w.m_Parent.window.m_DontSaveToLayout = true;
-            return w;
-        }
-
-        private void InitializePaths()
-        {
-            string[] allPaths = Directory.GetFiles(WindowLayout.layoutsModePreferencesPath);
-            ArrayList filteredFiles = new ArrayList();
-            foreach (string path in allPaths)
-            {
-                string name = Path.GetFileName(path);
-                if (Path.GetExtension(name) == ".wlt")
-                    filteredFiles.Add(path);
-            }
-
-            m_Paths = filteredFiles.ToArray(typeof(string)) as string[];
-        }
-
-        void OnEnable()
-        {
-            titleContent = GetLocalizedTitleContent();
-        }
-
-        void OnGUI()
-        {
-            if (m_Paths == null)
-                InitializePaths();
-            m_ScrollPos = EditorGUILayout.BeginScrollView(m_ScrollPos);
-            foreach (string path in m_Paths)
-            {
-                string name = Path.GetFileNameWithoutExtension(path);
-                if (name.Length > k_MaxLayoutNameLength)
-                    name = name.Substring(0, k_MaxLayoutNameLength) + "...";
-                if (GUILayout.Button(name))
-                {
-                    if (Toolbar.lastLoadedLayoutName == name)
-                        Toolbar.lastLoadedLayoutName = null;
-
-                    File.Delete(path);
-                    WindowLayout.ReloadWindowLayoutMenu();
-                    EditorUtility.Internal_UpdateAllMenus();
-                    ShortcutIntegration.instance.RebuildShortcuts();
-                    InitializePaths();
-                }
-            }
-
-            EditorGUILayout.EndScrollView();
         }
     }
 

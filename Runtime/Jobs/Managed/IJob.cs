@@ -23,7 +23,7 @@ namespace Unity.Jobs
             public static IntPtr Initialize()
             {
                 if (jobReflectionData == IntPtr.Zero)
-                    jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), JobType.Single, (ExecuteJobFunction)Execute);
+                    jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), (ExecuteJobFunction)Execute);
                 return jobReflectionData;
             }
 
@@ -36,7 +36,7 @@ namespace Unity.Jobs
 
         unsafe public static JobHandle Schedule<T>(this T jobData, JobHandle dependsOn = new JobHandle()) where T : struct, IJob
         {
-            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), JobStruct<T>.Initialize(), dependsOn, ScheduleMode.Batched);
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), JobStruct<T>.Initialize(), dependsOn, ScheduleMode.Single);
             return JobsUtility.Schedule(ref scheduleParams);
         }
 

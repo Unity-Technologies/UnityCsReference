@@ -168,7 +168,7 @@ namespace UnityEngine.ParticleSystemJobs
         public static IntPtr Initialize()
         {
             if (jobReflectionData == IntPtr.Zero)
-                jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), JobType.Single, (ExecuteJobFunction)Execute);
+                jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), (ExecuteJobFunction)Execute);
             return jobReflectionData;
         }
 
@@ -194,7 +194,7 @@ namespace UnityEngine.ParticleSystemJobs
         public static IntPtr Initialize()
         {
             if (jobReflectionData == IntPtr.Zero)
-                jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), JobType.ParallelFor, (ExecuteJobFunction)Execute);
+                jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), (ExecuteJobFunction)Execute);
             return jobReflectionData;
         }
 
@@ -232,7 +232,7 @@ namespace UnityEngine.ParticleSystemJobs
         public static IntPtr Initialize()
         {
             if (jobReflectionData == IntPtr.Zero)
-                jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), JobType.ParallelFor, (ExecuteJobFunction)Execute);
+                jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), (ExecuteJobFunction)Execute);
             return jobReflectionData;
         }
 

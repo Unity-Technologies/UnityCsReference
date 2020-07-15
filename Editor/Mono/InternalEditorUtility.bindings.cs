@@ -431,7 +431,7 @@ namespace UnityEditorInternal
 
         public static void RevertFactoryLayoutSettings(bool quitOnCancel)
         {
-            WindowLayout.RevertFactorySettings(quitOnCancel);
+            WindowLayout.ResetAllLayouts(quitOnCancel);
         }
 
         public static void LoadDefaultLayout()

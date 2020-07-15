@@ -642,6 +642,19 @@ namespace UnityEngine
             return GetVertexAttributesList(attributes);
         }
 
+        public void SetVertexBufferParams(int vertexCount, params UnityEngine.Rendering.VertexAttributeDescriptor[] attributes)
+        {
+            SetVertexBufferParamsFromArray(vertexCount, attributes);
+        }
+
+        public void SetVertexBufferParams(int vertexCount, NativeArray<UnityEngine.Rendering.VertexAttributeDescriptor> attributes)
+        {
+            unsafe
+            {
+                SetVertexBufferParamsFromPtr(vertexCount, (IntPtr)attributes.GetUnsafeReadOnlyPtr(), attributes.Length);
+            }
+        }
+
         public unsafe void SetVertexBufferData<T>(NativeArray<T> data, int dataStart, int meshBufferStart, int count, int stream = 0, UnityEngine.Rendering.MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default) where T : struct
         {
             if (!canAccess)

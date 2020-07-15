@@ -177,11 +177,12 @@ namespace UnityEditor
             pos = new Rect(position.width, 0, 0, 0);
 
             // Right spacing side
-            ReserveWidthLeft(space, ref pos);
-            ReserveWidthLeft(dropdownWidth, ref pos);
-
             if (ModeService.HasCapability(ModeCapability.LayoutWindowMenu, true))
+            {
+                ReserveWidthLeft(space, ref pos);
+                ReserveWidthLeft(dropdownWidth + 30, ref pos);
                 DoLayoutDropDown(EditorToolGUI.GetToolbarEntryRect(pos));
+            }
 
             if (ModeService.HasCapability(ModeCapability.Layers, true))
             {

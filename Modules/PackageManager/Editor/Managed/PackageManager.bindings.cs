@@ -36,6 +36,9 @@ namespace UnityEditor.PackageManager
         [FreeFunction("PackageManager::List::StartOperation")]
         private static extern NativeStatusCode List([Out] out long operationId, bool offlineMode, bool includeIndirectDependencies);
 
+        [FreeFunction("PackageManager::ListBuiltInPackages::StartOperation")]
+        private static extern NativeStatusCode ListBuiltInPackages([Out] out long operationId);
+
         [FreeFunction("PackageManager::Pack::StartOperation")]
         private static extern NativeStatusCode Pack([Out] out long operationId, string packageFolder, string targetFolder);
 

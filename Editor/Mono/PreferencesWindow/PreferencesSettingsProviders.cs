@@ -1076,18 +1076,22 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(!m_DeveloperMode))
             {
                 m_ShowRepaintDots = EditorGUILayout.Toggle(DeveloperModeProperties.showRepaintDots, m_ShowRepaintDots);
+                m_DeveloperModeDirty = EditorGUI.EndChangeCheck();
+
+                EditorGUI.BeginChangeCheck();
 
                 var docServer = (Help.DocRedirectionServer)EditorGUILayout.EnumPopup(DeveloperModeProperties.redirectionServer, Help.docRedirectionServer);
+
                 if (EditorGUI.EndChangeCheck())
                 {
                     Help.docRedirectionServer = docServer;
                 }
             }
 
-            // If any developer mode preference changes, make sure to repaint all views
-            m_DeveloperModeDirty = EditorGUI.EndChangeCheck();
-
-            ApplyChangesToPrefs();
+            if (m_DeveloperModeDirty)
+            {
+                ApplyChangesToPrefs();
+            }
         }
 
         private void WriteRecentAppsList(string[] paths, string path, string prefsKey)

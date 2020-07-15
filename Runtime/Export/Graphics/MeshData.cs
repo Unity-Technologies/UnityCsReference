@@ -283,7 +283,16 @@ namespace UnityEngine
             public void SetVertexBufferParams(int vertexCount, params VertexAttributeDescriptor[] attributes)
             {
                 CheckWriteAccess();
-                SetVertexBufferParamsImpl(m_Ptr, vertexCount, attributes);
+                SetVertexBufferParamsFromArray(m_Ptr, vertexCount, attributes);
+            }
+
+            public void SetVertexBufferParams(int vertexCount, NativeArray<UnityEngine.Rendering.VertexAttributeDescriptor> attributes)
+            {
+                CheckWriteAccess();
+                unsafe
+                {
+                    SetVertexBufferParamsFromPtr(m_Ptr, vertexCount, (IntPtr)attributes.GetUnsafeReadOnlyPtr(), attributes.Length);
+                }
             }
 
             public void SetIndexBufferParams(int indexCount, IndexFormat format)

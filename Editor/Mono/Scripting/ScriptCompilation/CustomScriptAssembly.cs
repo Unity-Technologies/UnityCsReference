@@ -343,7 +343,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var isBuildingWithTestAssemblies = (options & EditorScriptCompilationOptions.BuildingIncludingTestAssemblies) == EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
             var isTestAssembly = DefineConstraints != null && DefineConstraints.Any(x => x == "UNITY_INCLUDE_TESTS");
-            if (!buildingForEditor && isTestAssembly && !isBuildingWithTestAssemblies)
+            var isTestFrameworkAssembly = DefineConstraints != null && DefineConstraints.Any(x => x == "UNITY_TESTS_FRAMEWORK");
+            if (!buildingForEditor && (isTestAssembly || isTestFrameworkAssembly) && !isBuildingWithTestAssemblies)
             {
                 return false;
             }

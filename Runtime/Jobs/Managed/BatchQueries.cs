@@ -33,7 +33,7 @@ namespace Unity.Jobs.LowLevel.Unsafe
         public static IntPtr Initialize()
         {
             if (jobReflectionData == IntPtr.Zero)
-                jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), JobType.ParallelFor, null);
+                jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), null);
             return jobReflectionData;
         }
     }

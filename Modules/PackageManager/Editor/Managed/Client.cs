@@ -69,6 +69,13 @@ namespace UnityEditor.PackageManager
             return new GetCachedPackagesRequest(operationId, status);
         }
 
+        internal static ListBuiltInPackagesRequest ListBuiltInPackages()
+        {
+            long operationId;
+            var status = ListBuiltInPackages(out operationId);
+            return new ListBuiltInPackagesRequest(operationId, status);
+        }
+
         public static RemoveRequest Remove(string packageName)
         {
             if (string.IsNullOrEmpty(packageName?.Trim()))

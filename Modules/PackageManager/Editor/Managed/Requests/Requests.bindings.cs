@@ -61,6 +61,13 @@ namespace UnityEditor.PackageManager.Requests
         private static extern OperationStatus GetOperationData(long operationId);
     }
 
+    internal partial class ListBuiltInPackagesRequest
+    {
+        [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
+        [StaticAccessor("PackageManager::ListBuiltInPackages", StaticAccessorType.DoubleColon)]
+        private static extern PackageInfo[] GetOperationData(long operationId);
+    }
+
     public partial class PackRequest
     {
         [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
