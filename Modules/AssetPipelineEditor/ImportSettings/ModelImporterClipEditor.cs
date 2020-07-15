@@ -591,6 +591,7 @@ namespace UnityEditor
                 m_AnimationClipEditor = (AnimationClipEditor)Editor.CreateEditor(clip, typeof(AnimationClipEditor));
                 InitMask(info);
                 SyncClipEditor(info);
+                m_AnimationClipEditor.InitClipTime();
             }
         }
 

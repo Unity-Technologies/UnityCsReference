@@ -80,6 +80,8 @@ namespace UnityEditor.PackageManager.UI
         // The relevance of results beyond this limit is also questionable.
         private const int MaxDependentList = 10;
 
+        private bool m_DescriptionExpanded;
+
         public PackageDetails()
         {
             var root = Resources.GetTemplate("PackageDetails.uxml");
@@ -308,17 +310,28 @@ namespace UnityEditor.PackageManager.UI
 
         private void DescriptionGeometryChangeEvent(GeometryChangedEvent evt)
         {
-            // only hide lengthly description when there are images to be displayed
+            // only hide long description when there are images to be displayed
             if (!(package?.images.Any() ?? false))
                 return;
 
-            var lineHeight = detailDesc.computedStyle.unityFont.value.lineHeight + 2;
-            if (!UIUtils.IsElementVisible(detailDescMore) && !UIUtils.IsElementVisible(detailDescLess) &&
-                evt.newRect.height > lineHeight * 4)
+            var minTextHeight = (int)detailDesc.MeasureTextSize("|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).y*3 + 1;
+            var textHeight = (int)detailDesc.MeasureTextSize(detailDesc.text, evt.newRect.width, MeasureMode.AtMost, float.MaxValue, MeasureMode.Undefined).y + 1;
+            if (!m_DescriptionExpanded && textHeight > minTextHeight)
             {
                 UIUtils.SetElementDisplay(detailDescMore, true);
                 UIUtils.SetElementDisplay(detailDescLess, false);
-                detailDesc.style.maxHeight = lineHeight * 3;
+                detailDesc.style.maxHeight = minTextHeight;
+                return;
+            }
+
+            if (evt.newRect.width > evt.oldRect.width && textHeight <= minTextHeight)
+            {
+                UIUtils.SetElementDisplay(detailDescMore, false);
+                UIUtils.SetElementDisplay(detailDescLess, false);
+            }
+            else if (m_DescriptionExpanded && evt.newRect.width < evt.oldRect.width && textHeight > minTextHeight)
+            {
+                UIUtils.SetElementDisplay(detailDescLess, true);
             }
         }
 
@@ -330,6 +343,7 @@ namespace UnityEditor.PackageManager.UI
             detailDesc.text = hasDescription ? displayVersion.description : "There is no description for this package.";
             UIUtils.SetElementDisplay(detailDescMore, false);
             UIUtils.SetElementDisplay(detailDescLess, false);
+            m_DescriptionExpanded = false;
         }
 
         private void RefreshAuthor()
@@ -650,13 +664,15 @@ namespace UnityEditor.PackageManager.UI
             detailDesc.style.maxHeight = float.MaxValue;
             UIUtils.SetElementDisplay(detailDescMore, false);
             UIUtils.SetElementDisplay(detailDescLess, true);
+            m_DescriptionExpanded = true;
         }
 
         private void DescLessClick()
         {
-            detailDesc.style.maxHeight = 48;
+            detailDesc.style.maxHeight = (int)detailDesc.MeasureTextSize("|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).y*3 + 1;
             UIUtils.SetElementDisplay(detailDescMore, true);
             UIUtils.SetElementDisplay(detailDescLess, false);
+            m_DescriptionExpanded = false;
         }
 
         private void AuthorClick()

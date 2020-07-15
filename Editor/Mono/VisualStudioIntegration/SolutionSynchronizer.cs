@@ -43,7 +43,9 @@ namespace UnityEditor.VisualStudioIntegration
 
     class AssemblyNameProvider : IAssemblyNameProvider
     {
-        ProjectGenerationFlag m_ProjectGenerationFlag = (ProjectGenerationFlag)EditorPrefs.GetInt("unity_project_generation_flag", 0);
+        ProjectGenerationFlag m_ProjectGenerationFlag = (ProjectGenerationFlag)EditorPrefs.GetInt(
+            "unity_project_generation_flag",
+            (int)(ProjectGenerationFlag.Local | ProjectGenerationFlag.Embedded));
 
         public string[] ProjectSupportedExtensions => EditorSettings.projectGenerationUserExtensions;
 
