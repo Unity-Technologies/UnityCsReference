@@ -687,8 +687,15 @@ namespace UnityEditor
         [NativeMethod("GetPlatformAutomaticGraphicsAPIs")]
         public static extern bool GetUseDefaultGraphicsAPIs(BuildTarget platform);
 
+        public static void SetUseDefaultGraphicsAPIs(BuildTarget platform, bool automatic)
+        {
+            SetUseDefaultGraphicsAPIsImpl(platform, automatic);
+            // we do cache api list in player settings editor, so if we update from script we should forcibly update cache
+            PlayerSettingsEditor.SyncPlatformAPIsList(platform);
+        }
+
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
-        public static extern void SetUseDefaultGraphicsAPIs(BuildTarget platform, bool automatic);
+        private static extern void SetUseDefaultGraphicsAPIsImpl(BuildTarget platform, bool automatic);
 
         // Set the output color space for the current project. This setting only
         // defines the format of the final framebuffer and render textures
