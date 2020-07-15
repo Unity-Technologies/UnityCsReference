@@ -31,6 +31,9 @@ namespace UnityEditor.SceneTemplate
 
         internal static bool FillAnalyticDepInfos(SceneTemplateAsset template, List<AnalyticDepInfo> infos)
         {
+            if (template.dependencies == null)
+                return false;
+
             var hasCloneableDependencies = false;
             var tempDepInfos = new Dictionary<string, List<AnalyticDepInfo>>();
             if (template.dependencies != null)

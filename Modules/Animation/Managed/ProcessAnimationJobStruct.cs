@@ -28,7 +28,6 @@ namespace UnityEngine.Animations
             {
                 jobReflectionData = JobsUtility.CreateJobReflectionData(
                     typeof(T),
-                    JobType.Single,
                     (ExecuteJobFunction)Execute);
             }
 

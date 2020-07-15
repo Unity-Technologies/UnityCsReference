@@ -12,6 +12,7 @@ namespace Unity.Jobs
     [NativeType(Header = "Runtime/Jobs/ScriptBindings/JobsBindings.h")]
     public struct JobHandle
     {
+        [NativeDisableUnsafePtrRestriction]
         internal IntPtr  jobGroup;
         internal int     version;
 

@@ -1832,6 +1832,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             compilationTask.OnBeforeCompilationStarted += (assembly, phase) =>
             {
+                if (runScriptUpdaterAssemblies.Contains(assembly.Filename))
+                    runScriptUpdaterAssemblies.Remove(assembly.Filename);
+
                 RunScriptUpdater(assembly, tempBuildDirectory, scriptAssemblySettings.CompilationOptions);
             };
 
@@ -1857,9 +1860,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
 
                 changedAssemblies.Add(assembly.Filename);
-
-                if (runScriptUpdaterAssemblies.Contains(assembly.Filename))
-                    runScriptUpdaterAssemblies.Remove(assembly.Filename);
 
                 if (assembly.HasCompileErrors)
                 {

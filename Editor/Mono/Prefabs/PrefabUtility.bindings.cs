@@ -288,6 +288,12 @@ namespace UnityEditor
         [FreeFunction]
         extern public static bool IsPartOfNonAssetPrefabInstance([NotNull] Object componentOrGameObject);
 
+        // We need a version of IsPartOfNonAssetPrefabInstance that uses an instanceID in order to handle missing monobehaviors
+        // which leads to managed null references (unity null) even though we have a native object. See handling for missing
+        // scripts for Prefab instances in GenericInspector.cs
+        [FreeFunction]
+        extern internal static bool IsInstanceIDPartOfNonAssetPrefabInstance(int componentOrGameObjectInstanceID);
+
         // Returns true if the object is from a regular prefab or instance of regular prefab
         [FreeFunction]
         extern public static bool IsPartOfRegularPrefab([NotNull] Object componentOrGameObject);

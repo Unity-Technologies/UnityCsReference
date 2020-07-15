@@ -205,6 +205,7 @@ namespace UnityEditor
             public static readonly GUIContent virtualTexturingUnsupportedAPIWin = EditorGUIUtility.TrTextContent("The target Windows graphics API does not support Virtual Texturing. To target compatible graphics APIs, uncheck 'Auto Graphics API for Windows', and remove OpenGL ES 2/3 and OpenGLCore.");
             public static readonly GUIContent virtualTexturingUnsupportedAPIMac = EditorGUIUtility.TrTextContent("The target Mac graphics API does not support Virtual Texturing. To target compatible graphics APIs, uncheck 'Auto Graphics API for Mac', and remove OpenGLCore.");
             public static readonly GUIContent virtualTexturingUnsupportedAPILinux = EditorGUIUtility.TrTextContent("The target Linux graphics API does not support Virtual Texturing. To target compatible graphics APIs, uncheck 'Auto Graphics API for Linux', and remove OpenGLCore.");
+            public static readonly GUIContent stereo360CaptureCheckbox = EditorGUIUtility.TrTextContent("360 Stereo Capture*");
 
             public static string undoChangedBundleIdentifierString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS bundleIdentifier"); } }
             public static string undoChangedBuildNumberString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS build number"); } }
@@ -363,6 +364,7 @@ namespace UnityEditor
         // Legacy
         SerializedProperty m_LegacyClampBlendShapeWeights;
         SerializedProperty m_AndroidEnableTango;
+        SerializedProperty m_Enable360StereoCapture;
 
         SerializedProperty m_VirtualTexturingSupportEnabled;
 
@@ -524,6 +526,10 @@ namespace UnityEditor
 
             m_LegacyClampBlendShapeWeights = FindPropertyAssert("legacyClampBlendShapeWeights");
             m_AndroidEnableTango           = FindPropertyAssert("AndroidEnableTango");
+
+            SerializedProperty property = FindPropertyAssert("vrSettings");
+            if (property != null)
+                m_Enable360StereoCapture = property.FindPropertyRelative("enable360StereoCapture");
 
             m_VirtualTexturingSupportEnabled = FindPropertyAssert("virtualTexturingSupportEnabled");
 
@@ -2039,6 +2045,10 @@ namespace UnityEditor
             }
 
             EditorGUILayout.Space();
+
+            Stereo360CaptureGUI(targetGroup);
+
+            EditorGUILayout.Space();
         }
 
         private bool VirtualTexturingInvalidGfxAPI(BuildTarget target, bool checkEditor)
@@ -2637,6 +2647,11 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
+        private void Stereo360CaptureGUI(BuildTargetGroup targetGroup)
+        {
+            EditorGUILayout.PropertyField(m_Enable360StereoCapture, SettingsContent.stereo360CaptureCheckbox);
+        }
+
         private void OtherSectionLegacyGUI(BuildTargetGroup targetGroup)
         {
             GUILayout.Label(SettingsContent.legacyTitle, EditorStyles.boldLabel);
@@ -2821,32 +2836,36 @@ namespace UnityEditor
         internal static bool BuildFileBoxButton(SerializedProperty prop, string uiString, string directory,
             string ext, Action onSelect)
         {
-            float h = EditorGUI.kSingleLineHeight;
-            float kLabelFloatMinW = EditorGUI.kLabelW + EditorGUIUtility.fieldWidth + EditorGUI.kSpacing;
-            float kLabelFloatMaxW = EditorGUI.kLabelW + EditorGUIUtility.fieldWidth + EditorGUI.kSpacing;
-            Rect r = GUILayoutUtility.GetRect(kLabelFloatMinW, kLabelFloatMaxW, h, h, EditorStyles.layerMaskField, null);
-
-            float labelWidth = EditorGUIUtility.labelWidth;
-            Rect buttonRect  = new Rect(r.x + EditorGUI.indent, r.y, labelWidth - EditorGUI.indent, r.height);
-            Rect fieldRect   = new Rect(r.x + labelWidth, r.y, r.width - labelWidth, r.height);
-
-            string display = (prop.stringValue.Length == 0) ? "Not selected." : prop.stringValue;
-            EditorGUI.TextArea(fieldRect, display, EditorStyles.label);
-
             bool changed = false;
-            if (GUI.Button(buttonRect, EditorGUIUtility.TextContent(uiString)))
+            using (var vertical = new EditorGUILayout.VerticalScope())
+            using (new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, prop))
             {
-                string prevVal = prop.stringValue;
-                string path = EditorUtility.OpenFilePanel(EditorGUIUtility.TextContent(uiString).text, directory, ext);
+                float h = EditorGUI.kSingleLineHeight;
+                float kLabelFloatMinW = EditorGUI.kLabelW + EditorGUIUtility.fieldWidth + EditorGUI.kSpacing;
+                float kLabelFloatMaxW = EditorGUI.kLabelW + EditorGUIUtility.fieldWidth + EditorGUI.kSpacing;
+                Rect r = GUILayoutUtility.GetRect(kLabelFloatMinW, kLabelFloatMaxW, h, h, EditorStyles.layerMaskField, null);
 
-                string relPath = FileUtil.GetProjectRelativePath(path);
-                prop.stringValue = (relPath != string.Empty) ? relPath : path;
-                changed = (prop.stringValue != prevVal);
+                float labelWidth = EditorGUIUtility.labelWidth;
+                Rect buttonRect = new Rect(r.x + EditorGUI.indent, r.y, labelWidth - EditorGUI.indent, r.height);
+                Rect fieldRect = new Rect(r.x + labelWidth, r.y, r.width - labelWidth, r.height);
 
-                if (onSelect != null)
-                    onSelect();
+                string display = (prop.stringValue.Length == 0) ? "Not selected." : prop.stringValue;
+                EditorGUI.TextArea(fieldRect, display, EditorStyles.label);
 
-                prop.serializedObject.ApplyModifiedProperties();
+                if (GUI.Button(buttonRect, EditorGUIUtility.TextContent(uiString)))
+                {
+                    string prevVal = prop.stringValue;
+                    string path = EditorUtility.OpenFilePanel(EditorGUIUtility.TextContent(uiString).text, directory, ext);
+
+                    string relPath = FileUtil.GetProjectRelativePath(path);
+                    prop.stringValue = (relPath != string.Empty) ? relPath : path;
+                    changed = (prop.stringValue != prevVal);
+
+                    if (onSelect != null)
+                        onSelect();
+
+                    prop.serializedObject.ApplyModifiedProperties();
+                }
             }
 
             return changed;

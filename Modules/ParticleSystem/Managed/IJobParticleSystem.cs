@@ -57,7 +57,7 @@ namespace UnityEngine.ParticleSystemJobs
         unsafe private static JobsUtility.JobScheduleParameters CreateScheduleParams<T>(ref T jobData, ParticleSystem ps, JobHandle dependsOn, IntPtr jobReflectionData) where T : struct
         {
             dependsOn = JobHandle.CombineDependencies(ps.GetManagedJobHandle(), dependsOn);
-            return new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), jobReflectionData, dependsOn, ScheduleMode.Batched);
+            return new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), jobReflectionData, dependsOn, ScheduleMode.Parallel);
         }
     }
 }

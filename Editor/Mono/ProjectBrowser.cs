@@ -1058,6 +1058,10 @@ namespace UnityEditor
                     Selection.activeObject = null;
                 }
             }
+            else
+            {
+                m_SelectedPath = string.Empty;
+            }
 
             if (!string.IsNullOrEmpty(m_SelectedPath))
             {

@@ -221,6 +221,8 @@ namespace UnityEditor.Experimental.SceneManagement
         internal static bool CheckIfAnyComponentShouldBlockPrefabModeInPlayMode(string prefabAssetPath)
         {
             var assetRoot = AssetDatabase.LoadAssetAtPath<GameObject>(prefabAssetPath);
+            if (assetRoot == null)
+                return false;
             var monoBehaviors = assetRoot.GetComponentsInChildren<MonoBehaviour>(true);  // also check the inactive since these can be made active while in play mode
             var warnList = new List<MonoBehaviour>();
             foreach (var m in monoBehaviors)

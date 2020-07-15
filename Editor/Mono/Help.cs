@@ -32,7 +32,7 @@ namespace UnityEditor
             "https://docs-redirects.test.it.unity3d.com",
             "https://docs-redirects.stg.it.unity3d.com",
             "https://docs-redirects.prd.it.unity3d.com",
-            "http://docs-redirects.unity.com"
+            "https://docs-redirects.unity.com"
         };
 
         internal enum DocRedirectionServer
