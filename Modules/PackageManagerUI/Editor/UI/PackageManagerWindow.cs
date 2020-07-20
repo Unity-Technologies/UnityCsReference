@@ -254,11 +254,6 @@ namespace UnityEditor.PackageManager.UI
         private void OnFocus()
         {
             rootVisualElement.AddToClassList("focus");
-
-            if (cache == null)
-                return;
-
-            packageList.OnFocus();
         }
 
         private void OnLostFocus()

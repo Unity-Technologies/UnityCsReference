@@ -108,7 +108,7 @@ namespace UnityEditor
         extern internal static bool HasFixedFunctionShaders([NotNull] Shader s);
         extern internal static bool HasShaderSnippets([NotNull] Shader s);
         extern internal static bool HasInstancing([NotNull] Shader s);
-        extern internal static bool HasProceduralInstancing([NotNull] Shader s);
+        extern public static bool HasProceduralInstancing([NotNull] Shader s);
         extern internal static bool HasShadowCasterPass([NotNull] Shader s);
         extern internal static bool DoesIgnoreProjector([NotNull] Shader s);
         extern internal static int  GetRenderQueue([NotNull] Shader s);

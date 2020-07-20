@@ -36,6 +36,16 @@ namespace UnityEditor.PackageManager
             return new AddRequest(operationId, status);
         }
 
+        internal static AddScopedRegistryRequest AddScopedRegistry(string registryName, string url, string[] scopes)
+        {
+            if (string.IsNullOrEmpty(registryName?.Trim()))
+                throw new ArgumentException(nameof(registryName), "Registry name cannot be null, empty or whitespace");
+
+            long operationId;
+            var status = NativeClient.AddScopedRegistry(out operationId, registryName, url, scopes);
+            return new AddScopedRegistryRequest(operationId, status);
+        }
+
         public static EmbedRequest Embed(string packageName)
         {
             var packageInfo = PackageInfo.GetAll().FirstOrDefault(p => p.name == packageName);
@@ -61,6 +71,16 @@ namespace UnityEditor.PackageManager
             long operationId;
             var status = NativeClient.Remove(out operationId, packageName);
             return new RemoveRequest(operationId, status, packageName);
+        }
+
+        internal static RemoveScopedRegistryRequest RemoveScopedRegistry(string registryName)
+        {
+            if (string.IsNullOrEmpty(registryName?.Trim()))
+                throw new ArgumentException(nameof(registryName), "Registry name cannot be null, empty or whitespace");
+
+            long operationId;
+            var status = NativeClient.RemoveScopedRegistry(out operationId, registryName);
+            return new RemoveScopedRegistryRequest(operationId, status);
         }
 
         public static SearchRequest Search(string packageIdOrName, bool offlineMode)
@@ -94,7 +114,7 @@ namespace UnityEditor.PackageManager
         {
             long operationId;
             var status = NativeClient.Search(out operationId, options);
-            return new PerformSearchRequest(operationId, status, options);
+            return new PerformSearchRequest(operationId, status);
         }
 
         public static ResetToEditorDefaultsRequest ResetToEditorDefaults()
@@ -109,6 +129,16 @@ namespace UnityEditor.PackageManager
             long operationId;
             var status = NativeClient.Pack(out operationId, packageFolder, targetFolder);
             return new PackRequest(operationId, status);
+        }
+
+        internal static UpdateScopedRegistryRequest UpdateScopedRegistry(string registryName, UpdateScopedRegistryOptions options)
+        {
+            if (string.IsNullOrEmpty(registryName?.Trim()))
+                throw new ArgumentException(nameof(registryName), "Registry name cannot be null, empty or whitespace");
+
+            long operationId;
+            var status = NativeClient.UpdateScopedRegistry(out operationId, registryName, options);
+            return new UpdateScopedRegistryRequest(operationId, status);
         }
 
         [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
