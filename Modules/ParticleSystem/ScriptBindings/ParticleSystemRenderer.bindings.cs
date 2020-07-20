@@ -71,6 +71,6 @@ namespace UnityEngine
         extern public void GetActiveVertexStreams([NotNull] List<ParticleSystemVertexStream> streams);
 
         extern internal bool editorEnabled { get; set; }
-        extern internal bool supportsMeshInstancing { get; }
+        extern public bool supportsMeshInstancing { get; }
     }
 }

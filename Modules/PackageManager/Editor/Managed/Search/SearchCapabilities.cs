@@ -16,5 +16,6 @@ namespace UnityEditor.PackageManager
         Classification = 1 << 0,
         Ordering       = 1 << 1 ,
         Pagination     = 1 << 2,
+        All            = Classification | Ordering | Pagination,
     }
 }

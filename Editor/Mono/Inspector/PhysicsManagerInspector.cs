@@ -36,24 +36,31 @@ namespace UnityEditor
             GUILayout.Space(0);
             show = EditorGUILayout.Foldout(show, title, true);
             GUILayout.EndHorizontal();
+
             if (show)
             {
-                var scrollState = GUI.GetTopScrollView();
-                var scrollStatePosOffset = scrollState?.position.y ?? 0;
-                var scrollPos = scrollState?.scrollPosition ?? Vector2.zero;
-                var topLabelRect = GUILayoutUtility.GetRect(checkboxSize + labelSize, labelSize);
-                var topLeft = new Vector2(topLabelRect.x, topLabelRect.y);
-                var y = 0;
+                GUILayout.BeginScrollView(new Vector2(0, 0), GUILayout.Height(labelSize + 10));
+                Rect topLabelRect = GUILayoutUtility.GetRect(checkboxSize * numLayers + labelSize, labelSize);
+                Rect scrollArea = GUIClip.topmostRect;
+                Vector2 topLeft = GUIClip.Unclip(new Vector2(topLabelRect.x, topLabelRect.y));
+                int y = 0;
                 for (int i = 0; i < kMaxLayers; i++)
                 {
                     if (LayerMask.LayerToName(i) != "")
                     {
-                        var translate = new Vector3(labelSize + indent + checkboxSize * (numLayers - y) + topLeft.x - scrollPos.x + scrollStatePosOffset, topLeft.y - scrollPos.y + scrollStatePosOffset, 0);
-                        GUI.matrix = Matrix4x4.TRS(translate, Quaternion.Euler(0, 0, 90), Vector3.one);
-                        GUI.Label(new Rect(scrollPos.x, scrollPos.y, labelSize, checkboxSize), LayerMask.LayerToName(i), "RightLabel");
+                        // Need to do some shifting around here, so the rotated text will still clip correctly
+                        float clipOffset = (labelSize + indent + (numLayers - y) * checkboxSize) - (scrollArea.width);
+                        if (clipOffset < 0)
+                            clipOffset = 0;
+
+                        Vector3 translate = new Vector3(labelSize + indent + checkboxSize * (numLayers - y) + topLeft.y + topLeft.x - clipOffset, topLeft.y, 0);
+                        GUI.matrix = Matrix4x4.TRS(translate, Quaternion.identity, Vector3.one) * Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(0, 0, 90), Vector3.one);
+
+                        GUI.Label(new Rect(2 - topLeft.x, -clipOffset, labelSize, checkboxSize), LayerMask.LayerToName(i), "RightLabel");
                         y++;
                     }
                 }
+                GUILayout.EndScrollView();
 
                 GUI.matrix = Matrix4x4.identity;
                 y = 0;

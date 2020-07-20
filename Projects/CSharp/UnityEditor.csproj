@@ -1951,8 +1951,14 @@
     <Compile Include="..\..\Editor\Mono\Inspector\EdgeCollider2DEditor.cs">
       <Link>Editor\Mono\Inspector\EdgeCollider2DEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\EdgeCollider2DTool.cs">
+      <Link>Editor\Mono\Inspector\EdgeCollider2DTool.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\EditMode.cs">
       <Link>Editor\Mono\Inspector\EditMode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\EditablePathTool.cs">
+      <Link>Editor\Mono\Inspector\EditablePathTool.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\Editor.cs">
       <Link>Editor\Mono\Inspector\Editor.cs</Link>
@@ -2040,6 +2046,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\LightingSettingsEditor.cs">
       <Link>Editor\Mono\Inspector\LightingSettingsEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\LineHandle.cs">
+      <Link>Editor\Mono\Inspector\LineHandle.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\LineRendererCurveEditor.cs">
       <Link>Editor\Mono\Inspector\LineRendererCurveEditor.cs</Link>
@@ -2139,6 +2148,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\PolygonCollider2DEditor.cs">
       <Link>Editor\Mono\Inspector\PolygonCollider2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\PolygonCollider2DTool.cs">
+      <Link>Editor\Mono\Inspector\PolygonCollider2DTool.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\PolygonEditorUtility.cs">
       <Link>Editor\Mono\Inspector\PolygonEditorUtility.cs</Link>
@@ -4594,6 +4606,9 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\AddRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\AddRequest.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\AddScopedRegistryRequest.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Requests\AddScopedRegistryRequest.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\EmbedRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\EmbedRequest.cs</Link>
     </Compile>
@@ -4612,6 +4627,9 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\RemoveRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\RemoveRequest.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\RemoveScopedRegistryRequest.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Requests\RemoveScopedRegistryRequest.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\Request.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\Request.cs</Link>
     </Compile>
@@ -4620,6 +4638,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\SearchRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\SearchRequest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\UpdateScopedRegistryRequest.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Requests\UpdateScopedRegistryRequest.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchCapabilities.cs">
       <Link>Modules\PackageManager\Editor\Managed\Search\SearchCapabilities.cs</Link>
@@ -4644,6 +4665,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\StatusCode.cs">
       <Link>Modules\PackageManager\Editor\Managed\StatusCode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\UpdateScopedRegistryOptions.cs">
+      <Link>Modules\PackageManager\Editor\Managed\UpdateScopedRegistryOptions.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\VersionsInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\VersionsInfo.cs</Link>

@@ -3,28 +3,28 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
 
 namespace UnityEditor.PackageManager.Requests
 {
     [Serializable]
-    internal sealed class PerformSearchRequest : Request<SearchResults>
+    internal sealed partial class UpdateScopedRegistryRequest : Request<RegistryInfo>
     {
         /// <summary>
         /// Constructor to support serialization
         /// </summary>
-        private PerformSearchRequest()
+        private UpdateScopedRegistryRequest()
+            : base()
         {
         }
 
-        internal PerformSearchRequest(long operationId, NativeStatusCode initialStatus)
+        internal UpdateScopedRegistryRequest(long operationId, NativeStatusCode initialStatus)
             : base(operationId, initialStatus)
         {
         }
 
-        protected override SearchResults GetResult()
+        protected override RegistryInfo GetResult()
         {
-            return NativeClient.GetSearchOperationData(Id);
+            return NativeClient.GetUpdateScopedRegistryOperationData(Id);
         }
     }
 }
