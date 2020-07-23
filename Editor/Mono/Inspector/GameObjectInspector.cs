@@ -207,6 +207,7 @@ namespace UnityEditor
         {
             base.OnForceReloadInspector();
             CalculatePrefabStatus();
+            ReloadPreviewInstances();
         }
 
         void ClearPreviewCache()
@@ -581,6 +582,7 @@ namespace UnityEditor
                 var previewData = pair.Value;
                 previewData.UpdateGameObject(targets[index]);
             }
+            ClearPreviewCache();
         }
 
         PreviewData GetPreviewData()

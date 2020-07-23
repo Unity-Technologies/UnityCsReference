@@ -32,6 +32,14 @@ namespace UnityEditor.PackageManager
 
         public static extern NativeStatusCode GetOperationStatus(long operationId);
 
+        public static extern NativeStatusCode AddScopedRegistry([Out] out long operationId, string name, string url, string[] scopes);
+
+        public static extern NativeStatusCode RemoveScopedRegistry([Out] out long operationId, string registryName);
+
+        public static extern NativeStatusCode UpdateScopedRegistry([Out] out long operationId, string registryName, UpdateScopedRegistryOptions options);
+
+        public static extern NativeStatusCode GetRegistries([Out] out long operationId);
+
         [ThreadAndSerializationSafe]
         public static extern void ReleaseCompletedOperation(long operationId);
 
@@ -46,6 +54,12 @@ namespace UnityEditor.PackageManager
         public static extern PackageInfo[] GetSearchOperationData(long operationId);
 
         public static extern PackOperationResult GetPackOperationData(long operationId);
+
+        public static extern RegistryInfo[] GetGetRegistriesOperationData(long operationId);
+
+        public static extern RegistryInfo GetAddScopedRegistryOperationData(long operationId);
+
+        public static extern RegistryInfo GetUpdateScopedRegistryOperationData(long operationId);
     }
 
     [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]

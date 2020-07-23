@@ -20,7 +20,7 @@ namespace UnityEngine.UIElements
         {
             var inline = new StyleValue();
             if (TryGetStyleValue(id, ref inline))
-                return new StyleLength(inline.number, inline.keyword);
+                return new StyleLength(inline.length, inline.keyword);
             return StyleKeyword.Null;
         }
 
