@@ -4432,8 +4432,14 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\AddRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\AddRequest.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\AddScopedRegistryRequest.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Requests\AddScopedRegistryRequest.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\EmbedRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\EmbedRequest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\GetRegistriesRequest.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Requests\GetRegistriesRequest.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\ListRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\ListRequest.cs</Link>
@@ -4444,6 +4450,9 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\RemoveRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\RemoveRequest.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\RemoveScopedRegistryRequest.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Requests\RemoveScopedRegistryRequest.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\Request.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\Request.cs</Link>
     </Compile>
@@ -4453,8 +4462,14 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\SearchRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\SearchRequest.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\UpdateScopedRegistryRequest.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Requests\UpdateScopedRegistryRequest.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\StatusCode.cs">
       <Link>Modules\PackageManager\Editor\Managed\StatusCode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\UpdateScopedRegistryOptions.cs">
+      <Link>Modules\PackageManager\Editor\Managed\UpdateScopedRegistryOptions.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\VersionsInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\VersionsInfo.cs</Link>

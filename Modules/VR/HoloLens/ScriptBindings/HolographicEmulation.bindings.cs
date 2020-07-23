@@ -19,10 +19,24 @@ namespace UnityEngine.XR.WSA
     {
         None,
         Unknown,
-        Unreachable,
+        NoServerCertificate,
+        HandshakePortBusy,
+        HandshakeUnreachable,
+        HandshakeConnectionFailed,
+        AuthenticationFailed,
+        RemotingVersionMismatch,
+        IncompatibleTransportProtocols,
         HandshakeFailed,
+        TransportPortBusy,
+        TransportUnreachable,
+        TransportConnectionFailed,
         ProtocolVersionMismatch,
-        ConnectionLost
+        ProtocolError,
+        VideoCodecNotAvailable,
+        Canceled,
+        ConnectionLost,
+        DeviceLost,
+        DisconnectRequest
     }
 
     [NativeHeader("Modules/VR/HoloLens/PerceptionRemoting.h")]

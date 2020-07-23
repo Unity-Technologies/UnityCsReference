@@ -102,7 +102,7 @@ namespace UnityEditor
         }
 
         // Internal for testing framework
-        internal void SaveDirtyPrefabAssets(bool rebuildInspectors)
+        internal void SaveDirtyPrefabAssets(bool reloadInspectors)
         {
             if (assetTargets == null)
                 return;
@@ -156,11 +156,12 @@ namespace UnityEditor
                 {
                     AssetDatabase.StopAssetEditing();
 
-                    // All inspectors needs to be rebuild to ensure property changes are reflected after saving the Prefab shown.
-                    // (Saving clears the m_DirtyIndex of the target which is used for updating inspectors via SerializedObject::UpdateIfRequiredOrScript()
-                    // and thus the cached dirty index in SerializedObject is not updated meaning the source object is not reloaded even though it changed)
-                    if (savedPrefab && rebuildInspectors)
-                        EditorUtility.ForceRebuildInspectors();
+                    if (savedPrefab && reloadInspectors)
+                        // We only call ForceReloadInspectors (and not ForceRebuildInspectors) to ensure local inspector state
+                        // is not destroyed, such as a foldout state maintained by an editor (case 1255013).
+                        // And we need to reload Prefab asset inspectors in order for the preview to be regenerated since the preview shows
+                        // an instantiated Prefab. E.g disable a MeshRenderer on a Prefab Asset and the mesh should be hidden in the preview.
+                        EditorUtility.ForceReloadInspectors();
                 }
             }
         }

@@ -17,6 +17,10 @@ namespace UnityEditor.PackageManager
     public class RegistryInfo
     {
         [SerializeField]
+        [NativeName("id")]
+        private string m_Id;
+
+        [SerializeField]
         [NativeName("name")]
         private string m_Name;
 
@@ -32,16 +36,18 @@ namespace UnityEditor.PackageManager
         [NativeName("isDefault")]
         private bool m_IsDefault;
 
-        internal RegistryInfo() : this("", "", new string[0], false) {}
+        internal RegistryInfo() : this("", "", "", new string[0], false) {}
 
-        internal RegistryInfo(string name, string url, string[] scopes, bool isDefault)
+        internal RegistryInfo(string id, string name, string url, string[] scopes, bool isDefault)
         {
+            m_Id = id;
             m_Name = name;
             m_Url = url;
             m_Scopes = scopes;
             m_IsDefault = isDefault;
         }
 
+        internal string id { get { return m_Id;  } }
         public string name { get { return m_Name;  } }
         public string url { get { return m_Url;  } }
         internal string[] scopes { get { return m_Scopes; } }

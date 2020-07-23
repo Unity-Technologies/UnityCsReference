@@ -1943,20 +1943,19 @@ namespace UnityEditor
                 }
             }
 
+            List<UInt32> selfAndInterCollisionIndices = new List<UInt32>();
             if (countIndices > 0)
             {
-                List<UInt32> selfAndInterCollisionIndices = new List<UInt32>(countIndices);
-                selfAndInterCollisionIndices.Clear();
-                for (UInt32 i = 0; i < length; i++)
+                selfAndInterCollisionIndices.Capacity = countIndices;
+                for (uint i = 0; i < length; ++i)
                 {
                     if (m_SelfAndInterCollisionSelection[i] == true)
                     {
                         selfAndInterCollisionIndices.Add(i);
                     }
                 }
-
-                cloth.SetSelfAndInterCollisionIndices(selfAndInterCollisionIndices);
             }
+            cloth.SetSelfAndInterCollisionIndices(selfAndInterCollisionIndices);
 
             if (m_CachedMesh.Target == null)
             {
