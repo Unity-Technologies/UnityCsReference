@@ -136,17 +136,11 @@ namespace UnityEditor
             if (dict == null)
                 return;
 
-            /*
-            We have the Lucida Grande ttf asset which was always the font we used in the editor.
-            But on windows we call ReplaceFontForWindows to override the font used for that asset.
-            It would probably make sense to rename the asset to something generic, such as "EditorFont" instead,
-            though that might possibly break some things.
-            */
-            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResources.fontsPath + "Lucida Grande.ttf"));
-            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResources.fontsPath + "Lucida Grande Bold.ttf"));
-            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResources.fontsPath + "Lucida Grande Small.ttf"));
-            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResources.fontsPath + "Lucida Grande Small Bold.ttf"));
-            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResources.fontsPath + "Lucida Grande Big.ttf"));
+            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResources.fontsPath + "Inter/Inter-Regular.ttf"));
+            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResources.fontsPath + "Inter/Inter-SemiBold.ttf"));
+            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResources.fontsPath + "Inter/Inter-Small.ttf"));
+            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResources.fontsPath + "Inter/Inter-Italic.ttf"));
+            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResources.fontsPath + "Inter/Inter-SemiBoldItalic.ttf"));
         }
 
         static void ReplaceFontForLocalization(FontDictionary dict, Font font)

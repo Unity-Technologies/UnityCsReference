@@ -16,7 +16,7 @@ namespace UnityEditor
 
         static CacheServerToggle()
         {
-            AssetDatabaseExperimental.cacheServerConnectionChanged += OnCacherServerConnectionChanged;
+            AssetDatabase.cacheServerConnectionChanged += OnCacherServerConnectionChanged;
         }
 
         public CacheServerToggle()
@@ -41,12 +41,12 @@ namespace UnityEditor
 
         private GUIContent GetStatusContent()
         {
-            if (!AssetDatabaseExperimental.IsCacheServerEnabled())
+            if (!AssetDatabase.IsCacheServerEnabled())
             {
                 return m_CacheServerNotEnabledContent;
             }
 
-            if (!AssetDatabaseExperimental.IsConnectedToCacheServer())
+            if (!AssetDatabase.IsConnectedToCacheServer())
             {
                 return m_CacheServerDisconnectedContent;
             }
@@ -54,7 +54,7 @@ namespace UnityEditor
             return m_CacheServerConnectedContent;
         }
 
-        private static void OnCacherServerConnectionChanged(AssetDatabaseExperimental.CacheServerConnectionChangedParameters param)
+        private static void OnCacherServerConnectionChanged(CacheServerConnectionChangedParameters param)
         {
             AppStatusBar.StatusChanged();
         }

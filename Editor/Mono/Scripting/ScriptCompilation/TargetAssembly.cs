@@ -39,9 +39,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public List<string> ExplicitPrecompiledReferences { get; set; }
         public TargetAssemblyType Type { get; private set; }
         public string[] Defines { get; set; }
+        public string[] ResponseFileDefines { get; set; }
         public string RootNamespace { get; set; }
         public ScriptCompilerOptions CompilerOptions { get; set; }
         public List<VersionDefine> VersionDefines { get; set; }
+
         public int MaxPathLength { get; private set; }
 
         public TargetAssembly()

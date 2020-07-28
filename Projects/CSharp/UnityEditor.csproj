@@ -2893,6 +2893,9 @@
     <Compile Include="..\..\Editor\Mono\SceneView\SceneViewGrid.cs">
       <Link>Editor\Mono\SceneView\SceneViewGrid.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneView\SceneViewLightingOverlays.cs">
+      <Link>Editor\Mono\SceneView\SceneViewLightingOverlays.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\SceneView\SceneViewMotion.cs">
       <Link>Editor\Mono\SceneView\SceneViewMotion.cs</Link>
     </Compile>
@@ -3033,6 +3036,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\PragmaFixing30.cs">
       <Link>Editor\Mono\Scripting\PragmaFixing30.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ArrayHelper.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\ArrayHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\AssemblyBuilder.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\AssemblyBuilder.cs</Link>
@@ -3712,6 +3718,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UxmlExporter.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UxmlExporter.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\EditorAtlasMonitorInjector.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\EditorAtlasMonitorInjector.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\EditorContextualMenuManager.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\EditorContextualMenuManager.cs</Link>
     </Compile>
@@ -3744,6 +3753,24 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\RetainedMode.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\RetainedMode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetEditor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImportErrors.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImportErrors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImporter.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImporterImpl.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImporterImpl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetResourceUtil.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetResourceUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\URIHelpers.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\URIHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\IToolbarMenuElement.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\IToolbarMenuElement.cs</Link>
@@ -5583,27 +5610,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIAutomationEditor\TestEditorWindow.cs">
       <Link>Modules\UIAutomationEditor\TestEditorWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\EditorAtlasMonitorInjector.cs">
-      <Link>Modules\UIElementsEditor\EditorAtlasMonitorInjector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\StyleSheets\StyleSheetEditor.cs">
-      <Link>Modules\UIElementsEditor\StyleSheets\StyleSheetEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\StyleSheets\StyleSheetImportErrors.cs">
-      <Link>Modules\UIElementsEditor\StyleSheets\StyleSheetImportErrors.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\StyleSheets\StyleSheetImporter.cs">
-      <Link>Modules\UIElementsEditor\StyleSheets\StyleSheetImporter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\StyleSheets\StyleSheetImporterImpl.cs">
-      <Link>Modules\UIElementsEditor\StyleSheets\StyleSheetImporterImpl.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\StyleSheets\StyleSheetResourceUtil.cs">
-      <Link>Modules\UIElementsEditor\StyleSheets\StyleSheetResourceUtil.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\StyleSheets\URIHelpers.cs">
-      <Link>Modules\UIElementsEditor\StyleSheets\URIHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\ElementSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\ElementSnippet.cs</Link>

@@ -408,6 +408,7 @@ namespace UnityEditor
         readonly AnimBool m_ShowDefaultIsNativeResolution = new AnimBool();
         readonly AnimBool m_ShowResolution = new AnimBool();
         private static Texture2D s_WarningIcon;
+        private bool bIsPreset;
 
         public SerializedProperty FindPropertyAssert(string name)
         {
@@ -551,6 +552,11 @@ namespace UnityEditor
             // we clear it just to be on the safe side:
             // we access this cache both from player settings editor and script side when changing api
             s_GraphicsDeviceLists.Clear();
+
+            if (m_SerializedObject == null || m_SerializedObject.targetObject == null)
+                bIsPreset = false;
+            else
+                bIsPreset = m_SerializedObject.targetObject is Component ? ((int)(m_SerializedObject.targetObject as Component).gameObject.hideFlags == 93) : !AssetDatabase.Contains(m_SerializedObject.targetObject);
         }
 
         void OnDisable()
@@ -634,17 +640,12 @@ namespace UnityEditor
 
             int sectionIndex = 0;
 
-            // Fix for case 1218668
-            EditorGUI.indentLevel++;
-
             IconSectionGUI(targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
             ResolutionSectionGUI(targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
             m_SplashScreenEditor.SplashSectionGUI(platform, targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
             DebugAndCrashReportingGUI(platform, targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
             OtherSectionGUI(platform, targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
             PublishSectionGUI(targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
-
-            EditorGUI.indentLevel--;
 
             if (sectionIndex != kNumberGUISections)
                 Debug.LogError("Mismatched number of GUI sections.");
@@ -997,7 +998,14 @@ namespace UnityEditor
 
                         EditorGUILayout.PropertyField(m_ForceSingleInstance);
                         EditorGUILayout.PropertyField(m_UseFlipModelSwapchain, SettingsContent.useFlipModelSwapChain);
+
+                        if (bIsPreset)
+                            EditorGUI.indentLevel++;
+
                         EditorGUILayout.PropertyField(m_SupportedAspectRatios, true);
+
+                        if (bIsPreset)
+                            EditorGUI.indentLevel--;
 
                         EditorGUILayout.Space();
                     }
@@ -2502,7 +2510,14 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_BakeCollisionMeshes, SettingsContent.bakeCollisionMeshes);
             EditorGUILayout.PropertyField(m_KeepLoadedShadersAlive, SettingsContent.keepLoadedShadersAlive);
+
+            if (bIsPreset)
+                EditorGUI.indentLevel++;
+
             EditorGUILayout.PropertyField(m_PreloadedAssets, SettingsContent.preloadedAssets, true);
+
+            if (bIsPreset)
+                EditorGUI.indentLevel--;
 
             bool platformUsesAOT =
                 targetGroup == BuildTargetGroup.iOS ||

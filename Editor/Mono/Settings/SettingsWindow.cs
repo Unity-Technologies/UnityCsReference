@@ -36,6 +36,7 @@ namespace UnityEditor
         {
             public static readonly GUIStyle header = "SettingsHeader";
             public const float searchFieldHeight = 20;
+            public const float searchFieldWidth = 300;
         }
 
         private static class Styles
@@ -348,7 +349,9 @@ namespace UnityEditor
             }
 
             GUI.SetNextControlName(k_SearchField);
-            var searchText = EditorGUILayout.ToolbarSearchField(m_SearchText);
+
+            var searchTextRect = GUILayoutUtility.GetRect(0, ImguiStyles.searchFieldWidth, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.toolbarSearchField);
+            var searchText = EditorGUI.ToolbarSearchField(searchTextRect, m_SearchText, false);
             if (m_SearchFieldGiveFocus)
             {
                 m_SearchFieldGiveFocus = false;

@@ -16,9 +16,6 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\AlignmentUtils.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\AlignmentUtils.cs</Link>
     </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\AssemblyInfo.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Core\AssemblyInfo.cs</Link>
-    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\BindableElement.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\BindableElement.cs</Link>
     </Compile>
@@ -301,8 +298,8 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ImmediateModeElement.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\ImmediateModeElement.cs</Link>
     </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\InjectedEditor\EditorAtlasMonitor.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Core\InjectedEditor\EditorAtlasMonitor.cs</Link>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\InjectedEditor\PackageEditorAtlasMonitor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\InjectedEditor\PackageEditorAtlasMonitor.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\InteractionEnums.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\InteractionEnums.cs</Link>
@@ -672,6 +669,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualElementTooltip.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualElementTooltip.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualElementTypeData.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualElementTypeData.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualElementUtils.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualElementUtils.cs</Link>

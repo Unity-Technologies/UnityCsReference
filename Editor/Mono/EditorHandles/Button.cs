@@ -21,12 +21,12 @@ namespace UnityEditorInternal
                         capFunction(id, position, direction, pickSize, EventType.Layout);
                     break;
                 case EventType.MouseMove:
-                    if (HandleUtility.nearestControl == id && evt.button == 0)
+                    if (HandleUtility.nearestControl == id && !Tools.viewToolActive)
                         HandleUtility.Repaint();
                     break;
                 case EventType.MouseDown:
                     // am I closest to the thingy?
-                    if (HandleUtility.nearestControl == id && (evt.button == 0 || evt.button == 2))
+                    if (HandleUtility.nearestControl == id && !Tools.viewToolActive)
                     {
                         GUIUtility.hotControl = id; // Grab mouse focus
                         evt.Use();

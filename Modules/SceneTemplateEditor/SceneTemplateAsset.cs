@@ -19,6 +19,7 @@ namespace UnityEditor.SceneTemplate
     }
 
     [Serializable]
+    [ExcludeFromPreset]
     [AssetFileNameExtension("scenetemplate")]
     public class SceneTemplateAsset : ScriptableObject
     {

@@ -120,7 +120,14 @@ namespace UnityEngine.UIElements
         public bool isPasswordField
         {
             get { return m_TextInputBase.isPasswordField; }
-            set { m_TextInputBase.isPasswordField = value; }
+            set
+            {
+                if (m_TextInputBase.isPasswordField == value)
+                    return;
+
+                m_TextInputBase.isPasswordField = value;
+                m_TextInputBase.IncrementVersion(VersionChangeType.Repaint);
+            }
         }
 
         /// <summary>

@@ -25,7 +25,7 @@ namespace UnityEditor.UIElements
         }
     }
 
-    class UxmlSchemaGenerator
+    internal class UxmlSchemaGenerator
     {
         // Folder, relative to the project root.
         internal const string k_SchemaFolder = "UIElementsSchema";

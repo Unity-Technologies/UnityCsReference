@@ -109,7 +109,8 @@ namespace UnityEditor.PackageManager.UI
             PackageTag.Local,
             PackageTag.Git,
             PackageTag.Preview,
-            PackageTag.Deprecated
+            PackageTag.Deprecated,
+            PackageTag.Disabled
         };
 
         private static Texture2D s_LoadingTexture;
@@ -349,6 +350,7 @@ namespace UnityEditor.PackageManager.UI
                 UIUtils.SetElementDisplay(detailVersion, !package.Is(PackageType.BuiltIn) && !string.IsNullOrEmpty(versionString));
 
                 UIUtils.SetElementDisplay(previewInfoBox, package.Is(PackageType.Unity) && displayVersion.HasTag(PackageTag.Preview));
+                UIUtils.SetElementDisplay(disabledInfoBox, displayVersion.HasTag(PackageTag.Disabled));
 
                 foreach (var tag in k_VisibleTags)
                     UIUtils.SetElementDisplay(GetTagLabel(tag.ToString()), displayVersion.HasTag(tag));
@@ -856,6 +858,7 @@ namespace UnityEditor.PackageManager.UI
 
                 var state = package.state;
                 var isAvailableOnDisk = displayVersion?.isAvailableOnDisk ?? false;
+                var packageDisabled = displayVersion.HasTag(PackageTag.Disabled);
                 var hasUpdateAvailable = state == PackageState.UpdateAvailable;
                 var isLatestVersionOnDisk = isAvailableOnDisk && !hasUpdateAvailable;
                 var isDownloadRequested = operation?.state == DownloadState.DownloadRequested;
@@ -869,7 +872,8 @@ namespace UnityEditor.PackageManager.UI
                     RefreshButtonStatusAndTooltip(downloadButton, action,
                         new ButtonDisableCondition(isDownloadRequested,
                             L10n.Tr("The download request has been sent. Please wait for the download to start.")),
-                        disableIfCompiling,
+                        new ButtonDisableCondition(packageDisabled,
+                            L10n.Tr("This package is no longer available and can not be downloaded anymore.")),
                         new ButtonDisableCondition(!m_Application.isInternetReachable,
                             L10n.Tr("You need to restore your network connection to perform this action.")),
                         disableIfCompiling);
@@ -881,7 +885,10 @@ namespace UnityEditor.PackageManager.UI
                 if (showImportButton)
                 {
                     importButton.text = GetButtonText(PackageAction.Import);
-                    RefreshButtonStatusAndTooltip(importButton, PackageAction.Import, disableIfCompiling);
+                    RefreshButtonStatusAndTooltip(importButton, PackageAction.Import,
+                        new ButtonDisableCondition(displayVersion.HasTag(PackageTag.Disabled),
+                            L10n.Tr("This package is no longer available and can not be imported anymore.")),
+                        disableIfCompiling);
                 }
 
                 downloadProgress.UpdateProgress(operation);
@@ -977,7 +984,9 @@ namespace UnityEditor.PackageManager.UI
         private void UpdateClick()
         {
             // dissuade users from updating by showing a warning message
-            if (package.versions.installed != null && !package.versions.installed.isDirectDependency && package.versions.installed != targetVersion)
+            var installedVersion = package.versions.installed;
+            var targetVersion = this.targetVersion;
+            if (installedVersion != null && !installedVersion.isDirectDependency && installedVersion != targetVersion)
             {
                 var message = L10n.Tr("This version of the package is being used by other packages. Upgrading a different version might break your project. Are you sure you want to continue?");
                 if (!EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), message, L10n.Tr("Yes"), L10n.Tr("No")))
@@ -987,8 +996,10 @@ namespace UnityEditor.PackageManager.UI
             m_PackageDatabase.Install(targetVersion);
             RefreshPackageActionButtons();
 
-            var eventName = package.versions.installed == null ? "installNew" : "installUpdate";
-            PackageManagerWindowAnalytics.SendEvent(eventName, displayVersion?.uniqueId);
+            var installType = installedVersion == null ? "New" : "Update";
+            var installRecommended = package.versions.recommended == targetVersion ? "Recommended" : "NonRecommended";
+            var eventName = $"install{installType}{installRecommended}";
+            PackageManagerWindowAnalytics.SendEvent(eventName, targetVersion?.uniqueId);
         }
 
         /// <summary>
@@ -1213,6 +1224,7 @@ namespace UnityEditor.PackageManager.UI
         private TextField detailTitle { get { return cache.Get<TextField>("detailTitle"); } }
         private TextField detailVersion { get { return cache.Get<TextField>("detailVersion"); } }
         private HelpBox previewInfoBox { get { return cache.Get<HelpBox>("previewInfoBox"); } }
+        private HelpBox disabledInfoBox { get { return cache.Get<HelpBox>("disabledInfoBox"); } }
         private VisualElement detailPurchasedDateContainer { get { return cache.Get<VisualElement>("detailPurchasedDateContainer"); } }
         private TextField detailPurchasedDate { get { return cache.Get<TextField>("detailPurchasedDate"); } }
         private VisualElement detailAuthorContainer { get { return cache.Get<VisualElement>("detailAuthorContainer"); } }

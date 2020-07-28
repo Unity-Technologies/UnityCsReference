@@ -610,11 +610,15 @@ namespace UnityEditor.U2D
                 EditorGUI.indentLevel--;
 
                 if (m_SelectedPlatformSettings == 0)
+                {
+                    GUILayout.Space(EditorGUI.kSpacing);
                     HandlePlatformSettingUI(null);
+                }
                 else
                 {
                     EditorGUILayout.BeginVertical();
                     {
+                        GUILayout.Space(EditorGUI.kSpacing);
                         string oldSecondaryTextureName = m_PlatformSettingsOptions[m_SelectedPlatformSettings];
                         GUI.SetNextControlName(s_Styles.secondaryTextureNameTextControlName);
 

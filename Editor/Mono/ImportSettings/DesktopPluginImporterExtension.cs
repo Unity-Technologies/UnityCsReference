@@ -17,13 +17,14 @@ namespace UnityEditor
             None,
             AnyCPU,
             x86,
-            x86_64
+            x86_64,
+            ARM64,
         }
 
         internal class DesktopSingleCPUProperty : Property
         {
-            public DesktopSingleCPUProperty(GUIContent name, string platformName, DesktopPluginCPUArchitecture architecture)
-                : base(name, "CPU", architecture, platformName)
+            public DesktopSingleCPUProperty(BuildTarget buildTarget, DesktopPluginCPUArchitecture architecture)
+                : base(EditorGUIUtility.TrTextContent(GetArchitectureNameInGUI(buildTarget, architecture)), "CPU", architecture, BuildPipeline.GetBuildTargetName(buildTarget))
             {
             }
 
@@ -58,46 +59,100 @@ namespace UnityEditor
             }
         }
 
-        private DesktopSingleCPUProperty m_WindowsX86;
-        private DesktopSingleCPUProperty m_WindowsX86_X64;
+        class DesktopMultiCPUProperty : Property
+        {
+            private readonly DesktopPluginCPUArchitecture[] m_SupportedArchitectures;
+            private readonly GUIContent[] m_SupportedArchitectureNames;
 
-        private DesktopSingleCPUProperty m_LinuxX86_X64;
+            public DesktopMultiCPUProperty(BuildTarget buildTarget, params DesktopPluginCPUArchitecture[] supportedArchitectures) :
+                base("CPU", "CPU", DesktopPluginCPUArchitecture.None, BuildPipeline.GetBuildTargetName(buildTarget))
+            {
+                // Add "None" and "AnyCPU" architectures to the supported architecture list
+                m_SupportedArchitectures = new DesktopPluginCPUArchitecture[supportedArchitectures.Length + 2];
+                m_SupportedArchitectures[0] = DesktopPluginCPUArchitecture.None;
 
-        private DesktopSingleCPUProperty m_OSX_X64;
+                var architectureCount = supportedArchitectures.Length;
+                for (int i = 0; i < architectureCount; i++)
+                    m_SupportedArchitectures[i + 1] = supportedArchitectures[i];
 
+                m_SupportedArchitectures[m_SupportedArchitectures.Length - 1] = DesktopPluginCPUArchitecture.AnyCPU;
+
+                architectureCount = m_SupportedArchitectures.Length;
+                m_SupportedArchitectureNames = new GUIContent[architectureCount];
+                for (int i = 0; i < architectureCount; i++)
+                    m_SupportedArchitectureNames[i] = EditorGUIUtility.TrTextContent(GetArchitectureNameInGUI(buildTarget, m_SupportedArchitectures[i]));
+            }
+
+            DesktopPluginCPUArchitecture GetCurrentArchitecture(PluginImporterInspector inspector)
+            {
+                if (inspector.GetPlatformCompatibility(platformName) != PluginImporterInspector.Compatibility.Compatible)
+                    return DesktopPluginCPUArchitecture.None;
+
+                // Previous Unity versions had only two states: enabled or disabled. If it was enabled, then it means
+                // it was compatible with x64 as that was the only architecture available at the time.
+                var architecture = value as DesktopPluginCPUArchitecture ? ;
+                if (architecture == null || architecture == DesktopPluginCPUArchitecture.None)
+                    return DesktopPluginCPUArchitecture.x86_64;
+
+                return architecture.Value;
+            }
+
+            int GetArchitectureIndex(DesktopPluginCPUArchitecture architecture)
+            {
+                for (int i = 0; i < m_SupportedArchitectures.Length; i++)
+                {
+                    if (architecture == m_SupportedArchitectures[i])
+                        return i;
+                }
+
+                if (architecture == DesktopPluginCPUArchitecture.None)
+                    throw new InvalidOperationException("Supported architectures did not contain DesktopPluginCPUArchitecture.None!");
+
+                // If current architecture is something that's not in supported list, we treat it as the plugin is set to "No architecture".
+                return GetArchitectureIndex(DesktopPluginCPUArchitecture.None);
+            }
+
+            internal override void OnGUI(PluginImporterInspector inspector)
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(10);
+                EditorGUI.BeginChangeCheck();
+
+                int selectedIndex = GetArchitectureIndex(GetCurrentArchitecture(inspector));
+                selectedIndex = EditorGUILayout.Popup(name, selectedIndex, m_SupportedArchitectureNames);
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    value = m_SupportedArchitectures[selectedIndex];
+                    inspector.SetPlatformCompatibility(platformName, m_SupportedArchitectures[selectedIndex] != DesktopPluginCPUArchitecture.None);
+                }
+                EditorGUILayout.EndHorizontal();
+            }
+        }
+
+        // Windows has 1 build target per CPU architecture
+        private readonly DesktopSingleCPUProperty m_WindowsX86;
+        private readonly DesktopSingleCPUProperty m_WindowsX86_X64;
+
+        // Linux/Mac have 1 build target in total
+        private readonly DesktopMultiCPUProperty m_Linux;
+        private readonly DesktopMultiCPUProperty m_MacOS;
 
         public DesktopPluginImporterExtension()
             : base(null)
         {
-            properties = GetProperties();
-        }
+            m_WindowsX86 = new DesktopSingleCPUProperty(BuildTarget.StandaloneWindows, DesktopPluginCPUArchitecture.x86);
+            m_WindowsX86_X64 = new DesktopSingleCPUProperty(BuildTarget.StandaloneWindows64, DesktopPluginCPUArchitecture.x86_64);
+            m_Linux = new DesktopMultiCPUProperty(BuildTarget.StandaloneLinux64, DesktopPluginCPUArchitecture.x86_64);
+            m_MacOS = new DesktopMultiCPUProperty(BuildTarget.StandaloneOSX, DesktopPluginCPUArchitecture.x86_64, DesktopPluginCPUArchitecture.ARM64);
 
-        private Property[] GetProperties()
-        {
-            List<Property> properties = new List<Property>();
-            m_WindowsX86 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x86"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneWindows), DesktopPluginCPUArchitecture.x86);
-            m_WindowsX86_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x86_x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneWindows64), DesktopPluginCPUArchitecture.x86_64);
-
-            m_LinuxX86_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x86_x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneLinux64), DesktopPluginCPUArchitecture.x86_64);
-
-            m_OSX_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneOSX), DesktopPluginCPUArchitecture.x86_64);
-
-            properties.Add(m_WindowsX86);
-            properties.Add(m_WindowsX86_X64);
-
-            properties.Add(m_LinuxX86_X64);
-
-            properties.Add(m_OSX_X64);
-
-            return properties.ToArray();
-        }
-
-        private DesktopPluginCPUArchitecture CalculateMultiCPUArchitecture(bool x86, bool x64)
-        {
-            if (x86 && x64) return DesktopPluginCPUArchitecture.AnyCPU;
-            if (x86) return DesktopPluginCPUArchitecture.x86;
-            if (x64) return DesktopPluginCPUArchitecture.x86_64;
-            return DesktopPluginCPUArchitecture.None;
+            properties = new Property[]
+            {
+                m_WindowsX86,
+                m_WindowsX86_X64,
+                m_Linux,
+                m_MacOS,
+            };
         }
 
         private bool IsUsableOnWindows(PluginImporter imp)
@@ -142,21 +197,18 @@ namespace UnityEditor
             if (IsUsableOnLinux(imp))
             {
                 EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Linux"), EditorStyles.boldLabel);
-                m_LinuxX86_X64.OnGUI(inspector);
+                m_Linux.OnGUI(inspector);
                 EditorGUILayout.Space();
             }
 
             if (IsUsableOnOSX(imp))
             {
                 EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Mac OS X"), EditorStyles.boldLabel);
-                m_OSX_X64.OnGUI(inspector);
+                m_MacOS.OnGUI(inspector);
             }
 
             if (EditorGUI.EndChangeCheck())
-            {
-                ValidateUniversalTargets(inspector);
                 hasModified = true;
-            }
         }
 
         public void ValidateSingleCPUTargets(PluginImporterInspector inspector)
@@ -164,9 +216,7 @@ namespace UnityEditor
             DesktopSingleCPUProperty[] singleCPUTargets = new[]
             {
                 m_WindowsX86,
-                m_WindowsX86_X64,
-                m_LinuxX86_X64,
-                m_OSX_X64
+                m_WindowsX86_X64
             };
 
             foreach (var target in singleCPUTargets)
@@ -178,25 +228,6 @@ namespace UnityEditor
                     importer.SetPlatformData(target.platformName, "CPU", target.value.ToString());
                 }
             }
-
-            ValidateUniversalTargets(inspector);
-        }
-
-        private void ValidateUniversalTargets(PluginImporterInspector inspector)
-        {
-            bool linuxX86_X64Enabled = m_LinuxX86_X64.IsTargetEnabled(inspector);
-
-            DesktopPluginCPUArchitecture linuxUniversal = CalculateMultiCPUArchitecture(true, linuxX86_X64Enabled);
-            foreach (var importer in inspector.importers)
-                importer.SetPlatformData(BuildTarget.StandaloneLinux64, "CPU", linuxUniversal.ToString());
-            inspector.SetPlatformCompatibility(BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneLinux64), linuxX86_X64Enabled);
-
-            bool osxX64Enabled = m_OSX_X64.IsTargetEnabled(inspector);
-
-            DesktopPluginCPUArchitecture osxUniversal = CalculateMultiCPUArchitecture(true, osxX64Enabled);
-            foreach (var importer in inspector.importers)
-                importer.SetPlatformData(BuildTarget.StandaloneOSX, "CPU", osxUniversal.ToString());
-            inspector.SetPlatformCompatibility(BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneOSX), osxX64Enabled);
         }
 
         public override string CalculateFinalPluginPath(string platformName, PluginImporter imp)
@@ -240,6 +271,30 @@ namespace UnityEditor
         {
             var extension = Path.GetExtension(assetPath).ToLower();
             return extension == ".cpp" || extension == ".c" || extension == ".h" || extension == ".mm" || extension == ".m";
+        }
+
+        static string GetArchitectureNameInGUI(BuildTarget buildTarget, DesktopPluginCPUArchitecture architecture)
+        {
+            switch (architecture)
+            {
+                case DesktopPluginCPUArchitecture.None :
+                    return "None";
+
+                case DesktopPluginCPUArchitecture.x86 :
+                    return buildTarget == BuildTarget.StandaloneOSX ? "Intel 32-bit" : "x86";
+
+                case DesktopPluginCPUArchitecture.x86_64:
+                    return buildTarget == BuildTarget.StandaloneOSX ? "Intel 64-bit" : "x64";
+
+                case DesktopPluginCPUArchitecture.ARM64:
+                    return buildTarget == BuildTarget.StandaloneOSX ? "Apple silicon" : "ARM64";
+
+                case DesktopPluginCPUArchitecture.AnyCPU:
+                    return "Any CPU";
+
+                default:
+                    throw new NotSupportedException("Unknown DesktopPluginCPUArchitecture value: " + architecture);
+            }
         }
     }
 }

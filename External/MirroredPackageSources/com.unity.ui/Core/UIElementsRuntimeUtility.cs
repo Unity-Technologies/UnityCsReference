@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
-using UnityEngine.Scripting;
 
 namespace UnityEngine.UIElements
 {
@@ -113,7 +112,7 @@ namespace UnityEngine.UIElements
         {
             foreach (BaseRuntimePanel panel in GetSortedPlayerPanels())
             {
-                if (!panel.drawToCameras && panel.targetTexture == null)
+                if (!panel.drawToCameras && (panel.targetTexture == null || panel.isDirty))
                 {
                     using (s_RepaintProfilerMarker.Auto())
                         panel.Repaint(Event.current);
@@ -126,7 +125,7 @@ namespace UnityEngine.UIElements
                 s_onRepaintOverlayPanels();
         }
 
-        public static void UpdateOverlayPanels()
+        public static void UpdateRuntimePanels()
         {
             foreach (BaseRuntimePanel panel in GetSortedPlayerPanels())
             {

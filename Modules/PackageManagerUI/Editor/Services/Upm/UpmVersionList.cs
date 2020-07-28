@@ -21,20 +21,21 @@ namespace UnityEditor.PackageManager.UI
         {
             get
             {
-                // Get key versions -- Latest, Verified, LatestPatch, Installed.
-                var keyVersions = new HashSet<IPackageVersion>();
-
                 var installed = this.installed;
-                var latestRelease = m_Versions.LastOrDefault(v => v.HasTag(PackageTag.Release));
-                var verifiedVersion = m_Versions.FirstOrDefault(v => v.HasTag(PackageTag.Verified));
-                keyVersions.Add(installed);
-                keyVersions.Add(latestRelease);
-                keyVersions.Add(verifiedVersion);
-                keyVersions.Add(latestPatch);
-                keyVersions.Add(recommended);
-                if (installed == null && latestRelease == null)
-                    keyVersions.Add(latest);
-                return keyVersions.Where(v => v != null).OrderBy(package => package.version);
+                var recommended = this.recommended;
+                if (installed != null)
+                {
+                    if (installed.HasTag(PackageTag.Preview) && !recommended.HasTag(PackageTag.Verified))
+                    {
+                        var verified = m_Versions.LastOrDefault(v => v.HasTag(PackageTag.Verified));
+                        if (verified != null)
+                            yield return verified;
+                    }
+                    yield return installed;
+                }
+
+                if (installed != recommended)
+                    yield return recommended;
             }
         }
 
@@ -42,51 +43,31 @@ namespace UnityEditor.PackageManager.UI
         private int m_InstalledIndex;
         public IPackageVersion installed { get { return m_InstalledIndex < 0 ? null : m_Versions[m_InstalledIndex]; } }
 
-        public IPackageVersion latestPatch
-        {
-            get
-            {
-                if (m_InstalledIndex < 0)
-                    return null;
-
-                var installed = m_Versions[m_InstalledIndex].version;
-                for (var i = m_Versions.Count - 1; i > m_InstalledIndex; --i)
-                {
-                    if (m_Versions[i].version?.IsPatchOf(installed) == true)
-                        return m_Versions[i];
-                }
-                return null;
-            }
-        }
-
         public IPackageVersion latest => m_Versions.LastOrDefault();
 
         public IPackageVersion recommended
         {
             get
             {
-                // Override with current when it's version locked
                 var installed = this.installed;
-                if (installed?.HasTag(PackageTag.VersionLocked) ?? false)
-                    return installed;
+                if (installed != null)
+                {
+                    if (installed.HasTag(PackageTag.VersionLocked))
+                        return installed;
 
-                // Only try to find recommended version in versions newer than the installed version
-                var newerVersions = installed == null ? m_Versions : m_Versions.Skip(m_InstalledIndex + 1).SkipWhile(v => v.version <= installed.version);
-
-                var verifiedVersion = newerVersions.FirstOrDefault(v => v.HasTag(PackageTag.Verified));
-                if (verifiedVersion != null)
-                    return verifiedVersion;
-
-                var latestRelease = newerVersions.LastOrDefault(v => v.HasTag(PackageTag.Release));
-                if (latestRelease != null && (installed == null || !installed.HasTag(PackageTag.Verified)))
-                    return latestRelease;
-
-                var latestPreview = newerVersions.LastOrDefault(package => package.HasTag(PackageTag.Preview));
-                if (latestPreview != null && (installed == null || installed.HasTag(PackageTag.Preview)))
-                    return latestPreview;
-
-                // Show current if it exists, otherwise latest user visible, and then otherwise show the absolute latest
-                return installed ?? latest;
+                    var newerVersions = m_Versions.Skip(m_InstalledIndex + 1).SkipWhile(v => v.version <= installed.version);
+                    return newerVersions.LastOrDefault(v => v.HasTag(PackageTag.Verified))
+                        ?? newerVersions.LastOrDefault(v => v.HasTag(PackageTag.Release) && v.version?.IsPatchOf(installed.version) == true)
+                        ?? (installed.HasTag(PackageTag.Preview) ? newerVersions.LastOrDefault(v => v.version?.IsPatchOf(installed.version) == true) : installed)
+                        ?? installed;
+                }
+                else
+                {
+                    return m_Versions.LastOrDefault(v => v.HasTag(PackageTag.Verified))
+                        ?? m_Versions.LastOrDefault(v => v.HasTag(PackageTag.Release))
+                        ?? m_Versions.LastOrDefault(v => v.HasTag(PackageTag.Preview))
+                        ?? latest;
+                }
             }
         }
 

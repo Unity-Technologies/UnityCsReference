@@ -130,6 +130,8 @@ namespace UnityEngine
         GUIStyle m_verticalSliderThumb;
         [NonSerialized]
         GUIStyle m_verticalSliderThumbExtent;
+        [NonSerialized]
+        GUIStyle m_SliderMixed;
 
         // Style used by default for the background part of GUI::ref::HorizontalSlider controls.
         public GUIStyle horizontalSlider { get { return m_horizontalSlider; } set { m_horizontalSlider = value; Apply(); } }
@@ -139,6 +141,9 @@ namespace UnityEngine
 
         // Style used by default for the extended region around the thumb in GUI::ref::HorizontalSlider controls.
         internal GUIStyle horizontalSliderThumbExtent { get { return m_horizontalSliderThumbExtent; } set { m_horizontalSliderThumbExtent = value; Apply(); } }
+
+        //Style used for thumb and thumbextent when multiple objects are selected
+        internal GUIStyle sliderMixed { get { return m_SliderMixed; } set { m_SliderMixed = value; Apply(); } }
 
         // Style used by default for the background part of GUI::ref::VerticalSlider controls.
         public GUIStyle verticalSlider { get { return m_verticalSlider; } set { m_verticalSlider = value; Apply(); } }
@@ -330,6 +335,13 @@ namespace UnityEngine
                 m_horizontalSliderThumbExtent = new GUIStyle();
                 m_horizontalSliderThumbExtent.name = "horizontalsliderthumbextent";
                 m_Styles["HorizontalSliderThumbExtent"] = m_horizontalSliderThumbExtent;
+            }
+
+            if (!m_Styles.TryGetValue("SliderMixed", out m_SliderMixed))
+            {
+                m_SliderMixed = new GUIStyle();
+                m_SliderMixed.name = "SliderMixed";
+                m_Styles["SliderMixed"] = m_SliderMixed;
             }
 
             if (!m_Styles.TryGetValue("VerticalSliderThumbExtent", out m_verticalSliderThumbExtent))

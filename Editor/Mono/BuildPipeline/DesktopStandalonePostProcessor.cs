@@ -105,6 +105,9 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
         foreach (PluginImporter imp in PluginImporter.GetImporters(buildTarget))
         {
+            if (!IsPluginCompatibleWithCurrentBuild(buildTarget, imp))
+                continue;
+
             // Skip .cpp files. They get copied to il2cpp output folder just before code compilation
             if (DesktopPluginImporterExtension.IsCppPluginFile(imp.assetPath))
             {
@@ -182,6 +185,12 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         }
     }
 
+    protected virtual bool IsPluginCompatibleWithCurrentBuild(BuildTarget buildTarget, PluginImporter imp)
+    {
+        var cpu = imp.GetPlatformData(buildTarget, "CPU");
+        return !string.Equals(cpu, "None", StringComparison.OrdinalIgnoreCase);
+    }
+
     private void CopyCppPlugins(BuildPostProcessArgs args, string cppOutputDir, IEnumerable<string> cppPlugins)
     {
         if (GetCreateSolution(args))
@@ -224,7 +233,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             if (UseIl2Cpp)
             {
                 var il2cppPlatformProvider = GetPlatformProvider(args);
-                IL2CPPUtils.RunIl2Cpp(args.stagingAreaData, il2cppPlatformProvider, (cppOutputDir) => CopyCppPlugins(args, cppOutputDir, cppPlugins), args.usedClassRegistry);
+                RunIL2CPP(args, il2cppPlatformProvider, cppPlugins);
 
                 if (GetCreateSolution(args))
                 {
@@ -244,6 +253,11 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
             RenameFilesInStagingArea(args);
         }
+    }
+
+    protected virtual void RunIL2CPP(BuildPostProcessArgs args, IIl2CppPlatformProvider il2cppPlatformProvider, List<string> cppPlugins)
+    {
+        IL2CPPUtils.RunIl2Cpp(args.stagingAreaData, il2cppPlatformProvider, (cppOutputDir) => CopyCppPlugins(args, cppOutputDir, cppPlugins), args.usedClassRegistry);
     }
 
     private void ProcessIl2CppOutputForBinary(BuildPostProcessArgs args)
@@ -375,8 +389,9 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
     {
         // Don't copy assemblies that are being overridden by a User assembly.
         var fileName = Path.GetFileName(path);
-        for (int i = 0; i < args.report.files.Length; ++i)
-            if (Path.GetFileName(args.report.files[i].path) == fileName && args.report.files[i].isOverridingUnityAssembly)
+        var files = args.report.files;
+        for (var i = 0; i < files.Length; ++i)
+            if (Path.GetFileName(files[i].path) == fileName && files[i].isOverridingUnityAssembly)
                 return false;
 
         // Don't copy UnityEngine mdb/pdb files
@@ -507,9 +522,13 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         return ((args.options & BuildOptions.EnableHeadlessMode) != 0);
     }
 
-    protected virtual string GetVariationName(BuildPostProcessArgs args)
+    protected string GetVariationName(BuildPostProcessArgs args)
     {
-        var platformString = PlatformStringFor(args.target);
+        return GetVariationName(args, PlatformStringFor(args.target));
+    }
+
+    protected virtual string GetVariationName(BuildPostProcessArgs args, string platformString)
+    {
         var configurationString = GetDevelopment(args) ? "development" : "nondevelopment";
 
         var scriptingBackend = "mono";

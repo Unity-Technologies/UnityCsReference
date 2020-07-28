@@ -116,7 +116,7 @@ namespace UnityEditor
         }
 
         [FreeFunction("MenuController::DisplayPopupMenu")]
-        private static extern void Private_DisplayPopupMenu(Rect position, string menuItemPath, Object context, int contextUserData);
+        private static extern void Private_DisplayPopupMenu(Rect position, string menuItemPath, Object context, int contextUserData, bool shouldDiscardMenuOnSecondClick = false);
 
         [FreeFunction("UpdateMenuTitleForLanguage")]
         internal static extern void Internal_UpdateMenuTitleForLanguage(SystemLanguage newloc);
@@ -127,7 +127,7 @@ namespace UnityEditor
         internal static extern void DisplayObjectContextPopupMenu(Rect position, Object[] context, int contextUserData);
 
         [FreeFunction("DisplayCustomContextPopupMenu")]
-        private static extern void DisplayCustomContextPopupMenu(Rect screenPosition, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey, bool allowDisplayNames);
+        private static extern void DisplayCustomContextPopupMenu(Rect screenPosition, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey, bool allowDisplayNames, bool shouldDiscardMenuOnSecondClick = false);
 
         [FreeFunction("DisplayObjectContextPopupMenuWithExtraItems")]
         internal static extern void DisplayObjectContextPopupMenuWithExtraItems(Rect position, Object[] context, int contextUserData, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey);

@@ -352,10 +352,7 @@ namespace UnityEngine.UIElements
 
                 evt.PostDispatch(panel);
 
-                if (!evt.isPropagationStopped)
-                {
-                    m_ClickDetector.ProcessEvent(evt);
-                }
+                m_ClickDetector.ProcessEvent(evt);
 
                 Debug.Assert(imguiEventIsInitiallyUsed || evt.isPropagationStopped || e == null || e.rawType != EventType.Used, "Event is used but not stopped.");
             }

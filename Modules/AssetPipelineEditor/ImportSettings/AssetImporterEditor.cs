@@ -445,7 +445,7 @@ namespace UnityEditor.AssetImporters
                     foreach (var importer in targets.Cast<AssetImporter>())
                     {
                         Undo.RegisterImporterUndo(importer.assetPath, string.Empty);
-                        AssetDatabaseExperimental.SetImporterOverrideInternal(importer.assetPath, m_AvailableImporterTypes[newSelection]);
+                        AssetDatabase.SetImporterOverrideInternal(importer.assetPath, m_AvailableImporterTypes[newSelection]);
                     }
                     AssetDatabase.StopAssetEditing();
                     GUIUtility.ExitGUI();
@@ -465,7 +465,7 @@ namespace UnityEditor.AssetImporters
 
             var typeLists = targets.OfType<AssetImporter>()
                 .Select(t => t.assetPath)
-                .Select(AssetDatabaseExperimental.GetAvailableImporterTypes);
+                .Select(AssetDatabase.GetAvailableImporterTypes);
             m_AvailableImporterTypes = typeLists
                 .Aggregate(new HashSet<Type>(typeLists.First()),
                 (h, e) =>

@@ -184,7 +184,7 @@ namespace UnityEditor
                 GetObjectListFromHierarchy(hierarchyInstanceIDs, transform.GetChild(i).gameObject);
         }
 
-        private static void CollectAddedObjects(GameObject gameObject, HashSet<int> hierarchyInstanceIDs, List<Object> danglingObjects)
+        internal static void CollectAddedObjects(GameObject gameObject, HashSet<int> hierarchyInstanceIDs, List<Object> danglingObjects)
         {
             Transform transform = null;
             List<Component> components = new List<Component>();
@@ -220,7 +220,7 @@ namespace UnityEditor
             }
         }
 
-        internal static void RegisterNewObjects(GameObject newHierarchy, HashSet<int> hierarchyInstanceIDs, string actionName)
+        private static void RegisterNewObjects(GameObject newHierarchy, HashSet<int> hierarchyInstanceIDs, string actionName)
         {
             var danglingObjects = new List<Object>();
 

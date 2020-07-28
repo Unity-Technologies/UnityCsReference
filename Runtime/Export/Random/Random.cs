@@ -4,7 +4,7 @@
 
 namespace UnityEngine
 {
-    public sealed partial class Random
+    public static partial class Random
     {
         public static Color ColorHSV()
         {

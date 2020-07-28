@@ -3,17 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Collections;
-using UnityEngineInternal;
 using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
     // Class for generating random data.
     [NativeHeader("Runtime/Export/Random/Random.bindings.h")]
-    public sealed partial class Random
+    public static partial class Random
     {
         // Random number generator engine state struct
         [System.Serializable]
@@ -30,11 +26,6 @@ namespace UnityEngine
             private int s3;
         }
 
-        // Gets/Sets the seed for the random number generator.
-        [StaticAccessor("GetScriptingRand()", StaticAccessorType.Dot)]
-        [Obsolete("Deprecated. Use InitState() function or Random.state property instead.")]
-        extern public static int seed { get; set; }
-
         // Initializes the RNG state with a 32 bit seed
         [StaticAccessor("GetScriptingRand()", StaticAccessorType.Dot)]
         [NativeMethod("SetSeed")]
@@ -44,15 +35,15 @@ namespace UnityEngine
         [StaticAccessor("GetScriptingRand()", StaticAccessorType.Dot)]
         extern public static Random.State state { get; set; }
 
-        // Returns a random float number between and /min/ [inclusive] and /max/ [inclusive] (RO).
+        // Returns a random float number between and [minInclusive, maxInclusive] (RO).
         [FreeFunction]
-        extern public static float Range(float min, float max);
+        extern public static float Range(float minInclusive, float maxInclusive);
 
-        // Returns a random integer number between /min/ [inclusive] and /max/ [exclusive] (RO).
-        public static int Range(int min, int max) { return RandomRangeInt(min, max); }
+        // Returns a random integer number between [minInclusive, maxExclusive) (RO).
+        public static int Range(int minInclusive, int maxExclusive) { return RandomRangeInt(minInclusive, maxExclusive); }
 
         [FreeFunction]
-        extern private static int RandomRangeInt(int min, int max);
+        extern private static int RandomRangeInt(int minInclusive, int maxExclusive);
 
         // Returns a random number between 0.0 [inclusive] and 1.0 [inclusive] (RO).
         extern public static float value
@@ -95,6 +86,12 @@ namespace UnityEngine
             [FreeFunction]
             get;
         }
+
+        // OBSOLETE
+
+        [StaticAccessor("GetScriptingRand()", StaticAccessorType.Dot)]
+        [Obsolete("Deprecated. Use InitState() function or Random.state property instead.")]
+        extern public static int seed { get; set; }
 
         [Obsolete("Use Random.Range instead")]
         public static float RandomRange(float min, float max)  { return Range(min, max); }

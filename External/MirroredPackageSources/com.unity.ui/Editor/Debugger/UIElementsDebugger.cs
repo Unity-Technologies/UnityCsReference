@@ -176,7 +176,6 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-
         public static void OpenAndInspectWindow(EditorWindow window)
         {
             var debuggerWindow = CreateDebuggerWindow();

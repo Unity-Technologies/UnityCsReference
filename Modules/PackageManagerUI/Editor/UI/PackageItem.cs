@@ -223,6 +223,7 @@ namespace UnityEditor.PackageManager.UI
         private void SeeAllVersionsClick()
         {
             m_PageManager.SetSeeAllVersions(package, true);
+            PackageManagerWindowAnalytics.SendEvent("seeAllVersions", targetVersion?.uniqueId);
         }
 
         private void StartSpinner()

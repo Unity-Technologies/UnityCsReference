@@ -6,11 +6,11 @@ namespace UnityEngine.UIElements
     public class Clickable : PointerManipulator
     {
         /// <summary>
-        /// Callback triggerred when the target element is clicked.
+        /// Callback triggered when the target element is clicked, including event data.
         /// </summary>
         public event System.Action<EventBase> clickedWithEventInfo;
         /// <summary>
-        /// Callback triggerred when the target element is clicked.
+        /// Callback triggered when the target element is clicked.
         /// </summary>
         public event System.Action clicked;
 
@@ -29,11 +29,11 @@ namespace UnityEngine.UIElements
 
         private IVisualElementScheduledItem m_Repeater;
 
-        // delay is used to determine when the event begins.  Applies if delay > 0.
-        // interval is used to determine the time delta between event repetitions.  Applies if interval > 0.
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="delay">Determines when the event begins. Applies if delay > 0.</param>
+        /// <param name="interval">Determines the time delta between event repetition. Applies if interval > 0.</param>
         public Clickable(System.Action handler, long delay, long interval) : this(handler)
         {
             m_Delay = delay;
@@ -92,7 +92,6 @@ namespace UnityEngine.UIElements
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
-            target.RegisterCallback<ClickEvent>(OnClick);
         }
 
         /// <summary>
@@ -103,7 +102,6 @@ namespace UnityEngine.UIElements
             target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
-            target.UnregisterCallback<ClickEvent>(OnClick);
         }
 
         /// <summary>
@@ -145,11 +143,6 @@ namespace UnityEngine.UIElements
                 ProcessUpEvent(evt, evt.localMousePosition, PointerId.mousePointerId);
         }
 
-        private void OnClick(ClickEvent evt)
-        {
-            Invoke(evt);
-        }
-
         internal void SimulateSingleClick(EventBase evt, int delayMs = 100)
         {
             target.pseudoStates |= PseudoStates.Active;
@@ -173,11 +166,7 @@ namespace UnityEngine.UIElements
                 // Repeatable button clicks are performed on the MouseDown and at timer events
                 if (target.ContainsPoint(localPosition))
                 {
-                    using (ClickEvent clickEvt = ClickEvent.GetPooled(evt))
-                    {
-                        clickEvt.target = target;
-                        target.SendEvent(clickEvt);
-                    }
+                    Invoke(evt);
                 }
 
                 if (m_Repeater == null)
@@ -236,11 +225,7 @@ namespace UnityEngine.UIElements
                 // Non repeatable button clicks are performed on the MouseUp
                 if (target.ContainsPoint(localPosition))
                 {
-                    using (ClickEvent clickEvt = ClickEvent.GetPooled(evt))
-                    {
-                        clickEvt.target = target;
-                        target.SendEvent(clickEvt);
-                    }
+                    Invoke(evt);
                 }
             }
 

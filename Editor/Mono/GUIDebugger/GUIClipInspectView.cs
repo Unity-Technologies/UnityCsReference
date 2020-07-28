@@ -89,10 +89,7 @@ namespace UnityEditor
             return methodName;
         }
 
-        internal override void OnDoubleClickInstruction(int index)
-        {
-            throw new NotImplementedException();
-        }
+        internal override void OnDoubleClickInstruction(int index) {}
 
         internal override void OnSelectedInstructionChanged(int index)
         {

@@ -40,7 +40,7 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneOSX))
         {
             standaloneSubtargetsList.Add(BuildTarget.StandaloneOSX);
-            standaloneSubtargetStringsList.Add(EditorGUIUtility.TrTextContent("Mac OS X"));
+            standaloneSubtargetStringsList.Add(EditorGUIUtility.TrTextContent("macOS"));
         }
         if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneLinux64))
         {

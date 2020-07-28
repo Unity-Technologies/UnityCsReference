@@ -14,6 +14,7 @@ using UnityEditor.Compilation;
 using UnityEditor.Modules;
 using UnityEditor.Scripting.Compilers;
 using UnityEditorInternal;
+using UnityEngine;
 using UnityEngine.Profiling;
 using CompilerMessage = UnityEditor.Scripting.Compilers.CompilerMessage;
 using CompilerMessageType = UnityEditor.Scripting.Compilers.CompilerMessageType;
@@ -238,6 +239,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         public PrecompiledAssemblyProviderBase PrecompiledAssemblyProvider { get; set; } = new PrecompiledAssemblyProvider();
+        public ResponseFileProvider ResponseFileProvider { get; set; } = new MicrosoftCSharpResponseFileProvider();
 
         Dictionary<object, Stopwatch> stopWatchDict = new Dictionary<object, Stopwatch>();
         string projectDirectory = string.Empty;
@@ -961,7 +963,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static Exception[] UpdateCustomScriptAssemblies(CustomScriptAssembly[] customScriptAssemblies,
             List<CustomScriptAssemblyReference> customScriptAssemblyReferences,
-            AssetPathMetaData[] assetPathsMetaData)
+            AssetPathMetaData[] assetPathsMetaData, ResponseFileProvider responseFileProvider)
         {
             var asmrefLookup = customScriptAssemblyReferences.ToLookup(x => x.Reference);
 
@@ -974,8 +976,24 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 assembly.AdditionalPrefixes = foundAsmRefs.Any() ? foundAsmRefs.Select(ar => ar.PathPrefix).ToArray() : null;
             }
 
+            UpdateCustomTargetAssembliesResponseFileData(customScriptAssemblies, responseFileProvider);
             var exceptions = UpdateCustomTargetAssembliesAssetPathsMetaData(customScriptAssemblies, assetPathsMetaData);
             return exceptions.ToArray();
+        }
+
+        static void UpdateCustomTargetAssembliesResponseFileData(CustomScriptAssembly[] customScriptAssemblies, ResponseFileProvider responseFileProvider)
+        {
+            foreach (var assembly in customScriptAssemblies)
+            {
+                string rspFile = responseFileProvider.Get(assembly.PathPrefix)
+                    .SingleOrDefault();
+                if (!string.IsNullOrEmpty(rspFile))
+                {
+                    var responseFileContent = MicrosoftResponseFileParser.GetResponseFileContent(Directory.GetParent(Application.dataPath).FullName, rspFile);
+                    var compilerOptions = MicrosoftResponseFileParser.GetCompilerOptions(responseFileContent);
+                    assembly.ResponseFileDefines = MicrosoftResponseFileParser.GetDefines(compilerOptions).ToArray();
+                }
+            }
         }
 
         static Exception[] UpdateCustomTargetAssembliesAssetPathsMetaData(CustomScriptAssembly[] customScriptAssemblies,
@@ -1029,7 +1047,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         Exception[] UpdateCustomTargetAssemblies(bool forceUpdateAssetMetadata = false)
         {
-            var exceptions = UpdateCustomScriptAssemblies(customScriptAssemblies, customScriptAssemblyReferences, m_AssetPathsMetaData);
+            var exceptions = UpdateCustomScriptAssemblies(customScriptAssemblies, customScriptAssemblyReferences, m_AssetPathsMetaData, ResponseFileProvider);
 
             if (exceptions.Length > 0)
             {
@@ -1037,7 +1055,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             customTargetAssemblies = EditorBuildRules.CreateTargetAssemblies(customScriptAssemblies);
-
 
             ClearCompilationSetupErrorFlags(CompilationSetupErrorFlags.cyclicReferences);
 

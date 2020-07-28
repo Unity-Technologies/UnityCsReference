@@ -30,7 +30,6 @@ namespace UnityEditor.SceneTemplate
         private const string k_DependencyPropertyName = nameof(DependencyInfo.dependency);
         private const string k_InstantiationModePropertyName = nameof(DependencyInfo.instantiationMode);
 
-        private const string k_DescriptionTextFieldName = "scene-template-asset-inspector-description-field";
         private const string k_DependencyRowElementName = "scene-template-asset-inspector-dependency-row";
         private const string k_DependenciesLabelName = "scene-template-asset-inspector-dependency-label";
         private const string k_ThumbnailAreaName = "scene-template-asset-inspector-thumbnail-area";
@@ -53,7 +52,6 @@ namespace UnityEditor.SceneTemplate
         private VisualElement m_DependencyHelpBox;
         private ZebraList m_ZebraList;
         private Toggle m_CloneHeaderToggle;
-
         VisualElement Root { get; set; }
 
         private class SnapshotTargetInfo
@@ -118,20 +116,23 @@ namespace UnityEditor.SceneTemplate
 
             // Scene description
             var templateDescriptionProperty = serializedObject.FindProperty(k_TemplateDescriptionPropertyName);
-            var descriptionTextField = new TextField("Description", -1, true, false, '*')
+            var description = new PropertyField(templateDescriptionProperty, "Description");
+            description.RegisterCallback<ChangeEvent<string>>(e => TriggerSceneTemplateModified());
+            description.RegisterCallback<SerializedPropertyBindEvent>(e =>
             {
-                name = k_DescriptionTextFieldName,
-                value = templateDescriptionProperty.stringValue
-            };
-            descriptionTextField.AddToClassList(Styles.classWrappingText);
-            descriptionTextField.RegisterValueChangedCallback(e =>
-            {
-                serializedObject.UpdateIfRequiredOrScript();
-                templateDescriptionProperty.stringValue = e.newValue;
-                serializedObject.ApplyModifiedProperties();
-                TriggerSceneTemplateModified();
+                EditorApplication.delayCall += () =>
+                {
+                    if (!description.Children().Any())
+                        return;
+                    var descriptionTextField = description.Children().First() as TextField;
+                    if (descriptionTextField != null)
+                    {
+                        descriptionTextField.AddToClassList(Styles.classWrappingText);
+                        descriptionTextField.multiline = true;
+                    }
+                };
             });
-            detailElement.Add(descriptionTextField);
+            detailElement.Add(description);
 
             var templateAddToDefaultsProperty = serializedObject.FindProperty(k_TemplateAddToDefaultsPropertyName);
             var defaultTemplateField = new VisualElement();
@@ -174,8 +175,6 @@ namespace UnityEditor.SceneTemplate
 
             // Dependencies
             root.Add(CreateFoldoutInspector(BuildDependencyRows(), "Dependencies", "SceneTemplateDependenciesFoldout"));
-
-            root.Bind(serializedObject);
             return root;
         }
 

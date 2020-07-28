@@ -201,8 +201,6 @@ namespace UnityEngine.UIElements
 
         string m_Name;
         List<string> m_ClassList;
-        string m_TypeName;
-        string m_FullTypeName;
         private List<PropertyBagValue> m_PropertyBag;
 
         // Used for view data persistence (ie. scroll position or tree view expanded states)
@@ -854,39 +852,8 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal string fullTypeName
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(m_FullTypeName))
-                    m_FullTypeName = GetType().FullName;
-                return m_FullTypeName;
-            }
-        }
-
-        internal string typeName
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(m_TypeName))
-                {
-                    var type = GetType();
-                    bool isGeneric = type.IsGenericType;
-                    m_TypeName = type.Name;
-
-                    if (isGeneric)
-                    {
-                        int genericTypeIndex = m_TypeName.IndexOf('`');
-                        if (genericTypeIndex >= 0)
-                        {
-                            m_TypeName = m_TypeName.Remove(genericTypeIndex);
-                        }
-                    }
-                }
-
-                return m_TypeName;
-            }
-        }
+        internal string fullTypeName => typeData.fullTypeName;
+        internal string typeName => typeData.typeName;
 
         // Set and pass in values to be used for layout
         internal YogaNode yogaNode { get; private set; }
@@ -944,8 +911,6 @@ namespace UnityEngine.UIElements
             hierarchy = new Hierarchy(this);
 
             m_ClassList = s_EmptyClassList;
-            m_FullTypeName = string.Empty;
-            m_TypeName = string.Empty;
             SetEnabled(true);
 
             focusable = false;

@@ -14,6 +14,7 @@ namespace UnityEngine.Scripting
         {
             Disabled = 0,
             Enabled = 1,
+            Manual =  2,
         }
 
         public static event Action<Mode> GCModeChanged;
@@ -47,6 +48,6 @@ namespace UnityEngine.Scripting
 
         [NativeThrows]
         [NativeMethod("CollectIncrementalWrapper")]
-        public extern static bool CollectIncremental(ulong nanoseconds);
+        public extern static bool CollectIncremental(ulong nanoseconds = 0);
     }
 }

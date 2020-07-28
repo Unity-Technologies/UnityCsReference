@@ -38,7 +38,7 @@ namespace UnityEditor
 
             GUILayout.BeginArea(rect, m_WindowStyle);
             // Cache server connection url
-            if (AssetDatabaseExperimental.IsCacheServerEnabled())
+            if (AssetDatabase.IsCacheServerEnabled())
             {
                 var iconPosition = new Rect();
                 iconPosition.x = rect.width - (m_RefreshIcon.image.width / (Screen.dpi > 160 ? 2 : 1)) - m_WindowStyle.padding.right;
@@ -48,21 +48,21 @@ namespace UnityEditor
                 GUIStyle helpIconStyle = EditorStyles.iconButton;
                 if (GUI.Button(iconPosition, m_RefreshIcon, helpIconStyle))
                 {
-                    AssetDatabaseExperimental.RefreshSettings();
+                    AssetDatabase.RefreshSettings();
                 }
 
                 GUILayout.BeginHorizontal();
                 var style = new GUIStyle();
                 style.fontStyle = FontStyle.Bold;
                 style.normal.textColor = EditorStyles.boldLabel.normal.textColor;
-                if (!AssetDatabaseExperimental.IsConnectedToCacheServer())
+                if (!AssetDatabase.IsConnectedToCacheServer())
                 {
                     style.normal.textColor = new Color(0.97f, 0.32f, 0.31f);
                 }
 
-                if (GUILayout.Button(AssetDatabaseExperimental.GetCacheServerAddress(), style))
+                if (GUILayout.Button(AssetDatabase.GetCacheServerAddress(), style))
                 {
-                    var url = $"http://{AssetDatabaseExperimental.GetCacheServerAddress()}:{AssetDatabaseExperimental.GetCacheServerPort()}";
+                    var url = $"http://{AssetDatabase.GetCacheServerAddress()}:{AssetDatabase.GetCacheServerPort()}";
                     Application.OpenURL(url);
                 }
                 GUILayout.EndHorizontal();
@@ -104,11 +104,11 @@ namespace UnityEditor
         private GUIContent ConnectionStatusText()
         {
             GUIContent status = m_StatusMessageConnected;
-            if (!AssetDatabaseExperimental.IsCacheServerEnabled())
+            if (!AssetDatabase.IsCacheServerEnabled())
             {
                 status = m_StatusMessageDisabled;
             }
-            else if (!AssetDatabaseExperimental.IsConnectedToCacheServer())
+            else if (!AssetDatabase.IsConnectedToCacheServer())
             {
                 status = m_StatusMessageError;
             }
@@ -135,7 +135,7 @@ namespace UnityEditor
 
         public override Vector2 GetWindowSize()
         {
-            int lines = AssetDatabaseExperimental.IsCacheServerEnabled() ? 3 : 2;
+            int lines = AssetDatabase.IsCacheServerEnabled() ? 3 : 2;
             int heightOfLines = (int)Math.Ceiling(EditorGUI.kSingleLineHeight * lines);
             int heightOfWindowPadding = m_WindowStyle.padding.top + m_WindowStyle.padding.bottom;
             int dividerLine = 2;
