@@ -6,11 +6,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using UnityEditor.AnimatedValues;
-using UnityEditor.Rendering;
 using UnityEditor.SceneManagement;
 using UnityEditor.ShortcutManagement;
 using UnityEditorInternal;
@@ -103,14 +101,6 @@ namespace UnityEditor
         static readonly PrefColor kSceneViewSelectedChildrenOutline = new PrefColor("Scene/Selected Children Outline", 94.0f / 255.0f, 119.0f / 255.0f, 155.0f / 255.0f, 0.0f / 255.0f);
         static readonly PrefColor kSceneViewSelectedWire = new PrefColor("Scene/Wireframe Selected", 94.0f / 255.0f, 119.0f / 255.0f, 155.0f / 255.0f, 64.0f / 255.0f);
 
-        static readonly PrefColor kSceneViewMaterialValidateLow = new PrefColor("Scene/Material Validator Value Too Low", 255.0f / 255.0f, 0.0f, 0.0f, 1.0f);
-        static readonly PrefColor kSceneViewMaterialValidateHigh = new PrefColor("Scene/Material Validator Value Too High", 0.0f, 0.0f, 255.0f / 255.0f, 1.0f);
-        static readonly PrefColor kSceneViewMaterialValidatePureMetal = new PrefColor("Scene/Material Validator Pure Metal", 255.0f / 255.0f, 255.0f / 255.0f, 0.0f, 1.0f);
-
-        static readonly PrefColor kSceneViewMaterialNoContributeGI = new PrefColor("Scene/Contribute GI Off", 229.0f / 255.0f, 203.0f / 255.0f, 132.0f / 255.0f, 1.0f);
-        static readonly PrefColor kSceneViewMaterialReceiveGILightmaps = new PrefColor("Scene/Contribute GI / Receive GI Lightmaps", 89.0f / 255.0f, 148.0f / 255.0f, 161.0f / 255.0f, 1.0f);
-        static readonly PrefColor kSceneViewMaterialReceiveGILightProbes = new PrefColor("Scene/Contribute GI / Receive GI Light Probes", 221.0f / 255.0f, 115.0f / 255.0f, 91.0f / 255.0f, 1.0f);
-
         internal static Color kSceneViewFrontLight = new Color(0.769f, 0.769f, 0.769f, 1);
         internal static Color kSceneViewUpLight = new Color(0.212f, 0.227f, 0.259f, 1);
         internal static Color kSceneViewMidLight = new Color(0.114f, 0.125f, 0.133f, 1);
@@ -120,7 +110,6 @@ namespace UnityEditor
 
         [SerializeField]
         bool m_ShowContextualTools;
-
 
         internal static SavedBool s_PreferenceEnableFilteringWhileSearching = new SavedBool("SceneView.enableFilteringWhileSearching", true);
         internal static SavedBool s_PreferenceEnableFilteringWhileLodGroupEditing = new SavedBool("SceneView.enableFilteringWhileLodGroupEditing", true);
@@ -529,6 +518,8 @@ namespace UnityEditor
             }
         }
 
+        SceneViewLightingOverlays m_SceneViewLightingOverlays;
+
         [Obsolete("m_ValidateTrueMetals has been deprecated. Use validateTrueMetals instead (UnityUpgradable) -> validateTrueMetals", true)]
         public bool m_ValidateTrueMetals = false;
 
@@ -551,11 +542,12 @@ namespace UnityEditor
 
         [SerializeField]
         float m_ExposureSliderValue = 0.0f;
-        // this value can be altered by the user
-        float m_ExposureSliderMax = 16f;
 
-        Texture2D m_ExposureTexture = null;
-        Texture2D m_EmptyExposureTexture = null;
+        internal float bakedLightmapExposure
+        {
+            get => m_ExposureSliderValue;
+            set => m_ExposureSliderValue = value;
+        }
 
         internal bool showExposureSettings
         {
@@ -955,9 +947,6 @@ namespace UnityEditor
             public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden objects, click to toggle scene visibility");
             public static GUIStyle gizmoButtonStyle;
             public static GUIContent sceneViewCameraContent = EditorGUIUtility.TrIconContent("SceneViewCamera", "Settings for the Scene view camera.");
-            public static GUIContent contributeGIOff = EditorGUIUtility.TrTextContent("Contribute GI Off");
-            public static GUIContent receiveGILightmaps = EditorGUIUtility.TrTextContent("Contribute GI / Receive GI Lightmaps");
-            public static GUIContent receiveGILightProbes = EditorGUIUtility.TrTextContent("Contribute GI / Receive GI Light Probes");
 
             static Styles()
             {
@@ -982,9 +971,6 @@ namespace UnityEditor
         private string m_SceneVisHiddenCount = "0";
 
         OverlayWindow m_SceneVisOverlayWindow;
-        OverlayWindow m_PBRSettingsOverlayWindow;
-        OverlayWindow m_LightingExposureSettingsOverlayWindow;
-        OverlayWindow m_GIContributorsReceiversOverlayWindow;
         OverlayWindow m_EditorToolsOverlayWindow;
 
         public void SetSceneViewShaderReplace(Shader shader, string replaceString)
@@ -1133,13 +1119,11 @@ namespace UnityEditor
             s_SceneViews.Add(this);
 
             m_SceneViewOverlay = new SceneViewOverlay(this);
+            m_SceneViewLightingOverlays = new SceneViewLightingOverlays(this);
             m_SceneVisOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Isolation View", ""),
                 OverlayWindowGUI, (int)SceneViewOverlay.Ordering.ParticleEffect + 100,
                 null,
                 SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
-            m_PBRSettingsOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("PBR Validation Settings"), DrawPBRSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, this, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
-            m_LightingExposureSettingsOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Lighting Exposure"), DrawLightingExposureSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, this, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
-            m_GIContributorsReceiversOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("GI Contributors / Receivers"), DrawGIContributorsReceiversSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, this, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
             m_EditorToolsOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Tools"), EditorToolGUI.DoContextualToolbarOverlay, int.MaxValue, null, SceneViewOverlay.WindowDisplayOption.MultipleWindowsPerTarget);
             m_EditorToolsOverlayWindow.editorWindow = this;
 
@@ -1317,16 +1301,12 @@ namespace UnityEditor
             if (m_Light[2])
                 DestroyImmediate(m_Light[2].gameObject, true);
 
+            m_SceneViewLightingOverlays.Dispose();
+
             EditorSceneManager.ClosePreviewScene(m_CustomLightsScene);
 
             if (s_MipColorsTexture)
                 DestroyImmediate(s_MipColorsTexture, true);
-
-            if (m_ExposureTexture)
-                DestroyImmediate(m_ExposureTexture, true);
-
-            if (m_EmptyExposureTexture)
-                DestroyImmediate(m_EmptyExposureTexture, true);
 
             s_SceneViews.Remove(this);
             if (s_LastActiveSceneView == this)
@@ -2238,439 +2218,6 @@ namespace UnityEditor
             CallOnPreSceneGUI();
         }
 
-        private AlbedoSwatchInfo[] m_AlbedoSwatchInfos;
-        private GUIStyle[] m_AlbedoSwatchColorStyles;
-        private String[] m_AlbedoSwatchDescriptions;
-        private GUIContent[] m_AlbedoSwatchGUIContent;
-        private String[] m_AlbedoSwatchLuminanceStrings;
-
-        private GUIStyle m_TooLowColorStyle = null;
-        private GUIStyle m_TooHighColorStyle = null;
-        private GUIStyle m_PureMetalColorStyle = null;
-
-        private int m_SelectedAlbedoSwatchIndex = 0;
-        private float m_AlbedoSwatchHueTolerance = 0.1f;
-        private float m_AlbedoSwatchSaturationTolerance = 0.2f;
-        private ColorSpace m_LastKnownColorSpace = ColorSpace.Uninitialized;
-
-        private GUIStyle m_NoContributeGIStyle = null;
-        private GUIStyle m_ReceiveGILightmapsStyle = null;
-        private GUIStyle m_ReceiveGILightProbesStyle = null;
-
-        void UpdateSwatchTexture(Texture2D t, Color c, bool colorCorrect = false)
-        {
-            // Some colors were created in gamma space and should be viewed as such when in linear
-            if (PlayerSettings.colorSpace == ColorSpace.Linear && colorCorrect)
-            {
-                c = c.gamma; // offset linear to gamma correction that happens in IMGUI, by doing the inverse beforehand
-            }
-            c.a = 1.0f;
-            t.SetPixel(0, 0, c);
-            t.Apply();
-        }
-
-        GUIStyle CreateSwatchStyleForColor(Color c, bool colorCorrect = false)
-        {
-            Texture2D t = new Texture2D(1, 1);
-            UpdateSwatchTexture(t, c, colorCorrect);
-            return new GUIStyle {normal = {background = t}};
-        }
-
-        String CreateSwatchDescriptionForName(float minLum, float maxLum)
-        {
-            return "Luminance (" + minLum.ToString("F2", CultureInfo.InvariantCulture.NumberFormat) + " - " + maxLum.ToString("F2", CultureInfo.InvariantCulture.NumberFormat) + ")";
-        }
-
-        void CreateAlbedoSwatchData()
-        {
-            AlbedoSwatchInfo[] graphicsSettingsSwatches = EditorGraphicsSettings.albedoSwatches;
-
-            if (graphicsSettingsSwatches.Length != 0)
-            {
-                m_AlbedoSwatchInfos = graphicsSettingsSwatches;
-            }
-            else
-            {
-                m_AlbedoSwatchInfos = new AlbedoSwatchInfo[]
-                {
-                    // colors taken from http://www.babelcolor.com/index_htm_files/ColorChecker_RGB_and_spectra.xls
-                    new AlbedoSwatchInfo()
-                    {
-                        name = "Black Acrylic Paint",
-                        color = new Color(56f / 255f, 56f / 255f, 56f / 255f),
-                        minLuminance = 0.03f,
-                        maxLuminance = 0.07f
-                    },
-                    new AlbedoSwatchInfo()
-                    {
-                        name = "Dark Soil",
-                        color = new Color(85f / 255f, 61f / 255f, 49f / 255f),
-                        minLuminance = 0.05f,
-                        maxLuminance = 0.14f
-                    },
-
-                    new AlbedoSwatchInfo()
-                    {
-                        name = "Worn Asphalt",
-                        color = new Color(91f / 255f, 91f / 255f, 91f / 255f),
-                        minLuminance = 0.10f,
-                        maxLuminance = 0.15f
-                    },
-                    new AlbedoSwatchInfo()
-                    {
-                        name = "Dry Clay Soil",
-                        color = new Color(137f / 255f, 120f / 255f, 102f / 255f),
-                        minLuminance = 0.15f,
-                        maxLuminance = 0.35f
-                    },
-                    new AlbedoSwatchInfo()
-                    {
-                        name = "Green Grass",
-                        color = new Color(123f / 255f, 131f / 255f, 74f / 255f),
-                        minLuminance = 0.16f,
-                        maxLuminance = 0.26f
-                    },
-                    new AlbedoSwatchInfo()
-                    {
-                        name = "Old Concrete",
-                        color = new Color(135f / 255f, 136f / 255f, 131f / 255f),
-                        minLuminance = 0.17f,
-                        maxLuminance = 0.30f
-                    },
-                    new AlbedoSwatchInfo()
-                    {
-                        name = "Red Clay Tile",
-                        color = new Color(197f / 255f, 125f / 255f, 100f / 255f),
-                        minLuminance = 0.23f,
-                        maxLuminance = 0.33f
-                    },
-                    new AlbedoSwatchInfo()
-                    {
-                        name = "Dry Sand",
-                        color = new Color(177f / 255f, 167f / 255f, 132f / 255f),
-                        minLuminance = 0.20f,
-                        maxLuminance = 0.45f
-                    },
-                    new AlbedoSwatchInfo()
-                    {
-                        name = "New Concrete",
-                        color = new Color(185f / 255f, 182f / 255f, 175f / 255f),
-                        minLuminance = 0.32f,
-                        maxLuminance = 0.55f
-                    },
-                    new AlbedoSwatchInfo()
-                    {
-                        name = "White Acrylic Paint",
-                        color = new Color(227f / 255f, 227f / 255f, 227f / 255f),
-                        minLuminance = 0.75f,
-                        maxLuminance = 0.85f
-                    },
-                    new AlbedoSwatchInfo()
-                    {
-                        name = "Fresh Snow",
-                        color = new Color(243f / 255f, 243f / 255f, 243f / 255f),
-                        minLuminance = 0.85f,
-                        maxLuminance = 0.95f
-                    },
-                    new AlbedoSwatchInfo()
-                    {
-                        name = "Blue Sky",
-                        color = new Color(93f / 255f, 123f / 255f, 157f / 255f),
-                        minLuminance = new Color(93f / 255f, 123f / 255f, 157f / 255f).linear.maxColorComponent - 0.05f,
-                        maxLuminance = new Color(93f / 255f, 123f / 255f, 157f / 255f).linear.maxColorComponent + 0.05f
-                    },
-                    new AlbedoSwatchInfo()
-                    {
-                        name = "Foliage",
-                        color = new Color(91f / 255f, 108f / 255f, 65f / 255f),
-                        minLuminance = new Color(91f / 255f, 108f / 255f, 65f / 255f).linear.maxColorComponent - 0.05f,
-                        maxLuminance = new Color(91f / 255f, 108f / 255f, 65f / 255f).linear.maxColorComponent + 0.05f
-                    },
-                };
-            }
-            UpdateAlbedoSwatchGUI();
-        }
-
-        void UpdateAlbedoSwatchGUI()
-        {
-            m_LastKnownColorSpace = PlayerSettings.colorSpace;
-            m_AlbedoSwatchColorStyles = new GUIStyle[m_AlbedoSwatchInfos.Length + 1];
-            m_AlbedoSwatchGUIContent = new GUIContent[m_AlbedoSwatchInfos.Length + 1];
-            m_AlbedoSwatchDescriptions = new String[m_AlbedoSwatchInfos.Length + 1];
-            m_AlbedoSwatchLuminanceStrings = new String[m_AlbedoSwatchInfos.Length + 1];
-
-            m_AlbedoSwatchColorStyles[0] = CreateSwatchStyleForColor(Color.gray, true);
-            m_AlbedoSwatchDescriptions[0] = "Default Luminance";
-            m_AlbedoSwatchGUIContent[0] = new GUIContent(m_AlbedoSwatchDescriptions[0]);
-            m_AlbedoSwatchLuminanceStrings[0] = CreateSwatchDescriptionForName(0.012f, 0.9f);
-            for (int i = 1; i < m_AlbedoSwatchInfos.Length + 1; i++)
-            {
-                m_AlbedoSwatchColorStyles[i] = CreateSwatchStyleForColor(m_AlbedoSwatchInfos[i - 1].color, true);
-                m_AlbedoSwatchDescriptions[i] = m_AlbedoSwatchInfos[i - 1].name;
-                m_AlbedoSwatchGUIContent[i] = new GUIContent(m_AlbedoSwatchDescriptions[i]);
-                m_AlbedoSwatchLuminanceStrings[i] = CreateSwatchDescriptionForName(m_AlbedoSwatchInfos[i - 1].minLuminance, m_AlbedoSwatchInfos[i - 1].maxLuminance);
-            }
-        }
-
-        void UpdatePBRColorLegend()
-        {
-            if (m_TooLowColorStyle == null || m_TooLowColorStyle.normal.background == null)
-            {
-                m_TooLowColorStyle = CreateSwatchStyleForColor(kSceneViewMaterialValidateLow.Color);
-                m_TooHighColorStyle = CreateSwatchStyleForColor(kSceneViewMaterialValidateHigh.Color);
-                m_PureMetalColorStyle = CreateSwatchStyleForColor(kSceneViewMaterialValidatePureMetal.Color);
-            }
-            else
-            {
-                UpdateSwatchTexture(m_TooLowColorStyle.normal.background, kSceneViewMaterialValidateLow.Color);
-                UpdateSwatchTexture(m_TooHighColorStyle.normal.background, kSceneViewMaterialValidateHigh.Color);
-                UpdateSwatchTexture(m_PureMetalColorStyle.normal.background, kSceneViewMaterialValidatePureMetal.Color);
-            }
-
-            if (PlayerSettings.colorSpace == ColorSpace.Linear)
-            {
-                Shader.SetGlobalColor("unity_MaterialValidateLowColor", kSceneViewMaterialValidateLow.Color.linear);
-                Shader.SetGlobalColor("unity_MaterialValidateHighColor", kSceneViewMaterialValidateHigh.Color.linear);
-                Shader.SetGlobalColor("unity_MaterialValidatePureMetalColor", kSceneViewMaterialValidatePureMetal.Color.linear);
-            }
-            else
-            {
-                Shader.SetGlobalColor("unity_MaterialValidateLowColor", kSceneViewMaterialValidateLow.Color);
-                Shader.SetGlobalColor("unity_MaterialValidateHighColor", kSceneViewMaterialValidateHigh.Color);
-                Shader.SetGlobalColor("unity_MaterialValidatePureMetalColor", kSceneViewMaterialValidatePureMetal.Color);
-            }
-        }
-
-        void UpdateAlbedoSwatch()
-        {
-            Color color = Color.gray;
-            if (m_SelectedAlbedoSwatchIndex != 0)
-            {
-                color = m_AlbedoSwatchInfos[m_SelectedAlbedoSwatchIndex - 1].color;
-                Shader.SetGlobalFloat("_AlbedoMinLuminance", m_AlbedoSwatchInfos[m_SelectedAlbedoSwatchIndex - 1].minLuminance);
-                Shader.SetGlobalFloat("_AlbedoMaxLuminance", m_AlbedoSwatchInfos[m_SelectedAlbedoSwatchIndex - 1].maxLuminance);
-                Shader.SetGlobalFloat("_AlbedoHueTolerance", m_AlbedoSwatchHueTolerance);
-                Shader.SetGlobalFloat("_AlbedoSaturationTolerance", m_AlbedoSwatchSaturationTolerance);
-            }
-            Shader.SetGlobalColor("_AlbedoCompareColor", color.linear);
-            Shader.SetGlobalInt("_CheckAlbedo", (m_SelectedAlbedoSwatchIndex != 0) ? 1 : 0);
-            Shader.SetGlobalInt("_CheckPureMetal", m_DoValidateTrueMetals ? 1 : 0);
-        }
-
-        internal void DrawTrueMetalCheckbox()
-        {
-            EditorGUI.BeginChangeCheck();
-            m_DoValidateTrueMetals = EditorGUILayout.ToggleLeft(EditorGUIUtility.TrTextContent("Check Pure Metals", "Check if albedo is black for materials with an average specular color above 0.45"), m_DoValidateTrueMetals);
-            if (EditorGUI.EndChangeCheck())
-            {
-                Shader.SetGlobalInt("_CheckPureMetal", m_DoValidateTrueMetals ? 1 : 0);
-            }
-        }
-
-        internal void DrawPBRSettingsForScene()
-        {
-            if (m_CameraMode.drawMode == DrawCameraMode.ValidateAlbedo)
-            {
-                if (PlayerSettings.colorSpace == ColorSpace.Gamma)
-                {
-                    EditorGUILayout.HelpBox("Albedo Validation doesn't work when Color Space is set to gamma space", MessageType.Warning);
-                }
-
-                EditorGUIUtility.labelWidth = 140;
-
-                m_SelectedAlbedoSwatchIndex = EditorGUILayout.Popup(EditorGUIUtility.TrTextContent("Luminance Validation:", "Select default luminance validation or validate against a configured albedo swatch"), m_SelectedAlbedoSwatchIndex, m_AlbedoSwatchGUIContent);
-                EditorGUI.indentLevel++;
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    EditorGUIUtility.labelWidth = 5;
-                    EditorGUILayout.LabelField(" ", m_AlbedoSwatchColorStyles[m_SelectedAlbedoSwatchIndex]);
-                    EditorGUIUtility.labelWidth = 140;
-                    EditorGUILayout.LabelField(m_AlbedoSwatchLuminanceStrings[m_SelectedAlbedoSwatchIndex]);
-                }
-
-                UpdateAlbedoSwatch();
-
-                EditorGUI.indentLevel--;
-                using (new EditorGUI.DisabledScope(m_SelectedAlbedoSwatchIndex == 0))
-                {
-                    EditorGUI.BeginChangeCheck();
-                    using (new EditorGUI.DisabledScope(m_SelectedAlbedoSwatchIndex == 0))
-                    {
-                        m_AlbedoSwatchHueTolerance = EditorGUILayout.Slider(EditorGUIUtility.TrTextContent("Hue Tolerance:", "Check that the hue of the albedo value of a material is within the tolerance of the hue of the albedo swatch being validated against"), m_AlbedoSwatchHueTolerance, 0f, 0.5f);
-
-                        m_AlbedoSwatchSaturationTolerance = EditorGUILayout.Slider(EditorGUIUtility.TrTextContent("Saturation Tolerance:", "Check that the saturation of the albedo value of a material is within the tolerance of the saturation of the albedo swatch being validated against"), m_AlbedoSwatchSaturationTolerance, 0f, 0.5f);
-                    }
-
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        UpdateAlbedoSwatch();
-                    }
-                }
-            }
-
-            EditorGUILayout.LabelField("Color Legend:");
-            EditorGUI.indentLevel++;
-            string modeString;
-
-            if (m_CameraMode.drawMode == DrawCameraMode.ValidateAlbedo)
-            {
-                modeString = "Luminance";
-            }
-            else
-            {
-                modeString = "Specular";
-            }
-
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                EditorGUIUtility.labelWidth = 2;
-                EditorGUILayout.LabelField("", m_TooLowColorStyle);
-                EditorGUIUtility.labelWidth = 200;
-                EditorGUILayout.LabelField("Below Minimum " + modeString + " Value");
-            }
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                EditorGUIUtility.labelWidth = 2;
-                EditorGUILayout.LabelField("", m_TooHighColorStyle);
-                EditorGUIUtility.labelWidth = 200;
-                EditorGUILayout.LabelField("Above Maximum " + modeString + " Value");
-            }
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                EditorGUIUtility.labelWidth = 2;
-                EditorGUILayout.LabelField("", m_PureMetalColorStyle);
-                EditorGUIUtility.labelWidth = 200;
-                EditorGUILayout.LabelField("Not A Pure Metal");
-            }
-        }
-
-        void PrepareValidationUI()
-        {
-            if (m_AlbedoSwatchInfos == null)
-            {
-                CreateAlbedoSwatchData();
-                UpdatePBRColorLegend();
-            }
-
-            if (PlayerSettings.colorSpace != m_LastKnownColorSpace)
-            {
-                UpdateAlbedoSwatchGUI();
-                UpdateAlbedoSwatch();
-                UpdatePBRColorLegend();
-            }
-        }
-
-        static void DrawPBRSettings(Object target, SceneView sceneView)
-        {
-            sceneView.DrawTrueMetalCheckbox();
-            sceneView.DrawPBRSettingsForScene();
-        }
-
-        internal void DrawLightingExposureSlider()
-        {
-            m_ExposureSliderValue = EditorGUIInternal.ExposureSlider(m_ExposureSliderValue, ref m_ExposureSliderMax, EditorStyles.toolbarSlider);
-
-            Unsupported.SetSceneViewDebugModeExposureNoDirty(m_ExposureSliderValue);
-        }
-
-        static void DrawLightingExposureSettings(Object target, SceneView sceneView)
-        {
-            sceneView.DrawLightingExposureSlider();
-        }
-
-        void UpdateGIContributorsReceiversColors()
-        {
-            if (m_NoContributeGIStyle == null || m_NoContributeGIStyle.normal.background == null)
-            {
-                m_NoContributeGIStyle = CreateSwatchStyleForColor(kSceneViewMaterialNoContributeGI.Color);
-                m_ReceiveGILightmapsStyle = CreateSwatchStyleForColor(kSceneViewMaterialReceiveGILightmaps.Color);
-                m_ReceiveGILightProbesStyle = CreateSwatchStyleForColor(kSceneViewMaterialReceiveGILightProbes.Color);
-            }
-            else
-            {
-                UpdateSwatchTexture(m_NoContributeGIStyle.normal.background, kSceneViewMaterialNoContributeGI.Color);
-                UpdateSwatchTexture(m_ReceiveGILightmapsStyle.normal.background, kSceneViewMaterialReceiveGILightmaps.Color);
-                UpdateSwatchTexture(m_ReceiveGILightProbesStyle.normal.background, kSceneViewMaterialReceiveGILightProbes.Color);
-            }
-
-            Handles.SetSceneViewModeGIContributorsReceiversColors(kSceneViewMaterialNoContributeGI.Color, kSceneViewMaterialReceiveGILightmaps.Color, kSceneViewMaterialReceiveGILightProbes.Color);
-        }
-
-        internal void DrawGIContributorsReceiversSettings()
-        {
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                EditorGUIUtility.labelWidth = 2;
-                EditorGUILayout.LabelField("", m_NoContributeGIStyle);
-                EditorGUIUtility.labelWidth = 200;
-                EditorGUILayout.LabelField(Styles.contributeGIOff);
-            }
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                EditorGUIUtility.labelWidth = 2;
-                EditorGUILayout.LabelField("", m_ReceiveGILightmapsStyle);
-                EditorGUIUtility.labelWidth = 200;
-                EditorGUILayout.LabelField(Styles.receiveGILightmaps);
-            }
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                EditorGUIUtility.labelWidth = 2;
-                EditorGUILayout.LabelField("", m_ReceiveGILightProbesStyle);
-                EditorGUIUtility.labelWidth = 200;
-                EditorGUILayout.LabelField(Styles.receiveGILightProbes);
-            }
-        }
-
-        static void DrawGIContributorsReceiversSettings(Object target, SceneView sceneView)
-        {
-            sceneView.DrawGIContributorsReceiversSettings();
-        }
-
-        void DrawSceneViewSwatch()
-        {
-            if (this.cameraMode.drawMode == DrawCameraMode.ValidateAlbedo || this.cameraMode.drawMode == DrawCameraMode.ValidateMetalSpecular)
-            {
-                PrepareValidationUI();
-                SceneViewOverlay.ShowWindow(m_PBRSettingsOverlayWindow);
-            }
-
-            if (this.showExposureSettings)
-            {
-                SceneViewOverlay.ShowWindow(m_LightingExposureSettingsOverlayWindow);
-            }
-
-            if (this.cameraMode.drawMode == DrawCameraMode.GIContributorsReceivers)
-            {
-                UpdateGIContributorsReceiversColors();
-                SceneViewOverlay.ShowWindow(m_GIContributorsReceiversOverlayWindow);
-            }
-        }
-
-        void UpdateGizmoExposure()
-        {
-            if (this.showExposureSettings)
-            {
-                if (m_ExposureTexture == null)
-                    m_ExposureTexture = new Texture2D(1, 1, GraphicsFormat.R32G32_SFloat, TextureCreationFlags.None);
-
-                m_ExposureTexture.SetPixel(0, 0, new Color(Mathf.Pow(2.0f, m_ExposureSliderValue), 0.0f, 0.0f));
-                m_ExposureTexture.Apply();
-
-                Gizmos.exposure = m_ExposureTexture;
-            }
-            else
-            {
-                if (m_EmptyExposureTexture == null)
-                {
-                    m_EmptyExposureTexture = new Texture2D(1, 1, GraphicsFormat.R32G32_SFloat, TextureCreationFlags.None);
-                    m_EmptyExposureTexture.SetPixel(0, 0, new Color(1.0f, 0.0f, 0.0f));
-                    m_EmptyExposureTexture.Apply();
-                }
-
-                Gizmos.exposure = m_EmptyExposureTexture;
-            }
-        }
-
         void RepaintGizmosThatAreRenderedOnTopOfSceneView()
         {
             if (Event.current.type == EventType.Repaint)
@@ -2837,8 +2384,7 @@ namespace UnityEditor
                 SceneViewOverlay.ShowWindow(m_EditorToolsOverlayWindow);
             }
 
-            DrawSceneViewSwatch();
-            UpdateGizmoExposure();
+            m_SceneViewLightingOverlays.OnGUI();
 
             // Calling OnSceneGUI before DefaultHandles, so users can use events before the Default Handles
             HandleSelectionAndOnSceneGUI();

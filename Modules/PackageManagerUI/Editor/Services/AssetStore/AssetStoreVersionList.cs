@@ -22,8 +22,6 @@ namespace UnityEditor.PackageManager.UI
 
         public IPackageVersion latest => m_Versions.LastOrDefault();
 
-        public IPackageVersion latestPatch => latest;
-
         public IPackageVersion importAvailable => m_Versions.FirstOrDefault(v => v.isAvailableOnDisk);
 
         public IPackageVersion recommended => latest;

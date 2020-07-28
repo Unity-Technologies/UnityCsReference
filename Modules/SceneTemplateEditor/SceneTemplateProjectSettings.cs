@@ -64,6 +64,7 @@ namespace UnityEditor.SceneTemplate
             ignore = src.ignore;
             defaultInstantiationMode = src.defaultInstantiationMode;
             supportsModification = src.supportsModification;
+            m_Content = null;
         }
 
         public static string ToShortFullName(string fullName)
@@ -77,6 +78,20 @@ namespace UnityEditor.SceneTemplate
         public bool ignore;
         public TemplateInstantiationMode defaultInstantiationMode;
         public bool supportsModification;
+
+        private GUIContent m_Content;
+        public GUIContent content
+        {
+            get
+            {
+                if (m_Content == null)
+                {
+                    m_Content = new GUIContent(label, null, label);
+                }
+
+                return m_Content;
+            }
+        }
     }
 
     [Serializable]
@@ -87,6 +102,8 @@ namespace UnityEditor.SceneTemplate
         private static string m_TypeToAddLabel;
         private static System.Type[] m_AllTypes;
         private static string[] m_AllTypesLabels;
+        private static float m_MaxLabelWidth;
+        private const float kMaxLabelWidth = 450f;
 
         private static class Styles
         {
@@ -368,6 +385,10 @@ namespace UnityEditor.SceneTemplate
                         m_AllTypes = TypeCache.GetTypesDerivedFrom<UnityEngine.Object>().ToArray();
                         m_AllTypesLabels = m_AllTypes.Select(t => DependencyTypeInfo.ToShortFullName(t.FullName)).ToArray();
                     }
+
+                    m_MaxLabelWidth = Get().dependencyTypeInfos.Select(ti => ti.content).Max(content => EditorStyles.label.CalcSize(content).x);
+                    m_MaxLabelWidth = Mathf.Min(kMaxLabelWidth, m_MaxLabelWidth);
+
                     m_TypeToAddLabel = "";
                     m_TypeToAdd = null;
                 },
@@ -382,8 +403,7 @@ namespace UnityEditor.SceneTemplate
             using (new SettingsWindow.GUIScope())
             {
                 var oldLabelWidth = EditorGUIUtility.labelWidth;
-                EditorGUIUtility.labelWidth = Styles.labelWidth;
-
+                EditorGUIUtility.labelWidth = m_MaxLabelWidth;
 
                 if (Unsupported.IsDeveloperMode())
                 {
@@ -393,12 +413,12 @@ namespace UnityEditor.SceneTemplate
                     }
                 }
 
-                settings.newSceneOverride = (NewSceneOverride)EditorGUILayout.EnumPopup(new GUIContent("New Scene Menu"), settings.newSceneOverride, GUILayout.Width(450), GUILayout.ExpandWidth(false));
+                settings.newSceneOverride = (NewSceneOverride)EditorGUILayout.EnumPopup(new GUIContent("New Scene Menu"), settings.newSceneOverride, GUILayout.Width(m_MaxLabelWidth + 150), GUILayout.ExpandWidth(false));
                 GUILayout.Space(Styles.verticalSpace);
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    GUILayout.Label("Default types", EditorStyles.boldLabel, GUILayout.Width(285));
+                    GUILayout.Label("Default types", EditorStyles.boldLabel, GUILayout.Width(m_MaxLabelWidth - 15));
                     GUILayout.Label("Clone", EditorStyles.boldLabel);
                 }
 
@@ -409,7 +429,7 @@ namespace UnityEditor.SceneTemplate
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         EditorGUI.BeginChangeCheck();
-                        var toClone = EditorGUILayout.Toggle(new GUIContent(depInfo.label), depInfo.defaultInstantiationMode == TemplateInstantiationMode.Clone, GUILayout.Width(325));
+                        var toClone = EditorGUILayout.Toggle(depInfo.content, depInfo.defaultInstantiationMode == TemplateInstantiationMode.Clone, GUILayout.Width(m_MaxLabelWidth + 20));
                         if (EditorGUI.EndChangeCheck())
                         {
                             depInfo.defaultInstantiationMode = toClone ? TemplateInstantiationMode.Clone : TemplateInstantiationMode.Reference;
@@ -434,6 +454,8 @@ namespace UnityEditor.SceneTemplate
                     settings.defaultDependencyTypeInfo.defaultInstantiationMode = clone ? TemplateInstantiationMode.Clone : TemplateInstantiationMode.Reference;
                     Save(k_Path, settings);
                 }
+
+                EditorGUIUtility.labelWidth = oldLabelWidth;
 
                 GUILayout.Space(Styles.verticalSpace);
 
@@ -464,11 +486,19 @@ namespace UnityEditor.SceneTemplate
                             var typeId = m_TypeToAdd != null ? m_TypeToAdd.FullName : m_TypeToAddLabel;
                             if (settings.dependencyTypeInfos.Find(d => d.type == typeId) == null)
                             {
-                                settings.dependencyTypeInfos.Add(new DependencyTypeInfo(typeId, m_TypeToAddLabel)
+                                var newDepInfo = new DependencyTypeInfo(typeId, m_TypeToAddLabel)
                                 {
                                     defaultInstantiationMode = TemplateInstantiationMode.Clone,
                                     userAdded = true
-                                });
+                                };
+
+                                var depInfoWidth = EditorStyles.label.CalcSize(newDepInfo.content).x;
+                                if (depInfoWidth > m_MaxLabelWidth)
+                                {
+                                    m_MaxLabelWidth = Mathf.Min(kMaxLabelWidth, depInfoWidth);
+                                }
+
+                                settings.dependencyTypeInfos.Add(newDepInfo);
                                 Sort(settings.dependencyTypeInfos);
                                 Save(k_Path, settings);
                                 m_TypeToAddLabel = "";

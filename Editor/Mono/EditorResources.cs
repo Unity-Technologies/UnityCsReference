@@ -156,16 +156,7 @@ namespace UnityEditor.Experimental
 
         internal static string GetDefaultFont()
         {
-            // In languages other than english, we use 'lucida grande' because the localization settings are currently mapped to 'Lucida Grande'.
-            // see Editor/Resources/Windows/fontsettings.text for instance
-            if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
-            {
-                return FontDef.k_Inter;
-            }
-            else
-            {
-                return FontDef.k_LucidaGrande;
-            }
+            return FontDef.k_Inter;
         }
 
         internal static IEnumerable<string> supportedFontNames => EditorResources.supportedFonts.Keys;
@@ -178,20 +169,13 @@ namespace UnityEditor.Experimental
             {
                 if (s_CurrentFontName == null)
                 {
-                    if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
-                    {
-                        s_CurrentFontName = EditorPrefs.GetString(k_PrefsUserFontKey, GetDefaultFont());
+                    s_CurrentFontName = EditorPrefs.GetString(k_PrefsUserFontKey, GetDefaultFont());
 
-                        // If the current is not available then fallback to the default font
-                        if (!supportedFontNames.Contains(s_CurrentFontName))
-                        {
-                            s_CurrentFontName = GetDefaultFont();
-                            EditorPrefs.DeleteKey(k_PrefsUserFontKey);
-                        }
-                    }
-                    else
+                    // If the current is not available then fallback to the default font
+                    if (!supportedFontNames.Contains(s_CurrentFontName))
                     {
                         s_CurrentFontName = GetDefaultFont();
+                        EditorPrefs.DeleteKey(k_PrefsUserFontKey);
                     }
                 }
 
@@ -225,33 +209,23 @@ namespace UnityEditor.Experimental
                 if (s_SupportedFonts == null)
                 {
                     s_SupportedFonts = new Dictionary<string, FontDef>();
+                    s_SupportedFonts[FontDef.k_Inter] = FontDef.CreateFromResources(FontDef.k_Inter,
+                        new Dictionary<FontDef.Style, string>
+                        {
+                            {FontDef.Style.Small, "Fonts/Inter/Inter-Small.ttf"},
+                            {FontDef.Style.Normal, "Fonts/Inter/Inter-Regular.ttf"},
+                            {FontDef.Style.Bold, "Fonts/Inter/Inter-SemiBold.ttf"},
+                            {FontDef.Style.Italic, "Fonts/Inter/Inter-Italic.ttf"},
+                            {FontDef.Style.BoldAndItalic, "Fonts/Inter/Inter-SemiBoldItalic.ttf"}
+                        });
 
-                    // In languages other than english, we use 'lucida grande' because the localization settings are currently are mapped to 'lucida grande'.
-                    // see Editor/Resources/Windows/fontsettings.text for instance
-                    if (LocalizationDatabase.currentEditorLanguage != SystemLanguage.English)
+                    if (Application.platform == RuntimePlatform.WindowsEditor)
                     {
-                        AddLucidaGrande();
+                        s_SupportedFonts[FontDef.k_Verdana] = FontDef.CreateSystemFont(FontDef.k_Verdana);
                     }
                     else
                     {
-                        s_SupportedFonts[FontDef.k_Inter] = FontDef.CreateFromResources(FontDef.k_Inter,
-                            new Dictionary<FontDef.Style, string>
-                            {
-                                {FontDef.Style.Small, "Fonts/Inter/Inter-Small.ttf"},
-                                {FontDef.Style.Normal, "Fonts/Inter/Inter-Regular.ttf"},
-                                {FontDef.Style.Bold, "Fonts/Inter/Inter-SemiBold.ttf"},
-                                {FontDef.Style.Italic, "Fonts/Inter/Inter-Italic.ttf"},
-                                {FontDef.Style.BoldAndItalic, "Fonts/Inter/Inter-SemiBoldItalic.ttf"}
-                            });
-
-                        if (Application.platform == RuntimePlatform.WindowsEditor)
-                        {
-                            s_SupportedFonts[FontDef.k_Verdana] = FontDef.CreateSystemFont(FontDef.k_Verdana);
-                        }
-                        else
-                        {
-                            AddLucidaGrande();
-                        }
+                        AddLucidaGrande();
                     }
                 }
 

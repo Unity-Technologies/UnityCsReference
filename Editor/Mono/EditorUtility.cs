@@ -423,13 +423,13 @@ namespace UnityEditor
             DisplayCustomMenuWithSeparators(position, options, enabled, separator, selected, callback, userData, showHotkey, false);
         }
 
-        internal static void DisplayCustomMenuWithSeparators(Rect position, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey, bool allowDisplayNames)
+        internal static void DisplayCustomMenuWithSeparators(Rect position, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey, bool allowDisplayNames, bool shouldDiscardMenuOnSecondClick = false)
         {
             Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(position.x, position.y));
             position.x = temp.x;
             position.y = temp.y;
 
-            Internal_DisplayCustomMenu(position, options, enabled, separator, selected, callback, userData, showHotkey, allowDisplayNames);
+            Internal_DisplayCustomMenu(position, options, enabled, separator, selected, callback, userData, showHotkey, allowDisplayNames, shouldDiscardMenuOnSecondClick);
             ResetMouseDown();
         }
 
@@ -532,9 +532,9 @@ namespace UnityEditor
             ResetMouseDown();
         }
 
-        internal static void Internal_DisplayPopupMenu(Rect position, string menuItemPath, Object context, int contextUserData)
+        internal static void Internal_DisplayPopupMenu(Rect position, string menuItemPath, Object context, int contextUserData, bool shouldDiscardMenuOnSecondClick = false)
         {
-            Private_DisplayPopupMenu(position, menuItemPath, context, contextUserData);
+            Private_DisplayPopupMenu(position, menuItemPath, context, contextUserData, shouldDiscardMenuOnSecondClick);
         }
 
         internal static void InitInstantiatedPreviewRecursive(GameObject go)
@@ -587,9 +587,9 @@ namespace UnityEditor
             return Internal_InstantiateRemoveAllNonAnimationComponentsSingle(original, position, rotation);
         }
 
-        private static void Internal_DisplayCustomMenu(Rect screenPosition, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey, bool allowDisplayNames = false)
+        private static void Internal_DisplayCustomMenu(Rect screenPosition, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey, bool allowDisplayNames = false, bool shouldDiscardMenuOnSecondClick = false)
         {
-            DisplayCustomContextPopupMenu(screenPosition, options, enabled, separator, selected, callback, userData, showHotkey, allowDisplayNames);
+            DisplayCustomContextPopupMenu(screenPosition, options, enabled, separator, selected, callback, userData, showHotkey, allowDisplayNames, shouldDiscardMenuOnSecondClick);
         }
 
         internal static string GetTransformPath(Transform tform)

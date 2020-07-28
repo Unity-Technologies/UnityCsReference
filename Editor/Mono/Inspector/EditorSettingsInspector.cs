@@ -325,7 +325,7 @@ namespace UnityEditor
         public void OnDisable()
         {
             DevDeviceList.Changed -= OnDeviceListChanged;
-            AssetDatabaseExperimental.RefreshSettings();
+            AssetDatabase.RefreshSettings();
         }
 
         void OnDeviceListChanged()
@@ -518,7 +518,7 @@ namespace UnityEditor
             index = Mathf.Clamp(m_SpritePackerMode.intValue - spritePackDeprecatedEnums, 0, spritePackerPopupList.Length - 1);
             CreatePopupMenu(Content.mode.text, spritePackerPopupList, index, SetSpritePackerMode);
 
-            if (m_SpritePackerMode.intValue == (int)SpritePackerMode.SpriteAtlasV2)
+            if (m_SpritePackerMode.intValue != (int)SpritePackerMode.SpriteAtlasV2)
             {
                 var message = "Sprite Atlas V2 (Experimental) supports CacheServer with Importer workflow. Please take a backup of your project before switching to V2.";
                 EditorGUILayout.HelpBox(message, MessageType.Info, true);
@@ -652,7 +652,7 @@ namespace UnityEditor
                             if (address.Length == 2)
                                 port = Convert.ToUInt16(address[1]);
 
-                            if (AssetDatabaseExperimental.CanConnectToCacheServer(ip, port))
+                            if (AssetDatabase.CanConnectToCacheServer(ip, port))
                                 m_CacheServerConnectionState = CacheServerConnectionState.Success;
                             else
                                 m_CacheServerConnectionState = CacheServerConnectionState.Failure;

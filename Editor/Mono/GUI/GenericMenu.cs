@@ -89,8 +89,13 @@ namespace UnityEditor
             DropDown(new Rect(Event.current.mousePosition, Vector2.zero));
         }
 
-        // Show the menu at the given screen rect
         public void DropDown(Rect position)
+        {
+            DropDown(position, false);
+        }
+
+        // Show the menu at the given screen rect
+        internal void DropDown(Rect position, bool shouldDiscardMenuOnSecondClick)
         {
             string[] titles = new string[menuItems.Count];
             bool[] enabled = new bool[menuItems.Count];
@@ -107,7 +112,7 @@ namespace UnityEditor
                     selected.Add(idx);
             }
 
-            EditorUtility.DisplayCustomMenuWithSeparators(position, titles, enabled, separator, (int[])selected.ToArray(typeof(int)), CatchMenu, null, true, allowDuplicateNames);
+            EditorUtility.DisplayCustomMenuWithSeparators(position, titles, enabled, separator, (int[])selected.ToArray(typeof(int)), CatchMenu, null, true, allowDuplicateNames, shouldDiscardMenuOnSecondClick);
         }
 
         // Display as a popup with /selectedIndex/. How this behaves depends on the platform (on Mac, it'll try to scroll the menu to the right place)

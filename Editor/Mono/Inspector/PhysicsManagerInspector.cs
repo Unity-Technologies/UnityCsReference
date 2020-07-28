@@ -16,7 +16,7 @@ namespace UnityEditor
         {
             const int kMaxLayers = 32;
             const int checkboxSize = 16;
-            int labelSize = 100;
+            int labelSize = 110;
             const int indent = 30;
 
             int numLayers = 0;

@@ -12,8 +12,10 @@ using UnityEditor.Profiling;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
+using RenderSettings = UnityEditor.Experimental.RenderSettings;
 
 namespace UnityEditor.SceneTemplate
 {
@@ -22,6 +24,7 @@ namespace UnityEditor.SceneTemplate
         public string name;
         public string assetPath;
         public string description;
+        public string thumbnailPath;
         public Texture2D thumbnail;
         public Func<bool, bool> onCreateCallback;
         public bool isPinned;
@@ -49,17 +52,17 @@ namespace UnityEditor.SceneTemplate
         {
             return ValidPath == assetPathToCheck;
         }
-
-        public bool CanOpenAdditively()
-        {
-            return !IsInMemoryScene || SceneTemplateDialog.CanLoadAdditively();
-        }
     }
 
     internal class SceneTemplateDialog : EditorWindow
     {
-        public const string emptyTemplateName = "Empty (Built-in)";
-        public const string basicTemplateName = "Basic (Built-in)";
+        internal enum BuiltinTemplateType
+        {
+            Empty,
+            Default2D,
+            Default2DMode3DCamera,
+            Default3D
+        }
 
         private List<SceneTemplateInfo> m_SceneTemplateInfos;
         private static readonly GUIContent k_WindowTitle = new GUIContent("New Scene");
@@ -77,14 +80,42 @@ namespace UnityEditor.SceneTemplate
 
         private const string k_LoadAdditivelyError = "Cannot load an in-memory scene additively while another in-memory scene is loaded. Save the current scene or load a project scene.";
 
-        private const string k_EmptyTemplateDescription = "Just an empty scene - no Game Objects, uses the built-in renderer.";
-        private const string k_DefaultTemplateDescription = "Contains a camera and directional light, works with built-in renderer.";
+        internal static SceneTemplateInfo emptySceneTemplateInfo = new SceneTemplateInfo
+        {
+            name = "Empty (Built-in)",
+            isPinned = true,
+            thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-empty-scene.png",
+            description = L10n.Tr("Just an empty scene - no Game Objects, uses the built-in renderer."),
+            onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Empty, additive)
+        };
+        internal static SceneTemplateInfo default2DSceneTemplateInfo = new SceneTemplateInfo
+        {
+            name = "Basic 2D (Built-in)",
+            isPinned = true,
+            thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-2d-scene.png",
+            description = L10n.Tr("Contains an orthographic camera setup for 2D games. Works with built-in renderer."),
+            onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default2D, additive)
+        };
+        internal static SceneTemplateInfo default2DMode3DSceneTemplateInfo = new SceneTemplateInfo
+        {
+            name = "Basic 3D (Built-in)",
+            isPinned = true,
+            thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-3d-scene.png",
+            description = L10n.Tr("Contains a camera and directional light, works with built-in renderer."),
+            onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default2DMode3DCamera, additive)
+        };
+        internal static SceneTemplateInfo default3DSceneTemplateInfo = new SceneTemplateInfo
+        {
+            name = "Basic (Built-in)",
+            isPinned = true,
+            thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-3d-scene.png",
+            description = L10n.Tr("Contains a camera and directional light, works with built-in renderer."),
+            onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default3D, additive)
+        };
+        internal static SceneTemplateInfo[] builtinTemplateInfos = new[] { emptySceneTemplateInfo, default2DSceneTemplateInfo, default2DMode3DSceneTemplateInfo, default3DSceneTemplateInfo };
+        internal static SceneTemplateInfo[] builtin2DTemplateInfos = new[] { emptySceneTemplateInfo, default2DSceneTemplateInfo, default2DMode3DSceneTemplateInfo };
+        internal static SceneTemplateInfo[] builtin3DTemplateInfos = new[] { emptySceneTemplateInfo, default3DSceneTemplateInfo };
 
-        private static readonly string k_EmptyTemplateThumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-empty-scene.png";
-        private static readonly string k_DefaultTemplateThumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-default-scene.png";
-
-        private static SceneTemplateInfo s_EmptySceneTemplateInfo = new SceneTemplateInfo { name = emptyTemplateName, isPinned = true, description = k_EmptyTemplateDescription, onCreateCallback = CreateEmptyScene };
-        private static SceneTemplateInfo s_BasicSceneTemplateInfo = new SceneTemplateInfo { name = basicTemplateName, isPinned = true, description = k_DefaultTemplateDescription, onCreateCallback = CreateDefaultScene };
         private SceneTemplateInfo m_LastSelectedTemplate;
 
         private SceneTemplatePreviewArea m_PreviewArea;
@@ -242,9 +273,9 @@ namespace UnityEditor.SceneTemplate
                                 return;
                             OnCreateNewScene(m_LastSelectedTemplate);
                         })
-                        { text = "Create" };
+                        { text = "Create", tooltip = "Instantiate a new scene from a template" };
                         createSceneButton.AddToClassList(Styles.classButton);
-                        var cancelButton = new Button(Close) { text = "Cancel" };
+                        var cancelButton = new Button(Close) { text = "Cancel", tooltip = "Close scene template dialog without instantiating a new scene." };
                         cancelButton.AddToClassList(Styles.classButton);
                         buttonSection.Add(cancelButton);
                         buttonSection.Add(createSceneButton);
@@ -512,16 +543,13 @@ namespace UnityEditor.SceneTemplate
             LoadSessionPreferences();
             m_DefaultListViewThumbnail = UnityEditorInternal.InternalEditorUtility.FindIconForFile("foo.unity");
 
-            if (s_EmptySceneTemplateInfo.thumbnail == null)
+            foreach (var builtinTemplateInfo in builtinTemplateInfos)
             {
-                s_EmptySceneTemplateInfo.thumbnail = EditorResources.Load<Texture2D>(k_EmptyTemplateThumbnailPath);
-                Assert.IsNotNull(s_EmptySceneTemplateInfo.thumbnail);
-            }
-
-            if (s_BasicSceneTemplateInfo.thumbnail == null)
-            {
-                s_BasicSceneTemplateInfo.thumbnail = EditorResources.Load<Texture2D>(k_DefaultTemplateThumbnailPath);
-                Assert.IsNotNull(s_BasicSceneTemplateInfo.thumbnail);
+                if (builtinTemplateInfo.thumbnail == null)
+                {
+                    builtinTemplateInfo.thumbnail = EditorResources.Load<Texture2D>(builtinTemplateInfo.thumbnailPath);
+                    Assert.IsNotNull(builtinTemplateInfo.thumbnail);
+                }
             }
         }
 
@@ -572,7 +600,7 @@ namespace UnityEditor.SceneTemplate
 
             // Enable/Disable Create Additive button
             var createAdditiveButton = rootVisualElement.Q<Button>(k_SceneTemplateCreateAdditiveButtonName);
-            createAdditiveButton?.SetEnabled(info.CanOpenAdditively());
+            createAdditiveButton?.SetEnabled(true);
 
             if (m_SelectedButtonIndex != -1 && !m_Buttons[m_SelectedButtonIndex].button.enabledSelf)
             {
@@ -591,7 +619,7 @@ namespace UnityEditor.SceneTemplate
             SceneTemplateService.newSceneTemplateInstantiating += TemplateInstantiating;
             try
             {
-                sceneTemplateInfo.onCreateCallback(sceneTemplateInfo.CanOpenAdditively() && loadAdditive.value);
+                sceneTemplateInfo.onCreateCallback(loadAdditive.value);
                 if (sceneTemplateInfo.IsInMemoryScene)
                     Close();
             }
@@ -611,8 +639,11 @@ namespace UnityEditor.SceneTemplate
         {
             var sceneTemplateList = new List<SceneTemplateInfo>();
             // Add the special Empty and Basic template
-            s_EmptySceneTemplateInfo.isPinned = SceneTemplateProjectSettings.Get().GetPinState(s_EmptySceneTemplateInfo.name);
-            s_BasicSceneTemplateInfo.isPinned = SceneTemplateProjectSettings.Get().GetPinState(s_BasicSceneTemplateInfo.name);
+
+            foreach (var builtinTemplateInfo in builtinTemplateInfos)
+            {
+                builtinTemplateInfo.isPinned = SceneTemplateProjectSettings.Get().GetPinState(builtinTemplateInfo.name);
+            }
 
             // Check for real templateAssets:
             var sceneTemplateAssetInfos = SceneTemplateUtils.GetSceneTemplatePaths().Select(templateAssetPath =>
@@ -656,58 +687,113 @@ namespace UnityEditor.SceneTemplate
             sceneTemplateAssetInfos.Sort();
             sceneTemplateList.AddRange(sceneTemplateAssetInfos);
 
-            sceneTemplateList.Add(s_EmptySceneTemplateInfo);
-            sceneTemplateList.Add(s_BasicSceneTemplateInfo);
+            if (EditorSettings.defaultBehaviorMode == EditorBehaviorMode.Mode2D)
+            {
+                sceneTemplateList.AddRange(builtin2DTemplateInfos);
+            }
+            else
+            {
+                sceneTemplateList.AddRange(builtin3DTemplateInfos);
+            }
 
             return sceneTemplateList;
         }
 
         // Internal for testing
-        internal static bool CreateEmptyScene(bool loadAdditively)
-        {
-            return CreateBasicScene(false, loadAdditively);
-        }
-
-        // Internal for testing
-        internal static bool CreateDefaultScene(bool loadAdditively)
-        {
-            return CreateBasicScene(true, loadAdditively);
-        }
-
-        // Internal for testing
-        internal static bool CanLoadAdditively()
+        internal static bool HasSceneUntitled()
         {
             for (var i = 0; i < SceneManager.sceneCount; ++i)
             {
                 var scene = SceneManager.GetSceneAt(i);
                 if (string.IsNullOrEmpty(scene.path))
-                    return false;
+                    return true;
             }
-            return true;
+
+            return false;
         }
 
-        private static bool CreateBasicScene(bool isDefault, bool loadAdditively)
+        internal static bool HasMultipleScenes()
         {
-            if (loadAdditively && !CanLoadAdditively())
+            return SceneManager.sceneCount > 0;
+        }
+
+        internal static bool CreateBuiltinScene(BuiltinTemplateType type, bool loadAdditively)
+        {
+            if (loadAdditively && HasSceneUntitled() && !EditorSceneManager.SaveOpenScenes())
             {
-                Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, k_LoadAdditivelyError);
                 return false;
             }
 
-            if (!loadAdditively && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             {
                 return false;
             }
 
-            var eventType = isDefault ? SceneTemplateAnalytics.SceneInstantiationType.DefaultScene : SceneTemplateAnalytics.SceneInstantiationType.EmptyScene;
+            var eventType = type != BuiltinTemplateType.Empty ? SceneTemplateAnalytics.SceneInstantiationType.DefaultScene : SceneTemplateAnalytics.SceneInstantiationType.EmptyScene;
             var instantiateEvent = new SceneTemplateAnalytics.SceneInstantiationEvent(eventType)
             {
                 additive = loadAdditively
             };
-            var sceneSetup = isDefault ? NewSceneSetup.DefaultGameObjects : NewSceneSetup.EmptyScene;
-            EditorSceneManager.NewScene(sceneSetup, loadAdditively ? NewSceneMode.Additive : NewSceneMode.Single);
+
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, loadAdditively ? NewSceneMode.Additive : NewSceneMode.Single);
+            if (type != BuiltinTemplateType.Empty)
+            {
+                SetupDefaultObjects(type, scene);
+            }
+
             SceneTemplateAnalytics.SendSceneInstantiationEvent(instantiateEvent);
             return true;
+        }
+
+        private static void SetupDefaultObjects(BuiltinTemplateType type, Scene scene)
+        {
+            switch (type)
+            {
+                case BuiltinTemplateType.Default2DMode3DCamera:
+                case BuiltinTemplateType.Default3D:
+                    CreateCamera(scene, true);
+
+                    var lightObj = ObjectFactory.CreateGameObject(scene, HideFlags.None, L10n.Tr("Directional Light"), new[] { typeof(Light) });
+                    lightObj.transform.position = new Vector3(0, 3, 0);
+                    lightObj.transform.SetLocalEulerAngles(new Vector3(50, -30, 0), RotationOrder.OrderXYZ);
+                    var light = lightObj.GetComponent<Light>();
+                    light.type = LightType.Directional;
+                    light.color = new Color(255.0F / 255.0F, 244.0F / 255.0F, 214.0F / 255.0F);
+                    light.intensity = 1;
+                    light.shadows = LightShadows.Soft;
+
+                    if (type == BuiltinTemplateType.Default2DMode3DCamera)
+                    {
+                        UnityEngine.RenderSettings.skybox = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Skybox.mat");
+                        UnityEngine.RenderSettings.ambientMode = AmbientMode.Skybox;
+                    }
+
+                    break;
+                case BuiltinTemplateType.Default2D:
+                    CreateCamera(scene, false);
+                    break;
+            }
+
+            EditorSceneManager.ClearSceneDirtiness(scene);
+        }
+
+        private static void CreateCamera(Scene scene, bool isPerspective)
+        {
+            var cameraObj = ObjectFactory.CreateGameObject(scene, HideFlags.None, L10n.Tr("Main Camera"), new[] { typeof(Camera), typeof(AudioListener) });
+            var camera = cameraObj.GetComponent<Camera>();
+            camera.depth = -1;
+            cameraObj.tag = "MainCamera";
+
+            if (isPerspective)
+            {
+                camera.transform.position = new Vector3(0, 1, -10);
+            }
+            else
+            {
+                camera.transform.position = new Vector3(0, 0, -10);
+                camera.orthographic = true;
+                camera.clearFlags = CameraClearFlags.SolidColor;
+            }
         }
 
         private static bool CreateSceneFromTemplate(string templateAssetPath, bool loadAdditively)
@@ -732,7 +818,14 @@ namespace UnityEditor.SceneTemplate
 
         internal SceneTemplateInfo GetDefaultSceneTemplateInfo()
         {
-            return m_SceneTemplateInfos.Find(info => info.IsInMemoryScene && info.name == basicTemplateName);
+            if (EditorSettings.defaultBehaviorMode == EditorBehaviorMode.Mode2D)
+            {
+                return default2DSceneTemplateInfo;
+            }
+            else
+            {
+                return default3DSceneTemplateInfo;
+            }
         }
 
         private static void SetAllElementSequentiallyFocusable(VisualElement parent, bool focusable)

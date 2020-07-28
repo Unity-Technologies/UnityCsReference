@@ -78,10 +78,7 @@ namespace UnityEditor
             return clipInstruction.path;
         }
 
-        internal override void OnDoubleClickInstruction(int index)
-        {
-            throw new NotImplementedException();
-        }
+        internal override void OnDoubleClickInstruction(int index) {}
 
         internal override void OnSelectedInstructionChanged(int index)
         {

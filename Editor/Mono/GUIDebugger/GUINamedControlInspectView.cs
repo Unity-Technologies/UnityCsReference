@@ -44,9 +44,7 @@ namespace UnityEditor
             return "\"" + instruction.name + "\"";
         }
 
-        internal override void OnDoubleClickInstruction(int index)
-        {
-        }
+        internal override void OnDoubleClickInstruction(int index) {}
 
         protected override void DrawInspectedStacktrace(float availableWidth)
         {

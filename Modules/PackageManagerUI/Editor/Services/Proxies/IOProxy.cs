@@ -124,5 +124,15 @@ namespace UnityEditor.PackageManager.UI
         {
             File.Delete(filePath);
         }
+
+        public virtual string GetFileName(string path)
+        {
+            return Path.GetFileName(path);
+        }
+
+        public virtual string GetDirectoryName(string path)
+        {
+            return Path.GetDirectoryName(path);
+        }
     }
 }

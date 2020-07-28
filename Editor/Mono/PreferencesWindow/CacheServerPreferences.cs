@@ -134,7 +134,7 @@ namespace UnityEditor
 
             if (AssetDatabase.IsV2Enabled())
             {
-                AssetDatabaseExperimental.RefreshSettings();
+                AssetDatabase.RefreshSettings();
             }
 
             if (changedDir)
@@ -271,7 +271,7 @@ namespace UnityEditor
                     if (address.Length == 2)
                         port = Convert.ToUInt16(address[1]);
 
-                    if (AssetDatabaseExperimental.CanConnectToCacheServer(ip, port))
+                    if (AssetDatabase.CanConnectToCacheServer(ip, port))
                         s_ConnectionState = ConnectionState.Success;
                     else
                         s_ConnectionState = ConnectionState.Failure;
@@ -320,7 +320,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    canConnect = AssetDatabaseExperimental.IsConnectedToCacheServer();
+                    canConnect = AssetDatabase.IsConnectedToCacheServer();
                 }
 
                 if (canConnect)

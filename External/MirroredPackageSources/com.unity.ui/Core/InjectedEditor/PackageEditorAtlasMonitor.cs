@@ -13,7 +13,7 @@ namespace UnityEditor.UIElements
     {
         public static void StaticInit()
         {
-            EditorAtlasMonitor.StaticInit();
+            PackageEditorAtlasMonitor.StaticInit();
         }
 
         public static Action<string[], string[], string[], string[]>  OnPostprocessAllAssets;
@@ -21,7 +21,7 @@ namespace UnityEditor.UIElements
     }
 
     // TODO: Add [InitializeOnLoad].
-    static class EditorAtlasMonitor
+    static class PackageEditorAtlasMonitor
     {
         // TODO: Remove this.
         static TexturePostProcessor s_TexturePostProcessor = new TexturePostProcessor();

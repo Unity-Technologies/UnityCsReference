@@ -352,16 +352,11 @@ namespace UnityEditor
                 switch (Col)
                 {
                     case Column.Element:
-                        if (cx.info.isBatch)
-                            return -1;
+                        // In case of comparing with same element return 0 to avoid exception.
                         return cx.displayName.CompareTo(cy.displayName) * i;
                     case Column.BatchCount:
-                        if (cx.info.isBatch)
-                            return -1;
                         return cx.info.batchCount.CompareTo(cy.info.batchCount) * i;
                     case Column.TotalBatchCount:
-                        if (cx.info.isBatch)
-                            return -1;
                         return cx.info.totalBatchCount.CompareTo(cy.info.totalBatchCount) * i;
                     case Column.VertexCount:
                         if (cx.info.isBatch)

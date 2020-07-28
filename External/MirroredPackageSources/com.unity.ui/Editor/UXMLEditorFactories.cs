@@ -94,7 +94,8 @@ namespace UnityEditor.UIElements
                     || !typeof(IUxmlFactory).IsAssignableFrom(type)
                     || type.IsInterface
                     || type.IsGenericType
-                    || type.Assembly.GetName().Name == "UnityEngine.UIElementsModule")
+                    || type.Assembly.GetName().Name == "UnityEngine.UIElementsModule"
+                    || type.Assembly.GetName().Name == "UnityEditor.UIElementsModule")
                     continue;
 
                 var factory = (IUxmlFactory)Activator.CreateInstance(type);

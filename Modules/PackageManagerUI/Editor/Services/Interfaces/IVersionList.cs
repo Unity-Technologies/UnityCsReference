@@ -14,8 +14,6 @@ namespace UnityEditor.PackageManager.UI
 
         IPackageVersion latest { get; }
 
-        IPackageVersion latestPatch { get; }
-
         IPackageVersion importAvailable { get; }
 
         // the recommended version to install or update to

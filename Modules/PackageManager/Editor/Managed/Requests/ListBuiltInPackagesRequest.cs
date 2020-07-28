@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 
 namespace UnityEditor.PackageManager.Requests
 {
@@ -24,7 +25,7 @@ namespace UnityEditor.PackageManager.Requests
 
         protected override PackageInfo[] GetResult()
         {
-            return GetOperationData(Id);
+            return GetOperationData(Id).Where(p => p.type != ShimPackageType).ToArray();
         }
     }
 }

@@ -2801,7 +2801,7 @@ namespace UnityEditor
                     Graphics.DrawTexture(bgRect, sliderBackground, new Rect(.5f / sliderBackground.width, .5f / sliderBackground.height, 1 - 1f / sliderBackground.width, 1 - 1f / sliderBackground.height), 0, 0, 0, 0, new Color(0.5f, 0.5f, 0.5f, 0.5f));
                 }
 
-                newSliderValue = GUI.Slider(sliderRect, newSliderValue, 0, remapLeft, remapRight, sliderStyle, showMixedValue ? "SliderMixed" : thumbStyle, true, sliderId, thumbStyleExtent);
+                newSliderValue = GUI.Slider(sliderRect, newSliderValue, 0, remapLeft, remapRight, sliderStyle, showMixedValue ? GUI.skin.sliderMixed : thumbStyle, true, sliderId, showMixedValue ? GUI.skin.sliderMixed : thumbStyleExtent);
                 if (power != 1f)
                 {
                     newSliderValue = PowPreserveSign(newSliderValue, power);
@@ -4627,7 +4627,7 @@ namespace UnityEditor
                     break;
                 case EventType.Repaint:
                     Rect position2;
-                    position2 = showEyedropper ? style.padding.Remove(position) : position;
+                    position2 = showEyedropper ? style.padding.Remove(position) : EditorStyles.colorPickerBox.padding.Remove(position);
 
                     if (showEyedropper)
                     {
@@ -4651,7 +4651,6 @@ namespace UnityEditor
                     {
                         EditorGUIUtility.DrawColorSwatch(position2, value, showAlpha, hdr);
                     }
-
                     break;
 
                 case EventType.ValidateCommand:

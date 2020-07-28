@@ -1137,7 +1137,7 @@ namespace UnityEditor
             if (oldDirectoryMonitoring != m_DirectoryMonitoring)
             {
                 EditorPrefs.SetBool("DirectoryMonitoring", m_DirectoryMonitoring);
-                AssetDatabaseExperimental.RefreshSettings();
+                AssetDatabase.RefreshSettings();
             }
 
             if (m_ContentScaleChangedThisSession)

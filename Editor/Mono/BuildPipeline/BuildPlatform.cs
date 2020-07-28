@@ -116,7 +116,7 @@ namespace UnityEditor.Build
                 case BuildTarget.StandaloneOSXIntel:
                 case BuildTarget.StandaloneOSXIntel64:
 #pragma warning restore 612, 618
-                    return "Mac OS X";
+                    return "macOS";
                     // Deprecated
 #pragma warning disable 612, 618
                 case BuildTarget.StandaloneLinux:

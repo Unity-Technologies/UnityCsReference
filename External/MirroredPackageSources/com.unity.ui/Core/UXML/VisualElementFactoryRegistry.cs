@@ -30,7 +30,7 @@ namespace UnityEngine.UIElements
                 {
                     if (f.GetType() == factory.GetType())
                     {
-                        throw new ArgumentException("A factory of this type was already registered");
+                        throw new ArgumentException($"A factory for the type {factory.GetType().FullName} was already registered");
                     }
                 }
                 factoryList.Add(factory);

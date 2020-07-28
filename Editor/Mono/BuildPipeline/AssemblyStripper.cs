@@ -642,7 +642,7 @@ namespace UnityEditorInternal
                         break;
                     case BuildTarget.StandaloneOSX:
                         platform = "MacOSX";
-                        architecture = "x64";
+                        architecture = "";
                         break;
                     case BuildTarget.WSAPlayer:
                         platform = "WinRT";

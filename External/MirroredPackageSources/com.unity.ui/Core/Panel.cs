@@ -447,7 +447,7 @@ namespace UnityEngine.UIElements
 
         public IPanelDebug panelDebug { get; set; }
 
-        public void Update()
+        public virtual void Update()
         {
             scheduler.UpdateScheduledEvents();
             ValidateLayout();
@@ -925,6 +925,20 @@ namespace UnityEngine.UIElements
             clearFlags = PanelClearFlags.All;
             base.Repaint(e);
             RenderTexture.active = toBeRestoredTarget;
+        }
+
+        internal static readonly Func<Vector2, Vector2> DefaultScreenToPanelSpace = (p) => (p);
+        private Func<Vector2, Vector2> m_ScreenToPanelSpace = DefaultScreenToPanelSpace;
+
+        public Func<Vector2, Vector2> screenToPanelSpace
+        {
+            get => m_ScreenToPanelSpace;
+            set => m_ScreenToPanelSpace = value ?? DefaultScreenToPanelSpace;
+        }
+
+        internal Vector2 ScreenToPanel(Vector2 screen)
+        {
+            return screenToPanelSpace(screen) / scale;
         }
     }
 }

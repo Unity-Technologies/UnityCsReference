@@ -147,7 +147,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     ExplicitPrecompiledReferences = customAssembly.PrecompiledReferences?.ToList() ?? new List<string>(),
                     VersionDefines = customAssembly.VersionDefines != null
                         ? customAssembly.VersionDefines.ToList() : new List<VersionDefine>(),
-                    RootNamespace = customAssembly.RootNamespace
+                    RootNamespace = customAssembly.RootNamespace,
+                    ResponseFileDefines = customAssembly.ResponseFileDefines,
                 };
 
                 targetAssemblies.Add(targetAssembly);

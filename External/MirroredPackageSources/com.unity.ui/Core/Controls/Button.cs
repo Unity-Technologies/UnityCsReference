@@ -3,29 +3,64 @@ using System;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A clickable button.
+    /// This is a clickable button.
     /// </summary>
+    /// <remarks>
+    /// A <see cref="Button"/> consists of a text label element that can respond to pointer and mouse events.
+    /// You can replace or add to the content of the button by adding elements to its hierarchy.
+    /// For example, to use a separate image as an icon for the button, you can make an <see cref="Image"/>
+    /// element a child of the button.
+    ///
+    /// By default, a single left mouse click activates the Button's <see cref="Clickable"/> property button.
+    /// To remove this activator, or add more activators, modify the <c>clickable.activators</c> property.
+    /// For details, see <see cref="ManipulatorActivationFilter"/>.
+    ///
+    /// To bind a Button's text value to the contents of a variable, set the <c>binding-path</c> property in the
+    /// UXML file, or the <c>bindingPath</c> property in the C# code, to a string that contains the variable name.
+    /// </remarks>
     public class Button : TextElement
     {
         /// <summary>
-        /// Instantiates a <see cref="Button"/> using the data read from a UXML file.
+        /// Instantiates a <see cref="Button"/> using data from a UXML file.
         /// </summary>
+        /// <remarks>
+        /// This class is added to every <see cref="VisualElement"/> that is created from UXML.
+        /// </remarks>
         public new class UxmlFactory : UxmlFactory<Button, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="Button"/>.
         /// </summary>
+        /// <remarks>
+        /// This class defines the properties of a Button element that you can
+        /// use in a UXML asset.
+        /// </remarks>
         public new class UxmlTraits : TextElement.UxmlTraits {}
 
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to every instance of the Button element. Any styling applied to
+        /// this class affects every button located beside, or below the stylesheet in the visual tree.
+        /// </remarks>
         public new static readonly string ussClassName = "unity-button";
         private Clickable m_Clickable;
 
         /// <summary>
         /// Clickable MouseManipulator for this Button.
         /// </summary>
+        /// <remarks>
+        /// The default <see cref="Clickable"/> object provides a list of actions that are called using
+        /// one or more activation filters.
+        ///
+        /// To add or remove activation triggers, modify <see cref="clickable.activators"/>.
+        /// An activation trigger can be any mouse button, pressed any number of times, with any modifier key.
+        /// For details, see <see cref="ManipulatorActivationFilter"/>.
+        /// <code>clickable.activators.Add(new ManipulatorActivationFilter(...))</code>
+        /// or
+        /// <code>clickable.activators.Clear()</code>
+        /// </remarks>
         public Clickable clickable
         {
             get
@@ -67,7 +102,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Callback triggered when the button is clicked.
         /// </summary>
-        /// <seealso cref="Clickable.clicked"/>
+        /// <remarks>
+        /// This is a shortcut for modifying <seealso cref="Clickable.clicked"/>. It is provided as a convenience. When you add or remove actions from clicked, it adds or removes them from <c>Clickable.clicked</c> automatically.
+        /// </remarks>
         public event Action clicked
         {
             add
@@ -98,9 +135,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Constructs a Button.
+        /// Constructs a button with an Action that is triggered when the button is clicked.
         /// </summary>
-        /// <param name="clickEvent">Action triggered when the button is clicked.</param>
+        /// <param name="clickEvent">The action triggered when the button is clicked.</param>
+        /// <remarks>
+        /// By default, a single left mouse click triggers the Action. To change the activator, modify <see cref="clickable"/>.
+        /// </remarks>
         public Button(System.Action clickEvent)
         {
             AddToClassList(ussClassName);

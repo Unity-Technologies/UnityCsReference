@@ -66,8 +66,6 @@ namespace UnityEditor.Profiling
             var themeUssClass = (EditorGUIUtility.isProSkin) ? k_UssSelectorModuleEditorWindowDark : k_UssSelectorModuleEditorWindowLight;
             rootVisualElement.AddToClassList(themeUssClass);
 
-            rootVisualElement.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
-
             m_ModulesListView = rootVisualElement.Q<ListView>(k_UssSelector_ListView);
             m_ModulesListView.itemHeight = k_ListViewItemHeight;
             m_ModulesListView.makeItem = MakeListViewItem;
@@ -85,20 +83,6 @@ namespace UnityEditor.Profiling
             var restoreDefaultsButton = rootVisualElement.Q<Button>(k_UssSelector_RestoreDefaultsButton);
             restoreDefaultsButton.text = LocalizationDatabase.GetLocalizedString("Restore Defaults");
             restoreDefaultsButton.clicked += RestoreDefaults;
-        }
-
-        void OnMouseLeave(MouseLeaveEvent evt)
-        {
-            // Check if the mouse is still over the window when we received the leave event. This can occur if a tooltip is shown.
-            var modifiedRect = rootVisualElement.rect;
-            // For some reason, ShowAsDropDown() causes the MouseLeaveEvent to fire 5 pixels from the top.
-            modifiedRect.yMin += 6;
-            if (modifiedRect.Contains(evt.localMousePosition))
-            {
-                return;
-            }
-
-            Close();
         }
 
         void OnModuleSelected(IEnumerable<object> selectedItems)

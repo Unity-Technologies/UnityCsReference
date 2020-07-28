@@ -165,6 +165,8 @@ namespace UnityEditor.PackageManager.UI
                 m_Tag |= PackageTag.Published;
             else if (state.Equals("deprecated", StringComparison.InvariantCultureIgnoreCase))
                 m_Tag |= PackageTag.Deprecated;
+            else if (state.Equals("disabled", StringComparison.InvariantCultureIgnoreCase))
+                m_Tag |= PackageTag.Disabled;
 
             SetLocalPath(localInfo?.packagePath);
         }

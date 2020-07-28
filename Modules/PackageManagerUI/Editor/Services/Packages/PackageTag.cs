@@ -27,6 +27,7 @@ namespace UnityEditor.PackageManager.UI
         Embeddable      = 1 << 13,
 
         // status
+        Disabled        = 1 << 15,
         Published       = 1 << 16,
         Deprecated      = 1 << 17,
         Verified        = 1 << 18,   // the recommended version if major version > 0

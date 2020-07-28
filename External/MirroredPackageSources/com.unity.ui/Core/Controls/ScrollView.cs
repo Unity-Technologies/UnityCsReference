@@ -168,7 +168,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                return showHorizontal || (contentContainer.layout.width - layout.width > 0);
+                return showHorizontal || (scrollableWidth > 0);
             }
         }
 
@@ -176,7 +176,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                return showVertical || (contentContainer.layout.height - layout.height > 0);
+                return showVertical || (scrollableHeight > 0);
             }
         }
 
@@ -304,6 +304,9 @@ namespace UnityEngine.UIElements
             var t = contentContainer.transform.position;
 
             var offset = scrollOffset;
+            if (needsVertical)
+                offset.y += contentContainer.resolvedStyle.top;
+
             t.x = GUIUtility.RoundToPixelGrid(-offset.x);
             t.y = GUIUtility.RoundToPixelGrid(-offset.y);
             contentContainer.transform.position = t;
@@ -385,6 +388,16 @@ namespace UnityEngine.UIElements
 
         private float GetDeltaDistance(float viewMin, float viewMax, float childBoundaryMin, float childBoundaryMax)
         {
+            var viewSize = viewMax - viewMin;
+            var childSize = childBoundaryMax - childBoundaryMin;
+            if (childSize > viewSize)
+            {
+                if (viewMin > childBoundaryMin && childBoundaryMax > viewMax)
+                    return 0f;
+
+                return childBoundaryMin > viewMin ? childBoundaryMin - viewMin : childBoundaryMax - viewMax;
+            }
+
             float deltaDistance = childBoundaryMax - viewMax;
             if (deltaDistance < -1)
             {

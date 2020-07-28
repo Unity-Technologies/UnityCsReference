@@ -244,6 +244,7 @@ namespace UnityEditor.StyleSheets
         public Dictionary<string, string> ChildToParent { get; private set; }
         public Dictionary<string, Property> Variables { get; private set; }
         public ResolvingOptions Options { get; private set; }
+        internal List<StyleSheet.ImportStruct> Imports { get; private set; } = new List<StyleSheet.ImportStruct>();
 
         public StyleSheet ResolvedSheet
         {
@@ -318,6 +319,7 @@ namespace UnityEditor.StyleSheets
             foreach (var sheet in Sheets)
             {
                 ResolveRules(sheet);
+                ResolveImports(sheet);
             }
 
             // Link all pseudo state to their main rule:
@@ -438,7 +440,7 @@ namespace UnityEditor.StyleSheets
         public void ResolveTo(StyleSheet dest)
         {
             Resolve();
-            PopulateSheet(dest, Rules.Values, Options);
+            PopulateSheet(dest, Rules.Values, Imports, Options);
         }
 
         class VariableDependencyNode
@@ -570,7 +572,7 @@ namespace UnityEditor.StyleSheets
             }
         }
 
-        public static void PopulateSheet(StyleSheet sheet, IEnumerable<Rule> rules, ResolvingOptions options = null)
+        public static void PopulateSheet(StyleSheet sheet, IEnumerable<Rule> rules, List<StyleSheet.ImportStruct> imports, ResolvingOptions options = null)
         {
             options = options ?? new ResolvingOptions();
             var helper = new StyleSheetBuilderHelper();
@@ -592,13 +594,24 @@ namespace UnityEditor.StyleSheets
                 }
                 helper.EndRule();
             }
+
+            foreach (var import in imports)
+            {
+                helper.AddImport(import);
+            }
+
             helper.PopulateSheet(sheet);
         }
 
         public static StyleSheet ConvertToStyleSheet(IEnumerable<Rule> rules, ResolvingOptions options = null)
         {
+            return ConvertToStyleSheet(rules, new List<StyleSheet.ImportStruct>(), options);
+        }
+
+        static StyleSheet ConvertToStyleSheet(IEnumerable<Rule> rules, List<StyleSheet.ImportStruct> imports, ResolvingOptions options = null)
+        {
             var sheet = ScriptableObject.CreateInstance<StyleSheet>();
-            PopulateSheet(sheet, rules, options);
+            PopulateSheet(sheet, rules, imports, options);
             return sheet;
         }
 
@@ -739,6 +752,14 @@ namespace UnityEditor.StyleSheets
                 {
                     throw new Exception("Cannot resolve main rule: " + mainRuleName);
                 }
+            }
+        }
+
+        private void ResolveImports(StyleSheet sheet)
+        {
+            foreach (var sheetImport in sheet.imports)
+            {
+                Imports.Add(sheetImport);
             }
         }
 

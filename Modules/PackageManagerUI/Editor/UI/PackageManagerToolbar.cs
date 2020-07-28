@@ -8,7 +8,6 @@ using UnityEditor.UIElements;
 using System.Linq;
 using System;
 using UnityEngine;
-using System.IO;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -30,10 +29,10 @@ namespace UnityEditor.PackageManager.UI
         private ApplicationProxy m_Application;
         private UnityConnectProxy m_UnityConnect;
         private PackageFiltering m_PackageFiltering;
-        private PackageManagerPrefs m_PackageManagerPrefs;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
+        private IOProxy m_IOProxy;
 
         private void ResolveDependencies()
         {
@@ -42,10 +41,10 @@ namespace UnityEditor.PackageManager.UI
             m_Application = container.Resolve<ApplicationProxy>();
             m_UnityConnect = container.Resolve<UnityConnectProxy>();
             m_PackageFiltering = container.Resolve<PackageFiltering>();
-            m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
+            m_IOProxy = container.Resolve<IOProxy>();
         }
 
         public PackageManagerToolbar()
@@ -248,14 +247,14 @@ namespace UnityEditor.PackageManager.UI
             addMenu.menu.AppendAction(L10n.Tr("Add package from disk..."), a =>
             {
                 var path = EditorUtility.OpenFilePanelWithFilters(L10n.Tr("Select package on disk"), "", new[] { "package.json file", "json" });
-                if (Path.GetFileName(path) != "package.json")
+                if (m_IOProxy.GetFileName(path) != "package.json")
                 {
                     Debug.Log(L10n.Tr("Please select a valid package.json file in a package folder."));
                     return;
                 }
                 if (!string.IsNullOrEmpty(path) && !m_PackageDatabase.isInstallOrUninstallInProgress)
                 {
-                    m_PackageDatabase.InstallFromPath(Path.GetDirectoryName(path));
+                    m_PackageDatabase.InstallFromPath(m_IOProxy.GetDirectoryName(path));
                     PackageManagerWindowAnalytics.SendEvent("addFromDisk");
                 }
             }, a => DropdownMenuAction.Status.Normal);
@@ -398,10 +397,10 @@ namespace UnityEditor.PackageManager.UI
         {
             filtersMenu.ShowTextTooltipOnSizeChange(-16);
 
-            filtersMenu.clickable.clicked += () =>
+            filtersMenu.clicked += () =>
             {
                 if (PackageManagerFiltersWindow.instance != null)
-                    return;
+                    PackageManagerFiltersWindow.instance.Close();
 
                 var page = m_PageManager.GetCurrentPage();
                 if (page != null && PackageManagerFiltersWindow.ShowAtPosition(GUIUtility.GUIToScreenRect(filtersMenu.worldBound), page.tab, page.filters))
@@ -418,7 +417,8 @@ namespace UnityEditor.PackageManager.UI
                     };
                 }
             };
-            clearFiltersButton.clickable.clicked += () =>
+
+            clearFiltersButton.clicked += () =>
             {
                 var page = m_PageManager.GetCurrentPage();
                 page.ClearFilters();

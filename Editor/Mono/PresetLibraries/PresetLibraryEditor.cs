@@ -222,6 +222,9 @@ namespace UnityEditor
         // Returns an error string. If no errors occured then null is returned
         string CreateNewLibraryCallback(string libraryName, PresetFileLocation fileLocation)
         {
+            if (libraryName.Contains(":"))
+                return "A filename cannot contain the following character ':'";
+
             string defaultPath = PresetLibraryLocations.GetDefaultFilePathForFileLocation(fileLocation);
 
             if (libraryName.StartsWith("\\") || libraryName.StartsWith("/"))

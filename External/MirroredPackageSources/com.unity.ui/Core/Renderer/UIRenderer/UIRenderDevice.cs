@@ -148,7 +148,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        // TODO: Remove this once case 1148851 has been fixed.
+        // TODO: Remove this. Unused.
         static internal Func<Shader> getEditorShader = null;
 
         #region Default system resources
@@ -212,11 +212,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 if (!s_VertexTexturingIsAvailable.HasValue)
                 {
-                    // Remove this workaround once case 1148851 has been fixed. In the editor, subshaders aren't stripped
-                    // according to the graphic device capabilities unless the shader is precompiled. Querying tags will
-                    // always return the tags from the first subshader. The editor shader is precompiled and doesn't
-                    // suffer this issue, so we can use it as a reference.
-                    var stockDefaultShader = getEditorShader();
+                    var stockDefaultShader = Shader.Find(UIRUtility.k_DefaultShaderName);
                     var stockDefaultMaterial = new Material(stockDefaultShader);
                     stockDefaultMaterial.hideFlags |= HideFlags.DontSaveInEditor;
                     string tagValue = stockDefaultMaterial.GetTag(k_VertexTexturingIsAvailableTag, false);

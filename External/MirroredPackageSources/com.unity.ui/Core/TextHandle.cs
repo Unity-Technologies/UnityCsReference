@@ -10,7 +10,6 @@ namespace UnityEngine.UIElements
         public static TextHandle New()
         {
             TextHandle h = new TextHandle();
-            h.m_TextInfo = new TextInfo();
             h.useLegacy = false;
             h.m_CurrentGenerationSettings = new TextCore.TextGenerationSettings();
             h.m_CurrentLayoutSettings = new TextCore.TextGenerationSettings();
@@ -34,18 +33,43 @@ namespace UnityEngine.UIElements
         }
 
         Vector2 m_PreferredSize;
-        TextInfo m_TextInfo;
         int m_PreviousGenerationSettingsHash;
         TextCore.TextGenerationSettings m_CurrentGenerationSettings;
         int m_PreviousLayoutSettingsHash;
         TextCore.TextGenerationSettings m_CurrentLayoutSettings;
+
+        /// <summary>
+        /// DO NOT USE m_TextInfo directly, use textInfo to guarantee lazy allocation.
+        /// </summary>
+        private TextInfo m_TextInfo;
+
+        /// <summary>
+        /// The TextInfo instance, use from this instead of the m_TextInfo member to guarantee lazy allocation.
+        /// </summary>
+        internal TextInfo textInfo
+        {
+            get
+            {
+                if (m_TextInfo == null)
+                {
+                    m_TextInfo = new TextInfo();
+                }
+
+                return m_TextInfo;
+            }
+        }
+
+        internal bool IsTextInfoAllocated()
+        {
+            return m_TextInfo != null;
+        }
 
         public Vector2 GetCursorPosition(CursorPositionStylePainterParameters parms, float scaling)
         {
             if (useLegacy)
                 return TextNative.GetCursorPosition(parms.GetTextNativeSettings(scaling), parms.rect,
                     parms.cursorIndex);
-            return TextCore.TextGenerator.GetCursorPosition(m_TextInfo, parms.rect, parms.cursorIndex);
+            return TextCore.TextGenerator.GetCursorPosition(textInfo, parms.rect, parms.cursorIndex);
         }
 
         public float ComputeTextWidth(MeshGenerationContextUtils.TextParams parms, float scaling)
@@ -72,7 +96,7 @@ namespace UnityEngine.UIElements
             parms.rect = new Rect(Vector2.zero, parms.rect.size);
             int paramsHash = parms.GetHashCode();
             if (m_PreviousGenerationSettingsHash == paramsHash)
-                return m_TextInfo;
+                return textInfo;
 
             UpdateGenerationSettingsCommon(parms, m_CurrentGenerationSettings);
 
@@ -81,10 +105,10 @@ namespace UnityEngine.UIElements
             m_CurrentGenerationSettings.scale = pixelsPerPoint;
             m_CurrentGenerationSettings.overflowMode = parms.textOverflowMode;
 
-            m_TextInfo.isDirty = true;
-            TextCore.TextGenerator.GenerateText(m_CurrentGenerationSettings, m_TextInfo);
+            textInfo.isDirty = true;
+            TextCore.TextGenerator.GenerateText(m_CurrentGenerationSettings, textInfo);
             m_PreviousGenerationSettingsHash = paramsHash;
-            return m_TextInfo;
+            return textInfo;
         }
 
         void UpdatePreferredValues(MeshGenerationContextUtils.TextParams parms)
@@ -96,7 +120,7 @@ namespace UnityEngine.UIElements
                 return;
 
             UpdateGenerationSettingsCommon(parms, m_CurrentLayoutSettings);
-            m_PreferredSize = TextCore.TextGenerator.GetPreferredValues(m_CurrentLayoutSettings, m_TextInfo);
+            m_PreferredSize = TextCore.TextGenerator.GetPreferredValues(m_CurrentLayoutSettings, textInfo);
             m_PreviousLayoutSettingsHash = paramsHash;
         }
 

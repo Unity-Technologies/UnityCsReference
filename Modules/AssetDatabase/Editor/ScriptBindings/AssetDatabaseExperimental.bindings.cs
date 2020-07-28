@@ -132,56 +132,11 @@ namespace UnityEditor.Experimental
 
         public extern static AssetDatabaseCounters counters { get; }
 
-        [FreeFunction("AcceleratorClientCanConnectTo")]
-        public extern static bool CanConnectToCacheServer(string ip, UInt16 port);
-        [FreeFunction()]
-        public extern static void RefreshSettings();
-
-        public struct CacheServerConnectionChangedParameters
-        {
-        }
-
-        public static event Action<CacheServerConnectionChangedParameters> cacheServerConnectionChanged;
-        [RequiredByNativeCode]
-        private static void OnCacheServerConnectionChanged()
-        {
-            if (cacheServerConnectionChanged != null)
-            {
-                CacheServerConnectionChangedParameters param;
-                cacheServerConnectionChanged(param);
-            }
-        }
-
-        [FreeFunction("IsConnectedToCacheServerV2")]
-        public extern static bool IsConnectedToCacheServer();
-        [Obsolete("Has been replaced by AssetDatabaseExperimental.RefreshSettings", true)]
-        public static void ReconnectToCacheServer()
-        {
-            throw new NotSupportedException("Please use AssetdatabaseExperimental.RefreshSettings instead.");
-        }
-
-        [FreeFunction()]
-        public extern static string GetCacheServerAddress();
-        [FreeFunction()]
-        public extern static UInt16 GetCacheServerPort();
-
-        [FreeFunction("AssetDatabase::IsCacheServerEnabled")]
-        public extern static bool IsCacheServerEnabled();
-        [FreeFunction("AssetDatabase::GetCacheServerNamespacePrefix")]
-        public extern static string GetCacheServerNamespacePrefix();
-        [FreeFunction("AssetDatabase::GetCacheServerEnableDownload")]
-        public extern static bool GetCacheServerEnableDownload();
-        [FreeFunction("AssetDatabase::GetCacheServerEnableUpload")]
-        public extern static bool GetCacheServerEnableUpload();
-
         [FreeFunction("CacheServerCountersResetDeltas")]
         private extern static void CacheServerCountersResetDeltas();
 
         [FreeFunction("ImportCountersResetDeltas")]
         private extern static void ImportCountersResetDeltas();
-
-        [FreeFunction("AssetDatabase::IsDirectoryMonitoringEnabled")]
-        public extern static bool IsDirectoryMonitoringEnabled();
 
         public extern static OnDemandMode ActiveOnDemandMode
         {
@@ -287,37 +242,5 @@ namespace UnityEditor.Experimental
         {
             return GetOnDemandArtifactProgress(new ArtifactKey(new GUID(guid), importerType));
         }
-
-        [RequiredByNativeCode]
-        static string[] OnSourceAssetsModified(string[] changedAssets, string[] addedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
-        {
-            var assetMoveInfo = new AssetMoveInfo[movedAssets.Length];
-            Debug.Assert(movedAssets.Length == movedFromAssetPaths.Length);
-            for (int i = 0; i < movedAssets.Length; i++)
-                assetMoveInfo[i] = new AssetMoveInfo(movedFromAssetPaths[i], movedAssets[i]);
-
-            var assetsReportedChanged = new HashSet<string>();
-
-            foreach (Type type in TypeCache.GetTypesDerivedFrom<AssetsModifiedProcessor>())
-            {
-                var assetPostprocessor = Activator.CreateInstance(type) as AssetsModifiedProcessor;
-                assetPostprocessor.assetsReportedChanged = assetsReportedChanged;
-                assetPostprocessor.Internal_OnAssetsModified(changedAssets, addedAssets, deletedAssets, assetMoveInfo);
-                assetPostprocessor.assetsReportedChanged = null;
-            }
-
-            return assetsReportedChanged.ToArray();
-        }
-
-        [FreeFunction("AssetDatabaseExperimental::RegisterCustomDependency")]
-        [PreventExecutionInState(AssetDatabasePreventExecution.kPreventCustomDependencyChanges, PreventExecutionSeverity.PreventExecution_ManagedException, "Custom dependencies can only be changed when the assetdatabase is not importing.")]
-        public extern static void RegisterCustomDependency(string dependency, Hash128 hashOfValue);
-
-        [FreeFunction("AssetDatabaseExperimental::UnregisterCustomDependencyPrefixFilter")]
-        [PreventExecutionInState(AssetDatabasePreventExecution.kPreventCustomDependencyChanges, PreventExecutionSeverity.PreventExecution_ManagedException, "Custom dependencies can only be removed when the assetdatabase is not importing.")]
-        public extern static UInt32 UnregisterCustomDependencyPrefixFilter(string prefixFilter);
-
-        [FreeFunction("AssetDatabase::IsAssetImportProcess")]
-        public extern static bool IsAssetImportWorkerProcess();
     }
 }

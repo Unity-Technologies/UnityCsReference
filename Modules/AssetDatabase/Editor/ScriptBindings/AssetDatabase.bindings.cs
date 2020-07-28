@@ -13,6 +13,9 @@ using UnityEngine.Bindings;
 using UnityEngineInternal;
 using uei = UnityEngine.Internal;
 using Object = UnityEngine.Object;
+using UnityEngine.Scripting;
+using UnityEditor.Experimental;
+using UnityEngine.Internal;
 
 namespace UnityEditor
 {
@@ -61,6 +64,11 @@ namespace UnityEditor
         kImporting = 1 << 0,
         kImportingAsset = 1 << 1,
         kPreventCustomDependencyChanges = 1 << 2
+    }
+
+    [ExcludeFromDocs]
+    public struct CacheServerConnectionChangedParameters
+    {
     }
 
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabase.h")]
@@ -645,29 +653,114 @@ namespace UnityEditor
         {
             [FreeFunction("AssetDatabase::GetGlobalArtifactProcessedVersion")] get;
         }
-    }
-}
 
-namespace UnityEditor.Experimental
-{
-    public partial class AssetDatabaseExperimental
-    {
+        [ExcludeFromDocs]
         [FreeFunction("AssetDatabase::ClearImporterOverride")]
         extern public static void ClearImporterOverride(string path);
 
+        [ExcludeFromDocs]
+        [FreeFunction("AssetDatabase::IsCacheServerEnabled")]
+        public extern static bool IsCacheServerEnabled();
+
+        [FreeFunction("AssetDatabase::SetImporterOverride")]
+        extern internal static void SetImporterOverrideInternal(string path, System.Type importer);
+
+        [ExcludeFromDocs]
         public static void SetImporterOverride<T>(string path)
             where T : UnityEditor.AssetImporters.ScriptedImporter
         {
             SetImporterOverrideInternal(path, typeof(T));
         }
 
-        [FreeFunction("AssetDatabase::SetImporterOverride")]
-        extern internal static void SetImporterOverrideInternal(string path, System.Type importer);
-
+        [ExcludeFromDocs]
         [FreeFunction("AssetDatabase::GetImporterOverride")]
         extern public static System.Type GetImporterOverride(string path);
 
+        [ExcludeFromDocs]
         [FreeFunction("AssetDatabase::GetAvailableImporterTypes")]
         extern public static Type[] GetAvailableImporterTypes(string path);
+
+        [ExcludeFromDocs]
+        [FreeFunction("AcceleratorClientCanConnectTo")]
+        public extern static bool CanConnectToCacheServer(string ip, UInt16 port);
+
+        [ExcludeFromDocs]
+        [FreeFunction()]
+        public extern static void RefreshSettings();
+
+        [ExcludeFromDocs]
+        public static event Action<CacheServerConnectionChangedParameters> cacheServerConnectionChanged;
+        [RequiredByNativeCode]
+        private static void OnCacheServerConnectionChanged()
+        {
+            if (cacheServerConnectionChanged != null)
+            {
+                CacheServerConnectionChangedParameters param;
+                cacheServerConnectionChanged(param);
+            }
+        }
+
+        [ExcludeFromDocs]
+        [FreeFunction("IsConnectedToCacheServerV2")]
+        public extern static bool IsConnectedToCacheServer();
+
+        [ExcludeFromDocs]
+        [FreeFunction()]
+        public extern static string GetCacheServerAddress();
+
+        [ExcludeFromDocs]
+        [FreeFunction()]
+        public extern static UInt16 GetCacheServerPort();
+
+        [ExcludeFromDocs]
+        [FreeFunction("AssetDatabase::GetCacheServerNamespacePrefix")]
+        public extern static string GetCacheServerNamespacePrefix();
+
+        [ExcludeFromDocs]
+        [FreeFunction("AssetDatabase::GetCacheServerEnableDownload")]
+        public extern static bool GetCacheServerEnableDownload();
+
+        [ExcludeFromDocs]
+        [FreeFunction("AssetDatabase::GetCacheServerEnableUpload")]
+        public extern static bool GetCacheServerEnableUpload();
+
+        [ExcludeFromDocs]
+        [FreeFunction("AssetDatabase::IsDirectoryMonitoringEnabled")]
+        public extern static bool IsDirectoryMonitoringEnabled();
+
+        [ExcludeFromDocs]
+        [FreeFunction("AssetDatabase::RegisterCustomDependency")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kPreventCustomDependencyChanges, PreventExecutionSeverity.PreventExecution_ManagedException, "Custom dependencies can only be removed when the assetdatabase is not importing.")]
+        public extern static void RegisterCustomDependency(string dependency, Hash128 hashOfValue);
+
+        [ExcludeFromDocs]
+        [FreeFunction("AssetDatabase::UnregisterCustomDependencyPrefixFilter")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kPreventCustomDependencyChanges, PreventExecutionSeverity.PreventExecution_ManagedException, "Custom dependencies can only be removed when the assetdatabase is not importing.")]
+        public extern static UInt32 UnregisterCustomDependencyPrefixFilter(string prefixFilter);
+
+        [ExcludeFromDocs]
+        [FreeFunction("AssetDatabase::IsAssetImportProcess")]
+        public extern static bool IsAssetImportWorkerProcess();
+
+        [RequiredByNativeCode]
+        static string[] OnSourceAssetsModified(string[] changedAssets, string[] addedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+        {
+            var assetMoveInfo = new AssetMoveInfo[movedAssets.Length];
+            Debug.Assert(movedAssets.Length == movedFromAssetPaths.Length);
+            for (int i = 0; i < movedAssets.Length; i++)
+                assetMoveInfo[i] = new AssetMoveInfo(movedFromAssetPaths[i], movedAssets[i]);
+
+            var assetsReportedChanged = new HashSet<string>();
+
+            foreach (Type type in TypeCache.GetTypesDerivedFrom<AssetsModifiedProcessor>())
+            {
+                var assetPostprocessor = Activator.CreateInstance(type) as AssetsModifiedProcessor;
+                assetPostprocessor.assetsReportedChanged = assetsReportedChanged;
+                assetPostprocessor.Internal_OnAssetsModified(changedAssets, addedAssets, deletedAssets, assetMoveInfo);
+                assetPostprocessor.assetsReportedChanged = null;
+            }
+
+            return assetsReportedChanged.ToArray();
+        }
     }
 }

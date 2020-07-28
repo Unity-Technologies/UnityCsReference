@@ -775,16 +775,18 @@ namespace UnityEngine.UIElements
                             ClearSelectionWithoutValidation();
 
                             // Add range
+                            var range = new List<int>();
                             if (clickedIndex < m_RangeSelectionOrigin)
                             {
-                                for (int i = clickedIndex; i <= m_RangeSelectionOrigin; i++)
-                                    AddToSelection(i);
+                                for (var i = clickedIndex; i <= m_RangeSelectionOrigin; i++)
+                                    range.Add(i);
                             }
                             else
                             {
-                                for (int i = m_RangeSelectionOrigin; i <= clickedIndex; i++)
-                                    AddToSelection(i);
+                                for (var i = m_RangeSelectionOrigin; i <= clickedIndex; i++)
+                                    range.Add(i);
                             }
+                            AddToSelection(range);
                         }
                     }
                     else if (selectionType == SelectionType.Multiple && m_SelectedIndices.Contains(clickedIndex))
@@ -860,10 +862,19 @@ namespace UnityEngine.UIElements
         /// <param name="index">Item index.</param>
         public void AddToSelection(int index)
         {
-            if (!HasValidDataAndBindings())
+            AddToSelection(new[] {index});
+        }
+
+        internal void AddToSelection(IList<int> indexes)
+        {
+            if (!HasValidDataAndBindings() || indexes == null || indexes.Count == 0)
                 return;
 
-            AddToSelectionWithoutValidation(index);
+            foreach (var index in indexes)
+            {
+                AddToSelectionWithoutValidation(index);
+            }
+
             NotifyOfSelectionChange();
             SaveViewData();
         }

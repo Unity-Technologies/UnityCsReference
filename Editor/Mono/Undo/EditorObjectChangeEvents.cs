@@ -423,8 +423,18 @@ namespace UnityEditor
             {
                 var events = new NativeArray<Event>(m_EventCount, allocator, NativeArrayOptions.UninitializedMemory);
                 var payload = new NativeArray<byte>(m_PayloadSize, allocator, NativeArrayOptions.UninitializedMemory);
-                NativeArray<Event>.Copy(m_Events, 0, events, 0, m_EventCount);
-                NativeArray<byte>.Copy(m_Payload, 0, payload, 0, m_PayloadSize);
+                try
+                {
+                    NativeArray<Event>.Copy(m_Events, 0, events, 0, m_EventCount);
+                    NativeArray<byte>.Copy(m_Payload, 0, payload, 0, m_PayloadSize);
+                }
+                catch
+                {
+                    events.Dispose();
+                    payload.Dispose();
+                    throw;
+                }
+
                 return new ObjectChangeEventStream(events, payload);
             }
 

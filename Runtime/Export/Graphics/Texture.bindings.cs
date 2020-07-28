@@ -390,6 +390,8 @@ namespace UnityEngine
         extern private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel, int face);
         extern private IntPtr GetWritableImageData(int frame);
 
+        extern internal bool isPreProcessed { get; }
+
         extern public bool streamingMipmaps { get; }
         extern public int streamingMipmapsPriority { get; }
 

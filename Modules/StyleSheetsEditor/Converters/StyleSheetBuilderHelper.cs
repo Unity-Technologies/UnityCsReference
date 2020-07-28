@@ -98,6 +98,11 @@ namespace UnityEditor.StyleSheets
             builder.EndProperty();
         }
 
+        public void AddImport(StyleSheet.ImportStruct importStruct)
+        {
+            builder.AddImport(importStruct);
+        }
+
         public void PopulateSheet()
         {
             PopulateSheet(ScriptableObject.CreateInstance<StyleSheet>());

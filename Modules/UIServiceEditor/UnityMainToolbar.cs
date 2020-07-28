@@ -198,7 +198,7 @@ namespace UnityEditor
                 ReserveWidthLeft(dropdownWidth, ref pos);
                 if (EditorGUI.DropdownButton(EditorToolGUI.GetToolbarEntryRect(pos), s_AccountContent, FocusType.Passive, Styles.dropdown))
                 {
-                    ShowUserMenu(EditorToolGUI.GetToolbarEntryRect(pos));
+                    ShowUserMenu(EditorToolGUI.GetToolbarEntryRect(pos), true);
                 }
 
                 ReserveWidthLeft(space, ref pos);
@@ -265,10 +265,10 @@ namespace UnityEditor
                 m_ApplicationProxy.OpenURL($"https://docs.unity3d.com/{m_ApplicationProxy.shortUnityVersion}/Documentation/Manual/pack-preview.html");
             });
 
-            menu.DropDown(rect);
+            menu.DropDown(rect, true);
         }
 
-        void ShowUserMenu(Rect dropDownRect)
+        void ShowUserMenu(Rect dropDownRect, bool shouldDiscardMenuOnSecondClick = false)
         {
             var menu = new GenericMenu();
             if (!UnityConnect.instance.online || UnityConnect.instance.isDisableUserLogin)
@@ -306,7 +306,7 @@ namespace UnityEditor
                 }
             }
 
-            menu.DropDown(dropDownRect);
+            menu.DropDown(dropDownRect, shouldDiscardMenuOnSecondClick);
         }
 
 
@@ -389,7 +389,7 @@ namespace UnityEditor
                 Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(rect.x, rect.y));
                 rect.x = temp.x;
                 rect.y = temp.y;
-                EditorUtility.Internal_DisplayPopupMenu(rect, "Window/Layouts", this, 0);
+                EditorUtility.Internal_DisplayPopupMenu(rect, "Window/Layouts", this, 0, true);
             }
         }
 

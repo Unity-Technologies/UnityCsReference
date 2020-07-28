@@ -20,9 +20,172 @@ using UnityEditor.Scripting.Compilers;
 using UnityEditor.Utils;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
+using UnityEngine.Scripting.APIUpdating;
+
+namespace UnityEditor
+{
+    [MovedFrom("UnityEditor.LinuxStandalone")]
+    public abstract class Sysroot
+    {
+        public abstract string Name { get; }
+        public abstract bool Initialize();
+        public abstract string HostPlatform { get; }
+        public abstract string HostArch { get; }
+        public abstract string TargetPlatform { get; }
+        public abstract string TargetArch { get; }
+        public abstract IEnumerable<string> GetIl2CppArguments();
+    }
+}
 
 namespace UnityEditorInternal
 {
+    internal static class SysrootManager
+    {
+        private static Dictionary<string, Sysroot> _knownSysroots = null;
+        private static Dictionary<string, string> _archMap = null;
+        private static string _hostPlatform = null;
+        private static string _hostArch = null;
+
+        private static string MakeKey(string hostPlatform, string hostArch, string targetPlatform, string targetArch)
+        {
+            return $"{hostPlatform.ToLower()},{hostArch.ToLower()},{targetPlatform.ToLower()},{targetArch.ToLower()}";
+        }
+
+        private static string MakeKey(string targetPlatform, string targetArch)
+        {
+            return MakeKey(_hostPlatform, _hostArch, targetPlatform, targetArch);
+        }
+
+        private static string MakeKey(Sysroot sysroot)
+        {
+            return MakeKey(sysroot.HostPlatform, sysroot.HostArch, sysroot.TargetPlatform, sysroot.TargetArch);
+        }
+
+        public static void Initialize()
+        {
+            CreateArchMapping();
+            RegisterSysroots();
+        }
+
+        private static void CreateArchMapping()
+        {
+            _archMap = new Dictionary<string, string>();
+            _archMap.Add("amd64", "x86_64");
+            _archMap.Add("i686", "x86");
+        }
+
+        private static string MapArch(string arch)
+        {
+            string mapped;
+            if (_archMap.TryGetValue(arch.ToLower(), out mapped))
+                return mapped;
+            return arch.ToLower();
+        }
+
+        private static void RegisterSysroots()
+        {
+            _knownSysroots = new Dictionary<string, Sysroot>();
+            foreach (var type in TypeCache.GetTypesDerivedFrom<Sysroot>())
+            {
+                var sysroot = Activator.CreateInstance(type, new object[] {}, new object[] {}) as Sysroot;
+                if (sysroot != null)
+                {
+                    UnityEngine.Debug.Log($"Found sysroot: {sysroot.Name}, hp={sysroot.HostPlatform}, ha={sysroot.HostArch}, tp={sysroot.TargetPlatform}, ta={sysroot.TargetArch}");
+                    _knownSysroots.Add(MakeKey(sysroot.HostPlatform, sysroot.HostArch, sysroot.TargetPlatform, sysroot.TargetArch), sysroot);
+                }
+            }
+        }
+
+        private static bool GetTargetPlatformAndArchFromBuildTarget(BuildTarget target, out string targetPlatform, out string targetArch)
+        {
+            switch (target)
+            {
+                case BuildTarget.StandaloneLinux64:
+                case BuildTarget.CloudRendering:
+                    targetPlatform = "linux";
+                    targetArch = "x86_64";
+                    return true;
+            }
+
+            targetPlatform = null;
+            targetArch = null;
+            return false;
+        }
+
+        private static void GetPosixPlatformAndArch()
+        {
+            var p = new Process();
+            p.StartInfo.FileName = "uname";
+            p.StartInfo.Arguments = "-s -m";
+            p.StartInfo.RedirectStandardError = true;
+            p.StartInfo.RedirectStandardOutput = true;
+            p.StartInfo.UseShellExecute = false;
+            p.Start();
+            var parts = p.StandardOutput.ReadToEnd().Split(new char[] { ' ', '\r', '\n' });
+            p.WaitForExit();
+            if (parts.Length > 1)
+            {
+                _hostPlatform = parts[0].ToLower();
+                _hostArch = MapArch(parts[1]);
+            }
+        }
+
+        private static string AllowEnvironmentOverride(string origValue, string envVar)
+        {
+            string envValue = Environment.GetEnvironmentVariable(envVar);
+            return envValue == null ? origValue : envValue;
+        }
+
+        private static bool GetHostPlatformAndArch()
+        {
+            if (_hostPlatform != null && _hostArch != null)
+                return true;
+
+            switch (Environment.OSVersion.Platform)
+            {
+                case PlatformID.Win32NT:
+                    _hostPlatform = "Windows";
+                    _hostArch = MapArch(Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE"));
+                    break;
+                case PlatformID.Unix:
+                    GetPosixPlatformAndArch();
+                    break;
+            }
+
+            _hostPlatform = AllowEnvironmentOverride(_hostPlatform, "UNITY_SYSROOT_HOST_PLATFORM");
+            _hostArch = AllowEnvironmentOverride(_hostArch, "UNITY_SYSROOT_HOST_ARCH");
+
+            return _hostPlatform != null && _hostArch != null;
+        }
+
+        public static Sysroot FindSysroot(BuildTarget target)
+        {
+            string targetPlatform, targetArch;
+            if (!GetTargetPlatformAndArchFromBuildTarget(target, out targetPlatform, out targetArch))
+                return null;
+
+            return FindSysroot(targetPlatform, targetArch);
+        }
+
+        private static Sysroot FindSysroot(string targetPlatform, string targetArch)
+        {
+            if (!GetHostPlatformAndArch())
+                return null;
+
+            Sysroot sysroot;
+            if (!_knownSysroots.TryGetValue(MakeKey(targetPlatform, targetArch), out sysroot))
+                return null;
+
+            if (!sysroot.Initialize())
+            {
+                UnityEngine.Debug.Log($"Failed to initialize sysroot {sysroot.Name}");
+                return null;
+            }
+
+            return sysroot;
+        }
+    }
+
     internal class IL2CPPUtils
     {
         private static readonly string[] BaseDefinesWindows = new[]
@@ -406,6 +569,12 @@ namespace UnityEditorInternal
                 var additionalArgs = IL2CPPUtils.GetAdditionalArguments();
                 if (!string.IsNullOrEmpty(additionalArgs))
                     arguments.Add(additionalArgs);
+
+                foreach (var buildingArgument in IL2CPPUtils.GetBuildingIL2CPPArguments(m_PlatformProvider, buildTargetGroup))
+                {
+                    if (!arguments.Contains(buildingArgument))
+                        arguments.Add(buildingArgument);
+                }
 
                 arguments.Add($"--map-file-parser={CommandLineFormatter.PrepareFileName(GetMapFileParserPath())}");
                 arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(GetShortPathName(Path.GetFullPath(GetCppOutputDirectory(il2cppBuildCacheSource))))}");

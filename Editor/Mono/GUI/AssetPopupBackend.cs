@@ -40,14 +40,13 @@ namespace UnityEditor
 
         private class DoCreateNewAsset : ProjectWindowCallback.EndNameEditAction
         {
+            private SerializedObject m_Object;
             private SerializedProperty m_Property;
 
             public void SetProperty(SerializedProperty property)
             {
-                using (var so = new SerializedObject(property.serializedObject.targetObject))
-                {
-                    m_Property = so.FindProperty(property.propertyPath);
-                }
+                m_Object = new SerializedObject(property.serializedObject.targetObject);
+                m_Property = m_Object.FindProperty(property.propertyPath);
             }
 
             public override void Action(int instanceId, string pathName, string resourceFile)
@@ -59,6 +58,7 @@ namespace UnityEditor
                 m_Property.serializedObject.ApplyModifiedProperties();
                 m_Property.serializedObject.Dispose();
                 m_Property.Dispose();
+                m_Object.Dispose();
             }
 
             public override void Cancelled(int instanceId, string pathName, string resourceFile)
@@ -66,6 +66,7 @@ namespace UnityEditor
                 Selection.activeObject = m_Property.serializedObject.targetObject;
                 m_Property.serializedObject.Dispose();
                 m_Property.Dispose();
+                m_Object.Dispose();
             }
         }
 
