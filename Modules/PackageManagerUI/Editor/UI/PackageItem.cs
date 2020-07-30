@@ -11,15 +11,15 @@ namespace UnityEditor.PackageManager.UI
 {
     internal class PackageItem : VisualElement, ISelectableItem
     {
-        internal new class UxmlFactory : UxmlFactory<PackageItem> {}
-
         private string m_CurrentStateClass;
 
         public IPackage package { get; private set; }
-        private VisualState visualState { get; set; }
+        public VisualState visualState { get; set; }
 
         public IPackageVersion targetVersion { get { return package?.primaryVersion; } }
         public VisualElement element { get { return this; } }
+
+        internal PackageGroup packageGroup { get; set; }
 
         private IPackageVersion selectedVersion
         {
@@ -32,14 +32,7 @@ namespace UnityEditor.PackageManager.UI
         }
         internal IEnumerable<PackageVersionItem> versionItems { get { return versionList.Children().Cast<PackageVersionItem>(); } }
 
-        // the item is only expandable when there are more than one versions
-        private bool expandable { get { return package?.versions.Skip(1).Any() ?? false; } }
-
-        public PackageItem() : this(null)
-        {
-        }
-
-        public PackageItem(IPackage package)
+        public PackageItem(IPackage package, VisualState state)
         {
             var root = Resources.GetTemplate("PackageItem.uxml");
             Add(root);
@@ -48,37 +41,22 @@ namespace UnityEditor.PackageManager.UI
             itemLabel.OnLeftClick(SelectMainItem);
             seeAllVersionsLabel.OnLeftClick(SeeAllVersionsClick);
             expander.OnLeftClick(ToggleExpansion);
-            nameLabel.RegisterCallback<GeometryChangedEvent>(OnSizeChange);
+            nameLabel.ShowTextTooltipOnSizeChange();
 
             UpdateExpanderUI(false);
 
             SetPackage(package);
-            UpdateVisualState();
+            UpdateVisualState(state);
         }
 
-        private void OnSizeChange(GeometryChangedEvent evt)
-        {
-            if (evt.newRect.width == evt.oldRect.width)
-                return;
-
-            var target = evt.target as TextElement;
-            if (target == null)
-                return;
-
-            var size = target.MeasureTextSize(target.text, float.MaxValue, MeasureMode.AtMost, evt.newRect.height, MeasureMode.Undefined);
-            var width = evt.newRect.width - target.resolvedStyle.paddingRight;
-            target.tooltip = width < size.x ? target.text : string.Empty;
-        }
-
-        public void UpdateVisualState(VisualState newVisualState = null)
+        public void UpdateVisualState(VisualState newVisualState)
         {
             var seeAllVersionsOld = visualState?.seeAllVersions ?? false;
             var selectedVersionIdOld = visualState?.selectedVersionId ?? string.Empty;
 
-            visualState = newVisualState?.Clone() ?? visualState ?? new VisualState(package?.uniqueId);
+            visualState = newVisualState?.Clone() ?? visualState ?? new VisualState(package?.uniqueId, string.Empty);
 
-            if (UIUtils.IsElementVisible(this) != visualState.visible)
-                UIUtils.SetElementDisplay(this, visualState.visible);
+            EnableInClassList("invisible", !visualState.visible);
 
             var expansionChanged = expander.expanded != visualState.expanded;
             if (expansionChanged)
@@ -185,15 +163,16 @@ namespace UnityEditor.PackageManager.UI
 
             // Hack until ScrollList has a better way to do the same -- Vertical scroll bar is not yet visible
             var maxNumberOfItemBeforeScrollbar = 6;
-            versionList.EnableClass("hasScrollBar", versions.Count > maxNumberOfItemBeforeScrollbar);
+            versionList.EnableInClassList("hasScrollBar", versions.Count > maxNumberOfItemBeforeScrollbar);
         }
 
         public void RefreshSelection()
         {
             var selectedVersion = this.selectedVersion;
-            itemLabel.EnableClass(UIUtils.k_SelectedClassName, selectedVersion == targetVersion);
+            EnableInClassList(UIUtils.k_SelectedClassName, selectedVersion != null);
+            itemLabel.EnableInClassList(UIUtils.k_SelectedClassName, selectedVersion == targetVersion);
             foreach (var version in versionItems)
-                version.EnableClass(UIUtils.k_SelectedClassName, selectedVersion == version.targetVersion);
+                version.EnableInClassList(UIUtils.k_SelectedClassName, selectedVersion == version.targetVersion);
         }
 
         public void SelectMainItem()

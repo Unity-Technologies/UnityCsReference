@@ -118,7 +118,7 @@ namespace UnityEditor.PackageManager.UI
                 {
                     try
                     {
-                        return (PackageFilterTab)Enum.Parse(typeof(PackageFilterTab), EditorPrefs.GetString(lastUsedFilterForProjectPerfs, PackageFilterTab.All.ToString()));
+                        return (PackageFilterTab)Enum.Parse(typeof(PackageFilterTab), EditorPrefs.GetString(lastUsedFilterForProjectPerfs, PackageFilterTab.Unity.ToString()));
                     }
                     catch (Exception)
                     {

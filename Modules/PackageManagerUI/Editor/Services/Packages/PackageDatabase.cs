@@ -21,7 +21,8 @@ namespace UnityEditor.PackageManager.UI
             var options = RefreshOptions.None;
             switch (tab)
             {
-                case PackageFilterTab.All:
+                case PackageFilterTab.Unity:
+                case PackageFilterTab.Other:
                     options |= RefreshOptions.UpmList;
                     options |= RefreshOptions.UpmSearch;
                     break;
@@ -517,7 +518,9 @@ namespace UnityEditor.PackageManager.UI
             private void OnListOrSearchOperationFinalized(IOperation operation)
             {
                 m_RefreshOperationsInProgress.Remove(operation);
-                onRefreshOperationFinish(operation is UpmListOperation ? PackageFilterTab.Local : PackageFilterTab.All);
+                if (m_RefreshOperationsInProgress.Any())
+                    return;
+                onRefreshOperationFinish(PackageFiltering.instance.currentFilterTab);
             }
 
             private void OnUpmPackageVersionUpdated(string packageUniqueId, IPackageVersion version)

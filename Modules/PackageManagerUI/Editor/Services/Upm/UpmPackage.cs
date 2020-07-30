@@ -75,11 +75,13 @@ namespace UnityEditor.PackageManager.UI
             m_IsDiscoverable = isDiscoverable;
             m_VersionList = new UpmVersionList(info, isInstalled);
             m_Type = primaryVersion.HasTag(PackageTag.BuiltIn) ? PackageType.BuiltIn : PackageType.Installable;
+            RefreshUnityType();
         }
 
         internal void UpdateVersions(IEnumerable<UpmPackageVersion> updatedVersions)
         {
             m_VersionList = new UpmVersionList(updatedVersions);
+            RefreshUnityType();
             m_UpmErrors.Clear();
         }
 
@@ -87,6 +89,21 @@ namespace UnityEditor.PackageManager.UI
         public void AddInstalledVersion(UpmPackageVersion newVersion)
         {
             m_VersionList.AddInstalledVersion(newVersion);
+            RefreshUnityType();
+        }
+
+        private void RefreshUnityType()
+        {
+            var primaryUpmVersion = primaryVersion as UpmPackageVersion;
+            if (primaryUpmVersion?.isUnityPackage ?? false)
+                m_Type |= PackageType.Unity;
+            else
+                m_Type &= ~PackageType.Unity;
+
+            if (primaryUpmVersion?.isFromScopedRegistry ?? false)
+                m_Type |= PackageType.ScopedRegistry;
+            else
+                m_Type &= ~PackageType.ScopedRegistry;
         }
 
         public void AddError(Error error)

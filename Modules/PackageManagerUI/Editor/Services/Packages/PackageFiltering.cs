@@ -19,8 +19,10 @@ namespace UnityEditor.PackageManager.UI
             {
                 case PackageFilterTab.Modules:
                     return package.Is(PackageType.BuiltIn);
-                case PackageFilterTab.All:
-                    return package.Is(PackageType.Installable) && (package.isDiscoverable || (package.installedVersion?.isDirectDependency ?? false));
+                case PackageFilterTab.Unity:
+                    return package.Is(PackageType.Installable) && package.Is(PackageType.Unity) && (package.isDiscoverable || (package.installedVersion?.isDirectDependency ?? false));
+                case PackageFilterTab.Other:
+                    return package.Is(PackageType.Installable) && package.Is(PackageType.ScopedRegistry) && (package.isDiscoverable || (package.installedVersion?.isDirectDependency ?? false));
                 case PackageFilterTab.Local:
                     return !package.Is(PackageType.BuiltIn) && (package.installedVersion?.isDirectDependency ?? false);
                 case PackageFilterTab.AssetStore:
@@ -76,6 +78,8 @@ namespace UnityEditor.PackageManager.UI
             public event Action<PackageFilterTab> onFilterTabChanged = delegate {};
             public event Action<string> onSearchTextChanged = delegate {};
 
+            public PackageFilterTab? previousFilterTab { get; private set; } = null;
+
             private PackageFilterTab m_CurrentFilterTab;
             public PackageFilterTab currentFilterTab
             {
@@ -85,6 +89,7 @@ namespace UnityEditor.PackageManager.UI
                 {
                     if (value != m_CurrentFilterTab)
                     {
+                        previousFilterTab = m_CurrentFilterTab;
                         m_CurrentFilterTab = value;
                         onFilterTabChanged?.Invoke(m_CurrentFilterTab);
                     }

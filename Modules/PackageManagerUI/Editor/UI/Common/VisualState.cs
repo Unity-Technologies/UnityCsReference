@@ -10,14 +10,16 @@ namespace UnityEditor.PackageManager.UI
     internal class VisualState : IEquatable<VisualState>
     {
         public string packageUniqueId;
+        public string groupName;
         public bool visible;
         public bool expanded;
         public bool seeAllVersions;
         public string selectedVersionId;
 
-        public VisualState(string packageUniqueId)
+        public VisualState(string packageUniqueId, string groupName)
         {
             this.packageUniqueId = packageUniqueId;
+            this.groupName = groupName;
             visible = true;
             expanded = false;
             seeAllVersions = false;
@@ -27,6 +29,7 @@ namespace UnityEditor.PackageManager.UI
         public bool Equals(VisualState other)
         {
             return packageUniqueId == other.packageUniqueId
+                && groupName == other.groupName
                 && visible == other.visible
                 && expanded == other.expanded
                 && seeAllVersions == other.seeAllVersions

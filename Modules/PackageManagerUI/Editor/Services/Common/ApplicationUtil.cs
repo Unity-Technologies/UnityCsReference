@@ -18,32 +18,43 @@ namespace UnityEditor.PackageManager.UI
         static IApplicationUtil s_Instance = null;
         public static IApplicationUtil instance => s_Instance ?? ApplicationUtilInternal.instance;
 
-        private class ApplicationUtilInternal : IApplicationUtil
+        [Serializable]
+        private class ApplicationUtilInternal : ScriptableSingleton<ApplicationUtilInternal>, IApplicationUtil
         {
-            private static ApplicationUtilInternal s_Instance;
-            public static ApplicationUtilInternal instance => s_Instance ?? (s_Instance = new ApplicationUtilInternal());
-
             public event Action onFinishCompiling = delegate {};
+            [SerializeField]
             private bool m_CheckingCompilation = false;
 
             public event Action<bool> onUserLoginStateChange = delegate {};
             public event Action<bool> onInternetReachabilityChange = delegate {};
 
-            private ConnectInfo m_ConnectInfo;
+            [SerializeField]
+            private bool m_HasAccessToken;
+            [SerializeField]
+            private bool m_IsUserInfoReady;
 
+            [SerializeField]
             private bool m_IsInternetReachable;
+            [SerializeField]
             private double m_LastInternetCheck;
 
             public string userAppDataPath => InternalEditorUtility.userAppDataFolder;
 
-            private ApplicationUtilInternal()
+            public void OnEnable()
             {
-                m_ConnectInfo = UnityConnect.instance.connectInfo;
-                UnityConnect.instance.StateChanged += OnStateChanged;
+                m_HasAccessToken = !string.IsNullOrEmpty(UnityConnect.instance.userInfo.accessToken);
+                m_IsUserInfoReady = UnityConnect.instance.isUserInfoReady;
+                UnityConnect.instance.UserStateChanged += OnUserStateChanged;
 
                 m_IsInternetReachable = Application.internetReachability == NetworkReachability.ReachableViaLocalAreaNetwork;
                 m_LastInternetCheck = EditorApplication.timeSinceStartup;
                 EditorApplication.update += CheckInternetReachability;
+            }
+
+            public void OnDisable()
+            {
+                UnityConnect.instance.UserStateChanged -= OnUserStateChanged;
+                EditorApplication.update -= CheckInternetReachability;
             }
 
             private void CheckInternetReachability()
@@ -60,20 +71,11 @@ namespace UnityEditor.PackageManager.UI
                 }
             }
 
-            private void OnStateChanged(ConnectInfo state)
+            private void OnUserStateChanged(UserInfo newInfo)
             {
-                var loginChanged = (m_ConnectInfo.ready && m_ConnectInfo.loggedIn && !state.loggedIn) ||
-                    (m_ConnectInfo.ready && !m_ConnectInfo.loggedIn && state.loggedIn);
-
-                var onlineChanged = (m_ConnectInfo.ready && m_ConnectInfo.online && !state.online) ||
-                    (m_ConnectInfo.ready && !m_ConnectInfo.online && state.online);
-
-                m_ConnectInfo = state;
-
-                if (loginChanged)
-                    onUserLoginStateChange?.Invoke(m_ConnectInfo.loggedIn);
-                if (onlineChanged)
-                    onInternetReachabilityChange?.Invoke(m_ConnectInfo.online);
+                m_HasAccessToken = !string.IsNullOrEmpty(newInfo.accessToken);
+                m_IsUserInfoReady = UnityConnect.instance.isUserInfoReady;
+                onUserLoginStateChange?.Invoke(isUserLoggedIn);
             }
 
             public bool isPreReleaseVersion
@@ -101,7 +103,12 @@ namespace UnityEditor.PackageManager.UI
 
             public bool isUserLoggedIn
             {
-                get { return m_ConnectInfo.ready && m_ConnectInfo.loggedIn; }
+                get { return m_IsUserInfoReady && m_HasAccessToken; }
+            }
+
+            public bool isUserInfoReady
+            {
+                get { return m_IsUserInfoReady; }
             }
 
             public void ShowLogin()

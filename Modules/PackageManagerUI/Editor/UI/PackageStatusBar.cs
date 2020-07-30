@@ -38,7 +38,10 @@ namespace UnityEditor.PackageManager.UI
                 else
                     SetStatusMessage(StatusType.Loading, L10n.Tr("Loading packages..."));
             };
-            PackageDatabase.instance.onRefreshOperationFinish += UpdateStatusMessage;
+            PackageDatabase.instance.onRefreshOperationFinish += tab =>
+            {
+                UpdateStatusMessage(tab);
+            };
             PackageDatabase.instance.onRefreshOperationError += error =>
             {
                 var errorMessage = string.Empty;

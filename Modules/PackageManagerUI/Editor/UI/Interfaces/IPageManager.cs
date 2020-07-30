@@ -51,6 +51,10 @@ namespace UnityEditor.PackageManager.UI
 
         VisualState GetVisualState(IPackage package);
 
+        bool IsGroupExpanded(string groupName);
+
+        void SetGroupExpanded(string groupName, bool value);
+
         void Setup();
 
         void RegisterEvents();

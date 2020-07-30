@@ -111,6 +111,7 @@ namespace UnityEditor.PackageManager.UI
             editButton.clickable.clicked += EditPackageManifestClick;
             detailDescMore.clickable.clicked += DescMoreClick;
             detailDescLess.clickable.clicked += DescLessClick;
+            detailWarningLink.clickable.clicked += WarningLinkClick;
 
             detailDesc.RegisterCallback<GeometryChangedEvent>(DescriptionGeometryChangeEvent);
 
@@ -282,6 +283,8 @@ namespace UnityEditor.PackageManager.UI
 
                 RefreshAuthor();
 
+                RefreshRegistry();
+
                 RefreshPublishedDate();
 
                 UIUtils.SetElementDisplay(detailVersion, !isBuiltIn);
@@ -338,7 +341,7 @@ namespace UnityEditor.PackageManager.UI
         private void RefreshDescription()
         {
             var hasDescription = !string.IsNullOrEmpty(displayVersion.description);
-            detailDesc.EnableClass(k_EmptyDescriptionClass, !hasDescription);
+            detailDesc.EnableInClassList(k_EmptyDescriptionClass, !hasDescription);
             detailDesc.style.maxHeight = int.MaxValue;
             detailDesc.text = hasDescription ? displayVersion.description : "There is no description for this package.";
             UIUtils.SetElementDisplay(detailDescMore, false);
@@ -363,6 +366,19 @@ namespace UnityEditor.PackageManager.UI
                     UIUtils.SetElementDisplay(detailAuthorLink, false);
                     detailAuthorText.text = displayVersion.author;
                 }
+            }
+        }
+
+        private void RefreshRegistry()
+        {
+            var registry = displayVersion.packageInfo?.registry;
+            var showRegistry = registry != null;
+            UIUtils.SetElementDisplay(detailRegistryContainer, showRegistry);
+            if (showRegistry)
+            {
+                UIUtils.SetElementDisplay(detailRegistryWarning, !registry.isDefault);
+                detailRegistryName.text = registry.isDefault ? "Unity" : registry.name;
+                detailRegistryName.tooltip = registry.url;
             }
         }
 
@@ -659,6 +675,12 @@ namespace UnityEditor.PackageManager.UI
             return version == null ? $"{actionText}" : $"{actionText} {version}";
         }
 
+        private static void WarningLinkClick()
+        {
+            var unityVersionParts = Application.unityVersion.Split('.');
+            Application.OpenURL($"https://docs.unity3d.com/{unityVersionParts[0]}.{unityVersionParts[1]}/Documentation/Manual/upm-scoped.html");
+        }
+
         private void DescMoreClick()
         {
             detailDesc.style.maxHeight = float.MaxValue;
@@ -918,6 +940,10 @@ namespace UnityEditor.PackageManager.UI
         private VisualElement detailAuthorContainer { get { return cache.Get<VisualElement>("detailAuthorContainer"); } }
         private Label detailAuthorText { get { return cache.Get<Label>("detailAuthorText"); } }
         private Button detailAuthorLink { get { return cache.Get<Button>("detailAuthorLink"); } }
+        private VisualElement detailRegistryContainer { get { return cache.Get<VisualElement>("detailRegistryContainer"); } }
+        private VisualElement detailRegistryWarning { get { return cache.Get<VisualElement>("detailRegistryWarning"); } }
+        private Button detailWarningLink { get { return cache.Get<Button>("detailWarningLink"); } }
+        private Label detailRegistryName { get { return cache.Get<Label>("detailRegistryName"); } }
         private VisualElement customContainer { get { return cache.Get<VisualElement>("detailCustomContainer"); } }
         private PackageSampleList sampleList { get { return cache.Get<PackageSampleList>("detailSampleList"); } }
         private PackageDependencies dependencies { get {return cache.Get<PackageDependencies>("detailDependencies");} }
