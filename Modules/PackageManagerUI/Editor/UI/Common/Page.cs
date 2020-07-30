@@ -12,6 +12,9 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class Page : IPage, ISerializationCallbackReceiver
     {
+        private const string k_UnityPackageGroupName = "Unity";
+        private const string k_OtherPackageGroupName = "Other";
+
         [Serializable]
         public class FilteredList
         {
@@ -42,6 +45,9 @@ namespace UnityEditor.PackageManager.UI
         // note that what's saved in `m_SelectedStates` is a clone of the actual state, so should not be used directly
         [SerializeField]
         private List<VisualState> m_SelectedStates = new List<VisualState>();
+
+        [SerializeField]
+        private List<string> m_CollapsedGroups = new List<string>();
 
         [SerializeField]
         private List<VisualState> m_OrderedPackageVisualStates = new List<VisualState>();
@@ -78,6 +84,11 @@ namespace UnityEditor.PackageManager.UI
             if (!string.IsNullOrEmpty(packageUniqueId) && m_PackageVisualStateLookup.TryGetValue(packageUniqueId, out index))
                 return m_OrderedPackageVisualStates[index];
             return null;
+        }
+
+        public VisualState GetSelectedVisualState()
+        {
+            return m_SelectedStates.FirstOrDefault();
         }
 
         public IPackageVersion GetSelectedVersion()
@@ -175,15 +186,31 @@ namespace UnityEditor.PackageManager.UI
             RebuildList(addOrUpdateList, removeList);
         }
 
+        private string GetGroupName(IPackage package)
+        {
+            if (package.Is(PackageType.BuiltIn) || package.Is(PackageType.AssetStore))
+                return string.Empty;
+            else if (package.Is(PackageType.Unity))
+                return tab == PackageFilterTab.Unity ? string.Empty : L10n.Tr(k_UnityPackageGroupName);
+            else
+                return string.IsNullOrEmpty(package.primaryVersion?.author) ? L10n.Tr(k_OtherPackageGroupName) : package.primaryVersion?.author;
+        }
+
         public void RebuildList(IEnumerable<IPackage> addOrUpdateList = null, IEnumerable<IPackage> removeList = null)
         {
             if (!m_FilteredList.enabled)
             {
-                var orderedPackages = PackageDatabase.instance.allPackages
-                    .Where(p => PackageFiltering.instance.FilterByCurrentTab(p))
-                    .OrderBy(p => p.primaryVersion?.displayName ?? p.name);
+                var orderedPackages = PackageDatabase.instance.allPackages.Where(p => PackageFiltering.instance.FilterByCurrentTab(p));
+                if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.Modules)
+                    orderedPackages = orderedPackages.OrderBy(p => p.primaryVersion?.displayName ?? p.name);
+                else
+                    orderedPackages = orderedPackages.OrderByDescending(p => p.Is(PackageType.Unity)).
+                        ThenBy(p => string.IsNullOrEmpty(p.primaryVersion?.author)).
+                        ThenBy(p => p.Is(PackageType.Unity) ? null : p.primaryVersion?.author).
+                        ThenBy(p => p.displayName);
+
                 // the normal way
-                m_OrderedPackageVisualStates = orderedPackages.Select(p => GetVisualState(p.uniqueId) ?? new VisualState(p.uniqueId)).ToList();
+                m_OrderedPackageVisualStates = orderedPackages.Select(p => GetVisualState(p.uniqueId) ?? new VisualState(p.uniqueId, GetGroupName(p))).ToList();
                 SetupLookupTable();
 
                 m_MorePackagesToFetch = false;
@@ -201,7 +228,7 @@ namespace UnityEditor.PackageManager.UI
                     if (package != null)
                     {
                         newLookupTable[package.uniqueId] = newOrderedStates.Count;
-                        newOrderedStates.Add(GetVisualState(package.uniqueId) ?? new VisualState(package.uniqueId));
+                        newOrderedStates.Add(GetVisualState(package.uniqueId) ?? new VisualState(package.uniqueId, string.Empty));
                     }
                 }
 
@@ -215,7 +242,7 @@ namespace UnityEditor.PackageManager.UI
                         if (package != null)
                         {
                             newLookupTable[package.uniqueId] = newOrderedStates.Count;
-                            newOrderedStates.Add(GetVisualState(package.uniqueId) ?? new VisualState(package.uniqueId));
+                            newOrderedStates.Add(GetVisualState(package.uniqueId) ?? new VisualState(package.uniqueId, GetGroupName(package)));
                         }
                     }
                 }
@@ -341,6 +368,22 @@ namespace UnityEditor.PackageManager.UI
                 var removedPackages = removed?.Select(id => PackageDatabase.instance.GetPackage(id.ToString()));
                 RebuildList(addedPackages, removedPackages);
             }
+        }
+
+        public bool IsGroupExpanded(string groupName)
+        {
+            return !m_CollapsedGroups.Contains(groupName);
+        }
+
+        public void SetGroupExpanded(string groupName, bool value)
+        {
+            var groupExpanded = !m_CollapsedGroups.Contains(groupName);
+            if (groupExpanded == value)
+                return;
+            if (value)
+                m_CollapsedGroups.Remove(groupName);
+            else
+                m_CollapsedGroups.Add(groupName);
         }
 
         public void SetSelected(string packageUniqueId, string versionUniqueId)

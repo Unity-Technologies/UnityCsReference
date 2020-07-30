@@ -90,6 +90,12 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
             public void List(int offset, int limit, string searchText = "", bool fetchDetails = true)
             {
+                // patch fix to avoid User Not Logged In error when first opening the application with My Assets open
+                if (!ApplicationUtil.instance.isUserInfoReady)
+                {
+                    EditorApplication.delayCall += () => List(offset, limit, searchText, fetchDetails);
+                    return;
+                }
                 if (!ApplicationUtil.instance.isUserLoggedIn)
                 {
                     onOperationError?.Invoke(new Error(NativeErrorCode.Unknown, L10n.Tr("User not logged in")));
@@ -101,7 +107,10 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 RefreshLocalInfos();
 
                 if (offset == 0)
+                {
                     RefreshProductUpdateDetails();
+                    m_FetchedInfos.Clear();
+                }
 
                 AssetStoreRestAPI.instance.GetProductIDList(offset, limit, searchText, productList =>
                 {

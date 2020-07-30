@@ -18,6 +18,8 @@ namespace UnityEditor.PackageManager.UI
 
         static bool HasPackageInDevelopment => PackageDatabase.instance.allPackages.Any(p => p.installedVersion?.HasTag(PackageTag.InDevelopment) ?? false);
 
+        static bool HasPackageInScopeRegistries => PackageDatabase.instance.allPackages.Any(p => p.Is(PackageType.ScopedRegistry));
+
         private long m_SearchTextChangeTimestamp;
 
         private const long k_SearchEventDelayTicks = TimeSpan.TicksPerSecond / 3;
@@ -63,15 +65,19 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
         {
-            // If nothing in the change list is related to `in development` packages
-            // we can skip the whole database scan to save some time
-            var changed = added.Concat(removed).Concat(preUpdate).Concat(postUpdate);
-            if (!changed.Any(p => p.installedVersion?.HasTag(PackageTag.InDevelopment) ?? false))
-                return;
-
             // If we have a filter set and no packages are in this filter, reset the filter to local packages.
-            if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.InDevelopment && !HasPackageInDevelopment)
-                SetFilter(PackageFilterTab.Local);
+            if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.InDevelopment)
+            {
+                var changed = added.Concat(removed).Concat(preUpdate).Concat(postUpdate);
+                if (changed.Any(p => p.installedVersion?.HasTag(PackageTag.InDevelopment) == true) && !HasPackageInDevelopment)
+                    SetFilter(PackageFilterTab.Local);
+            }
+            else if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.Other)
+            {
+                var changed = added.Concat(removed).Concat(preUpdate).Concat(postUpdate);
+                if (changed.Any(p => p.Is(PackageType.ScopedRegistry)) && !HasPackageInScopeRegistries)
+                    SetFilter(PackageFilterTab.Unity);
+            }
         }
 
         internal void SetCurrentSearch(string text)
@@ -103,8 +109,10 @@ namespace UnityEditor.PackageManager.UI
         {
             switch (filter)
             {
-                case PackageFilterTab.All:
-                    return L10n.Tr("All packages");
+                case PackageFilterTab.Unity:
+                    return L10n.Tr("Unity Registry");
+                case PackageFilterTab.Other:
+                    return L10n.Tr("My Registries");
                 case PackageFilterTab.Local:
                     return L10n.Tr("In Project");
                 case PackageFilterTab.Modules:
@@ -181,41 +189,42 @@ namespace UnityEditor.PackageManager.UI
             });
         }
 
+        private void AddFilterTabToDropdownMenu(PackageFilterTab tab, Action<DropdownMenuAction> action = null, Func<DropdownMenuAction, DropdownMenuAction.Status> actionStatusCallback = null)
+        {
+            action = action ?? (a => SetFilterFromMenu(tab));
+            actionStatusCallback = actionStatusCallback ?? (a => PackageFiltering.instance.currentFilterTab == tab ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+            filterMenu.menu.AppendAction(GetFilterDisplayName(tab), action, actionStatusCallback);
+        }
+
         private void SetupFilterMenu()
         {
             filterMenu.menu.MenuItems().Clear();
-            filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.All), a =>
+            AddFilterTabToDropdownMenu(PackageFilterTab.Unity);
+            AddFilterTabToDropdownMenu(PackageFilterTab.Other, null, a =>
             {
-                SetFilterFromMenu(PackageFilterTab.All);
-            }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.All ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
-
-            filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.Local), a =>
-            {
-                SetFilterFromMenu(PackageFilterTab.Local);
-            }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.Local ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
-
-            filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.InDevelopment), a =>
-            {
-                SetFilterFromMenu(PackageFilterTab.InDevelopment);
-            }, a =>
-                {
-                    if (!HasPackageInDevelopment)
-                        return DropdownMenuAction.Status.Hidden;
-
-                    return PackageFiltering.instance.currentFilterTab == PackageFilterTab.InDevelopment ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
-                });
+                if (!HasPackageInScopeRegistries)
+                    return DropdownMenuAction.Status.Hidden;
+                else if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.Other)
+                    return DropdownMenuAction.Status.Checked;
+                return DropdownMenuAction.Status.Normal;
+            });
 
             filterMenu.menu.AppendSeparator();
-            filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.AssetStore), a =>
+            AddFilterTabToDropdownMenu(PackageFilterTab.Local);
+            AddFilterTabToDropdownMenu(PackageFilterTab.InDevelopment, null, a =>
             {
-                SetFilterFromMenu(PackageFilterTab.AssetStore);
-            }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+                if (!HasPackageInDevelopment)
+                    return DropdownMenuAction.Status.Hidden;
+                else if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.InDevelopment)
+                    return DropdownMenuAction.Status.Checked;
+                return DropdownMenuAction.Status.Normal;
+            });
 
             filterMenu.menu.AppendSeparator();
-            filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.Modules), a =>
-            {
-                SetFilterFromMenu(PackageFilterTab.Modules);
-            }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.Modules ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+            AddFilterTabToDropdownMenu(PackageFilterTab.AssetStore);
+
+            filterMenu.menu.AppendSeparator();
+            AddFilterTabToDropdownMenu(PackageFilterTab.Modules);
 
             PackageManagerExtensions.ExtensionCallback(() =>
             {

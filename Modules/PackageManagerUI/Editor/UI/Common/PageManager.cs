@@ -40,8 +40,11 @@ namespace UnityEditor.PackageManager.UI
             [MenuItem("internal:Packages/Reset Package Database")]
             public static void ResetPackageDatabase()
             {
+                var windows = UnityEngine.Resources.FindObjectsOfTypeAll<PackageManagerWindow>();
+                foreach (var window in windows)
+                    window.Close();
+
                 instance.Reload();
-                instance.Refresh(RefreshOptions.All | RefreshOptions.Purchased);
             }
 
             public void OnBeforeSerialize()
@@ -130,6 +133,16 @@ namespace UnityEditor.PackageManager.UI
                 GetPageFromFilterTab().SetExpanded(package?.uniqueId, value);
             }
 
+            public bool IsGroupExpanded(string groupName)
+            {
+                return GetPageFromFilterTab().IsGroupExpanded(groupName);
+            }
+
+            public void SetGroupExpanded(string groupName, bool value)
+            {
+                GetPageFromFilterTab().SetGroupExpanded(groupName, value);
+            }
+
             private void OnInstalledOrUninstalled(IPackage package, IPackageVersion installedVersion = null)
             {
                 if (package != null)
@@ -160,6 +173,14 @@ namespace UnityEditor.PackageManager.UI
 
                 page.RebuildList();
                 onPageRebuild?.Invoke(page);
+
+                if (PackageFiltering.instance.previousFilterTab != null)
+                {
+                    var previousPage = GetPageFromFilterTab((PackageFilterTab)PackageFiltering.instance.previousFilterTab);
+                    var selectedGoup = previousPage.GetSelectedVisualState()?.groupName;
+                    if (!string.IsNullOrEmpty(selectedGoup))
+                        previousPage.SetGroupExpanded(selectedGoup, true);
+                }
             }
 
             private void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)

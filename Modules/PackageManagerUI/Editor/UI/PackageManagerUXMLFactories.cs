@@ -26,7 +26,6 @@ namespace UnityEditor.PackageManager.UI
                 new LoadingSpinner.UxmlFactory(),
                 new PackageDependencies.UxmlFactory(),
                 new PackageDetails.UxmlFactory(),
-                new PackageItem.UxmlFactory(),
                 new PackageList.UxmlFactory(),
                 new PackageManagerToolbar.UxmlFactory(),
                 new PackageSampleList.UxmlFactory(),

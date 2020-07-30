@@ -13,6 +13,9 @@ namespace UnityEditor.PackageManager.UI
 
         Installable     = 1 << 0,
         BuiltIn         = 1 << 1,
-        AssetStore      = 1 << 2
+        AssetStore      = 1 << 2,
+
+        Unity           = 1 << 3,
+        ScopedRegistry  = 1 << 4
     }
 }

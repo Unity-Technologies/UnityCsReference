@@ -479,11 +479,11 @@ namespace UnityEditor
                 ContainerWindow.s_Modal = true;
 
                 SavedGUIState guiState = SavedGUIState.Create();
-                m_Parent.visualTree.panel.dispatcher?.PushDispatcherContext();
+                UnityEngine.UIElements.EventDispatcher.editorDispatcher.PushDispatcherContext();
 
                 Internal_MakeModal(m_Parent.window);
 
-                m_Parent.visualTree.panel.dispatcher?.PopDispatcherContext();
+                UnityEngine.UIElements.EventDispatcher.editorDispatcher.PopDispatcherContext();
                 guiState.ApplyAndForget();
             }
             finally

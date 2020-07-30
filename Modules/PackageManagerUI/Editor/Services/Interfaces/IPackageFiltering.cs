@@ -8,6 +8,7 @@ namespace UnityEditor.PackageManager.UI
 {
     internal interface IPackageFiltering
     {
+        PackageFilterTab? previousFilterTab { get; }
         PackageFilterTab currentFilterTab { get; set; }
         string currentSearchText { get; set; }
 

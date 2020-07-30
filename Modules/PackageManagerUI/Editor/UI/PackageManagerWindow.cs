@@ -81,12 +81,12 @@ namespace UnityEditor.PackageManager.UI
                 rootVisualElement.Add(root);
                 root.StretchToParentSize();
 
-                PackageFiltering.instance.currentFilterTab = PackageManagerPrefs.instance.lastUsedPackageFilter ?? PackageFilterTab.All;
+                PackageFiltering.instance.currentFilterTab = PackageManagerPrefs.instance.lastUsedPackageFilter ?? PackageFilterTab.Unity;
 
                 if (!PageManager.instance.HasFetchedPageForFilterTab(PackageFiltering.instance.currentFilterTab))
                     PageManager.instance.Refresh(RefreshOptions.CurrentFilter);
 
-                if (PackageFiltering.instance.currentFilterTab != PackageFilterTab.All && !PageManager.instance.HasFetchedPageForFilterTab(PackageFilterTab.All))
+                if (PackageFiltering.instance.currentFilterTab != PackageFilterTab.Unity && !PageManager.instance.HasFetchedPageForFilterTab(PackageFilterTab.Unity))
                     PageManager.instance.Refresh(RefreshOptions.All);
 
                 mainContainer.leftWidth = m_SplitPaneLeftWidth;
@@ -198,7 +198,7 @@ namespace UnityEditor.PackageManager.UI
                 {
                     if (m_FilterToSelectAfterLoad == null)
                     {
-                        var newFilterTab = PackageFilterTab.All;
+                        var newFilterTab = package.Is(PackageType.Unity) ? PackageFilterTab.Unity : PackageFilterTab.Other;
                         if (package.versions.Any(v => v.HasTag(PackageTag.BuiltIn)))
                             newFilterTab = PackageFilterTab.Modules;
                         else
@@ -285,11 +285,11 @@ namespace UnityEditor.PackageManager.UI
                 s_Window.m_FilterToSelectAfterLoad = filterTab;
                 if (!PackageDatabase.instance.isEmpty && !refresh)
                 {
-                    s_Window.OnRefreshOperationFinish(filterTab ?? PackageFilterTab.All);
+                    s_Window.OnRefreshOperationFinish(filterTab ?? PackageFilterTab.Unity);
                 }
                 else if (refresh)
                 {
-                    PageManager.instance.Refresh(filterTab ?? PackageFilterTab.All);
+                    PageManager.instance.Refresh(filterTab ?? PackageFilterTab.Unity);
                 }
             }
             s_Window.Show();

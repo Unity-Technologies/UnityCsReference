@@ -87,6 +87,34 @@ namespace UnityEditor.PackageManager.UI
             return GetParentsOfType<T>(element).FirstOrDefault();
         }
 
+        public static VisualElement FindNextSibling(VisualElement element, bool reverseOrder, Func<VisualElement, bool> matchFunc)
+        {
+            if (element == null)
+                return null;
+
+            var parent = element.parent;
+            var index = parent.IndexOf(element);
+            if (reverseOrder)
+            {
+                for (var i = index - 1; i >= 0; i--)
+                {
+                    var nextElement = parent.ElementAt(i);
+                    if (matchFunc == null || matchFunc(nextElement))
+                        return nextElement;
+                }
+            }
+            else
+            {
+                for (var i = index + 1; i < parent.childCount; i++)
+                {
+                    var nextElement = parent.ElementAt(i);
+                    if (matchFunc == null || matchFunc(nextElement))
+                        return nextElement;
+                }
+            }
+            return null;
+        }
+
         public static string convertToHumanReadableSize(ulong sizeInBytes)
         {
             var len = sizeInBytes / 1024.0;
@@ -97,6 +125,23 @@ namespace UnityEditor.PackageManager.UI
                 len = len / 1024;
             }
             return $"{len:0.##} {s_SizeUnits[order]}";
+        }
+
+        public static void ShowTextTooltipOnSizeChange<T>(this T element, int deltaWidth = 0) where T : TextElement
+        {
+            element.RegisterCallback<GeometryChangedEvent>(evt =>
+            {
+                if (evt.newRect.width == evt.oldRect.width)
+                    return;
+
+                var target = evt.target as TextElement;
+                if (target == null)
+                    return;
+
+                var size = target.MeasureTextSize(target.text, float.MaxValue, VisualElement.MeasureMode.AtMost, evt.newRect.height, VisualElement.MeasureMode.Undefined);
+                var width = evt.newRect.width + deltaWidth;
+                target.tooltip = width < size.x ? target.text : string.Empty;
+            });
         }
     }
 }
