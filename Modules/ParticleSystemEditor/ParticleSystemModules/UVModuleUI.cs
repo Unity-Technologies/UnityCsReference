@@ -177,6 +177,12 @@ namespace UnityEditor
                 return;
             }
 
+            // Support multi edit of large arrays (case 1222515)
+            if (serializedObject.isEditingMultipleObjects && serializedObject.maxArraySizeForMultiEditing < m_Sprites.arraySize)
+            {
+                serializedObject.maxArraySizeForMultiEditing = m_Sprites.arraySize;
+            }
+
             for (int i = 0; i < m_Sprites.arraySize; i++)
             {
                 GUILayout.BeginHorizontal();

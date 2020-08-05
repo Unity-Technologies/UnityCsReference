@@ -13,7 +13,9 @@ namespace UnityEditor.PackageManager.UI
 
         public bool started { get; private set; }
 
+        private const int k_RotationSpeed = 360; // Euler degrees per second
         private int m_Rotation;
+        private double m_LastRotationTime;
 
         public LoadingSpinner()
         {
@@ -28,10 +30,15 @@ namespace UnityEditor.PackageManager.UI
 
         private void UpdateProgress()
         {
+            var currentTime = EditorApplication.timeSinceStartup;
+            var deltaTime = currentTime - m_LastRotationTime;
+
             transform.rotation = Quaternion.Euler(0, 0, m_Rotation);
-            m_Rotation += 3;
-            if (m_Rotation > 360)
-                m_Rotation -= 360;
+            m_Rotation += (int)(k_RotationSpeed * deltaTime);
+            m_Rotation = m_Rotation % 360;
+            if (m_Rotation < 0) m_Rotation += 360;
+
+            m_LastRotationTime = currentTime;
         }
 
         public void Start()
@@ -40,6 +47,7 @@ namespace UnityEditor.PackageManager.UI
                 return;
 
             m_Rotation = 0;
+            m_LastRotationTime = EditorApplication.timeSinceStartup;
 
             EditorApplication.update += UpdateProgress;
 

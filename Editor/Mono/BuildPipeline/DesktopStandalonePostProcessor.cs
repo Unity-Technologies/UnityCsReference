@@ -375,8 +375,9 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
     {
         // Don't copy assemblies that are being overridden by a User assembly.
         var fileName = Path.GetFileName(path);
-        for (int i = 0; i < args.report.files.Length; ++i)
-            if (Path.GetFileName(args.report.files[i].path) == fileName && args.report.files[i].isOverridingUnityAssembly)
+        var files = args.report.files;
+        for (var i = 0; i < files.Length; ++i)
+            if (Path.GetFileName(files[i].path) == fileName && files[i].isOverridingUnityAssembly)
                 return false;
 
         // Don't copy UnityEngine mdb/pdb files

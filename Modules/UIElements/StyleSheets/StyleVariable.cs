@@ -39,11 +39,20 @@ namespace UnityEngine.UIElements
 
         private int m_VariableHash;
         private List<StyleVariable> m_Variables;
+        private List<int> m_SortedHash;
 
         public int count => m_Variables.Count;
 
         public void Add(StyleVariable sv)
         {
+            // Avoid duplicates. Otherwise the variable context explodes as hierarchy gets deeper.
+            var hash = sv.GetHashCode();
+            var hashIndex = m_SortedHash.BinarySearch(hash);
+            if (hashIndex >= 0)
+                return;
+
+            m_SortedHash.Insert(~hashIndex, hash);
+
             m_Variables.Add(sv);
 
             unchecked
@@ -60,6 +69,7 @@ namespace UnityEngine.UIElements
 
                 m_VariableHash = other.m_VariableHash;
                 m_Variables.AddRange(other.m_Variables);
+                m_SortedHash.AddRange(other.m_SortedHash);
             }
         }
 
@@ -69,6 +79,7 @@ namespace UnityEngine.UIElements
             {
                 m_Variables.Clear();
                 m_VariableHash = 0;
+                m_SortedHash.Clear();
             }
         }
 
@@ -76,12 +87,14 @@ namespace UnityEngine.UIElements
         {
             m_Variables = new List<StyleVariable>();
             m_VariableHash = 0;
+            m_SortedHash = new List<int>();
         }
 
         public StyleVariableContext(StyleVariableContext other)
         {
             m_Variables = new List<StyleVariable>(other.m_Variables);
             m_VariableHash = other.m_VariableHash;
+            m_SortedHash = new List<int>(other.m_SortedHash);
         }
 
         public bool TryFindVariable(string name, out StyleVariable v)
@@ -196,7 +209,6 @@ namespace UnityEngine.UIElements
             if (m_ResolvedVarStack.Contains(sv.name))
             {
                 // Cyclic dependencies : https://drafts.csswg.org/css-variables/#cycles
-                sv = new StyleVariable();
                 return Result.NotFound;
             }
 

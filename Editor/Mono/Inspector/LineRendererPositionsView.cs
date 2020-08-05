@@ -42,6 +42,7 @@ namespace UnityEditor
             }
             columns[0].headerContent = new GUIContent("Index");
             columns[0].width = 50;
+            columns[0].allowToggleVisibility = false; // Always show the Index column (case 1260526)
             columns[1].headerContent = new GUIContent("X");
             columns[2].headerContent = new GUIContent("Y");
             columns[3].headerContent = new GUIContent("Z");

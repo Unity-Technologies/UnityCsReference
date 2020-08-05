@@ -209,6 +209,12 @@ namespace UnityEngine.Rendering
             DrawGizmos_Internal(camera, gizmoSubset);
         }
 
+        public void DrawWireOverlay(Camera camera)
+        {
+            Validate();
+            DrawWireOverlay_Impl(camera);
+        }
+
         public void DrawUIOverlay(Camera camera)
         {
             Validate();

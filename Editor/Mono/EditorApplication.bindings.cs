@@ -159,6 +159,9 @@ namespace UnityEditor
         // Invokes the menu item in the specified path.
         public static extern  bool ExecuteMenuItem(string menuItemPath);
 
+        // Validates the menu item in the specific path
+        internal static extern bool ValidateMenuItem(string menuItemPath);
+
         // Like ExecuteMenuItem, but applies action to specified GameObjects if the menu action supports it.
         internal static extern  bool ExecuteMenuItemOnGameObjects(string menuItemPath, GameObject[] objects);
 

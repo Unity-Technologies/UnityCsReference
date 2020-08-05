@@ -13,10 +13,10 @@ namespace UnityEditor.PackageManager.UI
     internal class AssetStoreFiltersWindow : PackageManagerFiltersWindow
     {
         internal const int k_MaxDisplayLabels = 5;
-        private const int k_FoldOutHeight = 24;
-        private const int k_ToggleHeight = 19;
+        private const int k_FoldOutHeight = 25;
+        private const int k_ToggleHeight = 20;
         private const int k_Width = 196;
-        private const int k_MaxHeight = 400;
+        private const int k_MaxHeight = 421;
 
         private static readonly string k_FoldoutClass = "foldout";
         private static readonly string k_ToggleClass = "toggle";
@@ -58,17 +58,48 @@ namespace UnityEditor.PackageManager.UI
             return new Vector2(k_Width, Math.Min(height, k_MaxHeight));
         }
 
+        private float GetLabelsHeight()
+        {
+            var labels = m_LabelsFoldOut?.Children().OfType<Toggle>() ?? Enumerable.Empty<Toggle>();
+            var firstLabels = labels.Take(k_MaxDisplayLabels);
+            var height = (labels.Any() ? k_FoldOutHeight : 0) + firstLabels.Count() * k_ToggleHeight;
+
+            var selectedLabels = labels.Skip(k_MaxDisplayLabels).Where(t => t.value);
+            height += selectedLabels.Count() * k_ToggleHeight;
+            if (labels.Count() > firstLabels.Count() + selectedLabels.Count())
+                height += k_ToggleHeight; // Show all button height
+            return height;
+        }
+
         protected override void Init(Rect rect, PageFilters filters)
         {
             AssetStoreClient.instance.ListCategories(categories =>
             {
                 m_Categories = categories ?? new List<string>();
+                base.Init(rect, filters);
 
+                // Defer display of labels
                 AssetStoreClient.instance.ListLabels(labels =>
                 {
-                    m_Labels = labels ?? new List<string>();
+                    // If window was closed during fetch of labels, ignore display
+                    if (instance == null)
+                        return;
 
-                    base.Init(rect, filters);
+                    m_Labels = labels ?? new List<string>();
+                    if (m_Labels.Any())
+                    {
+                        DoLabelsDisplay();
+                        ApplyFilters();
+
+                        // Update window height if necessary
+                        var labelsHeight = GetLabelsHeight();
+                        var newHeight = Math.Min(position.height + labelsHeight, k_MaxHeight);
+                        if (newHeight != position.height)
+                        {
+                            position = new Rect(position) { height = newHeight };
+                            RepaintImmediately();
+                        }
+                    }
                 });
             });
         }
@@ -152,32 +183,32 @@ namespace UnityEditor.PackageManager.UI
                 m_CategoriesFoldOut.Query<Label>().ForEach(UIUtils.TextTooltipOnSizeChange);
                 m_Container.Add(m_CategoriesFoldOut);
             }
+        }
 
-            if (m_Labels.Any())
+        private void DoLabelsDisplay()
+        {
+            m_LabelsFoldOut = new Foldout {text = L10n.Tr("Labels"), name = k_LabelsFoldOutName, classList = {k_FoldoutClass}};
+            var i = 0;
+            foreach (var label in m_Labels)
             {
-                m_LabelsFoldOut = new Foldout {text = L10n.Tr("Labels"), name = k_LabelsFoldOutName, classList = {k_FoldoutClass}};
-                var i = 0;
-                foreach (var label in m_Labels)
+                var toggle = new Toggle(L10n.Tr(label)) {name = label, classList = {k_ToggleClass}};
+                toggle.RegisterValueChangedCallback(evt =>
                 {
-                    var toggle = new Toggle(L10n.Tr(label)) {name = label, classList = {k_ToggleClass}};
-                    toggle.RegisterValueChangedCallback(evt =>
+                    if (evt.newValue)
                     {
-                        if (evt.newValue)
-                        {
-                            // Uncheck Unlabeled if checked
-                            m_StatusFoldOut.Q<Toggle>(k_Statuses[0].ToLower()).value = false;
-                        }
-                        UpdateFiltersIfNeeded();
-                    });
-                    m_LabelsFoldOut.Add(toggle);
+                        // Uncheck Unlabeled if checked
+                        m_StatusFoldOut.Q<Toggle>(k_Statuses[0].ToLower()).value = false;
+                    }
+                    UpdateFiltersIfNeeded();
+                });
+                m_LabelsFoldOut.Add(toggle);
 
-                    if (++i > k_MaxDisplayLabels)
-                        UIUtils.SetElementDisplay(toggle, false);
-                }
-
-                m_LabelsFoldOut.Query<Label>().ForEach(UIUtils.TextTooltipOnSizeChange);
-                m_Container.Add(m_LabelsFoldOut);
+                if (++i > k_MaxDisplayLabels)
+                    UIUtils.SetElementDisplay(toggle, false);
             }
+
+            m_LabelsFoldOut.Query<Label>().ForEach(UIUtils.TextTooltipOnSizeChange);
+            m_Container.Add(m_LabelsFoldOut);
         }
 
         private void UpdateFiltersIfNeeded()

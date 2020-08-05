@@ -910,6 +910,7 @@ namespace UnityEditor
             DockArea da = m_Parent as DockArea;
             if (da)
             {
+                m_Parent.Focus();
                 da.RemoveTab(this, true);
             }
             else
