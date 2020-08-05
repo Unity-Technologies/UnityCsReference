@@ -314,6 +314,11 @@ namespace UnityEngine
             get { return SupportsTessellationShaders(); }
         }
 
+        public static bool supportsRenderTargetArrayIndexFromVertexShader
+        {
+            get { return SupportsRenderTargetArrayIndexFromVertexShader(); }
+        }
+
         // Is GPU draw call instancing supported? (RO)
         public static bool supportsInstancing
         {
@@ -356,6 +361,11 @@ namespace UnityEngine
         public static int supportsMultisampledTextures
         {
             get { return SupportsMultisampledTextures(); }
+        }
+
+        public static bool supportsMultisampled2DArrayTextures
+        {
+            get { return SupportsMultisampled2DArrayTextures(); }
         }
 
         public static bool supportsMultisampleAutoResolve
@@ -705,6 +715,9 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::SupportsTessellationShaders")]
         static extern bool SupportsTessellationShaders();
 
+        [FreeFunction("ScriptingGraphicsCaps::SupportsRenderTargetArrayIndexFromVertexShader")]
+        static extern bool SupportsRenderTargetArrayIndexFromVertexShader();
+
         [FreeFunction("ScriptingGraphicsCaps::SupportsInstancing")]
         static extern bool SupportsInstancing();
 
@@ -746,6 +759,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampledTextures")]
         static extern int SupportsMultisampledTextures();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampled2DArrayTextures")]
+        static extern bool SupportsMultisampled2DArrayTextures();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampleAutoResolve")]
         static extern bool SupportsMultisampleAutoResolve();
@@ -929,6 +945,8 @@ namespace UnityEngine
 
         public static bool supportsTessellationShaders => ShimManager.systemInfoShim.supportsTessellationShaders;
 
+        public static bool supportsRenderTargetArrayIndexFromVertexShader => ShimManager.systemInfoShim.supportsRenderTargetArrayIndexFromVertexShader;
+
         public static bool supportsInstancing => ShimManager.systemInfoShim.supportsInstancing;
 
         public static bool supportsHardwareQuadTopology => ShimManager.systemInfoShim.supportsHardwareQuadTopology;
@@ -944,6 +962,8 @@ namespace UnityEngine
         public static int supportedRandomWriteTargetCount => ShimManager.systemInfoShim.supportedRandomWriteTargetCount;
 
         public static int supportsMultisampledTextures => ShimManager.systemInfoShim.supportsMultisampledTextures;
+
+        public static bool supportsMultisampled2DArrayTextures => ShimManager.systemInfoShim.supportsMultisampled2DArrayTextures;
 
         public static bool supportsMultisampleAutoResolve => ShimManager.systemInfoShim.supportsMultisampleAutoResolve;
 

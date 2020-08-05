@@ -375,7 +375,7 @@ namespace UnityEditor.PackageManager.UI
             filtersMenu.clickable.clicked += () =>
             {
                 if (PackageManagerFiltersWindow.instance != null)
-                    return;
+                    PackageManagerFiltersWindow.instance.Close();
 
                 var page = PageManager.instance.GetCurrentPage();
                 if (page != null && PackageManagerFiltersWindow.ShowAtPosition(GUIUtility.GUIToScreenRect(filtersMenu.worldBound), page.tab, page.filters))

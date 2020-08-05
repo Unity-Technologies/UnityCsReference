@@ -229,7 +229,7 @@ namespace UnityEditor
 
         void DisplayRenderTextureGUI()
         {
-            OnRenderTextureGUI(0);
+            OnRenderTextureGUI(GUIElements.RenderTargetDepthGUI | GUIElements.RenderTargetAAGUI);
             GUILayout.Space(10.0f);
         }
 

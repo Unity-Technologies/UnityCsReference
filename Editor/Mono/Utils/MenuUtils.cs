@@ -56,7 +56,10 @@ namespace UnityEditor
             callbackObject.onBeforeExecuteCallback = onBeforeExecuteCallback;
             callbackObject.onAfterExecuteCallback = onAfterExecuteCallback;
             callbackObject.userData = userData;
-            menu.AddItem(new GUIContent(L10n.TrPath(replacementMenuString)), false, MenuCallback, callbackObject);
+            if (EditorApplication.ValidateMenuItem(menuString))
+                menu.AddItem(new GUIContent(L10n.TrPath(replacementMenuString)), false, MenuCallback, callbackObject);
+            else
+                menu.AddDisabledItem(new GUIContent(L10n.TrPath(replacementMenuString)), false);
         }
 
         private class MenuCallbackObject

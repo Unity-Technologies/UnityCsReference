@@ -155,13 +155,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static ILPostProcessor[] FindAllPostProcessors()
         {
             TypeCache.TypeCollection typesDerivedFrom = TypeCache.GetTypesDerivedFrom<ILPostProcessor>();
-            ILPostProcessor[] localILPostProcessors = new ILPostProcessor[typesDerivedFrom.Count];
+            var localILPostProcessors = new List<ILPostProcessor>(typesDerivedFrom.Count);
 
             for (int i = 0; i < typesDerivedFrom.Count; i++)
             {
                 try
                 {
-                    localILPostProcessors[i] = (ILPostProcessor)Activator.CreateInstance(typesDerivedFrom[i]);
+                    localILPostProcessors.Add((ILPostProcessor)Activator.CreateInstance(typesDerivedFrom[i]));
                 }
                 catch (Exception exception)
                 {
@@ -169,7 +169,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
             }
 
-            return localILPostProcessors;
+            // Default sort by type fullname
+            localILPostProcessors.Sort((left, right) => string.Compare(left.GetType().FullName, right.GetType().FullName, StringComparison.Ordinal));
+
+            return localILPostProcessors.ToArray();
         }
 
         List<DiagnosticMessage> RunILPostProcessors(ScriptAssembly assembly, string outputTempPath)

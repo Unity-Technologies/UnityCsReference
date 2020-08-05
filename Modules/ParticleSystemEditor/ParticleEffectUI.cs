@@ -369,6 +369,7 @@ namespace UnityEditor
                 //Stop();
             }
 
+            m_SelectedParticleSystems?.Clear();
             m_ParticleSystemCurveEditor.OnDisable();
             Tools.s_Hidden = false; // The collisionmodule might have hidden the tools
 

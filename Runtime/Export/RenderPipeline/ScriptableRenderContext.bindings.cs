@@ -68,6 +68,8 @@ namespace UnityEngine.Rendering
 
         extern private void DrawGizmos_Internal(Camera camera, GizmoSubset gizmoSubset);
 
+        extern private void DrawWireOverlay_Impl(Camera camera);
+
         extern private void DrawUIOverlay_Internal(Camera camera);
 
         internal IntPtr Internal_GetPtr()
