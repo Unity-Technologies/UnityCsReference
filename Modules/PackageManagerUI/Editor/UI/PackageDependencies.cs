@@ -45,8 +45,9 @@ namespace UnityEditor.PackageManager.UI
             if (installedVersion.HasTag(PackageTag.Local))
                 return "(local)";
 
+            var statusText = installedVersion.HasTag(PackageTag.BuiltIn) ? "enabled" : "installed";
             return installedVersion.version == dependency.version
-                ? "(installed \u2714)" : $"({installedVersion.version} installed \u2714)";
+                ? $"({statusText} \u2714)" : $"({installedVersion.version} {statusText} \u2714)";
         }
 
         public void SetDependencies(DependencyInfo[] dependencies)
