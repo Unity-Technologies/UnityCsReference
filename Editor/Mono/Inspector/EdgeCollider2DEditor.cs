@@ -3,9 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using System;
-using UnityEditor.EditorTools;
-using UnityEditor.IMGUI.Controls;
 
 namespace UnityEditor
 {
@@ -42,62 +39,6 @@ namespace UnityEditor
             EndColliderInspector();
 
             FinalizeInspectorGUI();
-        }
-    }
-
-    [EditorTool("Edit Edge Collider", typeof(EdgeCollider2D))]
-    class EdgeCollider2DTool : EditorTool
-    {
-        public override GUIContent toolbarIcon { get { return PrimitiveBoundsHandle.editModeButton; } }
-        PolygonEditorUtility m_PolyUtility = new PolygonEditorUtility();
-
-        public void OnEnable()
-        {
-            EditorTools.EditorTools.activeToolChanged += OnActiveToolChanged;
-            EditorTools.EditorTools.activeToolChanging += OnActiveToolChanging;
-            Selection.selectionChanged += OnSelectionChanged;
-        }
-
-        public void OnDisable()
-        {
-            EditorTools.EditorTools.activeToolChanged -= OnActiveToolChanged;
-            EditorTools.EditorTools.activeToolChanging -= OnActiveToolChanging;
-            Selection.selectionChanged -= OnSelectionChanged;
-        }
-
-        public override void OnToolGUI(EditorWindow window)
-        {
-            m_PolyUtility.OnSceneGUI();
-        }
-
-        void TryBeginEditing()
-        {
-            var collider = target as EdgeCollider2D;
-
-            if (EditorTools.EditorTools.IsActiveTool(this) && IsAvailable() && collider)
-                m_PolyUtility.StartEditing(target as Collider2D);
-        }
-
-        void TryEndEditing()
-        {
-            if (EditorTools.EditorTools.IsActiveTool(this))
-                m_PolyUtility.StopEditing();
-        }
-
-        void OnActiveToolChanged()
-        {
-            TryBeginEditing();
-        }
-
-        void OnActiveToolChanging()
-        {
-            TryEndEditing();
-        }
-
-        void OnSelectionChanged()
-        {
-            TryEndEditing();
-            TryBeginEditing();
         }
     }
 }

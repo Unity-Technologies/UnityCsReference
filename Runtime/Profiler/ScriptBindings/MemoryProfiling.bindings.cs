@@ -56,7 +56,7 @@ namespace UnityEngine.Profiling.Memory.Experimental
         [StaticAccessor("profiling::memory::GetMemorySnapshotManager()", StaticAccessorType.Dot)]
         [NativeMethod("StartOperation")]
         [NativeConditional("ENABLE_PROFILER")]
-        private static extern void StartOperation(uint captureFlag, bool requestScreenshot, string path);
+        private static extern void StartOperation(uint captureFlag, bool requestScreenshot, string path, bool isRemote);
 
         public static void TakeSnapshot(string path, Action<string, bool> finishCallback, CaptureFlags captureFlags = CaptureFlags.NativeObjects | CaptureFlags.ManagedObjects)
         {
@@ -80,7 +80,7 @@ namespace UnityEngine.Profiling.Memory.Experimental
             {
                 m_SnapshotFinished += finishCallback;
                 m_SaveScreenshotToDisk += screenshotCallback;
-                StartOperation((uint)captureFlags, m_SaveScreenshotToDisk != null, path);
+                StartOperation((uint)captureFlags, m_SaveScreenshotToDisk != null, path, false);
             }
         }
 

@@ -2197,8 +2197,14 @@
     <Compile Include="..\..\Editor\Mono\Inspector\EdgeCollider2DEditor.cs">
       <Link>Editor\Mono\Inspector\EdgeCollider2DEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\EdgeCollider2DTool.cs">
+      <Link>Editor\Mono\Inspector\EdgeCollider2DTool.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\EditMode.cs">
       <Link>Editor\Mono\Inspector\EditMode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\EditablePathTool.cs">
+      <Link>Editor\Mono\Inspector\EditablePathTool.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\Editor.cs">
       <Link>Editor\Mono\Inspector\Editor.cs</Link>
@@ -2286,6 +2292,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\LightingSettingsInspector.cs">
       <Link>Editor\Mono\Inspector\LightingSettingsInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\LineHandle.cs">
+      <Link>Editor\Mono\Inspector\LineHandle.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\LineRendererCurveEditor.cs">
       <Link>Editor\Mono\Inspector\LineRendererCurveEditor.cs</Link>
@@ -2385,6 +2394,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\PolygonCollider2DEditor.cs">
       <Link>Editor\Mono\Inspector\PolygonCollider2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\PolygonCollider2DTool.cs">
+      <Link>Editor\Mono\Inspector\PolygonCollider2DTool.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\PolygonEditorUtility.cs">
       <Link>Editor\Mono\Inspector\PolygonEditorUtility.cs</Link>

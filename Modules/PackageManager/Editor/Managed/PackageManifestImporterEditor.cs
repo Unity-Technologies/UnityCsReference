@@ -595,7 +595,27 @@ namespace UnityEditor.PackageManager
 
             try
             {
+                var newAssetPath = $"{Folders.GetPackagesPath()}/{packageState.info.packageName}/package.json";
                 File.WriteAllText(assetPath, Json.Serialize(json, true));
+                AssetDatabase.Refresh();
+                var pb = ProjectBrowser.GetAllProjectBrowsers();
+                foreach (var p in pb)
+                    p.ResetViews();
+
+                if (string.Compare(newAssetPath, assetPath, true) == 0)
+                {
+                    // Reselect asset
+                    EditorApplication.delayCall += () =>
+                    {
+                        var id = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(Path.GetDirectoryName(newAssetPath));
+                        var lastProjectBrowser = ProjectBrowser.s_LastInteractedProjectBrowser;
+                        if (lastProjectBrowser?.Initialized() ?? false)
+                        {
+                            if (lastProjectBrowser.IsTwoColumns()) lastProjectBrowser.SetFolderSelection(new[] { id }, true);
+                            lastProjectBrowser.Repaint();
+                        }
+                    };
+                }
             }
             catch (IOException)
             {
