@@ -52,13 +52,16 @@ namespace UnityEditor
         protected override void OnDisable()
         {
             base.OnDisable();
-            m_ParentInspectorWindow.RebuildContentsContainers();
+            if (m_ParentInspectorWindow != null)
+                m_ParentInspectorWindow.RebuildContentsContainers();
         }
 
         protected override void CreateTracker()
         {
             if (m_ParentInspectorWindow != null)
                 m_Tracker = m_ParentInspectorWindow.tracker;
+            else if (m_Tracker == null)
+                base.CreateTracker();
         }
 
         internal override Editor GetLastInteractedEditor()

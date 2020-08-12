@@ -76,46 +76,9 @@ namespace UnityEditor.PackageManager.UI
                 if (!isFullyFetched)
                     return new List<Sample>();
 
-                m_Samples = GetSamplesFromPackageInfo(m_PackageInfo) ?? new List<Sample>();
+                m_Samples = Sample.FindByPackage(m_PackageInfo)?.ToList() ?? new List<Sample>();
                 m_SamplesParsed = true;
                 return m_Samples;
-            }
-        }
-
-        private static List<Sample> GetSamplesFromPackageInfo(PackageInfo packageInfo)
-        {
-            if (string.IsNullOrEmpty(packageInfo?.resolvedPath))
-                return null;
-
-            var jsonPath = Path.Combine(packageInfo.resolvedPath, "package.json");
-            if (!File.Exists(jsonPath))
-                return null;
-
-            try
-            {
-                var packageJson = Json.Deserialize(File.ReadAllText(jsonPath)) as Dictionary<string, object>;
-                var samples = packageJson.GetList<IDictionary<string, object>>("samples");
-                return samples?.Select(sample =>
-                {
-                    var displayName = sample.GetString("displayName");
-                    var path = sample.GetString("path");
-                    var description = sample.GetString("description");
-                    var interactiveImport = sample.Get("interactiveImport", false);
-
-                    var resolvedSamplePath = Path.Combine(packageInfo.resolvedPath, path);
-                    var importPath = IOUtils.CombinePaths(
-                        Application.dataPath,
-                        "Samples",
-                        IOUtils.SanitizeFileName(packageInfo.displayName),
-                        packageInfo.version,
-                        IOUtils.SanitizeFileName(displayName)
-                    );
-                    return new Sample(displayName, description, resolvedSamplePath, importPath, interactiveImport);
-                }).ToList();
-            }
-            catch (Exception)
-            {
-                return null;
             }
         }
 

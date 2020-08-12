@@ -187,6 +187,7 @@ namespace UnityEditor
             [NativeProperty("ps4ShareFilePath", false, TargetType.Function)] extern public static string ShareFilePath { get; set; }
             [NativeProperty("ps4ShareOverlayImagePath", false, TargetType.Function)] extern public static string ShareOverlayImagePath { get; set; }
             [NativeProperty("ps4PrivacyGuardImagePath", false, TargetType.Function)] extern public static string PrivacyGuardImagePath { get; set; }
+            [NativeProperty("ps4ExtraSceSysFile", false, TargetType.Function)] extern public static string ExtraSceSysFile { get; set; }
             [NativeProperty("ps4PatchDayOne", false, TargetType.Field)] extern public static bool patchDayOne { get; set; }
             [NativeProperty("ps4PatchPkgPath", false, TargetType.Function)] extern public static string PatchPkgPath { get; set; }
             [NativeProperty("ps4PatchLatestPkgPath", false, TargetType.Function)] extern public static string PatchLatestPkgPath { get; set; }
@@ -220,6 +221,8 @@ namespace UnityEditor
             [NativeProperty(TargetType = TargetType.Field)] extern public static bool resetTempFolder { get; set; }
             [NativeProperty(TargetType = TargetType.Field)] extern public static int playerPrefsMaxSize { get; set; }
             [NativeProperty("ps4attribVROutputEnabled", false, TargetType.Field)] extern public static bool attribVROutputEnabled { get; set; }
+            [NativeProperty("ps4CompatibilityPS5", false, TargetType.Field)] extern public static bool compatibilityPS5 { get; set; }
+            [NativeProperty("ps4GPU800MHz", false, TargetType.Field)] extern public static bool gpu800MHz { get; set; }
         }
     }
 }

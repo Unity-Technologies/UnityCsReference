@@ -424,7 +424,10 @@ namespace UnityEditor
 
             foreach (var t in undoStructs)
             {
-                PrefabUtility.RegisterNewObjects(t.correspondingSourceObject, t.prefabHierarchy, actionName);
+                var danglingObjects = new List<Object>();
+                PrefabUtility.CollectAddedObjects(t.correspondingSourceObject, t.prefabHierarchy, danglingObjects);
+                foreach (var component in danglingObjects)
+                    Undo.RegisterCreatedObjectUndo(component, actionName);
             }
 
             EditorUtility.ForceRebuildInspectors();

@@ -109,7 +109,7 @@ namespace UnityEditor.Experimental.SceneManagement
         internal static PrefabStage CreatePrefabStage(string prefabAssetPath, GameObject openedFromInstanceObject, PrefabStage.Mode prefabStageMode, Stage contextStage)
         {
             PrefabStage prefabStage = CreateInstance<PrefabStage>();
-            prefabStage.Init(prefabAssetPath, openedFromInstanceObject, prefabStageMode, contextStage);
+            prefabStage.OneTimeInitialize(prefabAssetPath, openedFromInstanceObject, prefabStageMode, contextStage);
             return prefabStage;
         }
 
@@ -118,6 +118,25 @@ namespace UnityEditor.Experimental.SceneManagement
 
         private PrefabStage()
         {
+        }
+
+        void OneTimeInitialize(string prefabAssetPath, GameObject openedFromInstanceGameObject, PrefabStage.Mode prefabStageMode, Stage contextStage)
+        {
+            if (scene.IsValid())
+                Debug.LogError("PrefabStage is already initialized. Please report a bug.");
+
+            m_PrefabAssetPath = prefabAssetPath;
+            CachePrefabFolderInfo();
+            SetOpenedFromInstanceObject(openedFromInstanceGameObject);
+
+            if (prefabStageMode == PrefabStage.Mode.InContext)
+                m_ContextStage = contextStage;
+            m_Mode = prefabStageMode;
+        }
+
+        bool IsOpenedFromInstanceObjectValid()
+        {
+            return m_OpenedFromInstanceObject != null && PrefabUtility.IsPartOfPrefabInstance(m_OpenedFromInstanceObject);
         }
 
         void SetOpenedFromInstanceObject(GameObject go)
@@ -139,40 +158,31 @@ namespace UnityEditor.Experimental.SceneManagement
             }
         }
 
-        void Init(string prefabAssetPath, GameObject openedFromInstanceGameObject, PrefabStage.Mode prefabStageMode, Stage contextStage)
+        void ReconstructInContextStateIfNeeded()
         {
-            m_PrefabAssetPath = prefabAssetPath;
-            CachePrefabFolderInfo();
-            SetOpenedFromInstanceObject(openedFromInstanceGameObject);
-
-            if (prefabStageMode == PrefabStage.Mode.InContext)
-                m_ContextStage = contextStage;
-            m_Mode = prefabStageMode;
-        }
-
-        void ReconstructDataIfNeeded()
-        {
+            // The previous PrefabStage can have been reloaded if user chose to discard changes when entering this PrefabStage,
+            // which means we need to update our reference to m_OpenedFromInstanceObject to the newly loaded GameObject
+            // (the old GameObject was deleted as part of reloading the PrefabStage).
             bool needsReconstruction = m_OpenedFromInstanceObject == null && m_FileIdForOpenedFromInstanceObject != 0;
             if (!needsReconstruction)
                 return;
 
-            // The previous PrefabStage can have been reloaded which means we need to update our reference to m_OpenedFromInstanceObject
-            // to the newly loaded GameObject (the old GameObject was deleted as part of reloading the PrefabStage).
             var history = StageNavigationManager.instance.stageHistory;
             int index = history.IndexOf(this);
             int previousIndex = index - 1;
             var previousStage = history[previousIndex];
-            var prevPrefabStage = previousStage as PrefabStage;
-            if (prevPrefabStage)
+            var previousPrefabStage = previousStage as PrefabStage;
+            if (previousPrefabStage)
             {
-                var go = PrefabStageUtility.FindFirstGameObjectThatMatchesFileID(prevPrefabStage.prefabContentsRoot.transform, m_FileIdForOpenedFromInstanceObject, true);
+                var go = PrefabStageUtility.FindFirstGameObjectThatMatchesFileID(previousPrefabStage.prefabContentsRoot.transform, m_FileIdForOpenedFromInstanceObject, true);
                 if (go != null)
                 {
-                    SetOpenedFromInstanceObject(go);
+                    if (PrefabUtility.IsPartOfPrefabInstance(go))
+                        SetOpenedFromInstanceObject(go);
                 }
                 else
                 {
-                    Debug.LogError("Could not find GameObject with fileID " + m_FileIdForOpenedFromInstanceObject + " in PrefabStage for: " + prevPrefabStage.assetPath);
+                    // Could not find GameObject with fileID: m_FileIdForOpenedFromInstanceObject, this can happen if inserting a base in a Variant and then discarding changes when entering in-context of the new base
                 }
             }
         }
@@ -384,34 +394,30 @@ namespace UnityEditor.Experimental.SceneManagement
 
         bool LoadStage()
         {
-            ReconstructDataIfNeeded();
-
-            string prefabPath = m_PrefabAssetPath;
-            GameObject openedFromInstanceObject = m_OpenedFromInstanceObject;
-            Mode prefabStageMode = m_Mode;
-            Stage contextStage = m_ContextStage;
-
-            if (!File.Exists(prefabPath))
+            if (scene.IsValid())
             {
-                Debug.LogError("LoadStage with an invalid path: Prefab file not found " + prefabPath);
+                Debug.LogError("LoadStage: we haven't cleared the previous scene before loading a new scene");
                 return false;
             }
 
-            if (isValid)
-                Cleanup();
-
-            if (prefabStageMode == Mode.InContext && openedFromInstanceObject == null)
+            if (!File.Exists(m_PrefabAssetPath))
             {
-                Debug.LogError("Invalid LoadStage state: InContext is specified but 'openedFromInstance' is null. This is invalid.");
+                Debug.LogError("LoadStage: Prefab file not found " + m_PrefabAssetPath);
                 return false;
             }
 
-            Init(prefabPath, openedFromInstanceObject, prefabStageMode, contextStage);
+            ReconstructInContextStateIfNeeded();
+            if (m_Mode == Mode.InContext && !IsOpenedFromInstanceObjectValid())
+            {
+                // The Prefab instance used for opening Prefab Mode In Context has become invalid. Opening in Isolation instead.
+                SetOpenedFromInstanceObject(null);
+                m_ContextStage = null;
+                m_Mode = Mode.InIsolation;
+            }
 
             // Ensure scene is set before calling LoadPrefabIntoPreviewScene() so the user can request the current
             // the PrefabStage in their OnEnable and other callbacks (if they use ExecuteInEditMode or ExecuteAlways)
             bool isUIPrefab = PrefabStageUtility.IsUIPrefab(m_PrefabAssetPath);
-
 
             switch (m_Mode)
             {
@@ -426,7 +432,7 @@ namespace UnityEditor.Experimental.SceneManagement
                     break;
             }
 
-            m_PrefabContentsRoot = PrefabStageUtility.LoadPrefabIntoPreviewScene(prefabPath, scene);
+            m_PrefabContentsRoot = PrefabStageUtility.LoadPrefabIntoPreviewScene(m_PrefabAssetPath, scene);
             if (m_PrefabContentsRoot != null)
             {
                 if (isUIPrefab && m_Mode == Mode.InIsolation)
@@ -477,19 +483,30 @@ namespace UnityEditor.Experimental.SceneManagement
             else
             {
                 // Invalid setup
-                Cleanup();
+                CleanupBeforeClosing();
             }
 
             return isValid;
         }
 
-        // Returns true if opened successfully
+        // Returns true if opened successfully (this method should only be called from the StageNavigationManager)
         protected internal override bool OnOpenStage()
         {
             if (!isCurrentStage)
             {
                 Debug.LogError("Only opening the current PrefabStage is supported. Please report a bug");
                 return false;
+            }
+
+            return OpenStage();
+        }
+
+        bool OpenStage()
+        {
+            bool reloading = scene.IsValid();
+            if (reloading)
+            {
+                CleanupBeforeReloading();
             }
 
             if (LoadStage())
@@ -522,7 +539,7 @@ namespace UnityEditor.Experimental.SceneManagement
             if (isValid)
                 prefabStageClosing?.Invoke(this);
 
-            Cleanup();
+            CleanupBeforeClosing();
         }
 
         protected internal override void OnReturnToStage()
@@ -805,7 +822,14 @@ namespace UnityEditor.Experimental.SceneManagement
             }
         }
 
-        void Cleanup()
+        void CleanupBeforeReloading()
+        {
+            // Only clear state that is being reloaded but keep InContext editing state etc
+            PrefabStageUtility.DestroyPreviewScene(scene);
+            m_HideFlagUtility = null;
+        }
+
+        void CleanupBeforeClosing()
         {
             if (m_Mode == Mode.InContext)
             {
@@ -847,7 +871,7 @@ namespace UnityEditor.Experimental.SceneManagement
             foreach (SceneHierarchyWindow sceneHierarchyWindow in sceneHierarchyWindows)
                 SaveHierarchyState(sceneHierarchyWindow);
 
-            if (OnOpenStage())
+            if (OpenStage())
             {
                 foreach (SceneView sceneView in SceneView.sceneViews)
                     SyncSceneViewToStage(sceneView);
@@ -1769,10 +1793,13 @@ namespace UnityEditor.Experimental.SceneManagement
 
         void VisualizeOverridesToggle()
         {
-            EditorGUI.BeginChangeCheck();
-            bool patchAll = GUILayout.Toggle(showOverrides, Styles.showOverridesLabel);
-            if (EditorGUI.EndChangeCheck())
-                showOverrides = patchAll;
+            using (new EditorGUI.DisabledScope(!IsOpenedFromInstanceObjectValid()))
+            {
+                EditorGUI.BeginChangeCheck();
+                bool patchAll = GUILayout.Toggle(showOverrides, Styles.showOverridesLabel);
+                if (EditorGUI.EndChangeCheck())
+                    showOverrides = patchAll;
+            }
         }
 
         void CachePrefabFolderInfo()

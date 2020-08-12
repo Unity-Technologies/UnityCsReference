@@ -102,8 +102,8 @@ namespace UnityEditor
             s_PreviewPackageContent = EditorGUIUtility.TrTextContent("Preview Packages in Use");
             s_PreviewPackageIcon = EditorGUIUtility.TrIconContent("PreviewPackageInUse", "Preview Packages in Use");
 
-            s_CloudIcon = EditorGUIUtility.IconContent("CloudConnect");
-            s_AccountContent = EditorGUIUtility.TrTextContent("Account");
+            s_CloudIcon = EditorGUIUtility.TrIconContent("CloudConnect", "Manage services");
+            s_AccountContent = EditorGUIUtility.TrTextContent("Account", "Account profile");
         }
 
         static GUIContent[] s_ToolIcons;
@@ -496,7 +496,7 @@ namespace UnityEditor
         void DoLayoutDropDown(Rect rect)
         {
             // Layout DropDown
-            if (EditorGUI.DropdownButton(rect, GUIContent.Temp(Toolbar.lastLoadedLayoutName), FocusType.Passive, Styles.dropdown))
+            if (EditorGUI.DropdownButton(rect, EditorGUIUtility.TrTextContent(Toolbar.lastLoadedLayoutName, "Select editor layout"), FocusType.Passive, Styles.dropdown))
             {
                 Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(rect.x, rect.y));
                 rect.x = temp.x;

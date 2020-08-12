@@ -315,8 +315,11 @@ namespace UnityEditor.UIElements
                     var field = new PropertyField(property);
                     field.name = "PropertyField:" + property.propertyPath;
 
-                    if (property.propertyPath == "m_Script" && serializedObject.targetObject != null)
-                        field.SetEnabled(false);
+                    if (property.propertyPath == "m_Script")
+                    {
+                        if ((serializedObject.targetObject != null) || GenericInspector.IsAnyMonoBehaviourTargetPartOfPrefabInstance(editor))
+                            field.SetEnabled(false);
+                    }
 
                     hierarchy.Add(field);
                 }
@@ -324,7 +327,7 @@ namespace UnityEditor.UIElements
             }
 
             if (serializedObject.targetObject == null)
-                AddMissingScriptLabel(serializedObject);
+                AddMissingScriptLabel(serializedObject, GenericInspector.IsAnyMonoBehaviourTargetPartOfPrefabInstance(editor));
 
             AddToClassList(uIEDefaultVariantUssClassName);
             AddToClassList(uIEInspectorVariantUssClassName);
@@ -332,12 +335,12 @@ namespace UnityEditor.UIElements
             return this;
         }
 
-        bool AddMissingScriptLabel(SerializedObject serializedObject)
+        bool AddMissingScriptLabel(SerializedObject serializedObject, bool isPartOfPrefabInstance)
         {
             SerializedProperty scriptProperty = serializedObject.FindProperty("m_Script");
             if (scriptProperty != null)
             {
-                hierarchy.Add(new IMGUIContainer(() => GenericInspector.ShowScriptNotLoadedWarning(scriptProperty)));
+                hierarchy.Add(new IMGUIContainer(() => GenericInspector.ShowScriptNotLoadedWarning(scriptProperty, isPartOfPrefabInstance)));
                 return true;
             }
 
