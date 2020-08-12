@@ -14,6 +14,7 @@ namespace UnityEditor.Build.Content
     [StaticAccessor("BuildPipeline", StaticAccessorType.DoubleColon)]
     public static class ContentBuildInterface
     {
+        internal static extern void SetGarbageCollectionMemoryIncreaseThreshold(int mbThreshold);
         extern public static AssetBundleBuild[] GenerateAssetBundleBuilds();
 
         public static SceneDependencyInfo PrepareScene(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, string outputFolder)

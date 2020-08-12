@@ -1214,7 +1214,7 @@ namespace UnityEngine.TextCore.LowLevel
         {
             int count = srcList.Count;
 
-            if (dstArray == null || dstArray.Length < count + 1)
+            if (dstArray == null || dstArray.Length <= count)
             {
                 int size = Mathf.NextPowerOfTwo(count + 1);
 
@@ -1237,7 +1237,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// </summary>
         static void SetMarshallingArraySize<T>(ref T[] marshallingArray, int recordCount)
         {
-            if (marshallingArray == null || marshallingArray.Length < recordCount)
+            if (marshallingArray == null || marshallingArray.Length <= recordCount)
             {
                 int size = Mathf.NextPowerOfTwo(recordCount + 1);
 

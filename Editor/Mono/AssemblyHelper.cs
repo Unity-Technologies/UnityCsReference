@@ -11,6 +11,8 @@ using Mono.Cecil;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
+using System.Runtime.InteropServices;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -317,30 +319,48 @@ namespace UnityEditor
             originalClassNameSpacesArray = originalNamespaces.ToArray();
         }
 
+        struct GetAssemblyResolverData
+        {
+            public IAssemblyResolver Resolver;
+            public string[] SearchDirs;
+        }
+
+        static GetAssemblyResolverData GetAssemblyResolver(BuildTarget targetPlatform, bool isEditor, string assemblyPathName, string[] searchDirs)
+        {
+            var target = ModuleManager.GetTargetStringFromBuildTarget(targetPlatform);
+            var extension = ModuleManager.GetCompilationExtension(target);
+            var extraPaths = extension.GetCompilerExtraAssemblyPaths(isEditor, assemblyPathName);
+            if (extraPaths != null && extraPaths.Length > 0)
+            {
+                var dirs = new List<string>(searchDirs);
+                dirs.AddRange(extraPaths);
+                searchDirs = dirs.ToArray();
+            }
+
+            var assemblyResolver = extension.GetAssemblyResolver(isEditor, assemblyPathName, searchDirs);
+
+            return new GetAssemblyResolverData
+            {
+                Resolver = assemblyResolver,
+                SearchDirs = searchDirs
+            };
+        }
+
         /// Extract information about all types in the specified assembly, searchDirs might be used to resolve dependencies.
         static public AssemblyTypeInfoGenerator.ClassInfo[] ExtractAssemblyTypeInfo(BuildTarget targetPlatform, bool isEditor, string assemblyPathName, string[] searchDirs)
         {
             try
             {
-                var target = ModuleManager.GetTargetStringFromBuildTarget(targetPlatform);
-                var extension = ModuleManager.GetCompilationExtension(target);
-                var extraPaths = extension.GetCompilerExtraAssemblyPaths(isEditor, assemblyPathName);
-                if (extraPaths != null && extraPaths.Length > 0)
-                {
-                    var dirs = new List<string>(searchDirs);
-                    dirs.AddRange(extraPaths);
-                    searchDirs = dirs.ToArray();
-                }
-                var assemblyResolver = extension.GetAssemblyResolver(isEditor, assemblyPathName, searchDirs);
+                var assemblyResolverData = GetAssemblyResolver(targetPlatform, isEditor, assemblyPathName, searchDirs);
 
                 AssemblyTypeInfoGenerator gen;
-                if (assemblyResolver == null)
+                if (assemblyResolverData.Resolver == null)
                 {
-                    gen = new AssemblyTypeInfoGenerator(assemblyPathName, searchDirs);
+                    gen = new AssemblyTypeInfoGenerator(assemblyPathName, assemblyResolverData.SearchDirs);
                 }
                 else
                 {
-                    gen = new AssemblyTypeInfoGenerator(assemblyPathName, assemblyResolver);
+                    gen = new AssemblyTypeInfoGenerator(assemblyPathName, assemblyResolverData.Resolver);
                 }
 
                 return gen.GatherClassInfo();
@@ -349,6 +369,101 @@ namespace UnityEditor
             {
                 throw new Exception("ExtractAssemblyTypeInfo: Failed to process " + assemblyPathName + ", " + ex);
             }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct RuntimeInitializeOnLoadMethodsData
+        {
+            public RuntimeInitializeClassInfo[] classInfos;
+            public int methodsCount;
+        }
+
+        static void FindRuntimeInitializeOnLoadMethodAttributes(TypeDefinition type,
+            string assemblyName,
+            ref List<RuntimeInitializeClassInfo> classInfoList,
+            ref int methodCount)
+        {
+            if (!type.HasMethods)
+                return;
+
+            foreach (var method in type.Methods)
+            {
+                // RuntimeInitializeOnLoadMethod only works on static methods.
+                if (!method.IsStatic)
+                    continue;
+
+                foreach (var attribute in method.CustomAttributes)
+                {
+                    if (attribute.AttributeType.FullName == "UnityEngine.RuntimeInitializeOnLoadMethodAttribute")
+                    {
+                        RuntimeInitializeLoadType loadType = RuntimeInitializeLoadType.AfterSceneLoad;
+
+                        if (attribute.ConstructorArguments != null && attribute.ConstructorArguments.Count > 0)
+                            loadType = (RuntimeInitializeLoadType)attribute.ConstructorArguments[0].Value;
+
+                        RuntimeInitializeClassInfo classInfo = new RuntimeInitializeClassInfo();
+
+                        classInfo.assemblyName = assemblyName;
+                        classInfo.className = type.FullName;
+                        classInfo.methodNames = new[] { method.Name };
+                        classInfo.loadTypes = new[] { loadType };
+                        classInfoList.Add(classInfo);
+                        methodCount++;
+                    }
+                }
+            }
+        }
+
+        [RequiredByNativeCode]
+        public static RuntimeInitializeOnLoadMethodsData ExtractPlayerRuntimeInitializeOnLoadMethods(BuildTarget targetPlatform, string[] assemblyPaths, string[] searchDirs)
+        {
+            var classInfoList = new List<RuntimeInitializeClassInfo>();
+            int methodCount = 0;
+
+            foreach (var assemblyPath in assemblyPaths)
+            {
+                try
+                {
+                    var assemblyResolverData = GetAssemblyResolver(targetPlatform, false, assemblyPath, searchDirs);
+
+                    if (assemblyResolverData.Resolver == null)
+                    {
+                        var resolver = new DefaultAssemblyResolver();
+                        foreach (var searchDir in searchDirs)
+                            resolver.AddSearchDirectory(searchDir);
+
+                        assemblyResolverData.Resolver = resolver;
+                    }
+
+                    var assembly = AssemblyDefinition.ReadAssembly(assemblyPath, new ReaderParameters
+                    {
+                        AssemblyResolver = assemblyResolverData.Resolver
+                    });
+
+                    var assemblyName = assembly.Name.Name;
+
+                    foreach (var module in assembly.Modules)
+                    {
+                        foreach (var type in module.Types)
+                        {
+                            FindRuntimeInitializeOnLoadMethodAttributes(type,
+                                assemblyName,
+                                ref classInfoList,
+                                ref methodCount);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception("ExtractPlayerRuntimeInitializeOnLoadMethods: Failed to process " + assemblyPath + ", " + ex);
+                }
+            }
+
+            var data = new RuntimeInitializeOnLoadMethodsData();
+            data.classInfos = classInfoList.ToArray();
+            data.methodsCount = methodCount;
+
+            return data;
         }
 
         internal static Type[] GetTypesFromAssembly(Assembly assembly)
