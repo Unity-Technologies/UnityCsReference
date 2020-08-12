@@ -76,6 +76,44 @@ namespace UnityEditor.PackageManager.UI
             this.interactiveImport = interactiveImport;
         }
 
+        internal static IEnumerable<Sample> FindByPackage(PackageInfo package)
+        {
+            if (package != null)
+            {
+                if (string.IsNullOrEmpty(package?.resolvedPath))
+                    return Enumerable.Empty<Sample>();
+                var jsonPath = Path.Combine(package.resolvedPath, "package.json");
+                if (!File.Exists(jsonPath))
+                    return Enumerable.Empty<Sample>();
+                try
+                {
+                    var packageJson = Json.Deserialize(File.ReadAllText(jsonPath)) as Dictionary<string, object>;
+                    var samples = packageJson.GetList<IDictionary<string, object>>("samples");
+                    return samples?.Select(sample =>
+                    {
+                        var displayName = sample.GetString("displayName");
+                        var path = sample.GetString("path");
+                        var description = sample.GetString("description");
+                        var interactiveImport = sample.Get("interactiveImport", false);
+                        var resolvedSamplePath = Path.Combine(package.resolvedPath, path);
+                        var importPath = IOUtils.CombinePaths(
+                            Application.dataPath,
+                            "Samples",
+                            IOUtils.SanitizeFileName(package.displayName),
+                            package.version,
+                            IOUtils.SanitizeFileName(displayName)
+                        );
+                        return new Sample(displayName, description, resolvedSamplePath, importPath, interactiveImport);
+                    });
+                }
+                catch (Exception)
+                {
+                    return Enumerable.Empty<Sample>();
+                }
+            }
+            return Enumerable.Empty<Sample>();
+        }
+
         /// <summary>
         /// Given a package of a specific version, find a list of samples in that package.
         /// </summary>
@@ -85,15 +123,18 @@ namespace UnityEditor.PackageManager.UI
         public static IEnumerable<Sample> FindByPackage(string packageName, string packageVersion)
         {
             var package = PackageDatabase.instance.GetPackage(packageName);
-            if (package != null)
+            if (package == null)
             {
-                var version = package.installedVersion;
-                if (!string.IsNullOrEmpty(packageVersion))
-                    version = package.versions.FirstOrDefault(v => v.version == packageVersion);
-                if (version != null)
-                    return version.samples;
+                return FindByPackage(PackageInfo.GetAll().Where(p => { return p.name == packageName; }).FirstOrDefault());
             }
-            return new List<Sample>();
+            else
+            {
+                if (string.IsNullOrEmpty(packageVersion))
+                {
+                    return FindByPackage(package.primaryVersion.packageInfo);
+                }
+                else return FindByPackage(package.versions?.Where(v => v.versionString == packageVersion).FirstOrDefault().packageInfo);
+            }
         }
 
         /// <summary>

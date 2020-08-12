@@ -563,12 +563,9 @@ namespace UnityEditor
                     m_DeveloperModeDirty = true;
             }
 
-            using (new EditorGUI.DisabledScope(!pro))
-            {
-                int newSkin = EditorGUILayout.Popup(GeneralProperties.editorSkin, !EditorGUIUtility.isProSkin ? 0 : 1, GeneralProperties.editorSkinOptions);
-                if ((!EditorGUIUtility.isProSkin ? 0 : 1) != newSkin)
-                    InternalEditorUtility.SwitchSkinAndRepaintAllViews();
-            }
+            int newSkin = EditorGUILayout.Popup(GeneralProperties.editorSkin, !EditorGUIUtility.isProSkin ? 0 : 1, GeneralProperties.editorSkinOptions);
+            if ((!EditorGUIUtility.isProSkin ? 0 : 1) != newSkin)
+                InternalEditorUtility.SwitchSkinAndRepaintAllViews();
 
             if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
             {

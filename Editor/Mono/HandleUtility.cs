@@ -64,6 +64,46 @@ namespace UnityEditor
             return -(Vector2.Dot(x1 - x0, x2 - x1) / (x2 - x1).sqrMagnitude);
         }
 
+        // This limits the "shoot off into infinity" factor when the cursor ray and constraint are near parallel.
+        // Increase this value to more conservatively restrict movement, lower to allow more extreme values.
+        // Ex, with a camera roughly 30 degrees to the handle a value of .1 restricts translation to ~1500m, whereas a
+        // value of .01 will allow closer to 50000 units of movement.
+        const float k_MinRayConstraintDot = .05f;
+
+        // constraintOrigin and constraintDir are expected to be in Handle space (ie, origin and direction are
+        // pre-multiplied by the Handles.matrix)
+        internal static bool CalcPositionOnConstraint(Camera camera, Vector2 guiPosition, Vector3 constraintOrigin, Vector3 constraintDir, out Vector3 position)
+        {
+            float pointOnLineParam;
+            if (CalcParamOnConstraint(camera, guiPosition, constraintOrigin, constraintDir, out pointOnLineParam))
+            {
+                position = constraintOrigin + constraintDir * pointOnLineParam;
+                return true;
+            }
+
+            position = Vector3.zero;
+            return false;
+        }
+
+        internal static bool CalcParamOnConstraint(Camera camera, Vector2 guiPosition, Vector3 constraintOrigin, Vector3 constraintDir, out float parameterization)
+        {
+            Vector3 constraintToCameraTangent = Vector3.Cross(constraintDir, camera.transform.position - constraintOrigin);
+            Vector3 constraintPlaneNormal = Vector3.Cross(constraintDir, constraintToCameraTangent);
+            Plane plane = new Plane(constraintPlaneNormal, constraintOrigin);
+            var ray = GUIPointToWorldRay(guiPosition);
+            float distance;
+
+            if (Vector3.Dot(ray.direction, plane.normal) > k_MinRayConstraintDot && plane.Raycast(ray, out distance))
+            {
+                var pointOnPlane = ray.GetPoint(distance);
+                parameterization = PointOnLineParameter(pointOnPlane, constraintOrigin, constraintDir);
+                return !float.IsInfinity(parameterization);
+            }
+
+            parameterization = 0f;
+            return false;
+        }
+
         // Returns the parameter for the projection of the /point/ on the given line
         public static float PointOnLineParameter(Vector3 point, Vector3 linePoint, Vector3 lineDirection)
         {
@@ -362,6 +402,33 @@ namespace UnityEditor
                 float d = DistanceToLineInternal(mouse, p1, p2);
                 if (d < dist)
                     dist = d;
+            }
+
+            return dist;
+        }
+
+        // Pixel distance from mouse pointer to a polyline.
+        internal static float DistanceToPolyLine(Vector3[] points, bool loop, out int index)
+        {
+            Matrix4x4 handleMatrix = Handles.matrix;
+            CameraProjectionCache cam = new CameraProjectionCache(Camera.current, Screen.height);
+            Vector2 mouse = Event.current.mousePosition;
+
+            Vector2 p1 = cam.WorldToGUIPoint(handleMatrix.MultiplyPoint3x4(points[0]));
+            Vector2 p2 = cam.WorldToGUIPoint(handleMatrix.MultiplyPoint3x4(points[1]));
+            float dist = DistanceToLineInternal(mouse, p1, p2);
+            index = 0;
+
+            for (int i = 2, c = points.Length; i < (loop ? c + 1 : c); i++)
+            {
+                p1 = p2;
+                p2 = cam.WorldToGUIPoint(handleMatrix.MultiplyPoint3x4(points[i % c]));
+                float d = DistanceToLineInternal(mouse, p1, p2);
+                if (d < dist)
+                {
+                    index = i - 1;
+                    dist = d;
+                }
             }
             return dist;
         }

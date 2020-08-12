@@ -1654,6 +1654,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 compilationTaskOptions |= CompilationTaskOptions.RunPostProcessors;
             }
 
+            // Do not overwrite IsCodeGenAssemblyChanged if it was
+            // set to true during a previous failed compilation within
+            // the same domain.
+            if (IsCodeGenAssemblyChanged == false)
+            {
+                IsCodeGenAssemblyChanged = pendingCodeGenAssembly;
+            }
+
             // Compile to tempBuildDirectory
             compilationTask = new CompilationTask(scriptAssemblies,
                 tempBuildDirectory,
@@ -1676,14 +1684,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             compilationTask.OnCompilationTaskFinished += (context) =>
             {
-                // Do not overwrite IsCodeGenAssemblyChanged if it was
-                // set to true during a previous failed compilation within
-                // the same domain.
-                if (IsCodeGenAssemblyChanged == false)
-                {
-                    IsCodeGenAssemblyChanged = pendingCodeGenAssembly;
-                }
-
                 InvokeCompilationFinished(context);
 
                 var stopwatch = stopWatchDict[context];

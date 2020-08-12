@@ -369,7 +369,7 @@ namespace UnityEditor
             m_SearchFilter.folders = validFolders.ToArray();
         }
 
-        private void ResetViews()
+        internal void ResetViews()
         {
             if (m_AssetTree != null)
             {
