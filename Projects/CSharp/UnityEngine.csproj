@@ -937,6 +937,9 @@
     <Compile Include="..\..\Modules\UIElements\Cursor.cs">
       <Link>Modules\UIElements\Cursor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Delegates\TextDelegates.cs">
+      <Link>Modules\UIElements\Delegates\TextDelegates.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\DisposeHelper.cs">
       <Link>Modules\UIElements\DisposeHelper.cs</Link>
     </Compile>

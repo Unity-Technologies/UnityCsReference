@@ -17,6 +17,7 @@ namespace UnityEngine.UIElements
         Align alignItems { get; }
         Align alignSelf { get; }
         Color backgroundColor { get; }
+        Background backgroundImage { get; }
         Color borderBottomColor { get; }
         float borderBottomLeftRadius { get; }
         float borderBottomRightRadius { get; }

@@ -809,7 +809,12 @@ namespace UnityEditor.Experimental.GraphView
             if (p != null)
             {
                 if (graphViewShader == null)
-                    graphViewShader = Shader.Find("Hidden/GraphView/GraphViewUIE");
+                {
+                    if (UIElementsPackageUtility.IsUIEPackageLoaded)
+                        graphViewShader = Shader.Find("Hidden/UIE-GraphView");
+                    else
+                        graphViewShader = Shader.Find("Hidden/GraphView/GraphViewUIE");
+                }
                 p.standardShader = graphViewShader;
                 HostView ownerView = p.ownerObject as HostView;
                 if (ownerView != null && ownerView.actualView != null)

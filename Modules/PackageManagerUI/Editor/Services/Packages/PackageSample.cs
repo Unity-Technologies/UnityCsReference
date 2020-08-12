@@ -7,6 +7,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -76,6 +77,44 @@ namespace UnityEditor.PackageManager.UI
             this.interactiveImport = interactiveImport;
         }
 
+        internal static IEnumerable<Sample> FindByPackage(PackageInfo package)
+        {
+            if (package != null)
+            {
+                if (string.IsNullOrEmpty(package?.resolvedPath))
+                    return Enumerable.Empty<Sample>();
+                var jsonPath = Path.Combine(package.resolvedPath, "package.json");
+                if (!File.Exists(jsonPath))
+                    return Enumerable.Empty<Sample>();
+                try
+                {
+                    var packageJson = Json.Deserialize(File.ReadAllText(jsonPath)) as Dictionary<string, object>;
+                    var samples = packageJson.GetList<IDictionary<string, object>>("samples");
+                    return samples?.Select(sample =>
+                    {
+                        var displayName = sample.GetString("displayName");
+                        var path = sample.GetString("path");
+                        var description = sample.GetString("description");
+                        var interactiveImport = sample.Get("interactiveImport", false);
+                        var resolvedSamplePath = Path.Combine(package.resolvedPath, path);
+                        var importPath = IOUtils.CombinePaths(
+                            Application.dataPath,
+                            "Samples",
+                            IOUtils.SanitizeFileName(package.displayName),
+                            package.version,
+                            IOUtils.SanitizeFileName(displayName)
+                        );
+                        return new Sample(displayName, description, resolvedSamplePath, importPath, interactiveImport);
+                    });
+                }
+                catch (Exception)
+                {
+                    return Enumerable.Empty<Sample>();
+                }
+            }
+            return Enumerable.Empty<Sample>();
+        }
+
         /// <summary>
         /// Given a package of a specific version, find a list of samples in that package.
         /// </summary>
@@ -84,15 +123,13 @@ namespace UnityEditor.PackageManager.UI
         /// <returns>A list of samples in the given package</returns>
         public static IEnumerable<Sample> FindByPackage(string packageName, string packageVersion)
         {
-            var package = PackageDatabase.instance.GetPackage(packageName);
-            if (package != null)
-            {
-                var version = package.versions.installed;
-                if (!string.IsNullOrEmpty(packageVersion))
-                    version = package.versions.FirstOrDefault(v => v.version?.ToString() == packageVersion);
-                if (version != null)
-                    return version.samples;
-            }
+            if (UpmCache.instance.installedPackageInfos.Count() == 0)
+                UpmCache.instance.SetInstalledPackageInfos(PackageInfo.GetAll());
+            var package = UpmCache.instance.GetInstalledPackageInfo(packageName);
+
+            if (package?.version == packageVersion || string.IsNullOrEmpty(packageVersion))
+                return FindByPackage(package);
+
             return new List<Sample>();
         }
 
