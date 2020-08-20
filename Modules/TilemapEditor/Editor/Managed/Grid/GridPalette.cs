@@ -21,5 +21,29 @@ namespace UnityEditor
         /// <summary>Determines the sizing of cells for a Palette.</summary>
         [SerializeField]
         public CellSizing cellSizing;
+
+        [SerializeField]
+        private TransparencySortMode m_TransparencySortMode = TransparencySortMode.Default;
+
+        [SerializeField]
+        private Vector3 m_TransparencySortAxis = new Vector3(0.0f, 0.0f, 1.0f);
+
+        /// <summary>
+        /// Determines the transparency sorting mode of renderers in the Palette
+        /// </summary>
+        public TransparencySortMode transparencySortMode
+        {
+            get => m_TransparencySortMode;
+            set => m_TransparencySortMode = value;
+        }
+
+        /// <summary>
+        /// Determines the sorting axis if the transparency sort mode is set to Custom Axis Sort
+        /// </summary>
+        public Vector3 transparencySortAxis
+        {
+            get => m_TransparencySortAxis;
+            set =>  m_TransparencySortAxis = value;
+        }
     }
 }

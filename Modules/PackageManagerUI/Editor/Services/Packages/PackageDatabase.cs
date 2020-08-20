@@ -508,7 +508,7 @@ namespace UnityEditor.PackageManager.UI
 
         public virtual void Install(IPackageVersion version)
         {
-            if (version.isInstalled)
+            if (version == null || version.isInstalled)
                 return;
             m_UpmClient.AddById(version.uniqueId);
         }

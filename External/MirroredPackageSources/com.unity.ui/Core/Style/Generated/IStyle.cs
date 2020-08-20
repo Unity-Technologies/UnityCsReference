@@ -109,7 +109,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         StyleEnum<DisplayStyle> display { get; set; }
         /// <summary>
-        /// Initial main size of a flex item, on the main flex axis. The final layout mught be smaller or larger, according to the flex shrinking and growing determined by the flex property.
+        /// Initial main size of a flex item, on the main flex axis. The final layout might be smaller or larger, according to the flex shrinking and growing determined by the other flex properties.
         /// </summary>
         StyleLength flexBasis { get; set; }
         /// <summary>

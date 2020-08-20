@@ -248,6 +248,116 @@ namespace UnityEngine.Rendering
             }
         }
 
+        public void RequestAsyncReadbackIntoNativeSlice<T>(ref NativeSlice<T> output, ComputeBuffer src, Action<AsyncGPUReadbackRequest> callback) where T : struct
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            unsafe
+            {
+                var data = AsyncRequestNativeArrayData.CreateAndCheckAccess(output);
+                Internal_RequestAsyncReadback_1(src, callback, &data);
+            }
+        }
+
+        public void RequestAsyncReadbackIntoNativeSlice<T>(ref NativeSlice<T> output, ComputeBuffer src, int size, int offset, Action<AsyncGPUReadbackRequest> callback) where T : struct
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            unsafe
+            {
+                var data = AsyncRequestNativeArrayData.CreateAndCheckAccess(output);
+                Internal_RequestAsyncReadback_2(src, size, offset, callback, &data);
+            }
+        }
+
+        public void RequestAsyncReadbackIntoNativeSlice<T>(ref NativeSlice<T> output, GraphicsBuffer src, Action<AsyncGPUReadbackRequest> callback) where T : struct
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            unsafe
+            {
+                var data = AsyncRequestNativeArrayData.CreateAndCheckAccess(output);
+                Internal_RequestAsyncReadback_8(src, callback, &data);
+            }
+        }
+
+        public void RequestAsyncReadbackIntoNativeSlice<T>(ref NativeSlice<T> output, GraphicsBuffer src, int size, int offset, Action<AsyncGPUReadbackRequest> callback) where T : struct
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            unsafe
+            {
+                var data = AsyncRequestNativeArrayData.CreateAndCheckAccess(output);
+                Internal_RequestAsyncReadback_9(src, size, offset, callback, &data);
+            }
+        }
+
+        public void RequestAsyncReadbackIntoNativeSlice<T>(ref NativeSlice<T> output, Texture src, Action<AsyncGPUReadbackRequest> callback) where T : struct
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            unsafe
+            {
+                var data = AsyncRequestNativeArrayData.CreateAndCheckAccess(output);
+                Internal_RequestAsyncReadback_3(src, callback, &data);
+            }
+        }
+
+        public void RequestAsyncReadbackIntoNativeSlice<T>(ref NativeSlice<T> output, Texture src, int mipIndex, Action<AsyncGPUReadbackRequest> callback) where T : struct
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            unsafe
+            {
+                var data = AsyncRequestNativeArrayData.CreateAndCheckAccess(output);
+                Internal_RequestAsyncReadback_4(src, mipIndex, callback, &data);
+            }
+        }
+
+        public void RequestAsyncReadbackIntoNativeSlice<T>(ref NativeSlice<T> output, Texture src, int mipIndex, TextureFormat dstFormat, Action<AsyncGPUReadbackRequest> callback) where T : struct
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            unsafe
+            {
+                var data = AsyncRequestNativeArrayData.CreateAndCheckAccess(output);
+                Internal_RequestAsyncReadback_5(src, mipIndex, GraphicsFormatUtility.GetGraphicsFormat(dstFormat, QualitySettings.activeColorSpace == ColorSpace.Linear), callback, &data);
+            }
+        }
+
+        public void RequestAsyncReadbackIntoNativeSlice<T>(ref NativeSlice<T> output, Texture src, int mipIndex, GraphicsFormat dstFormat, Action<AsyncGPUReadbackRequest> callback) where T : struct
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            unsafe
+            {
+                var data = AsyncRequestNativeArrayData.CreateAndCheckAccess(output);
+                Internal_RequestAsyncReadback_5(src, mipIndex, dstFormat, callback, &data);
+            }
+        }
+
+        public void RequestAsyncReadbackIntoNativeSlice<T>(ref NativeSlice<T> output, Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, Action<AsyncGPUReadbackRequest> callback) where T : struct
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            unsafe
+            {
+                var data = AsyncRequestNativeArrayData.CreateAndCheckAccess(output);
+                Internal_RequestAsyncReadback_6(src, mipIndex, x, width, y, height, z, depth, callback, &data);
+            }
+        }
+
+        public void RequestAsyncReadbackIntoNativeSlice<T>(ref NativeSlice<T> output, Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, TextureFormat dstFormat, Action<AsyncGPUReadbackRequest> callback) where T : struct
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            unsafe
+            {
+                var data = AsyncRequestNativeArrayData.CreateAndCheckAccess(output);
+                Internal_RequestAsyncReadback_7(src, mipIndex, x, width, y, height, z, depth, GraphicsFormatUtility.GetGraphicsFormat(dstFormat, QualitySettings.activeColorSpace == ColorSpace.Linear), callback, &data);
+            }
+        }
+
+        public void RequestAsyncReadbackIntoNativeSlice<T>(ref NativeSlice<T> output, Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, GraphicsFormat dstFormat, Action<AsyncGPUReadbackRequest> callback) where T : struct
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            unsafe
+            {
+                var data = AsyncRequestNativeArrayData.CreateAndCheckAccess(output);
+                Internal_RequestAsyncReadback_7(src, mipIndex, x, width, y, height, z, depth, dstFormat, callback, &data);
+            }
+        }
+
         [NativeMethod("AddRequestAsyncReadback")]
         unsafe extern private void Internal_RequestAsyncReadback_1([NotNull] ComputeBuffer src, [NotNull] Action<AsyncGPUReadbackRequest> callback, AsyncRequestNativeArrayData* nativeArrayData = null);
         [NativeMethod("AddRequestAsyncReadback")]

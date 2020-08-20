@@ -454,7 +454,6 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Vector2 originalMousePosition { get; private set; }
 
-
         internal EventDebugger eventLogger { get; set; }
 
         internal bool log => eventLogger != null;
@@ -503,7 +502,6 @@ namespace UnityEngine.UIElements
             pooled = false;
 
             eventLogger = null;
-
         }
 
         /// <summary>

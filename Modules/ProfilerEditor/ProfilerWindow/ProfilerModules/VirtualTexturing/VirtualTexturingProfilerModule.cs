@@ -4,9 +4,9 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEditor.Profiling;
-using UnityEngine.Profiling;
 using UnityEditor;
 namespace UnityEditorInternal.Profiling
 {
@@ -19,7 +19,7 @@ namespace UnityEditorInternal.Profiling
         const string k_IconName = "Profiler.VirtualTexturing";
         const int k_DefaultOrderIndex = 13;
         static readonly string k_Name = "Virtual Texturing Profiler";
-        const string k_VTCountersCategoryName = "VirtualTexturing";
+        static readonly string k_VTCountersCategoryName = ProfilerCategory.VirtualTexturing.Name;
 
         static readonly string[] k_VirtualTexturingCounterNames =
         {
@@ -32,11 +32,11 @@ namespace UnityEditorInternal.Profiling
 
         public VirtualTexturingProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName, Chart.ChartType.Line) {}
 
-        public override ProfilerArea area => ProfilerArea.VirtualTexturing;
         protected override int defaultOrderIndex => k_DefaultOrderIndex;
 
         public override void OnEnable()
         {
+            base.OnEnable();
             if (m_VTProfilerView == null)
             {
                 m_VTProfilerView = new VirtualTexturingProfilerView();

@@ -659,7 +659,7 @@ namespace UnityEditor
 
             if (view)
             {
-                if (parent.window.showMode == ShowMode.MainWindow)
+                if (parent.window.showMode == ShowMode.MainWindow && view.CanMaximize())
                     menu.AddItem(EditorGUIUtility.TrTextContent("Maximize"), !(parent is SplitView), Maximize, view);
                 else
                     menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Maximize"));

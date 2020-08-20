@@ -53,19 +53,15 @@ namespace UnityEditor.PackageManager.UI
         private readonly Dictionary<string, UpmBaseOperation> m_ExtraFetchOperations = new Dictionary<string, UpmBaseOperation>();
 
         [NonSerialized]
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        [NonSerialized]
         private UpmCache m_UpmCache;
         [NonSerialized]
         private IOProxy m_IOProxy;
         [NonSerialized]
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
-        public void ResolveDependencies(PackageManagerPrefs packageManagerPrefs,
-            UpmCache upmCache,
+        public void ResolveDependencies(UpmCache upmCache,
             IOProxy IOProxy,
             PackageManagerProjectSettingsProxy settingsProxy)
         {
-            m_PackageManagerPrefs = packageManagerPrefs;
             m_UpmCache = upmCache;
             m_IOProxy = IOProxy;
             m_SettingsProxy = settingsProxy;
@@ -355,7 +351,7 @@ namespace UnityEditor.PackageManager.UI
                 onProductPackageChanged?.Invoke(m_UpmCache.GetProductId(package.name), package);
         }
 
-        private void OnShowPreviewPackagesesChanged(bool showPreview)
+        private void OnShowPreviewPackagesChanged(bool showPreview)
         {
             var updatedUpmPackages = new List<UpmPackage>();
             var updatedProductPackages = new List<UpmPackage>();
@@ -470,11 +466,14 @@ namespace UnityEditor.PackageManager.UI
 
             if (removeOperation.isInProgress)
                 SetupRemoveOperation();
+
+            if (searchOperation.isInProgress)
+                SearchAll();
         }
 
         public void OnEnable()
         {
-            m_SettingsProxy.onEnablePreviewPackagesChanged += OnShowPreviewPackagesesChanged;
+            m_SettingsProxy.onEnablePreviewPackagesChanged += OnShowPreviewPackagesChanged;
             m_UpmCache.onPackageInfosUpdated += OnPackageInfosUpdated;
 
             RestoreInProgressOperations();
@@ -482,7 +481,7 @@ namespace UnityEditor.PackageManager.UI
 
         public void OnDisable()
         {
-            m_SettingsProxy.onEnablePreviewPackagesChanged -= OnShowPreviewPackagesesChanged;
+            m_SettingsProxy.onEnablePreviewPackagesChanged -= OnShowPreviewPackagesChanged;
             m_UpmCache.onPackageInfosUpdated -= OnPackageInfosUpdated;
         }
 

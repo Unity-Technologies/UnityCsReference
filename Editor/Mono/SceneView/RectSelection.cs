@@ -47,6 +47,12 @@ namespace UnityEditor
                 case EventType.MouseMove:
                     if (!Tools.viewToolActive)
                         HandleUtility.AddDefaultControl(id);
+
+                    //Handle the case of the drag being canceled
+                    if (m_RectSelecting && GUIUtility.hotControl != id)
+                    {
+                        CompleteRectSelection();
+                    }
                     break;
 
                 case EventType.MouseDown:
@@ -124,12 +130,7 @@ namespace UnityEditor
                         GUIUtility.hotControl = 0;
                         if (m_RectSelecting)
                         {
-                            EditorApplication.modifierKeysChanged -= SendCommandsOnModifierKeys;
-                            m_RectSelecting = false;
-                            ActiveEditorTracker.delayFlushDirtyRebuild = false;
-                            ActiveEditorTracker.RebuildAllIfNecessary();
-                            m_SelectionStart = new Object[0];
-                            rectSelectionFinished();
+                            CompleteRectSelection();
                             evt.Use();
                         }
                         else
@@ -205,6 +206,16 @@ namespace UnityEditor
             }
 
             Handles.EndGUI();
+        }
+
+        void CompleteRectSelection()
+        {
+            EditorApplication.modifierKeysChanged -= SendCommandsOnModifierKeys;
+            m_RectSelecting = false;
+            ActiveEditorTracker.delayFlushDirtyRebuild = false;
+            ActiveEditorTracker.RebuildAllIfNecessary();
+            m_SelectionStart = new Object[0];
+            rectSelectionFinished();
         }
 
         static void UpdateSelection(Object[] existingSelection, Object newObject, SelectionType type, bool isRectSelection)

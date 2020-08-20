@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
 
@@ -25,6 +27,7 @@ namespace UnityEditorInternal
         public float m_DataScale;
         public ChartViewData m_Data;
         public ChartSeriesViewData[] m_Series;
+        string[] m_CachedSeriesCategories;
         // For some charts, every line is scaled individually, so every data series gets their own range based on their own max scale.
         // For charts that share their scale (like the Networking charts) all series get adjusted to the total max of the chart.
         // Shared scale is only used for line charts and should only be used when every series shares the same data unit.
@@ -160,10 +163,6 @@ namespace UnityEditorInternal
                     maxValue *= (1.05f + i * 0.05f);
                     m_Series[i].rangeAxis = new Vector2(0f, maxValue);
                 }
-                if (usesCounters)
-                {
-                    ProfilerDriver.GetStatisticsAvailabilityStatesByCategory(m_Series[i].category, firstEmptyFrame, m_Data.dataAvailable);
-                }
             }
 
             if (m_SharedScale && m_Type == ChartType.Line)
@@ -179,6 +178,10 @@ namespace UnityEditorInternal
             if (!usesCounters)
             {
                 ProfilerDriver.GetStatisticsAvailabilityStates(m_Area, firstEmptyFrame, m_Data.dataAvailable);
+            }
+            else
+            {
+                ProfilerDriver.GetAnyStatisticsAvailableInCategories(m_CachedSeriesCategories, firstEmptyFrame, m_Data.dataAvailable);
             }
         }
 
@@ -238,6 +241,26 @@ namespace UnityEditorInternal
             for (int k = 0; k < m_Data.numSeries; ++k)
                 m_Data.series[k].rangeAxis = new Vector2(0f, timeMax);
             m_Data.UpdateChartGrid(timeMax);
+        }
+
+        public void ConfigureChartSeries(int historySize, List<ProfilerCounterData> counters)
+        {
+            var chartAreaColors = ProfilerColors.chartAreaColors;
+            var categories = new HashSet<string>();
+            for (int i = 0; i < counters.Count; ++i)
+            {
+                var counter = counters[i];
+                var category = counter.m_Category;
+                m_Series[i] = new ChartSeriesViewData(counter.m_Name, category, historySize, chartAreaColors[i % chartAreaColors.Length]);
+                for (int frameIdx = 0; frameIdx < historySize; ++frameIdx)
+                {
+                    m_Series[i].xValues[frameIdx] = frameIdx;
+                }
+                categories.Add(category);
+            }
+
+            m_CachedSeriesCategories = new string[categories.Count];
+            categories.CopyTo(m_CachedSeriesCategories);
         }
     }
 }

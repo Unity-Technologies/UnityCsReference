@@ -32,6 +32,7 @@ namespace UnityEditor
             public GUIContent create = EditorGUIUtility.TrTextContent("", "Create and assign a Particle System as sub-emitter.");
             public GUIContent inherit = EditorGUIUtility.TrTextContent("Inherit", "Determines what properties to inherit from the Parent System.");
             public GUIContent emitProbability = EditorGUIUtility.TrTextContent("Emit Probability", "Determines the proportion of sub-emitter spawn events that successfully triggers the associated sub-emitter.");
+            public GUIContent invalidSubEmitterParenting = EditorGUIUtility.TrTextContent("The following sub-emitters are not descendents of their owning Particle System. Reparent the sub-emitters so that they are children of their owning system:");
 
             public GUIContent[] subEmitterTypes = new GUIContent[]
             {
@@ -290,6 +291,39 @@ namespace UnityEditor
             List<Object> props = GetSubEmitterProperties();
 
             m_EmittersList.DoLayoutList();
+
+            // show warnings for any subemitters that are not a descendent of the owning system
+            string invalidSubEmitters = "";
+            foreach (var ps in m_ParticleSystemUI.m_ParticleSystems)
+            {
+                var subEmitters = ps.subEmitters;
+                for (int i = 0; i < subEmitters.subEmittersCount; i++)
+                {
+                    var subEmitter = subEmitters.GetSubEmitterSystem(i);
+                    if (subEmitter != null)
+                    {
+                        bool valid = false;
+
+                        var parent = subEmitter.transform.parent;
+                        while (parent != null)
+                        {
+                            if (parent == ps.transform)
+                            {
+                                valid = true;
+                                break;
+                            }
+
+                            parent = parent.transform;
+                        }
+
+                        if (!valid)
+                            invalidSubEmitters += string.Format(" - {0}\n", subEmitter.name);
+                    }
+                }
+            }
+
+            if (invalidSubEmitters.Length > 0)
+                EditorGUILayout.HelpBox(string.Format("{0}\n{1}", s_Texts.invalidSubEmitterParenting.text, invalidSubEmitters.TrimEnd('\n')), MessageType.Error, true);
 
             // get new list of subemitters, so we can check for changes
             List<Object> props2 = GetSubEmitterProperties();

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Profiling;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -24,7 +25,7 @@ namespace UnityEditorInternal.Profiling
         const string k_IconName = "Profiler.Rendering";
         const int k_DefaultOrderIndex = 2;
         static readonly string k_Name = LocalizationDatabase.GetLocalizedString("Rendering");
-        const string k_RenderCountersCategoryName = "Render";
+        static readonly string k_RenderCountersCategoryName = ProfilerCategory.Render.Name;
         static readonly ProfilerCounterData[] k_DefaultRenderAreaCounterNames =
         {
             new ProfilerCounterData()

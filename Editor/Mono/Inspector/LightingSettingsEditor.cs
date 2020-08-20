@@ -161,6 +161,7 @@ namespace UnityEditor
             public static readonly GUIContent lightmapperNotSupportedWarning = EditorGUIUtility.TrTextContent("The Lightmapper is not supported by the current render pipeline. Fallback is ");
             public static readonly GUIContent mixedModeNotSupportedWarning = EditorGUIUtility.TrTextContent("The Mixed mode is not supported by the current render pipeline. Fallback mode is ");
             public static readonly GUIContent directionalNotSupportedWarning = EditorGUIUtility.TrTextContent("Directional Mode is not supported. Fallback will be Non-Directional.");
+            public static readonly GUIContent denoiserNotSupportedWarning = EditorGUIUtility.TrTextContent("The current hardware or system configuration does not support the selected denoiser. Select a different denoiser.");
 
             public static readonly GUIContent autoGenerate = EditorGUIUtility.TrTextContent("Auto Generate", "Automatically generates lighting data in the Scene when any changes are made to the lighting systems.");
             public static readonly GUIContent enableBaked = EditorGUIUtility.TrTextContent("Baked Global Illumination", "Controls whether Mixed and Baked lights will use baked Global Illumination. If enabled, Mixed lights are baked using the specified Lighting Mode and Baked lights will be completely baked and not adjustable at runtime.");
@@ -205,9 +206,9 @@ namespace UnityEditor
             public static readonly GUIContent indirectSampleCount = EditorGUIUtility.TrTextContent("Indirect Samples", "Controls the number of samples the lightmapper will use for indirect lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");
             public static readonly GUIContent maxBounces = EditorGUIUtility.TrTextContent("Max Bounces", "The maximum number of bounces the Lightmapper computes for indirect lighting. The higher the value, the longer the bake time. Values of up to 10 are suitable for most Scenes. Values higher than 10 might lead to significantly longer bake times.");
             public static readonly GUIContent minBounces = EditorGUIUtility.TrTextContent("Min Bounces", "The minimum number of bounces the Lightmapper computes for indirect lighting. Lower values reduce bake times, but might increase lightmap noise. To improve performance during bakes, the Lightmapper terminates light paths that contribute little to the appearance of the Scene using a technique called Russian Roulette.");
-            public static readonly GUIContent denoisingWarningDirect = EditorGUIUtility.TrTextContent("Direct Denoiser", "Your hardware doesn't support denoising. To see minimum requirements, read the documentation.");
-            public static readonly GUIContent denoisingWarningIndirect = EditorGUIUtility.TrTextContent("Indirect Denoiser", "Your hardware doesn't support denoising. To see minimum requirements, read the documentation.");
-            public static readonly GUIContent denoisingWarningAO = EditorGUIUtility.TrTextContent("Ambient Occlusion Denoiser", "Your hardware doesn't support denoising. To see minimum requirements, read the documentation.");
+            public static readonly GUIContent denoisingWarningDirect = EditorGUIUtility.TrTextContent("Direct Denoiser", "Your hardware does not support denoising. For minimum requirements, please read the documentation.");
+            public static readonly GUIContent denoisingWarningIndirect = EditorGUIUtility.TrTextContent("Indirect Denoiser", "Your hardware does not support denoising. For minimum requirements, please read the documentation.");
+            public static readonly GUIContent denoisingWarningAO = EditorGUIUtility.TrTextContent("Ambient Occlusion Denoiser", "Your hardware Your hardware does not support denoising. For minimum requirements, please read the documentation.");
             public static readonly GUIContent denoiserTypeDirect = EditorGUIUtility.TrTextContent("Direct Denoiser", "Specifies the type of denoiser used to reduce noise for direct lights.");
             public static readonly GUIContent denoiserTypeIndirect = EditorGUIUtility.TrTextContent("Indirect Denoiser", "Specifies the type of denoiser used to reduce noise for indirect lights.");
             public static readonly GUIContent denoiserTypeAO = EditorGUIUtility.TrTextContent("Ambient Occlusion Denoiser", "Specifies the type of denoiser used to reduce noise for ambient occlusion.");
@@ -572,16 +573,17 @@ namespace UnityEditor
                                     if (m_PVRFilteringMode.intValue == (int)LightingSettings.FilterMode.Advanced && !m_PVRFilteringMode.hasMultipleDifferentValues)
                                     {
                                         // Check if the platform doesn't support denoising.
-                                        bool usingGPULightmapper = m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.ProgressiveGPU;
                                         bool anyDenoisingSupported = (Lightmapping.IsOptixDenoiserSupported() || Lightmapping.IsOpenImageDenoiserSupported() || Lightmapping.IsRadeonDenoiserSupported());
-                                        bool aoDenoisingSupported = DenoiserSupported((LightingSettings.DenoiserType)m_PVRDenoiserTypeAO.intValue);
-                                        bool directDenoisingSupported = DenoiserSupported((LightingSettings.DenoiserType)m_PVRDenoiserTypeDirect.intValue);
-                                        bool indirectDenoisingSupported = DenoiserSupported((LightingSettings.DenoiserType)m_PVRDenoiserTypeIndirect.intValue);
 
                                         EditorGUI.indentLevel++;
                                         using (new EditorGUI.DisabledScope(!anyDenoisingSupported))
                                         {
-                                            DrawDenoiserTypeDropdown(m_PVRDenoiserTypeDirect, directDenoisingSupported ? Styles.denoiserTypeDirect : Styles.denoisingWarningDirect, DenoiserTarget.Direct);
+                                            DrawDenoiserTypeDropdown(m_PVRDenoiserTypeDirect, anyDenoisingSupported ? Styles.denoiserTypeDirect : Styles.denoisingWarningDirect, DenoiserTarget.Direct);
+
+                                            if (anyDenoisingSupported && !DenoiserSupported((LightingSettings.DenoiserType)m_PVRDenoiserTypeDirect.intValue))
+                                            {
+                                                EditorGUILayout.HelpBox(Styles.denoiserNotSupportedWarning.text, MessageType.Info);
+                                            }
                                         }
 
                                         EditorGUILayout.PropertyField(m_PVRFilterTypeDirect, Styles.filterTypeDirect);
@@ -601,7 +603,12 @@ namespace UnityEditor
 
                                         using (new EditorGUI.DisabledScope(!anyDenoisingSupported))
                                         {
-                                            DrawDenoiserTypeDropdown(m_PVRDenoiserTypeIndirect, indirectDenoisingSupported ? Styles.denoiserTypeIndirect : Styles.denoisingWarningIndirect, DenoiserTarget.Indirect);
+                                            DrawDenoiserTypeDropdown(m_PVRDenoiserTypeIndirect, anyDenoisingSupported ? Styles.denoiserTypeIndirect : Styles.denoisingWarningIndirect, DenoiserTarget.Indirect);
+
+                                            if (anyDenoisingSupported && !DenoiserSupported((LightingSettings.DenoiserType)m_PVRDenoiserTypeIndirect.intValue))
+                                            {
+                                                EditorGUILayout.HelpBox(Styles.denoiserNotSupportedWarning.text, MessageType.Info);
+                                            }
                                         }
                                         EditorGUILayout.PropertyField(m_PVRFilterTypeIndirect, Styles.filterTypeIndirect);
 
@@ -622,7 +629,12 @@ namespace UnityEditor
 
                                             using (new EditorGUI.DisabledScope(!anyDenoisingSupported))
                                             {
-                                                DrawDenoiserTypeDropdown(m_PVRDenoiserTypeAO, aoDenoisingSupported ? Styles.denoiserTypeAO : Styles.denoisingWarningAO, DenoiserTarget.AO);
+                                                DrawDenoiserTypeDropdown(m_PVRDenoiserTypeAO, anyDenoisingSupported ? Styles.denoiserTypeAO : Styles.denoisingWarningAO, DenoiserTarget.AO);
+
+                                                if (m_AmbientOcclusion.boolValue && anyDenoisingSupported && !DenoiserSupported((LightingSettings.DenoiserType)m_PVRDenoiserTypeAO.intValue))
+                                                {
+                                                    EditorGUILayout.HelpBox(Styles.denoiserNotSupportedWarning.text, MessageType.Info);
+                                                }
                                             }
                                             EditorGUILayout.PropertyField(m_PVRFilterTypeAO, Styles.filterTypeAO);
 
@@ -925,23 +937,15 @@ namespace UnityEditor
 
             if (EditorGUI.DropdownButton(rect, Styles.denoiserTypeStrings[index], FocusType.Passive))
             {
-                bool radeonDenoiserSupported = Lightmapping.IsRadeonDenoiserSupported();
-                bool openImageDenoiserSupported = Lightmapping.IsOpenImageDenoiserSupported();
-                bool optixDenoiserSupported = Lightmapping.IsOptixDenoiserSupported();
                 var menu = new GenericMenu();
+
                 for (int i = 0; i < Styles.denoiserTypeValues.Length; i++)
                 {
                     int value = Styles.denoiserTypeValues[i];
-                    bool optixDenoiserItem = (value == (int)LightingSettings.DenoiserType.Optix);
-                    bool openImageDenoiserItem = (value == (int)LightingSettings.DenoiserType.OpenImage);
-                    bool radeonDenoiserItem = (value == (int)LightingSettings.DenoiserType.RadeonPro);
+                    bool denoiserSupported = DenoiserSupported((LightingSettings.DenoiserType)value);
                     bool selected = (value == prop.intValue);
 
-                    if (!optixDenoiserSupported && optixDenoiserItem)
-                        menu.AddDisabledItem(Styles.denoiserTypeStrings[i], selected);
-                    else if (!openImageDenoiserSupported && openImageDenoiserItem)
-                        menu.AddDisabledItem(Styles.denoiserTypeStrings[i], selected);
-                    else if (!radeonDenoiserSupported && radeonDenoiserItem)
+                    if (!denoiserSupported)
                         menu.AddDisabledItem(Styles.denoiserTypeStrings[i], selected);
                     else
                     {

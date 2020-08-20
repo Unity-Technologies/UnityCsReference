@@ -91,6 +91,11 @@ namespace UnityEditor.UIElements.StyleSheets
             }
         }
 
+        bool IsFontAssetInternal(UnityEngine.Object fontAsset)
+        {
+            return TextDelegates.IsFontAsset?.Invoke(fontAsset) ?? false;
+        }
+
         protected void VisitUrlFunction(PrimitiveTerm term)
         {
             string path = (string)term.Value;
@@ -110,7 +115,7 @@ namespace UnityEditor.UIElements.StyleSheets
 
                 bool isTexture = asset is Texture2D;
 
-                if (isTexture || asset is Font || asset is VectorImage)
+                if (isTexture || asset is Font || IsFontAssetInternal(asset) || asset is VectorImage)
                 {
                     // Looking suffixed images files only
                     if (isTexture)
@@ -138,7 +143,7 @@ namespace UnityEditor.UIElements.StyleSheets
                 }
                 else
                 {
-                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURIProjectAssetType, string.Format("Invalid asset type {0}, only Font, Texture2D and VectorImage are supported", asset.GetType().Name));
+                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURIProjectAssetType, string.Format("Invalid asset type {0}, only Font, FontAsset, Texture2D and VectorImage are supported", asset.GetType().Name));
                 }
             }
         }

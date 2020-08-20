@@ -3,6 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -11,6 +14,30 @@ using System.Runtime.Serialization;
 
 namespace UnityEditor.Build.Player
 {
+    public static class TypeDbHelper
+    {
+        public static bool TryGet(string path, out TypeDB typeDb)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentException("Null or Empty is not allowed", nameof(path));
+            }
+
+            typeDb = new TypeDB();
+
+            var typeDbFilePathsFrom = BuildPlayerDataGenerator.GetTypeDbFilePathsFrom(path);
+            AssemblyInfoManaged[] extractAssemblyTypeInfo =
+                AssemblyHelper.ExtractAssemblyTypeInfoFromFiles(typeDbFilePathsFrom);
+
+            if (extractAssemblyTypeInfo != null && extractAssemblyTypeInfo.Any())
+            {
+                typeDb.AddAssemblyInfo(extractAssemblyTypeInfo, path);
+                return true;
+            }
+            return false;
+        }
+    }
+
     [Serializable]
     [UsedByNativeCode]
     [NativeHeader("Modules/BuildPipeline/Editor/Public/TypeDB.h")]
@@ -45,6 +72,9 @@ namespace UnityEditor.Build.Player
 
         [NativeMethod(IsThreadSafe = true)]
         private static extern IntPtr Internal_Create();
+
+        [NativeMethod(IsThreadSafe = true)]
+        internal extern void AddAssemblyInfo(AssemblyInfoManaged[] assemblyInfos, string assembliesPath);
 
         [NativeMethod(IsThreadSafe = true)]
         private static extern void Internal_Destroy(IntPtr ptr);

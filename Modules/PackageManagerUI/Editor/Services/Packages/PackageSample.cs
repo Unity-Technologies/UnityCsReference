@@ -137,7 +137,7 @@ namespace UnityEditor.PackageManager.UI
                 upmCache.SetInstalledPackageInfos(PackageInfo.GetAll());
 
             var package = upmCache.GetInstalledPackageInfo(packageName);
-            if (package.version == packageVersion || packageVersion?.Length == 0)
+            if (package?.version == packageVersion || string.IsNullOrEmpty(packageVersion))
             {
                 var ioProxy = ServicesContainer.instance.Resolve<IOProxy>();
                 var assetDatabaseProxy = ServicesContainer.instance.Resolve<AssetDatabaseProxy>();

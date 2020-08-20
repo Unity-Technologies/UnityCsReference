@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.IO;
 using UnityEditor.ProjectWindowCallback;
 using UnityEditor.Utils;
@@ -113,7 +114,9 @@ namespace UnityEditor
         // The asset is created here
         public void EndNewAssetCreation(string name)
         {
-            string path = folder + "/" + name + extension;
+            string path = folder + "/" + name;
+            if ((!String.IsNullOrEmpty(extension)) && (!path.EndsWith(extension, System.StringComparison.OrdinalIgnoreCase)))
+                path = path + extension;
             EndNameEditAction endAction = m_EndAction;
             int instanceID = m_InstanceID;
             string resourceFile = m_ResourceFile;
@@ -124,7 +127,9 @@ namespace UnityEditor
 
         public void EndNewAssetCreationCanceled(string name)
         {
-            string path = folder + "/" + name + extension;
+            string path = folder + "/" + name;
+            if ((!String.IsNullOrEmpty(extension)) && (!path.EndsWith(extension, System.StringComparison.OrdinalIgnoreCase)))
+                path = path + extension;
             ProjectWindowUtil.EndNameEditAction(m_EndAction, m_InstanceID, path, m_ResourceFile, false);
         }
 

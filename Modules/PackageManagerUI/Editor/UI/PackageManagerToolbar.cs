@@ -246,13 +246,17 @@ namespace UnityEditor.PackageManager.UI
         {
             addMenu.menu.AppendAction(L10n.Tr("Add package from disk..."), a =>
             {
-                var path = EditorUtility.OpenFilePanelWithFilters(L10n.Tr("Select package on disk"), "", new[] { "package.json file", "json" });
+                var path = m_Application.OpenFilePanelWithFilters(L10n.Tr("Select package on disk"), "", new[] { "package.json file", "json" });
+                if (string.IsNullOrEmpty(path))
+                    return;
+
                 if (m_IOProxy.GetFileName(path) != "package.json")
                 {
                     Debug.Log(L10n.Tr("Please select a valid package.json file in a package folder."));
                     return;
                 }
-                if (!string.IsNullOrEmpty(path) && !m_PackageDatabase.isInstallOrUninstallInProgress)
+
+                if (!m_PackageDatabase.isInstallOrUninstallInProgress)
                 {
                     m_PackageDatabase.InstallFromPath(m_IOProxy.GetDirectoryName(path));
                     PackageManagerWindowAnalytics.SendEvent("addFromDisk");
@@ -261,7 +265,7 @@ namespace UnityEditor.PackageManager.UI
 
             addMenu.menu.AppendAction(L10n.Tr("Add package from tarball..."), a =>
             {
-                var path = EditorUtility.OpenFilePanelWithFilters(L10n.Tr("Select package on disk"), "", new[] { "Package tarball", "tgz, tar.gz" });
+                var path = m_Application.OpenFilePanelWithFilters(L10n.Tr("Select package on disk"), "", new[] { "Package tarball", "tgz, tar.gz" });
                 if (!string.IsNullOrEmpty(path) && !m_PackageDatabase.isInstallOrUninstallInProgress)
                 {
                     m_PackageDatabase.InstallFromPath(path);
@@ -428,7 +432,7 @@ namespace UnityEditor.PackageManager.UI
 
         private VisualElementCache cache { get; set; }
 
-        private ToolbarMenu addMenu { get { return cache.Get<ToolbarMenu>("toolbarAddMenu"); }}
+        internal ToolbarMenu addMenu { get { return cache.Get<ToolbarMenu>("toolbarAddMenu"); }}
         private ToolbarMenu filterTabsMenu { get { return cache.Get<ToolbarMenu>("toolbarFilterTabsMenu"); } }
         private ToolbarMenu orderingMenu { get { return cache.Get<ToolbarMenu>("toolbarOrderingMenu"); } }
         private ToolbarWindowMenu filtersMenu { get { return cache.Get<ToolbarWindowMenu>("toolbarFiltersMenu"); } }

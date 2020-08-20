@@ -150,7 +150,6 @@ namespace UnityEngine.SocialPlatforms
     {
         string userName { get; }
         string id { get; }
-        string gameId { get; }
         bool isFriend { get; }
         UserState state { get; }
         Texture2D image { get; }

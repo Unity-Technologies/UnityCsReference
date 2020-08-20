@@ -36,13 +36,6 @@ namespace UnityEditor.Experimental.GraphView
             style.position = Position.Absolute;
             style.top = float.NaN;
             style.left = float.NaN;
-            style.bottom = 0f;
-            style.right = 0f;
-            // make clickable area bigger than render area
-            style.paddingLeft = 10f;
-            style.paddingTop = 14f;
-            style.width = 20f;
-            style.height = 20f;
             style.unityBackgroundScaleMode = ScaleMode.ScaleAndCrop;
 
             m_Active = false;

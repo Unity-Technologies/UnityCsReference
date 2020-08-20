@@ -675,10 +675,6 @@ namespace UnityEditor
             return (platform == null ? string.Empty : platform.name);
         }
 
-        // Get the texture that will be used as the display icon at a specified size for the specified platform.
-        [NativeMethod("GetPlatformIconForSize")]
-        internal static extern Texture2D GetIconForPlatformAtSize(string platform, int width, int height, IconKind kind);
-
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void GetBatchingForPlatform(BuildTarget platform, out int staticBatching, out int dynamicBatching);
 
@@ -822,6 +818,9 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         [NativeMethod("GetPlatformScriptingBackend")]
         public static extern ScriptingImplementation GetScriptingBackend(BuildTargetGroup targetGroup);
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        internal static extern string SanitizeApplicationIdentifier(string name, BuildTargetGroup targetGroup);
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
         public static extern void SetApplicationIdentifier(BuildTargetGroup targetGroup, string identifier);

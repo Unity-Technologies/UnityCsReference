@@ -153,7 +153,7 @@ namespace UnityEditor.PackageManager.UI
             m_PageManager.ClearSelection();
         }
 
-        private void HidePackagesShowMessage(bool isRefreshInProgress, bool isInitialFetchingDone)
+        public void HidePackagesShowMessage(bool isRefreshInProgress, bool isInitialFetchingDone, string messageWhenInitialFetchNotDone = "")
         {
             UIUtils.SetElementDisplay(scrollView, false);
             UIUtils.SetElementDisplay(emptyArea, true);
@@ -170,7 +170,7 @@ namespace UnityEditor.PackageManager.UI
             else if (string.IsNullOrEmpty(m_PackageFiltering.currentSearchText))
             {
                 if (!isInitialFetchingDone)
-                    noPackagesLabel.text = string.Empty;
+                    noPackagesLabel.text = messageWhenInitialFetchNotDone;
                 else
                     noPackagesLabel.text = L10n.Tr("There are no packages.");
             }

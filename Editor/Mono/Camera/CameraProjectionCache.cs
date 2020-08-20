@@ -6,44 +6,42 @@ using UnityEngine;
 
 namespace UnityEditor
 {
-    struct CameraProjectionCache
+    public struct CameraProjectionCache
     {
-        Matrix4x4 worldToClip;
-        Rect viewport;
-        float screen;
+        Matrix4x4 m_WorldToClip;
+        Rect m_Viewport;
 
-        public CameraProjectionCache(Camera camera, float screenHeight)
+        public CameraProjectionCache(Camera camera)
         {
-            worldToClip = camera.projectionMatrix * camera.worldToCameraMatrix;
-            viewport = camera.pixelRect;
-            screen = screenHeight;
+            m_WorldToClip = camera.projectionMatrix * camera.worldToCameraMatrix;
+            m_Viewport = camera.pixelRect;
         }
 
-        public Vector2 WorldToScreenPoint(Vector3 point)
+        public Vector2 WorldToScreenPoint(Vector3 worldPoint)
         {
-            Vector3 clip = worldToClip.MultiplyPoint(point);
+            Vector3 clip = m_WorldToClip.MultiplyPoint(worldPoint);
 
             return new Vector2(
-                viewport.x + (1.0f + clip.x) * viewport.width * 0.5f,
-                viewport.y + (1.0f + clip.y) * viewport.height * 0.5f);
+                m_Viewport.x + (1.0f + clip.x) * m_Viewport.width * 0.5f,
+                m_Viewport.y + (1.0f + clip.y) * m_Viewport.height * 0.5f);
         }
 
-        public Vector2 WorldToGUIPoint(Vector3 point)
+        public Vector2 WorldToGUIPoint(Vector3 worldPoint)
         {
-            return ScreenToGUIPoint(WorldToScreenPoint(point));
+            return ScreenToGUIPoint(WorldToScreenPoint(worldPoint));
         }
 
-        public Vector2 GUIToScreenPoint(Vector2 point)
+        public Vector2 GUIToScreenPoint(Vector2 guiPoint)
         {
-            var pixels = EditorGUIUtility.PointsToPixels(point);
-            pixels.y = screen - pixels.y;
+            var pixels = EditorGUIUtility.PointsToPixels(guiPoint);
+            pixels.y = m_Viewport.height - pixels.y;
             return pixels;
         }
 
-        public Vector2 ScreenToGUIPoint(Vector2 point)
+        public Vector2 ScreenToGUIPoint(Vector2 screenPoint)
         {
-            point.y = screen - point.y;
-            return GUIClip.Clip(EditorGUIUtility.PixelsToPoints(point));
+            screenPoint.y = Screen.height - screenPoint.y;
+            return GUIClip.Clip(EditorGUIUtility.PixelsToPoints(screenPoint));
         }
     }
 }

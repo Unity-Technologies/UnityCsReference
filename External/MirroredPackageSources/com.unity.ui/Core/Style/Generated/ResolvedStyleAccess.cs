@@ -18,6 +18,7 @@ namespace UnityEngine.UIElements
         Align IResolvedStyle.alignItems => computedStyle.alignItems.value;
         Align IResolvedStyle.alignSelf => computedStyle.alignSelf.value;
         Color IResolvedStyle.backgroundColor => computedStyle.backgroundColor.value;
+        Background IResolvedStyle.backgroundImage => computedStyle.backgroundImage.value;
         Color IResolvedStyle.borderBottomColor => computedStyle.borderBottomColor.value;
         float IResolvedStyle.borderBottomLeftRadius => computedStyle.borderBottomLeftRadius.value.value;
         float IResolvedStyle.borderBottomRightRadius => computedStyle.borderBottomRightRadius.value.value;

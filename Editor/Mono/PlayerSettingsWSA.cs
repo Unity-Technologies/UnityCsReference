@@ -27,7 +27,7 @@ namespace UnityEditor
                 }
             }
 
-            private static void ValidateWSAImageType(WSAImageType type)
+            internal static void ValidateWSAImageType(WSAImageType type)
             {
                 switch (type)
                 {
@@ -44,7 +44,7 @@ namespace UnityEditor
                 }
             }
 
-            private static void ValidateWSAImageScale(WSAImageScale scale)
+            internal static void ValidateWSAImageScale(WSAImageScale scale)
             {
                 switch (scale)
                 {

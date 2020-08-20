@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -21,6 +22,9 @@ namespace UnityEditor.Profiling
         {
             var count = Enum.GetNames(typeof(ProfilerArea)).Length;
             areaReferenceCounts = new int[count];
+
+            // Profiler areas are enabled and capturing by default. Disable them initially and only enable once reference counted.
+            DisableAllAreas();
         }
 
         public void IncrementArea(ProfilerArea area)
@@ -59,6 +63,15 @@ namespace UnityEditor.Profiling
             }
         }
 
+        void DisableAllAreas()
+        {
+            for (int i = 0; i < areaReferenceCounts.Length; i++)
+            {
+                var area = (ProfilerArea)i;
+                ProfilerDriver.SetAreaEnabled(area, false);
+            }
+        }
+
         int IndexForArea(ProfilerArea area)
         {
             var index = (int)area;
@@ -72,75 +85,27 @@ namespace UnityEditor.Profiling
 
     internal static class ProfilerAreaReferenceCounterUtility
     {
-        public static IEnumerable<ProfilerArea> ProfilerCategoryNameToArea(string categoryName)
+        static readonly Dictionary<string, IEnumerable<ProfilerArea>> k_ProfilerCategoriesToAreasMap = new Dictionary<string, IEnumerable<ProfilerArea>>()
         {
-            // Map a counter's category to a built-in Profiler area. This is part of the transition away from ProfilerArea and to Category/Counter pairs. A counter's category potentially needs to be mapped to a ProfilerArea in order to ensure that an area is not disabled when a module may be using counters associated with the legacy ProfilerArea. It is expected a category that does not correspond to any ProfilerArea returns an empty collection. It is expected that a category that corresponds to many ProfilerAreas returns all corresponding ProfilerAreas. No category corresponds to the CPU or GPU areas. Therefore, all ProfilerAreas should be accounted for here minus CPU and GPU. This is asserted in the test ProfilerAreaReferenceCounterUtilityTests_HandlesEveryBuiltInProfilerAreaExceptCPUAndGPU.
+            { ProfilerCategory.Render.Name, new ProfilerArea[] { ProfilerArea.Rendering } },
+            { ProfilerCategory.Memory.Name, new ProfilerArea[] { ProfilerArea.Memory } },
+            { ProfilerCategory.Audio.Name, new ProfilerArea[] { ProfilerArea.Audio } },
+            { ProfilerCategory.Video.Name, new ProfilerArea[] { ProfilerArea.Video } },
+            // Both Physics and Physics2D modules will remain active if any counter from the Physics category is active.
+            { ProfilerCategory.Physics.Name, new ProfilerArea[] { ProfilerArea.Physics, ProfilerArea.Physics2D } },
+            // Both NetworkMessages and NetworkOperations modules will remain active if any counter from the Network category is active.
+            { ProfilerCategory.Network.Name, new ProfilerArea[] { ProfilerArea.NetworkMessages, ProfilerArea.NetworkOperations } },
+            // Both UI and UIDetails modules will remain active if any counter from the GUI category is active.
+            { ProfilerCategory.Gui.Name, new ProfilerArea[] { ProfilerArea.UI, ProfilerArea.UIDetails } },
+            { ProfilerCategory.Lighting.Name, new ProfilerArea[] { ProfilerArea.GlobalIllumination } },
+            { ProfilerCategory.VirtualTexturing.Name, new ProfilerArea[] { ProfilerArea.VirtualTexturing } },
+        };
 
-            var areas = new List<ProfilerArea>();
-            switch (categoryName)
-            {
-                case "Render":
-                {
-                    areas.Add(ProfilerArea.Rendering);
-                    break;
-                }
+        public static IEnumerable<ProfilerArea> ProfilerCategoryNameToAreas(string categoryName)
+        {
+            // Map a counter's category to on or more built-in Profiler areas. This is part of the transition away from ProfilerArea and to Category/Counter pairs. A counter's category potentially needs to be mapped to a ProfilerArea in order to ensure that an area is not disabled when a module may be using counters associated with the legacy ProfilerArea. It is expected a category that does not correspond to any ProfilerArea returns an empty collection. It is expected that a category that corresponds to many ProfilerAreas returns all corresponding ProfilerAreas. No category corresponds to the CPU or GPU areas. Therefore, all ProfilerAreas should be accounted for here minus CPU and GPU. This is asserted in the test ProfilerAreaReferenceCounterUtilityTests_HandlesEveryBuiltInProfilerAreaExceptCPUAndGPU.
 
-                case "Memory":
-                {
-                    areas.Add(ProfilerArea.Memory);
-                    break;
-                }
-
-                case "Audio":
-                {
-                    areas.Add(ProfilerArea.Audio);
-                    break;
-                }
-
-                case "Video":
-                {
-                    areas.Add(ProfilerArea.Video);
-                    break;
-                }
-
-                case "Physics":
-                {
-                    // Both Physics and Physics2D modules will remain active if any counter from the Physics category is active.
-                    areas.Add(ProfilerArea.Physics);
-                    areas.Add(ProfilerArea.Physics2D);
-                    break;
-                }
-
-                case "Network":
-                {
-                    // Both NetworkMessages and NetworkOperations modules will remain active if any counter from the Network category is active.
-                    areas.Add(ProfilerArea.NetworkMessages);
-                    areas.Add(ProfilerArea.NetworkOperations);
-                    break;
-                }
-
-                case "GUI":
-                {
-                    // Both UI and UIDetails modules will remain active if any counter from the GUI category is active.
-                    areas.Add(ProfilerArea.UI);
-                    areas.Add(ProfilerArea.UIDetails);
-                    break;
-                }
-
-                case "Lighting":
-                {
-                    areas.Add(ProfilerArea.GlobalIllumination);
-                    break;
-                }
-
-                case "VirtualTexturing":
-                {
-                    areas.Add(ProfilerArea.VirtualTexturing);
-                    break;
-                }
-            }
-
-            return areas;
+            return k_ProfilerCategoriesToAreasMap.TryGetValue(categoryName, out var areas) ? areas : new ProfilerArea[0];
         }
     }
 }

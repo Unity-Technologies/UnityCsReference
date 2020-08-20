@@ -55,8 +55,10 @@ namespace UnityEditor
         [FreeFunction]
         public static extern bool IsDeveloperMode();
 
+        public static bool IsSourceBuild() => IsSourceBuild(true);
+
         [FreeFunction]
-        public static extern bool IsSourceBuild();
+        public static extern bool IsSourceBuild(bool checkHumanControllingUs);
 
         public static extern bool IsBleedingEdgeBuild();
 

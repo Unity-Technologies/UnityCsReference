@@ -392,8 +392,14 @@ namespace UnityEditor
             Rect p = m_PixelRect;
             if (loadPosition)
             {
-                p.x = EditorPrefs.GetFloat(ID + "x", m_PixelRect.x);
-                p.y = EditorPrefs.GetFloat(ID + "y", m_PixelRect.y);
+                // Use the current mouse position as the 'default' position if we cant
+                // load the position from our saved preferences. This allows the newly created
+                // window to pop up on the same monitor as the main window when a saved position
+                // couldn't be loaded rather than defaulting to monitor '0'
+                Vector2 mousePos = Editor.GetCurrentMousePosition();
+
+                p.x = EditorPrefs.GetFloat(ID + "x", mousePos.x);
+                p.y = EditorPrefs.GetFloat(ID + "y", mousePos.y);
                 p.width = EditorPrefs.GetFloat(ID + "w", m_PixelRect.width);
                 p.height = EditorPrefs.GetFloat(ID + "h", m_PixelRect.height);
                 m_Maximized = EditorPrefs.GetBool(ID + "z");

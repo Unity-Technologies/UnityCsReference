@@ -151,7 +151,9 @@ namespace UnityEditor
         [SerializeReference]
         List<ProfilerModuleBase> m_Modules;
         // Used by ProfilerEditorTests/ProfilerAreaReferenceCounterTests through reflection.
-        ProfilerAreaReferenceCounter m_AreaReferenceCounter = new ProfilerAreaReferenceCounter();
+        ProfilerAreaReferenceCounter m_AreaReferenceCounter;
+        [SerializeReference]
+        ProfilerWindowControllerProxy m_ProfilerWindowControllerProxy = new ProfilerWindowControllerProxy();
 
         ProfilerMemoryRecordMode m_CurrentCallstackRecordMode = ProfilerMemoryRecordMode.None;
         [SerializeField]
@@ -313,8 +315,9 @@ namespace UnityEditor
 
             foreach (var module in m_Modules)
             {
-                module?.OnEnable();
+                module.OnEnable();
             }
+            SelectedModule?.OnSelected();
         }
 
         void InitializeIfNeeded()
@@ -327,23 +330,33 @@ namespace UnityEditor
 
         void Initialize()
         {
+            m_ProfilerWindowControllerProxy.SetRealSubject(this, selectionChanged.GetInvocationList());
+
             // When reinitializing (e.g. because Colorblind mode or PlatformModule changed) we don't need a new state
             if (m_AttachProfilerState == null)
                 m_AttachProfilerState = PlayerConnectionGUIUtility.GetConnectionState(this, OnTargetedEditorConnectionChanged, IsEditorConnectionTargeted, (player) => ClearFramesCallback()) as IConnectionStateInternal;
 
-            m_Modules = InstantiateAvailableProfilerModules();
+            if (!HasValidModules())
+                m_Modules = InstantiateAvailableProfilerModules();
+
+            m_AreaReferenceCounter = new ProfilerAreaReferenceCounter();
             InitializeActiveNativePlatformSupportModuleName();
             InitializeSelectedModuleIndex();
             ConfigureLayoutProperties();
 
-            foreach (var module in m_Modules)
+            m_Initialized = true;
+        }
+
+        bool HasValidModules()
+        {
+            // Check if we haven't deserialized the modules.
+            if (m_Modules == null)
             {
-                module?.OnEnable();
+                return false;
             }
 
-            UpdateModules();
-
-            m_Initialized = true;
+            // If we have deserialized modules, check they are valid using the name. Module serialization was broken in 2020.2.0a15 until ~2020.2.0a20. For users coming from those versions we need to validate the serialized module state and rebuild the modules if invalid.
+            return (m_Modules.Count > 0) && !string.IsNullOrEmpty(m_Modules[0].name);
         }
 
         List<ProfilerModuleBase> InstantiateAvailableProfilerModules()
@@ -367,7 +380,7 @@ namespace UnityEditor
                 {
                     try
                     {
-                        var module = Activator.CreateInstance(moduleType, this as IProfilerWindowController) as ProfilerModuleBase;
+                        var module = Activator.CreateInstance(moduleType, m_ProfilerWindowControllerProxy as IProfilerWindowController) as ProfilerModuleBase;
                         if (module != null)
                         {
                             outModules.Add(module);
@@ -390,7 +403,7 @@ namespace UnityEditor
                 for (int i = 0; i < serializedDynamicModules.Length; i++)
                 {
                     var serializedDynamicModuleData = serializedDynamicModules[i];
-                    var dynamicModule = DynamicProfilerModule.CreateFromSerializedData(serializedDynamicModuleData, this as IProfilerWindowController);
+                    var dynamicModule = DynamicProfilerModule.CreateFromSerializedData(serializedDynamicModuleData, m_ProfilerWindowControllerProxy);
                     outModules.Add(dynamicModule);
                 }
             }
@@ -434,7 +447,12 @@ namespace UnityEditor
         void OnSettingsChanged()
         {
             SaveViewSettings();
-            Initialize();
+
+            foreach (var module in m_Modules)
+            {
+                module.Rebuild();
+            }
+            Repaint();
         }
 
         void OnProfileLoaded()
@@ -464,8 +482,8 @@ namespace UnityEditor
                 ClearSelectedPropertyPath();
             }
 
-            previousSelectedModule?.OnDisable();
-            SelectedModule?.OnEnable();
+            previousSelectedModule?.OnDeselected();
+            SelectedModule?.OnSelected();
 
             Repaint();
             GUIUtility.keyboardControl = 0;
@@ -474,9 +492,11 @@ namespace UnityEditor
 
         void IProfilerWindowController.CloseModule(ProfilerModuleBase module)
         {
+            // Reset the current selection. TODO Perhaps we could maintain module selection?
+            var previousSelectedModule = SelectedModule;
             m_SelectedModuleIndex = k_NoModuleSelected;
+            previousSelectedModule?.OnDeselected();
 
-            module.OnDisable();
             module.OnClosed();
         }
 
@@ -509,7 +529,12 @@ namespace UnityEditor
         {
             ProfilerDriver.ClearAllFrames();
             m_ActiveNativePlatformSupportModuleName = activeNativePlatformSupportModuleName;
-            Initialize();
+
+            foreach (var module in m_Modules)
+            {
+                module.OnNativePlatformSupportModuleChanged();
+            }
+            Repaint();
         }
 
         void OnDisable()
@@ -518,10 +543,13 @@ namespace UnityEditor
             m_AttachProfilerState.Dispose();
             m_AttachProfilerState = null;
             s_ProfilerWindows.Remove(this);
+
+            SelectedModule?.OnDeselected();
             foreach (var module in m_Modules)
             {
                 module.OnDisable();
             }
+
             EditorApplication.playModeStateChanged -= OnPlaymodeStateChanged;
             EditorApplication.pauseStateChanged -= OnPauseStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged -= OnSettingsChanged;
@@ -1127,7 +1155,6 @@ namespace UnityEditor
                 ProfilerWindowAnalytics.RecordProfilerSessionKeyboardEvent();
 
             CheckForPlatformModuleChange();
-            InitializeIfNeeded();
 
             if (m_SelectedModuleIndex == k_NoModuleSelected && Event.current.type == EventType.Repaint)
             {
@@ -1324,7 +1351,7 @@ namespace UnityEditor
         void CreateNewProfilerModule(ModuleData moduleData, int orderIndex)
         {
             var name = moduleData.name;
-            var module = new DynamicProfilerModule(this as IProfilerWindowController, name);
+            var module = new DynamicProfilerModule(m_ProfilerWindowControllerProxy, name);
             var chartCounters = new List<ProfilerCounterData>(moduleData.chartCounters);
             var detailCounters = new List<ProfilerCounterData>(moduleData.detailCounters);
             module.SetCounters(chartCounters, detailCounters);
@@ -1373,7 +1400,9 @@ namespace UnityEditor
             }
 
             var moduleToDelete = m_Modules[index];
-            moduleToDelete.SetActive(false); // Ensure that active areas in use are decremented.
+            // Ensure that active areas in use are decremented. Additionally, if moduleToDelete is currently selected, the SetActive(false) call will invoke its OnDeselected callback prior to the OnDisable callback below (via its chart's onClosed callback, which invokes the IProfilerWindowController's CloseModule method, which invokes the OnDeselected callback).
+            moduleToDelete.SetActive(false);
+            moduleToDelete.OnDisable();
             moduleToDelete.DeleteAllPreferences();
             m_Modules.RemoveAt(index);
         }
@@ -1487,6 +1516,101 @@ namespace UnityEditor
                 {
                     m_AreaReferenceCounter.DecrementArea(area);
                 }
+            }
+        }
+
+        // Using a serializable proxy object that does not inherit from UnityEngine.Object allows the modules to use [SerializeReference] to hold a reference to the window across domain reloads.
+        [Serializable]
+        internal class ProfilerWindowControllerProxy : IProfilerWindowController
+        {
+            IProfilerWindowController m_ProfilerWindowController;
+
+            public void SetRealSubject(IProfilerWindowController profilerWindowController, Delegate[] existingSelectionChangedSubscribers)
+            {
+                m_ProfilerWindowController = profilerWindowController;
+
+                // Copy any existing selectionChanged subscribers to the new real subject.
+                foreach (var existingSelectionChangedSubscriber in existingSelectionChangedSubscribers)
+                {
+                    m_ProfilerWindowController.selectionChanged += existingSelectionChangedSubscriber as SelectionChangedCallback;
+                }
+            }
+
+            string IProfilerWindowController.ConnectedTargetName => m_ProfilerWindowController.ConnectedTargetName;
+
+            bool IProfilerWindowController.ConnectedToEditor => m_ProfilerWindowController.ConnectedToEditor;
+
+            ProfilerModuleBase IProfilerWindowController.SelectedModule => m_ProfilerWindowController.SelectedModule;
+
+            event SelectionChangedCallback IProfilerWindowController.selectionChanged
+            {
+                add { m_ProfilerWindowController.selectionChanged += value; }
+                remove { m_ProfilerWindowController.selectionChanged -= value; }
+            }
+
+            void IProfilerWindowController.ClearSelectedPropertyPath()
+            {
+                m_ProfilerWindowController.ClearSelectedPropertyPath();
+            }
+
+            void IProfilerWindowController.CloseModule(ProfilerModuleBase module)
+            {
+                m_ProfilerWindowController.CloseModule(module);
+            }
+
+            ProfilerProperty IProfilerWindowController.CreateProperty()
+            {
+                return m_ProfilerWindowController.CreateProperty();
+            }
+
+            ProfilerProperty IProfilerWindowController.CreateProperty(int sortType)
+            {
+                return m_ProfilerWindowController.CreateProperty(sortType);
+            }
+
+            int IProfilerWindowController.GetActiveVisibleFrameIndex()
+            {
+                return m_ProfilerWindowController.GetActiveVisibleFrameIndex();
+            }
+
+            bool IProfilerWindowController.GetClearOnPlay()
+            {
+                return m_ProfilerWindowController.GetClearOnPlay();
+            }
+
+            HierarchyFrameDataView IProfilerWindowController.GetFrameDataView(string threadName, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
+            {
+                return m_ProfilerWindowController.GetFrameDataView(threadName, viewMode, profilerSortColumn, sortAscending);
+            }
+
+            bool IProfilerWindowController.IsRecording()
+            {
+                return m_ProfilerWindowController.IsRecording();
+            }
+
+            void IProfilerWindowController.Repaint()
+            {
+                m_ProfilerWindowController.Repaint();
+            }
+
+            void IProfilerWindowController.SelectModule(ProfilerModuleBase module)
+            {
+                m_ProfilerWindowController.SelectModule(module);
+            }
+
+            void IProfilerWindowController.SetAreasInUse(IEnumerable<ProfilerArea> areas, bool inUse)
+            {
+                m_ProfilerWindowController.SetAreasInUse(areas, inUse);
+            }
+
+            void IProfilerWindowController.SetClearOnPlay(bool enabled)
+            {
+                m_ProfilerWindowController.SetClearOnPlay(enabled);
+            }
+
+            void IProfilerWindowController.SetSelectedPropertyPath(string path)
+            {
+                m_ProfilerWindowController.SetSelectedPropertyPath(path);
             }
         }
     }

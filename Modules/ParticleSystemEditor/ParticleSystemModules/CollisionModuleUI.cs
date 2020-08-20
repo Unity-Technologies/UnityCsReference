@@ -234,7 +234,8 @@ namespace UnityEditor
                     EditorPrefs.SetFloat("ScalePlaneColision", m_ScaleGrid);
                 }
 
-                GUIButtonGroup(s_SceneViewEditModes, s_Texts.toolContents, m_ParticleSystemUI.GetBounds, m_ParticleSystemUI.m_ParticleEffectUI.m_Owner.customEditor);
+                if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
+                    GUIButtonGroup(s_SceneViewEditModes, s_Texts.toolContents, m_ParticleSystemUI.GetBounds, m_ParticleSystemUI.m_ParticleEffectUI.m_Owner.customEditor);
             }
             else
             {
@@ -272,11 +273,12 @@ namespace UnityEditor
 
             GUIToggle(s_Texts.collisionMessages, m_CollisionMessages);
 
-            EditorGUI.BeginChangeCheck();
-            s_VisualizeBounds = GUIToggle(s_Texts.visualizeBounds, s_VisualizeBounds);
-            if (EditorGUI.EndChangeCheck())
+            if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
             {
-                EditorPrefs.SetBool("VisualizeBounds", s_VisualizeBounds);
+                EditorGUI.BeginChangeCheck();
+                s_VisualizeBounds = GUIToggle(s_Texts.visualizeBounds, s_VisualizeBounds);
+                if (EditorGUI.EndChangeCheck())
+                    EditorPrefs.SetBool("VisualizeBounds", s_VisualizeBounds);
             }
         }
 

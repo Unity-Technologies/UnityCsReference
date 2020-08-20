@@ -145,7 +145,10 @@ namespace UnityEditor
             var tex = (Texture2D)ObjectField(label, m_Images[iface], typeof(Texture2D), false);
             if (GUI.changed)
             {
-                TextureUtil.CopyTextureIntoCubemapFace(tex, c, face);
+                if (tex != null)
+                {
+                    TextureUtil.CopyTextureIntoCubemapFace(tex, c, face);
+                }
                 // enable this line in order to retain connections from cube faces to their corresponding
                 // texture2D assets, this allows auto-update functionality when editing the source texture
                 // images

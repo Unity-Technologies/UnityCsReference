@@ -59,6 +59,12 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
+        public override void Rebuild()
+        {
+            base.Rebuild();
+            m_TimelineGUI.ReInitialize();
+        }
+
         protected override HierarchyFrameDataView.ViewModes GetFilteringMode()
         {
             return (((int)ViewOptions & (int)ProfilerViewFilteringOptions.CollapseEditorBoundarySamples) != 0) ? HierarchyFrameDataView.ViewModes.HideEditorOnlySamples : HierarchyFrameDataView.ViewModes.Default;

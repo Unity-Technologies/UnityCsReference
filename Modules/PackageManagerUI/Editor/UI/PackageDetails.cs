@@ -389,8 +389,8 @@ namespace UnityEditor.PackageManager.UI
 
         private void DescriptionGeometryChangeEvent(GeometryChangedEvent evt)
         {
-            var minTextHeight = (int)TextElement.MeasureVisualElementTextSize(detailDesc, "|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined, detailDesc.textHandle).y*3 + 1;
-            var textHeight = (int)TextElement.MeasureVisualElementTextSize(detailDesc, detailDesc.text, evt.newRect.width, MeasureMode.AtMost, float.MaxValue, MeasureMode.Undefined, detailDesc.textHandle).y + 1;
+            var minTextHeight = (int)detailDesc.MeasureTextSize("|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).y*3 + 1;
+            var textHeight = (int)detailDesc.MeasureTextSize(detailDesc.text, evt.newRect.width, MeasureMode.AtMost, float.MaxValue, MeasureMode.Undefined).y + 1;
             if (!m_DescriptionExpanded && textHeight > minTextHeight)
             {
                 UIUtils.SetElementDisplay(detailDescMore, true);
@@ -968,7 +968,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void DescLessClick()
         {
-            detailDesc.style.maxHeight = (int)TextElement.MeasureVisualElementTextSize(detailDesc, "|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined, detailDesc.textHandle).y*3 + 5;
+            detailDesc.style.maxHeight = (int)detailDesc.MeasureTextSize("|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).y*3 + 5;
             UIUtils.SetElementDisplay(detailDescMore, true);
             UIUtils.SetElementDisplay(detailDescLess, false);
             m_DescriptionExpanded = false;
@@ -1108,7 +1108,7 @@ namespace UnityEditor.PackageManager.UI
             PackageManagerWindowAnalytics.SendEvent("uninstall", displayVersion?.uniqueId);
         }
 
-        private void ViewOfflineUrl(IPackageVersion version, Func<IOProxy, IPackageVersion, bool, string> getUrl, string messageOnNotFound)
+        private void ViewOfflineDocs(IPackageVersion version, Func<IOProxy, IPackageVersion, bool, string> getUrl, string messageOnNotFound)
         {
             if (!version.isAvailableOnDisk)
             {
@@ -1117,7 +1117,7 @@ namespace UnityEditor.PackageManager.UI
             }
             var offlineUrl = getUrl(m_IOProxy, version, true);
             if (!string.IsNullOrEmpty(offlineUrl))
-                m_Application.OpenURL(offlineUrl);
+                m_Application.RevealInFinder(offlineUrl);
             else
                 EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), messageOnNotFound, L10n.Tr("Ok"));
         }
@@ -1137,13 +1137,13 @@ namespace UnityEditor.PackageManager.UI
                     }
                     else
                     {
-                        ViewOfflineUrl(version, getUrl, messageOnNotFound);
+                        ViewOfflineDocs(version, getUrl, messageOnNotFound);
                     }
                 };
             }
             else
             {
-                ViewOfflineUrl(version, getUrl, messageOnNotFound);
+                ViewOfflineDocs(version, getUrl, messageOnNotFound);
             }
         }
 

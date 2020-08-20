@@ -497,6 +497,23 @@ namespace UnityEditor
                         }
                     }
 
+                    var coupledComponent = targetComponent.GetCoupledComponent();
+                    if (!hasPrefabOverride && coupledComponent != null)
+                    {
+                        using (var so = new SerializedObject(coupledComponent))
+                        {
+                            SerializedProperty property = so.GetIterator();
+                            while (property.Next(property.hasChildren))
+                            {
+                                if (property.isInstantiatedPrefab && property.prefabOverride && !property.isDefaultOverride)
+                                {
+                                    hasPrefabOverride = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
                     // Handle modified component.
                     if (hasPrefabOverride)
                     {

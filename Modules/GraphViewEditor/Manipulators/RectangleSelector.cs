@@ -134,7 +134,7 @@ namespace UnityEditor.Experimental.GraphView
             graphView.graphElements.ForEach(child =>
             {
                 var localSelRect = graphView.contentViewContainer.ChangeCoordinatesTo(child, selectionRect);
-                if (child.IsSelectable() && child.Overlaps(localSelRect))
+                if (child.IsSelectable() && child.Overlaps(localSelRect) && !child.ClassListContains("stack-child-element")) // Exclude StackNode children
                 {
                     newSelection.Add(child);
                 }

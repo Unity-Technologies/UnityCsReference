@@ -205,7 +205,7 @@ namespace UnityEngine.UIElements.StyleSheets
             writeTo.complexSelectors = m_ComplexSelectors.ToArray();
 
             writeTo.imports = m_Imports.ToArray();
-            if(writeTo.imports.Length > 0)
+            if (writeTo.imports.Length > 0)
                 writeTo.FlattenImportedStyleSheetsRecursive();
         }
 

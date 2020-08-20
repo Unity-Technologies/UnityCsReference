@@ -1174,6 +1174,9 @@ namespace UnityEditor
 
         internal bool CanBeExpandedViaAFoldoutWithoutUpdate()
         {
+            if (alwaysAllowExpansion)
+                return true;
+
             if (m_SerializedObject == null)
                 CreateSerializedObject();
             SerializedProperty property = m_SerializedObject.GetIterator();

@@ -8,6 +8,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.Playables;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -25,9 +26,14 @@ namespace UnityEditor
             public static readonly GUIContent WrapModeContent = EditorGUIUtility.TrTextContent("Wrap Mode", "Controls the behaviour of evaluating the Playable outside its duration");
             public static readonly GUIContent NoBindingsContent = EditorGUIUtility.TrTextContent("This channel will not playback because it is not currently assigned");
             public static readonly GUIContent BindingsTitleContent = EditorGUIUtility.TrTextContent("Bindings");
-
-            public static readonly int ObjectFieldControlID = "s_ObjectFieldHash".GetHashCode();
+            public static readonly GUIContent ClearUnused = EditorGUIUtility.TrTextContent("Show Unused", "A PlayableDirector may contain bindings to objects not referenced by the assigned Playable file.\nToggle this field to show them.\n It is recommended to remove unused bound objects if their Playable will be no longer used by this PlayableDirector.");
         }
+
+        private static readonly int ObjectFieldControlID = "s_ObjectFieldHash".GetHashCode();
+        private const int BindingHeaderPadding = 4;
+        private const float UnusedItemBackGroundScale = 0.92f;
+        private const float UnusedItemColorScale = 0.70f;
+
 
         private SerializedProperty m_PlayableAsset;
         private SerializedProperty m_InitialState;
@@ -40,15 +46,30 @@ namespace UnityEditor
 
         private GUIContent m_BindingContent = new GUIContent();
 
-        private struct BindingPropertyPair
+        private struct BindingItem
         {
             public PlayableBinding binding;
             public SerializedProperty property;
+            public string AssetPath;
+            public bool IsMainAsset;
+            public PlayableAsset masterAsset;
+            public int propertyIndex;
         }
 
-        private List<BindingPropertyPair> m_BindingPropertiesCache = new List<BindingPropertyPair>();
-
+        private List<BindingItem> m_BindingItems = new List<BindingItem>();
         private PlayableBinding[] m_SynchedPlayableBindings = null;
+
+        private ReorderableList m_BindingList;
+
+
+        bool showUnused
+        {
+            get { return EditorPrefs.GetBool("PlayableDirector.ShowUnused", true); }
+            set { EditorPrefs.SetBool("PlayableDirector.ShowUnused", value); }
+        }
+
+        bool hasUnused { get; set; }
+
 
         public void OnEnable()
         {
@@ -60,19 +81,26 @@ namespace UnityEditor
             m_SceneBindings = serializedObject.FindProperty("m_SceneBindings");
 
             m_DefaultScriptContentTexture = EditorGUIUtility.FindTexture(typeof(ScriptableObject));
+
+            m_BindingList = new ReorderableList(m_BindingItems, typeof(BindingItem), false, false, false, true);
+            m_BindingList.drawElementCallback = BindingDrawCallback;
+            m_BindingList.onCanRemoveCallback = BindingCanRemoveCallback;
+            m_BindingList.onRemoveCallback = BindingOnRemove;
+            m_BindingList.onSelectCallback = BindingOnSelect;
+            m_BindingList.elementHeightCallback = BindingElementHeight;
         }
 
         public override void OnInspectorGUI()
         {
-            if (PlayableAssetOutputsChanged())
-                SynchSceneBindings();
+            if (PlayableAssetOutputsChanged() || m_BindingItems.Count != m_SceneBindings.arraySize)
+                SynchronizeSceneBindings();
 
             serializedObject.Update();
 
             if (PropertyFieldAsObject(m_PlayableAsset, Styles.PlayableText, typeof(PlayableAsset)))
             {
                 serializedObject.ApplyModifiedProperties();
-                SynchSceneBindings();
+                SynchronizeSceneBindings();
 
                 // some editors (like Timeline) needs to repaint when the playable asset changes
                 InternalEditorUtility.RepaintAllViews();
@@ -104,13 +132,10 @@ namespace UnityEditor
             }
 
             if (targets.Length == 1)
-            {
-                var playableAsset = m_PlayableAsset.objectReferenceValue as PlayableAsset;
-                if (playableAsset != null)
-                    DoDirectorBindingInspector();
-            }
+                DoDirectorBindingInspector();
 
-            serializedObject.ApplyModifiedProperties();
+            if (serializedObject.ApplyModifiedProperties())
+                SynchronizeSceneBindings();
         }
 
         private bool PlayableAssetOutputsChanged()
@@ -129,18 +154,6 @@ namespace UnityEditor
             return playableAsset.outputs.Where((t, i) => t.sourceObject != m_SynchedPlayableBindings[i].sourceObject).Any();
         }
 
-        private void BindingInspector(SerializedProperty bindingProperty, PlayableBinding binding)
-        {
-            if (binding.sourceObject == null || binding.outputTargetType == null || !typeof(UnityEngine.Object).IsAssignableFrom(binding.outputTargetType))
-                return;
-
-            var source = bindingProperty.objectReferenceValue;
-            PropertyFieldAsObject(bindingProperty,
-                GetContentForOutput(binding, source),
-                binding.outputTargetType
-            );
-        }
-
         GUIContent GetContentForOutput(PlayableBinding binding, UnityEngine.Object source)
         {
             m_BindingContent.text = binding.streamName;
@@ -151,24 +164,43 @@ namespace UnityEditor
 
         private void DoDirectorBindingInspector()
         {
-            if (!m_BindingPropertiesCache.Any())
-                return;
+            EditorGUILayout.BeginHorizontal();
 
-            m_SceneBindings.isExpanded = EditorGUILayout.Foldout(m_SceneBindings.isExpanded, Styles.BindingsTitleContent, true);
+            var rect = GUILayoutUtility.GetRect(EditorGUIUtility.fieldWidth, EditorGUIUtility.fieldWidth, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight,  EditorStyles.foldout);
+            EditorGUI.BeginProperty(rect, GUIContent.none, m_SceneBindings);
+            m_SceneBindings.isExpanded = EditorGUI.Foldout(rect, m_SceneBindings.isExpanded, Styles.BindingsTitleContent, true);
+            EditorGUI.EndProperty();
+
+            if (hasUnused)
+            {
+                const int rightEdgePad = 2;
+                GUILayout.FlexibleSpace();
+                EditorGUI.BeginChangeCheck();
+                var size = EditorStyles.toggle.CalcSize(Styles.ClearUnused).x + rightEdgePad;
+                showUnused = EditorGUILayout.ToggleLeft(Styles.ClearUnused, showUnused, GUILayout.Width(size));
+                if (EditorGUI.EndChangeCheck())
+                    SynchronizeSceneBindings();
+            }
+            EditorGUILayout.EndHorizontal();
+
             if (m_SceneBindings.isExpanded)
             {
                 EditorGUI.indentLevel++;
-
-                foreach (var bindingPropertyPair in m_BindingPropertiesCache)
-                {
-                    BindingInspector(bindingPropertyPair.property, bindingPropertyPair.binding);
-                }
-
+                m_BindingList.displayRemove = showUnused;
+                m_BindingList.DoLayoutList();
                 EditorGUI.indentLevel--;
             }
         }
 
-        void SynchSceneBindings()
+        PlayableBinding FindBinding(PlayableAsset source, UnityEngine.Object key)
+        {
+            if (source == null || key == null)
+                return default(PlayableBinding);
+
+            return source.outputs.FirstOrDefault(a => a.sourceObject == key);
+        }
+
+        void SynchronizeSceneBindings()
         {
             if (targets.Length > 1)
                 return;
@@ -176,40 +208,95 @@ namespace UnityEditor
             var director = (PlayableDirector)target;
             var playableAsset = m_PlayableAsset.objectReferenceValue as PlayableAsset;
 
-            m_BindingPropertiesCache.Clear();
-            m_SynchedPlayableBindings = null;
+            hasUnused = false;
+            m_BindingItems.Clear();
+            UpdatePlayableBindingsIfRequired(playableAsset, director);
 
-            if (playableAsset == null)
-                return;
+            var mainAssetPath = AssetDatabase.GetAssetPath(director.playableAsset);
+            for (int i = 0; i < m_SceneBindings.arraySize; ++i)
+            {
+                var property = m_SceneBindings.GetArrayElementAtIndex(i);
+                var keyObject = property.FindPropertyRelative("key").objectReferenceValue;
 
-            var bindings = playableAsset.outputs;
-            m_SynchedPlayableBindings = bindings.ToArray();
+                // Don't show completely null keys.
+                if (((object)keyObject) == null)
+                    continue;
+
+                var assetPath = AssetDatabase.GetAssetPath(keyObject);
+                var cacheValue = new BindingItem()
+                {
+                    property = property,
+                    AssetPath = assetPath,
+                    IsMainAsset = !string.IsNullOrEmpty(assetPath) && mainAssetPath == assetPath,
+                    masterAsset = !string.IsNullOrEmpty(assetPath) ? AssetDatabase.LoadMainAssetAtPath(assetPath) as PlayableAsset : null,
+                    propertyIndex = i,
+                };
+                cacheValue.binding = FindBinding(cacheValue.masterAsset, keyObject);
+
+                hasUnused |= !cacheValue.IsMainAsset;
+
+                if (showUnused || cacheValue.IsMainAsset)
+                    m_BindingItems.Add(cacheValue);
+            }
+
+            m_BindingItems.Sort((a, b) =>
+            {
+                if (a.IsMainAsset == b.IsMainAsset)
+                    return -string.CompareOrdinal(a.AssetPath, b.AssetPath);
+                if (a.IsMainAsset)
+                    return -1;
+                return 1;
+            }
+            );
+
+            if (showUnused)
+            {
+                bool addHeader = false;
+                for (int i = 0; i < m_BindingItems.Count - 1; i++)
+                {
+                    if (m_BindingItems[i].masterAsset != m_BindingItems[i + 1].masterAsset)
+                    {
+                        m_BindingItems.Insert(i + 1, new BindingItem()
+                            { masterAsset = m_BindingItems[i + 1].masterAsset, propertyIndex = -1}
+                        );
+                        addHeader = true;
+                    }
+                }
+
+                if (addHeader && m_BindingItems.Count > 0)
+                {
+                    m_BindingItems.Insert(0, new BindingItem()
+                    {
+                        masterAsset = m_BindingItems[0].masterAsset,
+                        propertyIndex = -1,
+                        IsMainAsset = m_BindingItems[0].masterAsset == director.playableAsset,
+                    }
+                    );
+                }
+            }
+        }
+
+        private void UpdatePlayableBindingsIfRequired(PlayableAsset playableAsset, PlayableDirector director)
+        {
+            m_SynchedPlayableBindings = new PlayableBinding[0];
+
+            if (playableAsset != null)
+            {
+                var bindings = playableAsset.outputs;
+                m_SynchedPlayableBindings = bindings.ToArray();
+            }
 
             foreach (var binding in m_SynchedPlayableBindings)
             {
-                if (!director.HasGenericBinding(binding.sourceObject))
+                // don't add bindings without a specific target type, clear previously bound objects
+                // This can happen with timeline tracks that do not have a specific binding.
+                if (binding.outputTargetType == null)
+                    director.ClearGenericBinding(binding.sourceObject);
+                else if (!director.HasGenericBinding(binding.sourceObject))
                     director.SetGenericBinding(binding.sourceObject, null);
             }
 
             serializedObject.Update();
-
-            var serializedProperties = new SerializedProperty[m_SceneBindings.arraySize];
-            for (int i = 0; i < m_SceneBindings.arraySize; ++i)
-            {
-                serializedProperties[i] = m_SceneBindings.GetArrayElementAtIndex(i);
-            }
-
-            foreach (var binding in m_SynchedPlayableBindings)
-            {
-                foreach (var prop in serializedProperties)
-                {
-                    if (prop.FindPropertyRelative("key").objectReferenceValue == binding.sourceObject)
-                    {
-                        m_BindingPropertiesCache.Add(new BindingPropertyPair { binding = binding, property = prop.FindPropertyRelative("value")});
-                        break;
-                    }
-                }
-            }
         }
 
         // To show the current time field in play mode
@@ -238,6 +325,13 @@ namespace UnityEditor
             return EditorGUI.EndChangeCheck();
         }
 
+        private static bool PropertyFieldAsObject(Rect rect, SerializedProperty property, GUIContent title, Type objType)
+        {
+            EditorGUI.BeginChangeCheck();
+            EditorGUI.ObjectField(rect, property, objType, title);
+            return EditorGUI.EndChangeCheck();
+        }
+
         // Does not use Properties because time is not a serialized property
         private void CurrentTimeField()
         {
@@ -255,6 +349,118 @@ namespace UnityEditor
             {
                 EditorGUILayout.TextField(Styles.TimeContent, EditorGUI.mixedValueContent.text);
             }
+        }
+
+        private void BindingDrawCallback(Rect rect, int index, bool isActive, bool isFocused)
+        {
+            // apply a subtle darkening to unused items
+            var guiColor = GUI.color;
+            var backGroundColor = GUI.backgroundColor;
+
+            if (!m_BindingItems[index].IsMainAsset)
+            {
+                if (EditorGUIUtility.isProSkin)
+                    GUI.color = GUI.color.RGBMultiplied(UnusedItemColorScale);
+                else
+                    GUI.backgroundColor = GUI.backgroundColor.RGBMultiplied(UnusedItemBackGroundScale);
+            }
+
+            // header item
+            if (m_BindingItems[index].property == null)
+            {
+                if (Event.current.type == EventType.Repaint)
+                {
+                    rect.yMin += BindingHeaderPadding * 0.5f;
+                    rect.height -= BindingHeaderPadding * 0.5f;
+
+                    var content = EditorGUIUtility.ObjectContent(m_BindingItems[index].masterAsset, typeof(PlayableAsset));
+                    EditorStyles.objectField.Draw(rect,
+                        content,
+                        ObjectFieldControlID,
+                        false,
+                        rect.Contains(Event.current.mousePosition)
+                    );
+                }
+            }
+            else
+            {
+                var binding = m_BindingItems[index].binding;
+                var key = m_BindingItems[index].property.FindPropertyRelative("key");
+                var value = m_BindingItems[index].property.FindPropertyRelative("value");
+                var type = m_BindingItems[index].binding.outputTargetType;
+
+                // don't permit assignment if we don't how to assign it
+                using (new EditorGUI.DisabledScope(type == null))
+                    PropertyFieldAsObject(ItemRect(rect), value, GetContentForOutput(binding, key.objectReferenceValue), type ?? typeof(Object));
+            }
+
+            GUI.backgroundColor = backGroundColor;
+            GUI.color = guiColor;
+        }
+
+        private Rect ItemRect(Rect rect)
+        {
+            if (hasUnused && showUnused)
+            {
+                EditorGUI.indentLevel++;
+                rect = EditorGUI.IndentedRect(rect);
+                EditorGUI.indentLevel--;
+            }
+
+            return rect;
+        }
+
+        private bool BindingCanRemoveCallback(ReorderableList list)
+        {
+            if (!showUnused)
+                return false;
+
+            if (list.index < 0 || list.index >= m_BindingItems.Count)
+                return false;
+
+            return !m_BindingItems[list.index].IsMainAsset;
+        }
+
+        private void BindingOnRemove(ReorderableList list)
+        {
+            if (list.index >= 0 && list.index < m_BindingItems.Count)
+            {
+                var bindingProperty = m_BindingItems[list.index].property;
+                // group header, remove all from this timeline
+                if (bindingProperty == null)
+                {
+                    var path = AssetDatabase.GetAssetPath(m_BindingItems[list.index].masterAsset);
+                    int size = m_SceneBindings.arraySize - 1;
+                    for (int i = size; i >= 0; i--)
+                    {
+                        var prop = m_SceneBindings.GetArrayElementAtIndex(i).FindPropertyRelative("key").objectReferenceValue;
+                        if (AssetDatabase.GetAssetPath(prop) == path)
+                            m_SceneBindings.DeleteArrayElementAtIndex(i);
+                    }
+                }
+                else
+                {
+                    m_SceneBindings.DeleteArrayElementAtIndex(m_BindingItems[list.index].propertyIndex);
+                }
+            }
+        }
+
+        private void BindingOnSelect(ReorderableList list)
+        {
+            if (list.index < 0 || list.index >= m_BindingItems.Count)
+                return;
+
+            if (m_BindingItems[list.index].masterAsset)
+                EditorGUIUtility.PingObject(m_BindingItems[list.index].masterAsset);
+            else
+                EditorGUIUtility.PingObject(m_BindingItems[list.index].property.FindPropertyRelative("key").objectReferenceValue);
+        }
+
+        private float BindingElementHeight(int index)
+        {
+            if (m_BindingItems[index].property == null)
+                return m_BindingList.elementHeight + DirectorEditor.BindingHeaderPadding;
+            return m_BindingList.elementHeight;
         }
     }
 }

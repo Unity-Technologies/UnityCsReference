@@ -196,6 +196,7 @@ namespace UnityEditor.Experimental.GraphView
 
         private void OnChildAdded(GraphElement element)
         {
+            element.capabilities &= ~Capabilities.Snappable;
             element.AddToClassList("stack-child-element");
             element.ResetPositionProperties();
             element.RegisterCallback<DetachFromPanelEvent>(OnChildDetachedFromPanel);

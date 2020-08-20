@@ -378,12 +378,10 @@ namespace UnityEditor
             return null;
         }
 
-        // returns the index of the button that was pressed otherwise -1
-        public int GUIListOfFloatObjectToggleFields(GUIContent label, SerializedProperty[] objectProps, EditorGUI.ObjectFieldValidator validator, GUIContent buttonTooltip, bool allowCreation, params GUILayoutOption[] layoutOptions)
+        public void GUIListOfObjectFields(GUIContent label, SerializedProperty[] objectProps, params GUILayoutOption[] layoutOptions)
         {
-            int buttonPressed = -1;
             int numObjects = objectProps.Length;
-            Rect rect = GUILayoutUtility.GetRect(0, (kSingleLineHeight + 2) * numObjects, layoutOptions); // the +1 is that label is on it own line
+            Rect rect = GUILayoutUtility.GetRect(0, (kSingleLineHeight + 2) * numObjects, layoutOptions);
             rect.height = kSingleLineHeight;
 
             float indent = 10f;
@@ -400,23 +398,15 @@ namespace UnityEditor
                     SerializedProperty objectProp = objectProps[i];
 
                     Rect r2 = new Rect(rect.x + indent + floatFieldWidth + space, rect.y, objectFieldWidth, rect.height);
-                    int id = EditorGUIUtility.GetControlID(1235498, FocusType.Keyboard, r2);
+                    int id = GUIUtility.GetControlID(1235498, FocusType.Keyboard, r2);
 
                     EditorGUI.BeginProperty(r2, GUIContent.none, objectProp);
-                    EditorGUI.DoObjectField(r2, r2, id, null, objectProp, validator, true, ParticleSystemStyles.Get().objectField);
+                    EditorGUI.DoObjectField(r2, r2, id, null, objectProp, null, true, ParticleSystemStyles.Get().objectField);
                     EditorGUI.EndProperty();
-
-                    if (objectProp.objectReferenceValue == null)
-                    {
-                        r2 = new Rect(rect.xMax - k_toggleWidth, rect.y + 3, k_toggleWidth, k_toggleWidth);
-                        if (!allowCreation || GUI.Button(r2, buttonTooltip ?? GUIContent.none, ParticleSystemStyles.Get().plus))
-                            buttonPressed = i;
-                    }
 
                     rect.y += kSingleLineHeight + 2;
                 }
             }
-            return buttonPressed;
         }
 
         public static void GUIIntDraggableX2(GUIContent mainLabel, GUIContent label1, SerializedProperty intProp1, GUIContent label2, SerializedProperty intProp2, params GUILayoutOption[] layoutOptions)

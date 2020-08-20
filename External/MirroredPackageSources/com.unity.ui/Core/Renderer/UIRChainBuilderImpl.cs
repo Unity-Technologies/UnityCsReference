@@ -698,9 +698,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             MeshHandle data = ve.renderChainData.data;
 
-            if (painter.totalVertices > 1 << 16)
+            if (painter.totalVertices > renderChain.device.maxVerticesPerPage)
             {
-                Debug.LogError($"A {nameof(VisualElement)} must not allocate more than 65536 vertices.");
+                Debug.LogError($"A {nameof(VisualElement)} must not allocate more than {renderChain.device.maxVerticesPerPage } vertices.");
 
                 if (data != null)
                 {

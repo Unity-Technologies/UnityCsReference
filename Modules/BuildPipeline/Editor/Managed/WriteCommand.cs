@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using UnityEditor.Build.Player;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -12,7 +13,6 @@ namespace UnityEditor.Build.Content
 {
     [Serializable]
     [UsedByNativeCode]
-    [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(CodegenOptions = CodegenOptions.Custom)]
     [NativeHeader("Modules/BuildPipeline/Editor/Shared/ContentBuildInterface.bindings.h")]
@@ -70,7 +70,6 @@ namespace UnityEditor.Build.Content
 
     [Serializable]
     [UsedByNativeCode]
-    [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(CodegenOptions = CodegenOptions.Custom)]
     [NativeHeader("Modules/BuildPipeline/Editor/Shared/ContentBuildInterface.bindings.h")]
@@ -129,7 +128,6 @@ namespace UnityEditor.Build.Content
 
     [Serializable]
     [UsedByNativeCode]
-    [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(CodegenOptions = CodegenOptions.Custom)]
     [NativeHeader("Modules/BuildPipeline/Editor/Shared/ContentBuildInterface.bindings.h")]
@@ -218,6 +216,7 @@ namespace UnityEditor.Build.Content
         public BuildUsageTagSet usageSet;
         public BuildReferenceMap referenceMap;
         public AssetBundleInfo bundleInfo;
+        public PreloadInfo preloadInfo;
     }
 
     public struct WriteSceneParameters
@@ -230,5 +229,12 @@ namespace UnityEditor.Build.Content
         public BuildReferenceMap referenceMap;
         public PreloadInfo preloadInfo;
         public SceneBundleInfo sceneBundleInfo;
+    }
+
+    public struct WriteManagerParameters
+    {
+        public BuildSettings settings;
+        public BuildUsageTagGlobal globalUsage;
+        public BuildReferenceMap referenceMap;
     }
 }

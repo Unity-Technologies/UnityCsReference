@@ -208,7 +208,7 @@ namespace UnityEditor
                 m_EditorCache.Dispose();
 
             AssetPreview.ClearTemporaryAssetPreviews();
-
+            HierarchyProperty.ClearSceneObjectsFilter();
             m_Debounce = null;
         }
 

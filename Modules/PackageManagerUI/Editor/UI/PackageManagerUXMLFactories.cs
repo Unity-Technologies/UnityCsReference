@@ -34,6 +34,7 @@ namespace UnityEditor.PackageManager.UI
                 new PackageStatusBar.UxmlFactory(),
                 new PackageToolbar.UxmlFactory(),
                 new ProgressBar.UxmlFactory(),
+                new ScopedRegistriesSettings.UxmlFactory(),
                 new ToolbarWindowMenu.UxmlFactory()
             };
 

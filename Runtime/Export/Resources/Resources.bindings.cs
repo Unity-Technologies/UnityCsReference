@@ -20,7 +20,64 @@ namespace UnityEngine
     {
         internal string m_Path;
         internal Type m_Type;
-        public Object asset { get { return Resources.Load(m_Path, m_Type); } }
+
+        protected virtual Object GetResult()
+        {
+            return Resources.Load(m_Path, m_Type);
+        }
+
+        public Object asset { get { return GetResult(); } }
+    }
+
+    [NativeHeader("Runtime/Export/Resources/Resources.bindings.h")]
+    [NativeHeader("Runtime/Misc/ResourceManagerUtility.h")]
+    internal static class ResourcesAPIInternal
+    {
+        [TypeInferenceRule(TypeInferenceRules.ArrayOfTypeReferencedByFirstArgument)]
+        [FreeFunction("Resources_Bindings::FindObjectsOfTypeAll")]
+        public extern static Object[] FindObjectsOfTypeAll(Type type);
+
+        [FreeFunction("GetScriptMapper().FindShader")]
+        public extern static Shader FindShaderByName(string name);
+
+        [TypeInferenceRule(TypeInferenceRules.TypeReferencedBySecondArgument)]
+        [NativeThrows]
+        [FreeFunction("Resources_Bindings::Load")]
+        public extern static Object Load(string path, [NotNull] Type systemTypeInstance);
+
+        [NativeThrows]
+        [FreeFunction("Resources_Bindings::LoadAll")]
+        public extern static Object[] LoadAll([NotNull] string path, [NotNull] Type systemTypeInstance);
+
+        [FreeFunction("Resources_Bindings::LoadAsyncInternal")]
+        extern internal static ResourceRequest LoadAsyncInternal(string path, Type type);
+
+        [FreeFunction("Scripting::UnloadAssetFromScripting")]
+        public extern static void UnloadAsset(Object assetToUnload);
+    }
+
+    public class ResourcesAPI
+    {
+        static ResourcesAPI s_DefaultAPI = new ResourcesAPI();
+        // Internal code must use ActiveAPI over overrideAPI to properly fallback to default api handling
+        internal static ResourcesAPI ActiveAPI => overrideAPI ?? s_DefaultAPI;
+
+        public static ResourcesAPI overrideAPI { get; set; }
+
+        protected internal ResourcesAPI() {}
+        protected internal virtual Object[] FindObjectsOfTypeAll(Type systemTypeInstance) => ResourcesAPIInternal.FindObjectsOfTypeAll(systemTypeInstance);
+        protected internal virtual Shader FindShaderByName(string name) => ResourcesAPIInternal.FindShaderByName(name);
+        protected internal virtual Object Load(string path, Type systemTypeInstance) => ResourcesAPIInternal.Load(path, systemTypeInstance);
+        protected internal virtual Object[] LoadAll(string path, Type systemTypeInstance) => ResourcesAPIInternal.LoadAll(path, systemTypeInstance);
+        protected internal virtual ResourceRequest LoadAsync(string path, Type systemTypeInstance)
+        {
+            var req = ResourcesAPIInternal.LoadAsyncInternal(path, systemTypeInstance);
+            req.m_Path = path;
+            req.m_Type = systemTypeInstance;
+            return req;
+        }
+
+        protected internal virtual void UnloadAsset(Object assetToUnload) => ResourcesAPIInternal.UnloadAsset(assetToUnload);
     }
 
     // The Resources class allows you to find and access Objects including assets.
@@ -37,9 +94,10 @@ namespace UnityEngine
             return typedObjects;
         }
 
-        [TypeInferenceRule(TypeInferenceRules.ArrayOfTypeReferencedByFirstArgument)]
-        [FreeFunction("Resources_Bindings::FindObjectsOfTypeAll")]
-        extern public static Object[] FindObjectsOfTypeAll(Type type);
+        public static Object[] FindObjectsOfTypeAll(Type type)
+        {
+            return ResourcesAPI.ActiveAPI.FindObjectsOfTypeAll(type);
+        }
 
         public static T[] FindObjectsOfTypeAll<T>() where T : Object
         {
@@ -58,11 +116,10 @@ namespace UnityEngine
             return (T)Load(path, typeof(T));
         }
 
-        // Loads an asset stored at /path/ in a Resources folder.
-        [TypeInferenceRule(TypeInferenceRules.TypeReferencedBySecondArgument)]
-        [NativeThrows]
-        [FreeFunction("Resources_Bindings::Load")]
-        extern public static Object Load(string path, [NotNull] Type systemTypeInstance);
+        public static Object Load(string path, Type systemTypeInstance)
+        {
+            return ResourcesAPI.ActiveAPI.Load(path, systemTypeInstance);
+        }
 
         public static ResourceRequest LoadAsync(string path)
         {
@@ -76,19 +133,14 @@ namespace UnityEngine
 
         public static ResourceRequest LoadAsync(string path, Type type)
         {
-            ResourceRequest req = LoadAsyncInternal(path, type);
-            req.m_Path = path;
-            req.m_Type = type;
-            return req;
+            return ResourcesAPI.ActiveAPI.LoadAsync(path, type);
         }
 
-        [FreeFunction("Resources_Bindings::LoadAsyncInternal")]
-        extern internal static ResourceRequest LoadAsyncInternal(string path, Type type);
-
         // Loads all assets in a folder or file at /path/ in a Resources folder.
-        [NativeThrows]
-        [FreeFunction("Resources_Bindings::LoadAll")]
-        extern public static Object[] LoadAll([NotNull] string path, [NotNull] Type systemTypeInstance);
+        public static Object[] LoadAll(string path, Type systemTypeInstance)
+        {
+            return ResourcesAPI.ActiveAPI.LoadAll(path, systemTypeInstance);
+        }
 
         // Loads all assets in a folder or file at /path/ in a Resources folder.
 
@@ -112,8 +164,13 @@ namespace UnityEngine
         }
 
         // Unloads /assetToUnload/ from memory.
+        public static void UnloadAsset(Object assetToUnload)
+        {
+            ResourcesAPI.ActiveAPI.UnloadAsset(assetToUnload);
+        }
+
         [FreeFunction("Scripting::UnloadAssetFromScripting")]
-        extern public static void UnloadAsset(Object assetToUnload);
+        extern static void UnloadAssetImplResourceManager(Object assetToUnload);
 
         // Unloads assets that are not used.
         [FreeFunction("Resources_Bindings::UnloadUnusedAssets")]

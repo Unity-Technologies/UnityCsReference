@@ -63,8 +63,9 @@ namespace UnityEditor.PackageManager.UI
             var pageManager = container.Resolve<PageManager>();
             var settingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             var unityConnectProxy = container.Resolve<UnityConnectProxy>();
+            var applicationProxy = container.Resolve<ApplicationProxy>();
 
-            m_Root = new PackageManagerWindowRoot(resourceLoader, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy);
+            m_Root = new PackageManagerWindowRoot(resourceLoader, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy);
             rootVisualElement.Add(m_Root);
 
             m_Root.OnEnable();
@@ -139,6 +140,13 @@ namespace UnityEditor.PackageManager.UI
         [UsedByNativeCode]
         internal static void OnPackageManagerResolve()
         {
+            var applicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
+            if (!applicationProxy.isBatchMode)
+            {
+                var upmRegistryClient = ServicesContainer.instance.Resolve<UpmRegistryClient>();
+                upmRegistryClient.CheckRegistriesChanged();
+            }
+
             // we don't want to refresh at all if window refresh hasn't happened yet
             var pageManager = ServicesContainer.instance.Resolve<PageManager>();
             if (pageManager.GetRefreshTimestamp(RefreshOptions.UpmList | RefreshOptions.UpmListOffline) == 0)
@@ -149,7 +157,7 @@ namespace UnityEditor.PackageManager.UI
 
         internal static void SelectPackageAndFilterStatic(string packageToSelect, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")
         {
-            instance = GetWindow<PackageManagerWindow>(typeof(SceneView));
+            instance = GetWindow<PackageManagerWindow>();
             instance.minSize = new Vector2(800, 250);
             instance.m_Root.SelectPackageAndFilter(packageToSelect, filterTab, refresh, searchText);
             instance.Show();

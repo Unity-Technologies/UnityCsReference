@@ -1698,6 +1698,11 @@ namespace UnityEditorInternal
             }
         }
 
+        public void ReInitialize()
+        {
+            InitializeNativeTimeline();
+        }
+
         void InitializeNativeTimeline()
         {
             var args = new NativeProfilerTimeline_InitializeArgs();

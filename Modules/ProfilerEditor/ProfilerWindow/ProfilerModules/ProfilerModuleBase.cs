@@ -21,15 +21,15 @@ namespace UnityEditorInternal.Profiling
         const string k_NoCategory = "NoCategory";
         const int k_InvalidIndex = -1;
 
-        protected IProfilerWindowController m_ProfilerWindow;
+        [SerializeReference] protected IProfilerWindowController m_ProfilerWindow;
 
-        protected string m_Name;
-        protected string m_IconName;
+        [SerializeField] protected string m_Name;
+        [SerializeField] protected string m_IconName;
 
         protected ProfilerChart m_Chart;
-        protected List<ProfilerCounterData> m_ChartCounters;
-        protected List<ProfilerCounterData> m_DetailCounters; // TODO All built-in modules should use this for their details pane?
-        protected Chart.ChartType m_ChartType;
+        [SerializeField] protected List<ProfilerCounterData> m_ChartCounters;
+        [SerializeField] protected List<ProfilerCounterData> m_DetailCounters; // TODO All built-in modules should use this for their details pane?
+        [SerializeField] protected Chart.ChartType m_ChartType;
 
         [SerializeField] protected Vector2 m_PaneScroll;
 
@@ -46,13 +46,11 @@ namespace UnityEditorInternal.Profiling
                 throw new ArgumentException($"Chart counters cannot contain more than {maximumNumberOfChartCounters} counters.");
             }
             m_DetailCounters = CollectDefaultDetailCounters();
-            InitializeChart();
-
-            isActive = ReadActiveState();
-            ApplyActiveState();
         }
 
-        // Area is defined by modules that use legacy stats instead of Counters.
+        /// <summary>
+        /// Area is only defined by modules that use legacy stats instead of Profiler Counters.
+        /// </summary>
         public virtual ProfilerArea area => unchecked((ProfilerArea)Profiler.invalidProfilerArea);
         public ReadOnlyCollection<ProfilerCounterData> chartCounters => m_ChartCounters.AsReadOnly();
         public ProfilerChart chart => m_Chart;
@@ -101,7 +99,14 @@ namespace UnityEditorInternal.Profiling
 
         public virtual void OnEnable()
         {
-            m_Chart.LoadAndBindSettings(legacyPreferenceKey);
+            BuildChartIfNecessary();
+
+            isActive = ReadActiveState();
+            // The active state only needs to be applied (reference counted) in OnEnable() if the module is active.
+            if (isActive)
+            {
+                ApplyActiveState();
+            }
         }
 
         public virtual void OnDisable()
@@ -120,8 +125,16 @@ namespace UnityEditorInternal.Profiling
         }
 
         public virtual void SaveViewSettings() {}
+        public virtual void OnSelected() {}
+        public virtual void OnDeselected() {}
         public virtual void OnClosed() {}
         public virtual void Clear() {}
+        public virtual void OnNativePlatformSupportModuleChanged() {}
+
+        public virtual void Rebuild()
+        {
+            RebuildChart();
+        }
 
         public abstract void DrawToolbar(Rect position);
         public abstract void DrawDetailsView(Rect position);
@@ -169,9 +182,7 @@ namespace UnityEditorInternal.Profiling
 
             m_ChartCounters = chartCounters;
             m_DetailCounters = detailCounters;
-            InitializeChart();
-            UpdateChart();
-            m_Chart.LoadAndBindSettings(legacyPreferenceKey);
+            RebuildChart();
 
             if (isActive)
             {
@@ -319,24 +330,8 @@ namespace UnityEditorInternal.Profiling
             var chartScale = (isStackedFillChartType) ? 0.001f : 1f;
             var chartMaximumScaleInterpolationValue = (isStackedFillChartType) ? -1f : 0f;
             m_Chart = InstantiateChart(chartScale, chartMaximumScaleInterpolationValue);
-            ConfigureChartSeries();
+            m_Chart.ConfigureChartSeries(ProfilerUserSettings.frameCount, m_ChartCounters);
             ConfigureChartSelectionCallbacks();
-        }
-
-        void ConfigureChartSeries()
-        {
-            int historySize = ProfilerUserSettings.frameCount;
-            var chartAreaColors = ProfilerColors.chartAreaColors;
-            for (int s = 0; s < m_ChartCounters.Count; s++)
-            {
-                var counter = m_ChartCounters[s];
-                var category = counter.m_Category;
-                m_Chart.m_Series[s] = new ChartSeriesViewData(counter.m_Name, category, historySize, chartAreaColors[s % chartAreaColors.Length]);
-                for (int frameIdx = 0; frameIdx < historySize; ++frameIdx)
-                {
-                    m_Chart.m_Series[s].xValues[frameIdx] = frameIdx;
-                }
-            }
         }
 
         void ConfigureChartSelectionCallbacks()
@@ -363,6 +358,23 @@ namespace UnityEditorInternal.Profiling
             m_Chart.UpdateData(firstEmptyFrame, firstFrame, frameCount);
             UpdateChartOverlay(firstEmptyFrame, firstFrame, frameCount);
             m_Chart.UpdateScaleValuesIfNecessary(firstEmptyFrame, firstFrame, frameCount);
+        }
+
+        void RebuildChart()
+        {
+            var forceRebuild = true;
+            BuildChartIfNecessary(forceRebuild);
+        }
+
+        void BuildChartIfNecessary(bool forceRebuild = false)
+        {
+            if (forceRebuild || m_Chart == null)
+            {
+                InitializeChart();
+                UpdateChart();
+            }
+
+            m_Chart.LoadAndBindSettings(legacyPreferenceKey);
         }
 
         string ConstructTextSummaryFromDetailCounters()
@@ -414,7 +426,7 @@ namespace UnityEditorInternal.Profiling
         void AddCounterToAreas(ProfilerCounterData counter, HashSet<ProfilerArea> areas)
         {
             var categoryName = counter.m_Category;
-            var categoryAreas = ProfilerAreaReferenceCounterUtility.ProfilerCategoryNameToArea(categoryName);
+            var categoryAreas = ProfilerAreaReferenceCounterUtility.ProfilerCategoryNameToAreas(categoryName);
             foreach (var area in categoryAreas)
             {
                 areas.Add(area);

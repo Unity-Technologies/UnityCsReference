@@ -802,6 +802,11 @@ namespace UnityEditor.Experimental.GraphView
             BuildContextualMenu(evt);
         }
 
+        Shader FindShader()
+        {
+            return Shader.Find(UnityEngine.UIElements.UIR.Shaders.k_GraphView);
+        }
+
         static Shader graphViewShader = null;
         void OnEnterPanel(AttachToPanelEvent e)
         {
@@ -809,7 +814,19 @@ namespace UnityEditor.Experimental.GraphView
             if (p != null)
             {
                 if (graphViewShader == null)
-                    graphViewShader = Shader.Find("Hidden/GraphView/GraphViewUIE");
+                {
+                    try
+                    {
+                        // Previous versions of the package may not define k_GraphView, so we fallback to the hard-coded version.
+                        // We are wrappring Shader.Find in a method because it is the only way to catch the exception
+                        // caused by the failed access to k_GraphView.
+                        graphViewShader = FindShader();
+                    }
+                    catch (MissingFieldException)
+                    {
+                        graphViewShader = Shader.Find("Hidden/GraphView/GraphViewUIE");
+                    }
+                }
                 p.standardShader = graphViewShader;
                 HostView ownerView = p.ownerObject as HostView;
                 if (ownerView != null && ownerView.actualView != null)

@@ -72,14 +72,14 @@ namespace Unity.Collections
 
         public NativeArray(NativeArray<T> array, Allocator allocator)
         {
+            AtomicSafetyHandle.CheckReadAndThrow(array.m_Safety);
             Allocate(array.Length, allocator, out this);
-            Copy(array, this);
+            Copy(array, 0, this, 0, array.Length);
         }
 
-        static void Allocate(int length, Allocator allocator, out NativeArray<T> array)
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        static void CheckAllocateArguments(int length, Allocator allocator, long totalSize)
         {
-            var totalSize = UnsafeUtility.SizeOf<T>() * (long)length;
-
             // Native allocation is only valid for Temp, Job and Persistent.
             if (allocator <= Allocator.None)
                 throw new ArgumentException("Allocator must be Temp, TempJob or Persistent", nameof(allocator));
@@ -93,6 +93,12 @@ namespace Unity.Collections
             // TODO: change UnsafeUtility.Malloc to accept a UIntPtr length instead to match C++ API
             if (totalSize > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(length), $"Length * sizeof(T) cannot exceed {int.MaxValue} bytes");
+        }
+
+        static void Allocate(int length, Allocator allocator, out NativeArray<T> array)
+        {
+            var totalSize = UnsafeUtility.SizeOf<T>() * (long)length;
+            CheckAllocateArguments(length, allocator, totalSize);
 
             array = default(NativeArray<T>);
             array.m_Buffer = UnsafeUtility.Malloc(totalSize, UnsafeUtility.AlignOf<T>(), allocator);
@@ -258,6 +264,7 @@ namespace Unity.Collections
             return array;
         }
 
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         void FailOutOfRangeError(int index)
         {
             if (index < Length && (m_MinIndex != 0 || m_MaxIndex != Length - 1))
@@ -348,38 +355,56 @@ namespace Unity.Collections
             return !left.Equals(right);
         }
 
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private static void CheckCopyLengths(int srcLength, int dstLength)
+        {
+            if (srcLength != dstLength)
+                throw new ArgumentException("source and destination length must be the same");
+        }
+
         public static void Copy(NativeArray<T> src, NativeArray<T> dst)
         {
             AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
             AtomicSafetyHandle.CheckWriteAndThrow(dst.m_Safety);
+            CheckCopyLengths(src.Length, dst.Length);
+            Copy(src, 0, dst, 0, src.Length);
+        }
 
-            if (src.Length != dst.Length)
-                throw new ArgumentException("source and destination length must be the same");
-
+        public static void Copy(ReadOnly src, NativeArray<T> dst)
+        {
+            AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
+            AtomicSafetyHandle.CheckWriteAndThrow(dst.m_Safety);
+            CheckCopyLengths(src.Length, dst.Length);
             Copy(src, 0, dst, 0, src.Length);
         }
 
         public static void Copy(T[] src, NativeArray<T> dst)
         {
             AtomicSafetyHandle.CheckWriteAndThrow(dst.m_Safety);
-
-            if (src.Length != dst.Length)
-                throw new ArgumentException("source and destination length must be the same");
-
+            CheckCopyLengths(src.Length, dst.Length);
             Copy(src, 0, dst, 0, src.Length);
         }
 
         public static void Copy(NativeArray<T> src, T[] dst)
         {
             AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
+            CheckCopyLengths(src.Length, dst.Length);
+            Copy(src, 0, dst, 0, src.Length);
+        }
 
-            if (src.Length != dst.Length)
-                throw new ArgumentException("source and destination length must be the same");
-
+        public static void Copy(ReadOnly src, T[] dst)
+        {
+            AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
+            CheckCopyLengths(src.Length, dst.Length);
             Copy(src, 0, dst, 0, src.Length);
         }
 
         public static void Copy(NativeArray<T> src, NativeArray<T> dst, int length)
+        {
+            Copy(src, 0, dst, 0, length);
+        }
+
+        public static void Copy(ReadOnly src, NativeArray<T> dst, int length)
         {
             Copy(src, 0, dst, 0, length);
         }
@@ -394,26 +419,46 @@ namespace Unity.Collections
             Copy(src, 0, dst, 0, length);
         }
 
+        public static void Copy(ReadOnly src, T[] dst, int length)
+        {
+            Copy(src, 0, dst, 0, length);
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private static void CheckCopyArguments(int srcLength, int srcIndex, int dstLength, int dstIndex, int length)
+        {
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), "length must be equal or greater than zero.");
+
+            if (srcIndex < 0 || srcIndex > srcLength || (srcIndex == srcLength && srcLength > 0))
+                throw new ArgumentOutOfRangeException(nameof(srcIndex), "srcIndex is outside the range of valid indexes for the source NativeArray.");
+
+            if (dstIndex < 0 || dstIndex > dstLength || (dstIndex == dstLength && dstLength > 0))
+                throw new ArgumentOutOfRangeException(nameof(dstIndex), "dstIndex is outside the range of valid indexes for the destination NativeArray.");
+
+            if (srcIndex + length > srcLength)
+                throw new ArgumentException("length is greater than the number of elements from srcIndex to the end of the source NativeArray.", nameof(length));
+
+            if (dstIndex + length > dstLength)
+                throw new ArgumentException("length is greater than the number of elements from dstIndex to the end of the destination NativeArray.", nameof(length));
+        }
+
         public static void Copy(NativeArray<T> src, int srcIndex, NativeArray<T> dst, int dstIndex, int length)
         {
             AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
             AtomicSafetyHandle.CheckWriteAndThrow(dst.m_Safety);
+            CheckCopyArguments(src.Length, srcIndex, dst.Length, dstIndex, length);
+            UnsafeUtility.MemCpy(
+                (byte*)dst.m_Buffer + dstIndex * UnsafeUtility.SizeOf<T>(),
+                (byte*)src.m_Buffer + srcIndex * UnsafeUtility.SizeOf<T>(),
+                length * UnsafeUtility.SizeOf<T>());
+        }
 
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), "length must be equal or greater than zero.");
-
-            if (srcIndex < 0 || srcIndex > src.Length || (srcIndex == src.Length && src.Length > 0))
-                throw new ArgumentOutOfRangeException(nameof(srcIndex), "srcIndex is outside the range of valid indexes for the source NativeArray.");
-
-            if (dstIndex < 0 || dstIndex > dst.Length || (dstIndex == dst.Length && dst.Length > 0))
-                throw new ArgumentOutOfRangeException(nameof(dstIndex), "dstIndex is outside the range of valid indexes for the destination NativeArray.");
-
-            if (srcIndex + length > src.Length)
-                throw new ArgumentException("length is greater than the number of elements from srcIndex to the end of the source NativeArray.", nameof(length));
-
-            if (dstIndex + length > dst.Length)
-                throw new ArgumentException("length is greater than the number of elements from dstIndex to the end of the destination NativeArray.", nameof(length));
-
+        public static void Copy(ReadOnly src, int srcIndex, NativeArray<T> dst, int dstIndex, int length)
+        {
+            AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
+            AtomicSafetyHandle.CheckWriteAndThrow(dst.m_Safety);
+            CheckCopyArguments(src.Length, srcIndex, dst.Length, dstIndex, length);
             UnsafeUtility.MemCpy(
                 (byte*)dst.m_Buffer + dstIndex * UnsafeUtility.SizeOf<T>(),
                 (byte*)src.m_Buffer + srcIndex * UnsafeUtility.SizeOf<T>(),
@@ -426,21 +471,7 @@ namespace Unity.Collections
 
             if (src == null)
                 throw new ArgumentNullException(nameof(src));
-
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), "length must be equal or greater than zero.");
-
-            if (srcIndex < 0 || srcIndex > src.Length || (srcIndex == src.Length && src.Length > 0))
-                throw new ArgumentOutOfRangeException(nameof(srcIndex), "srcIndex is outside the range of valid indexes for the source array.");
-
-            if (dstIndex < 0 || dstIndex > dst.Length || (dstIndex == dst.Length && dst.Length > 0))
-                throw new ArgumentOutOfRangeException(nameof(dstIndex), "dstIndex is outside the range of valid indexes for the destination NativeArray.");
-
-            if (srcIndex + length > src.Length)
-                throw new ArgumentException("length is greater than the number of elements from srcIndex to the end of the source array.", nameof(length));
-
-            if (dstIndex + length > dst.Length)
-                throw new ArgumentException("length is greater than the number of elements from dstIndex to the end of the destination NativeArray.", nameof(length));
+            CheckCopyArguments(src.Length, srcIndex, dst.Length, dstIndex, length);
 
             var handle = GCHandle.Alloc(src, GCHandleType.Pinned);
             var addr = handle.AddrOfPinnedObject();
@@ -459,25 +490,27 @@ namespace Unity.Collections
 
             if (dst == null)
                 throw new ArgumentNullException(nameof(dst));
-
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), "length must be equal or greater than zero.");
-
-            if (srcIndex < 0 || srcIndex > src.Length || (srcIndex == src.Length && src.Length > 0))
-                throw new ArgumentOutOfRangeException(nameof(srcIndex), "srcIndex is outside the range of valid indexes for the source NativeArray.");
-
-            if (dstIndex < 0 || dstIndex > dst.Length || (dstIndex == dst.Length && dst.Length > 0))
-                throw new ArgumentOutOfRangeException(nameof(dstIndex), "dstIndex is outside the range of valid indexes for the destination array.");
-
-            if (srcIndex + length > src.Length)
-                throw new ArgumentException("length is greater than the number of elements from srcIndex to the end of the source NativeArray.", nameof(length));
-
-            if (dstIndex + length > dst.Length)
-                throw new ArgumentException("length is greater than the number of elements from dstIndex to the end of the destination array.", nameof(length));
-
+            CheckCopyArguments(src.Length, srcIndex, dst.Length, dstIndex, length);
             var handle = GCHandle.Alloc(dst, GCHandleType.Pinned);
             var addr = handle.AddrOfPinnedObject();
 
+            UnsafeUtility.MemCpy(
+                (byte*)addr + dstIndex * UnsafeUtility.SizeOf<T>(),
+                (byte*)src.m_Buffer + srcIndex * UnsafeUtility.SizeOf<T>(),
+                length * UnsafeUtility.SizeOf<T>());
+
+            handle.Free();
+        }
+
+        public static void Copy(ReadOnly src, int srcIndex, T[] dst, int dstIndex, int length)
+        {
+            AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
+
+            if (dst == null)
+                throw new ArgumentNullException(nameof(dst));
+            CheckCopyArguments(src.Length, srcIndex, dst.Length, dstIndex, length);
+            var handle = GCHandle.Alloc(dst, GCHandleType.Pinned);
+            var addr = handle.AddrOfPinnedObject();
             UnsafeUtility.MemCpy(
                 (byte*)addr + dstIndex * UnsafeUtility.SizeOf<T>(),
                 (byte*)src.m_Buffer + srcIndex * UnsafeUtility.SizeOf<T>(),
@@ -550,13 +583,33 @@ namespace Unity.Collections
         }
 
 
-        public NativeArray<U> Reinterpret<U>() where U : struct
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private static void CheckReinterpretSize<U>() where U : struct
         {
             if (UnsafeUtility.SizeOf<T>() != UnsafeUtility.SizeOf<U>())
             {
                 throw new InvalidOperationException($"Types {typeof(T)} and {typeof(U)} are different sizes - direct reinterpretation is not possible. If this is what you intended, use Reinterpret(<type size>)");
             }
+        }
+
+        public NativeArray<U> Reinterpret<U>() where U : struct
+        {
+            CheckReinterpretSize<U>();
             return InternalReinterpret<U>(Length);
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void CheckReinterpretSize<U>(long tSize, long uSize, int expectedTypeSize, long byteLen, long uLen)
+        {
+            if (tSize != expectedTypeSize)
+            {
+                throw new InvalidOperationException($"Type {typeof(T)} was expected to be {expectedTypeSize} but is {tSize} bytes");
+            }
+
+            if (uLen * uSize != byteLen)
+            {
+                throw new InvalidOperationException($"Types {typeof(T)} (array length {Length}) and {typeof(U)} cannot be aliased due to size constraints. The size of the types and lengths involved must line up.");
+            }
         }
 
         public NativeArray<U> Reinterpret<U>(int expectedTypeSize) where U : struct
@@ -567,19 +620,12 @@ namespace Unity.Collections
             long byteLen = ((long)Length) * tSize;
             long uLen = byteLen / uSize;
 
-            if (tSize != expectedTypeSize)
-            {
-                throw new InvalidOperationException($"Type {typeof(T)} was expected to be {expectedTypeSize} but is {tSize} bytes");
-            }
-
-            if (uLen * uSize != byteLen)
-            {
-                throw new InvalidOperationException($"Types {typeof(T)} (array length {Length}) and {typeof(U)} cannot be aliased due to size constraints. The size of the types and lengths involved must line up.");
-            }
+            CheckReinterpretSize<U>(tSize, uSize, expectedTypeSize, byteLen, uLen);
             return InternalReinterpret<U>((int)uLen);
         }
 
-        public NativeArray<T> GetSubArray(int start, int length)
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void CheckGetSubArrayArguments(int start, int length)
         {
             if (start < 0)
             {
@@ -588,8 +634,13 @@ namespace Unity.Collections
 
             if (start + length > Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(length), $"sub array range {start}-{start+length-1} is outside the range of the native array 0-{Length-1}");
+                throw new ArgumentOutOfRangeException(nameof(length), $"sub array range {start}-{start + length - 1} is outside the range of the native array 0-{Length - 1}");
             }
+        }
+
+        public NativeArray<T> GetSubArray(int start, int length)
+        {
+            CheckGetSubArrayArguments(start, length);
             var result = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(((byte*)m_Buffer) + ((long)UnsafeUtility.SizeOf<T>()) * start, length, Allocator.Invalid);
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref result, m_Safety);
@@ -602,9 +653,12 @@ namespace Unity.Collections
             return new ReadOnly(m_Buffer, m_Length, ref m_Safety);
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         [NativeContainer]
         [NativeContainerIsReadOnly]
-        public unsafe struct ReadOnly
+        [DebuggerDisplay("Length = {Length}")]
+        [DebuggerTypeProxy(typeof(NativeArrayReadOnlyDebugView<>))]
+        public struct ReadOnly
         {
             [NativeDisableUnsafePtrRestriction]
             internal void* m_Buffer;
@@ -620,6 +674,25 @@ namespace Unity.Collections
             }
 
 
+            public int Length => m_Length;
+
+            public void CopyTo(T[] array) => Copy(this, array);
+
+            public void CopyTo(NativeArray<T> array) => Copy(this, array);
+
+            public T[] ToArray()
+            {
+                var array = new T[m_Length];
+                Copy(this, array, m_Length);
+                return array;
+            }
+
+            public NativeArray<U>.ReadOnly Reinterpret<U>() where U : struct
+            {
+                CheckReinterpretSize<U>();
+                return new NativeArray<U>.ReadOnly(m_Buffer, m_Length, ref m_Safety);
+            }
+
             public T this[int index]
             {
                 get
@@ -629,13 +702,10 @@ namespace Unity.Collections
                 }
             }
 
-            public int Length => m_Length;
-
             [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
             void CheckElementReadAccess(int index)
             {
-                if (index < 0
-                    &&  index >= m_Length)
+                if (index < 0 || index >= m_Length)
                 {
                     throw new IndexOutOfRangeException($"Index {index} is out of range (must be between 0 and {m_Length-1}).");
                 }
@@ -662,7 +732,7 @@ namespace Unity.Collections
         }
     }
 
-    // [BurstCompile] - can't use attribute since it's inside com.unity.collections.
+    // [BurstCompile] - can't use attribute since it's inside com.unity.Burst.
     internal struct NativeArrayDisposeJob : IJob
     {
         internal NativeArrayDispose Data;
@@ -687,6 +757,21 @@ namespace Unity.Collections
 
         public T[] Items => m_Array.ToArray();
     }
+
+    /// <summary>
+    /// DebuggerTypeProxy for <see cref="NativeArray{T}.ReadOnly"/>
+    /// </summary>
+    internal sealed class NativeArrayReadOnlyDebugView<T> where T : struct
+    {
+        NativeArray<T>.ReadOnly m_Array;
+
+        public NativeArrayReadOnlyDebugView(NativeArray<T>.ReadOnly array)
+        {
+            m_Array = array;
+        }
+
+        public T[] Items => m_Array.ToArray();
+    }
 }
 namespace Unity.Collections.LowLevel.Unsafe
 {
@@ -703,9 +788,8 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
 
-        /// Internal method used typically by other systems to provide a view on them.
-        /// The caller is still the owner of the data.
-        public static unsafe NativeArray<T> ConvertExistingDataToNativeArray<T>(void* dataPointer, int length, Allocator allocator) where T : struct
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private static void CheckConvertArguments<T>(int length, Allocator allocator) where T : struct
         {
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), "Length must be >= 0");
@@ -718,6 +802,13 @@ namespace Unity.Collections.LowLevel.Unsafe
             // TODO: change UnsafeUtility.Malloc to accept a UIntPtr length instead to match C++ API
             if (totalSize > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(length), $"Length * sizeof(T) cannot exceed {int.MaxValue} bytes");
+        }
+
+        /// Internal method used typically by other systems to provide a view on them.
+        /// The caller is still the owner of the data.
+        public static unsafe NativeArray<T> ConvertExistingDataToNativeArray<T>(void* dataPointer, int length, Allocator allocator) where T : struct
+        {
+            CheckConvertArguments<T>(length, allocator);
 
             var newArray = new NativeArray<T>
             {
@@ -739,6 +830,12 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         public static unsafe void* GetUnsafeReadOnlyPtr<T>(this NativeArray<T> nativeArray) where T : struct
+        {
+            AtomicSafetyHandle.CheckReadAndThrow(nativeArray.m_Safety);
+            return nativeArray.m_Buffer;
+        }
+
+        public static unsafe void* GetUnsafeReadOnlyPtr<T>(this NativeArray<T>.ReadOnly nativeArray) where T : struct
         {
             AtomicSafetyHandle.CheckReadAndThrow(nativeArray.m_Safety);
             return nativeArray.m_Buffer;

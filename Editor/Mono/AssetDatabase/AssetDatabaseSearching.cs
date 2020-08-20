@@ -32,7 +32,7 @@ namespace UnityEditor
 
         internal static string[] FindAssets(SearchFilter searchFilter)
         {
-            return FindAllAssets(searchFilter).Select(property => property.guid).ToArray();
+            return FindAllAssets(searchFilter).Select(property => property.guid).Distinct().ToArray();
         }
 
         internal static IEnumerable<HierarchyProperty> FindAllAssets(SearchFilter searchFilter)

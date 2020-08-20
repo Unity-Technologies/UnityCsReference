@@ -336,6 +336,11 @@ namespace UnityEditor
 
         internal virtual void OnMaximized() {}
 
+        internal virtual bool CanMaximize()
+        {
+            return true;
+        }
+
         // Is EditorWindow focused?
         public bool hasFocus { get { return m_Parent && m_Parent.actualView == this; } }
 

@@ -556,12 +556,18 @@ namespace UnityEditorInternal
 
         public void RunCompileAndLink(string il2cppBuildCacheSource)
         {
+            if (string.Equals(Path.GetFullPath(il2cppBuildCacheSource), Path.GetFullPath(m_PlatformProvider.il2cppBuildCacheDirectory), StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("IIl2CppPlatformProvider.il2cppBuildCacheDirectory cannot be the same as il2cppBuildCacheDirectory. You probably forgot to override il2cppBuildCacheDirectory on your IIl2CppPlatformProvider.");
+
             var il2CppNativeCodeBuilder = m_PlatformProvider.CreateIl2CppNativeCodeBuilder();
             if (il2CppNativeCodeBuilder != null)
             {
                 Il2CppNativeCodeBuilderUtils.ClearAndPrepareCacheDirectory(il2CppNativeCodeBuilder);
 
-                var buildCacheNativeOutputFile = Path.Combine(GetNativeOutputDirectory(m_PlatformProvider.il2cppBuildCacheDirectory), m_PlatformProvider.nativeLibraryFileName);
+                var buildCacheDirectory = m_PlatformProvider.il2cppBuildCacheDirectory;
+                Directory.CreateDirectory(buildCacheDirectory);
+
+                var buildCacheNativeOutputFile = Path.Combine(GetNativeOutputDirectory(buildCacheDirectory), m_PlatformProvider.nativeLibraryFileName);
                 var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
                 var compilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup);
                 var arguments = Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, buildCacheNativeOutputFile, m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, compilerConfiguration).ToList();
@@ -750,7 +756,10 @@ namespace UnityEditorInternal
             // Copy IL2CPP outputs to StagingArea
             var nativeOutputDirectoryInBuildCache = GetNativeOutputDirectory(m_PlatformProvider.il2cppBuildCacheDirectory);
             if (Directory.Exists(nativeOutputDirectoryInBuildCache))
-                FileUtil.CopyDirectoryRecursive(nativeOutputDirectoryInBuildCache, GetNativeOutputDirectory(m_StagingAreaData));
+            {
+                var outputDirectory = GetNativeOutputDirectory(m_StagingAreaData);
+                FileUtil.CopyDirectoryRecursive(nativeOutputDirectoryInBuildCache, outputDirectory, true);
+            }
 
             // Copy Generated C++ files and Data directory to StagingArea.
             // This directory will only be present when using "--convert-to-cpp" with IL2CPP.

@@ -640,6 +640,9 @@
     <Compile Include="..\..\Editor\Mono\BuildPipeline\WinRT\WinRTUtils.cs">
       <Link>Editor\Mono\BuildPipeline\WinRT\WinRTUtils.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildPlayerDataExtractor.cs">
+      <Link>Editor\Mono\BuildPlayerDataExtractor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPlayerSceneTreeView.cs">
       <Link>Editor\Mono\BuildPlayerSceneTreeView.cs</Link>
     </Compile>
@@ -2134,6 +2137,9 @@
     <Compile Include="..\..\Editor\Mono\Inspector\PlayerSettingsEditor\PlayerSettingsEditor.cs">
       <Link>Editor\Mono\Inspector\PlayerSettingsEditor\PlayerSettingsEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\PlayerSettingsEditor\PlayerSettingsIconsEditor.cs">
+      <Link>Editor\Mono\Inspector\PlayerSettingsEditor\PlayerSettingsIconsEditor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\PlayerSettingsEditor\PlayerSettingsSplashScreenEditor.bindings.cs">
       <Link>Editor\Mono\Inspector\PlayerSettingsEditor\PlayerSettingsSplashScreenEditor.bindings.cs</Link>
     </Compile>
@@ -3202,6 +3208,9 @@
     <Compile Include="..\..\Editor\Mono\SerializedProperty.bindings.cs">
       <Link>Editor\Mono\SerializedProperty.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\SerializedPropertyExtensions.cs">
+      <Link>Editor\Mono\SerializedPropertyExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\SerializedProperty\SerializedPropertyFilters.cs">
       <Link>Editor\Mono\SerializedProperty\SerializedPropertyFilters.cs</Link>
     </Compile>
@@ -3769,6 +3778,15 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetResourceUtil.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetResourceUtil.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeAssetDefinitionState.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeAssetDefinitionState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeStyleSheetImporter.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeStyleSheetImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeStyleSheetImporterEditor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeStyleSheetImporterEditor.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\URIHelpers.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\URIHelpers.cs</Link>
     </Compile>
@@ -3973,6 +3991,9 @@
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildPlayerDataGenerator.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\BuildPlayerDataGenerator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildPlayerDataGeneratorProcess.cs">
+      <Link>Modules\BuildPipeline\Editor\Managed\BuildPlayerDataGeneratorProcess.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildReferenceMap.bindings.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\BuildReferenceMap.bindings.cs</Link>
     </Compile>
@@ -3993,6 +4014,9 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\ContentBuildInterface.deprecated.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\ContentBuildInterface.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\GameManagerDependencyInfo.cs">
+      <Link>Modules\BuildPipeline\Editor\Managed\GameManagerDependencyInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\ObjectIdentifier.bindings.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\ObjectIdentifier.bindings.cs</Link>
@@ -4450,6 +4474,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettingsProvider.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettingsProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\RegistryInfoDraft.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\RegistryInfoDraft.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\ApplicationProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\ApplicationProxy.cs</Link>
     </Compile>
@@ -4480,6 +4507,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmAddOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmAddOperation.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmAddRegistryOperation.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmAddRegistryOperation.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmBaseOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmBaseOperation.cs</Link>
     </Compile>
@@ -4491,6 +4521,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmEmbedOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmEmbedOperation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmGetRegistriesOperation.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmGetRegistriesOperation.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmListOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmListOperation.cs</Link>
@@ -4504,11 +4537,20 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageVersion.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageVersion.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmRegistryClient.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmRegistryClient.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmRemoveOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmRemoveOperation.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmRemoveRegistryOperation.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmRemoveRegistryOperation.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmSearchOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmSearchOperation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmUpdateRegistryOperation.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmUpdateRegistryOperation.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmVersionList.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmVersionList.cs</Link>
@@ -4662,6 +4704,12 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackagesAction.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackagesAction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ScopedRegistriesSettings.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\ScopedRegistriesSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ScopedRegistryAddedPopup.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\ScopedRegistryAddedPopup.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\AuthorInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\AuthorInfo.cs</Link>
@@ -5921,7 +5969,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\artifacts\UnityEditor.dll\Debug</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_ASSETPIPELINE_GUI;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
+    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_ASSETPIPELINE_GUI;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoWarn>0169;0649;0626</NoWarn>

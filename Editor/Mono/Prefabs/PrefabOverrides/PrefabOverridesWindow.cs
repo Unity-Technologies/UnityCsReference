@@ -88,7 +88,8 @@ namespace UnityEditor
 
             m_TreeView.SetApplyTarget(selectedGameObject, prefabAssetRoot, AssetDatabase.GetAssetPath(prefabAssetRoot));
 
-            RefreshStatus();
+            // m_TreeView.SetApplyTarget already reloads the TreeView so don't do it again in RefreshStatus.
+            RefreshStatus(false);
         }
 
         internal PrefabOverridesWindow(GameObject[] selectedGameObjects)
@@ -114,9 +115,9 @@ namespace UnityEditor
             RefreshStatus();
         }
 
-        internal void RefreshStatus()
+        internal void RefreshStatus(bool reloadTreeView = true)
         {
-            if (m_TreeView != null)
+            if (m_TreeView != null && reloadTreeView)
             {
                 m_TreeView.Reload();
                 m_TreeView.CullNonExistingItemsFromSelection();

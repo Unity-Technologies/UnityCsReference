@@ -32,6 +32,7 @@ namespace UnityEditor.PackageManager.UI
 
         internal static class StylesheetPath
         {
+            internal static readonly string scopedRegistriesSettings = "StyleSheets/PackageManager/ScopedRegistriesSettings.uss";
             internal static readonly string projectSettings = "StyleSheets/PackageManager/PackageManagerProjectSettings.uss";
             internal static readonly string projectSettingsDark = "StyleSheets/PackageManager/Dark.uss";
             internal static readonly string projectSettingsLight = "StyleSheets/PackageManager/Light.uss";
@@ -48,6 +49,8 @@ namespace UnityEditor.PackageManager.UI
             {
                 // Create a child to make sure all the style sheets are not added to the root.
                 rootVisualElement = new ScrollView();
+                rootVisualElement.StretchToParentSize();
+                rootVisualElement.AddStyleSheetPath(StylesheetPath.scopedRegistriesSettings);
                 rootVisualElement.AddStyleSheetPath(StylesheetPath.projectSettings);
                 rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? StylesheetPath.projectSettingsDark : StylesheetPath.projectSettingsLight);
                 rootVisualElement.AddStyleSheetPath(StylesheetPath.packageManagerCommon);
@@ -66,11 +69,20 @@ namespace UnityEditor.PackageManager.UI
 
                 ResolveDependencies();
 
-                SetExpanded(m_SettingsProxy.advancedSettingsExpanded);
+                advancedSettingsFoldout.SetValueWithoutNotify(m_SettingsProxy.advancedSettingsExpanded);
+                m_SettingsProxy.onAdvancedSettingsFoldoutChanged += OnAdvancedSettingsFoldoutChanged;
                 advancedSettingsFoldout.RegisterValueChangedCallback(changeEvent =>
                 {
                     if (changeEvent.target == advancedSettingsFoldout)
-                        SetExpanded(changeEvent.newValue);
+                        m_SettingsProxy.advancedSettingsExpanded = changeEvent.newValue;
+                });
+
+                scopedRegistriesSettingsFoldout.SetValueWithoutNotify(m_SettingsProxy.scopedRegistriesSettingsExpanded);
+                m_SettingsProxy.onScopedRegistriesSettingsFoldoutChanged += OnScopedRegistriesSettingsFoldoutChanged;
+                scopedRegistriesSettingsFoldout.RegisterValueChangedCallback(changeEvent =>
+                {
+                    if (changeEvent.target == scopedRegistriesSettingsFoldout)
+                        m_SettingsProxy.scopedRegistriesSettingsExpanded = changeEvent.newValue;
                 });
 
                 previewInfoBox.Q<Button>().clickable.clicked += () =>
@@ -123,15 +135,28 @@ namespace UnityEditor.PackageManager.UI
         [SettingsProvider]
         public static SettingsProvider CreateProjectSettingsProvider()
         {
-            return new PackageManagerProjectSettingsProvider(k_PackageManagerSettingsPath, SettingsScope.Project, new List<string>(new[] { "enable", "package", "preview" }));
+            return new PackageManagerProjectSettingsProvider(k_PackageManagerSettingsPath, SettingsScope.Project, new List<string>()
+            {
+                L10n.Tr("enable"),
+                L10n.Tr("preview"),
+                L10n.Tr("package"),
+                L10n.Tr("scoped"),
+                L10n.Tr("registries"),
+                L10n.Tr("registry"),
+                L10n.Tr("dependencies"),
+            });
         }
 
-        private void SetExpanded(bool expanded)
+        private void OnAdvancedSettingsFoldoutChanged(bool expanded)
         {
             if (advancedSettingsFoldout.value != expanded)
                 advancedSettingsFoldout.value = expanded;
-            if (m_SettingsProxy.advancedSettingsExpanded != expanded)
-                m_SettingsProxy.advancedSettingsExpanded = expanded;
+        }
+
+        private void OnScopedRegistriesSettingsFoldoutChanged(bool expanded)
+        {
+            if (scopedRegistriesSettingsFoldout.value != expanded)
+                scopedRegistriesSettingsFoldout.value = expanded;
         }
 
         private VisualElementCache cache { get; set; }
@@ -140,5 +165,6 @@ namespace UnityEditor.PackageManager.UI
         private Toggle enablePreviewPackages { get { return rootVisualElement.Q<Toggle>("enablePreviewPackages"); } }
         private Toggle enablePackageDependencies { get { return rootVisualElement.Q<Toggle>("enableDependencies"); } }
         private Foldout advancedSettingsFoldout { get { return rootVisualElement.Q<Foldout>("advancedSettingsFoldout"); } }
+        private Foldout scopedRegistriesSettingsFoldout { get { return rootVisualElement.Q<Foldout>("scopedRegistriesSettingsFoldout"); } }
     }
 }

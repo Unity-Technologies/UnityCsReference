@@ -360,7 +360,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     // waiting to get post processed.
                     if (isCodeGenAssembly && hasCompileErrors)
                     {
-                        pendingPostProcessorTasks.Clear();
+                        ClearPendingPostProcessors();
                         pendingAssemblies.Clear();
                     }
 
@@ -418,7 +418,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 // If any codegen assemblies are not getting compiled, clear
                 // pending il post processing tasks.
                 if (notCompiledCodeGenAssemblies.Any())
-                    pendingPostProcessorTasks.Clear();
+                    ClearPendingPostProcessors();
 
                 return;
             }
@@ -560,6 +560,24 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return false;
         }
 
+        void ClearPendingPostProcessors()
+        {
+            pendingPostProcessorTasks.Clear();
+
+            // When we clearing pendingPostProcessorTasks, we have to copy
+            // compiler messages from compiledAssemblies to processedAssemblies,
+            // as processedAssemblies is used by native to emit and clear compiler
+            // messages. If we do not add them, then compile errors will not be
+            // cleared when post processors are used and compilation is stopped
+            // before an assembly that previously had compile errors has been
+            // post processed.
+            foreach (var entry in compiledAssemblies)
+            {
+                if (!processedAssemblies.ContainsKey(entry.Key))
+                    processedAssemblies.Add(entry.Key, entry.Value);
+            }
+        }
+
         void QueuePendingAssemblies()
         {
             if (pendingAssemblies.Count == 0)
@@ -661,7 +679,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     if (codeGenAssemblies.Contains(assembly))
                     {
                         notCompiledCodeGenAssemblies.Add(assembly);
-                        pendingPostProcessorTasks.Clear();
+                        ClearPendingPostProcessors();
                         pendingAssemblies.Clear();
                         assemblyCompileQueue = null;
                         break;

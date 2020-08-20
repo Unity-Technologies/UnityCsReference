@@ -412,6 +412,15 @@ namespace UnityEditor
         // Just like BuildPlayer, but does not check for Pro license. Used from build player dialog.
         internal static extern BuildReport BuildPlayerInternalNoCheck(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options, string[] extraScriptingDefines, bool delayToAfterScriptReload);
 
+
+        [FreeFunction("WriteBootConfig", ThrowsException = true)]
+        static extern void WriteBootConfig(string outputFile, BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options);
+
+        public static void WriteBootConfig(string outputFile, BuildTarget target, BuildOptions options)
+        {
+            WriteBootConfig(outputFile, BuildPipeline.GetBuildTargetGroup(target), target, options);
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         private struct BuildPlayerDataResult
         {

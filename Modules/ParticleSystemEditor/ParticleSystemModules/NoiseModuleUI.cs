@@ -232,6 +232,8 @@ namespace UnityEditor
 
             if (singleLine)
                 GUILayout.EndVertical();
+            else
+                EditorGUILayout.Space();
 
             if (EditorGUI.EndChangeCheck() || m_ScrollSpeed.scalar.floatValue != 0.0f || remapEnabled || separateAxesChanged)
             {
@@ -239,10 +241,13 @@ namespace UnityEditor
                 m_ParticleSystemUI.m_ParticleEffectUI.m_Owner.Repaint();
             }
 
-            if (m_ParticleSystemUI.multiEdit)
-                GUILayout.Label(s_Texts.previewTextureMultiEdit, previewTextureStyle, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(false));
-            else
-                GUILayout.Label(s_Texts.previewTexture, previewTextureStyle, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(false));
+            if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
+            {
+                if (m_ParticleSystemUI.multiEdit)
+                    GUILayout.Label(s_Texts.previewTextureMultiEdit, previewTextureStyle, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(false));
+                else
+                    GUILayout.Label(s_Texts.previewTexture, previewTextureStyle, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(false));
+            }
 
             if (singleLine)
                 GUILayout.EndHorizontal();
