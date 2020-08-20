@@ -54,6 +54,9 @@ namespace UnityEditor.PackageManager.UI
         private UpmClient m_UpmClient;
 
         [SerializeField]
+        private UpmRegistryClient m_UpmRegistryClient;
+
+        [SerializeField]
         private PackageFiltering m_PackageFiltering;
 
         [SerializeField]
@@ -96,6 +99,7 @@ namespace UnityEditor.PackageManager.UI
 
             m_UpmCache = new UpmCache();
             m_UpmClient = new UpmClient();
+            m_UpmRegistryClient = new UpmRegistryClient();
 
             m_PackageFiltering = new PackageFiltering();
             m_PackageManagerPrefs = new PackageManagerPrefs();
@@ -123,12 +127,13 @@ namespace UnityEditor.PackageManager.UI
             m_AssetStoreDownloadManager.ResolveDependencies(m_ApplicationProxy, m_HttpClientFactory, m_UnityConnectProxy, m_AssetStoreCache, m_AssetStoreUtils, m_AssetStoreRestAPI);
 
             m_UpmCache.ResolveDependencies(m_PackageManagerPrefs);
-            m_UpmClient.ResolveDependencies(m_PackageManagerPrefs, m_UpmCache, m_IOProxy, m_SettingsProxy);
+            m_UpmClient.ResolveDependencies(m_UpmCache, m_IOProxy, m_SettingsProxy);
+            m_UpmRegistryClient.ResolveDependencies(m_UpmCache, m_SettingsProxy);
 
             m_PackageFiltering.ResolveDependencies(m_UnityConnectProxy, m_SettingsProxy);
 
             m_PackageDatabase.ResolveDependencies(m_UnityConnectProxy, m_AssetDatabaseProxy, m_AssetStoreUtils, m_AssetStoreClient, m_AssetStoreDownloadManager, m_UpmClient, m_IOProxy);
-            m_PageManager.ResolveDependencies(m_ApplicationProxy, m_SelectionProxy, m_UnityConnectProxy, m_PackageFiltering, m_PackageManagerPrefs, m_UpmClient, m_AssetStoreClient, m_PackageDatabase, m_SettingsProxy);
+            m_PageManager.ResolveDependencies(m_ApplicationProxy, m_SelectionProxy, m_UnityConnectProxy, m_PackageFiltering, m_PackageManagerPrefs, m_UpmClient, m_UpmRegistryClient, m_AssetStoreClient, m_PackageDatabase, m_SettingsProxy);
 
             m_DependenciesResolved = true;
         }
@@ -188,6 +193,7 @@ namespace UnityEditor.PackageManager.UI
 
             Register(m_UpmCache);
             Register(m_UpmClient);
+            Register(m_UpmRegistryClient);
 
             Register(m_PackageFiltering);
             Register(m_PackageManagerPrefs);

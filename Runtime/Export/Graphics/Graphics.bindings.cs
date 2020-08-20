@@ -601,7 +601,14 @@ namespace UnityEngine
         public extern static LightmapsMode lightmapsMode { get; [FreeFunction(ThrowsException = true)] set; }
 
         // Holds all data needed by the light probes.
-        public extern static LightProbes lightProbes { get; set; }
+        public extern static LightProbes lightProbes
+        {
+            get;
+
+            [FreeFunction]
+            [NativeName("SetLightProbes")]
+            set;
+        }
 
         [NativeName("ResetAndAwakeFromLoad")]
         internal static extern void Reset();

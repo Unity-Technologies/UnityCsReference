@@ -327,7 +327,6 @@ namespace UnityEditor.Experimental.GraphView
         public Node(string uiFile)
         {
             var tpl = EditorGUIUtility.Load(uiFile) as VisualTreeAsset;
-
             tpl.CloneTree(this);
 
             VisualElement main = this;

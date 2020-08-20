@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
@@ -226,6 +228,24 @@ namespace UnityEngine
 
         [FreeFunction(Name = "TrailRendererScripting::AddPositions", HasExplicitThis = true)]
         extern public void AddPositions([NotNull] Vector3[] positions);
+
+        public void SetPositions(NativeArray<Vector3> positions) { unsafe { SetPositionsWithNativeContainer((IntPtr)positions.GetUnsafeReadOnlyPtr(), positions.Length); } }
+        public void SetPositions(NativeSlice<Vector3> positions) { unsafe { SetPositionsWithNativeContainer((IntPtr)positions.GetUnsafeReadOnlyPtr(), positions.Length); } }
+
+        public int GetPositions([Out] NativeArray<Vector3> positions) { unsafe { return GetPositionsWithNativeContainer((IntPtr)positions.GetUnsafePtr(), positions.Length); } }
+        public int GetPositions([Out] NativeSlice<Vector3> positions) { unsafe { return GetPositionsWithNativeContainer((IntPtr)positions.GetUnsafePtr(), positions.Length); } }
+
+        public void AddPositions([Out] NativeArray<Vector3> positions) { unsafe { AddPositionsWithNativeContainer((IntPtr)positions.GetUnsafePtr(), positions.Length); } }
+        public void AddPositions([Out] NativeSlice<Vector3> positions) { unsafe { AddPositionsWithNativeContainer((IntPtr)positions.GetUnsafePtr(), positions.Length); } }
+
+        [FreeFunction(Name = "TrailRendererScripting::SetPositionsWithNativeContainer", HasExplicitThis = true)]
+        extern private void SetPositionsWithNativeContainer(IntPtr positions, int count);
+
+        [FreeFunction(Name = "TrailRendererScripting::GetPositionsWithNativeContainer", HasExplicitThis = true)]
+        extern private int GetPositionsWithNativeContainer(IntPtr positions, int length);
+
+        [FreeFunction(Name = "TrailRendererScripting::AddPositionsWithNativeContainer", HasExplicitThis = true)]
+        extern private void AddPositionsWithNativeContainer(IntPtr positions, int length);
     }
 
     [NativeHeader("Runtime/Graphics/LineRenderer.h")]
@@ -278,6 +298,18 @@ namespace UnityEngine
 
         [FreeFunction(Name = "LineRendererScripting::SetPositions", HasExplicitThis = true)]
         extern public void SetPositions([NotNull] Vector3[] positions);
+
+        public void SetPositions(NativeArray<Vector3> positions) { unsafe { SetPositionsWithNativeContainer((IntPtr)positions.GetUnsafeReadOnlyPtr(), positions.Length); } }
+        public void SetPositions(NativeSlice<Vector3> positions) { unsafe { SetPositionsWithNativeContainer((IntPtr)positions.GetUnsafeReadOnlyPtr(), positions.Length); } }
+
+        public int GetPositions([Out] NativeArray<Vector3> positions) { unsafe { return GetPositionsWithNativeContainer((IntPtr)positions.GetUnsafePtr(), positions.Length); } }
+        public int GetPositions([Out] NativeSlice<Vector3> positions) { unsafe { return GetPositionsWithNativeContainer((IntPtr)positions.GetUnsafePtr(), positions.Length); } }
+
+        [FreeFunction(Name = "LineRendererScripting::SetPositionsWithNativeContainer", HasExplicitThis = true)]
+        extern private void SetPositionsWithNativeContainer(IntPtr positions, int count);
+
+        [FreeFunction(Name = "LineRendererScripting::GetPositionsWithNativeContainer", HasExplicitThis = true)]
+        extern private int GetPositionsWithNativeContainer(IntPtr positions, int length);
     }
 
     [NativeHeader("Runtime/Graphics/Mesh/SkinnedMeshRenderer.h")]

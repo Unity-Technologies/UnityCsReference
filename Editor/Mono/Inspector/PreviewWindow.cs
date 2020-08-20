@@ -52,13 +52,16 @@ namespace UnityEditor
         protected override void OnDisable()
         {
             base.OnDisable();
-            m_ParentInspectorWindow.RebuildContentsContainers();
+            if (m_ParentInspectorWindow != null)
+                m_ParentInspectorWindow.RebuildContentsContainers();
         }
 
         protected override void CreateTracker()
         {
             if (m_ParentInspectorWindow != null)
                 m_Tracker = m_ParentInspectorWindow.tracker;
+            else if (m_Tracker == null)
+                base.CreateTracker();
         }
 
         internal override Editor GetLastInteractedEditor()
@@ -145,5 +148,13 @@ namespace UnityEditor
         }
 
         protected override void ShowButton(Rect r) {}
+
+        internal override bool CanMaximize()
+        {
+            /*Since preview window is tightly coupled with Ispector window, maximizing this would destroy inspector
+             * which internally closes all the windows tied with it which in this case would be this window so there
+             * is no point in maximizing a winodw that will be closed as a part of maximizing*/
+            return false;
+        }
     }
 }

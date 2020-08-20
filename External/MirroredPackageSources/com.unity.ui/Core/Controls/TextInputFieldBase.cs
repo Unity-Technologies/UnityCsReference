@@ -191,6 +191,21 @@ namespace UnityEngine.UIElements
             get { return m_TextInputBase.maskChar; }
             set { m_TextInputBase.maskChar = value; }
         }
+        
+        /// <summary>
+        /// Computes the size needed to display a text string based on element style values such as font, font-size, word-wrap, and so on.
+        /// </summary>
+        /// <param name="textToMeasure">The text to measure.</param>
+        /// <param name="width">Suggested width. Can be zero.</param>
+        /// <param name="widthMode">Width restrictions.</param>
+        /// <param name="height">Suggested height.</param>
+        /// <param name="heightMode">Height restrictions.</param>
+        /// <returns>The horizontal and vertical size needed to display the text string.</returns>
+        internal Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height,
+            MeasureMode heightMode)
+        {
+            return TextElement.MeasureVisualElementTextSize(this, textToMeasure, width, widthMode, height, heightMode, textHandle);
+        }
 
         /* internal for VisualTree tests */
         internal TextEditorEventHandler editorEventHandler => m_TextInputBase.editorEventHandler;

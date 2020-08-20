@@ -124,6 +124,18 @@ namespace UnityEditor
             }
         }
 
+        internal class DoCreatePrefab : EndNameEditAction
+        {
+            public override void Action(int instanceId, string pathName, string resourceFile)
+            {
+                var empty = new GameObject("New Prefab");
+                bool success;
+                Object o = PrefabUtility.SaveAsPrefabAsset(empty, pathName, out success);
+                DestroyImmediate(empty);
+                ProjectWindowUtil.ShowCreatedAsset(o);
+            }
+        }
+
         internal class DoCreatePrefabVariant : EndNameEditAction
         {
             public override void Action(int instanceId, string pathName, string resourceFile)
@@ -285,7 +297,18 @@ namespace UnityEditor
             return (go != null && EditorUtility.IsPersistent(go));
         }
 
-        [MenuItem("Assets/Create/Prefab Variant", false, 202)]
+        [MenuItem("Assets/Create/Prefab", false, 202)]
+        static void CreatePrefab()
+        {
+            StartNameEditingIfProjectWindowExists(
+                0,
+                ScriptableObject.CreateInstance<DoCreatePrefab>(),
+                "New Prefab.prefab",
+                EditorGUIUtility.FindTexture("Prefab Icon"),
+                null);
+        }
+
+        [MenuItem("Assets/Create/Prefab Variant", false, 203)]
         static void CreatePrefabVariant()
         {
             var go = Selection.activeGameObject;
@@ -819,6 +842,9 @@ namespace UnityEditor
 
                 EditorUtility.DisplayDialog(L10n.Tr("Cannot Delete"), message, L10n.Tr("Ok"));
             }
+
+            PackageManager.Client.Resolve(false);
+
             return success;
         }
 

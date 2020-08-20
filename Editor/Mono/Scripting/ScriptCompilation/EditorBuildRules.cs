@@ -254,6 +254,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public DirtySource DirtySource { get; set; }
         }
 
+        static void AddDirtyTargetAssembly(Dictionary<TargetAssembly, DirtyTargetAssembly> dirtyTargetAssemblies, TargetAssembly targetAssembly, DirtySource dirtySource)
+        {
+            DirtyTargetAssembly dirtyTargetAssembly;
+
+            if (dirtyTargetAssemblies.TryGetValue(targetAssembly, out dirtyTargetAssembly))
+            {
+                dirtyTargetAssembly.DirtySource |= dirtySource;
+            }
+            else
+            {
+                dirtyTargetAssembly = new DirtyTargetAssembly(dirtySource);
+                dirtyTargetAssemblies[targetAssembly] = dirtyTargetAssembly;
+            }
+        }
+
         public static ScriptAssembly[] GenerateChangedScriptAssemblies(GenerateChangedScriptAssembliesArgs args)
         {
             var dirtyTargetAssemblies = new Dictionary<TargetAssembly, DirtyTargetAssembly>();
@@ -264,7 +279,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (!IsCompatibleWithPlatformAndDefines(dirtyTargetAssembly, args.Settings))
                     continue;
 
-                dirtyTargetAssemblies[dirtyTargetAssembly] = new DirtyTargetAssembly(DirtySource.DirtyAssembly);
+                AddDirtyTargetAssembly(dirtyTargetAssemblies, dirtyTargetAssembly, DirtySource.DirtyAssembly);
             }
 
             // Dirty custom script assemblies that have explicit references to
@@ -278,14 +293,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     foreach (var entry in customTargetAssembliesWithExplictReferences)
                     {
                         var customTargetAssembly = entry.Value;
-                        if (customTargetAssembly.ExplicitPrecompiledReferences.Contains(dirtyPrecompiledAssembly))
-                        {
-                            if (!IsCompatibleWithPlatformAndDefines(customTargetAssembly, args.Settings))
-                                continue;
 
-                            dirtyTargetAssemblies[customTargetAssembly] = new DirtyTargetAssembly(DirtySource.DirtyReference);
-                            break;
-                        }
+                        if (!customTargetAssembly.ExplicitPrecompiledReferences.Contains(dirtyPrecompiledAssembly))
+                            continue;
+
+                        if (!IsCompatibleWithPlatformAndDefines(customTargetAssembly, args.Settings))
+                            continue;
+
+                        AddDirtyTargetAssembly(dirtyTargetAssemblies, customTargetAssembly, DirtySource.DirtyReference);
                     }
                 }
             }
@@ -299,7 +314,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 foreach (var assemblyFilename in args.RunUpdaterAssemblies)
                 {
                     var targetAssembly = allTargetAssemblies.First(a => a.Filename == assemblyFilename);
-                    dirtyTargetAssemblies[targetAssembly] = new DirtyTargetAssembly(DirtySource.DirtyAssembly);
+
+                    AddDirtyTargetAssembly(dirtyTargetAssemblies, targetAssembly, DirtySource.DirtyAssembly);
                 }
 
             bool isAnyCustomScriptAssemblyDirty = dirtyTargetAssemblies.Any(entry =>
@@ -319,8 +335,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     if (!IsCompatibleWithPlatformAndDefines(assembly, args.Settings))
                         continue;
 
-                    if (!dirtyTargetAssemblies.ContainsKey(assembly))
-                        dirtyTargetAssemblies[assembly] = new DirtyTargetAssembly(DirtySource.DirtyReference);
+                    AddDirtyTargetAssembly(dirtyTargetAssemblies, assembly, DirtySource.DirtyReference);
                 }
             }
 
@@ -347,7 +362,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     foreach (var reference in assembly.References)
                         if (dirtyTargetAssemblies.ContainsKey(reference))
                         {
-                            dirtyTargetAssemblies[assembly] = new DirtyTargetAssembly(DirtySource.DirtyReference);
+                            AddDirtyTargetAssembly(dirtyTargetAssemblies, assembly, DirtySource.DirtyReference);
                             dirtyAssemblyCount++;
                             break;
                         }

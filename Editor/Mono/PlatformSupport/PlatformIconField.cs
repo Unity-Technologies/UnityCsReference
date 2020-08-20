@@ -64,7 +64,7 @@ namespace UnityEditor.PlatformSupport
             return !(m_IconsFields.Count > 0);
         }
 
-        public void AddPlatformIcons(PlatformIcon[] icons, PlatformIconKind kind)
+        public void SetPlatformIcons(PlatformIcon[] icons, PlatformIconKind kind)
         {
             m_PlatformIconsByKind[kind] = icons;
 
@@ -208,7 +208,7 @@ namespace UnityEditor.PlatformSupport
             Rect previewRect = new Rect(elementContentRect.x + elementContentRect.width - kMaxPreviewSize, elementContentRect.y, previewWidth, previewHeight);
 
             GUI.Box(previewRect, "");
-            Texture2D closestIcon = PlayerSettings.GetPlatformIconAtSize(m_PlatformName, platformIcon.width, platformIcon.height, platformIcon.kind.kind, platformIcon.iconSubKind);
+            Texture2D closestIcon = platformIcon.GetPreviewTextures()[0]; // 0 is 1st layer
             if (closestIcon != null)
                 GUI.DrawTexture(GetContentRect(previewRect, 1, 1), closestIcon);
 

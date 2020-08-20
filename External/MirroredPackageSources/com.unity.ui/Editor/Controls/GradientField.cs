@@ -152,7 +152,7 @@ namespace UnityEditor.UIElements
             }
             else
             {
-                Texture2D gradientTexture = UnityEditorInternal.GradientPreviewCache.GenerateGradientPreview(value, computedStyle.backgroundImage.value.texture, colorSpace);
+                Texture2D gradientTexture = UnityEditorInternal.GradientPreviewCache.GenerateGradientPreview(value, resolvedStyle.backgroundImage.texture, colorSpace);
                 m_GradientTextureImage.style.backgroundImage = gradientTexture;
 
                 IncrementVersion(VersionChangeType.Repaint); // since the Texture2D object can be reused, force dirty because the backgroundImage change will only trigger the Dirty if the Texture2D objects are different.

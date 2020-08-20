@@ -972,5 +972,22 @@ namespace UnityEditor
                 DestroyImmediate(m_Settings.lineMaterial);
             }
         }
+
+        public override string GetInfoString()
+        {
+            Mesh mesh = target as Mesh;
+            string info = $"{mesh.vertexCount} Vertices, {InternalMeshUtil.GetPrimitiveCount(mesh)} Triangles";
+
+            int submeshes = mesh.subMeshCount;
+            if (submeshes > 1)
+                info += $", {submeshes} Sub Meshes";
+
+            int blendShapeCount = mesh.blendShapeCount;
+            if (blendShapeCount > 0)
+                info += $", {blendShapeCount} Blend Shapes";
+
+            info += " | " + InternalMeshUtil.GetVertexFormat(mesh);
+            return info;
+        }
     }
 }

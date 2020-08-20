@@ -754,6 +754,9 @@ namespace UnityEditorInternal
             Age,
             Disposed,
             NumChannelInstances,
+            NumClones,
+            RefCount,
+            InstancePtr,
             _LastColumn
         }
 
@@ -781,6 +784,9 @@ namespace UnityEditorInternal
                     case ColumnIndices.Age: res = a.info.age.CompareTo(b.info.age); break;
                     case ColumnIndices.Disposed: res = a.info.disposed.CompareTo(b.info.disposed); break;
                     case ColumnIndices.NumChannelInstances: res = a.info.numChannelInstances.CompareTo(b.info.numChannelInstances); break;
+                    case ColumnIndices.NumClones: res = a.info.numClones.CompareTo(b.info.numClones); break;
+                    case ColumnIndices.RefCount: res = a.info.refCount.CompareTo(b.info.refCount); break;
+                    case ColumnIndices.InstancePtr: res = a.info.instancePtr.CompareTo(b.info.instancePtr); break;
                 }
                 return (sortByDescendingOrder) ? -res : res;
             }
@@ -805,6 +811,9 @@ namespace UnityEditorInternal
                 case ColumnIndices.Age: return info.info.age.ToString();
                 case ColumnIndices.Disposed: return (info.info.disposed != 0) ? "YES" : "NO";
                 case ColumnIndices.NumChannelInstances: return info.info.numChannelInstances.ToString();
+                case ColumnIndices.NumClones: return info.info.numClones.ToString();
+                case ColumnIndices.RefCount: return info.info.refCount.ToString();
+                case ColumnIndices.InstancePtr: return "0x" + info.info.instancePtr.ToString("X");
             }
             return "Unknown";
         }
@@ -1016,7 +1025,7 @@ namespace UnityEditorInternal
             private AudioProfilerClipTreeViewState m_TreeViewState;
             private AudioProfilerClipViewBackend m_Backend;
 
-            string[] headers = new[] { "Asset", "Load State", "Internal Load State", "Age", "Disposed", "Num Voices" };
+            string[] headers = new[] { "Asset", "Load State", "Internal Load State", "Age", "Disposed", "Num Voices", "Num Clones", "Ref Count", "Instance Ptr" };
 
             public AudioProfilerClipViewColumnHeader(AudioProfilerClipTreeViewState state, AudioProfilerClipViewBackend backend)
             {

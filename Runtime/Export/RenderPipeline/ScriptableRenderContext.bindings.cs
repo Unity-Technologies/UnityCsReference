@@ -48,6 +48,9 @@ namespace UnityEngine.Rendering
         [FreeFunction("UI::GetCanvasManager().EmitWorldGeometryForSceneView")]
         extern static public void EmitWorldGeometryForSceneView(Camera cullingCamera);
 
+        [FreeFunction("UI::GetCanvasManager().EmitGeometryForCamera")]
+        extern static public void EmitGeometryForCamera(Camera camera);
+
         [NativeThrows]
         extern private void ExecuteCommandBuffer_Internal(CommandBuffer commandBuffer);
 

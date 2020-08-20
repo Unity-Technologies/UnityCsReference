@@ -110,6 +110,10 @@ namespace Unity.Profiling
         /// </summary>
         public static ProfilerCategory Memory => new ProfilerCategory(ProfilerUnsafeUtility.CategoryAllocation);
         /// <summary>
+        /// Virtual Texturing category.
+        /// </summary>
+        public static ProfilerCategory VirtualTexturing => new ProfilerCategory(ProfilerUnsafeUtility.CategoryVirtualTexturing);
+        /// <summary>
         /// Internal category.
         /// </summary>
         public static ProfilerCategory Internal => new ProfilerCategory(ProfilerUnsafeUtility.CategoryInternal);

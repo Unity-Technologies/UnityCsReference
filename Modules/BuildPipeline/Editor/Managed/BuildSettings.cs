@@ -15,7 +15,8 @@ namespace UnityEditor.Build.Content
     {
         None = 0,
         DisableWriteTypeTree = 1 << 0,
-        StripUnityVersion = 1 << 1
+        StripUnityVersion = 1 << 1,
+        DevelopmentBuild = 1 << 2,
     }
 
     [Serializable]

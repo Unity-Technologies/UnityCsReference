@@ -29,6 +29,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         Color backgroundColor { get; }
         /// <summary>
+        /// Background image to paint in the element's box.
+        /// </summary>
+        Background backgroundImage { get; }
+        /// <summary>
         /// Color of the element's bottom border.
         /// </summary>
         Color borderBottomColor { get; }
@@ -96,7 +100,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         DisplayStyle display { get; }
         /// <summary>
-        /// Initial main size of a flex item, on the main flex axis. The final layout mught be smaller or larger, according to the flex shrinking and growing determined by the flex property.
+        /// Initial main size of a flex item, on the main flex axis. The final layout might be smaller or larger, according to the flex shrinking and growing determined by the other flex properties.
         /// </summary>
         StyleFloat flexBasis { get; }
         /// <summary>

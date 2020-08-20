@@ -2,88 +2,115 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using UnityEditor.Scripting;
-using UnityEditor.Utils;
+using UnityEditor.Scripting.ScriptCompilation;
+using UnityEditor.VisualStudioIntegration;
+using UnityEditorInternal;
+using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace UnityEditor.Build.Player
 {
-    internal class BuildPlayerDataGeneratorOptions
+    internal class BuildPlayerDataGeneratorNativeInterface
     {
-        public string[] Assemblies { get; set; }
-        public string[] SearchPaths { get; set; }
-        public string OutputPath { get; set; }
-        public string GeneratedTypeDbName { get; set; }
-        public string GeneratedRuntimeInitializeOnLoadName { get; set; }
+        private static BuildPlayerDataGenerator _buildPlayerDataGenerator = new BuildPlayerDataGenerator(new BuildPlayerDataGeneratorProcess(), new DirectoryIOProvider());
+
+        [RequiredByNativeCode]
+        public static void GenerateForAssemblies(string[] assemblies, string[] searchPaths, BuildTarget buildTarget, bool isEditor)
+        {
+            _buildPlayerDataGenerator.GenerateForAssemblies(assemblies, searchPaths, buildTarget, isEditor);
+        }
     }
 
     internal class BuildPlayerDataGenerator
     {
-        private const string buildDataGenerator = "BuildPlayerDataGenerator";
-        private const string buildDataGeneratorPathExe = buildDataGenerator + ".exe";
+        public const string OutputPath = "Library/BuildPlayerData";
 
-        private static string buildDataGeneratorPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools",
-            buildDataGenerator, buildDataGeneratorPathExe);
-
-        private static List<Program> runningProcesses = new List<Program>();
-
-        public void ExecuteAsync(BuildPlayerDataGeneratorOptions options)
+        public string EditorOutputPath
         {
-            Program typeDbGeneratorProcess;
-            var arguments = OptionsToStringArgument(options);
-
-            if (NetCoreRunProgram.IsSupported())
-            {
-                typeDbGeneratorProcess = new NetCoreRunProgram(buildDataGeneratorPath, arguments, null);
-            }
-            else
-            {
-                typeDbGeneratorProcess =
-                    new ManagedProgram(MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge"), null,
-                        buildDataGeneratorPath, arguments, false, null);
-            }
-
-            typeDbGeneratorProcess.Start((s, e) =>
-            {
-                ProcessExit(typeDbGeneratorProcess);
-            });
-            runningProcesses.Add(typeDbGeneratorProcess);
+            get; private set;
         }
 
-        private void ProcessExit(Program typeDbGeneratorProcess)
+        public string PlayerOutputPath
         {
-            if (typeDbGeneratorProcess.ExitCode == 0)
-            {
-                return;
-            }
-            Console.WriteLine($"Failure running BuildPlayerGenerator\nArguments:\n{typeDbGeneratorProcess.GetProcessStartInfo().Arguments}{Environment.NewLine}{typeDbGeneratorProcess.GetAllOutput()}");
+            get; private set;
         }
 
-        public string OptionsToStringArgument(BuildPlayerDataGeneratorOptions options)
+        private readonly IBuildPlayerDataGeneratorProcess m_BuildPlayerDataGeneratorProcess;
+        private readonly IDirectoryIO m_DirectoryIo;
+
+        public BuildPlayerDataGenerator(IBuildPlayerDataGeneratorProcess buildPlayerDataGeneratorProcess,
+                                        IDirectoryIO directoryIO, string outputPath = OutputPath)
         {
-            string result =
-                $"-a \"{string.Join(",", options.Assemblies)}\" -s \"{string.Join(",", options.SearchPaths)}\" -o \"{options.OutputPath}\" -rn={options.GeneratedRuntimeInitializeOnLoadName} -tn={options.GeneratedTypeDbName}";
-            return result;
+            EditorOutputPath = Path.Combine(outputPath, "Editor");
+            PlayerOutputPath = Path.Combine(outputPath, "Player");
+            m_BuildPlayerDataGeneratorProcess = buildPlayerDataGeneratorProcess;
+            m_DirectoryIo = directoryIO;
         }
 
-        public void WaitToAllDone()
+        public void GenerateForAssemblies(string[] assemblies, string[] searchPaths, BuildTarget buildTarget, bool isEditor)
         {
-            const int timeoutMilliseconds = 5000;
-            foreach (var runningProcess in runningProcesses)
+            CreateCleanFolder(isEditor);
+            var staticSearchPaths = GetStaticSearchPaths(buildTarget);
+
+            string runtimeInitOnLoadFileName = null;
+            if (!isEditor)
             {
-                if (!runningProcess.WaitForExit(timeoutMilliseconds))
-                {
-                    Console.WriteLine("BuildPlayerGenerator running for a long time. Trying to stop it.");
-                    ProcessExit(runningProcess);
-                    runningProcess.Kill();
-                }
+                runtimeInitOnLoadFileName = "RuntimeInitializeOnLoads.json";
             }
 
-            runningProcesses.Clear();
+            string fullOutputPath = Path.GetFullPath(isEditor ? EditorOutputPath : PlayerOutputPath);
+            var assembliesWithFullPath = assemblies.Select(x => Path.GetFullPath(x));
+
+            var buildPlayerDataGeneratorOptions = new BuildPlayerDataGeneratorOptions
+            {
+                Assemblies = assembliesWithFullPath.ToArray(),
+                OutputPath = fullOutputPath,
+                SearchPaths = searchPaths.Concat(staticSearchPaths).ToArray(),
+                GeneratedTypeDbName = "TypeDb-All.json",
+                GeneratedRuntimeInitializeOnLoadName = runtimeInitOnLoadFileName,
+            };
+            m_BuildPlayerDataGeneratorProcess.Execute(buildPlayerDataGeneratorOptions);
+        }
+
+        private void CreateCleanFolder(bool isEditor)
+        {
+            string path = isEditor ? EditorOutputPath : PlayerOutputPath;
+
+            if (m_DirectoryIo.Exists(path))
+            {
+                m_DirectoryIo.Delete(path, true);
+            }
+
+            m_DirectoryIo.CreateDirectory(path);
+        }
+
+        private static List<string> GetStaticSearchPaths(BuildTarget buildTarget)
+        {
+            var unityAssembliesInternal =
+                EditorCompilationInterface.Instance.PrecompiledAssemblyProvider.GetUnityAssemblies(true, buildTarget);
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
+            var systemReferenceDirectories =
+                MonoLibraryHelpers.GetSystemReferenceDirectories(
+                    PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup));
+
+            var searchPaths = unityAssembliesInternal.Select(x => Path.GetDirectoryName(x.Path))
+                .Distinct().ToList();
+            searchPaths.AddRange(systemReferenceDirectories);
+            return searchPaths;
+        }
+
+        public string[] GetTypeDbFilePaths(bool isEditor)
+        {
+            var specificFolderPath = isEditor ? EditorOutputPath : PlayerOutputPath;
+            return GetTypeDbFilePathsFrom(specificFolderPath);
+        }
+
+        public static string[] GetTypeDbFilePathsFrom(string path)
+        {
+            return Directory.GetFiles(path, "TypeDb-*", SearchOption.AllDirectories);
         }
     }
 }

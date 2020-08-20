@@ -756,6 +756,17 @@ namespace UnityEditor
 
             ApplyPropertyOverrides(instanceComponentOrGameObject, null, assetPath, false, action);
 
+            if (action == InteractionMode.UserAction)
+            {
+                Component instanceComponent = instanceComponentOrGameObject as Component;
+                if (instanceComponent != null)
+                {
+                    Component coupledComponent = instanceComponent.GetCoupledComponent();
+                    if (coupledComponent != null)
+                        ApplyPropertyOverrides(coupledComponent, null, assetPath, false, action);
+                }
+            }
+
             Analytics.SendApplyEvent(
                 Analytics.ApplyScope.ObjectOverride,
                 instanceComponentOrGameObject,
@@ -773,6 +784,20 @@ namespace UnityEditor
             if (action == InteractionMode.UserAction)
                 Undo.RegisterCompleteObjectUndo(instanceComponentOrGameObject, "Revert component property overrides");
             PrefabUtility.RevertObjectOverride_Internal(instanceComponentOrGameObject);
+
+            if (action == InteractionMode.UserAction)
+            {
+                Component instanceComponent = instanceComponentOrGameObject as Component;
+                if (instanceComponent != null)
+                {
+                    Component coupledComponent = instanceComponent.GetCoupledComponent();
+                    if (coupledComponent != null)
+                    {
+                        Undo.RegisterCompleteObjectUndo(coupledComponent, "Revert component property overrides");
+                        PrefabUtility.RevertObjectOverride_Internal(coupledComponent);
+                    }
+                }
+            }
         }
 
         public static void ApplyAddedComponent(Component component, string assetPath, InteractionMode action)
@@ -816,7 +841,16 @@ namespace UnityEditor
                 PrefabUtility.ApplyAddedComponent(component, prefabSourceGameObject);
 
                 if (action == InteractionMode.UserAction)
+                {
                     Undo.RegisterCreatedObjectUndo(GetCorrespondingObjectFromOriginalSource(component), actionName);
+
+                    var coupledComponent = component.GetCoupledComponent();
+                    if (coupledComponent != null)
+                    {
+                        PrefabUtility.ApplyAddedComponent(coupledComponent, prefabSourceGameObject);
+                        Undo.RegisterCreatedObjectUndo(GetCorrespondingObjectFromOriginalSource(coupledComponent), actionName);
+                    }
+                }
             }
             catch (ArgumentException exception)
             {
@@ -866,7 +900,12 @@ namespace UnityEditor
                     EditorUtility.DisplayDialog(L10n.Tr("Can't revert added component"), error, L10n.Tr("OK"));
                     return;
                 }
+
+                var coupledComponent = component.GetCoupledComponent();
+
                 Undo.DestroyObjectImmediate(component);
+                if (coupledComponent != null)
+                    Undo.DestroyObjectImmediate(coupledComponent);
             }
             else
                 Object.DestroyImmediate(component);
@@ -928,8 +967,13 @@ namespace UnityEditor
                     return;
                 }
 
+                var coupledAssetComponent = assetComponent.GetCoupledComponent();
+
                 Undo.DestroyObjectUndoable(assetComponent, actionName);
                 // Undo.DestroyObjectUndoable saves prefab asset internally.
+
+                if (coupledAssetComponent != null)
+                    Undo.DestroyObjectUndoable(coupledAssetComponent, actionName);
             }
             else
             {
@@ -1009,6 +1053,20 @@ namespace UnityEditor
                     {
                         Undo.RegisterCreatedObjectUndo(component, actionName);
                         break;
+                    }
+                }
+
+                var coupledAssetComponent = assetComponent.GetCoupledComponent();
+                if (coupledAssetComponent != null)
+                {
+                    RemoveRemovedComponentOverride(prefabInstanceObject, coupledAssetComponent);
+                    foreach (var component in instanceGameObject.GetComponents<Component>())
+                    {
+                        if (IsPrefabInstanceObjectOf(component, coupledAssetComponent))
+                        {
+                            Undo.RegisterCreatedObjectUndo(component, actionName);
+                            break;
+                        }
                     }
                 }
             }

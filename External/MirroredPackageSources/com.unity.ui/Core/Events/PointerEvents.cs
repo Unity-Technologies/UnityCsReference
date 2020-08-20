@@ -93,10 +93,10 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public static readonly int penPointerCount = 2;
 
-        internal static IEnumerable<int> hoveringPointers
+        internal static readonly int[] hoveringPointers =
         {
-            get { yield return mousePointerId; }
-        }
+            mousePointerId
+        };
     }
 
     /// <summary>

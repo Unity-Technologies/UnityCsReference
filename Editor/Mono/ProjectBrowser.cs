@@ -1091,6 +1091,7 @@ namespace UnityEditor
                 {
                     projectBrowser.ClearSearch(); // shows tree instead of search
                     projectBrowser.m_AssetTree.Frame(selectedInstanceIDs[0], true, false);
+                    projectBrowser.m_AssetTree.data.SetExpanded(selectedInstanceIDs[0], true);
                 }
 
                 projectBrowser.Repaint();

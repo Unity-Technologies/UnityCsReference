@@ -154,6 +154,7 @@ namespace UnityEngine.UIElements
 
             base.SetValueWithoutNotify(clampedValue);
             UpdateDragElementPosition();
+            UpdateTextFieldValue();
         }
 
         private SliderDirection m_Direction;
@@ -286,8 +287,6 @@ namespace UnityEngine.UIElements
                 ComputeValueAndDirectionFromDrag(dragContainer.resolvedStyle.width, dragElement.resolvedStyle.width, m_DragElementStartPos.x + delta.x);
             else
                 ComputeValueAndDirectionFromDrag(dragContainer.resolvedStyle.height, dragElement.resolvedStyle.height, m_DragElementStartPos.y + delta.y);
-
-            UpdateTextFieldValue();
         }
 
         void ComputeValueAndDirectionFromDrag(float sliderLength, float dragElementLength, float dragElementPos)
@@ -328,8 +327,6 @@ namespace UnityEngine.UIElements
                         ComputeValueAndDirectionFromDrag(dragContainer.resolvedStyle.width, dragElement.resolvedStyle.width, m_DragElementStartPos.x);
                     else
                         ComputeValueAndDirectionFromDrag(dragContainer.resolvedStyle.height, dragElement.resolvedStyle.height, m_DragElementStartPos.y);
-
-                    UpdateTextFieldValue();
                     return;
                 }
 
@@ -340,8 +337,6 @@ namespace UnityEngine.UIElements
                 ComputeValueAndDirectionFromClick(dragContainer.resolvedStyle.width, dragElement.resolvedStyle.width, dragElement.transform.position.x, clampedDragger.lastMousePosition.x);
             else
                 ComputeValueAndDirectionFromClick(dragContainer.resolvedStyle.height, dragElement.resolvedStyle.height, dragElement.transform.position.y, clampedDragger.lastMousePosition.y);
-
-            UpdateTextFieldValue();
         }
 
         internal virtual void ComputeValueAndDirectionFromClick(float sliderLength, float dragElementLength, float dragElementPos, float dragElementLastPos)
@@ -526,11 +521,15 @@ namespace UnityEngine.UIElements
 
         void OnTextFieldValueChange(ChangeEvent<string> evt)
         {
-            value = GetClampedValue(ParseStringToValue(evt.newValue));
-            evt.StopPropagation();
+            var newValue = GetClampedValue(ParseStringToValue(evt.newValue));
+            if (!EqualityComparer<TValueType>.Default.Equals(newValue, value))
+            {
+                value = newValue;
+                evt.StopPropagation();
 
-            if (elementPanel != null)
-                OnViewDataReady();
+                if (elementPanel != null)
+                    OnViewDataReady();
+            }
         }
     }
 }

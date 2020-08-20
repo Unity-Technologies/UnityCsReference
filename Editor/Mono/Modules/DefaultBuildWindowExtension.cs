@@ -10,7 +10,7 @@ namespace UnityEditor.Modules
     {
         internal class Styles
         {
-            public GUIContent buildScriptsOnly = EditorGUIUtility.TrTextContent("Scripts Only Build", "Scripts Only Build re-compiles only scripts in the current Project, it skips processing other assets. When you Build, it will produce a new Player build, based on a previous successful build.");
+            public GUIContent buildScriptsOnly = EditorGUIUtility.TrTextContent("Scripts Only Build", "Scripts Only Build re-compiles only scripts in the current Project, skipping processing other assets. When you Build, it will create a new Player build based on a previous successful build.");
         }
 
         static private Styles m_Styles = null;

@@ -18,7 +18,9 @@ using System.Reflection;
 
 namespace UnityEditor
 {
-    [ExcludeFromDocs]
+    /// <summary>
+    /// This provides Localization function.
+    /// </summary>
     public static class L10n
     {
         static object lockObject = new object();
@@ -46,6 +48,10 @@ namespace UnityEditor
             return name;
         }
 
+        /// <summary>
+        /// Get the translation for the given argument.
+        /// <param name="str">The original string to be translated.</Param>
+        /// </Summary>
         public static string Tr(string str)
         {
             if (!LocalizationDatabase.enableEditorLocalization)
@@ -63,6 +69,10 @@ namespace UnityEditor
             }
         }
 
+        /// <summary>
+        /// Get the translation array for the given argument array.
+        /// <param name="str_list">The original strings to be translated.</Param>
+        /// </Summary>
         public static string[] Tr(string[] str_list)
         {
             var res = new string[str_list.Length];
@@ -71,12 +81,18 @@ namespace UnityEditor
             return res;
         }
 
+        /// <summary>
+        /// Get the translation for the given argument.
+        /// <param name="str">The original string to be translated.</Param>
+        /// <param name="groupName">The specified group name for the translation.</Param>
+        /// </Summary>
         public static string Tr(string str, string groupName)
         {
             var new_str = LocalizationDatabase.GetLocalizedStringWithGroupName(str, groupName);
             return new_str;
         }
 
+        [ExcludeFromDocs]
         public static string TrPath(string path)
         {
             string[] separatingChars = { "/" };
@@ -91,6 +107,7 @@ namespace UnityEditor
             return result.ToString();
         }
 
+        [ExcludeFromDocs]
         public static GUIContent TextContent(string text, string tooltip = null, Texture icon = null)
         {
             if (!LocalizationDatabase.enableEditorLocalization)
@@ -109,6 +126,7 @@ namespace UnityEditor
             }
         }
 
+        [ExcludeFromDocs]
         public static GUIContent TextContent(string text, string tooltip, string iconName)
         {
             if (!LocalizationDatabase.enableEditorLocalization)
@@ -127,6 +145,7 @@ namespace UnityEditor
             }
         }
 
+        [ExcludeFromDocs]
         public static GUIContent TextContent(string text, Texture icon)
         {
             if (!LocalizationDatabase.enableEditorLocalization)
@@ -144,6 +163,7 @@ namespace UnityEditor
             }
         }
 
+        [ExcludeFromDocs]
         public static GUIContent TextContentWithIcon(string text, Texture icon)
         {
             if (!LocalizationDatabase.enableEditorLocalization)
@@ -161,6 +181,7 @@ namespace UnityEditor
             }
         }
 
+        [ExcludeFromDocs]
         public static GUIContent TextContentWithIcon(string text, string iconName)
         {
             if (!LocalizationDatabase.enableEditorLocalization)
@@ -178,6 +199,7 @@ namespace UnityEditor
             }
         }
 
+        [ExcludeFromDocs]
         public static GUIContent TextContentWithIcon(string text, string tooltip, string iconName)
         {
             if (!LocalizationDatabase.enableEditorLocalization)
@@ -196,6 +218,7 @@ namespace UnityEditor
             }
         }
 
+        [ExcludeFromDocs]
         public static GUIContent TextContentWithIcon(string text, string tooltip, Texture icon)
         {
             if (!LocalizationDatabase.enableEditorLocalization)
@@ -214,6 +237,7 @@ namespace UnityEditor
             }
         }
 
+        [ExcludeFromDocs]
         public static GUIContent TextContentWithIcon(string text, string tooltip, MessageType messageType)
         {
             if (!LocalizationDatabase.enableEditorLocalization)
@@ -232,6 +256,7 @@ namespace UnityEditor
             }
         }
 
+        [ExcludeFromDocs]
         public static GUIContent TextContentWithIcon(string text, MessageType messageType)
         {
             if (!LocalizationDatabase.enableEditorLocalization)
@@ -249,6 +274,7 @@ namespace UnityEditor
             }
         }
 
+        [ExcludeFromDocs]
         public static GUIContent IconContent(string iconName, string tooltip = null)
         {
             if (!LocalizationDatabase.enableEditorLocalization)
@@ -266,6 +292,7 @@ namespace UnityEditor
             }
         }
 
+        [ExcludeFromDocs]
         public static GUIContent IconContent(Texture icon, string tooltip = null)
         {
             if (!LocalizationDatabase.enableEditorLocalization)
@@ -283,6 +310,7 @@ namespace UnityEditor
             }
         }
 
+        [ExcludeFromDocs]
         public static GUIContent TempContent(string t)
         {
             if (!LocalizationDatabase.enableEditorLocalization)
@@ -300,6 +328,7 @@ namespace UnityEditor
             }
         }
 
+        [ExcludeFromDocs]
         public static GUIContent[] TempContent(string[] texts)
         {
             if (!LocalizationDatabase.enableEditorLocalization)
@@ -322,6 +351,7 @@ namespace UnityEditor
             }
         }
 
+        [ExcludeFromDocs]
         public static GUIContent[] TempContent(string[] texts, string[] tooltips)
         {
             if (!LocalizationDatabase.enableEditorLocalization)

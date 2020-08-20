@@ -23,6 +23,31 @@ namespace UnityEngine.UIElements
         Root      = 1 << 7,     // set on the root visual element
     }
 
+    [Flags]
+    internal enum VisualElementFlags
+    {
+        // Need to compute world transform
+        WorldTransformDirty = 1 << 0,
+        // Need to compute world transform inverse
+        WorldTransformInverseDirty = 1 << 1,
+        // Need to compute world clip
+        WorldClipDirty = 1 << 2,
+        // Need to compute bounding box
+        BoundingBoxDirty = 1 << 3,
+        // Need to compute world bounding box
+        WorldBoundingBoxDirty = 1 << 4,
+        // Element layout is manually set
+        LayoutManual = 1 << 5,
+        // Element is a root for composite controls
+        CompositeRoot = 1 << 6,
+        // Element has a custom measure function
+        RequireMeasureFunction = 1 << 7,
+        // Element has view data persistence
+        EnableViewDataPersistence = 1 << 8,
+        // Element initial flags
+        Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty
+    }
+
     /// <summary>
     /// Describes the picking behavior.
     /// </summary>
@@ -187,7 +212,11 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal bool isCompositeRoot { get; /*protected*/ set; }
+        internal bool isCompositeRoot
+        {
+            get => (m_Flags & VisualElementFlags.CompositeRoot) == VisualElementFlags.CompositeRoot;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.CompositeRoot : m_Flags & ~VisualElementFlags.CompositeRoot;
+        }
 
         private static uint s_NextId;
 
@@ -202,6 +231,7 @@ namespace UnityEngine.UIElements
         string m_Name;
         List<string> m_ClassList;
         private List<PropertyBagValue> m_PropertyBag;
+        private VisualElementFlags m_Flags;
 
         // Used for view data persistence (ie. scroll position or tree view expanded states)
         private string m_ViewDataKey;
@@ -233,7 +263,11 @@ namespace UnityEngine.UIElements
         // does have a viewDataKey, if its logical parent does not have a viewDataKey.
         // This check internally controls whether or not view data persistence is enabled as
         // the VisualTreeViewDataUpdater traverses the visual tree.
-        internal bool enableViewDataPersistence { get; private set; }
+        internal bool enableViewDataPersistence
+        {
+            get => (m_Flags & VisualElementFlags.EnableViewDataPersistence) == VisualElementFlags.EnableViewDataPersistence;
+            private set => m_Flags = value ? m_Flags | VisualElementFlags.EnableViewDataPersistence : m_Flags & ~VisualElementFlags.EnableViewDataPersistence;
+        }
 
         /// <summary>
         /// This property can be used to associate application-specific user data with this VisualElement.
@@ -402,8 +436,11 @@ namespace UnityEngine.UIElements
             get { return Matrix4x4.TRS(m_Position, m_Rotation, m_Scale); }
         }
 
-        internal bool isLayoutManual { get; private set; }
-
+        internal bool isLayoutManual
+        {
+            get => (m_Flags & VisualElementFlags.LayoutManual) == VisualElementFlags.LayoutManual;
+            private set => m_Flags = value ? m_Flags | VisualElementFlags.LayoutManual : m_Flags & ~VisualElementFlags.LayoutManual;
+        }
 
         internal float scaledPixelsPerPoint
         {
@@ -512,9 +549,18 @@ namespace UnityEngine.UIElements
             return res;
         }
 
-        internal bool isBoundingBoxDirty = true;
+        internal bool isBoundingBoxDirty
+        {
+            get => (m_Flags & VisualElementFlags.BoundingBoxDirty) == VisualElementFlags.BoundingBoxDirty;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.BoundingBoxDirty : m_Flags & ~VisualElementFlags.BoundingBoxDirty;
+        }
         private Rect m_BoundingBox;
-        internal bool isWorldBoundingBoxDirty = true;
+
+        internal bool isWorldBoundingBoxDirty
+        {
+            get => (m_Flags & VisualElementFlags.WorldBoundingBoxDirty) == VisualElementFlags.WorldBoundingBoxDirty;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.WorldBoundingBoxDirty : m_Flags & ~VisualElementFlags.WorldBoundingBoxDirty;
+        }
         private Rect m_WorldBoundingBox;
 
         internal Rect boundingBox
@@ -613,8 +659,17 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal bool isWorldTransformDirty { get; set; } = true;
-        internal bool isWorldTransformInverseDirty { get; set; } = true;
+        internal bool isWorldTransformDirty
+        {
+            get => (m_Flags & VisualElementFlags.WorldTransformDirty) == VisualElementFlags.WorldTransformDirty;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.WorldTransformDirty : m_Flags & ~VisualElementFlags.WorldTransformDirty;
+        }
+
+        internal bool isWorldTransformInverseDirty
+        {
+            get => (m_Flags & VisualElementFlags.WorldTransformInverseDirty) == VisualElementFlags.WorldTransformInverseDirty;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.WorldTransformInverseDirty : m_Flags & ~VisualElementFlags.WorldTransformInverseDirty;
+        }
 
         private Matrix4x4 m_WorldTransformCache = Matrix4x4.identity;
         private Matrix4x4 m_WorldTransformInverseCache = Matrix4x4.identity;
@@ -678,7 +733,11 @@ namespace UnityEngine.UIElements
             isWorldBoundingBoxDirty = true;
         }
 
-        internal bool isWorldClipDirty { get; set; } = true;
+        internal bool isWorldClipDirty
+        {
+            get => (m_Flags & VisualElementFlags.WorldClipDirty) == VisualElementFlags.WorldClipDirty;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.WorldClipDirty : m_Flags & ~VisualElementFlags.WorldClipDirty;
+        }
 
         private Rect m_WorldClip = Rect.zero;
         private Rect m_WorldClipMinusGroup = Rect.zero;
@@ -911,6 +970,7 @@ namespace UnityEngine.UIElements
             hierarchy = new Hierarchy(this);
 
             m_ClassList = s_EmptyClassList;
+            m_Flags = VisualElementFlags.Init;
             SetEnabled(true);
 
             focusable = false;
@@ -1379,18 +1439,17 @@ namespace UnityEngine.UIElements
             AtMost = YogaMeasureMode.AtMost
         }
 
-        private bool m_RequireMeasureFunction = false;
         internal bool requireMeasureFunction
         {
-            get { return m_RequireMeasureFunction; }
+            get => (m_Flags & VisualElementFlags.RequireMeasureFunction) == VisualElementFlags.RequireMeasureFunction;
             set
             {
-                m_RequireMeasureFunction = value;
-                if (m_RequireMeasureFunction && !yogaNode.IsMeasureDefined)
+                m_Flags = value ? m_Flags | VisualElementFlags.RequireMeasureFunction : m_Flags & ~VisualElementFlags.RequireMeasureFunction;
+                if (value && !yogaNode.IsMeasureDefined)
                 {
                     AssignMeasureFunction();
                 }
-                else if (!m_RequireMeasureFunction && yogaNode.IsMeasureDefined)
+                else if (!value && yogaNode.IsMeasureDefined)
                 {
                     RemoveMeasureFunction();
                 }

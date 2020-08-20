@@ -59,6 +59,29 @@ namespace UnityEditor.Build.Content
         [FreeFunction("CalculatePlayerDependenciesForScene")]
         static extern SceneDependencyInfo CalculatePlayerDependenciesForSceneInternal(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, BuildUsageCache usageCache, DependencyType mode);
 
+        public static GameManagerDependencyInfo CalculatePlayerDependenciesForGameManagers(BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet)
+        {
+            if (IsBuildInProgress())
+                throw new InvalidOperationException("Cannot call CalculatePlayerDependenciesForGameManagers while a build is in progress");
+            return CalculatePlayerDependenciesForGameManagersInternal(settings, globalUsage, usageSet, null, DependencyType.DefaultDependencies);
+        }
+
+        public static GameManagerDependencyInfo CalculatePlayerDependenciesForGameManagers(BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildUsageCache usageCache)
+        {
+            if (IsBuildInProgress())
+                throw new InvalidOperationException("Cannot call CalculatePlayerDependenciesForGameManagers while a build is in progress");
+            return CalculatePlayerDependenciesForGameManagersInternal(settings, globalUsage, usageSet, usageCache, DependencyType.DefaultDependencies);
+        }
+
+        public static GameManagerDependencyInfo CalculatePlayerDependenciesForGameManagers(BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildUsageCache usageCache, DependencyType mode)
+        {
+            if (IsBuildInProgress())
+                throw new InvalidOperationException("Cannot call CalculatePlayerDependenciesForGameManagers while a build is in progress");
+            return CalculatePlayerDependenciesForGameManagersInternal(settings, globalUsage, usageSet, usageCache, mode);
+        }
+
+        [FreeFunction("CalculatePlayerDependenciesForGameManagers")]
+        static extern GameManagerDependencyInfo CalculatePlayerDependenciesForGameManagersInternal(BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildUsageCache usageCache, DependencyType mode);
 
         public static extern ObjectIdentifier[] GetPlayerObjectIdentifiersInAsset(GUID asset, BuildTarget target);
 
@@ -147,14 +170,10 @@ namespace UnityEditor.Build.Content
             if (parameters.referenceMap == null)
                 throw new ArgumentNullException("parameters.referenceMap");
 
-            if (parameters.bundleInfo == null)
-                return WriteSerializedFileRaw(outputFolder, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap);
-            return WriteSerializedFileAssetBundle(outputFolder, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap, parameters.bundleInfo);
+            return WriteSerializedFile_Internal(outputFolder, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap, parameters.preloadInfo, parameters.bundleInfo);
         }
 
-        static extern WriteResult WriteSerializedFileRaw(string outputFolder, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap);
-
-        static extern WriteResult WriteSerializedFileAssetBundle(string outputFolder, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, AssetBundleInfo bundleInfo);
+        static extern WriteResult WriteSerializedFile_Internal(string outputFolder, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo, AssetBundleInfo bundleInfo);
 
         public static WriteResult WriteSceneSerializedFile(string outputFolder, WriteSceneParameters parameters)
         {
@@ -167,18 +186,24 @@ namespace UnityEditor.Build.Content
             if (parameters.referenceMap == null)
                 throw new ArgumentNullException("parameters.referenceMap");
 
-            if (parameters.preloadInfo == null && parameters.sceneBundleInfo == null)
-                return WriteSceneSerializedFileRaw(outputFolder, parameters.scenePath, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap);
-            if (parameters.sceneBundleInfo == null)
-                return WriteSceneSerializedFilePlayerData(outputFolder, parameters.scenePath, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap, parameters.preloadInfo);
-            return WriteSceneSerializedFileAssetBundle(outputFolder, parameters.scenePath, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap, parameters.preloadInfo, parameters.sceneBundleInfo);
+            return WriteSceneSerializedFile_Internal(outputFolder, parameters.scenePath, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap, parameters.preloadInfo, parameters.sceneBundleInfo);
         }
 
-        static extern WriteResult WriteSceneSerializedFileRaw(string outputFolder, string scenePath, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap);
+        static extern WriteResult WriteSceneSerializedFile_Internal(string outputFolder, string scenePath, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo, SceneBundleInfo sceneBundleInfo);
 
-        static extern WriteResult WriteSceneSerializedFilePlayerData(string outputFolder, string scenePath, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo);
+        public static WriteResult WriteGameManagersSerializedFile(string outputFolder, WriteManagerParameters parameters)
+        {
+            if (IsBuildInProgress())
+                throw new InvalidOperationException("Cannot call WriteSceneSerializedFile while a build is in progress");
+            if (string.IsNullOrEmpty(outputFolder))
+                throw new ArgumentException("String is null or empty.", "outputFolder");
+            if (parameters.referenceMap == null)
+                throw new ArgumentNullException("parameters.referenceMap");
 
-        static extern WriteResult WriteSceneSerializedFileAssetBundle(string outputFolder, string scenePath, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo, SceneBundleInfo sceneBundleInfo);
+            return WriteGameManagersSerializedFileRaw(outputFolder, parameters.settings, parameters.globalUsage, parameters.referenceMap);
+        }
+
+        static extern WriteResult WriteGameManagersSerializedFileRaw(string outputFolder, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildReferenceMap referenceMap);
 
         public static uint ArchiveAndCompress(ResourceFile[] resourceFiles, string outputBundlePath,
             UnityEngine.BuildCompression compression)

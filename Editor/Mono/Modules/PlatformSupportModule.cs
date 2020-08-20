@@ -234,6 +234,8 @@ namespace UnityEditor.Modules
         void VulkanSectionGUI();
 
         bool SupportsFrameTimingStatistics();
+
+        void SerializedObjectUpdated();
     }
 
 

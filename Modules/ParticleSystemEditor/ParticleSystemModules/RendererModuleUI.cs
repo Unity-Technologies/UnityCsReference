@@ -360,11 +360,12 @@ namespace UnityEditor
 
                 GUIVector3Field(s_Texts.pivot, m_Pivot);
 
-                EditorGUI.BeginChangeCheck();
-                s_VisualizePivot = GUIToggle(s_Texts.visualizePivot, s_VisualizePivot);
-                if (EditorGUI.EndChangeCheck())
+                if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
                 {
-                    EditorPrefs.SetBool("VisualizePivot", s_VisualizePivot);
+                    EditorGUI.BeginChangeCheck();
+                    s_VisualizePivot = GUIToggle(s_Texts.visualizePivot, s_VisualizePivot);
+                    if (EditorGUI.EndChangeCheck())
+                        EditorPrefs.SetBool("VisualizePivot", s_VisualizePivot);
                 }
 
                 GUIPopup(s_Texts.maskingMode, m_MaskInteraction, s_Texts.maskInteractions);
@@ -414,7 +415,7 @@ namespace UnityEditor
 
         private void DoListOfMeshesGUI()
         {
-            GUIListOfFloatObjectToggleFields(s_Texts.mesh, m_ShownMeshes, null, null, false);
+            GUIListOfObjectFields(s_Texts.mesh, m_ShownMeshes);
 
             // Minus button
             Rect rect = GUILayoutUtility.GetRect(0, kSingleLineHeight); //GUILayoutUtility.GetLastRect();

@@ -16,16 +16,56 @@ namespace UnityEditor
 {
     internal struct PlatformIconStruct
     {
-        public int m_Width;
-        public int m_Height;
-        public int m_Kind;
-        public string m_SubKind;
-        public Texture2D[] m_Textures;
+        [NativeName("m_Width")]
+        public int Width;
+        [NativeName("m_Height")]
+        public int Height;
+        [NativeName("m_Kind")]
+        public int Kind;
+        [NativeName("m_SubKind")]
+        public string SubKind;
+        [NativeName("m_Textures")]
+        public Texture2D[] Textures;
+    }
+
+    internal struct LegacyPlatformIcon
+    {
+        [NativeName("m_Icon")]
+        public Texture2D Icon;
+        [NativeName("m_Width")]
+        public int Width;
+        [NativeName("m_Height")]
+        public int Height;
+        [NativeName("m_Kind")]
+        public IconKind Kind;
+    }
+
+    internal struct IconSize
+    {
+        public int Width, Height;
+        public IconKind Kind;
+    }
+
+    internal struct LegacyBuildTargetIcons
+    {
+        [NativeName("m_BuildTarget")]
+        public string BuildTarget;
+        [NativeName("m_Icons")]
+        public LegacyPlatformIcon[] Icons;
+    }
+
+    internal struct BuildTargetIcons
+    {
+        [NativeName("m_BuildTarget")]
+        public string BuildTarget;
+        [NativeName("m_Icons")]
+        public PlatformIconStruct[] Icons;
     }
 
     public class PlatformIcon
     {
         internal List<Texture2D> m_Textures;
+        private Texture2D[] m_PreviewTextures;
 
         private PlatformIconKind m_Kind;
 
@@ -76,11 +116,11 @@ namespace UnityEditor
         internal PlatformIconStruct GetPlatformIconStruct()
         {
             PlatformIconStruct platformIconStruct = new PlatformIconStruct();
-            platformIconStruct.m_Textures = m_Textures.ToArray();
-            platformIconStruct.m_Width = m_Width;
-            platformIconStruct.m_Height = m_Height;
-            platformIconStruct.m_Kind = m_Kind.kind;
-            platformIconStruct.m_SubKind = m_iconSubKind;
+            platformIconStruct.Textures = m_Textures.ToArray();
+            platformIconStruct.Width = m_Width;
+            platformIconStruct.Height = m_Height;
+            platformIconStruct.Kind = m_Kind.kind;
+            platformIconStruct.SubKind = m_iconSubKind;
 
             return platformIconStruct;
         }
@@ -90,10 +130,8 @@ namespace UnityEditor
             return m_Textures.Count(t => t != null) == 0;
         }
 
-        internal static PlatformIcon[] GetRequiredPlatformIconsByType(IPlatformIconProvider platformIcons, PlatformIconKind kind)
+        internal static PlatformIcon[] GetRequiredPlatformIconsByType(IPlatformIconProvider platformIcons, PlatformIconKind kind, Dictionary<PlatformIconKind, PlatformIcon[]> requiredIcons)
         {
-            Dictionary<PlatformIconKind, PlatformIcon[]> requiredIcons = platformIcons.GetRequiredPlatformIcons();
-
             if (kind != PlatformIconKind.Any)
                 return requiredIcons[kind];
 
@@ -128,16 +166,14 @@ namespace UnityEditor
             return m_Textures.ToArray();
         }
 
+        internal void SetPreviewTextures(Texture2D[] textures)
+        {
+            m_PreviewTextures = textures;
+        }
+
         internal Texture2D[] GetPreviewTextures()
         {
-            Texture2D[] previewTextures = new Texture2D[maxLayerCount];
-
-            for (int i = 0; i < maxLayerCount; i++)
-            {
-                previewTextures[i] = PlayerSettings.GetPlatformIconAtSize(m_Kind.platform, m_Width, m_Height, m_Kind.kind, m_iconSubKind, i);
-            }
-
-            return previewTextures;
+            return m_PreviewTextures;
         }
 
         public void SetTexture(Texture2D texture, int layer = 0)
@@ -210,7 +246,7 @@ namespace UnityEditor
             if (obj == null || GetType() != obj.GetType())
                 return false;
 
-            return kind == ((PlatformIconKind)obj).kind;
+            return kind == ((PlatformIconKind)obj).kind && platform == ((PlatformIconKind)obj).platform;
         }
 
         public override int GetHashCode()
@@ -252,17 +288,43 @@ namespace UnityEditor
             platformIconProviders[platform] = platformIconProvider;
         }
 
+        internal static PlatformIcon[] GetPlatformIconsFromStruct(PlatformIcon[] icons, PlatformIconKind kind, PlatformIconStruct[] serializedIcons)
+        {
+            foreach (var icon in icons)
+            {
+                foreach (var serializedIcon in serializedIcons)
+                {
+                    var requiredKind = kind.Equals(PlatformIconKind.Any) ? (int)serializedIcon.Kind : kind.kind;
+                    if (icon.kind.kind != requiredKind || icon.iconSubKind != serializedIcon.SubKind) continue;
+                    if (icon.width != serializedIcon.Width || icon.height != serializedIcon.Height) continue;
+                    var serializedTextures = serializedIcon.Textures.Take(icon.maxLayerCount).ToArray();
+                    var textures = new Texture2D[serializedTextures.Length > icon.minLayerCount
+                                                 ? serializedTextures.Length
+                                                 : icon.minLayerCount];
+
+                    for (int i = 0; i < serializedTextures.Length; i++)
+                        textures[i] = serializedTextures[i];
+
+                    icon.SetTextures(textures);
+                    break;
+                }
+            }
+
+            return icons;
+        }
+
         // Loops through 'requiredIconSlots' and fills it with icons that are already serialized.
         public static PlatformIcon[] GetPlatformIcons(BuildTargetGroup platform, PlatformIconKind kind)
         {
-            IPlatformIconProvider platformIconProvider = GetPlatformIconProvider(platform);
+            var platformIconProvider = GetPlatformIconProvider(platform);
             if (platformIconProvider == null)
                 return new PlatformIcon[] {};
 
-            string platformName = PlayerSettings.GetPlatformName(platform);
+            var platformName = PlayerSettings.GetPlatformName(platform);
 
-            PlatformIconStruct[] serializedIcons  = GetPlatformIconsInternal(platformName, kind.kind);
-            PlatformIcon[] icons = PlatformIcon.GetRequiredPlatformIconsByType(platformIconProvider, kind);
+            var serializedIcons  = GetPlatformIconsInternal(platformName, kind.kind);
+            var requiredIcons = platformIconProvider.GetRequiredPlatformIcons();
+            var icons = PlatformIcon.GetRequiredPlatformIconsByType(platformIconProvider, kind, requiredIcons);
 
             if (serializedIcons.Length <= 0)
             {
@@ -275,42 +337,20 @@ namespace UnityEditor
             }
             else
             {
-                foreach (PlatformIcon icon in icons)
-                {
-                    foreach (PlatformIconStruct serializedIcon in serializedIcons)
-                    {
-                        int requiredKind = kind.Equals(PlatformIconKind.Any) ? serializedIcon.m_Kind : kind.kind;
-                        if (icon.kind.kind == requiredKind && icon.iconSubKind == serializedIcon.m_SubKind)
-                        {
-                            if (icon.width == serializedIcon.m_Width && icon.height == serializedIcon.m_Height)
-                            {
-                                Texture2D[] serializedTextures =
-                                    serializedIcon.m_Textures.Take(icon.maxLayerCount).ToArray();
-                                Texture2D[] textures = new Texture2D[serializedTextures.Length > icon.minLayerCount
-                                                                     ? serializedTextures.Length
-                                                                     : icon.minLayerCount];
-
-                                for (int i = 0; i < serializedTextures.Length; i++)
-                                    textures[i] = serializedTextures[i];
-
-                                icon.SetTextures(textures);
-                                break;
-                            }
-                        }
-                    }
-                }
+                icons = GetPlatformIconsFromStruct(icons, kind, serializedIcons);
             }
             return icons;
         }
 
         public static void SetPlatformIcons(BuildTargetGroup platform, PlatformIconKind kind, PlatformIcon[] icons)
         {
-            string platformName = GetPlatformName(platform);
-            IPlatformIconProvider platformIconProvider = GetPlatformIconProvider(platform);
+            var platformName = GetPlatformName(platform);
+            var platformIconProvider = GetPlatformIconProvider(platform);
             if (platformIconProvider == null)
                 return;
 
-            int requiredIconCount = PlatformIcon.GetRequiredPlatformIconsByType(platformIconProvider, kind).Length;
+            var requiredIcons = platformIconProvider.GetRequiredPlatformIcons();
+            var requiredIconCount = PlatformIcon.GetRequiredPlatformIconsByType(platformIconProvider, kind, requiredIcons).Length;
 
             PlatformIconStruct[] iconStructs;
             if (icons == null)
@@ -335,7 +375,7 @@ namespace UnityEditor
 
         public static PlatformIconKind[] GetSupportedIconKindsForPlatform(BuildTargetGroup platform)
         {
-            IPlatformIconProvider platformIconProvider = GetPlatformIconProvider(platform);
+            var platformIconProvider = GetPlatformIconProvider(platform);
 
             if (platformIconProvider == null)
                 return new PlatformIconKind[] {};
@@ -366,12 +406,32 @@ namespace UnityEditor
         extern internal static void SetPlatformIconsInternal(string platform, PlatformIconStruct[] icons, int kind);
 
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+        extern internal static LegacyBuildTargetIcons[] SetPlatformIconsForTargetIcons(string platform, Texture2D[] icons, IconKind kind, LegacyBuildTargetIcons[] allIcons);
+
+        [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+        extern internal static BuildTargetIcons[] SetIconsForPlatformForTargetIcons(string platform, PlatformIconStruct[] icons, int kind, BuildTargetIcons[] allIcons);
+
+        [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
         [NativeMethod(Name = "GetIconsForPlatform")]
         extern internal static PlatformIconStruct[] GetPlatformIconsInternal(string platform, int kind);
+
+        [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+        extern internal static Texture2D[] GetPlatformIconsForTargetIcons(string platform, IconKind kind, LegacyBuildTargetIcons[] allIcons);
+
+        [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+        [NativeMethod(Name = "GetIconsForPlatformFromTargetIcons")]
+        extern internal static PlatformIconStruct[] GetPlatformIconsFromTargetIcons(string platform, int kind, BuildTargetIcons[] allIcons);
+
+        // Get the texture that will be used as the display icon at a specified size for the specified platform.
+        internal static extern Texture2D GetPlatformIconForSizeForTargetIcons(string platform, int width, int height, IconKind kind, LegacyBuildTargetIcons[] allIcons);
 
         // Get the texture that will be used as the display icon at a specified size for the specified platform.
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
         extern internal static Texture2D GetPlatformIconAtSize(string platform, int width, int height, int kind, string subKind = "", int layer = 0);
+
+        // Get the texture that will be used as the display icon at a specified size for the specified platform.
+        [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+        extern internal static Texture2D GetPlatformIconAtSizeForTargetIcons(string platform, int width, int height, BuildTargetIcons[] allIcons, int kind, string subKind = "", int layer = 0);
 
         internal static void ClearSetIconsForPlatform(BuildTargetGroup target)
         {

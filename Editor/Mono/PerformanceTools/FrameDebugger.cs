@@ -676,9 +676,15 @@ namespace UnityEditor
             }
 
             if (FrameDebuggerUtility.IsLocalEnabled())
+            {
                 styles.recordButton.text = L10n.Tr("Disable");
+                styles.recordButton.tooltip = L10n.Tr("Disable Frame Debugging");
+            }
             else
+            {
                 styles.recordButton.text = L10n.Tr("Enable");
+                styles.recordButton.tooltip = L10n.Tr("Enable Frame Debugging");
+            }
 
             PlayerConnectionGUILayout.ConnectionTargetSelectionDropdown(m_AttachToPlayerState, EditorStyles.toolbarDropDown);
 
@@ -1517,7 +1523,12 @@ namespace UnityEditor
 
                 if (!FrameDebuggerUtility.locallySupported)
                 {
-                    EditorGUILayout.HelpBox("Frame Debugger requires multi-threaded renderer. Usually Unity uses that; if it does not, try starting with -force-gfx-mt command line argument.", MessageType.Warning, true);
+                    var supportMessage = "The Frame Debugger requires multi-threaded renderer. If this error persists, try starting the Editor with -force-gfx-mt command line argument.";
+
+                    if (Application.platform == RuntimePlatform.LinuxEditor && SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLCore)
+                        supportMessage += " On Linux, the editor does not support a multi-threaded renderer when using OpenGL.";
+
+                    EditorGUILayout.HelpBox(supportMessage, MessageType.Warning, true);
                 }
 
                 // info box

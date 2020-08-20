@@ -430,6 +430,7 @@ namespace UnityEditor.Compilation
             UnityEngine = 1 << 1,
             UnityEditor = 1 << 2,
             SystemAssembly = 1 << 3,
+            UnityAssembly = 1 << 4,
             All = ~0
         }
 
@@ -441,6 +442,11 @@ namespace UnityEditor.Compilation
 
         internal static string[] GetPrecompiledAssemblyPaths(PrecompiledAssemblySources precompiledAssemblySources, PrecompiledAssemblyProviderBase precompiledAssemblyProvider)
         {
+            return GetPrecompiledAssemblyPaths(precompiledAssemblySources, precompiledAssemblyProvider, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
+        }
+
+        internal static string[] GetPrecompiledAssemblyPaths(PrecompiledAssemblySources precompiledAssemblySources, PrecompiledAssemblyProviderBase precompiledAssemblyProvider, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
+        {
             HashSet<string> assemblyNames = new HashSet<string>();
             sc.AssemblyFlags flags = sc.AssemblyFlags.None;
             if ((precompiledAssemblySources & PrecompiledAssemblySources.SystemAssembly) != 0)
@@ -451,16 +457,18 @@ namespace UnityEditor.Compilation
                 }
             }
 
-            if ((precompiledAssemblySources & PrecompiledAssemblySources.UnityEngine) != 0)
+            if ((precompiledAssemblySources & (PrecompiledAssemblySources.UnityEngine | precompiledAssemblySources & PrecompiledAssemblySources.UnityAssembly)) != 0)
                 flags |= sc.AssemblyFlags.UnityModule;
 
-            if ((precompiledAssemblySources & PrecompiledAssemblySources.UnityEditor) != 0)
+            if ((precompiledAssemblySources & (PrecompiledAssemblySources.UnityEditor | precompiledAssemblySources & PrecompiledAssemblySources.UnityAssembly)) != 0)
                 flags |= sc.AssemblyFlags.EditorOnly;
 
             if ((precompiledAssemblySources & PrecompiledAssemblySources.UserAssembly) != 0)
                 flags |= sc.AssemblyFlags.UserAssembly;
 
-            var precompiledAssemblies = precompiledAssemblyProvider.GetPrecompiledAssemblies(true, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget).Concat(EditorCompilationInterface.Instance.GetUnityAssemblies());
+            var precompiledAssemblies = precompiledAssemblyProvider.GetPrecompiledAssemblies(true, buildTargetGroup, buildTarget)
+                .Concat(precompiledAssemblyProvider.GetUnityAssemblies(true, buildTarget));
+
             foreach (var a in precompiledAssemblies.Where(x => (x.Flags & flags) != 0))
                 assemblyNames.Add(a.Path);
 

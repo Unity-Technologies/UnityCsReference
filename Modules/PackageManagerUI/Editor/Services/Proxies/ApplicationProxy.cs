@@ -28,6 +28,10 @@ namespace UnityEditor.PackageManager.UI
 
         public virtual bool isInternetReachable => m_IsInternetReachable;
 
+        public virtual bool isBatchMode => Application.isBatchMode;
+
+        public virtual bool isUpmRunning => !Application.HasARGV("noUpm");
+
         public virtual bool isCompiling
         {
             get
@@ -99,6 +103,16 @@ namespace UnityEditor.PackageManager.UI
         public virtual void OpenURL(string url)
         {
             Application.OpenURL(url);
+        }
+
+        public virtual void RevealInFinder(string path)
+        {
+            EditorUtility.RevealInFinder(path);
+        }
+
+        public virtual string OpenFilePanelWithFilters(string title, string directory, string[] filters)
+        {
+            return EditorUtility.OpenFilePanelWithFilters(title, directory, filters);
         }
     }
 }

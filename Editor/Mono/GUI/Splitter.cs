@@ -261,6 +261,14 @@ namespace UnityEditor
                 realSizes[i2] += realSizes[i1] - m1;
                 realSizes[i1] = m1;
 
+                if (realSizes[i2] < m2)
+                {
+                    if (i2 != realSizes.Length - 1)
+                        DoSplitter(i2, i2 + 1, diff);
+                    else
+                        realSizes[i2] = m2;
+                }
+
                 if (i1 != 0)
                     DoSplitter(i1 - 1, i2, diff);
                 else
@@ -274,6 +282,14 @@ namespace UnityEditor
                 diff -= h2 - m2;
                 realSizes[i1] += realSizes[i2] - m2;
                 realSizes[i2] = m2;
+
+                if (realSizes[i1] < m1)
+                {
+                    if (i1 != 0)
+                        DoSplitter(i1 - 1, i2, diff);
+                    else
+                        realSizes[i1] = m1;
+                }
 
                 if (i2 != realSizes.Length - 1)
                     DoSplitter(i1, i2 + 1, diff);

@@ -64,6 +64,9 @@ namespace UnityEditorInternal
         public int age;
         public int disposed;
         public int numChannelInstances;
+        public int numClones;
+        public int refCount;
+        public UInt64 instancePtr;
     }
 
     [Flags]

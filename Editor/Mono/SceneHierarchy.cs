@@ -1255,6 +1255,20 @@ namespace UnityEditor
             AddCreateGameObjectItemsToMenu(menu, new UnityEngine.Object[0], false, true, true, scene.handle, MenuUtils.ContextMenuOrigin.Subscene);
         }
 
+        internal bool CanScenesBeReloaded(Scene[] scenes)
+        {
+            foreach (var scene in scenes)
+            {
+                var path = scene.path;
+                if (string.IsNullOrEmpty(path))
+                    return false;
+
+                if (!System.IO.File.Exists(path))
+                    return false;
+            }
+            return true;
+        }
+
         internal void CreateSceneHeaderContextClick(GenericMenu menu, Scene scene)
         {
             if (!IsSceneHeaderInHierarchyWindow(scene))
@@ -1339,7 +1353,8 @@ namespace UnityEditor
                 var content = EditorGUIUtility.TrTextContent("Discard changes");
                 var selectedSceneHandles = GetSelectedScenes();
                 var modifiedScenes = GetModifiedScenes(selectedSceneHandles);
-                bool canDiscardChanges = !EditorApplication.isPlaying && modifiedScenes.Length > 0;
+                bool canReload = modifiedScenes.Length > 0 && CanScenesBeReloaded(modifiedScenes);
+                bool canDiscardChanges = !EditorApplication.isPlaying && canReload;
                 if (canDiscardChanges)
                     menu.AddItem(content, false, DiscardChangesInSelectedScenes, scene);
                 else

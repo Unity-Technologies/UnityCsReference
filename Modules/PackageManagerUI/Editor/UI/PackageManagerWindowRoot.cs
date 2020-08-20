@@ -22,6 +22,7 @@ namespace UnityEditor.PackageManager.UI
         private PageManager m_PageManager;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private UnityConnectProxy m_UnityConnectProxy;
+        private ApplicationProxy m_ApplicationProxy;
         private void ResolveDependencies(ResourceLoader resourceLoader,
             SelectionProxy selection,
             PackageFiltering packageFiltering,
@@ -29,7 +30,8 @@ namespace UnityEditor.PackageManager.UI
             PackageDatabase packageDatabase,
             PageManager pageManager,
             PackageManagerProjectSettingsProxy settingsProxy,
-            UnityConnectProxy unityConnectProxy)
+            UnityConnectProxy unityConnectProxy,
+            ApplicationProxy applicationProxy)
         {
             m_ResourceLoader = resourceLoader;
             m_Selection = selection;
@@ -39,6 +41,7 @@ namespace UnityEditor.PackageManager.UI
             m_PageManager = pageManager;
             m_SettingsProxy = settingsProxy;
             m_UnityConnectProxy = unityConnectProxy;
+            m_ApplicationProxy = applicationProxy;
         }
 
         public PackageManagerWindowRoot(ResourceLoader resourceLoader,
@@ -48,9 +51,10 @@ namespace UnityEditor.PackageManager.UI
                                         PackageDatabase packageDatabase,
                                         PageManager pageManager,
                                         PackageManagerProjectSettingsProxy settingsProxy,
-                                        UnityConnectProxy unityConnectProxy)
+                                        UnityConnectProxy unityConnectProxy,
+                                        ApplicationProxy applicationProxy)
         {
-            ResolveDependencies(resourceLoader, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy);
+            ResolveDependencies(resourceLoader, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy);
 
             styleSheets.Add(m_ResourceLoader.GetMainWindowStyleSheet());
 
@@ -90,7 +94,7 @@ namespace UnityEditor.PackageManager.UI
             if (m_PageManager.GetRefreshTimestamp(newTab) == 0)
                 DelayRefresh(newTab);
 
-            if (newTab != PackageFilterTab.UnityRegistry && m_PageManager.GetRefreshTimestamp(PackageFilterTab.UnityRegistry) == 0)
+            if (newTab != PackageFilterTab.UnityRegistry && m_PageManager.GetRefreshTimestamp(PackageFilterTab.UnityRegistry) == 0 && m_ApplicationProxy.isUpmRunning)
                 DelayRefresh(PackageFilterTab.UnityRegistry);
 
             EditorApplication.focusChanged += OnFocusChanged;
@@ -105,6 +109,17 @@ namespace UnityEditor.PackageManager.UI
 
         private void DelayRefresh(PackageFilterTab tab)
         {
+            if (!m_ApplicationProxy.isUpmRunning)
+            {
+                if (!m_ApplicationProxy.isBatchMode)
+                    Debug.Log(L10n.Tr("[Package Manager Window] UPM server is not running. Please check that your Editor was not launched with '-noUpm' command line option."));
+
+                packageList.HidePackagesShowMessage(false, false, L10n.Tr("UPM server is not running"));
+                packageStatusbar.DisableRefresh();
+                packageManagerToolbar.SetEnabled(false);
+                return;
+            }
+
             if (m_PackageManagerPrefs.numItemsPerPage == null ||
                 tab == PackageFilterTab.AssetStore && !m_UnityConnectProxy.isUserInfoReady)
             {
@@ -195,6 +210,8 @@ namespace UnityEditor.PackageManager.UI
                 packageLoadBar.Refresh();
                 UIUtils.SetElementDisplay(packageLoadBar, true);
             }
+
+            DisableToolbarIfRefreshInProgress(filterTab);
         }
 
         private void SelectPackageAndFilter()
@@ -257,8 +274,16 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnRefreshOperationStart()
         {
-            packageManagerToolbar.SetEnabled(false);
-            packageDetails.packageToolbarContainer.SetEnabled(false);
+            DisableToolbarIfRefreshInProgress();
+        }
+
+        private void DisableToolbarIfRefreshInProgress(PackageFilterTab? tab = null)
+        {
+            if (m_PageManager.IsRefreshInProgress(tab))
+            {
+                packageManagerToolbar.SetEnabled(false);
+                packageDetails.packageToolbarContainer.SetEnabled(false);
+            }
         }
 
         private void OnRefreshOperationError(UIError error)

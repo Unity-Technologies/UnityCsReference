@@ -17,13 +17,12 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
     [NativeHeader("Modules/AssetBundle/Public/AssetBundleLoadAssetOperation.h")]
-    public class AssetBundleRequest : AsyncOperation
+    public class AssetBundleRequest : ResourceRequest
     {
-        public extern Object asset
-        {
-            [NativeMethod("GetLoadedAsset")]
-            get;
-        }
+        [NativeMethod("GetLoadedAsset")]
+        protected override extern Object GetResult();
+
+        public new Object asset { get { return GetResult(); } }
 
         public extern Object[] allAssets
         {

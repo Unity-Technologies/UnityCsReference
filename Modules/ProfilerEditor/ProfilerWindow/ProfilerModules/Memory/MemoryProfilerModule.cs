@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Unity.Profiling;
 using UnityEditor;
 using UnityEditor.Profiling;
 using UnityEngine;
@@ -42,7 +43,7 @@ namespace UnityEditorInternal.Profiling
             "GARLIC heap allocs",
             "ONION heap allocs"
         };
-        const string k_MemoryCountersCategoryName = "Memory";
+        static readonly string k_MemoryCountersCategoryName = ProfilerCategory.Memory.Name;
 
         static WeakReference instance;
 
@@ -94,6 +95,14 @@ namespace UnityEditorInternal.Profiling
                 EditorPrefs.SetFloat(k_SplitterRelative0SettingsKey, m_ViewSplit.relativeSizes[0]);
                 EditorPrefs.SetFloat(k_SplitterRelative1SettingsKey, m_ViewSplit.relativeSizes[1]);
             }
+        }
+
+        public override void OnNativePlatformSupportModuleChanged()
+        {
+            base.OnNativePlatformSupportModuleChanged();
+
+            var chartCounters = CollectDefaultChartCounters();
+            SetCounters(chartCounters, chartCounters);
         }
 
         public override void DrawToolbar(Rect position)

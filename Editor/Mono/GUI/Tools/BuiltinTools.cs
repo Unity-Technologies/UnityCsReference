@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEditor.EditorTools;
 using UnityEditor.SceneManagement;
@@ -98,6 +99,11 @@ namespace UnityEditor
         public static void SetMinDragDifferenceForPos(Vector3 position, float multiplier)
         {
             minDragDifference = Vector3.one * (HandleUtility.GetHandleSize(position) * multiplier / 80f);
+        }
+
+        public static void SetMinDragDifferenceForPos(Vector3 position, float multiplier, float max)
+        {
+            minDragDifference = Vector3.one * Math.Min(HandleUtility.GetHandleSize(position) * multiplier / 80f, max);
         }
 
         public static void DisableMinDragDifference()
@@ -657,8 +663,8 @@ namespace UnityEditor
                             // because the manipulated object is being moved at the same time.
                             // However, with resize handles, when dragging one edge or corner,
                             // the opposite is standing still, and even slight rounding can cause shaking/vibration.
-                            // At a fraction of the normal rounding, the shaking is very unlikely to happen though.
-                            ManipulationToolUtility.SetMinDragDifferenceForPos(curPos, 0.1f);
+                            // We limit the min drag difference to use a really low number to only take into account float point imprecision
+                            ManipulationToolUtility.SetMinDragDifferenceForPos(curPos, 0.1f, 0.0005f);
 
                             if (supportsRectSnapping)
                             {

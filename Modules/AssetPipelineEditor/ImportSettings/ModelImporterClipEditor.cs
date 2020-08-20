@@ -464,12 +464,6 @@ namespace UnityEditor
             }
         }
 
-        internal override void PostApply()
-        {
-            base.PostApply();
-            DeserializeClips();
-        }
-
         void AnimationSettings()
         {
             EditorGUILayout.Space();

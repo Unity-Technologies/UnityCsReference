@@ -51,15 +51,12 @@ namespace UnityEditor
             public static readonly GUIContent colorSpaceWebGLWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires WebGL 2.0, uncheck 'Automatic Graphics API' to remove WebGL 1.0 API. WARNING: If DXT sRGB is not supported by the browser, texture will be decompressed");
             public static readonly GUIContent colorSpaceIOSWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2/3 APIs.");
             public static readonly GUIContent recordingInfo = EditorGUIUtility.TrTextContent("Reordering the list will switch editor to the first available platform");
-            public static readonly GUIContent notApplicableInfo = EditorGUIUtility.TrTextContent("Not applicable for this platform.");
             public static readonly GUIContent sharedBetweenPlatformsInfo = EditorGUIUtility.TrTextContent("* Shared setting between multiple platforms.");
 
             public static readonly GUIContent cursorHotspot = EditorGUIUtility.TrTextContent("Cursor Hotspot");
             public static readonly GUIContent defaultCursor = EditorGUIUtility.TrTextContent("Default Cursor");
-            public static readonly GUIContent defaultIcon = EditorGUIUtility.TrTextContent("Default Icon");
             public static readonly GUIContent vertexChannelCompressionMask = EditorGUIUtility.TrTextContent("Vertex Compression*", "Select which vertex channels should be compressed. Compression can save memory and bandwidth, but precision will be lower.");
 
-            public static readonly GUIContent iconTitle = EditorGUIUtility.TrTextContent("Icon");
             public static readonly GUIContent resolutionPresentationTitle = EditorGUIUtility.TrTextContent("Resolution and Presentation");
             public static readonly GUIContent resolutionTitle = EditorGUIUtility.TrTextContent("Resolution");
             public static readonly GUIContent orientationTitle = EditorGUIUtility.TrTextContent("Orientation");
@@ -91,7 +88,6 @@ namespace UnityEditor
             public static readonly GUIContent mipStripping = EditorGUIUtility.TrTextContent("Texture MipMap Stripping*", "Remove unused texture levels from package builds, reducing package size on disk. Limits the texture quality settings to the highest mip that was included during the build.");
             public static readonly GUIContent enableFrameTimingStats = EditorGUIUtility.TrTextContent("Frame Timing Stats", "Enable gathering of CPU/GPU frame timing statistics.");
             public static readonly GUIContent useOSAutoRotation = EditorGUIUtility.TrTextContent("Use Animated Autorotation", "If set OS native animated autorotation method will be used. Otherwise orientation will be changed immediately.");
-            public static readonly GUIContent UIPrerenderedIcon = EditorGUIUtility.TrTextContent("Prerendered Icon");
             public static readonly GUIContent defaultScreenWidth = EditorGUIUtility.TrTextContent("Default Screen Width");
             public static readonly GUIContent defaultScreenHeight = EditorGUIUtility.TrTextContent("Default Screen Height");
             public static readonly GUIContent macRetinaSupport = EditorGUIUtility.TrTextContent("Mac Retina Support");
@@ -207,20 +203,12 @@ namespace UnityEditor
             public static readonly GUIContent virtualTexturingUnsupportedAPILinux = EditorGUIUtility.TrTextContent("The target Linux graphics API does not support Virtual Texturing. To target compatible graphics APIs, uncheck 'Auto Graphics API for Linux', and remove OpenGLCore.");
             public static readonly GUIContent stereo360CaptureCheckbox = EditorGUIUtility.TrTextContent("360 Stereo Capture*");
 
-            public static string undoChangedBundleIdentifierString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS bundleIdentifier"); } }
-            public static string undoChangedBuildNumberString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS build number"); } }
             public static string undoChangedBatchingString { get { return LocalizationDatabase.GetLocalizedString("Changed Batching Settings"); } }
-            public static string undoChangedIconString { get { return LocalizationDatabase.GetLocalizedString("Changed Icon"); } }
             public static string undoChangedGraphicsAPIString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics API Settings"); } }
             public static string undoChangedScriptingDefineString { get { return LocalizationDatabase.GetLocalizedString("Changed Scripting Define Settings"); } }
             public static string undoChangedGraphicsJobsString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics Jobs Setting"); } }
             public static string undoChangedGraphicsJobModeString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics Job Mode Setting"); } }
         }
-
-        // Icon layout constants
-        const int kSlotSize = 64;
-        const int kMaxPreviewSize = 96;
-        const int kIconSpacing = 6;
 
         PlayerSettingsSplashScreenEditor m_SplashScreenEditor;
         PlayerSettingsSplashScreenEditor splashScreenEditor
@@ -230,6 +218,17 @@ namespace UnityEditor
                 if (m_SplashScreenEditor == null)
                     m_SplashScreenEditor = new PlayerSettingsSplashScreenEditor(this);
                 return m_SplashScreenEditor;
+            }
+        }
+
+        PlayerSettingsIconsEditor m_IconsEditor;
+        PlayerSettingsIconsEditor iconsEditor
+        {
+            get
+            {
+                if (m_IconsEditor == null)
+                    m_IconsEditor = new PlayerSettingsIconsEditor(this);
+                return m_IconsEditor;
             }
         }
 
@@ -280,7 +279,6 @@ namespace UnityEditor
 
         SerializedProperty m_AndroidProfiler;
 
-        SerializedProperty m_UIPrerenderedIcon;
         SerializedProperty m_UIRequiresPersistentWiFi;
         SerializedProperty m_UIStatusBarHidden;
         SerializedProperty m_UIRequiresFullScreen;
@@ -306,6 +304,9 @@ namespace UnityEditor
 
         SerializedProperty m_AllowUnsafeCode;
         SerializedProperty m_GCIncremental;
+
+        SerializedProperty m_ApplicationIdentifier;
+        SerializedProperty m_BuildNumber;
 
         // General
         SerializedProperty m_CompanyName;
@@ -433,8 +434,6 @@ namespace UnityEditor
             m_CursorHotspot                 = FindPropertyAssert("cursorHotspot");
 
 
-            m_UIPrerenderedIcon             = FindPropertyAssert("uIPrerenderedIcon");
-
             m_UIRequiresFullScreen          = FindPropertyAssert("uIRequiresFullScreen");
 
             m_UIStatusBarHidden             = FindPropertyAssert("uIStatusBarHidden");
@@ -448,6 +447,9 @@ namespace UnityEditor
             m_MetalFramebufferOnly          = FindPropertyAssert("metalFramebufferOnly");
             m_MetalForceHardShadows         = FindPropertyAssert("iOSMetalForceHardShadows");
             m_FramebufferDepthMemorylessMode = FindPropertyAssert("framebufferDepthMemorylessMode");
+
+            m_ApplicationIdentifier         = FindPropertyAssert("applicationIdentifier");
+            m_BuildNumber                   = FindPropertyAssert("buildNumber");
 
             m_ApplicationBundleVersion      = serializedObject.FindProperty("bundleVersion");
             if (m_ApplicationBundleVersion == null)
@@ -548,6 +550,7 @@ namespace UnityEditor
             SetValueChangeListeners(Repaint);
 
             splashScreenEditor.OnEnable();
+            iconsEditor.OnEnable();
 
             // we clear it just to be on the safe side:
             // we access this cache both from player settings editor and script side when changing api
@@ -604,8 +607,7 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            serializedObject.Update();
-
+            var serializedObjectUpdated = serializedObject.UpdateIfRequiredOrScript();
             EditorGUILayout.BeginVertical();
             {
                 CommonSettings();
@@ -640,7 +642,17 @@ namespace UnityEditor
 
             int sectionIndex = 0;
 
-            IconSectionGUI(targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
+            if (serializedObjectUpdated)
+            {
+                m_IconsEditor.SerializedObjectUpdated();
+                foreach (var settingsExtension in m_SettingsExtensions)
+                {
+                    settingsExtension?.SerializedObjectUpdated();
+                }
+            }
+
+            m_IconsEditor.IconSectionGUI(targetGroup, m_SettingsExtensions[selectedPlatform], selectedPlatform, sectionIndex++);
+
             ResolutionSectionGUI(targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
             m_SplashScreenEditor.SplashSectionGUI(platform, targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
             DebugAndCrashReportingGUI(platform, targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
@@ -662,24 +674,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_ApplicationBundleVersion, EditorGUIUtility.TrTextContent("Version"));
             EditorGUILayout.Space();
 
-            // Get icons and icon sizes for selected platform (or default)
-            GUI.changed = false;
-            string platformName = "";
-            Texture2D[] icons = PlayerSettings.GetAllIconsForPlatform(platformName);
-            int[] widths = PlayerSettings.GetIconWidthsOfAllKindsForPlatform(platformName);
-
-            // Ensure the default icon list is always populated correctly
-            if (icons.Length != widths.Length)
-            {
-                icons = new Texture2D[widths.Length];
-            }
-            icons[0] = (Texture2D)EditorGUILayout.ObjectField(SettingsContent.defaultIcon, icons[0], typeof(Texture2D), false);
-            // Save changes
-            if (GUI.changed)
-            {
-                Undo.RecordObject(this.target, SettingsContent.undoChangedIconString);
-                PlayerSettings.SetIconsForPlatform(platformName, icons);
-            }
+            m_IconsEditor.LegacyIconSectionGUI();
 
             GUILayout.Space(3);
 
@@ -708,170 +703,20 @@ namespace UnityEditor
             }
             m_SectionAnimators[nr].target = expanded;
             GUI.enabled = enabled;
+            EditorGUI.indentLevel++;
             return EditorGUILayout.BeginFadeGroup(m_SectionAnimators[nr].faded);
         }
 
         public void EndSettingsBox()
         {
             EditorGUILayout.EndFadeGroup();
+            EditorGUI.indentLevel--;
             EditorGUILayout.EndVertical();
-        }
-
-        private void ShowNoSettings()
-        {
-            GUILayout.Label(SettingsContent.notApplicableInfo, EditorStyles.miniLabel);
         }
 
         public void ShowSharedNote()
         {
             GUILayout.Label(SettingsContent.sharedBetweenPlatformsInfo, EditorStyles.miniLabel);
-        }
-
-        private void IconSectionGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension, int sectionIndex)
-        {
-            if (BeginSettingsBox(sectionIndex, SettingsContent.iconTitle))
-            {
-                bool platformUsesStandardIcons = true;
-                if (settingsExtension != null)
-                    platformUsesStandardIcons = settingsExtension.UsesStandardIcons();
-
-                if (platformUsesStandardIcons)
-                {
-                    bool selectedDefault = (selectedPlatform < 0);
-                    // Set default platform variables
-                    BuildPlatform platform = null;
-                    targetGroup = BuildTargetGroup.Standalone;
-                    string platformName = "";
-
-                    // Override if a platform is selected
-                    if (!selectedDefault)
-                    {
-                        platform = validPlatforms[selectedPlatform];
-                        targetGroup = platform.targetGroup;
-                        platformName = platform.name;
-                    }
-
-                    bool enabled = GUI.enabled;
-
-                    if (targetGroup == BuildTargetGroup.WebGL)
-                    {
-                        ShowNoSettings();
-                        EditorGUILayout.Space();
-                    }
-                    else if (targetGroup != BuildTargetGroup.WSA) // UWP does this in its editor extension
-                    {
-                        // Get icons and icon sizes for selected platform (or default)
-                        Texture2D[] icons = PlayerSettings.GetAllIconsForPlatform(platformName);
-                        int[] widths = PlayerSettings.GetIconWidthsOfAllKindsForPlatform(platformName);
-                        int[] heights = PlayerSettings.GetIconHeightsOfAllKindsForPlatform(platformName);
-                        IconKind[] kinds = PlayerSettings.GetIconKindsForPlatform(platformName);
-
-                        bool overrideIcons = true;
-
-                        if (!selectedDefault)
-                        {
-                            // If the list of icons for this platform is not empty (and has the correct size),
-                            // consider the icon overridden for this platform
-                            GUI.changed = false;
-                            overrideIcons = (icons.Length == widths.Length);
-                            overrideIcons = GUILayout.Toggle(overrideIcons, string.Format(L10n.Tr("Override for {0}"), platform.title.text));
-                            GUI.enabled = enabled && overrideIcons;
-                            if (GUI.changed || (!overrideIcons && icons.Length > 0))
-                            {
-                                // Set the list of icons to correct length if overridden, otherwise to an empty list
-                                if (overrideIcons)
-                                    icons = new Texture2D[widths.Length];
-                                else
-                                    icons = new Texture2D[0];
-
-                                if (GUI.changed)
-                                    PlayerSettings.SetIconsForPlatform(platformName, icons);
-                            }
-                        }
-
-                        // Show the icons for this platform (or default)
-                        GUI.changed = false;
-                        for (int i = 0; i < widths.Length; i++)
-                        {
-                            int previewWidth = Mathf.Min(kMaxPreviewSize, widths[i]);
-                            int previewHeight = (int)((float)heights[i] * previewWidth / widths[i]);  // take into account the aspect ratio
-
-                            if (targetGroup == BuildTargetGroup.iOS)
-                            {
-                                // Spotlight icons begin with 120 but there are two in the list.
-                                // So check if the next one is 80.
-                                if (kinds[i] == IconKind.Spotlight && kinds[i - 1] != IconKind.Spotlight)
-                                {
-                                    Rect labelRect = GUILayoutUtility.GetRect(EditorGUIUtility.labelWidth, 20);
-                                    GUI.Label(new Rect(labelRect.x, labelRect.y, EditorGUIUtility.labelWidth, 20), "Spotlight icons", EditorStyles.boldLabel);
-                                }
-
-                                if (kinds[i] == IconKind.Settings && kinds[i - 1] != IconKind.Settings)
-                                {
-                                    Rect labelRect = GUILayoutUtility.GetRect(EditorGUIUtility.labelWidth, 20);
-                                    GUI.Label(new Rect(labelRect.x, labelRect.y, EditorGUIUtility.labelWidth, 20), "Settings icons", EditorStyles.boldLabel);
-                                }
-
-                                if (kinds[i] == IconKind.Notification && kinds[i - 1] != IconKind.Notification)
-                                {
-                                    Rect labelRect = GUILayoutUtility.GetRect(EditorGUIUtility.labelWidth, 20);
-                                    GUI.Label(new Rect(labelRect.x, labelRect.y, EditorGUIUtility.labelWidth, 20), "Notification icons", EditorStyles.boldLabel);
-                                }
-
-                                if (kinds[i] == IconKind.Store && kinds[i - 1] != IconKind.Store)
-                                {
-                                    Rect labelRect = GUILayoutUtility.GetRect(EditorGUIUtility.labelWidth, 20);
-                                    GUI.Label(new Rect(labelRect.x, labelRect.y, EditorGUIUtility.labelWidth, 20), "App Store icons", EditorStyles.boldLabel);
-                                }
-                            }
-
-                            Rect rect = GUILayoutUtility.GetRect(kSlotSize, Mathf.Max(kSlotSize, previewHeight) + kIconSpacing);
-                            float width = Mathf.Min(rect.width, EditorGUIUtility.labelWidth + 4 + kSlotSize + kIconSpacing + kMaxPreviewSize);
-
-                            // Label
-                            string label = widths[i] + "x" + heights[i];
-                            GUI.Label(new Rect(rect.x, rect.y, width - kMaxPreviewSize - kSlotSize - 2 * kIconSpacing, 20), label);
-
-                            // Texture slot
-                            if (overrideIcons)
-                            {
-                                int slotWidth = kSlotSize;
-                                int slotHeight = (int)((float)heights[i] / widths[i] * kSlotSize);  // take into account the aspect ratio
-                                icons[i] = (Texture2D)EditorGUI.ObjectField(
-                                    new Rect(rect.x + width - kMaxPreviewSize - kSlotSize - kIconSpacing, rect.y, slotWidth, slotHeight),
-                                    icons[i],
-                                    typeof(Texture2D),
-                                    false);
-                            }
-
-                            // Preview
-                            Rect previewRect = new Rect(rect.x + width - kMaxPreviewSize, rect.y, previewWidth, previewHeight);
-                            Texture2D closestIcon = PlayerSettings.GetIconForPlatformAtSize(platformName, widths[i], heights[i], kinds[i]);
-                            if (closestIcon != null)
-                                GUI.DrawTexture(previewRect, closestIcon);
-                            else
-                                GUI.Box(previewRect, "");
-                        }
-                        // Save changes
-                        if (GUI.changed)
-                        {
-                            Undo.RecordObject(this.target, SettingsContent.undoChangedIconString);
-                            PlayerSettings.SetIconsForPlatform(platformName, icons);
-                        }
-                        GUI.enabled = enabled;
-
-                        if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
-                        {
-                            EditorGUILayout.PropertyField(m_UIPrerenderedIcon, SettingsContent.UIPrerenderedIcon);
-                            EditorGUILayout.Space();
-                        }
-                    }
-                }
-
-                if (settingsExtension != null)
-                    settingsExtension.IconSectionGUI();
-            }
-            EndSettingsBox();
         }
 
         private static bool TargetSupportsOptionalBuiltinSplashScreen(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
@@ -905,7 +750,14 @@ namespace UnityEditor
 
                         var fullscreenModes = new[] { FullScreenMode.FullScreenWindow, FullScreenMode.ExclusiveFullScreen, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
                         var fullscreenModeNames = new[] { SettingsContent.fullscreenWindow, SettingsContent.exclusiveFullscreen, SettingsContent.maximizedWindow, SettingsContent.windowed };
-                        var fullscreenModeNew = BuildEnumPopup(m_FullscreenMode, SettingsContent.fullscreenMode, fullscreenModes, fullscreenModeNames);
+                        var fullscreenModeNew = FullScreenMode.FullScreenWindow;
+                        using (var horizontal = new EditorGUILayout.HorizontalScope())
+                        {
+                            using (new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_FullscreenMode))
+                            {
+                                fullscreenModeNew = BuildEnumPopup(m_FullscreenMode, SettingsContent.fullscreenMode, fullscreenModes, fullscreenModeNames);
+                            }
+                        }
 
                         bool defaultIsFullScreen = fullscreenModeNew != FullScreenMode.Windowed;
                         m_ShowDefaultIsNativeResolution.target = defaultIsFullScreen;
@@ -2088,8 +1940,8 @@ namespace UnityEditor
                 // TODO this should be move to an extension if we have one for MacOS or Standalone target at some point.
                 GUILayout.Label(SettingsContent.macAppStoreTitle, EditorStyles.boldLabel);
 
-                PlayerSettingsEditor.ShowApplicationIdentifierUI(serializedObject, BuildTargetGroup.Standalone, "Bundle Identifier", "'CFBundleIdentifier'", SettingsContent.undoChangedBundleIdentifierString);
-                PlayerSettingsEditor.ShowBuildNumberUI(serializedObject, BuildTargetGroup.Standalone, "Build", "'CFBundleVersion'", SettingsContent.undoChangedBuildNumberString);
+                PlayerSettingsEditor.ShowApplicationIdentifierUI(m_ApplicationIdentifier, BuildTargetGroup.Standalone, "Bundle Identifier", "'CFBundleIdentifier'");
+                PlayerSettingsEditor.ShowBuildNumberUI(m_BuildNumber, BuildTargetGroup.Standalone, "Build", "'CFBundleVersion'");
 
                 EditorGUILayout.PropertyField(m_MacAppStoreCategory, SettingsContent.macAppStoreCategory);
                 EditorGUILayout.PropertyField(m_UseMacAppStoreValidation, SettingsContent.useMacAppStoreValidation);
@@ -2117,93 +1969,53 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
-        internal static void ShowPlatformIconsByKind(PlatformIconFieldGroup iconFieldGroup, bool foldByKind = true, bool foldBySubkind = true)
+        internal void ShowPlatformIconsByKind(PlatformIconFieldGroup iconFieldGroup, bool foldByKind = true, bool foldBySubkind = true)
         {
-            int labelHeight = 20;
+            m_IconsEditor.ShowPlatformIconsByKind(iconFieldGroup, foldByKind, foldBySubkind);
+        }
 
-            if (iconFieldGroup.m_IconsFields.Count == 0)
-            {
-                foreach (var kind in PlayerSettings.GetSupportedIconKindsForPlatform(iconFieldGroup.targetGroup))
-                {
-                    iconFieldGroup.AddPlatformIcons(PlayerSettings.GetPlatformIcons(
-                        iconFieldGroup.targetGroup, kind), kind
-                    );
-                }
-            }
-            foreach (var kindGroup in iconFieldGroup.m_IconsFields)
+        internal static void ShowApplicationIdentifierUI(SerializedProperty prop, BuildTargetGroup targetGroup, string label, string tooltip)
+        {
+            if (!prop.serializedObject.isEditingMultipleObjects)
             {
                 EditorGUI.BeginChangeCheck();
 
-                var key = kindGroup.Key;
+                var currentIdentifier = "";
+                prop.TryGetMapEntry(targetGroup.ToString(), out var entry);
 
-                if (foldByKind)
+                if (entry != null)
                 {
-                    GUIContent kindName = new GUIContent(
-                        string.Format("{0} icons ({1}/{2})", key.m_Label, kindGroup.Key.m_SetIconSlots, kindGroup.Key.m_IconSlotCount),
-                        key.m_KindDescription
-                    );
+                    currentIdentifier = entry.FindPropertyRelative("second").stringValue;
+                    var identifier = entry.FindPropertyRelative("second");
 
-                    Rect rectKindLabel = GUILayoutUtility.GetRect(kSlotSize, labelHeight);
-                    rectKindLabel.x += 2;
-                    key.m_State = EditorGUI.Foldout(rectKindLabel, key.m_State, kindName, EditorStyles.foldout);
-                }
-                else
-                    key.m_State = true;
-
-                if (key.m_State)
-                {
-                    kindGroup.Key.m_SetIconSlots = 0;
-                    foreach (var subKindGroup in kindGroup.Value)
+                    using (var horizontal = new EditorGUILayout.HorizontalScope())
                     {
-                        subKindGroup.Key.m_SetIconSlots =
-                            PlayerSettings.GetNonEmptyPlatformIconCount(subKindGroup.Value.Select(x => x.platformIcon)
-                                .ToArray());
-                        kindGroup.Key.m_SetIconSlots += subKindGroup.Key.m_SetIconSlots;
-
-                        if (foldBySubkind)
+                        using (new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, identifier))
                         {
-                            string subKindName = string.Format("{0} icons ({1}/{2})", subKindGroup.Key.m_Label, subKindGroup.Key.m_SetIconSlots , subKindGroup.Value.Length);
-                            Rect rectSubKindLabel = GUILayoutUtility.GetRect(kSlotSize, labelHeight);
-                            rectSubKindLabel.x += 8;
-
-                            subKindGroup.Key.m_State = EditorGUI.Foldout(rectSubKindLabel, subKindGroup.Key.m_State, subKindName, EditorStyles.foldout);
-                        }
-                        else
-                            subKindGroup.Key.m_State = true;
-
-                        if (subKindGroup.Key.m_State || !foldBySubkind)
-                        {
-                            foreach (var iconField in subKindGroup.Value)
-                            {
-                                iconField.DrawAt();
-                            }
+                            currentIdentifier = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent(label, tooltip), currentIdentifier);
                         }
                     }
+
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
+                        prop.SetMapValue(targetGroup.ToString(), currentIdentifier);
+                    }
                 }
-                if (EditorGUI.EndChangeCheck())
-                    PlayerSettings.SetPlatformIcons(iconFieldGroup.targetGroup, key.m_Kind , iconFieldGroup.m_PlatformIconsByKind[key.m_Kind]);
             }
         }
 
-        internal static void ShowApplicationIdentifierUI(SerializedObject serializedObject, BuildTargetGroup targetGroup, string label, string tooltip, string undoText)
+        internal static void ShowBuildNumberUI(SerializedProperty prop, BuildTargetGroup targetGroup, string label, string tooltip)
         {
-            EditorGUI.BeginChangeCheck();
-            string identifier = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent(label, tooltip), PlayerSettings.GetApplicationIdentifier(targetGroup));
-            if (EditorGUI.EndChangeCheck())
+            if (!prop.serializedObject.isEditingMultipleObjects)
             {
-                Undo.RecordObject(serializedObject.targetObject, undoText);
-                PlayerSettings.SetApplicationIdentifier(targetGroup, identifier);
-            }
-        }
+                prop.TryGetMapEntry(targetGroup.ToString(), out var entry);
 
-        internal static void ShowBuildNumberUI(SerializedObject serializedObject, BuildTargetGroup targetGroup, string label, string tooltip, string undoText)
-        {
-            EditorGUI.BeginChangeCheck();
-            string buildNumber = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent(label, tooltip), PlayerSettings.GetBuildNumber(targetGroup));
-            if (EditorGUI.EndChangeCheck())
-            {
-                Undo.RecordObject(serializedObject.targetObject, undoText);
-                PlayerSettings.SetBuildNumber(targetGroup, buildNumber);
+                if (entry != null)
+                {
+                    var buildNumber = entry.FindPropertyRelative("second");
+                    EditorGUILayout.PropertyField(buildNumber, EditorGUIUtility.TrTextContent(label, tooltip));
+                }
             }
         }
 

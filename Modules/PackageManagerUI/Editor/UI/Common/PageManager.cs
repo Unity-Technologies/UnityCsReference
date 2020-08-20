@@ -78,6 +78,8 @@ namespace UnityEditor.PackageManager.UI
         [NonSerialized]
         private UpmClient m_UpmClient;
         [NonSerialized]
+        private UpmRegistryClient m_UpmRegistryClient;
+        [NonSerialized]
         private AssetStoreClient m_AssetStoreClient;
         [NonSerialized]
         private PackageDatabase m_PackageDatabase;
@@ -89,6 +91,7 @@ namespace UnityEditor.PackageManager.UI
             PackageFiltering packageFiltering,
             PackageManagerPrefs packageManagerPrefs,
             UpmClient upmClient,
+            UpmRegistryClient upmRegistryClient,
             AssetStoreClient assetStoreClient,
             PackageDatabase packageDatabase,
             PackageManagerProjectSettingsProxy settingsProxy)
@@ -99,6 +102,7 @@ namespace UnityEditor.PackageManager.UI
             m_PackageFiltering = packageFiltering;
             m_PackageManagerPrefs = packageManagerPrefs;
             m_UpmClient = upmClient;
+            m_UpmRegistryClient = upmRegistryClient;
             m_AssetStoreClient = assetStoreClient;
             m_PackageDatabase = packageDatabase;
             m_SettingsProxy = settingsProxy;
@@ -558,6 +562,8 @@ namespace UnityEditor.PackageManager.UI
             m_UpmClient.onListOperation += OnRefreshOperation;
             m_UpmClient.onSearchAllOperation += OnRefreshOperation;
 
+            m_UpmRegistryClient.onRegistriesModified += OnRegistriesModified;
+
             m_AssetStoreClient.onListOperation += OnRefreshOperation;
             m_AssetStoreClient.onProductListFetched += OnProductListFetched;
             m_AssetStoreClient.onProductFetched += OnProductFetched;
@@ -579,6 +585,8 @@ namespace UnityEditor.PackageManager.UI
         {
             m_UpmClient.onListOperation -= OnRefreshOperation;
             m_UpmClient.onSearchAllOperation -= OnRefreshOperation;
+
+            m_UpmRegistryClient.onRegistriesModified -= OnRegistriesModified;
 
             m_AssetStoreClient.onListOperation -= OnRefreshOperation;
             m_AssetStoreClient.onProductListFetched -= OnProductListFetched;
@@ -639,6 +647,11 @@ namespace UnityEditor.PackageManager.UI
                 UnregisterPageEvents(page);
             }
             m_Pages.Clear();
+        }
+
+        private void OnRegistriesModified()
+        {
+            Refresh(RefreshOptions.UpmSearch);
         }
 
         private void OnRefreshOperation(IOperation operation)

@@ -85,7 +85,7 @@ namespace UnityEditor.Experimental.GraphView
             this.typeText = typeText;
 
             this.AddManipulator(new SelectionDropper());
-            this.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
+            this.AddManipulator(new ContextualMenuManipulator(BuildFieldContextualMenu));
         }
 
         protected override void ExecuteDefaultAction(EventBase evt)
@@ -136,7 +136,7 @@ namespace UnityEditor.Experimental.GraphView
             m_TextField.SelectAll();
         }
 
-        void BuildContextualMenu(ContextualMenuPopulateEvent evt)
+        protected virtual void BuildFieldContextualMenu(ContextualMenuPopulateEvent evt)
         {
             evt.menu.AppendAction("Rename", (a) => OpenTextEditor(), DropdownMenuAction.AlwaysEnabled);
         }

@@ -66,7 +66,7 @@ namespace UnityEditor
             public GUIContent autoconnectProfilerDisabled = EditorGUIUtility.TrTextContent("Autoconnect Profiler", "Profiling is only enabled in a Development Player.");
             public GUIContent buildWithDeepProfiler = EditorGUIUtility.TrTextContent("Deep Profiling Support", "Build Player with Deep Profiling Support. This might affect Player performance.");
             public GUIContent buildWithDeepProfilerDisabled = EditorGUIUtility.TrTextContent("Deep Profiling", "Profiling is only enabled in a Development Player.");
-            public GUIContent allowDebugging = EditorGUIUtility.TrTextContent("Script Debugging");
+            public GUIContent allowDebugging = EditorGUIUtility.TrTextContent("Script Debugging", "Enable this setting to allow your script code to be debugged.");
             public GUIContent waitForManagedDebugger = EditorGUIUtility.TrTextContent("Wait For Managed Debugger", "Show a dialog where you can attach a managed debugger before any script execution.");
             public GUIContent explicitNullChecks = EditorGUIUtility.TrTextContent("Explicit Null Checks");
             public GUIContent explicitDivideByZeroChecks = EditorGUIUtility.TrTextContent("Divide By Zero Checks");
@@ -91,7 +91,7 @@ namespace UnityEditor
 
 
         Vector2 scrollPosition = new Vector2(0, 0);
-
+        Vector2 buildTargetSettingsScrollPosition = new Vector2(0, 0);
         private const string kEditorBuildSettingsPath = "ProjectSettings/EditorBuildSettings.asset";
 
         static Styles styles = null;
@@ -155,7 +155,7 @@ namespace UnityEditor
             Rect scenesInBuildRect = GUILayoutUtility.GetRect(styles.scenesInBuild, styles.title);
             GUI.Label(scenesInBuildRect, styles.scenesInBuild, styles.title);
 
-            Rect rect = GUILayoutUtility.GetRect(0, position.width, 0, position.height);
+            Rect rect = GUILayoutUtility.GetRect(0, position.width, 0, position.height, GUILayout.MinHeight(20));
             m_TreeView.OnGUI(rect);
         }
 
@@ -363,7 +363,7 @@ namespace UnityEditor
 
             GUILayout.Space(10);
 
-            GUILayout.BeginHorizontal(GUILayout.Height(351));
+            GUILayout.BeginHorizontal(GUILayout.Height(400));
             ActiveBuildTargetsGUI();
             GUILayout.Space(10);
             GUILayout.BeginVertical();
@@ -486,7 +486,7 @@ namespace UnityEditor
         };
         static public string GetPlaybackEngineDownloadURL(string moduleName)
         {
-            if (moduleName == "PS4" || moduleName == "XboxOne")
+            if (moduleName == "PS4" || moduleName == "XboxOne" || moduleName == "GameCoreXboxOne" || moduleName == "GameCoreScarlett")
                 return "https://unity3d.com/platform-installation";
 
             string fullVersion = InternalEditorUtility.GetFullUnityVersion();
@@ -709,6 +709,8 @@ namespace UnityEditor
                 return;
             }
 
+            buildTargetSettingsScrollPosition = GUILayout.BeginScrollView(buildTargetSettingsScrollPosition);
+
             // FIXME: WHY IS THIS ALL IN ONE FUNCTION?!
             // Draw the side bar to the right. Different options like specific Standalone player to build, profiling and debugging options, etc.
             string module = ModuleManager.GetTargetStringFrom(platform.targetGroup, buildTarget);
@@ -860,6 +862,8 @@ namespace UnityEditor
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
             }
+
+            GUILayout.EndScrollView();
 
             GUIBuildButtons(buildWindowExtension, enableBuildButton, enableBuildAndRunButton,
                 canInstallInBuildFolder, platform);

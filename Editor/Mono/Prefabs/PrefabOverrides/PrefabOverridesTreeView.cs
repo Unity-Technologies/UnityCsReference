@@ -283,14 +283,13 @@ namespace UnityEditor
                         ObjectOverride modifiedObjectData = objectModifications.objectOverrides.Find(x => x.instanceObject == component);
                         ObjectOverride modifiedCoupledObjectData = (coupledComponent != null) ? objectModifications.objectOverrides.Find(x => x.instanceObject == coupledComponent) : null;
 
-                        if (modifiedObjectData == null)
+                        if (modifiedObjectData != null || modifiedCoupledObjectData != null)
                         {
-                            modifiedObjectData = modifiedCoupledObjectData;
-                            modifiedCoupledObjectData = null;
-                        }
+                            // If only the coupled component has modifications, create an
+                            // ObjectOverride object for the main component since it doesn't exist yet.
+                            if (modifiedObjectData == null)
+                                modifiedObjectData = new ObjectOverride() { instanceObject = component };
 
-                        if (modifiedObjectData != null)
-                        {
                             modifiedObjectData.coupledOverride = modifiedCoupledObjectData;
 
                             componentItem.singleModification = modifiedObjectData;
@@ -589,8 +588,21 @@ namespace UnityEditor
             UndoPropertyModification[] RecheckOverrideStatus(UndoPropertyModification[] modifications)
             {
                 if (m_Instance == null || !PrefabUtility.HasObjectOverride(m_Instance))
-                    UpdateAndClose();
+                {
+                    // Delay update and close since if there's multiple undo events, RecheckOverrideStatus
+                    // gets called for each, and we only want to recheck after the last one.
+                    // This fixes an issue where the tree view would still show a component with no more
+                    // modifications on it, if it was a component with a coupled component.
+                    EditorApplication.tick -= UpdateAndCloseOnNextTick;
+                    EditorApplication.tick += UpdateAndCloseOnNextTick;
+                }
                 return modifications;
+            }
+
+            void UpdateAndCloseOnNextTick()
+            {
+                EditorApplication.tick -= UpdateAndCloseOnNextTick;
+                UpdateAndClose();
             }
 
             void UpdatePreviewHeight(float height)

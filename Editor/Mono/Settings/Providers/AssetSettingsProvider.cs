@@ -80,8 +80,6 @@ namespace UnityEditor
         {
             if (settingsEditor != null)
             {
-                var info = settingsEditor.GetType().GetMethod("OnDisable");
-                info?.Invoke(settingsEditor, null);
                 UnityEngine.Object.DestroyImmediate(settingsEditor);
             }
             settingsEditor = null;

@@ -7,18 +7,22 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Mono.Cecil;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
 using System.Runtime.InteropServices;
+using UnityEditor.VisualStudioIntegration;
 using UnityEngine.Scripting;
+using Debug = UnityEngine.Debug;
 
 namespace UnityEditor
 {
     internal partial class AssemblyHelper
     {
         static Dictionary<string, bool> managedToDllType = new Dictionary<string, bool>();
+        static BuildPlayerDataExtractor m_BuildPlayerDataExtractor = new BuildPlayerDataExtractor();
 
         // Check if assmebly internal name doesn't match file name, and show the warning.
         static public void CheckForAssemblyFileNameMismatch(string assemblyPath)
@@ -327,24 +331,17 @@ namespace UnityEditor
             originalClassNameSpacesArray = originalNamespaces.ToArray();
         }
 
-        struct GetAssemblyResolverData
+        /// Extract information about all types in the specified assembly, searchDirs might be used to resolve dependencies.
+        [RequiredByNativeCode]
+        static public AssemblyInfoManaged[] ExtractAssemblyTypeInfo(bool isEditor)
         {
-            public IAssemblyResolver Resolver;
-            public string[] SearchDirs;
+            var extractAssemblyTypeInfo = m_BuildPlayerDataExtractor.ExtractAssemblyTypeInfo(isEditor);
+            return extractAssemblyTypeInfo;
         }
 
-        /// Extract information about all types in the specified assembly, searchDirs might be used to resolve dependencies.
-        static public AssemblyTypeInfoGenerator.ClassInfo[] ExtractAssemblyTypeInfo(BuildTarget targetPlatform, bool isEditor, string assemblyPathName, string[] searchDirs)
+        static public AssemblyInfoManaged[] ExtractAssemblyTypeInfoFromFiles(string[] typeDbJsonPaths)
         {
-            try
-            {
-                AssemblyTypeInfoGenerator gen = new AssemblyTypeInfoGenerator(assemblyPathName, searchDirs);
-                return gen.GatherClassInfo();
-            }
-            catch (System.Exception ex)
-            {
-                throw new Exception("ExtractAssemblyTypeInfo: Failed to process " + assemblyPathName + ", " + ex);
-            }
+            return m_BuildPlayerDataExtractor.ExtractAssemblyTypeInfoFromFiles(typeDbJsonPaths);
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -354,88 +351,17 @@ namespace UnityEditor
             public int methodsCount;
         }
 
-        static void FindRuntimeInitializeOnLoadMethodAttributes(TypeDefinition type,
-            string assemblyName,
-            ref List<RuntimeInitializeClassInfo> classInfoList,
-            ref int methodCount)
-        {
-            if (!type.HasMethods)
-                return;
-
-            foreach (var method in type.Methods)
-            {
-                // RuntimeInitializeOnLoadMethod only works on static methods.
-                if (!method.IsStatic)
-                    continue;
-
-                foreach (var attribute in method.CustomAttributes)
-                {
-                    if (attribute.AttributeType.FullName == "UnityEngine.RuntimeInitializeOnLoadMethodAttribute")
-                    {
-                        RuntimeInitializeLoadType loadType = RuntimeInitializeLoadType.AfterSceneLoad;
-
-                        if (attribute.ConstructorArguments != null && attribute.ConstructorArguments.Count > 0)
-                            loadType = (RuntimeInitializeLoadType)attribute.ConstructorArguments[0].Value;
-
-                        RuntimeInitializeClassInfo classInfo = new RuntimeInitializeClassInfo();
-
-                        classInfo.assemblyName = assemblyName;
-                        classInfo.className = type.FullName;
-                        classInfo.methodNames = new[] { method.Name };
-                        classInfo.loadTypes = new[] { loadType };
-                        classInfoList.Add(classInfo);
-                        methodCount++;
-                    }
-                }
-            }
-        }
-
         [RequiredByNativeCode]
-        public static RuntimeInitializeOnLoadMethodsData ExtractPlayerRuntimeInitializeOnLoadMethods(BuildTarget targetPlatform, string[] assemblyPaths, string[] searchDirs)
+        public static void ExtractPlayerRuntimeInitializeOnLoadMethods(string jsonPath)
         {
-            var classInfoList = new List<RuntimeInitializeClassInfo>();
-            int methodCount = 0;
-
-            foreach (var assemblyPath in assemblyPaths)
+            try
             {
-                try
-                {
-                    var assemblyResolverData = new GetAssemblyResolverData { SearchDirs = searchDirs, };
-                    var resolver = new DefaultAssemblyResolver();
-                    foreach (var searchDir in searchDirs)
-                        resolver.AddSearchDirectory(searchDir);
-
-                    assemblyResolverData.Resolver = resolver;
-
-                    var assembly = AssemblyDefinition.ReadAssembly(assemblyPath, new ReaderParameters
-                    {
-                        AssemblyResolver = assemblyResolverData.Resolver
-                    });
-
-                    var assemblyName = assembly.Name.Name;
-
-                    foreach (var module in assembly.Modules)
-                    {
-                        foreach (var type in module.Types)
-                        {
-                            FindRuntimeInitializeOnLoadMethodAttributes(type,
-                                assemblyName,
-                                ref classInfoList,
-                                ref methodCount);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    throw new Exception("ExtractPlayerRuntimeInitializeOnLoadMethods: Failed to process " + assemblyPath + ", " + ex);
-                }
+                m_BuildPlayerDataExtractor.ExtractPlayerRuntimeInitializeOnLoadMethods(jsonPath);
             }
-
-            var data = new RuntimeInitializeOnLoadMethodsData();
-            data.classInfos = classInfoList.ToArray();
-            data.methodsCount = methodCount;
-
-            return data;
+            catch (Exception exception)
+            {
+                Debug.LogError($"Failed extracting RuntimeInitializeOnLoadMethods. Player will not be able to execute RuntimeInitializeOnLoadMethods: {exception.Message}{Environment.NewLine}{exception.StackTrace}");
+            }
         }
 
         internal static Type[] GetTypesFromAssembly(Assembly assembly)

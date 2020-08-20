@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 
@@ -22,17 +23,14 @@ namespace UnityEngine
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal sealed partial class RuntimeInitializeClassInfo
+    [Serializable]
+    internal class RuntimeInitializeClassInfo
     {
-        string      m_AssemblyName;
-        string      m_ClassName;
-        string[]        m_MethodNames;
-        RuntimeInitializeLoadType[] m_LoadTypes;
-
-        internal string assemblyName { get { return m_AssemblyName; } set { m_AssemblyName = value; } }
-        internal string className { get { return m_ClassName; } set { m_ClassName = value; } }
-        internal string[] methodNames { get { return m_MethodNames; } set { m_MethodNames = value; } }
-        internal RuntimeInitializeLoadType[] loadTypes { get { return m_LoadTypes; } set { m_LoadTypes = value; } }
+        public string assemblyName;
+        public string nameSpace;
+        public string className;
+        public string methodName;
+        public int loadTypes;
     }
 
     [NativeHeader("Runtime/Misc/RuntimeInitializeOnLoadManager.h")]
@@ -40,11 +38,5 @@ namespace UnityEngine
     internal sealed partial class RuntimeInitializeOnLoadManager
     {
         extern internal static string[] dontStripClassNames { get; }
-
-        [NativeProperty("RuntimeInitializeClassMethodInfos")]
-        extern internal static RuntimeInitializeMethodInfo[] methodInfos { get; }
-
-        [NativeMethod("UpdateExecutionOrderNumber")]
-        extern internal static  void UpdateMethodExecutionOrders(int[] changedIndices, int[] changedOrder);
     }
 }

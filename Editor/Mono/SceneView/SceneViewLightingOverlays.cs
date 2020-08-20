@@ -18,17 +18,17 @@ namespace UnityEditor
         static readonly PrefColor kSceneViewMaterialValidateHigh = new PrefColor("Scene/Material Validator Value Too High", 0.0f, 0.0f, 255.0f / 255.0f, 1.0f);
         static readonly PrefColor kSceneViewMaterialValidatePureMetal = new PrefColor("Scene/Material Validator Pure Metal", 255.0f / 255.0f, 255.0f / 255.0f, 0.0f, 1.0f);
 
-        static readonly PrefColor kSceneViewMaterialNoContributeGI = new PrefColor("Scene/Contribute GI Off", 229.0f / 255.0f, 203.0f / 255.0f, 132.0f / 255.0f, 1.0f);
-        static readonly PrefColor kSceneViewMaterialReceiveGILightmaps = new PrefColor("Scene/Contribute GI / Receive GI Lightmaps", 89.0f / 255.0f, 148.0f / 255.0f, 161.0f / 255.0f, 1.0f);
-        static readonly PrefColor kSceneViewMaterialReceiveGILightProbes = new PrefColor("Scene/Contribute GI / Receive GI Light Probes", 221.0f / 255.0f, 115.0f / 255.0f, 91.0f / 255.0f, 1.0f);
+        static readonly PrefColor kSceneViewMaterialNoContributeGI = new PrefColor("Scene/Contribute GI: Off / Receive GI: Light Probes", 229.0f / 255.0f, 203.0f / 255.0f, 132.0f / 255.0f, 1.0f);
+        static readonly PrefColor kSceneViewMaterialReceiveGILightmaps = new PrefColor("Scene/Contribute GI: On / Receive GI: Lightmaps", 89.0f / 255.0f, 148.0f / 255.0f, 161.0f / 255.0f, 1.0f);
+        static readonly PrefColor kSceneViewMaterialReceiveGILightProbes = new PrefColor("Scene/Contribute GI: On / Receive GI: Light Probes", 221.0f / 255.0f, 115.0f / 255.0f, 91.0f / 255.0f, 1.0f);
 
         SceneView m_SceneView;
 
         static class Styles
         {
-            public static GUIContent contributeGIOff = EditorGUIUtility.TrTextContent("Contribute GI Off");
-            public static GUIContent receiveGILightmaps = EditorGUIUtility.TrTextContent("Contribute GI / Receive GI Lightmaps");
-            public static GUIContent receiveGILightProbes = EditorGUIUtility.TrTextContent("Contribute GI / Receive GI Light Probes");
+            public static GUIContent contributeGIOff = EditorGUIUtility.TrTextContent("Contribute GI: Off / Receive GI: Light Probes");
+            public static GUIContent receiveGILightmaps = EditorGUIUtility.TrTextContent("Contribute GI: On / Receive GI: Lightmaps");
+            public static GUIContent receiveGILightProbes = EditorGUIUtility.TrTextContent("Contribute GI: On / Receive GI: Light Probes");
             public static GUIStyle colorSwatch = new GUIStyle() { normal = new GUIStyleState() { background = Texture2D.whiteTexture } };
         }
 

@@ -90,6 +90,11 @@ namespace UnityEditor.PackageManager.UI
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
         }
 
+        public void DisableRefresh()
+        {
+            refreshButton.SetEnabled(false);
+        }
+
         private void OnInternetReachabilityChange(bool value)
         {
             refreshButton.SetEnabled(value);

@@ -353,38 +353,58 @@ namespace UnityEditorInternal
                     dir = (newIndex > prevIndex) ? 1 : -1;
 
                 int from, to;
-                if (newIndex > lastIndex)
+                var addExisting = true;
+                if (prevIndex < newIndex)
                 {
-                    from = firstIndex;
+                    from = prevIndex;
                     to = newIndex;
                 }
                 else if (newIndex >= firstIndex && newIndex < lastIndex)
                 {
+                    addExisting = false;
                     if (dir > 0)
                     {
-                        from = newIndex;
-                        to = lastIndex;
+                        from = prevIndex;
+                        to = newIndex;
                     }
                     else
                     {
-                        from = firstIndex;
-                        to = newIndex;
+                        from = newIndex;
+                        to = prevIndex;
                     }
                 }
                 else
                 {
                     from = newIndex;
-                    to = lastIndex;
+                    to = prevIndex;
                 }
 
                 // Outcomment to debug
                 //Debug.Log (clickedEntry + ",   firstIndex " + firstIndex + ", lastIndex " + lastIndex + ",    newIndex " + newIndex + " " + ", lastClickedIndex " + prevIndex + ",     from " + from + ", to " + to);
                 if (allEntryGuids == null)
-                    return allEntryInstanceIDs.GetRange(from, to - from + 1);
+                {
+                    List<int> allSelectedInstanceIDs = new List<int>();
+
+                    if (addExisting)
+                        allSelectedInstanceIDs.AddRange(selectedInstanceIDs);
+
+                    allSelectedInstanceIDs.AddRange(allEntryInstanceIDs.GetRange(from, to - from + 1));
+                    return allSelectedInstanceIDs.Distinct().ToList();
+                }
 
                 var foundInstanceIDs = TryGetInstanceIds(allEntryInstanceIDs, allEntryGuids, from, to);
                 if (foundInstanceIDs != null)
+                {
+                    if (addExisting)
+                    {
+                        List<int> allSelectedInstanceIDs = new List<int>();
+                        allSelectedInstanceIDs.AddRange(selectedInstanceIDs);
+                        allSelectedInstanceIDs.AddRange(foundInstanceIDs);
+                        return allSelectedInstanceIDs.Distinct().ToList();
+                    }
+
                     return foundInstanceIDs;
+                }
 
                 return new List<int>(selectedInstanceIDs);
             }

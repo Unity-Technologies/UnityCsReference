@@ -248,8 +248,10 @@ namespace UnityEditor
             internal static extern AndroidBanner[] GetAndroidBanners();
 
             internal static extern Texture2D GetAndroidBannerForHeight(int height);
+            internal static extern Texture2D GetAndroidBannerForHeightCustomList(int height, AndroidBanner[] allBanners);
 
             internal static extern void SetAndroidBanners(Texture2D[] banners);
+            internal static extern AndroidBanner[] SetAndroidBannersCustomList(Texture2D[] banners, AndroidBanner[] allBanners);
 
             //*undocumented*
             // only available in developer builds for now.

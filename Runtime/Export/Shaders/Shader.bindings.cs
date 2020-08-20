@@ -31,7 +31,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Misc/ResourceManager.h")]
     public sealed partial class Shader : Object
     {
-        [FreeFunction("GetScriptMapper().FindShader")] extern public static Shader Find(string name);
+        public static Shader Find(string name) => ResourcesAPI.ActiveAPI.FindShaderByName(name);
         [FreeFunction("GetBuiltinResource<Shader>")] extern internal static Shader FindBuiltin(string name);
 
         [NativeProperty("MaximumShaderLOD")] extern public int maximumLOD { get; set; }

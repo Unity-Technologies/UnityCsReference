@@ -2026,12 +2026,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return false;
         }
 
-        ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, EditorScriptCompilationOptions options)
+        internal ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, EditorScriptCompilationOptions options)
         {
             return CreateScriptAssemblySettings(buildTargetGroup, buildTarget, options, new string[] {});
         }
 
-        ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, EditorScriptCompilationOptions options, string[] extraScriptingDefines)
+        internal ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, EditorScriptCompilationOptions options, string[] extraScriptingDefines)
         {
             var predefinedAssembliesCompilerOptions = new ScriptCompilerOptions();
 

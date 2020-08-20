@@ -290,6 +290,10 @@ namespace UnityEditorInternal
             GetStatisticsAvailabilityStatesByCategory(category, firstFrame, buffer);
         }
 
+        [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        [NativeMethod("GetAnyStatisticsAvailableInCategories")]
+        static internal extern void GetAnyStatisticsAvailableInCategories(string[] categories, int firstFrame, [Out] int[] anyStatisticsAvailableBuffer);
+
         static public HierarchyFrameDataView GetHierarchyFrameDataView(int frameIndex, int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int sortColumn, bool sortAscending)
         {
             return new HierarchyFrameDataView(frameIndex, threadIndex, viewMode, sortColumn, sortAscending);

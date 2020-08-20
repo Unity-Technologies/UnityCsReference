@@ -439,7 +439,7 @@ namespace UnityEditor
         public static float DistanceToPolyLine(params Vector3[] points)
         {
             Matrix4x4 handleMatrix = Handles.matrix;
-            CameraProjectionCache cam = new CameraProjectionCache(Camera.current, Screen.height);
+            CameraProjectionCache cam = new CameraProjectionCache(Camera.current);
             Vector2 mouse = Event.current.mousePosition;
 
             Vector2 p1 = cam.WorldToGUIPoint(handleMatrix.MultiplyPoint3x4(points[0]));
@@ -462,7 +462,7 @@ namespace UnityEditor
         internal static float DistanceToPolyLine(Vector3[] points, bool loop, out int index)
         {
             Matrix4x4 handleMatrix = Handles.matrix;
-            CameraProjectionCache cam = new CameraProjectionCache(Camera.current, Screen.height);
+            CameraProjectionCache cam = new CameraProjectionCache(Camera.current);
             Vector2 mouse = Event.current.mousePosition;
 
             Vector2 p1 = cam.WorldToGUIPoint(handleMatrix.MultiplyPoint3x4(points[0]));
@@ -651,7 +651,7 @@ namespace UnityEditor
 
             // project point cloud into 2D GUI space
             var handleMatrix = Handles.matrix;
-            var cam = new CameraProjectionCache(Camera.current, Screen.height);
+            var cam = new CameraProjectionCache(Camera.current);
             for (var i = 0; i < points.Length; ++i)
                 points[i] = cam.WorldToGUIPoint(handleMatrix.MultiplyPoint3x4(points[i]));
 

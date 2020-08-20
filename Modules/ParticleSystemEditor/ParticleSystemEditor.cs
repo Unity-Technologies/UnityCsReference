@@ -18,6 +18,8 @@ namespace UnityEditor
         GUIContent showWindowText = EditorGUIUtility.TrTextContent("Open Editor...");
         GUIContent closeWindowText = EditorGUIUtility.TrTextContent("Close Editor");
         GUIContent hideWindowText = EditorGUIUtility.TrTextContent("Hide Editor");
+        GUIContent selectSubEmitterOwner = EditorGUIUtility.TrTextContent("Select Sub-Emitter Owner");
+
         static GUIContent m_PlayBackTitle;
 
         public class ShortcutContext : IShortcutToolContext
@@ -125,6 +127,55 @@ namespace UnityEditor
                     bool alreadySelected = selectedInParticleSystemWindow;
                     GameObject targetGameObject = (target as ParticleSystem).gameObject;
 
+                    // Show a button to select the sub-emitter owner, if this system is a sub-emitter
+                    List<ParticleSystem> owners = new List<ParticleSystem>();
+                    var parent = targetGameObject.transform.parent;
+                    while (parent != null)
+                    {
+                        var ps = parent.GetComponent<ParticleSystem>();
+                        if (ps != null)
+                        {
+                            var subEmitters = ps.subEmitters;
+                            if (subEmitters.enabled)
+                            {
+                                for (int i = 0; i < subEmitters.subEmittersCount; i++)
+                                {
+                                    var subEmitter = subEmitters.GetSubEmitterSystem(i);
+                                    if (subEmitter != null && subEmitter.gameObject == targetGameObject)
+                                    {
+                                        owners.Add(ps);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        parent = parent.parent;
+                    }
+                    if (owners.Count > 0)
+                    {
+                        if (owners.Count == 1)
+                        {
+                            if (GUILayout.Button(GUIContent.Temp(selectSubEmitterOwner.text, owners[0].name), EditorStyles.miniButton, GUILayout.Width(160)))
+                                Selection.activeGameObject = owners[0].gameObject;
+                        }
+                        else
+                        {
+                            if (EditorGUILayout.DropdownButton(selectSubEmitterOwner, FocusType.Passive, EditorStyles.miniButton, GUILayout.Width(160)))
+                            {
+                                GenericMenu menu = new GenericMenu();
+
+                                foreach (var owner in owners)
+                                    menu.AddItem(new GUIContent(owner.name), false, OnOwnerSelected, owner);
+                                menu.AddSeparator("");
+                                menu.AddItem(new GUIContent("Select All"), false, OnOwnersSelected, owners);
+
+                                Rect buttonRect = GUILayoutUtility.topLevel.GetLast();
+                                menu.DropDown(buttonRect);
+                            }
+                        }
+                    }
+
                     // When editing a preset the GameObject will have the NotEditable flag.
                     // We do not support the ParticleSystemWindow for Presets for two reasons:
                     // - When selected the Preset editor creates a temporary GameObject which it then uses to edit the properties.
@@ -190,6 +241,16 @@ namespace UnityEditor
                     }
                 }
             }
+        }
+
+        void OnOwnerSelected(object owner)
+        {
+            Selection.activeGameObject = ((ParticleSystem)owner).gameObject;
+        }
+
+        void OnOwnersSelected(object owners)
+        {
+            Selection.objects = ((List<ParticleSystem>)owners).Select(o => o.gameObject).ToArray();
         }
 
         public override bool UseDefaultMargins() { return false; }

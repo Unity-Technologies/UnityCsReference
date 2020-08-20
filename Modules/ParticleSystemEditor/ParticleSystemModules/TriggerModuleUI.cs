@@ -94,11 +94,12 @@ namespace UnityEditor
             GUIPopup(s_Texts.colliderQueryMode, m_ColliderQueryMode, s_Texts.colliderQueryModeOptions);
             GUIFloat(s_Texts.radiusScale, m_RadiusScale);
 
-            EditorGUI.BeginChangeCheck();
-            s_VisualizeBounds = GUIToggle(s_Texts.visualizeBounds, s_VisualizeBounds);
-            if (EditorGUI.EndChangeCheck())
+            if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
             {
-                EditorPrefs.SetBool("VisualizeTriggerBounds", s_VisualizeBounds);
+                EditorGUI.BeginChangeCheck();
+                s_VisualizeBounds = GUIToggle(s_Texts.visualizeBounds, s_VisualizeBounds);
+                if (EditorGUI.EndChangeCheck())
+                    EditorPrefs.SetBool("VisualizeTriggerBounds", s_VisualizeBounds);
             }
         }
 

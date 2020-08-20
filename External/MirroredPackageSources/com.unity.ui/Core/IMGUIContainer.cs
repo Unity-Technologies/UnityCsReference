@@ -443,7 +443,7 @@ namespace UnityEngine.UIElements
             if (evt.type == EventType.Layout &&
                 (!Mathf.Approximately(previousMeasuredWidth, layoutMeasuredWidth) || !Mathf.Approximately(previousMeasuredHeight, layoutMeasuredHeight)))
             {
-                if (isComputingLayout)
+                if (isComputingLayout && clippingRect == Rect.zero)
                     this.schedule.Execute(() => IncrementVersion(VersionChangeType.Layout));
                 else
                     IncrementVersion(VersionChangeType.Layout);
