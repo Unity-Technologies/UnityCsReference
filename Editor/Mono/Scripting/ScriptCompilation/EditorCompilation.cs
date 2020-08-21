@@ -1687,6 +1687,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 foreach (var codegenAssembly in scriptCodegenAssemblies.CodeGenAssemblies)
                 {
+                    // If the codegen assembly has only been marked as dirty by reference,
+                    // do not recompile it.
                     if (codegenAssembly.DirtySource == DirtySource.DirtyReference)
                         continue;
 
