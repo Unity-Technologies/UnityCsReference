@@ -143,5 +143,7 @@ namespace UnityEditor
 
         [FreeFunction("AssetImporterBindings::SupportsRemappedAssetType", HasExplicitThis = true, IsThreadSafe = true)]
         public extern bool SupportsRemappedAssetType(Type type);
+
+        internal extern double GetImportStartTime();
     }
 }

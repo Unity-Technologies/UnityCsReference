@@ -49,7 +49,7 @@ namespace UnityEngine.U2D
         extern public string tag { get; }
         extern public int spriteCount { get; }
 
-        extern public bool CanBindTo(Sprite sprite);
+        extern public bool CanBindTo([NotNull] Sprite sprite);
 
         extern public Sprite GetSprite(string name);
         public int GetSprites(Sprite[] sprites) { return GetSpritesScripting(sprites); }

@@ -192,7 +192,7 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         ShowIl2CppErrorIfNeeded();
     }
 
-    private void ShowIl2CppErrorIfNeeded()
+    protected void ShowIl2CppErrorIfNeeded()
     {
         if (PlayerSettings.GetScriptingBackend(BuildTargetGroup.Standalone) != ScriptingImplementation.IL2CPP)
             return;

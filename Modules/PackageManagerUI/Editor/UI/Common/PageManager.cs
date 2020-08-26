@@ -143,7 +143,7 @@ namespace UnityEditor.PackageManager.UI
                 GetPageFromFilterTab().SetGroupExpanded(groupName, value);
             }
 
-            private void OnInstalledOrUninstalled(IPackage package, IPackageVersion installedVersion = null)
+            private void OnInstalled(IPackage package, IPackageVersion installedVersion = null)
             {
                 if (package != null)
                     SetSelected(package, installedVersion);
@@ -151,7 +151,8 @@ namespace UnityEditor.PackageManager.UI
 
             private void OnUninstalled(IPackage package)
             {
-                OnInstalledOrUninstalled(package);
+                if (GetVisualState(package) != null)
+                    SetSelected(package);
             }
 
             private void OnSearchTextChanged(string searchText)
@@ -268,7 +269,7 @@ namespace UnityEditor.PackageManager.UI
                 AssetStore.AssetStoreClient.instance.onProductListFetched += OnProductListFetched;
                 AssetStore.AssetStoreClient.instance.onProductFetched += OnProductFetched;
 
-                PackageDatabase.instance.onInstallSuccess += OnInstalledOrUninstalled;
+                PackageDatabase.instance.onInstallSuccess += OnInstalled;
                 PackageDatabase.instance.onUninstallSuccess += OnUninstalled;
                 PackageDatabase.instance.onPackagesChanged += OnPackagesChanged;
 
@@ -288,7 +289,7 @@ namespace UnityEditor.PackageManager.UI
                 AssetStore.AssetStoreClient.instance.onProductListFetched -= OnProductListFetched;
                 AssetStore.AssetStoreClient.instance.onProductFetched -= OnProductFetched;
 
-                PackageDatabase.instance.onInstallSuccess -= OnInstalledOrUninstalled;
+                PackageDatabase.instance.onInstallSuccess -= OnInstalled;
                 PackageDatabase.instance.onUninstallSuccess -= OnUninstalled;
                 PackageDatabase.instance.onPackagesChanged -= OnPackagesChanged;
 

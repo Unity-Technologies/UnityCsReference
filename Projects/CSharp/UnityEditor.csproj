@@ -3016,6 +3016,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\PragmaFixing30.cs">
       <Link>Editor\Mono\Scripting\PragmaFixing30.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ArrayHelper.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\ArrayHelper.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\AssemblyBuilder.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\AssemblyBuilder.cs</Link>
     </Compile>

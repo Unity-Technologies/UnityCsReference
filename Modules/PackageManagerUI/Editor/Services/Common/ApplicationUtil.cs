@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.IO;
 using System.Linq;
 using UnityEditor.Connect;
 using UnityEditorInternal;
@@ -145,6 +146,16 @@ namespace UnityEditor.PackageManager.UI
                 EditorApplication.update -= CheckCompilationStatus;
 
                 onFinishCompiling();
+            }
+
+            public string OpenFilePanelWithFilters(string title, string directory, string[] filters)
+            {
+                return EditorUtility.OpenFilePanelWithFilters(title, directory, filters);
+            }
+
+            public string GetFileName(string path)
+            {
+                return Path.GetFileName(path);
             }
         }
     }

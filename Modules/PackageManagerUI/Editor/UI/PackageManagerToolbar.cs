@@ -142,13 +142,16 @@ namespace UnityEditor.PackageManager.UI
         {
             addMenu.menu.AppendAction("Add package from disk...", a =>
             {
-                var path = EditorUtility.OpenFilePanelWithFilters("Select package on disk", "", new[] { "package.json file", "json" });
-                if (Path.GetFileName(path) != "package.json")
+                var path = ApplicationUtil.instance.OpenFilePanelWithFilters("Select package on disk", "", new[] { "package.json file", "json" });
+                if (string.IsNullOrEmpty(path))
+                    return;
+
+                if (ApplicationUtil.instance.GetFileName(path) != "package.json")
                 {
                     Debug.Log("Please select a valid package.json file in a package folder.");
                     return;
                 }
-                if (!string.IsNullOrEmpty(path) && !PackageDatabase.instance.isInstallOrUninstallInProgress)
+                if (!PackageDatabase.instance.isInstallOrUninstallInProgress)
                 {
                     PackageDatabase.instance.InstallFromPath(Path.GetDirectoryName(path));
                     PackageManagerWindowAnalytics.SendEvent("addFromDisk");
@@ -281,7 +284,7 @@ namespace UnityEditor.PackageManager.UI
 
         private VisualElementCache cache { get; set; }
 
-        private ToolbarMenu addMenu { get { return cache.Get<ToolbarMenu>("toolbarAddMenu"); }}
+        internal ToolbarMenu addMenu { get { return cache.Get<ToolbarMenu>("toolbarAddMenu"); }}
         private ToolbarMenu filterMenu { get { return cache.Get<ToolbarMenu>("toolbarFilterMenu"); } }
         private ToolbarMenu advancedMenu { get { return cache.Get<ToolbarMenu>("toolbarAdvancedMenu"); } }
         private ToolbarSearchField searchToolbar { get { return cache.Get<ToolbarSearchField>("toolbarSearch"); } }

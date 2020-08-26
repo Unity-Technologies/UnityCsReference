@@ -204,7 +204,7 @@ namespace UnityEditor
             bool pluginForWindows = target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64;
 #pragma warning disable 612, 618
             bool pluginForOSX = target == BuildTarget.StandaloneOSXIntel || target == BuildTarget.StandaloneOSXIntel64 || target == BuildTarget.StandaloneOSX;
-            bool pluginForLinux = target == BuildTarget.StandaloneLinux || target == BuildTarget.StandaloneLinux64 || target == BuildTarget.StandaloneLinuxUniversal;
+            bool pluginForLinux = target == BuildTarget.StandaloneLinux || target == BuildTarget.StandaloneLinux64 || target == BuildTarget.StandaloneLinuxUniversal || target == BuildTarget.CloudRendering;
 #pragma warning restore 612, 618
 
             if (!pluginForLinux && !pluginForOSX && !pluginForWindows)

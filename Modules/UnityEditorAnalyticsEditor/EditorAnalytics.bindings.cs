@@ -83,6 +83,11 @@ namespace UnityEditor
             return EditorAnalytics.SendEvent("collabOperation", parameters);
         }
 
+        internal static bool SendAssetPostprocessorsUsage(object parameters)
+        {
+            return SendEventWithVersion("assetPostProcessorsUsage", parameters, 2);
+        }
+
         internal extern static bool SendAssetDownloadEvent(object parameters);
 
         public extern static bool enabled
@@ -91,6 +96,8 @@ namespace UnityEditor
         }
 
         extern private static bool SendEvent(string eventName, object parameters, SendEventOptions sendEventOptions = SendEventOptions.kAppendNone);
+
+        extern private static bool SendEventWithVersion(string eventName, object parameters, int ver, SendEventOptions sendEventOptions = SendEventOptions.kAppendNone);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static AnalyticsResult RegisterEventWithLimit(string eventName, int maxEventPerHour, int maxItems, string vendorKey)
