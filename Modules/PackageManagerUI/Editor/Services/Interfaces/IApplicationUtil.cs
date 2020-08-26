@@ -31,5 +31,9 @@ namespace UnityEditor.PackageManager.UI
         void ShowLogin();
 
         void OpenURL(string url);
+
+        string OpenFilePanelWithFilters(string title, string directory, string[] filters);
+
+        string GetFileName(string path);
     }
 }

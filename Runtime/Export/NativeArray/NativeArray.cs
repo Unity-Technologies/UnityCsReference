@@ -459,10 +459,10 @@ namespace Unity.Collections
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void CheckReinterpretLoadRange<U>(int sourceIndex) where U : struct
         {
-            int tsize = UnsafeUtility.SizeOf<T>();
+            long tsize = UnsafeUtility.SizeOf<T>();
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
 
-            int usize = UnsafeUtility.SizeOf<U>();
+            long usize = UnsafeUtility.SizeOf<U>();
             long byteSize = Length * tsize;
 
             long firstByte = sourceIndex * tsize;
@@ -475,10 +475,10 @@ namespace Unity.Collections
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void CheckReinterpretStoreRange<U>(int destIndex) where U : struct
         {
-            int tsize = UnsafeUtility.SizeOf<T>();
+            long tsize = UnsafeUtility.SizeOf<T>();
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
 
-            int usize = UnsafeUtility.SizeOf<U>();
+            long usize = UnsafeUtility.SizeOf<U>();
             long byteSize = Length * tsize;
 
             long firstByte = destIndex * tsize;
@@ -491,14 +491,14 @@ namespace Unity.Collections
         public U ReinterpretLoad<U>(int sourceIndex) where U : struct
         {
             CheckReinterpretLoadRange<U>(sourceIndex);
-            byte* src_ptr = ((byte*)m_Buffer) + UnsafeUtility.SizeOf<T>() * sourceIndex;
+            byte* src_ptr = ((byte*)m_Buffer) + ((long)UnsafeUtility.SizeOf<T>()) * sourceIndex;
             return UnsafeUtility.ReadArrayElement<U>(src_ptr, 0);
         }
 
         public void ReinterpretStore<U>(int destIndex, U data) where U : struct
         {
             CheckReinterpretStoreRange<U>(destIndex);
-            byte* dst_ptr = ((byte*)m_Buffer) + UnsafeUtility.SizeOf<T>() * destIndex;
+            byte* dst_ptr = ((byte*)m_Buffer) + ((long)UnsafeUtility.SizeOf<T>()) * destIndex;
             UnsafeUtility.WriteArrayElement<U>(dst_ptr, 0, data);
         }
 
@@ -522,11 +522,11 @@ namespace Unity.Collections
 
         public NativeArray<U> Reinterpret<U>(int expectedTypeSize) where U : struct
         {
-            var tSize = UnsafeUtility.SizeOf<T>();
-            var uSize = UnsafeUtility.SizeOf<U>();
+            long tSize = UnsafeUtility.SizeOf<T>();
+            long uSize = UnsafeUtility.SizeOf<U>();
 
-            var byteLen = ((long)Length) * tSize;
-            var uLen = byteLen / uSize;
+            long byteLen = ((long)Length) * tSize;
+            long uLen = byteLen / uSize;
 
             if (tSize != expectedTypeSize)
             {
@@ -551,7 +551,7 @@ namespace Unity.Collections
             {
                 throw new ArgumentOutOfRangeException(nameof(length), $"sub array range {start}-{start+length-1} is outside the range of the native array 0-{Length-1}");
             }
-            var result = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(((byte*)m_Buffer) + UnsafeUtility.SizeOf<T>() * start, length, Allocator.Invalid);
+            var result = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(((byte*)m_Buffer) + ((long)UnsafeUtility.SizeOf<T>()) * start, length, Allocator.Invalid);
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref result, m_Safety);
             result.m_DisposeSentinel = null;

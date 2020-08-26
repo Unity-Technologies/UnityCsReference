@@ -97,6 +97,8 @@ namespace UnityEditor
 
         Lumin = 28,
 
-        Stadia = 29
+        Stadia = 29,
+
+        CloudRendering = 30
     }
 }

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using UnityEditor.Compilation;
+using UnityEditor.Scripting.Compilers;
 using UnityEditorInternal;
 using DiscoveredTargetInfo = UnityEditor.BuildTargetDiscovery.DiscoveredTargetInfo;
 
@@ -239,6 +240,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public bool AutoReferenced { get; set; }
         public string[] DefineConstraints { get; set; }
         public VersionDefine[] VersionDefines { get; set; }
+
+        public string[] ResponseFileDefines { get; set; }
+
         public bool NoEngineReferences { get; set; }
 
         public AssemblyFlags AssemblyFlags
@@ -325,7 +329,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             if (defines != null && defines.Length == 0)
-                throw new ArgumentException("Defines cannot be empty", "defines");
+                throw new ArgumentException("Defines cannot be empty", nameof(defines));
 
             // Log invalid define constraints
             if (DefineConstraints != null)
@@ -338,8 +342,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     }
                 }
             }
-
-            if (!DefineConstraintsHelper.IsDefineConstraintsCompatible(defines, DefineConstraints))
+            var allDefines = ArrayHelper.Merge(defines, ResponseFileDefines);
+            if (!DefineConstraintsHelper.IsDefineConstraintsCompatible(allDefines, DefineConstraints))
             {
                 return false;
             }
@@ -412,7 +416,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var compilerOptions = new ScriptCompilerOptions();
 
             compilerOptions.AllowUnsafeCode = customScriptAssemblyData.allowUnsafeCode;
-
             customScriptAssembly.CompilerOptions = compilerOptions;
 
             return customScriptAssembly;

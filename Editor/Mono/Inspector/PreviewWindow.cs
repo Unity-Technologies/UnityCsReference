@@ -121,8 +121,8 @@ namespace UnityEditor
             Event evt = Event.current;
             if (evt.type == EventType.MouseUp && evt.button == 1 && toolbarRect.Contains(evt.mousePosition))
             {
-                Close();
                 evt.Use();
+                Close();
                 // Don't draw preview if we just closed this window
                 return;
             }

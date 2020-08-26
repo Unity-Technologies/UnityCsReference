@@ -26,7 +26,6 @@ namespace UnityEditor.Compilation
         public bool AllowUnsafeCode { get; set; }
         public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
         public string[] ResponseFiles { get; set; }
-
         public ScriptCompilerOptions()
         {
             AllowUnsafeCode = false;
@@ -288,6 +287,24 @@ namespace UnityEditor.Compilation
             {
                 var assembly = editorCompilation.GetCustomTargetAssemblyFromName(assemblyName);
                 return assembly?.Defines;
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+        }
+
+        public static string[] GetResponseFileDefinesFromAssemblyName(string assemblyName)
+        {
+            return GetResponseFileDefinesFromAssemblyName(EditorCompilationInterface.Instance, assemblyName);
+        }
+
+        internal static string[] GetResponseFileDefinesFromAssemblyName(EditorCompilation editorCompilation, string assemblyName)
+        {
+            try
+            {
+                var assembly = editorCompilation.GetCustomTargetAssemblyFromName(assemblyName);
+                return assembly?.ResponseFileDefines;
             }
             catch (ArgumentException)
             {

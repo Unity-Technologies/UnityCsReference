@@ -6,6 +6,8 @@ using System;
 using System.Collections;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
+using UnityEngine;
 
 namespace UnityEditor.Utils
 {
@@ -172,14 +174,45 @@ namespace UnityEditor.Utils
             return sb.ToString();
         }
 
+        private int SleepTimeoutMiliseconds
+        {
+            get { return 10; }
+        }
+
         public void WaitForExit()
         {
-            _process.WaitForExit();
+            // Case 1111601: Process.WaitForExit hangs on OSX platform
+            if (Application.platform == RuntimePlatform.OSXEditor)
+            {
+                while (!_process.HasExited)
+                {
+                    // Don't consume 100% of CPU while waiting for process to exit
+                    Thread.Sleep(SleepTimeoutMiliseconds);
+                }
+            }
+            else
+            {
+                _process.WaitForExit();
+            }
         }
 
         public bool WaitForExit(int milliseconds)
         {
-            return _process.WaitForExit(milliseconds);
+            // Case 1111601: Process.WaitForExit hangs on OSX platform
+            if (Application.platform == RuntimePlatform.OSXEditor)
+            {
+                var start = DateTime.Now;
+                while (!_process.HasExited && (DateTime.Now - start).TotalMilliseconds < milliseconds)
+                {
+                    // Don't consume 100% of CPU while waiting for process to exit
+                    Thread.Sleep(SleepTimeoutMiliseconds);
+                }
+                return _process.HasExited;
+            }
+            else
+            {
+                return _process.WaitForExit(milliseconds);
+            }
         }
     }
 }
