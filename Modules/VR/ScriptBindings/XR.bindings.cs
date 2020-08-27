@@ -144,10 +144,8 @@ namespace UnityEngine.XR
     [NativeConditional("ENABLE_VR")]
     public static class XRDevice
     {
-        [NativeName("DeviceConnected")]
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         [Obsolete("This is obsolete, and should no longer be used. Instead, find the active XRDisplaySubsystem and check that the running property is true (for details, see XRDevice.isPresent documentation).", false)]
-        extern public static bool isPresent { get; }
+        public static bool isPresent { get {throw new NotSupportedException("XRDevice is Obsolete. Instead, find the active XRDisplaySubsystem and check to see if it is running.");} }
 
         [Obsolete("This is obsolete, and should no longer be used.  Please use CommonUsages.userPresence.")]
         extern public static UserPresenceState userPresence { get; }

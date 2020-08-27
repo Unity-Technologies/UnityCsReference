@@ -52,6 +52,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public List<string> ExplicitPrecompiledReferences { get; set; }
             public TargetAssemblyType Type { get; private set; }
             public string[] Defines { get; set; }
+            public string[] ResponseFileDefines { get; set; }
             public ScriptCompilerOptions CompilerOptions { get; set; }
             public List<VersionDefine> VersionDefines { get; set; }
             public int MaxPathLength { get; private set; }
@@ -260,6 +261,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     ExplicitPrecompiledReferences = customAssembly.PrecompiledReferences?.ToList() ?? new List<string>(),
                     VersionDefines = customAssembly.VersionDefines != null
                         ? customAssembly.VersionDefines.ToList() : new List<VersionDefine>(),
+                    ResponseFileDefines = customAssembly.ResponseFileDefines,
                 };
 
                 targetAssemblies.Add(targetAssembly);
@@ -402,7 +404,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                         if (!IsCompatibleWithPlatformAndDefines(customTargetAssembly, args.Settings))
                             continue;
-                            
+
                         AddDirtyTargetAssembly(dirtyTargetAssemblies, customTargetAssembly, DirtySource.DirtyReference);
                     }
                 }

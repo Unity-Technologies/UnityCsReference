@@ -36,6 +36,11 @@ namespace UnityEditorInternal
                 m_DelayTarget = 0;
             }
 
+            public bool HasTriggered
+            {
+                get { return m_OnSearchChanged == null; }
+            }
+
             public bool IsDone
             {
                 get { return Time.realtimeSinceStartup >= m_DelayTarget; }
@@ -428,7 +433,7 @@ namespace UnityEditorInternal
 
             if (!patternEmpty)
             {
-                if (m_prevSearchPattern != searchString)
+                if (m_prevSearchPattern != searchString || m_DelayedSearch.HasTriggered)
                 {
                     m_prevSearchPattern = searchString;
                     requestedDelayedSearch = true;

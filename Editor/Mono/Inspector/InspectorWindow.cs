@@ -89,6 +89,7 @@ namespace UnityEditor
 
             EditorApplication.projectWasLoaded += OnProjectWasLoaded;
             EditorApplication.focusChanged += OnFocusChanged;
+            Selection.selectionChanged += OnSelectionChanged;
 
             m_FirstInitialize = true;
         }
@@ -117,6 +118,15 @@ namespace UnityEditor
             }
         }
 
+        private void OnSelectionChanged()
+        {
+            RebuildContentsContainers();
+            if (Selection.objects.Length == 0 && m_MultiEditLabel != null)
+            {
+                m_MultiEditLabel.RemoveFromHierarchy();
+            }
+        }
+
         protected override void OnDisable()
         {
             base.OnDisable();
@@ -125,6 +135,7 @@ namespace UnityEditor
             m_LockTracker?.lockStateChanged.RemoveListener(LockStateChanged);
 
             EditorApplication.projectWasLoaded -= OnProjectWasLoaded;
+            Selection.selectionChanged -= OnSelectionChanged;
         }
 
         static internal void RepaintAllInspectors()

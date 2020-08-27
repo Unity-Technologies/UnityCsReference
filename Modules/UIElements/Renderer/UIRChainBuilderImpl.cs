@@ -541,13 +541,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             Debug.Assert(ve.renderChainData.clipMethod != ClipMethod.Undetermined);
             Debug.Assert(RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || ve.hierarchy.parent == null || ve.renderChainData.transformID.Equals(ve.hierarchy.parent.renderChainData.transformID) || (ve.renderHints & RenderHints.GroupTransform) != 0);
 
-            var painterClosingInfo = new UIRStylePainter.ClosingInfo();
-            var painter = PaintElement(renderChain, ve, ref stats);
-            if (painter != null)
-            {
-                painterClosingInfo = painter.closingInfo;
-                painter.Reset();
-            }
+            UIRStylePainter.ClosingInfo closingInfo = PaintElement(renderChain, ve, ref stats);
 
             if (hierarchical)
             {
@@ -559,8 +553,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             // By closing the element after its children, we can ensure closing data is allocated
             // at a time that would maintain continuity in the index buffer
-            if (painterClosingInfo.needsClosing)
-                ClosePaintElement(ve, painterClosingInfo, painter.device, ref stats);
+            if (closingInfo.needsClosing)
+                ClosePaintElement(ve, closingInfo, renderChain, ref stats);
         }
 
         static bool IsElementHierarchyHidden(VisualElement ve)
@@ -651,7 +645,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             return false;
         }
 
-        internal static UIRStylePainter PaintElement(RenderChain renderChain, VisualElement ve, ref ChainBuilderStats stats)
+        internal static UIRStylePainter.ClosingInfo PaintElement(RenderChain renderChain, VisualElement ve, ref ChainBuilderStats stats)
         {
             var isClippingWithStencil = ve.renderChainData.clipMethod == ClipMethod.Stencil;
             if ((IsElementSelfHidden(ve) && !isClippingWithStencil) || ve.renderChainData.isHierarchyHidden)
@@ -663,15 +657,16 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 }
                 if (ve.renderChainData.firstCommand != null)
                     ResetCommands(renderChain, ve);
-                return null;
+
+                return new UIRStylePainter.ClosingInfo();
             }
 
             // Retain our command insertion points if possible, to avoid paying the cost of finding them again
             RenderChainCommand oldCmdPrev = ve.renderChainData.firstCommand?.prev;
             RenderChainCommand oldCmdNext = ve.renderChainData.lastCommand?.next;
             RenderChainCommand oldClosingCmdPrev, oldClosingCmdNext;
-            bool commandsAndClosingCommandsWereConsequtive = (ve.renderChainData.firstClosingCommand != null) && (oldCmdNext == ve.renderChainData.firstClosingCommand);
-            if (commandsAndClosingCommandsWereConsequtive)
+            bool commandsAndClosingCommandsWereConsecutive = (ve.renderChainData.firstClosingCommand != null) && (oldCmdNext == ve.renderChainData.firstClosingCommand);
+            if (commandsAndClosingCommandsWereConsecutive)
             {
                 oldCmdNext = ve.renderChainData.lastClosingCommand.next;
                 oldClosingCmdPrev = oldClosingCmdNext = null;
@@ -689,8 +684,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             ResetCommands(renderChain, ve);
 
             var painter = renderChain.painter;
-            painter.currentElement = ve;
-            painter.Begin();
+            painter.Begin(ve);
+
             if (ve.visible)
             {
                 painter.DrawVisualElementBackground();
@@ -704,14 +699,31 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 if (ve.renderChainData.clipMethod == ClipMethod.Stencil)
                     painter.ApplyVisualElementClipping();
             }
-            var entries = painter.entries;
 
             MeshHandle data = ve.renderChainData.data;
-            if (painter.totalVertices <= UInt16.MaxValue && (entries.Count > 0))
+
+            if (painter.totalVertices > renderChain.device.maxVerticesPerPage)
+            {
+                Debug.LogError($"A {nameof(VisualElement)} must not allocate more than {renderChain.device.maxVerticesPerPage } vertices.");
+
+                if (data != null)
+                {
+                    painter.device.Free(data);
+                    data = null;
+                }
+
+                // Restart without drawing anything.
+                painter.Reset();
+                painter.Begin(ve);
+            }
+
+            var entries = painter.entries;
+            if (entries.Count > 0)
             {
                 NativeSlice<Vertex> verts = new NativeSlice<Vertex>();
                 NativeSlice<UInt16> indices = new NativeSlice<UInt16>();
                 UInt16 indexOffset = 0;
+
                 if (painter.totalVertices > 0)
                     UpdateOrAllocate(ref data, painter.totalVertices, painter.totalIndices, painter.device, out verts, out indices, out indexOffset, ref stats);
 
@@ -831,7 +843,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (painter.closingInfo.needsClosing)
             {
                 RenderChainCommand cmdPrev = oldClosingCmdPrev, cmdNext = oldClosingCmdNext;
-                if (commandsAndClosingCommandsWereConsequtive)
+                if (commandsAndClosingCommandsWereConsecutive)
                 {
                     cmdPrev = ve.renderChainData.lastCommand;
                     cmdNext = cmdPrev.next;
@@ -859,10 +871,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 }
             }
 
-            return painter;
+            var closingInfo = painter.closingInfo;
+            painter.Reset();
+            return closingInfo;
         }
 
-        static void ClosePaintElement(VisualElement ve, UIRStylePainter.ClosingInfo closingInfo, UIRenderDevice device, ref ChainBuilderStats stats)
+        static void ClosePaintElement(VisualElement ve, UIRStylePainter.ClosingInfo closingInfo, RenderChain renderChain, ref ChainBuilderStats stats)
         {
             if (closingInfo.clipperRegisterIndices.Length > 0)
             {
@@ -873,7 +887,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 // Due to device Update limitations, we cannot share the vertices of the registration mesh. It would be great
                 // if we can just point winding-flipped indices towards the same vertices as the registration mesh.
                 // For now, we duplicate the registration mesh entirely, wasting a bit of vertex memory
-                UpdateOrAllocate(ref ve.renderChainData.closingData, closingInfo.clipperRegisterVertices.Length, closingInfo.clipperRegisterIndices.Length, device, out verts, out indices, out indexOffset, ref stats);
+                UpdateOrAllocate(ref ve.renderChainData.closingData, closingInfo.clipperRegisterVertices.Length, closingInfo.clipperRegisterIndices.Length, renderChain.painter.device, out verts, out indices, out indexOffset, ref stats);
                 verts.CopyFrom(closingInfo.clipperRegisterVertices);
                 CopyTriangleIndicesFlipWindingOrder(closingInfo.clipperRegisterIndices, indices, indexOffset - closingInfo.clipperRegisterIndexOffset);
                 closingInfo.clipUnregisterDrawCommand.mesh = ve.renderChainData.closingData;
@@ -1136,6 +1150,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             VisualElement nextDrawingElem = ve.renderChainData.next;
 
+            // Depth first search for the first VE that has a command (i.e. non empty element).
             // This can be potentially O(n) of VE count
             // It is ok to check against lastCommand to mean the presence of closingCommand too, as we
             // require that closing commands only exist if a startup command exists too
@@ -1145,7 +1160,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (nextDrawingElem != null && nextDrawingElem.renderChainData.firstCommand != null)
             {
                 // A next drawing element can be:
-                // A) A next sibling (O(1) check time)
+                // A) A next sibling of ve (O(1) check time)
                 // B) A child/grand-child of self (O(n) of tree depth check time - meh)
                 // C) A next sibling of a parent/ancestor (lengthy check time, so it is left as the only choice remaining after the first two)
                 if (nextDrawingElem.hierarchy.parent == ve.hierarchy.parent) // Case A
@@ -1427,7 +1442,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
         }
 
         public MeshGenerationContext meshGenerationContext { get; }
-        public VisualElement currentElement { get; set; }
+        public VisualElement currentElement { get; private set; }
         public UIRenderDevice device { get; }
         public List<Entry> entries { get { return m_Entries; } }
         public ClosingInfo closingInfo { get { return m_ClosingInfo; } }
@@ -1463,8 +1478,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         #endregion // Dispose Pattern
 
-        public void Begin()
+        public void Begin(VisualElement ve)
         {
+            currentElement = ve;
             m_NextMeshWriteDataPoolItem = 0;
             m_SVGBackgroundEntryIndex = -1;
             currentElement.renderChainData.usesLegacyText = currentElement.renderChainData.usesAtlas = currentElement.renderChainData.disableNudging = false;

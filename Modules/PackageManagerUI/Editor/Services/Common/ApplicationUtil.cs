@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.IO;
 using System.Linq;
 using UnityEditor.Connect;
 using UnityEditorInternal;
@@ -124,6 +125,10 @@ namespace UnityEditor.PackageManager.UI
                 Application.OpenURL(url);
             }
 
+            public bool isBatchMode => Application.isBatchMode;
+
+            public bool isUpmRunning => !Application.HasARGV("noUpm");
+
             public bool isCompiling
             {
                 get
@@ -201,6 +206,16 @@ namespace UnityEditor.PackageManager.UI
                     return (int)(containerHeight / elementHeight);
 
                 return 0;
+            }
+
+            public string OpenFilePanelWithFilters(string title, string directory, string[] filters)
+            {
+                return EditorUtility.OpenFilePanelWithFilters(title, directory, filters);
+            }
+
+            public string GetFileName(string path)
+            {
+                return Path.GetFileName(path);
             }
         }
     }

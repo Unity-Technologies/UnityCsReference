@@ -67,7 +67,8 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        private const uint k_MaxQueuedFrameCount = 4; // Support drivers queuing up to 4 frames
+        internal const uint k_MaxQueuedFrameCount = 4; // Support drivers queuing up to 4 frames
+        internal const int k_PruneEmptyPageFrameCount = 60; // Empty pages will be pruned if they are empty for x consecutive frames.
 
         private readonly bool m_MockDevice; // Don't access GfxDevice resources nor submit commands of any sort, used for tests
 
@@ -113,6 +114,8 @@ namespace UnityEngine.UIElements.UIR
         const string k_VertexTexturingIsAvailableTag = "UIE_VertexTexturingIsAvailable";
         const string k_VertexTexturingIsAvailableTrue = "1";
 
+        internal uint maxVerticesPerPage  { get; } = 0xFFFF; // On DX11, 0xFFFF is an invalid index (associated to primitive restart). With size = 0xFFFF last index is 0xFFFE    cases:1259449
+
 
         static UIRenderDevice()
         {
@@ -129,6 +132,7 @@ namespace UnityEngine.UIElements.UIR
         {
             m_MockDevice = mockDevice;
             Debug.Assert(!m_SynchronousFree); // Shouldn't create render devices when the app is quitting or domain-unloading
+            Debug.Assert(k_PruneEmptyPageFrameCount > k_MaxQueuedFrameCount); // To prevent pending updates from attempting to access a pruned page.
             if (m_ActiveDeviceCount++ == 0)
             {
                 if (!m_SubscribedToNotifications && !m_MockDevice)
@@ -414,7 +418,7 @@ namespace UnityEngine.UIElements.UIR
                 {
                     m_NextPageVertexCount <<= 1; // Double the vertex count
                     m_NextPageVertexCount = Math.Max(m_NextPageVertexCount, vertexCount * 2);
-                    m_NextPageVertexCount = Math.Min(m_NextPageVertexCount, 64 * 1024); // Stay below 64k for 16-bit indices
+                    m_NextPageVertexCount = Math.Min(m_NextPageVertexCount, maxVerticesPerPage);  // Stay below 64k for 16-bit indices
                     uint newPageIndexCount = (uint)(m_NextPageVertexCount * m_IndexToVertexCountRatio + 0.5f);
                     newPageIndexCount = Math.Max(newPageIndexCount, (uint)(indexCount * 2));
                     Debug.Assert(page?.next == null); // page MUST be the last page in the list, but can be null
@@ -433,25 +437,68 @@ namespace UnityEngine.UIElements.UIR
             {
                 CompleteCreation();
 
-                // A huge mesh, push it to a page of its own. Put this page at the end so it won't be queried often
+                // Search for an empty page that offers the best fit.
+                Page current = m_FirstPage;
                 Page lastPage = m_FirstPage;
-                while (lastPage != null && lastPage.next != null)
-                    lastPage = lastPage.next;
+                int bestFitExtraVertices = int.MaxValue;
+                while (current != null)
+                {
+                    int extraVertices = current.vertices.cpuData.Length - (int)vertexCount;
+                    int extraIndices = current.indices.cpuData.Length - (int)indexCount;
+                    if (current.isEmpty && extraVertices >= 0 && extraIndices >= 0 && extraVertices < bestFitExtraVertices)
+                    {
+                        // The page is empty and large enough and wastes less vertices.
+                        page = current;
+                        bestFitExtraVertices = extraVertices;
+                    }
 
-                Page dedicatedPage = new Page((uint)vertexCount, (uint)indexCount, k_MaxQueuedFrameCount, m_MockDevice);
-                if (lastPage != null)
-                    lastPage.next = dedicatedPage;
-                else m_FirstPage = dedicatedPage;
-                page = dedicatedPage;
-                va = dedicatedPage.vertices.allocator.Allocate((uint)vertexCount, shortLived);
-                ia = dedicatedPage.indices.allocator.Allocate((uint)indexCount, shortLived);
+                    lastPage = current;
+                    current = current.next;
+                }
+
+                if (page == null)
+                {
+                    // If we want to do an allocation larger than the maximum the render device support,
+                    // we allocate a small page and let the alloc fails.
+                    // The page itself is not going to be usable and will be feed after 60 frames.
+                    // This is done because because the page is required when creating the native slice
+                    var pageVertexCount = (vertexCount > maxVerticesPerPage) ? 2 : vertexCount;
+                    Debug.Assert(vertexCount <= maxVerticesPerPage, $"Requested Vertex count ({vertexCount}) is above the limit ({maxVerticesPerPage}). Alloc will fail.");
+
+                    // A huge mesh, push it to a page of its own. Put this page at the end so it won't be queried often
+                    page = new Page((uint)pageVertexCount, (uint)indexCount, k_MaxQueuedFrameCount, m_MockDevice);
+                    if (lastPage != null)
+                        lastPage.next = page;
+                    else m_FirstPage = page;
+                }
+
+                va = page.vertices.allocator.Allocate((uint)vertexCount, shortLived);
+                ia = page.indices.allocator.Allocate((uint)indexCount, shortLived);
+
+            }
+
+
+            Debug.Assert(va.size == vertexCount, $"Vertices allocated ({va.size}) != Vertices requested ({vertexCount})");
+            Debug.Assert(ia.size == indexCount, $"Indices allocated ({ia.size}) != Indices requested ({indexCount})");
+
+            // If the allocated VB or IB has a different size than expected, both are invalidated.
+            // The user may check one buffer size but not the other.
+            if (va.size != vertexCount || ia.size != indexCount)
+            {
+                if (va.handle != null)
+                    page.vertices.allocator.Free(va);
+                if (ia.handle != null)
+                    page.vertices.allocator.Free(ia);
+
+                ia = new Alloc();
+                va = new Alloc();
             }
 
             page.vertices.RegisterUpdate(va.start, va.size);
             page.indices.RegisterUpdate(ia.start, ia.size);
 
-            vertexData = new NativeSlice<Vertex>(page.vertices.cpuData, (int)va.start, (int)vertexCount);
-            indexData = new NativeSlice<UInt16>(page.indices.cpuData, (int)ia.start, (int)indexCount);
+            vertexData = new NativeSlice<Vertex>(page.vertices.cpuData, (int)va.start, (int)va.size);
+            indexData = new NativeSlice<UInt16>(page.indices.cpuData, (int)ia.start, (int)ia.size);
 
             meshHandle.allocPage = page;
             meshHandle.allocVerts = va;
@@ -918,7 +965,58 @@ namespace UnityEngine.UIElements.UIR
             }
             queueToUpdate.Clear();
 
+            PruneUnusedPages();
+
             s_MarkerAdvanceFrame.End();
+        }
+
+        void PruneUnusedPages()
+        {
+            Page current, firstToKeep, lastToKeep, firstToPrune, lastToPrune;
+            firstToKeep = lastToKeep = firstToPrune = lastToPrune = null;
+
+            // Find pages to keep/prune and update their consecutive-empty-frames counters.
+            current = m_FirstPage;
+            while (current != null)
+            {
+                if (!current.isEmpty)
+                    current.framesEmpty = 0;
+                else
+                    ++current.framesEmpty;
+
+                if (current.framesEmpty < k_PruneEmptyPageFrameCount)
+                {
+                    if (firstToKeep != null)
+                        lastToKeep.next = current;
+                    else
+                        firstToKeep = current;
+                    lastToKeep = current;
+                }
+                else
+                {
+                    if (firstToPrune != null)
+                        lastToPrune.next = current;
+                    else
+                        firstToPrune = current;
+                    lastToPrune = current;
+                }
+
+                Page next = current.next;
+                current.next = null;
+                current = next;
+            }
+
+            m_FirstPage = firstToKeep;
+
+            // Prune pages.
+            current = firstToPrune;
+            while (current != null)
+            {
+                Page next = current.next;
+                current.next = null;
+                current.Dispose();
+                current = next;
+            }
         }
 
         internal static void PrepareForGfxDeviceRecreate()

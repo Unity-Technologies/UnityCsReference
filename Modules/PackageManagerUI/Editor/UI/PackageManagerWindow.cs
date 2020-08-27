@@ -210,6 +210,8 @@ namespace UnityEditor.PackageManager.UI
                 packageLoadBar.Refresh();
                 UIUtils.SetElementDisplay(packageLoadBar, true);
             }
+
+            DisableToolbarIfRefreshInProgress(filterTab);
         }
 
         private void SelectPackageAndFilter()
@@ -271,8 +273,16 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnRefreshOperationStart()
         {
-            packageManagerToolbar.SetEnabled(false);
-            packageDetails.packageToolbarContainer.SetEnabled(false);
+            DisableToolbarIfRefreshInProgress();
+        }
+
+        private void DisableToolbarIfRefreshInProgress(PackageFilterTab? tab = null)
+        {
+            if (PageManager.instance.IsRefreshInProgress(tab))
+            {
+                packageManagerToolbar.SetEnabled(false);
+                packageDetails.packageToolbarContainer.SetEnabled(false);
+            }
         }
 
         private void OnRefreshOperationError(UIError error)
@@ -338,6 +348,9 @@ namespace UnityEditor.PackageManager.UI
         [UsedByNativeCode]
         internal static void OnPackageManagerResolve()
         {
+            if (!ApplicationUtil.instance.isBatchMode)
+                UpmRegistryClient.instance.CheckRegistriesChanged();
+
             // we don't want to refresh at all if page manager hasn't been initialized before
             if (!PageManager.instance.isInitialized)
                 return;

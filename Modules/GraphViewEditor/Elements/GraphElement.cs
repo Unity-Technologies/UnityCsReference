@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
+
 
 namespace UnityEditor.Experimental.GraphView
 {
@@ -223,9 +225,23 @@ namespace UnityEditor.Experimental.GraphView
                 if (!selection.selection.Contains(this))
                 {
                     if (!additive)
+                    {
                         selection.ClearSelection();
+                        selection.AddToSelection(this);
+                    }
+                    else // prevent heterogenous selections between stack child nodes and other nodes
+                    {
+                        var selected = selection.selection.Cast<VisualElement>();
+                        bool selectionHasChildren = selected.Any(item => item.ClassListContains("stack-child-element"));
+                        bool selectionHasSiblings = selected.All(item => item.parent == parent);
+                        bool targetIsChild = ClassListContains("stack-child-element");
+                        bool isSelectionHomogeneous = !targetIsChild && !selectionHasChildren || targetIsChild && selectionHasSiblings;
 
-                    selection.AddToSelection(this);
+                        if (isSelectionHomogeneous)
+                        {
+                            selection.AddToSelection(this);
+                        }
+                    }
                 }
             }
         }

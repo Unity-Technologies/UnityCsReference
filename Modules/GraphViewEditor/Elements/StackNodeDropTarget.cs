@@ -22,7 +22,8 @@ namespace UnityEditor.Experimental.GraphView
         private const string k_PreviewClass = "stack-node-preview";
         private Func<GraphElement, VisualElement> m_DropPreviewTemplate;
 
-        private bool m_InstantAdd = false; // Temporarily set to true right after an item is detached from the stack to show its preview right away (instead of being animated)
+        // Animation features are not fully tested or implemented, disabling by setting this to 'true' and all RemovePreview operations to false.
+        private bool m_InstantAdd = true; // Temporarily set to true right after an item is detached from the stack to show its preview right away (instead of being animated)
 
         private List<IValueAnimation> m_AddAnimations;
         private List<IValueAnimation> m_RemoveAnimations;
@@ -180,7 +181,7 @@ namespace UnityEditor.Experimental.GraphView
             // If a new preview was added while another one was been removed and that a drag exit occurred
             // before the RemoveAnimation finished then removed this added preview
             if (dragEntered == false && m_CurrentPreviews != null)
-                RemovePreview(true);
+                RemovePreview(false);
         }
 
         private void HandleDragAndDropEvent(IMouseEvent evt)
@@ -232,7 +233,7 @@ namespace UnityEditor.Experimental.GraphView
             previewIndex = insertIndex;
 
             // Remove the current preview if there is any with some animation
-            RemovePreview(true);
+            RemovePreview(false);
 
             var previews = new List<VisualElement>();
 
@@ -333,7 +334,7 @@ namespace UnityEditor.Experimental.GraphView
         public virtual bool DragLeave(DragLeaveEvent evt, IEnumerable<ISelectable> selection, IDropTarget leftTarget, ISelection dragSource)
         {
             // Remove the current preview with some animation
-            RemovePreview(true);
+            RemovePreview(false);
 
             dragEntered = false;
             m_DraggedElements = null;

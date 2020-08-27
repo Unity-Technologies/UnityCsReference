@@ -347,7 +347,10 @@ namespace UnityEngine.UIElements.UIR
     {
         public Page(uint vertexMaxCount, uint indexMaxCount, uint maxQueuedFrameCount, bool mockPage)
         {
-            vertexMaxCount = Math.Min(vertexMaxCount, 0xFFFF); // Because we use UInt16 as the index type
+            // The vertexMaxCount imposed here is only because we use UInt16 as the index type.
+            // The actual render device may not support 0xFFFF as an index but it is up to the device
+            // to limit the allocation size.
+            vertexMaxCount = Math.Min(vertexMaxCount, (1 << 16));
             vertices = new DataSet<Vertex>(Utility.GPUBufferType.Vertex, vertexMaxCount, maxQueuedFrameCount, 32, mockPage);
             indices = new DataSet<UInt16>(Utility.GPUBufferType.Index, indexMaxCount, maxQueuedFrameCount, 32, mockPage);
         }
@@ -530,6 +533,7 @@ namespace UnityEngine.UIElements.UIR
         public DataSet<Vertex> vertices;
         public DataSet<UInt16> indices;
         public Page next;
+        public int framesEmpty; // For how many consecutive frames has the page been empty?
     }
     #endregion
 }
