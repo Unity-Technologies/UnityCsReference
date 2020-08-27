@@ -199,6 +199,12 @@ namespace UnityEditor.Experimental.AssetImporters
                     m_Settings.alphaIsTransparency = false;
                     m_Settings.alphaSource = TextureImporterAlphaSource.None;
                     break;
+                case TextureImporterType.Shadowmask:
+                    m_Settings.sRGBTexture = false;
+                    m_Settings.npotScale = TextureImporterNPOTScale.ToNearest;
+                    m_Settings.alphaIsTransparency = false;
+                    m_Settings.alphaSource = TextureImporterAlphaSource.None;
+                    break;
                 case TextureImporterType.SingleChannel:
                     m_Settings.sRGBTexture = false;
                     break;

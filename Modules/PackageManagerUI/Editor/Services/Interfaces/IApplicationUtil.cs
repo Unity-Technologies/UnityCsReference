@@ -26,6 +26,10 @@ namespace UnityEditor.PackageManager.UI
 
         bool isInternetReachable { get; }
 
+        bool isBatchMode { get; }
+
+        bool isUpmRunning { get; }
+
         bool isCompiling { get; }
 
         bool isUserLoggedIn { get; }
@@ -49,5 +53,9 @@ namespace UnityEditor.PackageManager.UI
         string GetTranslationForText(string text);
 
         void TranslateTextElement(TextElement textElement);
+
+        string OpenFilePanelWithFilters(string title, string directory, string[] filters);
+
+        string GetFileName(string path);
     }
 }

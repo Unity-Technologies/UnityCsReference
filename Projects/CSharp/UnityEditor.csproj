@@ -3046,6 +3046,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\PragmaFixing30.cs">
       <Link>Editor\Mono\Scripting\PragmaFixing30.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ArrayHelper.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\ArrayHelper.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\AssemblyBuilder.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\AssemblyBuilder.cs</Link>
     </Compile>
@@ -4300,6 +4303,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IUpmClient.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IUpmClient.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IUpmRegistryClient.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IUpmRegistryClient.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IVersionList.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IVersionList.cs</Link>
     </Compile>
@@ -4345,8 +4351,14 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettingsProvider.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettingsProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\RegistryInfoDraft.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\RegistryInfoDraft.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmAddOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmAddOperation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmAddRegistryOperation.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmAddRegistryOperation.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmBaseOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmBaseOperation.cs</Link>
@@ -4360,6 +4372,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmEmbedOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmEmbedOperation.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmGetRegistriesOperation.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmGetRegistriesOperation.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmListOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmListOperation.cs</Link>
     </Compile>
@@ -4372,11 +4387,20 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageVersion.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageVersion.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmRegistryClient.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmRegistryClient.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmRemoveOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmRemoveOperation.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmRemoveRegistryOperation.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmRemoveRegistryOperation.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmSearchOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmSearchOperation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmUpdateRegistryOperation.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmUpdateRegistryOperation.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmVersionList.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmVersionList.cs</Link>
@@ -4527,6 +4551,12 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackagesAction.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackagesAction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ScopedRegistriesSettings.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\ScopedRegistriesSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ScopedRegistryAddedPopup.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\ScopedRegistryAddedPopup.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\AuthorInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\AuthorInfo.cs</Link>

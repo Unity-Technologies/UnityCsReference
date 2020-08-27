@@ -234,7 +234,7 @@ namespace UnityEditor
                 {
                     var defineConstraintsCompatible = true;
 
-                    var defines = CompilationPipeline.GetDefinesFromAssemblyName(m_AssemblyName.stringValue);
+                    var defines = GetDefines();
 
                     if (defines != null)
                     {
@@ -463,7 +463,7 @@ namespace UnityEditor
             var textFieldValue = EditorGUI.TextField(textFieldRect, mixed ? L10n.Tr("(Multiple Values)") : label);
             EditorGUI.showMixedValue = false;
 
-            var defines = CompilationPipeline.GetDefinesFromAssemblyName(m_AssemblyName.stringValue);
+            var defines = GetDefines();
 
             if (defines != null)
             {
@@ -480,6 +480,18 @@ namespace UnityEditor
             {
                 defineConstraint.stringValue = textFieldValue;
             }
+        }
+
+        private string[] GetDefines()
+        {
+            var responseFileDefinesFromAssemblyName =
+                CompilationPipeline.GetResponseFileDefinesFromAssemblyName(m_AssemblyName.stringValue) ?? new string[0];
+            var definesFromAssemblyName =
+                CompilationPipeline.GetDefinesFromAssemblyName(m_AssemblyName.stringValue) ?? new string[0];
+            var defines = definesFromAssemblyName
+                .Concat(responseFileDefinesFromAssemblyName)
+                .ToArray();
+            return defines;
         }
 
         private void DrawVersionDefineListElement(Rect rect, int index, bool isactive, bool isfocused)

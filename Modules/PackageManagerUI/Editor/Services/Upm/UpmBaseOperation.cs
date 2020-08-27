@@ -73,8 +73,10 @@ namespace UnityEditor.PackageManager.UI
 
         [SerializeField]
         protected T m_Request;
+        [SerializeField]
+        protected bool m_IsCompleted;
 
-        public override bool isInProgress { get { return m_Request != null && m_Request.Id != 0 && !m_Request.IsCompleted; } }
+        public override bool isInProgress { get { return m_Request != null && m_Request.Id != 0 && !m_IsCompleted; } }
 
         protected abstract T CreateRequest();
 
@@ -94,8 +96,18 @@ namespace UnityEditor.PackageManager.UI
             // because we consider a `0` refresh timestamp as `not initialized`/`no refreshes have been done`.
             else if (m_Timestamp == 0)
                 m_Timestamp = DateTime.Now.Ticks - (long)(EditorApplication.timeSinceStartup * TimeSpan.TicksPerSecond);
-            m_Request = CreateRequest();
+
             error = null;
+            try
+            {
+                m_Request = CreateRequest();
+            }
+            catch (ArgumentException e)
+            {
+                OnError(new UIError(UIErrorCode.UpmError, e.Message));
+                return;
+            }
+            m_IsCompleted = false;
             EditorApplication.update += Progress;
         }
 
@@ -108,7 +120,8 @@ namespace UnityEditor.PackageManager.UI
         // Common progress code for all classes
         protected void Progress()
         {
-            if (m_Request.IsCompleted)
+            m_IsCompleted = m_Request.IsCompleted;
+            if (m_IsCompleted)
             {
                 if (m_Request.Status == StatusCode.Success)
                     OnSuccess();

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -129,28 +130,32 @@ namespace UnityEditor.Experimental.GraphView
 
             List<ISelectable> selection = graphView.selection;
 
-            // a copy is necessary because Add To selection might cause a SendElementToFront which will change the order.
-            List<ISelectable> newSelection = new List<ISelectable>();
-            graphView.graphElements.ForEach(child =>
+            // Do not add to a selection that already contains a stack node-- the behavior is not supported.
+            bool hasStackChild = selection.Any(ge => (ge is GraphElement) && ((GraphElement)ge).ClassListContains("stack-child-element"));
+            if (!hasStackChild)
             {
-                var localSelRect = graphView.contentViewContainer.ChangeCoordinatesTo(child, selectionRect);
-                if (child.IsSelectable() && child.Overlaps(localSelRect))
+                // a copy is necessary because Add To selection might cause a SendElementToFront which will change the order.
+                List<ISelectable> newSelection = new List<ISelectable>();
+                graphView.graphElements.ForEach(child =>
                 {
-                    newSelection.Add(child);
-                }
-            });
+                    var localSelRect = graphView.contentViewContainer.ChangeCoordinatesTo(child, selectionRect);
+                    if (child.IsSelectable() && child.Overlaps(localSelRect) && !child.ClassListContains("stack-child-element")) // Exclude StackNode children
+                    {
+                        newSelection.Add(child);
+                    }
+                });
 
-            foreach (var selectable in newSelection)
-            {
-                if (selection.Contains(selectable))
+                foreach (var selectable in newSelection)
                 {
-                    if (e.actionKey) // invert selection on shift only
-                        graphView.RemoveFromSelection(selectable);
+                    if (selection.Contains(selectable))
+                    {
+                        if (e.actionKey) // invert selection on shift only
+                            graphView.RemoveFromSelection(selectable);
+                    }
+                    else
+                        graphView.AddToSelection(selectable);
                 }
-                else
-                    graphView.AddToSelection(selectable);
             }
-
             m_Active = false;
             target.ReleaseMouse();
             e.StopPropagation();

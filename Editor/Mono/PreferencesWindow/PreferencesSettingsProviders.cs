@@ -67,7 +67,7 @@ namespace UnityEditor
             public static readonly GUIContent scriptChangesDuringPlay = EditorGUIUtility.TrTextContent("Script Changes While Playing");
             public static readonly GUIContent editorFont = EditorGUIUtility.TrTextContent("Editor Font");
             public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Theme");
-            public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Personal"), EditorGUIUtility.TrTextContent("Professional") };
+            public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Light"), EditorGUIUtility.TrTextContent("Dark") };
             public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alphanumeric Sorting");
             public static readonly GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation");
             public static readonly GUIContent codeCoverageEnabled = EditorGUIUtility.TrTextContent("Enable Code Coverage", "Check this to enable Code Coverage. Code Coverage lets you see how much of your code is executed when it is run. Note that Code Coverage lowers Editor performance.");

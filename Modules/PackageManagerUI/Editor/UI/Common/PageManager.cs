@@ -535,6 +535,8 @@ namespace UnityEditor.PackageManager.UI
                 UpmClient.instance.onListOperation += OnRefreshOperation;
                 UpmClient.instance.onSearchAllOperation += OnRefreshOperation;
 
+                UpmRegistryClient.instance.onRegistriesModified += OnRegistriesModified;
+
                 AssetStoreClient.instance.onListOperation += OnRefreshOperation;
                 AssetStoreClient.instance.onProductListFetched += OnProductListFetched;
                 AssetStoreClient.instance.onProductFetched += OnProductFetched;
@@ -561,6 +563,8 @@ namespace UnityEditor.PackageManager.UI
 
                 UpmClient.instance.onListOperation -= OnRefreshOperation;
                 UpmClient.instance.onSearchAllOperation -= OnRefreshOperation;
+
+                UpmRegistryClient.instance.onRegistriesModified -= OnRegistriesModified;
 
                 AssetStoreClient.instance.onListOperation -= OnRefreshOperation;
                 AssetStoreClient.instance.onProductListFetched -= OnProductListFetched;
@@ -629,6 +633,11 @@ namespace UnityEditor.PackageManager.UI
                     UnregisterPageEvents(page);
                 }
                 m_Pages.Clear();
+            }
+
+            private void OnRegistriesModified()
+            {
+                Refresh(RefreshOptions.UpmSearch);
             }
 
             private void OnRefreshOperation(IOperation operation)

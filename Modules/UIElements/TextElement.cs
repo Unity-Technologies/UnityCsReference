@@ -20,6 +20,8 @@ namespace UnityEngine.UIElements
         {
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
 
+            UxmlBoolAttributeDescription m_DisplayTooltipWhenElided = new UxmlBoolAttributeDescription { name = "display-tooltip-when-elided" };
+
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
                 get { yield break; }
@@ -28,7 +30,9 @@ namespace UnityEngine.UIElements
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
-                ((ITextElement)ve).text = m_Text.GetValueFromBag(bag, cc);
+                var textElement = (TextElement)ve;
+                textElement.text = m_Text.GetValueFromBag(bag, cc);
+                textElement.displayTooltipWhenElided = m_DisplayTooltipWhenElided.GetValueFromBag(bag, cc);
             }
         }
 
@@ -71,6 +75,10 @@ namespace UnityEngine.UIElements
 
         private bool m_DisplayTooltipWhenElided = true;
 
+        /// <summary>
+        /// When true, a tooltip displays the full version of elided text, and also if a tooltip had been previously
+        /// provided, it will be overwritten.
+        /// </summary>
         public bool displayTooltipWhenElided
         {
             get { return m_DisplayTooltipWhenElided; }
@@ -188,17 +196,14 @@ namespace UnityEngine.UIElements
 
             if (needsTooltip)
             {
-                if (!m_WasElided)
-                {
-                    if (string.IsNullOrEmpty(tooltip))
-                        tooltip = this.text;
-                    m_WasElided = true;
-                }
+                // The elided text may have changed, but comparing to see if it really changed would be
+                // heavier than just assigning and getting it done so let's just do it.
+                tooltip = this.text;
+                m_WasElided = true;
             }
             else if (m_WasElided)
             {
-                if (tooltip == this.text)
-                    tooltip = null;
+                tooltip = null;
                 m_WasElided = false;
             }
         }

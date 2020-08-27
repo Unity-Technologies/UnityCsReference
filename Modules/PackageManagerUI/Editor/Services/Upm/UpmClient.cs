@@ -467,6 +467,9 @@ namespace UnityEditor.PackageManager.UI
 
                 if (m_RemoveOperation.isInProgress)
                     SetupRemoveOperation();
+
+                if (m_SearchOperation.isInProgress)
+                    SearchAll();
             }
 
             public void RegisterEvents()

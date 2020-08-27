@@ -108,6 +108,17 @@ namespace UnityEditor.Utils
             return path.Replace('\\', '/');
         }
 
+        public static string TrimTrailingSlashes(this string path)
+        {
+            return path.TrimEnd(new[] { '/', '\\' });
+        }
+
+        public static string GetPathRelativeToProjectDirectory(string filePath)
+        {
+            return String.Join(separator: "/",
+                value: filePath.ConvertSeparatorsToUnity().TrimTrailingSlashes().Split('/').SkipWhile(s => s != "assets" && s != "Assets").ToArray());
+        }
+
         public static string SkipPathPrefix(string path, string prefix)
         {
             if (path.StartsWith(prefix))
