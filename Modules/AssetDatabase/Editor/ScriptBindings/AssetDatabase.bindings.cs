@@ -728,12 +728,10 @@ namespace UnityEditor
         [FreeFunction("AssetDatabase::IsDirectoryMonitoringEnabled")]
         public extern static bool IsDirectoryMonitoringEnabled();
 
-        [ExcludeFromDocs]
         [FreeFunction("AssetDatabase::RegisterCustomDependency")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kPreventCustomDependencyChanges, PreventExecutionSeverity.PreventExecution_ManagedException, "Custom dependencies can only be removed when the assetdatabase is not importing.")]
         public extern static void RegisterCustomDependency(string dependency, Hash128 hashOfValue);
 
-        [ExcludeFromDocs]
         [FreeFunction("AssetDatabase::UnregisterCustomDependencyPrefixFilter")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kPreventCustomDependencyChanges, PreventExecutionSeverity.PreventExecution_ManagedException, "Custom dependencies can only be removed when the assetdatabase is not importing.")]
         public extern static UInt32 UnregisterCustomDependencyPrefixFilter(string prefixFilter);

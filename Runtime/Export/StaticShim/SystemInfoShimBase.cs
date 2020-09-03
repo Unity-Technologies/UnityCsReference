@@ -179,6 +179,9 @@ namespace UnityEngine
 
         public virtual bool supportsSetConstantBuffer => EditorSystemInfo.supportsSetConstantBuffer;
 
+        public virtual int constantBufferOffsetAlignment => EditorSystemInfo.constantBufferOffsetAlignment;
+
+        [Obsolete("Use SystemInfo.constantBufferOffsetAlignment instead.")]
         public virtual bool minConstantBufferOffsetAlignment => EditorSystemInfo.minConstantBufferOffsetAlignment;
 
         public virtual bool hasMipMaxLevel => EditorSystemInfo.hasMipMaxLevel;

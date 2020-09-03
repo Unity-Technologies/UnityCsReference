@@ -561,9 +561,16 @@ namespace UnityEngine
         {
             get { return SupportsSetConstantBuffer(); }
         }
-        public static bool minConstantBufferOffsetAlignment
+
+        public static int constantBufferOffsetAlignment
         {
             get { return MinConstantBufferOffsetAlignment(); }
+        }
+
+        [Obsolete("Use SystemInfo.constantBufferOffsetAlignment instead.")]
+        public static bool minConstantBufferOffsetAlignment
+        {
+            get { return false; }
         }
 
         public static bool hasMipMaxLevel
@@ -845,7 +852,7 @@ namespace UnityEngine
         static extern bool SupportsSetConstantBuffer();
 
         [FreeFunction("ScriptingGraphicsCaps::MinConstantBufferOffsetAlignment")]
-        static extern bool MinConstantBufferOffsetAlignment();
+        static extern int MinConstantBufferOffsetAlignment();
 
         [FreeFunction("ScriptingGraphicsCaps::HasMipMaxLevel")]
         static extern bool HasMipMaxLevel();
@@ -1053,6 +1060,9 @@ namespace UnityEngine
 
         public static bool supportsSetConstantBuffer => ShimManager.systemInfoShim.supportsSetConstantBuffer;
 
+        public static int constantBufferOffsetAlignment => ShimManager.systemInfoShim.constantBufferOffsetAlignment;
+
+        [Obsolete("Use SystemInfo.constantBufferOffsetAlignment instead.")]
         public static bool minConstantBufferOffsetAlignment => ShimManager.systemInfoShim.minConstantBufferOffsetAlignment;
 
         public static bool hasMipMaxLevel => ShimManager.systemInfoShim.hasMipMaxLevel;

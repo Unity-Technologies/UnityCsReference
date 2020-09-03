@@ -101,7 +101,7 @@ namespace UnityEditor
         public static void ShowBuildPlayerWindow()
         {
             EditorUserBuildSettings.selectedBuildTargetGroup = EditorUserBuildSettings.activeBuildTargetGroup;
-            EditorWindow.GetWindow<BuildPlayerWindow>(true, "Build Settings");
+            EditorWindow.GetWindow<BuildPlayerWindow>(false, "Build Settings");
         }
 
         static bool BuildLocationIsValid(string path)

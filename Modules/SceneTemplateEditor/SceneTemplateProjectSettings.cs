@@ -201,8 +201,10 @@ namespace UnityEditor.SceneTemplate
             return GetDependencyInfo(obj.GetType());
         }
 
-        public static void Save(string path, SceneTemplateProjectSettings settings)
+        public static void Save(string path = null, SceneTemplateProjectSettings settings = null)
         {
+            path = path ?? k_Path;
+            settings = settings ?? Get();
             var json = JsonUtility.ToJson(settings, true);
             System.IO.File.WriteAllText(path, json);
         }
@@ -386,9 +388,6 @@ namespace UnityEditor.SceneTemplate
                         m_AllTypesLabels = m_AllTypes.Select(t => DependencyTypeInfo.ToShortFullName(t.FullName)).ToArray();
                     }
 
-                    m_MaxLabelWidth = Get().dependencyTypeInfos.Select(ti => ti.content).Max(content => EditorStyles.label.CalcSize(content).x);
-                    m_MaxLabelWidth = Mathf.Min(kMaxLabelWidth, m_MaxLabelWidth);
-
                     m_TypeToAddLabel = "";
                     m_TypeToAdd = null;
                 },
@@ -399,6 +398,12 @@ namespace UnityEditor.SceneTemplate
 
         private static void OnGUIHandler(string obj)
         {
+            if (m_MaxLabelWidth == 0)
+            {
+                m_MaxLabelWidth = Get().dependencyTypeInfos.Select(ti => ti.content).Max(content => EditorStyles.label.CalcSize(content).x);
+                m_MaxLabelWidth = Mathf.Min(kMaxLabelWidth, m_MaxLabelWidth);
+            }
+
             var settings = Get();
             using (new SettingsWindow.GUIScope())
             {
@@ -413,7 +418,13 @@ namespace UnityEditor.SceneTemplate
                     }
                 }
 
+                EditorGUI.BeginChangeCheck();
                 settings.newSceneOverride = (NewSceneOverride)EditorGUILayout.EnumPopup(new GUIContent("New Scene Menu"), settings.newSceneOverride, GUILayout.Width(m_MaxLabelWidth + 150), GUILayout.ExpandWidth(false));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Save();
+                }
+
                 GUILayout.Space(Styles.verticalSpace);
 
                 using (new EditorGUILayout.HorizontalScope())
@@ -433,13 +444,13 @@ namespace UnityEditor.SceneTemplate
                         if (EditorGUI.EndChangeCheck())
                         {
                             depInfo.defaultInstantiationMode = toClone ? TemplateInstantiationMode.Clone : TemplateInstantiationMode.Reference;
-                            Save(k_Path, settings);
+                            Save();
                         }
 
                         if (GUILayout.Button("Remove", GUILayout.Width(Styles.buttonWidth)))
                         {
                             settings.dependencyTypeInfos.Remove(depInfo);
-                            Save(k_Path, settings);
+                            Save();
                             GUIUtility.ExitGUI();
                         }
                     }
@@ -452,7 +463,7 @@ namespace UnityEditor.SceneTemplate
                 if (EditorGUI.EndChangeCheck())
                 {
                     settings.defaultDependencyTypeInfo.defaultInstantiationMode = clone ? TemplateInstantiationMode.Clone : TemplateInstantiationMode.Reference;
-                    Save(k_Path, settings);
+                    Save();
                 }
 
                 EditorGUIUtility.labelWidth = oldLabelWidth;
@@ -500,7 +511,7 @@ namespace UnityEditor.SceneTemplate
 
                                 settings.dependencyTypeInfos.Add(newDepInfo);
                                 Sort(settings.dependencyTypeInfos);
-                                Save(k_Path, settings);
+                                Save();
                                 m_TypeToAddLabel = "";
                                 m_TypeToAdd = null;
                                 GUIUtility.ExitGUI();
@@ -542,6 +553,7 @@ namespace UnityEditor.SceneTemplate
             var settings = Get();
             settings.dependencyTypeInfos = new List<DependencyTypeInfo>();
             settings.SetupDependencyTypeInfos();
+            Save();
         }
     }
 }

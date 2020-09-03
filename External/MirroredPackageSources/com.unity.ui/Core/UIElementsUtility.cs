@@ -498,8 +498,8 @@ namespace UnityEngine.UIElements
             return panel;
         }
 
-          // Empty method signature just to allow the UI Builder to compile while accessing this API.
-          // Related to Live Reload of UXML/USS assets. Implementation coming later.
-         internal static void InMemoryAssetsHaveBeenChanged() {}
+        // Empty method signature just to allow the UI Builder to compile while accessing this API.
+        // Related to Live Reload of UXML/USS assets. Implementation coming later.
+        internal static void InMemoryAssetsHaveBeenChanged() {}
     }
 }

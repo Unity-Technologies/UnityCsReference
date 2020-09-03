@@ -46,12 +46,7 @@ namespace UnityEditorInternal
             performEngineStripping = rcr != null && PlayerSettings.stripEngineCode && engineStrippingSupported;
         }
 
-        public string ModulesAssetFilePath => Path.Combine(platformProvider.moduleStrippingInformationFolder, "../modules.asset");
-
-        public IEnumerable<string> GetModuleBlacklistFiles()
-        {
-            return Directory.GetFiles(platformProvider.moduleStrippingInformationFolder, "*.xml");
-        }
+        public string ModulesAssetFilePath => platformProvider.modulesAssetFile;
 
         public BuildReport BuildReport => il2CppPlatformProvider == null ? null : il2CppPlatformProvider.buildReport;
 

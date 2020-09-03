@@ -462,7 +462,7 @@ namespace UnityEditor
                     row++;
                     headerRows.Add(row);
 
-                    if (IsSceneHeader(property))
+                    if (property.isSceneHeader)
                         continue; // no need to add it
 
                     item = EnsureCreatedItem(row); // prepare for item below
@@ -550,7 +550,7 @@ namespace UnityEditor
 
         private void InitTreeViewItem(GameObjectTreeViewItem item, HierarchyProperty property, bool itemHasChildren, int itemDepth)
         {
-            InitTreeViewItem(item, property.instanceID, property.GetScene(), IsSceneHeader(property), property.colorCode, property.pptrValue, itemHasChildren, itemDepth);
+            InitTreeViewItem(item, property.instanceID, property.GetScene(), property.isSceneHeader, property.colorCode, property.pptrValue, itemHasChildren, itemDepth);
         }
 
         private void InitTreeViewItem(GameObjectTreeViewItem item, int itemID, Scene scene, bool isSceneHeader, int colorCode, Object pptrObject, bool hasChildren, int depth)
@@ -578,11 +578,6 @@ namespace UnityEditor
             {
                 item.children = CreateChildListForCollapsedParent(); // add a dummy child in children list to ensure we show the collapse arrow (because we do not fetch data for collapsed items)
             }
-        }
-
-        bool IsSceneHeader(HierarchyProperty property)
-        {
-            return property.pptrValue == null;
         }
 
         protected override void GetParentsAbove(int id, HashSet<int> parentsAbove)

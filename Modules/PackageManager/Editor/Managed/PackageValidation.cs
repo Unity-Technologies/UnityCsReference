@@ -8,12 +8,18 @@ namespace UnityEditor.PackageManager
 {
     internal static class PackageValidation
     {
-        private static readonly Regex s_NameRegEx = new Regex(@"^([a-z][a-z\d\-\._]{0,99})$");
-        private static readonly Regex s_OrganizationNameRegEx = new Regex(@"^([a-z][a-z\d\-_]{0,99})$");
+        private static readonly Regex s_CompleteNameRegEx = new Regex(@"^([a-z\d][a-z\d-._]{0,213})$");
+        private static readonly Regex s_NameRegEx = new Regex(@"^([a-z\d][a-z\d\-\._]{0,112})$");
+        private static readonly Regex s_OrganizationNameRegEx = new Regex(@"^([a-z\d][a-z\d\-_]{0,99})$");
         private static readonly Regex s_AllowedSemverRegEx = new Regex(@"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(\-.+)?$");
         private static readonly Regex s_UnityMajorVersionRegEx = new Regex(@"^([1-9][0-9]{3})$");
         private static readonly Regex s_UnityMinorVersionRegEx = new Regex(@"^([1-9])$");
         private static readonly Regex s_UnityReleaseVersionRegEx = new Regex(@"^(0|[1-9]\d*)([abfp])(0|[1-9]\d*)$");
+
+        public static bool ValidateCompleteName(string completeName)
+        {
+            return !string.IsNullOrEmpty(completeName) && s_CompleteNameRegEx.IsMatch(completeName);
+        }
 
         public static bool ValidateName(string name)
         {

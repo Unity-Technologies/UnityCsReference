@@ -11,6 +11,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using ShaderPlatform = UnityEngine.Rendering.GraphicsDeviceType;
 using UnityEngine.Experimental.Rendering;
+using UnityEditor.AssetImporters;
 
 namespace UnityEditor
 {
@@ -170,16 +171,26 @@ namespace UnityEditor
         extern internal static void RecreateSkinnedMeshResources();
         extern internal static void ReloadAllShaders();
 
-        extern public static Shader CreateShaderAsset(string source, bool compileInitialShaderVariants);
+        extern public static Shader CreateShaderAsset(AssetImportContext context, string source, bool compileInitialShaderVariants);
         public static Shader CreateShaderAsset(string source)
         {
-            return CreateShaderAsset(source, true);
+            return CreateShaderAsset(null, source, true);
         }
 
-        extern public static void   UpdateShaderAsset([NotNull] Shader shader, [NotNull] string source, bool compileInitialShaderVariants);
+        public static Shader CreateShaderAsset(string source, bool compileInitialShaderVariants)
+        {
+            return CreateShaderAsset(null, source, compileInitialShaderVariants);
+        }
+
+        extern public static void   UpdateShaderAsset(AssetImportContext context, [NotNull] Shader shader, [NotNull] string source, bool compileInitialShaderVariants);
         public static void          UpdateShaderAsset(Shader shader, string source)
         {
-            UpdateShaderAsset(shader, source, true);
+            UpdateShaderAsset(null, shader, source, true);
+        }
+
+        public static void UpdateShaderAsset(Shader shader, string source, bool compileInitialShaderVariants)
+        {
+            UpdateShaderAsset(null, shader, source, compileInitialShaderVariants);
         }
 
         [FreeFunction("GetScriptMapper().AddShader")] extern public static void RegisterShader([NotNull("NullExceptionObject")] Shader shader);

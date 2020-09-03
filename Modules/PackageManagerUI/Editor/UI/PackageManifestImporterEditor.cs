@@ -338,11 +338,23 @@ namespace UnityEditor.PackageManager.UI
 
         private void PerformValidation()
         {
+            var canBuildCompleteName = true;
             if (!PackageValidation.ValidateOrganizationName(m_OrganizationName.stringValue) && !IsNullOrEmptyTrim(m_OrganizationName.stringValue))
+            {
+                canBuildCompleteName = false;
                 errorMessages.Add($"Invalid Package Organization Name '{m_OrganizationName.stringValue}'");
-
+            }
             if (!PackageValidation.ValidateName(m_Name.stringValue))
+            {
+                canBuildCompleteName = false;
                 errorMessages.Add($"Invalid Package Name '{m_Name.stringValue}'");
+            }
+            if (canBuildCompleteName)
+            {
+                var completePackageName = BuildCompletePackageName(packageState.info.packageName.domain, m_OrganizationName.stringValue, m_Name.stringValue);
+                if (!PackageValidation.ValidateCompleteName(completePackageName))
+                    errorMessages.Add($"Invalid Complete Package Name '{completePackageName}'");
+            }
 
             if (!PackageValidation.ValidateVersion(m_Version.stringValue))
                 errorMessages.Add($"Invalid Version '{m_Version.stringValue}'");
@@ -580,27 +592,9 @@ namespace UnityEditor.PackageManager.UI
             if (json == null)
                 return;
 
-            var domainTrimmed = packageState.info.packageName.domain.Trim();
-            var organizationNameTrimmed = packageState.info.packageName.organizationName.Trim();
-            var nameTrimmed = packageState.info.packageName.name.Trim();
-
-            if (string.IsNullOrEmpty(domainTrimmed) && string.IsNullOrEmpty(organizationNameTrimmed))
-            {
-                json["name"] = nameTrimmed;
-            }
-            else if (string.IsNullOrEmpty(domainTrimmed) && !string.IsNullOrEmpty(organizationNameTrimmed))
-            {
-                json["name"] = string.Join(".",
-                    new[] { organizationNameTrimmed,
-                            nameTrimmed });
-            }
-            else if (!string.IsNullOrEmpty(domainTrimmed) && !string.IsNullOrEmpty(organizationNameTrimmed))
-            {
-                json["name"] = string.Join(".",
-                    new[] { domainTrimmed,
-                            organizationNameTrimmed,
-                            nameTrimmed });
-            }
+            var completePackageName = BuildCompletePackageName(packageState.info.packageName);
+            if (!IsNullOrEmptyTrim(completePackageName))
+                json["name"] = completePackageName;
 
             if (!IsNullOrEmptyTrim(packageState.info.displayName))
                 json["displayName"] = packageState.info.displayName.Trim();
@@ -667,6 +661,46 @@ namespace UnityEditor.PackageManager.UI
             {
                 Debug.Log($"Couldn't write package manifest file {assetPath}.");
             }
+        }
+
+        private static string BuildCompletePackageName(PackageName packageName)
+        {
+            return BuildCompletePackageName(packageName.domain, packageName.organizationName, packageName.name);
+        }
+
+        private static string BuildCompletePackageName(string domain, string organizationName, string name)
+        {
+            var domainTrimmed = domain?.Trim();
+            var organizationNameTrimmed = organizationName?.Trim();
+            var nameTrimmed = name?.Trim();
+
+            if (string.IsNullOrEmpty(domainTrimmed) && string.IsNullOrEmpty(organizationNameTrimmed))
+            {
+                return nameTrimmed;
+            }
+
+            if (string.IsNullOrEmpty(domainTrimmed) && !string.IsNullOrEmpty(organizationNameTrimmed))
+            {
+                return string.Join(".",
+                    new[]
+                    {
+                        organizationNameTrimmed,
+                        nameTrimmed
+                    });
+            }
+
+            if (!string.IsNullOrEmpty(domainTrimmed) && !string.IsNullOrEmpty(organizationNameTrimmed))
+            {
+                return string.Join(".",
+                    new[]
+                    {
+                        domainTrimmed,
+                        organizationNameTrimmed,
+                        nameTrimmed
+                    });
+            }
+
+            return null;
         }
 
         private static bool IsNullOrEmptyTrim(string str)

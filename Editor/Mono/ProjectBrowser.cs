@@ -28,6 +28,8 @@ namespace UnityEditor
 
         private bool isFolderTreeViewContextClicked = false;
 
+        private const string k_WarningImmutableSelectionFormat = "The operation \"{0}\" cannot be executed because the selection or package is read-only.";
+
         // Alive ProjectBrowsers
         private static List<ProjectBrowser> s_ProjectBrowsers = new List<ProjectBrowser>();
         public static List<ProjectBrowser> GetAllProjectBrowsers()
@@ -1559,7 +1561,7 @@ namespace UnityEditor
             return Selection.activeInstanceID == kPackagesFolderInstanceId;
         }
 
-        private bool ShouldDiscardCommandsEventsForImmmutablePackages()
+        private static bool ShouldDiscardCommandsEventsForImmutablePackages()
         {
             if ((Event.current.type == EventType.ExecuteCommand || Event.current.type == EventType.ValidateCommand) &&
                 (Event.current.commandName == EventCommandNames.Cut ||
@@ -1596,8 +1598,9 @@ namespace UnityEditor
                 // Check if event made on immutable package
                 if (itemType == ItemType.Asset)
                 {
-                    if (ShouldDiscardCommandsEventsForImmmutablePackages())
+                    if (ShouldDiscardCommandsEventsForImmutablePackages())
                     {
+                        Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, k_WarningImmutableSelectionFormat, Event.current.commandName);
                         return;
                     }
                 }
@@ -1652,8 +1655,9 @@ namespace UnityEditor
         void HandleCommandEvents()
         {
             // Check if event made on immutable package
-            if (ShouldDiscardCommandsEventsForImmmutablePackages())
+            if (ShouldDiscardCommandsEventsForImmutablePackages())
             {
+                Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, k_WarningImmutableSelectionFormat, Event.current.commandName);
                 return;
             }
 

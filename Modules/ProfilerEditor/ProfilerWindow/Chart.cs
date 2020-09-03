@@ -810,14 +810,14 @@ namespace UnityEditorInternal
                     for (int k = 0; k < i; k++)
                     {
                         m_LineDrawingPoints[k].Set(
-                            (series.xValues[i] - domain.x + 0.5f) * domainScale + r.x,
+                            (series.firstXValue + i - domain.x + 0.5f) * domainScale + r.x,
                             rectBottom - (Mathf.Clamp(yValue, graphRange.x, graphRange.y) - series.rangeAxis.x) * rangeScale,
                             0f
                         );
                     }
                 }
                 m_LineDrawingPoints[i].Set(
-                    (series.xValues[i] - domain.x + 0.5f) * domainScale + r.x,
+                    (series.firstXValue + i - domain.x + 0.5f) * domainScale + r.x,
                     rectBottom - (Mathf.Clamp(yValue, graphRange.x, graphRange.y) - series.rangeAxis.x) * rangeScale,
                     0f
                 );
@@ -1164,11 +1164,12 @@ namespace UnityEditorInternal
         public string category { get; private set; }
         public Color color { get; private set; }
         public bool enabled;
-        public float[] xValues { get; private set; }
         public float yScale { get; internal set; }
         public float[] yValues { get; private set; }
         public Vector2 rangeAxis { get; set; }
         public int numDataPoints { get; private set; }
+        public readonly int firstXValue = 0;
+        public readonly int lastXValue = 0;
 
         public ChartSeriesViewData(string name, string category, int numDataPoints, Color color)
         {
@@ -1176,8 +1177,8 @@ namespace UnityEditorInternal
             this.category = category;
             this.color = color;
             this.numDataPoints = numDataPoints;
-            xValues = new float[numDataPoints];
             yValues = new float[numDataPoints];
+            lastXValue = numDataPoints - 1;
             yScale = 1.0f;
             enabled = true;
         }
@@ -1227,8 +1228,8 @@ namespace UnityEditorInternal
 
             if (overlays == null || overlays.Length != numSeries)
                 overlays = new ChartSeriesViewData[numSeries];
-            if (dataAvailable == null && series.Length > 0 && series[0].xValues != null)
-                dataAvailable = new int[series[0].xValues.Length];
+            if (dataAvailable == null && series.Length > 0 && series[0].yValues != null)
+                dataAvailable = new int[series[0].yValues.Length];
         }
 
         public void AssignSelectedLabels(string[] selectedLabels)
@@ -1247,13 +1248,13 @@ namespace UnityEditorInternal
             // TODO: this currently assumes data points are in order and first series has at least one data point
             if (series == null || numSeries == 0 || series[0].numDataPoints == 0)
                 return Vector2.zero;
-            Vector2 result = Vector2.one * series[0].xValues[0];
+            Vector2 result = Vector2.one * series[0].firstXValue;
             for (int i = 0; i < numSeries; ++i)
             {
                 if (series[i].numDataPoints == 0)
                     continue;
-                result.x = Mathf.Min(result.x, series[i].xValues[0]);
-                result.y = Mathf.Max(result.y, series[i].xValues[series[i].numDataPoints - 1]);
+                result.x = Mathf.Min(result.x, series[i].firstXValue);
+                result.y = Mathf.Max(result.y, series[i].lastXValue);
             }
             return result;
         }
