@@ -785,12 +785,9 @@ namespace UnityEditor
             return $"{format} x {dimension} ({ConvertFormatToSize(format) * dimension} bytes)";
         }
 
-        static int CalcTotalIndices(Mesh mesh)
+        static UInt32 CalcTotalIndices(Mesh mesh)
         {
-            var totalCount = 0;
-            for (var i = 0; i < mesh.subMeshCount; i++)
-                totalCount += (int)mesh.GetIndexCount(i);
-            return totalCount;
+            return mesh.GetTotalIndexCount();
         }
 
         static void DrawColorRect(Rect rect, Color color)
@@ -811,7 +808,7 @@ namespace UnityEditor
             if (targets.Length > 1)
             {
                 var totalVertices = 0;
-                var totalIndices = 0;
+                UInt32 totalIndices = 0;
 
                 foreach (Mesh m in targets)
                 {

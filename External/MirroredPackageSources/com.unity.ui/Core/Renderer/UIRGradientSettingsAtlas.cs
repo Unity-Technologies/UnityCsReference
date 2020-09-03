@@ -19,6 +19,7 @@ namespace UnityEngine.UIElements.UIR
         BestFitAllocator m_Allocator;
         Texture2D m_Atlas; // Should be accessed through the property
         RawTexture m_RawAtlas;
+        static int s_TextureCounter;
 
         #region Dispose Pattern
 
@@ -191,7 +192,7 @@ namespace UnityEngine.UIElements.UIR
             m_Atlas = new Texture2D(m_ElemWidth, m_Length, TextureFormat.ARGB32, 0, true)
             {
                 hideFlags = HideFlags.HideAndDontSave,
-                name = "GradientSettings " + Random.Range(int.MinValue, int.MaxValue),
+                name = "GradientSettings " + s_TextureCounter++,
                 filterMode = FilterMode.Point
             };
         }

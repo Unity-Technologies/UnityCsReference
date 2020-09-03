@@ -50,11 +50,6 @@ namespace UnityEditorInternal
             }
         }
 
-        private static string GetModuleWhitelist(string module, string moduleStrippingInformationFolder)
-        {
-            return Paths.Combine(moduleStrippingInformationFolder, module + ".xml");
-        }
-
         static IEnumerable<string> SanitizeLinkXmlFilePaths(List<string> linkXmlFilePaths, UnityLinkerRunInformation runInformation)
         {
             foreach (var linkXmlFilePath in linkXmlFilePaths)
@@ -89,11 +84,6 @@ namespace UnityEditorInternal
                 $"-out={CommandLineFormatter.PrepareFileName(outputFolder)}",
             };
 
-            if (!UseUnityLinkerEngineModuleStripping)
-            {
-                args.Add($"-x={CommandLineFormatter.PrepareFileName(GetModuleWhitelist("Core", runInformation.platformProvider.moduleStrippingInformationFolder))}");
-            }
-
             args.AddRange(linkXmlFiles.Select(path => $"-x={CommandLineFormatter.PrepareFileName(path)}"));
             args.AddRange(runInformation.SearchDirectories.Select(d => $"-d={CommandLineFormatter.PrepareFileName(d)}"));
             args.AddRange(assemblies.Select(assembly => $"--include-unity-root-assembly={CommandLineFormatter.PrepareFileName(GetFullPath(assembly))}"));
@@ -126,11 +116,6 @@ namespace UnityEditorInternal
                 if (string.IsNullOrEmpty(architecture))
                     throw new ArgumentException("Architecture is required if AllowOutputToBeMadeArchitectureDependent is true");
                 args.Add($"--architecture={architecture}");
-            }
-
-            if (!UseUnityLinkerEngineModuleStripping)
-            {
-                args.Add("--disable-engine-module-support");
             }
 
             if (runInformation.performEngineStripping)
@@ -234,25 +219,6 @@ namespace UnityEditorInternal
             return Directory.GetFiles("Assets", "link.xml", SearchOption.AllDirectories).Select(s => Path.Combine(Directory.GetCurrentDirectory(), s));
         }
 
-        private static bool AddWhiteListsForModules(IEnumerable<string> nativeModules, List<string> blacklists, string moduleStrippingInformationFolder)
-        {
-            bool result = false;
-            foreach (var module in nativeModules)
-            {
-                var moduleWhitelist = GetModuleWhitelist(module, moduleStrippingInformationFolder);
-
-                if (File.Exists(moduleWhitelist))
-                {
-                    if (!blacklists.Contains(moduleWhitelist))
-                    {
-                        blacklists.Add(moduleWhitelist);
-                        result = true;
-                    }
-                }
-            }
-            return result;
-        }
-
         private static void RunAssemblyStripper(UnityLinkerRunInformation runInformation)
         {
             string output;
@@ -286,54 +252,29 @@ namespace UnityEditorInternal
 
             WriteEditorData(runInformation);
 
-            if (!runInformation.performEngineStripping && !UseUnityLinkerEngineModuleStripping)
-            {
-                // if we don't do stripping, add all modules blacklists.
-                linkXmlFiles.AddRange(runInformation.GetModuleBlacklistFiles());
-            }
-
             var tempStripPath = GetFullPath(Path.Combine(managedAssemblyFolderPath, "tempStrip"));
 
             ProcessBuildPipelineOnBeforeRun(runInformation);
 
-            bool addedMoreBlacklists;
-            do
+            if (EditorUtility.DisplayCancelableProgressBar("Building Player", "Stripping assemblies", 0.0f))
+                throw new OperationCanceledException();
+
+            if (!StripAssembliesTo(
+                tempStripPath,
+                out output,
+                out error,
+                SanitizeLinkXmlFilePaths(linkXmlFiles, runInformation),
+                runInformation))
+                throw new Exception("Error in stripping assemblies: " + runInformation.AssembliesToProcess() + ", " + error);
+
+            if (runInformation.engineStrippingSupported)
             {
-                addedMoreBlacklists = false;
-
-                if (EditorUtility.DisplayCancelableProgressBar("Building Player", "Stripping assemblies", 0.0f))
-                    throw new OperationCanceledException();
-
-                if (!StripAssembliesTo(
-                    tempStripPath,
-                    out output,
-                    out error,
-                    SanitizeLinkXmlFilePaths(linkXmlFiles, runInformation),
-                    runInformation))
-                    throw new Exception("Error in stripping assemblies: " + runInformation.AssembliesToProcess() + ", " + error);
-
-                if (runInformation.engineStrippingSupported)
-                {
-                    var icallSummaryPath = Path.Combine(managedAssemblyFolderPath, "ICallSummary.txt");
-                    GenerateInternalCallSummaryFile(icallSummaryPath, managedAssemblyFolderPath, tempStripPath);
-
-                    if (runInformation.performEngineStripping && !UseUnityLinkerEngineModuleStripping)
-                    {
-                        // Find which modules we must include in the build based on Assemblies
-                        HashSet<UnityType> nativeClasses;
-                        HashSet<string> nativeModules;
-                        CodeStrippingUtils.GenerateDependencies(tempStripPath, icallSummaryPath, rcr, runInformation.performEngineStripping, out nativeClasses, out nativeModules, runInformation.il2CppPlatformProvider);
-                        // Add module-specific blacklists.
-                        addedMoreBlacklists = AddWhiteListsForModules(nativeModules, linkXmlFiles, runInformation.platformProvider.moduleStrippingInformationFolder);
-                    }
-                }
-
-                if (runInformation.performEngineStripping && UseUnityLinkerEngineModuleStripping)
-                    UpdateBuildReport(ReadLinkerToEditorData(tempStripPath), runInformation);
-
-                // If we had to add more whitelists, we need to run AssemblyStripper again with the added whitelists.
+                var icallSummaryPath = Path.Combine(managedAssemblyFolderPath, "ICallSummary.txt");
+                GenerateInternalCallSummaryFile(icallSummaryPath, managedAssemblyFolderPath, tempStripPath);
             }
-            while (addedMoreBlacklists && !UseUnityLinkerEngineModuleStripping);
+
+            if (runInformation.performEngineStripping)
+                UpdateBuildReport(ReadLinkerToEditorData(tempStripPath), runInformation);
 
             // keep unstripped files for debugging purposes
             var tempUnstrippedPath = GetFullPath(Path.Combine(managedAssemblyFolderPath, "tempUnstripped"));
@@ -361,11 +302,6 @@ namespace UnityEditorInternal
             Directory.Delete(tempStripPath);
 
             ProcessBuildPipelineOnAfterRun(runInformation);
-        }
-
-        public static bool UseUnityLinkerEngineModuleStripping
-        {
-            get { return string.IsNullOrEmpty(Environment.GetEnvironmentVariable("UNITYLINKER_DISABLE_EMS")); }
         }
 
         private static string WriteTypesInScenesBlacklist(string managedAssemblyDirectory, RuntimeClassRegistry rcr)

@@ -83,14 +83,6 @@ namespace UnityEditor
             bool advancedLic, string targetDevice, bool stripping, RuntimeClassRegistry usedClassRegistry,
             AssemblyReferenceChecker checker, string stagingAreaDataManaged)
         {
-            WriteCPlusPlusFileForStaticAOTModuleRegistration(buildTarget, file, crossCompileOptions, advancedLic, targetDevice, stripping, usedClassRegistry, checker, stagingAreaDataManaged, null);
-        }
-
-        static public void WriteCPlusPlusFileForStaticAOTModuleRegistration(BuildTarget buildTarget, string file,
-            CrossCompileOptions crossCompileOptions,
-            bool advancedLic, string targetDevice, bool stripping, RuntimeClassRegistry usedClassRegistry,
-            AssemblyReferenceChecker checker, string stagingAreaDataManaged, IIl2CppPlatformProvider platformProvider)
-        {
             // generate the Interal Call Summary file
             var icallSummaryPath = Path.Combine(stagingAreaDataManaged, "ICallSummary.txt");
             var dlls = Directory.GetFiles(stagingAreaDataManaged, "UnityEngine.*Module.dll").Concat(new[] {Path.Combine(stagingAreaDataManaged, "UnityEngine.dll")});
@@ -102,7 +94,7 @@ namespace UnityEditor
 
             HashSet<UnityType> nativeClasses;
             HashSet<string> nativeModules;
-            CodeStrippingUtils.GenerateDependencies(stagingAreaDataManaged, icallSummaryPath, usedClassRegistry, stripping, out nativeClasses, out nativeModules, platformProvider);
+            CodeStrippingUtils.GenerateDependencies(stagingAreaDataManaged, stripping, out nativeClasses, out nativeModules);
 
             using (TextWriter w = new StreamWriter(file))
             {

@@ -149,6 +149,7 @@ namespace UnityEditor.UIElements
 
         /// Property getters
         private static int GetIntPropertyValue(SerializedProperty p) { return p.intValue; }
+        private static long GetLongPropertyValue(SerializedProperty p) { return p.longValue; }
         private static bool GetBoolPropertyValue(SerializedProperty p) { return p.boolValue; }
         private static float GetFloatPropertyValue(SerializedProperty p) { return p.floatValue; }
         private static double GetDoublePropertyValue(SerializedProperty p) { return p.doubleValue; }
@@ -176,6 +177,7 @@ namespace UnityEditor.UIElements
         private static double GetFloatPropertyValueAsDouble(SerializedProperty p) { return (double)p.floatValue; }
         private static string GetCharacterPropertyValueAsString(SerializedProperty p) { return new string((char)p.intValue, 1); }
         private static float GetIntPropertyValueAsFloat(SerializedProperty p) { return p.intValue; }
+        private static float GetLongPropertyValueAsFloat(SerializedProperty p) { return p.longValue; }
 
         //this one is a bit more tricky
         private static string GetEnumPropertyValueAsString(SerializedProperty p) { return p.enumDisplayNames[p.enumValueIndex]; }
@@ -183,6 +185,7 @@ namespace UnityEditor.UIElements
 
         /// Property setters
         private static void SetIntPropertyValue(SerializedProperty p, int v) { p.intValue = v; }
+        private static void SetLongPropertyValue(SerializedProperty p, long v) { p.longValue = v; }
         private static void SetBoolPropertyValue(SerializedProperty p, bool v) { p.boolValue = v; }
         private static void SetFloatPropertyValue(SerializedProperty p, float v) { p.floatValue = v; }
         private static void SetDoublePropertyValue(SerializedProperty p, double v) { p.doubleValue = v; }
@@ -380,16 +383,35 @@ namespace UnityEditor.UIElements
             switch (prop.propertyType)
             {
                 case SerializedPropertyType.Integer:
-                    if (element is INotifyValueChanged<int> || element is  INotifyValueChanged<string>)
-                    {
-                        DefaultBind(element, objWrapper, prop, GetIntPropertyValue, SetIntPropertyValue, ValueEquals);
-                    }
-                    else if (element is INotifyValueChanged<float>)
-                    {
-                        DefaultBind(element, objWrapper, prop, GetIntPropertyValueAsFloat, SetFloatPropertyValue, ValueEquals);
-                    }
 
+                    if (prop.type == "long")
+                    {
+                        if (element is INotifyValueChanged<long>)
+                        {
+                            DefaultBind(element, objWrapper, prop, GetLongPropertyValue, SetLongPropertyValue, ValueEquals);
+                        }
+                        else if (element is INotifyValueChanged<int> || element is  INotifyValueChanged<string>)
+                        {
+                            DefaultBind(element, objWrapper, prop, GetIntPropertyValue, SetIntPropertyValue, ValueEquals);
+                        }
+                        else if (element is INotifyValueChanged<float>)
+                        {
+                            DefaultBind(element, objWrapper, prop, GetLongPropertyValueAsFloat, SetFloatPropertyValue, ValueEquals);
+                        }
+                    }
+                    else
+                    {
+                        if (element is INotifyValueChanged<int> || element is  INotifyValueChanged<string>)
+                        {
+                            DefaultBind(element, objWrapper, prop, GetIntPropertyValue, SetIntPropertyValue, ValueEquals);
+                        }
+                        else if (element is INotifyValueChanged<float>)
+                        {
+                            DefaultBind(element, objWrapper, prop, GetIntPropertyValueAsFloat, SetFloatPropertyValue, ValueEquals);
+                        }
+                    }
                     break;
+
                 case SerializedPropertyType.Boolean:
                     DefaultBind(element, objWrapper, prop, GetBoolPropertyValue, SetBoolPropertyValue, ValueEquals);
                     break;

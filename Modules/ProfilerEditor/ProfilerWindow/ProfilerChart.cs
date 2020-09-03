@@ -192,9 +192,11 @@ namespace UnityEditorInternal
             for (int i = 0; i < numCharts; ++i)
             {
                 var chart = m_Data.series[i];
-                m_Data.overlays[i] = new ChartSeriesViewData(chart.name, chart.yValues.Length, chart.color);
-                for (int frameIdx = 0; frameIdx < chart.yValues.Length; ++frameIdx)
-                    m_Data.overlays[i].xValues[frameIdx] = (float)frameIdx;
+                var length = chart.yValues.Length;
+                if (m_Data.overlays[i] == null || m_Data.overlays[i].yValues.Length != length)
+                {
+                    m_Data.overlays[i] = new ChartSeriesViewData(chart.name, chart.category, length, chart.color);
+                }
                 float maxValue;
                 ProfilerDriver.GetCounterValuesBatch(ProfilerArea.CPU, UnityString.Format("Selected{0}", chart.name), firstEmptyFrame, 1.0f, m_Data.overlays[i].yValues, out maxValue);
                 m_Data.overlays[i].yScale = m_DataScale;
@@ -213,6 +215,8 @@ namespace UnityEditorInternal
         {
             float timeMax = 0.0f;
             float timeMaxExcludeFirst = 0.0f;
+            // TODO: optimze this. it's not terrible but not cache friendly either and the yValues are the once needed to be accessed more often than the series
+            // This takes up som 1 ms in deep profiling with 300 frames and likely scales badly with more
             for (int k = 0; k < frameCount; k++)
             {
                 float timeNow = 0.0F;
@@ -252,10 +256,6 @@ namespace UnityEditorInternal
                 var counter = counters[i];
                 var category = counter.m_Category;
                 m_Series[i] = new ChartSeriesViewData(counter.m_Name, category, historySize, chartAreaColors[i % chartAreaColors.Length]);
-                for (int frameIdx = 0; frameIdx < historySize; ++frameIdx)
-                {
-                    m_Series[i].xValues[frameIdx] = frameIdx;
-                }
                 categories.Add(category);
             }
 

@@ -62,6 +62,8 @@ namespace UnityEngine.UIElements
         public int maxImageSize { get; }
         public RenderTextureFormat format { get; }
 
+        static int s_TextureCounter;
+
         /// <summary>
         /// Current atlas texture in use. The texture could change after <c>UIRAtlasManager.Commit</c> is called.
         /// </summary>
@@ -425,7 +427,7 @@ namespace UnityEngine.UIElements
             return new RenderTexture(m_Allocator.physicalWidth, m_Allocator.physicalHeight, 0, format)
             {
                 hideFlags = HideFlags.HideAndDontSave,
-                name = "UIR Atlas " + Random.Range(int.MinValue, int.MaxValue),
+                name = "UIR Atlas " + s_TextureCounter++,
                 filterMode = m_FilterMode
             };
         }

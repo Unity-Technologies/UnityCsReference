@@ -100,19 +100,20 @@ namespace UnityEditor
             CompressCubemapTexture(texture, format, TextureCompressionQuality.Normal);
         }
 
-        private static System.Collections.Generic.Dictionary<int, string> s_ActiveIconPathLUT = new System.Collections.Generic.Dictionary<int, string>();
+        private static System.Collections.Generic.Dictionary<int, Texture> s_ActiveIconPathLUT = new System.Collections.Generic.Dictionary<int, Texture>();
         internal static Texture GetIconInActiveState(Texture icon)
         {
             if (icon == null)
                 return null;
 
-            string selectedIconPath;
+            Texture selectedIcon;
             var iconInstanceId = icon.GetInstanceID();
-            if (!s_ActiveIconPathLUT.TryGetValue(iconInstanceId, out selectedIconPath))
+            if (!s_ActiveIconPathLUT.TryGetValue(iconInstanceId, out selectedIcon))
             {
                 const string iconText = " icon";
                 const string onText = " on";
 
+                string selectedIconPath = string.Empty;
                 string path = EditorResources.GetAssetPath(icon).ToLowerInvariant();
                 if (path.Contains(iconText))
                     selectedIconPath = path.Replace(iconText, onText + iconText);
@@ -121,10 +122,11 @@ namespace UnityEditor
                 else if (path.EndsWith(".png"))
                     selectedIconPath = path.Replace(".png", onText + ".png");
 
-                s_ActiveIconPathLUT[iconInstanceId] = selectedIconPath;
+                selectedIcon = EditorResources.Load<Texture>(selectedIconPath, false);
+                s_ActiveIconPathLUT[iconInstanceId] = selectedIcon;
             }
 
-            return EditorResources.Load<Texture>(selectedIconPath, false);
+            return selectedIcon;
         }
 
         public static string SaveFilePanelInProject(string title, string defaultName, string extension, string message)

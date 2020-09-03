@@ -27,6 +27,7 @@ namespace UnityEditor
         private AnimationEvent[] m_EventsAtMouseDown;
         [System.NonSerialized]
         private float[] m_EventTimes;
+        private static readonly Vector2 k_EventMarkerSize = new Vector2(16, 16);
 
         private bool m_DirtyTooltip = false;
         private int m_HoverEvent = -1;
@@ -199,15 +200,15 @@ namespace UnityEditor
                     int sharedOffset = 0;
                     if (shared > 1)
                     {
-                        float spread = Mathf.Min((shared - 1) * (eventMarker.width - 1), (int)(state.FrameDeltaToPixel(rect) - eventMarker.width * 2));
-                        sharedOffset = Mathf.FloorToInt(Mathf.Max(0, spread - (eventMarker.width - 1) * (sharedLeft)));
+                        float spread = Mathf.Min((shared - 1) * (k_EventMarkerSize.x - 1), (int)(state.FrameDeltaToPixel(rect) - k_EventMarkerSize.x * 2));
+                        sharedOffset = Mathf.FloorToInt(Mathf.Max(0, spread - (k_EventMarkerSize.x - 1) * (sharedLeft)));
                     }
 
                     Rect r = new Rect(
-                        keypos + sharedOffset - eventMarker.width / 2,
+                        keypos + sharedOffset - k_EventMarkerSize.x / 2,
                         (rect.height - 10) * (float)(sharedLeft - shared + 1) / Mathf.Max(1, shared - 1),
-                        eventMarker.width,
-                        eventMarker.height);
+                        k_EventMarkerSize.x,
+                        k_EventMarkerSize.y);
 
                     hitRects[i] = r;
                     drawRects[i] = r;

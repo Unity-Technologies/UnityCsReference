@@ -280,6 +280,8 @@ namespace UnityEditor.UIElements
             switch (propertyType)
             {
                 case SerializedPropertyType.Integer:
+                    if (property.type == "long")
+                        return ConfigureField<LongField, long>(new LongField(), property);
                     return ConfigureField<IntegerField, int>(new IntegerField(), property);
 
                 case SerializedPropertyType.Boolean:

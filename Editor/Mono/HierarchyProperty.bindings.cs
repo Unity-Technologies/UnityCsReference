@@ -157,6 +157,7 @@ namespace UnityEditor
         public extern string guid { [FreeFunction("HierarchyPropertyBindings::GetGuid", HasExplicitThis = true)] get; }
         public extern bool alphaSorted { [NativeName("IsAlphaSorted")] get; set; }
         public extern bool showSceneHeaders { [NativeName("IsShowingSceneHeaders")] get; [NativeName("SetShowingSceneHeaders")] set; }
+        public extern bool isSceneHeader { [NativeName("IsSceneHeader")] get; }
         public extern bool isValid { [NativeName("IsValid")] get; }
         public extern bool isMainRepresentation { [NativeName("IsMainAssetRepresentation")] get; }
         public extern bool hasFullPreviewImage { [NativeName("HasFullPreviewImage")] get; }

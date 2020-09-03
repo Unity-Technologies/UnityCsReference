@@ -363,7 +363,8 @@ namespace UnityEditor.PackageManager.UI
         private void RefreshSelectedLabelText()
         {
             var label = draft.original != null ? GetRegistryLabel(draft.original.name) : m_NewScopedRegistryLabel;
-            label.text = GetLabelText(draft);
+            if (label != null)
+                label.text = GetLabelText(draft);
         }
 
         private void RefreshErrorBox()

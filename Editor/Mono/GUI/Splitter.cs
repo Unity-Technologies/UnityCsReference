@@ -384,9 +384,9 @@ namespace UnityEditor
 
                     state.xOffset = x;
 
-                    if (width != state.lastTotalSize)
+                    float alignedWidth = GUIUtility.RoundToPixelGrid(width);
+                    if (alignedWidth != state.lastTotalSize)
                     {
-                        float alignedWidth = GUIUtility.RoundToPixelGrid(width);
                         state.RelativeToRealSizes(alignedWidth);
                         state.lastTotalSize = alignedWidth;
 
@@ -436,9 +436,9 @@ namespace UnityEditor
                     // Set the positions
                     int k;
 
-                    if (height != state.lastTotalSize)
+                    float alignedHeight = GUIUtility.RoundToPixelGrid(height);
+                    if (alignedHeight != state.lastTotalSize)
                     {
-                        float alignedHeight = GUIUtility.RoundToPixelGrid(height);
                         state.RelativeToRealSizes(alignedHeight);
                         state.lastTotalSize = alignedHeight;
 

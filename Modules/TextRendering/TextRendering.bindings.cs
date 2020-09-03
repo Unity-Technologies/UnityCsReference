@@ -249,10 +249,10 @@ namespace UnityEngine
         public Vector3 normal;
         public Vector4 tangent;
         public Color32 color;
-        public Vector2 uv0;
-        public Vector2 uv1;
-        public Vector2 uv2;
-        public Vector2 uv3;
+        public Vector4 uv0;
+        public Vector4 uv1;
+        public Vector4 uv2;
+        public Vector4 uv3;
 
         private static readonly Color32 s_DefaultColor = new Color32(255, 255, 255, 255);
         private static readonly Vector4 s_DefaultTangent = new Vector4(1.0f, 0.0f, 0.0f, -1.0f);
@@ -263,10 +263,10 @@ namespace UnityEngine
             normal = Vector3.back,
             tangent = s_DefaultTangent,
             color = s_DefaultColor,
-            uv0 = Vector2.zero,
-            uv1 = Vector2.zero,
-            uv2 = Vector2.zero,
-            uv3 = Vector2.zero
+            uv0 = Vector4.zero,
+            uv1 = Vector4.zero,
+            uv2 = Vector4.zero,
+            uv3 = Vector4.zero
         };
     }
 

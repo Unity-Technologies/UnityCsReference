@@ -113,7 +113,7 @@ namespace UnityEditor
         internal static readonly SVC<float> kWindowToolbarHeight = new SVC<float>("--window-toolbar-height", 21f);
         internal const int kTabButtonHeight = 22;
         private const string kEnabledPropertyName = "m_Enabled";
-        private const string k_MultiEditValueString = "<multi>";
+        private const string k_MultiEditValueString = "<>";
         private const float kDropDownArrowMargin = 2;
         private const float kDropDownArrowWidth = 12;
         private const float kDropDownArrowHeight = 12;
@@ -2169,17 +2169,14 @@ namespace UnityEditor
             {
                 value = double.NegativeInfinity;
             }
+            else if (lowered == "nan")
+            {
+                value = double.NaN;
+            }
             else
             {
                 if (!ExpressionEvaluator.Evaluate(str, out value))
                     return false;
-
-                // Don't allow user to enter NaN - it opens a can of worms that can trigger many latent bugs,
-                // and is not really useful for anything.
-                if (double.IsNaN(value))
-                {
-                    value = 0;
-                }
 
                 return true;
             }

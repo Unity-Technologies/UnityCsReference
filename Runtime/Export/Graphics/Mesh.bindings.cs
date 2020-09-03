@@ -30,6 +30,8 @@ namespace UnityEngine
 
         extern public UnityEngine.Rendering.IndexFormat indexFormat { get; set; }
 
+        extern internal UInt32 GetTotalIndexCount();
+
         [FreeFunction(Name = "MeshScripting::SetIndexBufferParams", HasExplicitThis = true)]
         extern public void SetIndexBufferParams(int indexCount, UnityEngine.Rendering.IndexFormat format);
 

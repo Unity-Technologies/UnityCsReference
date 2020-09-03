@@ -38,9 +38,9 @@ namespace UnityEditorInternal
             get { return BuildPipeline.IsFeatureSupported("ENABLE_ENGINE_CODE_STRIPPING", m_Target); }
         }
 
-        public virtual string moduleStrippingInformationFolder
+        public virtual string modulesAssetFile
         {
-            get { return Path.Combine(BuildPipeline.GetPlaybackEngineDirectory(EditorUserBuildSettings.activeBuildTarget, 0), "Whitelists"); }
+            get { return Path.Combine(BuildPipeline.GetPlaybackEngineDirectory(EditorUserBuildSettings.activeBuildTarget, 0), "modules.asset"); }
         }
     }
 }
