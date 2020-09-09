@@ -304,6 +304,7 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck())
                 {
                     ResetSimplifyPreview();
+                    SceneView.RepaintAll();
                 }
 
                 EditorGUILayout.EndHorizontal();

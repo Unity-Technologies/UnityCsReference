@@ -12,8 +12,10 @@ using UnityEngine;
 namespace UnityEditor.PackageManager.UI
 {
     [Serializable]
-    internal class UpmClient
+    internal class UpmClient : ISerializationCallbackReceiver
     {
+        private static readonly string[] k_UnityRegistriesUrlHosts = { ".unity.com", ".unity3d.com" };
+
         public virtual event Action<IOperation> onListOperation = delegate {};
         public virtual event Action<IOperation> onSearchAllOperation = delegate {};
         public virtual event Action<IOperation> onRemoveOperation = delegate {};
@@ -52,6 +54,14 @@ namespace UnityEditor.PackageManager.UI
 
         private readonly Dictionary<string, UpmBaseOperation> m_ExtraFetchOperations = new Dictionary<string, UpmBaseOperation>();
 
+        [SerializeField]
+        private string[] m_SerializedPRegistriesUrlKeys;
+
+        [SerializeField]
+        private bool[] m_SerializedRegistriesUrlValues;
+
+        internal Dictionary<string, bool> m_RegistriesUrl = new Dictionary<string, bool>();
+
         [NonSerialized]
         private UpmCache m_UpmCache;
         [NonSerialized]
@@ -65,6 +75,18 @@ namespace UnityEditor.PackageManager.UI
             m_UpmCache = upmCache;
             m_IOProxy = IOProxy;
             m_SettingsProxy = settingsProxy;
+        }
+
+        public void OnBeforeSerialize()
+        {
+            m_SerializedPRegistriesUrlKeys = m_RegistriesUrl?.Keys.ToArray() ?? new string[0];
+            m_SerializedRegistriesUrlValues = m_RegistriesUrl?.Values.ToArray() ?? new bool[0];
+        }
+
+        public void OnAfterDeserialize()
+        {
+            for (var i = 0; i < m_SerializedPRegistriesUrlKeys.Length; i++)
+                m_RegistriesUrl[m_SerializedPRegistriesUrlKeys[i]] = m_SerializedRegistriesUrlValues[i];
         }
 
         public virtual bool isAddRemoveOrEmbedInProgress
@@ -296,9 +318,11 @@ namespace UnityEditor.PackageManager.UI
                 {
                     productId = m_UpmCache.GetProductId(packageInfo.name);
                     if (string.IsNullOrEmpty(productId))
-                        onPackageVersionUpdated?.Invoke(packageInfo.name, new UpmPackageVersion(packageInfo, false));
+                    {
+                        onPackageVersionUpdated?.Invoke(packageInfo.name, new UpmPackageVersion(packageInfo, false, IsUnityPackage(packageInfo)));
+                    }
                     else
-                        onProductPackageVersionUpdated?.Invoke(productId, new UpmPackageVersion(packageInfo, false));
+                        onProductPackageVersionUpdated?.Invoke(productId, new UpmPackageVersion(packageInfo, false, false));
                 }
             }
         }
@@ -407,12 +431,13 @@ namespace UnityEditor.PackageManager.UI
 
             UpmPackage result;
             if (searchInfo == null)
-                result = new UpmPackage(installedInfo, true, false);
+                result = new UpmPackage(installedInfo, true, false, IsUnityPackage(installedInfo));
             else
             {
-                result = new UpmPackage(searchInfo, false, true);
+                var isUnityPackage = IsUnityPackage(searchInfo);
+                result = new UpmPackage(searchInfo, false, true, isUnityPackage);
                 if (installedInfo != null)
-                    result.AddInstalledVersion(new UpmPackageVersion(installedInfo, true));
+                    result.AddInstalledVersion(new UpmPackageVersion(installedInfo, true, isUnityPackage));
             }
             return result;
         }
@@ -431,7 +456,7 @@ namespace UnityEditor.PackageManager.UI
                         continue;
                     PackageInfo info;
                     if (extraVersions.TryGetValue(version.version.ToString(), out info))
-                        version.UpdatePackageInfo(info);
+                        version.UpdatePackageInfo(info, IsUnityPackage(info));
                 }
             }
 
@@ -500,6 +525,35 @@ namespace UnityEditor.PackageManager.UI
         public void Resolve()
         {
             Client.Resolve();
+        }
+
+        public virtual bool IsUnityPackage(PackageInfo packageInfo)
+        {
+            if (!(packageInfo?.registry?.isDefault ?? false) || string.IsNullOrEmpty(packageInfo.registry?.url))
+                return false;
+
+            if (m_RegistriesUrl.TryGetValue(packageInfo.registry.url, out var isUnityRegistry))
+                return isUnityRegistry;
+
+            isUnityRegistry = IsUnityUrl(packageInfo.registry.url);
+            m_RegistriesUrl[packageInfo.registry.url] = isUnityRegistry;
+            return isUnityRegistry;
+        }
+
+        public virtual bool IsUnityUrl(string url)
+        {
+            if (string.IsNullOrEmpty(url))
+                return false;
+
+            try
+            {
+                var uri = new Uri(url);
+                return !uri.IsLoopback && k_UnityRegistriesUrlHosts.Any(unityHost => uri.Host.EndsWith(unityHost, StringComparison.InvariantCultureIgnoreCase));
+            }
+            catch (UriFormatException)
+            {
+                return false;
+            }
         }
     }
 }

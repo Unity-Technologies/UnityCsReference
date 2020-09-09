@@ -5,11 +5,12 @@
 using System;
 using UnityEngine;
 using UnityEngine.Bindings;
-
+using UnityEngine.Experimental.Rendering; //for GraphicsFormat
 namespace UnityEditor
 {
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporterUtils.h")]
     [NativeHeader("Runtime/Graphics/TextureFormat.h")]
+    [NativeHeader("Runtime/Graphics/Format.h")]
     internal static class TextureUtil
     {
         [Obsolete("GetStorageMemorySize has been deprecated since it is limited to 2GB. Please use GetStorageMemorySizeLong() instead.")]
@@ -68,6 +69,9 @@ namespace UnityEditor
 
         [FreeFunction]
         public static extern bool IsHDRFormat(TextureFormat format);
+
+        [FreeFunction("IsHDRFormat")]
+        public static extern bool IsHDRGraphicsFormat(GraphicsFormat format);
 
         [FreeFunction]
         public static extern bool HasAlphaTextureFormat(TextureFormat format);

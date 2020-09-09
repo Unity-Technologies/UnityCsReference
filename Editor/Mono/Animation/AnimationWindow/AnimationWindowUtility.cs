@@ -1060,13 +1060,15 @@ namespace UnityEditorInternal
         {
             while (true)
             {
-                var animator = tr.GetComponent<Animator>();
-                if (animator != null)
+                if (tr.TryGetComponent(out Animator animator))
+                {
                     return animator;
+                }
 
-                var animation = tr.GetComponent<Animation>();
-                if (animation != null)
+                if (tr.TryGetComponent(out Animation animation))
+                {
                     return animation;
+                }
 
                 if (tr == tr.root)
                     break;
@@ -1081,7 +1083,10 @@ namespace UnityEditorInternal
         {
             while (true)
             {
-                if (tr.GetComponent<Animator>() != null) return tr.GetComponent<Animator>();
+                if (tr.TryGetComponent(out Animator animator))
+                {
+                    return animator;
+                }
                 if (tr == tr.root) break;
                 tr = tr.parent;
             }
@@ -1093,7 +1098,10 @@ namespace UnityEditorInternal
         {
             while (true)
             {
-                if (tr.GetComponent<Animation>() != null) return tr.GetComponent<Animation>();
+                if (tr.TryGetComponent(out Animation animation))
+                {
+                    return animation;
+                }
                 if (tr == tr.root) break;
                 tr = tr.parent;
             }

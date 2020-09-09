@@ -293,9 +293,13 @@ namespace UnityEditor.SceneTemplate
             {
                 EditorApplication.FileMenuNewScene();
             }
-            else
+            else if (!EditorApplication.isPlaying)
             {
                 SceneTemplateDialog.ShowWindow();
+            }
+            else
+            {
+                Debug.LogWarning("Cannot open the New Scene dialog while playing.");
             }
         }
 

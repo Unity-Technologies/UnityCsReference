@@ -313,6 +313,8 @@ namespace UnityEngine.LowLevel
         public IntPtr loopConditionFunction;
 
         public delegate void UpdateFunction();
+
+        public override string ToString() => type.Name;
     }
 
     [MovedFrom("UnityEngine.Experimental.LowLevel")]

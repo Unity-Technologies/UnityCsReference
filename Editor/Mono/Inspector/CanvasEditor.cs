@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEditor.AnimatedValues;
 using UnityEditorInternal.VR;
+using System.Linq;
 
 namespace UnityEditor
 {
@@ -130,7 +131,19 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox("Using a render mode of ScreenSpaceOverlay while VR is enabled will cause the Canvas to continue to incur a rendering cost, even though the Canvas will not be visible in VR.", MessageType.Warning);
             }
 
+            EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_RenderMode);
+            if (EditorGUI.EndChangeCheck())
+            {
+                var rectTransforms = targets.Select(c => (c as Canvas).transform).ToArray();
+                Undo.RegisterCompleteObjectUndo(rectTransforms, "Inspector");
+                serializedObject.ApplyModifiedProperties();
+                foreach (Canvas canvas in targets)
+                {
+                    canvas.UpdateCanvasRectTransform(true);
+                }
+                GUIUtility.ExitGUI();
+            }
 
             m_OverlayMode.target = m_RenderMode.intValue == 0;
             m_CameraMode.target = m_RenderMode.intValue == 1;

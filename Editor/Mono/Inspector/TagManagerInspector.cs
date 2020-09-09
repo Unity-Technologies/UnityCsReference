@@ -266,7 +266,12 @@ namespace UnityEditor
             rect.yMin += 1;
             rect.yMax -= 1;
 
-            bool isUserLayer = index >= 8;
+            // Layers up to 8 used to be reserved for Builtin Layers
+            // As layers with indices 3, 6 and 7 were empty,
+            // it was decided to change them to User Layers
+            // However, we cannot shift layers around so we need to explicitly handle
+            // the gap where layer index == 3 in the layer stack
+            bool isUserLayer = index > 5 || index == 3;
 
             bool oldEnabled = GUI.enabled;
             GUI.enabled = m_IsEditable && isUserLayer;

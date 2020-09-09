@@ -153,8 +153,10 @@ namespace UnityEditorInternal
         private static bool RunAssemblyLinker(IEnumerable<string> args, out string @out, out string err, string linkerPath, string workingDirectory)
         {
             var argString = args.Aggregate((buff, s) => buff + " " + s);
-            Console.WriteLine("Invoking UnityLinker with arguments: " + argString);
-            Runner.RunManagedProgram(linkerPath, argString, workingDirectory, null, null);
+            var responseFile = Path.Combine(workingDirectory, "response.rsp");
+            File.WriteAllText(responseFile, argString);
+            Console.WriteLine("Invoking UnityLinker with response file. response.rsp contents: " + argString);
+            Runner.RunManagedProgram(linkerPath, $"@{CommandLineFormatter.PrepareFileName(responseFile)}", workingDirectory, null, null);
 
             @out = "";
             err = "";

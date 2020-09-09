@@ -160,7 +160,12 @@ namespace UnityEditor.SceneTemplate
         [UsedImplicitly]
         private void OnEnable()
         {
+            SceneTemplateAssetInspectorWindow.sceneTemplateAssetModified -= OnSceneTemplateAssetModified;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+
             SceneTemplateAssetInspectorWindow.sceneTemplateAssetModified += OnSceneTemplateAssetModified;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+
             ValidatePosition();
 
             using (new EditorPerformanceTracker("SceneTemplateDialog.SetupData"))
@@ -299,6 +304,9 @@ namespace UnityEditor.SceneTemplate
         [UsedImplicitly]
         private void OnDisable()
         {
+            SceneTemplateAssetInspectorWindow.sceneTemplateAssetModified -= OnSceneTemplateAssetModified;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+
             SceneTemplateService.newSceneTemplateInstantiating -= TemplateInstantiating;
             EditorPrefs.SetFloat(GetKeyName(nameof(m_GridView.sizeLevel)), m_GridView.sizeLevel);
             SceneTemplateAssetInspectorWindow.sceneTemplateAssetModified -= OnSceneTemplateAssetModified;
@@ -306,6 +314,15 @@ namespace UnityEditor.SceneTemplate
             {
                 var splitterPosition = m_Splitter.fixedPane.style.width.value.value;
                 EditorPrefs.SetFloat(GetKeyName(nameof(m_Splitter)), splitterPosition);
+            }
+        }
+
+        private void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingEditMode)
+            {
+                Debug.LogWarning("Cannot open new scene while playing.");
+                Close();
             }
         }
 
@@ -602,7 +619,7 @@ namespace UnityEditor.SceneTemplate
             var createAdditiveButton = rootVisualElement.Q<Button>(k_SceneTemplateCreateAdditiveButtonName);
             createAdditiveButton?.SetEnabled(true);
 
-            if (m_SelectedButtonIndex != -1 && !m_Buttons[m_SelectedButtonIndex].button.enabledSelf)
+            if (m_SelectedButtonIndex != -1 && m_Buttons != null && !m_Buttons[m_SelectedButtonIndex].button.enabledSelf)
             {
                 SelectNextEnabledButton();
                 UpdateSelectedButton();

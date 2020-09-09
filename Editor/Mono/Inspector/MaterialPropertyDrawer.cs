@@ -520,12 +520,10 @@ namespace UnityEditor
         // Single argument: enum type name; entry names & values fetched via reflection
         public MaterialEnumDrawer(string enumName)
         {
-            var loadedTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => AssemblyHelper.GetTypesFromAssembly(x)).ToArray();
+            var loadedTypes = TypeCache.GetTypesDerivedFrom(typeof(Enum));
             try
             {
-                var enumType = loadedTypes.FirstOrDefault(
-                    x => x.IsEnum && (x.Name == enumName || x.FullName == enumName)
-                );
+                var enumType = loadedTypes.FirstOrDefault(x => x.Name == enumName || x.FullName == enumName);
                 var enumNames = Enum.GetNames(enumType);
                 this.names = new GUIContent[enumNames.Length];
                 for (int i = 0; i < enumNames.Length; ++i)

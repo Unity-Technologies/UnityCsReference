@@ -16,7 +16,7 @@ namespace UnityEditor
         private Material m_Material;
         private int m_Slice;
 
-        static readonly int s_ShaderColorMask = Shader.PropertyToID("_ColorMask");
+        static readonly int s_ShaderColorMask = Shader.PropertyToID("_ColorMaskBits");
         static readonly int s_ShaderSliceIndex = Shader.PropertyToID("_SliceIndex");
         static readonly int s_ShaderToSrgb = Shader.PropertyToID("_ToSRGB");
 
@@ -198,12 +198,12 @@ namespace UnityEditor
 
         public override void OnPreviewSettings()
         {
+            RenderTexture rt = (RenderTexture)target;
             if (m_Dimension.intValue == (int)UnityEngine.Rendering.TextureDimension.Tex2DArray)
             {
                 if (m_Material == null)
                     InitPreview();
 
-                RenderTexture rt = (RenderTexture)target;
                 m_Material.mainTexture = rt;
 
                 if (rt.volumeDepth > 1)
@@ -212,6 +212,12 @@ namespace UnityEditor
                     m_Material.SetInt(s_ShaderSliceIndex, m_Slice);
                 }
             }
+
+            if (TextureUtil.IsHDRGraphicsFormat(rt.graphicsFormat))
+            {
+                base.OnExposureSlider();
+            }
+
 
             var prevColorMode = m_PreviewMode;
             base.OnPreviewSettings();
@@ -276,7 +282,7 @@ namespace UnityEditor
                     FilterMode oldFilter = rt.filterMode;
                     TextureUtil.SetFilterModeNoDirty(rt, FilterMode.Point);
 
-                    EditorGUI.DrawPreviewTexture(wantedRect, rt, m_Material, ScaleMode.StretchToFill, 0, mipLevel);
+                    EditorGUI.DrawPreviewTexture(wantedRect, rt, m_Material, ScaleMode.StretchToFill, 0, mipLevel, ColorWriteMask.All, GetExposureValueForTexture(rt));
 
                     TextureUtil.SetFilterModeNoDirty(rt, oldFilter);
 
@@ -300,6 +306,16 @@ namespace UnityEditor
                 return true;
 
             return m_DepthFormat.enumValueIndex != 0;
+        }
+
+        override protected float GetExposureValueForTexture(Texture t)
+        {
+            RenderTexture rt = (RenderTexture)t;
+            if (TextureUtil.IsHDRGraphicsFormat(rt.graphicsFormat))
+            {
+                return m_ExposureSliderValue;
+            }
+            return 0.0f;
         }
 
         override public string GetInfoString()

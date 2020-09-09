@@ -23,7 +23,7 @@ namespace UnityEditor.Scripting.Compilers
         public MicrosoftCSharpCompiler(ScriptAssembly assembly, string tempOutputDirectory)
             : base(assembly, tempOutputDirectory) {}
 
-        static void FillCompilerOptions(List<string> arguments, BuildTarget BuildTarget)
+        static void FillCompilerOptions(List<string> arguments, string languageVersion)
         {
             // This will ensure that csc.exe won't include csc.rsp
             // csc.rsp references .NET 4.5 assemblies which cause conflicts for us
@@ -31,7 +31,7 @@ namespace UnityEditor.Scripting.Compilers
 
             // Case 755238: Always use english for outputing errors, the same way as Mono compilers do
             arguments.Add("/preferreduilang:en-US");
-            arguments.Add("/langversion:latest");
+            arguments.Add("/langversion:" + languageVersion);
         }
 
         internal static string GenerateResponseFile(ScriptAssembly assembly, string tempBuildDirectory)
@@ -72,7 +72,7 @@ namespace UnityEditor.Scripting.Compilers
                 arguments.Add("/optimize-");
             }
 
-            FillCompilerOptions(arguments, assembly.BuildTarget);
+            FillCompilerOptions(arguments, assembly.CompilerOptions.LanguageVersion);
 
             string[] scriptAssemblyReferences = new string[assembly.ScriptAssemblyReferences.Length];
             for (var index = 0; index < assembly.ScriptAssemblyReferences.Length; index++)

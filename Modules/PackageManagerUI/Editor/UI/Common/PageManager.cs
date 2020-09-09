@@ -12,6 +12,9 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class PageManager : ISerializationCallbackReceiver
     {
+        internal const string k_UnityPackageGroupName = "Unity";
+        internal const string k_OtherPackageGroupName = "Other";
+
         internal const int k_DefaultPageSize = 25;
 
         private static readonly RefreshOptions[] k_RefreshOptionsByTab =

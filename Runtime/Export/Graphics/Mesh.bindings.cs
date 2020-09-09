@@ -278,4 +278,19 @@ namespace UnityEngine
         [FreeFunction("MeshScripting::CombineMeshIndicesForStaticBatching")]
         extern internal static void InternalCombineIndices(MeshSubsetCombineUtility.SubMeshInstance[] submeshes, Mesh combinedMesh);
     }
+
+    [NativeHeader("Runtime/Graphics/Mesh/MeshScriptBindings.h")]
+    internal struct MeshGraphicsTestHelper
+    {
+        [FreeFunction("MeshGraphicsTestHelper::InternalEnableComputeBufferBindings")]
+        extern internal static void InternalEnableComputeBufferBindings([NotNull] Mesh mesh);
+        [FreeFunction("MeshGraphicsTestHelper::InternalEnableComputeBufferBindingsSkinned")]
+        extern internal static void InternalEnableComputeBufferBindingsSkinned([NotNull] SkinnedMeshRenderer mesh);
+        [FreeFunction("MeshGraphicsTestHelper::InternalAssignComputeBuffer")]
+        extern internal static bool InternalAssignComputeBuffer([NotNull] Mesh mesh, [NotNull] ComputeShader shader, int kernelIndex, int iboTargetID, int vboTargetID);
+        [FreeFunction("MeshGraphicsTestHelper::InternalAssignComputeBufferSkinned")]
+        extern internal static bool InternalAssignComputeBufferSkinned([NotNull] SkinnedMeshRenderer mesh, [NotNull] ComputeShader shader, int kernelIndex, int vboTargetID);
+        [FreeFunction("MeshGraphicsTestHelper::InternalSetChannelInfo")]
+        extern internal static bool InternalSetChannelInfo([NotNull] Mesh mesh, [NotNull] ComputeShader shader, int kernelIndex, int vertexStrideID, int positionOffsetID, int normalOffsetID, int uvOffsetID, int colorOffsetID);
+    }
 }

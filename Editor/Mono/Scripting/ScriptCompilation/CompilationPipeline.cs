@@ -34,12 +34,15 @@ namespace UnityEditor.Compilation
         public CodeOptimization CodeOptimization { get; set; }
         public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
         public string[] ResponseFiles { get; set; }
+        public string LanguageVersion { get; internal set; } // Requires a refresh sent to the Code Editor package if made public
+
         public ScriptCompilerOptions()
         {
             AllowUnsafeCode = false;
             ApiCompatibilityLevel = ApiCompatibilityLevel.NET_4_6;
             ResponseFiles = new string[0];
             RoslynAnalyzerDllPaths = new string[0];
+            LanguageVersion = "8.0";
         }
 
         internal ScriptCompilerOptions(ScriptCompilerOptions scriptCompilerOptions)
@@ -52,6 +55,7 @@ namespace UnityEditor.Compilation
             AllowUnsafeCode = scriptCompilerOptions.AllowUnsafeCode;
             CodeOptimization = scriptCompilerOptions.CodeOptimization;
             ApiCompatibilityLevel = scriptCompilerOptions.ApiCompatibilityLevel;
+            LanguageVersion = scriptCompilerOptions.LanguageVersion;
         }
     }
 

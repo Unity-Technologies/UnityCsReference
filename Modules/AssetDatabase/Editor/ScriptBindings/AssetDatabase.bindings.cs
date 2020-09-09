@@ -654,37 +654,30 @@ namespace UnityEditor
             [FreeFunction("AssetDatabase::GetGlobalArtifactProcessedVersion")] get;
         }
 
-        [ExcludeFromDocs]
         [FreeFunction("AssetDatabase::ClearImporterOverride")]
         extern public static void ClearImporterOverride(string path);
 
-        [ExcludeFromDocs]
         [FreeFunction("AssetDatabase::IsCacheServerEnabled")]
         public extern static bool IsCacheServerEnabled();
 
         [FreeFunction("AssetDatabase::SetImporterOverride")]
         extern internal static void SetImporterOverrideInternal(string path, System.Type importer);
 
-        [ExcludeFromDocs]
         public static void SetImporterOverride<T>(string path)
             where T : UnityEditor.AssetImporters.ScriptedImporter
         {
             SetImporterOverrideInternal(path, typeof(T));
         }
 
-        [ExcludeFromDocs]
         [FreeFunction("AssetDatabase::GetImporterOverride")]
         extern public static System.Type GetImporterOverride(string path);
 
-        [ExcludeFromDocs]
         [FreeFunction("AssetDatabase::GetAvailableImporterTypes")]
         extern public static Type[] GetAvailableImporterTypes(string path);
 
-        [ExcludeFromDocs]
         [FreeFunction("AcceleratorClientCanConnectTo")]
         public extern static bool CanConnectToCacheServer(string ip, UInt16 port);
 
-        [ExcludeFromDocs]
         [FreeFunction()]
         public extern static void RefreshSettings();
 
@@ -700,27 +693,21 @@ namespace UnityEditor
             }
         }
 
-        [ExcludeFromDocs]
         [FreeFunction("IsConnectedToCacheServerV2")]
         public extern static bool IsConnectedToCacheServer();
 
-        [ExcludeFromDocs]
         [FreeFunction()]
         public extern static string GetCacheServerAddress();
 
-        [ExcludeFromDocs]
         [FreeFunction()]
         public extern static UInt16 GetCacheServerPort();
 
-        [ExcludeFromDocs]
         [FreeFunction("AssetDatabase::GetCacheServerNamespacePrefix")]
         public extern static string GetCacheServerNamespacePrefix();
 
-        [ExcludeFromDocs]
         [FreeFunction("AssetDatabase::GetCacheServerEnableDownload")]
         public extern static bool GetCacheServerEnableDownload();
 
-        [ExcludeFromDocs]
         [FreeFunction("AssetDatabase::GetCacheServerEnableUpload")]
         public extern static bool GetCacheServerEnableUpload();
 

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Burst;
 using Unity.Profiling.LowLevel;
@@ -55,15 +56,12 @@ namespace Unity.Profiling.LowLevel.Unsafe
             return new ProfilerRecorderHandle((ulong)marker.Handle.ToInt64());
         }
 
-        internal static unsafe ProfilerRecorderHandle Get(ProfilerCategory category, string statName)
+        internal static ProfilerRecorderHandle Get(ProfilerCategory category, string statName)
         {
             if (string.IsNullOrEmpty(statName))
                 throw new ArgumentException("String must be not null or empty", nameof(statName));
 
-            fixed(char* c = statName)
-            {
-                return GetByName(category, c, statName.Length);
-            }
+            return GetByName(category, statName);
         }
 
         public static ProfilerRecorderDescription GetDescription(ProfilerRecorderHandle handle)
@@ -78,7 +76,20 @@ namespace Unity.Profiling.LowLevel.Unsafe
         public static extern void GetAvailable(List<ProfilerRecorderHandle> outRecorderHandleList);
 
         [NativeMethod(IsThreadSafe = true)]
-        internal static extern unsafe ProfilerRecorderHandle GetByName(ProfilerCategory category, char* name, int nameLen);
+        internal static extern ProfilerRecorderHandle GetByName(ProfilerCategory category, string name);
+        // Burst shadow
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern unsafe ProfilerRecorderHandle GetByName__Unmanaged(ProfilerCategory category, byte* name, int nameLen);
+
+        // 256 : Aggressive inlining
+        [MethodImpl(256)]
+        internal static unsafe ProfilerRecorderHandle GetByName(ProfilerCategory category, char* name, int nameLen)
+        {
+            return GetByName_Unsafe(category, name, nameLen);
+        }
+
+        [NativeMethod(IsThreadSafe = true)]
+        static extern unsafe ProfilerRecorderHandle GetByName_Unsafe(ProfilerCategory category, char* name, int nameLen);
 
         [NativeMethod(IsThreadSafe = true)]
         static extern ProfilerRecorderDescription GetDescriptionInternal(ProfilerRecorderHandle handle);
@@ -154,10 +165,7 @@ namespace Unity.Profiling
         public unsafe ProfilerRecorder(ProfilerCategory category, string statName, int capacity = 1, ProfilerRecorderOptions options = ProfilerRecorderOptions.Default)
         {
             LowLevel.Unsafe.ProfilerRecorderHandle statHandle;
-            fixed(char* c = statName)
-            {
-                statHandle = LowLevel.Unsafe.ProfilerRecorderHandle.GetByName(category, c, statName.Length);
-            }
+            statHandle = LowLevel.Unsafe.ProfilerRecorderHandle.GetByName(category, statName);
             this = Create(statHandle, capacity, options);
         }
 

@@ -125,14 +125,14 @@ namespace UnityEditor.PackageManager.UI
             m_InstalledIndex = m_Versions.FindIndex(v => v.isInstalled);
         }
 
-        public UpmVersionList(PackageInfo info, bool isInstalled)
+        public UpmVersionList(PackageInfo info, bool isInstalled, bool isUnityPackage)
         {
-            var mainVersion = new UpmPackageVersion(info, isInstalled);
+            var mainVersion = new UpmPackageVersion(info, isInstalled, isUnityPackage);
             m_Versions = info.versions.compatible.Select(v =>
             {
                 SemVersion? version;
                 SemVersionParser.TryParse(v, out version);
-                return new UpmPackageVersion(info, false, version, mainVersion.displayName);
+                return new UpmPackageVersion(info, false, version, mainVersion.displayName, isUnityPackage);
             }).ToList();
 
             AddToSortedVersions(m_Versions, mainVersion);

@@ -4015,6 +4015,9 @@
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\ContentBuildInterface.deprecated.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\ContentBuildInterface.deprecated.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\ContentBuildInterfaceProfile.bindings.cs">
+      <Link>Modules\BuildPipeline\Editor\Managed\ContentBuildInterfaceProfile.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\GameManagerDependencyInfo.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\GameManagerDependencyInfo.cs</Link>
     </Compile>
@@ -6002,7 +6005,7 @@
       <HintPath>..\..\External\ExCSS\builds\builds\lib\net35\ExCSS.Unity.dll</HintPath>
     </Reference>
     <Reference Include="Unity.IL2CPP.BeeSettings">
-      <HintPath>..\..\External\il2cpp\builds\BeeRunner\Unity.IL2CPP.BeeSettings.dll</HintPath>
+      <HintPath>..\..\External\il2cpp\builds\build\BeeSettings\offline\Unity.IL2CPP.BeeSettings.dll</HintPath>
     </Reference>
     <ProjectReference Include="UnityEngine.csproj">
       <Project>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</Project>

@@ -50,6 +50,9 @@ namespace UnityEditor
 
     internal sealed partial class LightmapVisualizationUtility
     {
+        static readonly PrefColor kUVColor = new PrefColor("Lightmap Preview/UV Color", 51f / 255f, 111f / 255f, 244f / 255f, 1f);
+        static readonly PrefColor kSelectedUVColor = new PrefColor("Lightmap Preview/Selected UV Color", 250f / 255f, 250f / 255f, 0f, 1f);
+
         [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
         internal extern static bool IsTextureTypeEnabled(GITextureType textureType);
 
@@ -88,7 +91,12 @@ namespace UnityEditor
 
         [NativeHeader("Runtime/GI/RenderOverlay.h")]
         [FreeFunction("DrawTextureWithUVOverlay")]
-        public   extern static void DrawTextureWithUVOverlay(Texture2D texture, GameObject selectedGameObject, GameObject[] gameObjects, Rect drawableArea, Rect position, GITextureType textureType, float exposure = 0.0f);
+        public extern static void DrawTextureWithUVOverlay(Texture2D texture, GameObject selectedGameObject, GameObject[] gameObjects, Rect drawableArea, Rect position, GITextureType textureType, Color uvColor, Color selectedUVColor, float exposure = 0.0f);
+
+        public static void DrawTextureWithUVOverlay(Texture2D texture, GameObject selectedGameObject, GameObject[] gameObjects, Rect drawableArea, Rect position, GITextureType textureType, float exposure = 0.0f)
+        {
+            DrawTextureWithUVOverlay(texture, selectedGameObject, gameObjects, drawableArea, position, textureType, kUVColor, kSelectedUVColor, exposure);
+        }
 
         [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
         public   extern static LightmapType GetLightmapType(GITextureType textureType);

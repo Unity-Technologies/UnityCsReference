@@ -296,6 +296,10 @@ namespace UnityEditor
             string invalidSubEmitters = "";
             foreach (var ps in m_ParticleSystemUI.m_ParticleSystems)
             {
+                // skip this for Presets - traversing the parent hierarchy doesn't work because they aren't real GameObjects.
+                if ((ps.gameObject.hideFlags & HideFlags.NotEditable) != 0)
+                    continue;
+
                 var subEmitters = ps.subEmitters;
                 for (int i = 0; i < subEmitters.subEmittersCount; i++)
                 {

@@ -20,12 +20,9 @@ namespace Unity.Profiling
         [FieldOffset(0)]
         readonly ushort m_CategoryId;
 
-        public unsafe ProfilerCategory(string categoryName)
+        public ProfilerCategory(string categoryName)
         {
-            fixed(char* c = categoryName)
-            {
-                m_CategoryId = ProfilerUnsafeUtility.GetCategoryByName(c, categoryName.Length);
-            }
+            m_CategoryId = ProfilerUnsafeUtility.GetCategoryByName(categoryName);
         }
 
         internal ProfilerCategory(ushort category)

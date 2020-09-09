@@ -1785,7 +1785,11 @@ namespace UnityEditor
             {
                 UnpackPrefabInstanceAndReturnNewOutermostRoots(instanceRoot, unpackMode);
             }
+
+            prefabInstanceUnpacked?.Invoke(instanceRoot);
         }
+
+        static internal event Action<GameObject> prefabInstanceUnpacked;
 
         internal static bool HasInvalidComponent(Object gameObjectOrComponent)
         {

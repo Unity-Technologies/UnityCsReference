@@ -3,11 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
+using UnityEngine;
 using UnityEditor.Scripting;
+using UnityEditor.Scripting.Compilers;
 using UnityEditor.Utils;
 
 namespace UnityEditor.Build.Player
@@ -40,16 +39,18 @@ namespace UnityEditor.Build.Player
         {
             Program typeDbGeneratorProcess;
             var arguments = OptionsToStringArgument(options);
+            var responseFile = Path.Combine(Directory.GetParent(options.OutputPath).FullName, "response.rsp");
+            File.WriteAllText(responseFile, arguments);
 
             if (NetCoreRunProgram.IsSupported())
             {
-                typeDbGeneratorProcess = new NetCoreRunProgram(buildDataGeneratorPath, arguments, null);
+                typeDbGeneratorProcess = new NetCoreRunProgram(buildDataGeneratorPath, $"@{CommandLineFormatter.PrepareFileName(responseFile)}", null);
             }
             else
             {
                 typeDbGeneratorProcess =
                     new ManagedProgram(MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge"), null,
-                        buildDataGeneratorPath, arguments, false, null);
+                        buildDataGeneratorPath, $"@{CommandLineFormatter.PrepareFileName(responseFile)}", false, null);
             }
 
             typeDbGeneratorProcess.Start((s, e) =>
@@ -67,10 +68,21 @@ namespace UnityEditor.Build.Player
 
         private void ProcessExit(Program typeDbGeneratorProcess)
         {
-            if (typeDbGeneratorProcess.HasExited && typeDbGeneratorProcess.ExitCode == 0)
+            if (typeDbGeneratorProcess.HasExited)
             {
-                Console.WriteLine("BuildPlayerGenerator: Succeeded");
-                return;
+                var stderr = typeDbGeneratorProcess.GetErrorOutput();
+                foreach (var s in stderr)
+                    Debug.LogError(s);
+
+                if (typeDbGeneratorProcess.ExitCode == 0)
+                {
+                    var stdout = typeDbGeneratorProcess.GetStandardOutput();
+                    foreach (var s in stdout)
+                        Debug.Log(s);
+
+                    Console.WriteLine("BuildPlayerGenerator: Succeeded");
+                    return;
+                }
             }
             Console.WriteLine($"Failure running BuildPlayerGenerator\nArguments:\n{typeDbGeneratorProcess.GetProcessStartInfo().Arguments}{Environment.NewLine}{typeDbGeneratorProcess.GetAllOutput()}");
         }

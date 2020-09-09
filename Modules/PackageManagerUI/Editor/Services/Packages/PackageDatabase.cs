@@ -454,7 +454,8 @@ namespace UnityEditor.PackageManager.UI
         private void RemoveSpecialInstallation(string specialUniqueId)
         {
             var placeHolderPackage = m_Packages.Get(specialUniqueId);
-            if (placeHolderPackage != null)
+            // Fix issue where package was added by id without version. Remove package from package database only if it's a placeholder
+            if (placeHolderPackage is PlaceholderPackage)
             {
                 m_Packages.Remove(specialUniqueId);
                 onPackagesChanged?.Invoke(Enumerable.Empty<IPackage>(), new[] { placeHolderPackage }, Enumerable.Empty<IPackage>(), Enumerable.Empty<IPackage>());

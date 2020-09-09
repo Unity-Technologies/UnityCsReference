@@ -1224,7 +1224,7 @@ namespace UnityEditor
             bool showAniso = (FilterMode)m_FilterMode.intValue != FilterMode.Point
                 && m_EnableMipMap.intValue > 0
                 && (TextureImporterShape)m_TextureShape.intValue != TextureImporterShape.TextureCube
-                && (TextureImporterShape)m_TextureShape.intValue != TextureImporterShape.Texture2D;
+                && (TextureImporterShape)m_TextureShape.intValue != TextureImporterShape.Texture3D;
             using (new EditorGUI.DisabledScope(!showAniso))
             {
                 EditorGUI.BeginChangeCheck();

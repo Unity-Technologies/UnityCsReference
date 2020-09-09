@@ -1414,7 +1414,7 @@ namespace UnityEditor
                     continue;
 
                 if (!settings.allowDeleteLastKeyInCurve)
-                    if (cw.curve.keys.Length == 1)
+                    if (cw.curve.length == 1)
                         continue;
 
                 cw.curve.RemoveKey(k.key);
@@ -1444,7 +1444,7 @@ namespace UnityEditor
             for (int i = keyList.Count - 1; i >= 0; i--)
             {
                 if (!settings.allowDeleteLastKeyInCurve)
-                    if (keyList[i].curve.keys.Length == 1)
+                    if (keyList[i].curve.length == 1)
                         continue;
 
                 if (!GetCurveWrapperFromID(keyList[i].curveId).animationIsEditable)
@@ -1933,7 +1933,7 @@ namespace UnityEditor
                 CurveWrapper cw = m_AnimationCurves[singleCurveIndex];
                 Vector2 localPos = ViewToDrawingTransformPoint(viewPos);
                 float time = localPos.x;
-                if (cw.curve.keys.Length == 0 || time < cw.curve.keys[0].time || time > cw.curve.keys[cw.curve.keys.Length - 1].time)
+                if (cw.curve.length == 0 || time < cw.curve[0].time || time > cw.curve[cw.curve.length - 1].time)
                 {
                     if (CreateKeyFromClick(singleCurveIndex, localPos))
                         curveIds.Add(cw.id);
@@ -2151,9 +2151,10 @@ namespace UnityEditor
                 if (cw.readOnly || cw.hidden)
                     continue;
 
-                for (int i = 0; i < cw.curve.keys.Length; ++i)
+                Keyframe[] keys = cw.curve.keys;
+                for (int i = 0; i < cw.curve.length; ++i)
                 {
-                    Keyframe k = cw.curve.keys[i];
+                    Keyframe k = keys[i];
                     float d = (GetGUIPoint(cw, new Vector2(k.time, k.value)) - mousePos).sqrMagnitude;
                     // If we have an exact hit we just return that key
                     if (d <= kExactPickDistSqr)
@@ -2269,7 +2270,7 @@ namespace UnityEditor
                     if (mouseY >= v1 && mouseY <= v2)
                     {
                         timeValue = mousePositionInDrawing;
-                        curves = new[] {cw, cw2};
+                        curves = new[] { cw, cw2 };
                         MoveCurveToFront(cw.id);
                         return true;
                     }
@@ -2329,7 +2330,7 @@ namespace UnityEditor
                             if (curve != null)
                             {
                                 BeginRangeSelection();
-                                for (int keyIndex = 0; keyIndex < curve.keys.Length; ++keyIndex)
+                                for (int keyIndex = 0; keyIndex < curve.length; ++keyIndex)
                                 {
                                     if (!selectedCurves.Any(x => x.curveID == selectedPoint.curveID && x.key == keyIndex))
                                     {
@@ -4086,7 +4087,7 @@ namespace UnityEditor
                     float[] ticksPos = (float[])ticks.Clone();
 
                     // Calculate how many decimals are needed to show the differences between the labeled ticks
-                    int decimals =  MathUtils.GetNumberOfDecimalsForMinimumDifference(vTicks.GetPeriodOfLevel(labelLevel));
+                    int decimals = MathUtils.GetNumberOfDecimalsForMinimumDifference(vTicks.GetPeriodOfLevel(labelLevel));
                     string format = "n" + decimals;
                     m_AxisLabelFormat = format;
 

@@ -54,7 +54,7 @@ namespace UnityEditor
             }
         }
 
-        private class EventLineContextMenuObject
+        private struct EventLineContextMenuObject
         {
             public GameObject m_Animated;
             public AnimationClip m_Clip;

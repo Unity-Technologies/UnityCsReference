@@ -20,8 +20,8 @@ namespace UnityEditor
         private AnimationCurve m_Curve;
         private float m_CustomRangeStart = 0;
         private float m_CustomRangeEnd = 0;
-        private float rangeStart { get { return (m_CustomRangeStart == 0 && m_CustomRangeEnd == 0 && m_Curve.length > 0 ? m_Curve.keys[0].time : m_CustomRangeStart); } }
-        private float rangeEnd   { get { return (m_CustomRangeStart == 0 && m_CustomRangeEnd == 0 && m_Curve.length > 0 ? m_Curve.keys[m_Curve.length - 1].time : m_CustomRangeEnd); } }
+        private float rangeStart { get { return (m_CustomRangeStart == 0 && m_CustomRangeEnd == 0 && m_Curve.length > 0 ? m_Curve[0].time : m_CustomRangeStart); } }
+        private float rangeEnd   { get { return (m_CustomRangeStart == 0 && m_CustomRangeEnd == 0 && m_Curve.length > 0 ? m_Curve[m_Curve.length - 1].time : m_CustomRangeEnd); } }
         private WrapMode preWrapMode = WrapMode.Once;
         private WrapMode postWrapMode = WrapMode.Once;
 
@@ -262,11 +262,14 @@ namespace UnityEditor
         {
             BuildCurveMesh();
 
-            Keyframe[] keys = m_Curve.keys;
-            if (keys.Length > 0)
+            int numKeys = m_Curve.length;
+            int first = 0;
+            int last = Mathf.Max(first, numKeys - 1);
+
+            if (numKeys > 0)
             {
-                Vector3 firstPoint = new Vector3(rangeStart, keys.First().value);
-                Vector3 lastPoint = new Vector3(rangeEnd, keys.Last().value);
+                Vector3 firstPoint = new Vector3(rangeStart, m_Curve[first].value);
+                Vector3 lastPoint = new Vector3(rangeEnd, m_Curve[last].value);
                 DrawCurveWrapped(minTime, maxTime, rangeStart, rangeEnd, preWrapMode, postWrapMode, m_CurveMesh, firstPoint, lastPoint, transform, color, wrapColor);
             }
         }

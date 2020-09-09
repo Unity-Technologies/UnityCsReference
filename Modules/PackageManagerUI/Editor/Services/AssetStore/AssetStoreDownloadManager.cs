@@ -65,21 +65,46 @@ namespace UnityEditor.PackageManager.UI
 
         [NonSerialized]
         private DownloadDelegateHandler m_DownloadDelegateHandler;
+        [SerializeField]
+        private int m_DownloadDelegateHandlerInstanceId = 0;
+        [SerializeField]
+        private bool m_DelegateRegistered = false;
+
+        private DownloadDelegateHandler downloadDelegateHandler
+        {
+            get
+            {
+                if (m_DownloadDelegateHandler != null)
+                    return m_DownloadDelegateHandler;
+
+                if (m_DownloadDelegateHandlerInstanceId != 0)
+                    m_DownloadDelegateHandler = UnityEngine.Object.FindObjectFromInstanceID(m_DownloadDelegateHandlerInstanceId) as DownloadDelegateHandler;
+
+                if (m_DownloadDelegateHandler == null)
+                {
+                    m_DownloadDelegateHandler = ScriptableObject.CreateInstance<DownloadDelegateHandler>();
+                    m_DownloadDelegateHandler.hideFlags = HideFlags.DontSave;
+                }
+                m_DownloadDelegateHandler.downloadManager = this;
+                m_DownloadDelegateHandlerInstanceId = m_DownloadDelegateHandler.GetInstanceID();
+                return m_DownloadDelegateHandler;
+            }
+        }
+
         private void RegisterDownloadDelegate()
         {
-            if (m_DownloadDelegateHandler != null)
+            if (m_DelegateRegistered)
                 return;
-            m_DownloadDelegateHandler = ScriptableObject.CreateInstance<DownloadDelegateHandler>();
-            m_DownloadDelegateHandler.downloadManager = this;
-            m_AssetStoreUtils.RegisterDownloadDelegate(m_DownloadDelegateHandler);
+            m_AssetStoreUtils.RegisterDownloadDelegate(downloadDelegateHandler);
+            m_DelegateRegistered = true;
         }
 
         private void UnRegisterDownloadDelegate()
         {
-            if (m_DownloadDelegateHandler == null)
+            if (!m_DelegateRegistered)
                 return;
-            m_AssetStoreUtils.UnRegisterDownloadDelegate(m_DownloadDelegateHandler);
-            UnityEngine.Object.DestroyImmediate(m_DownloadDelegateHandler);
+            m_AssetStoreUtils.UnRegisterDownloadDelegate(downloadDelegateHandler);
+            m_DelegateRegistered = false;
         }
 
         public virtual bool IsAnyDownloadInProgress()

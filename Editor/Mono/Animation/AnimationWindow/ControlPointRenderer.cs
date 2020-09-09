@@ -97,11 +97,11 @@ namespace UnityEditor
 
                 if (renderChunk.isDirty)
                 {
-                    renderChunk.mesh.vertices = renderChunk.vertices.ToArray();
-                    renderChunk.mesh.colors32 = renderChunk.colors.ToArray();
-                    renderChunk.mesh.uv = renderChunk.uvs.ToArray();
+                    renderChunk.mesh.SetVertices(renderChunk.vertices);
+                    renderChunk.mesh.SetColors(renderChunk.colors);
+                    renderChunk.mesh.SetUVs(0, renderChunk.uvs);
 
-                    renderChunk.mesh.SetIndices(renderChunk.indices.ToArray(), MeshTopology.Triangles, 0);
+                    renderChunk.mesh.SetIndices(renderChunk.indices, MeshTopology.Triangles, 0);
 
                     renderChunk.isDirty = false;
                 }

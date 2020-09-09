@@ -3310,7 +3310,19 @@ namespace UnityEditor
                     break;
                 case EventCommandNames.SelectAll:
                     if (execute)
-                        Selection.objects = FindObjectsOfType(typeof(GameObject));
+                    {
+                        var gameObjects = FindObjectsOfType<GameObject>();
+                        var objs = new List<Object>(gameObjects.Length);
+
+                        foreach (var go in gameObjects)
+                        {
+                            if (!SceneVisibilityManager.instance.IsPickingDisabled(go)
+                                && !SceneVisibilityManager.instance.IsHidden(go))
+                                objs.Add(go);
+                        }
+                        Selection.objects = objs.ToArray();
+                    }
+
                     Event.current.Use();
                     break;
                 case EventCommandNames.DeselectAll:

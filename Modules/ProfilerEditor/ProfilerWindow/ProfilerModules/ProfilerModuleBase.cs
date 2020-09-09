@@ -180,9 +180,40 @@ namespace UnityEditorInternal.Profiling
                 m_ProfilerWindow.SetAreasInUse(previousAreas, false);
             }
 
+            // Capture each chart counter's enabled state prior to assignment.
+            Dictionary<ProfilerCounterData, bool> counterEnabledStates = null;
+            if (m_Chart != null)
+            {
+                counterEnabledStates = new Dictionary<ProfilerCounterData, bool>();
+                for (int i = 0; i < m_ChartCounters.Count; ++i)
+                {
+                    var counter = m_ChartCounters[i];
+                    var enabled = m_Chart.m_Series[i].enabled;
+                    counterEnabledStates.Add(counter, enabled);
+                }
+            }
+
             m_ChartCounters = chartCounters;
             m_DetailCounters = detailCounters;
             RebuildChart();
+
+            // Restore each chart counter's enabled state after assignment.
+            if (counterEnabledStates != null && counterEnabledStates.Count > 0)
+            {
+                for (int i = 0; i < m_ChartCounters.Count; ++i)
+                {
+                    var counter = m_ChartCounters[i];
+
+                    bool enabled;
+                    if (!counterEnabledStates.TryGetValue(counter, out enabled))
+                    {
+                        // A new counter is enabled by default.
+                        enabled = true;
+                    }
+
+                    m_Chart.m_Series[i].enabled = enabled;
+                }
+            }
 
             if (isActive)
             {
