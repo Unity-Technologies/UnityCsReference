@@ -64,7 +64,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     var message = string.Format(exception.Message, filePath);
                     var loadAssetAtPath = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filePath);
 
-                    CompilationPipeline.LogEditorCompilationError(message, loadAssetAtPath.GetInstanceID());
+                    if (loadAssetAtPath != null)
+                    {
+                        CompilationPipeline.LogEditorCompilationError(message, loadAssetAtPath.GetInstanceID());
+                    }
+                    else
+                    {
+                        UnityEngine.Debug.LogException(exception);
+                    }
                 }
             }
             else
@@ -338,7 +345,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static EditorCompilation.CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform)
         {
-            return EmitExceptionAsError(() => Instance.TickCompilationPipeline(options, platformGroup, platform), EditorCompilation.CompileStatus.Idle);
+            try
+            {
+                return Instance.TickCompilationPipeline(options, platformGroup, platform);
+            }
+            catch (Exception e)
+            {
+                LogException(e);
+                ClearDirtyScripts();
+                return EditorCompilation.CompileStatus.CompilationFailed;
+            }
         }
 
         [RequiredByNativeCode]
