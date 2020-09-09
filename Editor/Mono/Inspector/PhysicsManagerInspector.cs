@@ -48,15 +48,78 @@ namespace UnityEditor
                 {
                     if (LayerMask.LayerToName(i) != "")
                     {
-                        // Need to do some shifting around here, so the rotated text will still clip correctly
-                        float clipOffset = (labelSize + indent + (numLayers - y) * checkboxSize) - (scrollArea.width);
-                        if (clipOffset < 0)
-                            clipOffset = 0;
+                        bool hidelabel = false;
+                        bool hidelabelonscrollbar = false;
+                        int defautlabelrectwidth = 311;
+                        int defaultlablecount  = 10;
+                        float clipOffset = labelSize + (checkboxSize * numLayers) + checkboxSize;
 
-                        Vector3 translate = new Vector3(labelSize + indent + checkboxSize * (numLayers - y) + topLeft.y + topLeft.x - clipOffset, topLeft.y, 0);
+                        // hide vertical labels when overlap with the rest of the UI
+                        if ((topLeft.x + (clipOffset - checkboxSize * y)) <= 0)
+                            hidelabel = true;
+
+                        // hide label when it touch horizontal scroll area
+                        if (topLabelRect.height > scrollArea.height)
+                        {
+                            hidelabelonscrollbar = true;
+                        }
+                        else if (topLabelRect.width != scrollArea.width || topLabelRect.width != scrollArea.width - topLeft.x)
+                        {
+                            // hide label when it touch vertical scroll area
+                            if (topLabelRect.width > defautlabelrectwidth)
+                            {
+                                float tmp = topLabelRect.width - scrollArea.width;
+                                if (tmp > 1)
+                                {
+                                    if (topLeft.x < 0)
+                                        tmp += topLeft.x;
+
+                                    if (tmp / checkboxSize > y)
+                                        hidelabelonscrollbar = true;
+                                }
+                            }
+                            else
+                            {
+                                float tmp = defautlabelrectwidth;
+                                if (numLayers < defaultlablecount)
+                                {
+                                    tmp -= checkboxSize * (defaultlablecount - numLayers);
+                                }
+
+                                if ((scrollArea.width + y * checkboxSize) + checkboxSize <= tmp)
+                                    hidelabelonscrollbar = true;
+
+                                //Re-enable the label when we move the scroll bar
+                                if (topLeft.x < 0)
+                                {
+                                    if (topLabelRect.width == scrollArea.width - topLeft.x)
+                                        hidelabelonscrollbar = false;
+
+                                    if (numLayers <= defaultlablecount / 2)
+                                    {
+                                        if ((tmp - (scrollArea.width - ((topLeft.x - 10) * (y + 1)))) < 0)
+                                            hidelabelonscrollbar = false;
+                                    }
+                                    else
+                                    {
+                                        float hiddenlables = (int)(tmp - scrollArea.width) / checkboxSize;
+                                        int res = (int)((topLeft.x * -1) + 12) / checkboxSize;
+                                        if (hiddenlables - res < y)
+                                            hidelabelonscrollbar = false;
+                                    }
+                                }
+                            }
+                        }
+
+
+                        Vector3 translate = new Vector3(labelSize + indent + checkboxSize * (numLayers - y) + topLeft.y + topLeft.x, topLeft.y, 0);
                         GUI.matrix = Matrix4x4.TRS(translate, Quaternion.identity, Vector3.one) * Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(0, 0, 90), Vector3.one);
 
-                        GUI.Label(new Rect(2 - topLeft.x, -clipOffset, labelSize, checkboxSize), LayerMask.LayerToName(i), "RightLabel");
+                        if (hidelabel || hidelabelonscrollbar)
+                            GUI.Label(new Rect(2 - topLeft.x, 0, labelSize, checkboxSize), "", "RightLabel");
+                        else
+                            GUI.Label(new Rect(2 - topLeft.x, 0, labelSize, checkboxSize), LayerMask.LayerToName(i), "RightLabel");
+
                         y++;
                     }
                 }

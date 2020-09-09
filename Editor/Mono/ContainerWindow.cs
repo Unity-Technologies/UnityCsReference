@@ -249,21 +249,32 @@ namespace UnityEditor
                     L10n.Tr("Discard All"));
             }
 
-            switch (option)
+            try
             {
-                case kSave:
-                    foreach (var w in allUnsaved)
-                        w.SaveChanges();
-                    break;
-                case kCancel:
-                case kDiscard:
-                    break;
-                default:
-                    Debug.LogError("Unrecognized option.");
-                    break;
-            }
+                switch (option)
+                {
+                    case kSave:
+                        foreach (var w in allUnsaved)
+                            w.SaveChanges();
+                        break;
+                    case kCancel:
+                    case kDiscard:
+                        break;
+                    default:
+                        Debug.LogError("Unrecognized option.");
+                        break;
+                }
 
-            return option != kCancel;
+                return option != kCancel;
+            }
+            catch (Exception ex)
+            {
+                EditorUtility.DisplayDialog(L10n.Tr("Save Changes Failed"),
+                    ex.Message,
+                    L10n.Tr("OK"));
+
+                return false;
+            }
         }
 
         internal void InternalCloseWindow()

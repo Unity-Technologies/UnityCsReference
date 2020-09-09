@@ -25,6 +25,7 @@ namespace UnityEditor.Build.Content
     [NativeHeader("Modules/BuildPipeline/Editor/Public/ContentBuildTypes.h")]
     [NativeHeader("Modules/BuildPipeline/Editor/Shared/ContentBuildInterface.bindings.h")]
     [NativeHeader("Modules/BuildPipeline/Editor/Public/BuildUtilities.h")]
+    [NativeHeader("Modules/BuildPipeline/Editor/Public/ContentBuildInterfaceProfile.h")]
     [StaticAccessor("BuildPipeline", StaticAccessorType.DoubleColon)]
     public static partial class ContentBuildInterface
     {
@@ -214,5 +215,11 @@ namespace UnityEditor.Build.Content
         //modified to be thread safe - if called from a non-main thread, there are no dialogs presented in the case of an error.
         [ThreadSafe]
         public static extern uint ArchiveAndCompress(ResourceFile[] resourceFiles, string outputBundlePath, UnityEngine.BuildCompression compression, bool stripUnityVersion);
+
+        [NativeThrows]
+        extern public static void StartProfileCapture(ProfileCaptureOptions options);
+
+        [NativeThrows]
+        extern public static ContentBuildProfileEvent[] StopProfileCapture();
     }
 }

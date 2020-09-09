@@ -844,15 +844,16 @@ namespace UnityEditor
                         bool isKey = false;
                         int keyIndex = keyCount - 1;
 
+                        Keyframe[] keys = curve.keys;
                         for (int keyIter = 0; keyIter < keyCount; keyIter++)
                         {
-                            if (Mathf.Abs(curve.keys[keyIter].time - time) < 0.0001f)
+                            if (Mathf.Abs(keys[keyIter].time - time) < 0.0001f)
                             {
                                 isKey = true;
                                 keyIndex = keyIter;
                                 break;
                             }
-                            else if (curve.keys[keyIter].time > time)
+                            else if (keys[keyIter].time > time)
                             {
                                 keyIndex = keyIter;
                                 break;
@@ -866,14 +867,14 @@ namespace UnityEditor
                             if (keyIndex > 0)
                             {
                                 keyIndex--;
-                                m_AvatarPreview.timeControl.normalizedTime = curve.keys[keyIndex].time;
+                                m_AvatarPreview.timeControl.normalizedTime = keys[keyIndex].time;
                             }
                         }
 
                         if (GUILayout.Button(Styles.NextKeyContent))
                         {
                             if (isKey && keyIndex < keyCount - 1) keyIndex++;
-                            m_AvatarPreview.timeControl.normalizedTime = curve.keys[keyIndex].time;
+                            m_AvatarPreview.timeControl.normalizedTime = keys[keyIndex].time;
                         }
 
                         float val, newVal;
@@ -911,6 +912,7 @@ namespace UnityEditor
                             key.inTangent = 0;
                             key.outTangent = 0;
                             curve.AddKey(key);
+                            keys = curve.keys;
                             m_ClipInfo.SetCurve(i, curve);
                             UnityEditorInternal.AnimationCurvePreviewCache.ClearCache();
                         }
@@ -929,7 +931,7 @@ namespace UnityEditor
 
                         for (int keyIter = 0; keyIter < keyCount; keyIter++)
                         {
-                            float keyTime = curve.keys[keyIter].time;
+                            float keyTime = keys[keyIter].time;
 
                             Handles.color = Color.white;
                             Handles.DrawLine(new Vector3(curveRect.x + keyTime * curveRect.width, curveRect.y + curveRect.height - 10, 0), new Vector3(curveRect.x + keyTime * curveRect.width, curveRect.y + curveRect.height, 0));
@@ -1427,7 +1429,7 @@ namespace UnityEditor
                     Color[] colors = new Color[keys.Length];
                     Color curveColorRed = new Color(1.0f, 0.3f, 0.3f);
                     Color curveColorOrange = new Color(1.0f, 0.8f, 0.0f);
-                    Color curveColorGreen  = new Color(0.0f, 1.0f, 0.0f);
+                    Color curveColorGreen = new Color(0.0f, 1.0f, 0.0f);
                     for (int i = 0; i < points.Length; i++)
                     {
                         points[i] = keys[i];
@@ -1479,7 +1481,7 @@ namespace UnityEditor
             m_Timeline = timeArea;
         }
 
-        public void SelectEvent(AnimationEvent[] events , int index, AnimationClipInfoProperties clipInfo)
+        public void SelectEvent(AnimationEvent[] events, int index, AnimationClipInfoProperties clipInfo)
         {
             m_EventsSelected = new bool[events.Length];
             m_EventsSelected[index] = true;

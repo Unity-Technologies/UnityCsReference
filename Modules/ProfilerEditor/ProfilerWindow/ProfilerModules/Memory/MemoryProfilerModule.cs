@@ -180,32 +180,32 @@ namespace UnityEditorInternal.Profiling
                     if (totalUsedMemory != -1)
                     {
                         var stringBuilder = new StringBuilder(1024);
-                        stringBuilder.Append($"Used Total: {EditorUtility.FormatBytes(totalUsedMemory)}   ");
-                        stringBuilder.Append($"Mono/il2cpp: {GetCounterValueAsBytes(f, "GC Used Memory")}   ");
+                        stringBuilder.Append($"Total Used Memory: {EditorUtility.FormatBytes(totalUsedMemory)}   ");
+                        stringBuilder.Append($"GC: {GetCounterValueAsBytes(f, "GC Used Memory")}   ");
                         stringBuilder.Append($"Gfx: {GetCounterValueAsBytes(f, "Gfx Used Memory")}   ");
                         stringBuilder.Append($"Audio: {GetCounterValueAsBytes(f, "Audio Used Memory")}   ");
                         stringBuilder.Append($"Video: {GetCounterValueAsBytes(f, "Video Used Memory")}   ");
                         stringBuilder.Append($"Profiler: {GetCounterValueAsBytes(f, "Profiler Used Memory")}   ");
 
-                        stringBuilder.Append($"\nReserved Total: {GetCounterValueAsBytes(f, "Total Reserved Memory")}   ");
-                        stringBuilder.Append($"Mono/il2cpp: {GetCounterValueAsBytes(f, "GC Reserved Memory")}   ");
+                        stringBuilder.Append($"\nTotal Reserved Memory: {GetCounterValueAsBytes(f, "Total Reserved Memory")}   ");
+                        stringBuilder.Append($"GC: {GetCounterValueAsBytes(f, "GC Reserved Memory")}   ");
                         stringBuilder.Append($"Gfx: {GetCounterValueAsBytes(f, "Gfx Reserved Memory")}   ");
                         stringBuilder.Append($"Audio: {GetCounterValueAsBytes(f, "Audio Reserved Memory")}   ");
                         stringBuilder.Append($"Video: {GetCounterValueAsBytes(f, "Video Reserved Memory")}   ");
                         stringBuilder.Append($"Profiler: {GetCounterValueAsBytes(f, "Profiler Reserved Memory")}   ");
 
-                        stringBuilder.Append($"\nTotal System Memory Usage: {GetCounterValueAsBytes(f, "System Used Memory")}   ");
+                        stringBuilder.Append($"\nSystem Used Memory: {GetCounterValueAsBytes(f, "System Used Memory")}   ");
 
                         stringBuilder.Append($"\n\nTextures: {GetCounterValue(f, "Texture Count")} / {GetCounterValueAsBytes(f, "Texture Memory")}   ");
                         stringBuilder.Append($"\nMeshes: {GetCounterValue(f, "Mesh Count")} / {GetCounterValueAsBytes(f, "Mesh Memory")}   ");
                         stringBuilder.Append($"\nMaterials: {GetCounterValue(f, "Material Count")} / {GetCounterValueAsBytes(f, "Material Memory")}   ");
                         stringBuilder.Append($"\nAnimationClips: {GetCounterValue(f, "AnimationClip Count")} / {GetCounterValueAsBytes(f, "AnimationClip Memory")}   ");
-                        stringBuilder.Append($"\nAssets: {GetCounterValue(f, "Asset Count")}   ");
-                        stringBuilder.Append($"\nGameObjects in Scenes: {GetCounterValue(f, "Game Object Count")}   ");
-                        stringBuilder.Append($"\nTotal Objects in Scenes: {GetCounterValue(f, "Scene Object Count")}   ");
-                        stringBuilder.Append($"\nTotal Unity Object Count: {GetCounterValue(f, "Object Count")}   ");
+                        stringBuilder.Append($"\nAsset Count: {GetCounterValue(f, "Asset Count")}   ");
+                        stringBuilder.Append($"\nGame Object Count: {GetCounterValue(f, "Game Object Count")}   ");
+                        stringBuilder.Append($"\nScene Object Count: {GetCounterValue(f, "Scene Object Count")}   ");
+                        stringBuilder.Append($"\nObject Count: {GetCounterValue(f, "Object Count")}   ");
 
-                        stringBuilder.Append($"\n\nGC Allocations per Frame: {GetCounterValue(f, "GC Allocation In Frame Count")} / {GetCounterValueAsBytes(f, "GC Allocated In Frame")}   ");
+                        stringBuilder.Append($"\n\nGC Allocation In Frame: {GetCounterValue(f, "GC Allocation In Frame Count")} / {GetCounterValueAsBytes(f, "GC Allocated In Frame")}   ");
 
                         var garlicHeapUsedMemory = GetCounterValue(f, "GARLIC heap used");
                         if (garlicHeapUsedMemory != -1)

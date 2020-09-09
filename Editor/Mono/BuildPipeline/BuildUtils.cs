@@ -102,20 +102,20 @@ namespace UnityEditorInternal
         }
 
         // Used when debugging il2cpp.exe from Windows, please don't remove it
-        public static void RunNativeProgram(string exe, string args)
-        {
-            using (var p = new NativeProgram(exe, args))
-            {
-                p.Start();
-                p.WaitForExit();
-                if (p.ExitCode != 0)
-                {
-                    Debug.LogError("Failed running " + exe + " " + args + "\n\n" + p.GetAllOutput());
-
-                    throw new Exception(string.Format("{0} did not run properly!", exe));
-                }
-            }
-        }
+        // public static void RunNativeProgram(string exe, string args)
+        // {
+        //     using (var p = new NativeProgram(exe, args))
+        //     {
+        //         p.Start();
+        //         p.WaitForExit();
+        //         if (p.ExitCode != 0)
+        //         {
+        //             Debug.LogError("Failed running " + exe + " " + args + "\n\n" + p.GetAllOutput());
+        //
+        //             throw new Exception(string.Format("{0} did not run properly!", exe));
+        //         }
+        //     }
+        // }
 
         private static void RunProgram(Program p, string exe, string args, string workingDirectory, CompilerOutputParserBase parser)
         {

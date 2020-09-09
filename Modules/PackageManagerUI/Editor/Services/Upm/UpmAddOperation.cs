@@ -16,11 +16,11 @@ namespace UnityEditor.PackageManager.UI
 
         // the special unique id is used when neither package unique id or version unique id applies
         // e.g. git url, tar ball path that does not contain any package name or version
-        public string specialUniqueId => m_SpecialUniqueId;
+        public virtual string specialUniqueId => m_SpecialUniqueId;
 
         [SerializeField]
         private PackageTag m_PackageTag = PackageTag.None;
-        public PackageTag packageTag => m_PackageTag;
+        public virtual PackageTag packageTag => m_PackageTag;
 
         public override RefreshOptions refreshOptions => RefreshOptions.None;
 

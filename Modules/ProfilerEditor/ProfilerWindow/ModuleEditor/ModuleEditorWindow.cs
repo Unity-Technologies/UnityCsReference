@@ -184,12 +184,16 @@ namespace UnityEditor.Profiling.ModuleEditor
                     Close();
                 }
             }
-            else
+            else if (closeWindow)
             {
                 var title = LocalizationDatabase.GetLocalizedString("Save Changes Failed");
                 var message = localizedErrorDescription;
                 var ok = LocalizationDatabase.GetLocalizedString("OK");
                 EditorUtility.DisplayDialog(title, message, ok);
+            }
+            else
+            {
+                throw new InvalidOperationException(localizedErrorDescription);
             }
         }
 

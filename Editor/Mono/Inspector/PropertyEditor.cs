@@ -289,6 +289,7 @@ namespace UnityEditor
 
             EditorApplication.focusChanged += OnFocusChanged;
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
+            PrefabUtility.prefabInstanceUnpacked += OnPrefabInstanceUnpacked;
         }
 
         [UsedImplicitly]
@@ -300,6 +301,7 @@ namespace UnityEditor
 
             EditorApplication.focusChanged -= OnFocusChanged;
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            PrefabUtility.prefabInstanceUnpacked -= OnPrefabInstanceUnpacked;
         }
 
         [UsedImplicitly]
@@ -1595,6 +1597,19 @@ namespace UnityEditor
             if (inspectedObjectInstanceID == m_LastInspectedObjectInstanceID && inspectedObjectInstanceID != -1)
                 m_ScrollView.verticalScroller.value = m_LastVerticalScrollValue;
             m_LastInspectedObjectInstanceID = -1; // reset to make sure the restore occurs once
+        }
+
+        void OnPrefabInstanceUnpacked(GameObject unpackedPrefabInstance)
+        {
+            // We don't use the input 'unpackedPrefabInstance', instead we reuse the ExtractPrefabComponents logic to detect
+            // if RebuildContentsContainers if actually needed to clear any "Component Name (Removed)" title headers.
+            // This prevents performance issues when unpacking a large multiselection.
+            var prevRemovedComponents = new HashSet<Component>(m_RemovedComponents);
+            ExtractPrefabComponents();
+            if (!prevRemovedComponents.SetEquals(m_RemovedComponents))
+            {
+                RebuildContentsContainers();
+            }
         }
 
         private void AddRemovedPrefabComponentElement(GameObject targetGameObject, Component nextInSource, VisualElement element)

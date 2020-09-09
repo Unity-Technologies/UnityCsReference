@@ -437,6 +437,16 @@ namespace UnityEditorInternal
                 "il2cpp"));
         }
 
+        internal static string GetIl2CppBeeSettingsFolder()
+        {
+            return $"{GetIl2CppFolder()}/build/BeeSettings/offline";
+        }
+
+        internal static string GetTundraFolder()
+        {
+            return $"{GetIl2CppFolder()}/external/bee/tundra";
+        }
+
         internal static string GetAdditionalArguments()
         {
             var arguments = new List<string>();
@@ -786,27 +796,27 @@ namespace UnityEditorInternal
 
         private string GetIl2CppCoreExe()
         {
-            return $"{IL2CPPUtils.GetIl2CppFolder()}/build/deploy/netcoreapp3.0/il2cpp{(Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "")}";
+            return $"{IL2CPPUtils.GetIl2CppFolder()}/build/deploy/netcoreapp3.1/il2cpp{(Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "")}";
         }
 
         private string GetIl2CppBeeExe()
         {
-            return $"{IL2CPPUtils.GetIl2CppFolder()}/BeeRunner/bee.exe";
+            return $"{IL2CPPUtils.GetIl2CppBeeSettingsFolder()}/bee.exe";
         }
 
         private string GetIl2CppBeeArtifactsDirectory()
         {
-            return $"{IL2CPPUtils.GetIl2CppFolder()}/BeeRunner/artifacts";
+            return $"{IL2CPPUtils.GetIl2CppBeeSettingsFolder()}/artifacts";
         }
 
         private string GetIl2CppTundraExe()
         {
             if (Application.platform == RuntimePlatform.OSXEditor)
-                return $"{IL2CPPUtils.GetIl2CppFolder()}/BeeRunner/tundra/tundra-mac-x64/tundra2";
+                return $"{IL2CPPUtils.GetTundraFolder()}/tundra-mac-x64/tundra2";
             if (Application.platform == RuntimePlatform.LinuxEditor)
-                return $"{IL2CPPUtils.GetIl2CppFolder()}/BeeRunner/tundra/tundra-linux-x64/tundra2";
+                return $"{IL2CPPUtils.GetTundraFolder()}/tundra-linux-x64/tundra2";
 
-            return $"{IL2CPPUtils.GetIl2CppFolder()}/BeeRunner/tundra/tundra-win-x64/tundra2.exe";
+            return $"{IL2CPPUtils.GetTundraFolder()}/tundra-win-x64/tundra2.exe";
         }
 
         private string GetMonoBleedingEdgeExe()

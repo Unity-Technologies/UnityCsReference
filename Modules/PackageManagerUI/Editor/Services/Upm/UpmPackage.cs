@@ -22,7 +22,7 @@ namespace UnityEditor.PackageManager.UI
 
         public override IVersionList versions => m_VersionList;
 
-        public UpmPackage(string name, bool isDiscoverable, PackageType type = PackageType.None)
+        public UpmPackage(string name, bool isDiscoverable, PackageType type)
         {
             m_Progress = PackageProgress.None;
             m_Name = name;
@@ -33,13 +33,13 @@ namespace UnityEditor.PackageManager.UI
             RefreshUnityType();
         }
 
-        public UpmPackage(PackageInfo info, bool isInstalled, bool isDiscoverable)
+        public UpmPackage(PackageInfo info, bool isInstalled, bool isDiscoverable, bool isUnityPackage)
         {
             m_Progress = PackageProgress.None;
             m_Name = info.name;
             m_Errors = new List<UIError>();
             m_IsDiscoverable = isDiscoverable;
-            m_VersionList = new UpmVersionList(info, isInstalled);
+            m_VersionList = new UpmVersionList(info, isInstalled, isUnityPackage);
             m_Type = versions.primary.HasTag(PackageTag.BuiltIn) ? PackageType.BuiltIn : PackageType.Installable;
             RefreshUnityType();
         }

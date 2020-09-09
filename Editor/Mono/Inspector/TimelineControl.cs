@@ -6,7 +6,6 @@ using UnityEngine;
 using System.Collections.Generic;
 using System;
 
-
 namespace UnityEditor
 {
     internal class TimelineControl
@@ -439,26 +438,34 @@ namespace UnityEditor
             bool hasModifiedData = false;
 
             Init();
-            m_Rect = timeRect;
 
-            float timeAreaStart = m_TimeArea.PixelToTime(timeRect.xMin, timeRect);
-            float timeAreaStop = m_TimeArea.PixelToTime(timeRect.xMax, timeRect);
-
-            if (!Mathf.Approximately(timeAreaStart, StartTime))
-            {
-                StartTime = timeAreaStart;
-                GUI.changed = true;
-            }
-            if (!Mathf.Approximately(timeAreaStop, StopTime))
-            {
-                StopTime = timeAreaStop;
-                GUI.changed = true;
-            }
-
-            Time = Mathf.Max(Time, 0f);
-
+            // Case 1233111: timeRect is not valid during the layout phase and setting GUI.changed during that phase
+            // invalidates the layout.
             if (Event.current.type == EventType.Repaint)
+            {
+                m_Rect = timeRect;
+
+
+                float timeAreaStart = m_TimeArea.PixelToTime(timeRect.xMin, timeRect);
+                float timeAreaStop = m_TimeArea.PixelToTime(timeRect.xMax, timeRect);
+
+                if (!Mathf.Approximately(timeAreaStart, StartTime))
+                {
+                    StartTime = timeAreaStart;
+                    GUI.changed = true;
+                }
+                if (!Mathf.Approximately(timeAreaStop, StopTime))
+                {
+                    StopTime = timeAreaStop;
+                    GUI.changed = true;
+                }
+
+                Time = Mathf.Max(Time, 0f);
+
                 m_TimeArea.rect = timeRect;
+            }
+            else
+                timeRect = m_Rect;
 
             m_TimeArea.BeginViewGUI();
             m_TimeArea.EndViewGUI();

@@ -249,11 +249,12 @@ namespace UnityEditor
             {
                 foreach (var animationCurve in new[] { m_MaxCurve, m_MinCurve })
                 {
-                    if (animationCurve.length > 0)
+                    var keyCount = animationCurve.length;
+                    if (keyCount > 0)
                     {
                         var keys = animationCurve.keys;
-                        domain.x = Mathf.Min(domain.x, keys.First().time);
-                        domain.y = Math.Max(domain.y, keys.Last().time);
+                        domain.x = Mathf.Min(domain.x, animationCurve[0].time);
+                        domain.y = Math.Max(domain.y, animationCurve[keyCount - 1].time);
                     }
                 }
             }

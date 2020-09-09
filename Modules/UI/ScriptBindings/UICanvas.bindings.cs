@@ -65,6 +65,8 @@ namespace UnityEngine
         [FreeFunction("UI::GetDefaultUIMaterial")] public static extern Material GetDefaultCanvasMaterial();
         [FreeFunction("UI::GetETC1SupportedCanvasMaterial")] public static extern Material GetETC1SupportedCanvasMaterial();
 
+        internal extern void UpdateCanvasRectTransform(bool alignWithCamera);
+
         public static void ForceUpdateCanvases()
         {
             SendWillRenderCanvases();

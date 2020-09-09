@@ -49,6 +49,7 @@ namespace UnityEditor.PackageManager.UI
         void SetSeeAllVersions(IPackage package, bool value);
         bool IsGroupExpanded(string groupName);
         void SetGroupExpanded(string groupName, bool value);
+        string GetGroupName(IPackage package);
 
         bool Contains(IPackage package);
         bool Contains(string packageUniqueId);

@@ -10,7 +10,7 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     class Texture2DArrayInspector : TextureInspector
     {
-        static readonly int s_ShaderColorMask = Shader.PropertyToID("_ColorMask");
+        static readonly int s_ShaderColorMask = Shader.PropertyToID("_ColorMaskBits");
         static readonly int s_ShaderSliceIndex = Shader.PropertyToID("_SliceIndex");
         static readonly int s_ShaderMip = Shader.PropertyToID("_Mip");
         static readonly int s_ShaderToSrgb = Shader.PropertyToID("_ToSRGB");

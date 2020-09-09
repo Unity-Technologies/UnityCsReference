@@ -228,9 +228,12 @@ namespace UnityEngine
         extern public MonoOrStereoscopicEye stereoActiveEye {[FreeFunction("CameraScripting::GetStereoActiveEye", HasExplicitThis = true)] get; }
 
         extern public Matrix4x4 GetStereoNonJitteredProjectionMatrix(StereoscopicEye eye);
+
+        [FreeFunction("CameraScripting::GetStereoViewMatrix", HasExplicitThis = true)]
         extern public Matrix4x4 GetStereoViewMatrix(StereoscopicEye eye);
         extern public void CopyStereoDeviceProjectionMatrixToNonJittered(StereoscopicEye eye);
 
+        [FreeFunction("CameraScripting::GetStereoProjectionMatrix", HasExplicitThis = true)]
         extern public Matrix4x4 GetStereoProjectionMatrix(StereoscopicEye eye);
         extern public void SetStereoProjectionMatrix(StereoscopicEye eye, Matrix4x4 matrix);
         extern public void ResetStereoProjectionMatrices();

@@ -190,7 +190,11 @@ namespace UnityEditor
 
         public void SetTickStrengths(float tickMinSpacing, float tickMaxSpacing, bool sqrt)
         {
-            m_TickStrengths = new float[m_TickModulos.Length];
+            if (m_TickStrengths == null || m_TickStrengths.Length != m_TickModulos.Length)
+            {
+                m_TickStrengths = new float[m_TickModulos.Length];
+            }
+
             m_SmallestTick = 0;
             m_BiggestTick = m_TickModulos.Length - 1;
 

@@ -45,8 +45,8 @@ namespace UnityEditor
             else
             {
                 var toggleSize = style.CalcSize(content);
-                var visibleRect = new Rect(position.position, toggleSize);
-                returnValue = DoControl(visibleRect, id, computedValue, visibleRect.Contains(Event.current.mousePosition), content, style);
+                var visibleRect = new Rect(position.position.x, position.position.y, toggleSize.x, position.height);
+                returnValue = DoToggle(visibleRect, id, computedValue, content, style);
             }
             if (nonLeftClick)
                 evt.type = origType;

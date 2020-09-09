@@ -534,7 +534,7 @@ namespace UnityEditor
             return t != null && t.dimension == UnityEngine.Rendering.TextureDimension.Tex2DArray;
         }
 
-        protected float GetExposureValueForTexture(Texture t)
+        protected virtual float GetExposureValueForTexture(Texture t)
         {
             if (TextureUtil.NeedsExposureControl(t))
                 return m_ExposureSliderValue;
@@ -647,7 +647,7 @@ namespace UnityEditor
 
             if (needsExposureControl)
             {
-                m_ExposureSliderValue = EditorGUIInternal.ExposureSlider(m_ExposureSliderValue, ref m_ExposureSliderMax, s_Styles.previewSlider);
+                OnExposureSlider();
             }
 
             if (mipCount > 1)
@@ -665,6 +665,13 @@ namespace UnityEditor
 
                 GUILayout.Box(s_Styles.largeZoom, s_Styles.previewLabel);
             }
+        }
+
+        public void OnExposureSlider()
+        {
+            if (s_Styles == null)
+                s_Styles = new Styles();
+            m_ExposureSliderValue = EditorGUIInternal.ExposureSlider(m_ExposureSliderValue, ref m_ExposureSliderMax, s_Styles.previewSlider);
         }
 
         public override bool HasPreviewGUI()

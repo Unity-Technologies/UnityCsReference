@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
@@ -22,7 +23,7 @@ namespace Unity.Profiling.LowLevel.Unsafe
         [FieldOffset(2)] readonly ushort reserved1;
         [FieldOffset(4)] public uint Size;
         [FieldOffset(8)] public void* Ptr;
-    };
+    }
 
     [StructLayout(LayoutKind.Explicit, Size = 24)]
     public readonly unsafe struct ProfilerCategoryDescription
@@ -65,39 +66,55 @@ namespace Unity.Profiling.LowLevel.Unsafe
         internal const ushort CategoryAny = 0xFFFF;
 
         [ThreadSafe]
-        public static extern unsafe ushort GetCategoryByName(char* name, int nameLen);
+        internal static extern ushort GetCategoryByName(string name);
+        // Burst shadow
+        [ThreadSafe]
+        internal static extern unsafe ushort GetCategoryByName__Unmanaged(byte* name, int nameLen);
+
+        // 256 : Aggressive inlining
+        [MethodImpl(256)]
+        public static unsafe ushort GetCategoryByName(char* name, int nameLen)
+        {
+            return GetCategoryByName_Unsafe(name, nameLen);
+        }
+
+        [ThreadSafe]
+        static extern unsafe ushort GetCategoryByName_Unsafe(char* name, int nameLen);
 
         [ThreadSafe]
         public static extern ProfilerCategoryDescription GetCategoryDescription(ushort categoryId);
 
-        public static unsafe IntPtr CreateMarker(string name, ushort categoryId, MarkerFlags flags, int metadataCount)
+        [ThreadSafe]
+        public static extern unsafe IntPtr CreateMarker(string name, ushort categoryId, MarkerFlags flags, int metadataCount);
+        // Burst shadow
+        [ThreadSafe]
+        internal static extern unsafe IntPtr CreateMarker__Unmanaged(byte* name, int nameLen, ushort categoryId, MarkerFlags flags, int metadataCount);
+
+        // 256 : Aggressive inlining
+        [MethodImpl(256)]
+        public static unsafe IntPtr CreateMarker(char* name, int nameLen, ushort categoryId, MarkerFlags flags, int metadataCount)
         {
-            fixed(char* c = name)
-            {
-                return CreateMarker(c, name.Length, categoryId, flags, metadataCount);
-            }
+            return CreateMarker(name, nameLen, categoryId, flags, metadataCount);
         }
 
         [ThreadSafe]
-        public static extern unsafe IntPtr CreateMarker(char* name, int nameLen, ushort categoryId, MarkerFlags flags, int metadataCount);
+        static extern unsafe IntPtr CreateMarker_Unsafe(char* name, int nameLen, ushort categoryId, MarkerFlags flags, int metadataCount);
 
-        public static unsafe void SetMarkerMetadata(IntPtr markerPtr, int index, string name, byte type, byte unit)
+        [ThreadSafe]
+        public static extern unsafe void SetMarkerMetadata(IntPtr markerPtr, int index, string name, byte type, byte unit);
+        // Burst shadow
+        [ThreadSafe]
+        internal static extern unsafe void SetMarkerMetadata__Unmanaged(IntPtr markerPtr, int index, byte* name, int nameLen, byte type, byte unit);
+
+        // 256 : Aggressive inlining
+        [MethodImpl(256)]
+        public static unsafe void SetMarkerMetadata(IntPtr markerPtr, int index, char* name, int nameLen, byte type, byte unit)
         {
-            if (String.IsNullOrEmpty(name))
-            {
-                SetMarkerMetadata(markerPtr, index, null, 0, type, unit);
-            }
-            else
-            {
-                fixed(char* c = name)
-                {
-                    SetMarkerMetadata(markerPtr, index, c, name.Length, type, unit);
-                }
-            }
+            SetMarkerMetadata_Unsafe(markerPtr, index, name, nameLen, type, unit);
         }
 
         [ThreadSafe]
-        public static extern unsafe void SetMarkerMetadata(IntPtr markerPtr, int index, char* name, int nameLen, byte type, byte unit);
+        static extern unsafe void SetMarkerMetadata_Unsafe(IntPtr markerPtr, int index, char* name, int nameLen, byte type, byte unit);
 
         [ThreadSafe]
         public static extern void BeginSample(IntPtr markerPtr);
@@ -111,16 +128,21 @@ namespace Unity.Profiling.LowLevel.Unsafe
         [ThreadSafe]
         public static extern unsafe void SingleSampleWithMetadata(IntPtr markerPtr, int metadataCount, void* metadata);
 
-        public static unsafe void* CreateCounterValue(out IntPtr counterPtr, string name, ushort categoryId, MarkerFlags flags, byte dataType, byte dataUnit, int dataSize, ProfilerCounterOptions counterOptions)
+        [ThreadSafe]
+        public static extern unsafe void* CreateCounterValue(out IntPtr counterPtr, string name, ushort categoryId, MarkerFlags flags, byte dataType, byte dataUnit, int dataSize, ProfilerCounterOptions counterOptions);
+        // Burst shadow
+        [ThreadSafe]
+        internal static extern unsafe void* CreateCounterValue__Unmanaged(out IntPtr counterPtr, byte* name, int nameLen, ushort categoryId, MarkerFlags flags, byte dataType, byte dataUnit, int dataSize, ProfilerCounterOptions counterOptions);
+
+        // 256 : Aggressive inlining
+        [MethodImpl(256)]
+        public static unsafe void* CreateCounterValue(out IntPtr counterPtr, char* name, int nameLen, ushort categoryId, MarkerFlags flags, byte dataType, byte dataUnit, int dataSize, ProfilerCounterOptions counterOptions)
         {
-            fixed(char* c = name)
-            {
-                return CreateCounterValue(out counterPtr, c, name.Length, categoryId, flags, dataType, dataUnit, dataSize, counterOptions);
-            }
+            return CreateCounterValue_Unsafe(out counterPtr, name, nameLen, categoryId, flags, dataType, dataUnit, dataSize, counterOptions);
         }
 
         [ThreadSafe]
-        public static extern unsafe void* CreateCounterValue(out IntPtr counterPtr, char* name, int nameLen, ushort categoryId, MarkerFlags flags, byte dataType, byte dataUnit, int dataSize, ProfilerCounterOptions counterOptions);
+        static extern unsafe void* CreateCounterValue_Unsafe(out IntPtr counterPtr, char* name, int nameLen, ushort categoryId, MarkerFlags flags, byte dataType, byte dataUnit, int dataSize, ProfilerCounterOptions counterOptions);
 
         [ThreadSafe]
         public static extern unsafe void FlushCounterValue(void* counterValuePtr);

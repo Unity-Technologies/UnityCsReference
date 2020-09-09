@@ -53,7 +53,7 @@ namespace UnityEditor
             serializedObject.Update();
 
             EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), target);
-
+            GUILayout.Space(5);
             EditorGUILayout.PropertyField(m_IsTrigger, triggerContent);
             EditorGUILayout.PropertyField(m_Material, materialContent);
             EditorGUILayout.PropertyField(m_Center, centerContent);

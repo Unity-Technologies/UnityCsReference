@@ -125,6 +125,7 @@ namespace UnityEditor
 
         static Vector3 s_DoScaleHandle_AxisHandlesOctant = Vector3.one;
         static int[] s_DoScaleHandle_AxisDrawOrder = { 0, 1, 2 };
+        static float s_CurrentMultiplier;
         static Vector3 s_InitialScale;
 
         public static Vector3 DoScaleHandle(Vector3 scale, Vector3 position, Quaternion rotation, float size)
@@ -160,6 +161,7 @@ namespace UnityEditor
             switch (Event.current.type)
             {
                 case EventType.MouseDown:
+                    s_CurrentMultiplier = 1.0f;
                     s_InitialScale = scale;
                     break;
             }
@@ -226,10 +228,10 @@ namespace UnityEditor
             {
                 color = ToActiveColorSpace(centerColor);
                 EditorGUI.BeginChangeCheck();
-                var s = ScaleValueHandle(ids.xyz, scale.x, position, rotation, handleSize * param.xyzSize, CubeHandleCap, EditorSnapSettings.scale);
+                s_CurrentMultiplier = ScaleValueHandle(ids.xyz, s_CurrentMultiplier, position, rotation, handleSize * param.xyzSize, CubeHandleCap, EditorSnapSettings.scale);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    scale = s_InitialScale * s;
+                    scale = s_InitialScale * s_CurrentMultiplier;
                 }
             }
 

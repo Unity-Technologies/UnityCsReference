@@ -126,7 +126,7 @@ namespace UnityEditor
             serializedObject.Update();
 
             EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), target);
-
+            GUILayout.Space(5);
             EditorGUILayout.PropertyField(m_IsTrigger);
             EditorGUILayout.PropertyField(m_Material);
             EditorGUILayout.PropertyField(m_Center);

@@ -125,7 +125,6 @@ namespace UnityEditor
             public static readonly GUIContent colorGamut = EditorGUIUtility.TrTextContent("Color Gamut*");
             public static readonly GUIContent colorGamutForMac = EditorGUIUtility.TrTextContent("Color Gamut For Mac*");
             public static readonly GUIContent metalForceHardShadows = EditorGUIUtility.TrTextContent("Force hard shadows on Metal*");
-            public static readonly GUIContent metalEditorSupport = EditorGUIUtility.TrTextContent("Metal Editor Support*");
             public static readonly GUIContent metalAPIValidation = EditorGUIUtility.TrTextContent("Metal API Validation*");
             public static readonly GUIContent metalFramebufferOnly = EditorGUIUtility.TrTextContent("Metal Write-Only Backbuffer", "Set framebufferOnly flag on backbuffer. This prevents readback from backbuffer but enables some driver optimizations.");
             public static readonly GUIContent framebufferDepthMemorylessMode = EditorGUIUtility.TrTextContent("Memoryless Depth", "Memoryless mode of framebuffer depth");
@@ -305,6 +304,7 @@ namespace UnityEditor
         SerializedProperty m_AllowUnsafeCode;
         SerializedProperty m_GCIncremental;
 
+        SerializedProperty m_OverrideDefaultApplicationIdentifier;
         SerializedProperty m_ApplicationIdentifier;
         SerializedProperty m_BuildNumber;
 
@@ -324,7 +324,6 @@ namespace UnityEditor
         SerializedProperty m_StripUnusedMeshComponents;
         SerializedProperty m_MipStripping;
         SerializedProperty m_VertexChannelCompressionMask;
-        SerializedProperty m_MetalEditorSupport;
         SerializedProperty m_MetalAPIValidation;
         SerializedProperty m_MetalFramebufferOnly;
         SerializedProperty m_MetalForceHardShadows;
@@ -442,12 +441,12 @@ namespace UnityEditor
             m_StripUnusedMeshComponents     = FindPropertyAssert("StripUnusedMeshComponents");
             m_MipStripping                  = FindPropertyAssert("mipStripping");
             m_VertexChannelCompressionMask  = FindPropertyAssert("VertexChannelCompressionMask");
-            m_MetalEditorSupport            = FindPropertyAssert("metalEditorSupport");
             m_MetalAPIValidation            = FindPropertyAssert("metalAPIValidation");
             m_MetalFramebufferOnly          = FindPropertyAssert("metalFramebufferOnly");
             m_MetalForceHardShadows         = FindPropertyAssert("iOSMetalForceHardShadows");
             m_FramebufferDepthMemorylessMode = FindPropertyAssert("framebufferDepthMemorylessMode");
 
+            m_OverrideDefaultApplicationIdentifier = FindPropertyAssert("overrideDefaultApplicationIdentifier");
             m_ApplicationIdentifier         = FindPropertyAssert("applicationIdentifier");
             m_BuildNumber                   = FindPropertyAssert("buildNumber");
 
@@ -1463,32 +1462,7 @@ namespace UnityEditor
             // Metal
             if (Application.platform == RuntimePlatform.OSXEditor && BuildTargetDiscovery.BuildTargetSupportsRenderer(platform, GraphicsDeviceType.Metal))
             {
-                bool curMetalSupport = m_MetalEditorSupport.boolValue || SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal;
-                bool newMetalSupport = EditorGUILayout.Toggle(SettingsContent.metalEditorSupport, curMetalSupport);
-
-                if (newMetalSupport != curMetalSupport)
-                {
-                    GraphicsDeviceType[] api = PlayerSettings.GetGraphicsAPIs(BuildTarget.StandaloneOSX);
-
-                    bool updateCurrentAPI = api[0] != SystemInfo.graphicsDeviceType;
-                    if (!newMetalSupport && SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal)
-                        updateCurrentAPI = true; // running on metal and disabled it
-                    if (newMetalSupport && api[0] == GraphicsDeviceType.Metal)
-                        updateCurrentAPI = true; // just enabled metal so want to switch to it
-
-                    ChangeGraphicsApiAction action = CheckApplyGraphicsAPIList(BuildTarget.StandaloneOSX, updateCurrentAPI);
-                    if (action.changeList)
-                    {
-                        m_MetalEditorSupport.boolValue = newMetalSupport;
-                        serializedObject.ApplyModifiedProperties();
-                        // HACK: we pretended to change first api in list to trigger possible gfx device recreation
-                        // HACK: but we dont really change api list (as we will simply set bool checked from native code)
-                        action = new ChangeGraphicsApiAction(false, action.reloadGfx);
-                    }
-                    ApplyChangeGraphicsApiAction(BuildTarget.StandaloneOSX, api, action);
-                }
-
-                if (m_MetalEditorSupport.boolValue)
+                if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal)
                 {
                     using (new EditorGUI.IndentLevelScope())
                         m_MetalAPIValidation.boolValue = EditorGUILayout.Toggle(SettingsContent.metalAPIValidation, m_MetalAPIValidation.boolValue);
@@ -1940,7 +1914,20 @@ namespace UnityEditor
                 // TODO this should be move to an extension if we have one for MacOS or Standalone target at some point.
                 GUILayout.Label(SettingsContent.macAppStoreTitle, EditorStyles.boldLabel);
 
-                PlayerSettingsEditor.ShowApplicationIdentifierUI(m_ApplicationIdentifier, BuildTargetGroup.Standalone, "Bundle Identifier", "'CFBundleIdentifier'");
+                EditorGUILayout.PropertyField(m_OverrideDefaultApplicationIdentifier, EditorGUIUtility.TrTextContent("Override Default Bundle Identifier"));
+                string defaultIdentifier = String.Format("com.{0}.{1}", m_CompanyName.stringValue, m_ProductName.stringValue);
+
+                using (var horizontal = new EditorGUILayout.HorizontalScope())
+                {
+                    using (new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_OverrideDefaultApplicationIdentifier))
+                    {
+                        using (new EditorGUI.IndentLevelScope())
+                        {
+                            PlayerSettingsEditor.ShowApplicationIdentifierUI(m_ApplicationIdentifier, BuildTargetGroup.Standalone, m_OverrideDefaultApplicationIdentifier.boolValue, defaultIdentifier, "Bundle Identifier", "'CFBundleIdentifier'");
+                        }
+                    }
+                }
+
                 PlayerSettingsEditor.ShowBuildNumberUI(m_BuildNumber, BuildTargetGroup.Standalone, "Build", "'CFBundleVersion'");
 
                 EditorGUILayout.PropertyField(m_MacAppStoreCategory, SettingsContent.macAppStoreCategory);
@@ -1974,33 +1961,39 @@ namespace UnityEditor
             m_IconsEditor.ShowPlatformIconsByKind(iconFieldGroup, foldByKind, foldBySubkind);
         }
 
-        internal static void ShowApplicationIdentifierUI(SerializedProperty prop, BuildTargetGroup targetGroup, string label, string tooltip)
+        internal static void ShowApplicationIdentifierUI(SerializedProperty prop, BuildTargetGroup targetGroup, bool overrideDefaultID, string defaultID, string label, string tooltip)
         {
+            var oldIdentifier = "";
+            string currentIdentifier = defaultID;
+
             if (!prop.serializedObject.isEditingMultipleObjects)
             {
-                EditorGUI.BeginChangeCheck();
-
-                var currentIdentifier = "";
                 prop.TryGetMapEntry(targetGroup.ToString(), out var entry);
 
                 if (entry != null)
+                    oldIdentifier = entry.FindPropertyRelative("second").stringValue;
+
+                if (overrideDefaultID && currentIdentifier != oldIdentifier)
+                    currentIdentifier = oldIdentifier;
+
+                EditorGUI.BeginChangeCheck();
+
+                using (new EditorGUI.DisabledScope(!overrideDefaultID))
                 {
-                    currentIdentifier = entry.FindPropertyRelative("second").stringValue;
-                    var identifier = entry.FindPropertyRelative("second");
+                    currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
+                    currentIdentifier = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent(label, tooltip), currentIdentifier);
+                }
 
-                    using (var horizontal = new EditorGUILayout.HorizontalScope())
-                    {
-                        using (new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, identifier))
-                        {
-                            currentIdentifier = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent(label, tooltip), currentIdentifier);
-                        }
-                    }
+                if (!overrideDefaultID && currentIdentifier != oldIdentifier)
+                {
+                    currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
+                    prop.SetMapValue(targetGroup.ToString(), currentIdentifier);
+                }
 
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
-                        prop.SetMapValue(targetGroup.ToString(), currentIdentifier);
-                    }
+                if (EditorGUI.EndChangeCheck())
+                {
+                    currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
+                    prop.SetMapValue(targetGroup.ToString(), currentIdentifier);
                 }
             }
         }

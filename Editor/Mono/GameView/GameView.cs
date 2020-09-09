@@ -332,7 +332,6 @@ namespace UnityEditor
 
         private void OnFocus()
         {
-            AllowCursorLockAndHide(true);
             SetFocus(true);
             targetSize = targetRenderSize;
         }

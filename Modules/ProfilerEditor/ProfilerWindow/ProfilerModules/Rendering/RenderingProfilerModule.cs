@@ -84,18 +84,18 @@ namespace UnityEditorInternal.Profiling
                     {
                         var stringBuilder = new StringBuilder(1024);
 
-                        stringBuilder.Append($"SetPass Calls: {GetCounterValueAsNumber(f, "SetPass Calls Count")}   \tDraw Calls: {GetCounterValueAsNumber(f, "Draw Calls Count")} \t\tTotal Batches: {batchesCount} \tTris: {GetCounterValueAsNumber(f, "Triangles Count")} \tVerts: {GetCounterValueAsNumber(f, "Vertices Count")}");
-                        stringBuilder.Append($"\n(Dynamic Batching) \tBatched Draw Calls: {GetCounterValueAsNumber(f, "Dynamic Batched Draw Calls Count")} \tBatches: {GetCounterValueAsNumber(f, "Dynamic Batches Count")} \tTris: {GetCounterValueAsNumber(f, "Dynamic Batched Triangles Count")} \tVerts: {GetCounterValueAsNumber(f, "Dynamic Batched Vertices Count")} \tTime: {GetCounterValue(f, "Dynamic Batching Time") * 1e-6:0.00}ms");
-                        stringBuilder.Append($"\n(Static Batching)    \tBatched Draw Calls: {GetCounterValueAsNumber(f, "Static Batched Draw Calls Count")} \tBatches: {GetCounterValueAsNumber(f, "Static Batches Count")} \tTris: {GetCounterValueAsNumber(f, "Static Batched Triangles Count")} \tVerts: {GetCounterValueAsNumber(f, "Static Batched Vertices Count")}");
-                        stringBuilder.Append($"\n(Instancing)    \tBatched Draw Calls: {GetCounterValueAsNumber(f, "Instanced Batched Draw Calls Count")} \tBatches: {GetCounterValueAsNumber(f, "Instanced Batches Count")} \tTris: {GetCounterValueAsNumber(f, "Instanced Batched Triangles Count")} \tVerts: {GetCounterValueAsNumber(f, "Instanced Batched Vertices Count")}");
+                        stringBuilder.Append($"SetPass Calls: {GetCounterValueAsNumber(f, "SetPass Calls Count")}   \tDraw Calls: {GetCounterValueAsNumber(f, "Draw Calls Count")} \t\tBatches: {batchesCount} \tTriangles: {GetCounterValueAsNumber(f, "Triangles Count")} \tVertices: {GetCounterValueAsNumber(f, "Vertices Count")}");
+                        stringBuilder.Append($"\n(Dynamic Batching)\tBatched Draw Calls: {GetCounterValueAsNumber(f, "Dynamic Batched Draw Calls Count")} \tBatches: {GetCounterValueAsNumber(f, "Dynamic Batches Count")} \tTriangles: {GetCounterValueAsNumber(f, "Dynamic Batched Triangles Count")} \tVertices: {GetCounterValueAsNumber(f, "Dynamic Batched Vertices Count")} \tTime: {GetCounterValue(f, "Dynamic Batching Time") * 1e-6:0.00}ms");
+                        stringBuilder.Append($"\n(Static Batching)\t\tBatched Draw Calls: {GetCounterValueAsNumber(f, "Static Batched Draw Calls Count")} \tBatches: {GetCounterValueAsNumber(f, "Static Batches Count")} \tTriangles: {GetCounterValueAsNumber(f, "Static Batched Triangles Count")} \tVertices: {GetCounterValueAsNumber(f, "Static Batched Vertices Count")}");
+                        stringBuilder.Append($"\n(Instancing)\t\tBatched Draw Calls: {GetCounterValueAsNumber(f, "Instanced Batched Draw Calls Count")} \tBatches: {GetCounterValueAsNumber(f, "Instanced Batches Count")} \tTriangles: {GetCounterValueAsNumber(f, "Instanced Batched Triangles Count")} \tVertices: {GetCounterValueAsNumber(f, "Instanced Batched Vertices Count")}");
 
                         stringBuilder.Append($"\nUsed Textures: {GetCounterValue(f, "Used Textures Count")} / {GetCounterValueAsBytes(f, "Used Textures Bytes")}");
-                        stringBuilder.Append($"\nRenderTextures: {GetCounterValue(f, "Render Textures Count")} / {GetCounterValueAsBytes(f, "Render Textures Bytes")}");
-                        stringBuilder.Append($"\nRenderTexture Changes: {GetCounterValue(f, "Render Textures Changes Count")}");
+                        stringBuilder.Append($"\nRender Textures: {GetCounterValue(f, "Render Textures Count")} / {GetCounterValueAsBytes(f, "Render Textures Bytes")}");
+                        stringBuilder.Append($"\nRender Textures Changes: {GetCounterValue(f, "Render Textures Changes Count")}");
 
-                        stringBuilder.Append($"\nBuffers Total: {GetCounterValue(f, "Used Buffers Count")} / {GetCounterValueAsBytes(f, "Used Buffers Bytes")}");
-                        stringBuilder.Append($"\nVertex Buffer Uploads: {GetCounterValue(f, "Vertex Buffer Upload In Frame Count")} / {GetCounterValueAsBytes(f, "Vertex Buffer Upload In Frame Bytes")}");
-                        stringBuilder.Append($"\nIndex Buffer Uploads: {GetCounterValue(f, "Index Buffer Upload In Frame Count")} / {GetCounterValueAsBytes(f, "Index Buffer Upload In Frame Bytes")}");
+                        stringBuilder.Append($"\nUsed Buffers: {GetCounterValue(f, "Used Buffers Count")} / {GetCounterValueAsBytes(f, "Used Buffers Bytes")}");
+                        stringBuilder.Append($"\nVertex Buffer Upload In Frame: {GetCounterValue(f, "Vertex Buffer Upload In Frame Count")} / {GetCounterValueAsBytes(f, "Vertex Buffer Upload In Frame Bytes")}");
+                        stringBuilder.Append($"\nIndex Buffer Upload In Frame: {GetCounterValue(f, "Index Buffer Upload In Frame Count")} / {GetCounterValueAsBytes(f, "Index Buffer Upload In Frame Bytes")}");
 
                         stringBuilder.Append($"\nShadow Casters: {GetCounterValue(f, "Shadow Casters Count")}\n");
 
