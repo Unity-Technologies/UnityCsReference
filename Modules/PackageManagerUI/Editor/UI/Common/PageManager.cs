@@ -11,6 +11,9 @@ namespace UnityEditor.PackageManager.UI
 {
     internal sealed class PageManager
     {
+        internal const string k_UnityPackageGroupName = "Unity";
+        internal const string k_OtherPackageGroupName = "Other";
+
         internal const int k_DefaultPageSize = 25;
 
         static IPageManager s_Instance = null;
@@ -246,6 +249,11 @@ namespace UnityEditor.PackageManager.UI
             public IPage GetPage(PackageFilterTab tab)
             {
                 return GetPageFromTab(tab);
+            }
+
+            public virtual bool HasPage(PackageFilterTab tab)
+            {
+                return m_Pages.ContainsKey(tab);
             }
 
             public IPackageVersion GetSelectedVersion()

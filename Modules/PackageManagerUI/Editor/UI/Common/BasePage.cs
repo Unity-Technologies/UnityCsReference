@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using UnityEngine;
 
@@ -187,6 +188,19 @@ namespace UnityEditor.PackageManager.UI
         public bool Contains(IPackage package)
         {
             return Contains(package?.uniqueId);
+        }
+
+        public string GetGroupName(IPackage package)
+        {
+            if (package.Is(PackageType.BuiltIn) || package.Is(PackageType.AssetStore))
+                return string.Empty;
+
+            if (package.Is(PackageType.Unity))
+                return tab == PackageFilterTab.UnityRegistry ? string.Empty : PageManager.k_UnityPackageGroupName;
+
+            return string.IsNullOrEmpty(package.versions.primary?.author) ?
+                PageManager.k_OtherPackageGroupName :
+                package.versions.primary.author;
         }
 
         public abstract bool Contains(string packageUniqueId);

@@ -36,7 +36,8 @@ namespace UnityEngine
             [NativeMethod(IsThreadSafe = true)] static extern int GetSubMeshCount(IntPtr self);
             [NativeMethod(IsThreadSafe = true, ThrowsException = true)] static extern SubMeshDescriptor GetSubMesh(IntPtr self, int index);
 
-            [NativeMethod(IsThreadSafe = true, ThrowsException = true)] static extern void SetVertexBufferParamsImpl(IntPtr self, int vertexCount, params VertexAttributeDescriptor[] attributes);
+            [NativeMethod(IsThreadSafe = true, ThrowsException = true)] static extern void SetVertexBufferParamsFromPtr(IntPtr self, int vertexCount, IntPtr attributesPtr, int attributesCount);
+            [NativeMethod(IsThreadSafe = true, ThrowsException = true)] static extern void SetVertexBufferParamsFromArray(IntPtr self, int vertexCount, params VertexAttributeDescriptor[] attributes);
             [NativeMethod(IsThreadSafe = true)] static extern void SetIndexBufferParamsImpl(IntPtr self, int indexCount, IndexFormat indexFormat);
             [NativeMethod(IsThreadSafe = true)] static extern void SetSubMeshCount(IntPtr self, int count);
             [NativeMethod(IsThreadSafe = true, ThrowsException = true)] static extern void SetSubMeshImpl(IntPtr self, int index, SubMeshDescriptor desc, MeshUpdateFlags flags);
