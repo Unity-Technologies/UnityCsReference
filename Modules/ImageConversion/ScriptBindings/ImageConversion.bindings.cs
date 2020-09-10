@@ -14,6 +14,24 @@ namespace UnityEngine
     [NativeHeader("Modules/ImageConversion/ScriptBindings/ImageConversion.bindings.h")]
     public static class ImageConversion
     {
+        public static bool EnableLegacyPngGammaRuntimeLoadBehavior
+        {
+            get
+            {
+                return GetEnableLegacyPngGammaRuntimeLoadBehavior();
+            }
+            set
+            {
+                SetEnableLegacyPngGammaRuntimeLoadBehavior(value);
+            }
+        }
+
+        [NativeMethod(Name = "ImageConversionBindings::GetEnableLegacyPngGammaRuntimeLoadBehavior", IsFreeFunction = true, ThrowsException = false)]
+        extern private static bool GetEnableLegacyPngGammaRuntimeLoadBehavior();
+
+        [NativeMethod(Name = "ImageConversionBindings::SetEnableLegacyPngGammaRuntimeLoadBehavior", IsFreeFunction = true, ThrowsException = false)]
+        extern private static void SetEnableLegacyPngGammaRuntimeLoadBehavior(bool enable);
+
         [NativeMethod(Name = "ImageConversionBindings::EncodeToTGA", IsFreeFunction = true, ThrowsException = true)]
         extern public static byte[] EncodeToTGA(this Texture2D tex);
 

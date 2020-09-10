@@ -13,8 +13,11 @@ namespace UnityEditor.PackageManager.UI
 {
     internal sealed class UpmClient
     {
+        private static string[] k_UnityRegistriesUrlHosts = { ".unity.com", ".unity3d.com" };
+
         static IUpmClient s_Instance = null;
         public static IUpmClient instance { get { return s_Instance ?? UpmClientInternal.instance; } }
+
 
         [Serializable]
         internal class UpmClientInternal : ScriptableSingleton<UpmClientInternal>, IUpmClient, ISerializationCallbackReceiver
@@ -81,6 +84,14 @@ namespace UnityEditor.PackageManager.UI
             private string[] m_SerializedProductIdMapKeys;
             private string[] m_SerializedProductIdMapValues;
 
+            [SerializeField]
+            private string[] m_SerializedPRegistriesUrlKeys;
+
+            [SerializeField]
+            private bool[] m_SerializedRegistriesUrlValues;
+
+            internal Dictionary<string, bool> m_RegistriesUrl = new Dictionary<string, bool>();
+
             [NonSerialized]
             private bool m_EventsRegistered;
 
@@ -114,6 +125,38 @@ namespace UnityEditor.PackageManager.UI
                 m_AddOperation = new UpmAddOperation();
                 m_RemoveOperation = new UpmRemoveOperation();
                 m_EmbedOperation = new UpmEmbedOperation();
+            }
+
+            public void OnBeforeSerialize()
+            {
+                m_SerializedInstalledPackageInfos = m_InstalledPackageInfos.Values.ToArray();
+                m_SerializedSearchPackageInfos = m_SearchPackageInfos.Values.ToArray();
+                m_SerializedProductPackageInfos = m_ProductPackageInfos.Values.ToArray();
+                m_SerializedExtraPackageInfos = m_ExtraPackageInfo.Values.SelectMany(p => p.Values).ToArray();
+                m_SerializedProductIdMapKeys = m_ProductIdMap.Keys.ToArray();
+                m_SerializedProductIdMapValues = m_ProductIdMap.Values.ToArray();
+                m_SerializedPRegistriesUrlKeys = m_RegistriesUrl?.Keys.ToArray() ?? new string[0];
+                m_SerializedRegistriesUrlValues = m_RegistriesUrl?.Values.ToArray() ?? new bool[0];
+            }
+
+            public void OnAfterDeserialize()
+            {
+                foreach (var p in m_SerializedInstalledPackageInfos)
+                    m_InstalledPackageInfos[p.name] = p;
+
+                foreach (var p in m_SerializedSearchPackageInfos)
+                    m_SearchPackageInfos[p.name] = p;
+
+                m_ProductPackageInfos = m_SerializedProductPackageInfos.ToDictionary(p => p.name, p => p);
+
+                foreach (var p in m_SerializedExtraPackageInfos)
+                    AddExtraPackageInfo(p);
+
+                for (var i = 0; i < m_SerializedProductIdMapKeys.Length; i++)
+                    m_ProductIdMap[m_SerializedProductIdMapKeys[i]] = m_SerializedProductIdMapValues[i];
+
+                for (var i = 0; i < m_SerializedPRegistriesUrlKeys.Length; i++)
+                    m_RegistriesUrl[m_SerializedPRegistriesUrlKeys[i]] = m_SerializedRegistriesUrlValues[i];
             }
 
             public void AddById(string packageId)
@@ -357,9 +400,9 @@ namespace UnityEditor.PackageManager.UI
                     {
                         productId = m_ProductIdMap.Get(packageInfo.name);
                         if (string.IsNullOrEmpty(productId))
-                            onPackageVersionUpdated?.Invoke(packageInfo.name, new UpmPackageVersion(packageInfo, false));
+                            onPackageVersionUpdated?.Invoke(packageInfo.name, new UpmPackageVersion(packageInfo, false, false));
                         else
-                            onProductPackageVersionUpdated?.Invoke(productId, new UpmPackageVersion(packageInfo, false));
+                            onProductPackageVersionUpdated?.Invoke(productId, new UpmPackageVersion(packageInfo, false, IsUnityPackage(packageInfo)));
                     }
                 }
             }
@@ -469,12 +512,13 @@ namespace UnityEditor.PackageManager.UI
 
                 UpmPackage result;
                 if (searchInfo == null)
-                    result = new UpmPackage(installedInfo, true, false);
+                    result = new UpmPackage(installedInfo, true, false, IsUnityPackage(installedInfo));
                 else
                 {
-                    result = new UpmPackage(searchInfo, false, true);
+                    var isUnityPackage = IsUnityPackage(searchInfo);
+                    result = new UpmPackage(searchInfo, false, true, isUnityPackage);
                     if (installedInfo != null)
-                        result.AddInstalledVersion(new UpmPackageVersion(installedInfo, true));
+                        result.AddInstalledVersion(new UpmPackageVersion(installedInfo, true, isUnityPackage));
                 }
                 return result;
             }
@@ -493,7 +537,7 @@ namespace UnityEditor.PackageManager.UI
                             continue;
                         PackageInfo info;
                         if (extraVersions.TryGetValue(version.version.ToString(), out info))
-                            version.UpdatePackageInfo(info);
+                            version.UpdatePackageInfo(info, IsUnityPackage(info));
                     }
                 }
 
@@ -566,33 +610,6 @@ namespace UnityEditor.PackageManager.UI
                     .Concat(oldInfos.Values.Where(p => { return !newInfos.TryGetValue(p.name, out info); })).ToList();
             }
 
-            public void OnBeforeSerialize()
-            {
-                m_SerializedInstalledPackageInfos = m_InstalledPackageInfos.Values.ToArray();
-                m_SerializedSearchPackageInfos = m_SearchPackageInfos.Values.ToArray();
-                m_SerializedProductPackageInfos = m_ProductPackageInfos.Values.ToArray();
-                m_SerializedExtraPackageInfos = m_ExtraPackageInfo.Values.SelectMany(p => p.Values).ToArray();
-                m_SerializedProductIdMapKeys = m_ProductIdMap.Keys.ToArray();
-                m_SerializedProductIdMapValues = m_ProductIdMap.Values.ToArray();
-            }
-
-            public void OnAfterDeserialize()
-            {
-                foreach (var p in m_SerializedInstalledPackageInfos)
-                    m_InstalledPackageInfos[p.name] = p;
-
-                foreach (var p in m_SerializedSearchPackageInfos)
-                    m_SearchPackageInfos[p.name] = p;
-
-                m_ProductPackageInfos = m_SerializedProductPackageInfos.ToDictionary(p => p.name, p => p);
-
-                foreach (var p in m_SerializedExtraPackageInfos)
-                    AddExtraPackageInfo(p);
-
-                for (var i = 0; i < m_SerializedProductIdMapKeys.Length; i++)
-                    m_ProductIdMap[m_SerializedProductIdMapKeys[i]] = m_SerializedProductIdMapValues[i];
-            }
-
             public void OnEnable()
             {
                 if (m_AddOperation.isInProgress)
@@ -645,6 +662,36 @@ namespace UnityEditor.PackageManager.UI
                 m_SerializedProductPackageInfos = new PackageInfo[0];
                 m_SerializedProductIdMapKeys = new string[0];
                 m_SerializedProductIdMapValues = new string[0];
+            }
+
+            public bool IsUnityPackage(PackageInfo packageInfo)
+            {
+                if (!(packageInfo?.registry?.isDefault ?? false) || string.IsNullOrEmpty(packageInfo.registry?.url))
+                    return false;
+
+                bool isUnityRegistry;
+                if (m_RegistriesUrl.TryGetValue(packageInfo.registry.url, out isUnityRegistry))
+                    return isUnityRegistry;
+
+                isUnityRegistry = IsUnityUrl(packageInfo.registry.url);
+                m_RegistriesUrl[packageInfo.registry.url] = isUnityRegistry;
+                return isUnityRegistry;
+            }
+
+            public bool IsUnityUrl(string url)
+            {
+                if (string.IsNullOrEmpty(url))
+                    return false;
+
+                try
+                {
+                    var uri = new Uri(url);
+                    return !uri.IsLoopback && k_UnityRegistriesUrlHosts.Any(unityHost => uri.Host.EndsWith(unityHost, StringComparison.InvariantCultureIgnoreCase));
+                }
+                catch (UriFormatException)
+                {
+                    return false;
+                }
             }
         }
     }

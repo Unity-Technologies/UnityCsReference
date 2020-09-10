@@ -53,7 +53,7 @@ namespace UnityEditor.UIElements
         public override void SetValueWithoutNotify(TValueType newValue)
         {
             base.SetValueWithoutNotify(newValue);
-            m_TextElement.text = GetValueToDisplay();
+            ((INotifyValueChanged<string>)m_TextElement).SetValueWithoutNotify(GetValueToDisplay());
         }
 
         public string text

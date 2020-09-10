@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -12,6 +13,9 @@ namespace UnityEditor.PackageManager.UI
 {
     internal class PackageList : VisualElement
     {
+        private const string k_UnityPackageGroupDisplayName = "Unity Technologies";
+        private const string k_OtherPackageGroupDisplayName = "Other";
+
         internal new class UxmlFactory : UxmlFactory<PackageList> {}
 
         private bool m_PackageListLoaded;
@@ -67,6 +71,8 @@ namespace UnityEditor.PackageManager.UI
 
             ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
 
+            PackageFiltering.instance.onFilterTabChanged += OnFilterTabChanged;
+
             // manually build the items on initialization to refresh the UI
             OnPageRebuild(PageManager.instance.GetCurrentPage());
             OnSelectionChanged(PageManager.instance.GetSelectedVersion());
@@ -88,6 +94,8 @@ namespace UnityEditor.PackageManager.UI
             PageManager.instance.onPageUpdate -= OnPageUpdate;
 
             ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
+
+            PackageFiltering.instance.onFilterTabChanged -= OnFilterTabChanged;
         }
 
         private PackageItem GetPackageItem(string packageUniqueId)
@@ -274,25 +282,58 @@ namespace UnityEditor.PackageManager.UI
             if (item != null)
             {
                 item.SetPackage(package);
+
+                // Check if group has changed
+                var groupName = PageManager.instance.GetCurrentPage().GetGroupName(package);
+                if (item.packageGroup.name != groupName)
+                {
+                    var oldGroup = GetOrCreateGroup(item.packageGroup.name);
+                    var newGroup = GetOrCreateGroup(groupName);
+                    state.groupName = groupName;
+
+                    // Replace PackageItem
+                    m_PackageItemsLookup[package.uniqueId] = newGroup.AddPackageItem(package, state);
+                    oldGroup.RemovePackageItem(item);
+                    if (!oldGroup.packageItems.Any())
+                        itemsList.Remove(oldGroup);
+
+                    ReorderGroups();
+                }
+
                 item.UpdateVisualState(state);
             }
             else
             {
+                var groupName = PageManager.instance.GetCurrentPage().GetGroupName(package);
+                if (state.groupName != groupName)
+                    state.groupName = groupName;
+
                 var group = GetOrCreateGroup(state.groupName);
                 item = group.AddPackageItem(package, state);
                 m_PackageItemsLookup[package.uniqueId] = item;
             }
         }
 
+        internal static string GetGroupDisplayName(string groupName)
+        {
+            if (groupName == PageManager.k_UnityPackageGroupName)
+                return k_UnityPackageGroupDisplayName;
+
+            if (groupName == PageManager.k_OtherPackageGroupName)
+                return L10n.Tr(k_OtherPackageGroupDisplayName);
+
+            return groupName;
+        }
+
         private PackageGroup GetOrCreateGroup(string groupName)
         {
-            var group = packageGroups.FirstOrDefault(g => g.name == groupName);
+            var group = packageGroups.FirstOrDefault(g => string.Compare(g.name, groupName, StringComparison.InvariantCultureIgnoreCase) == 0);
             if (group != null)
                 return group;
 
             var hidden = string.IsNullOrEmpty(groupName);
             var expanded = PageManager.instance.IsGroupExpanded(groupName);
-            group = new PackageGroup(groupName, expanded, hidden);
+            group = new PackageGroup(groupName, GetGroupDisplayName(groupName), expanded, hidden);
             if (!hidden)
             {
                 group.onGroupToggle += value =>
@@ -312,7 +353,7 @@ namespace UnityEditor.PackageManager.UI
             var item = GetPackageItem(packageUniqueId);
             if (item != null)
             {
-                item.packageGroup.Remove(item);
+                item.packageGroup.RemovePackageItem(item);
                 m_PackageItemsLookup.Remove(packageUniqueId);
             }
         }
@@ -329,6 +370,11 @@ namespace UnityEditor.PackageManager.UI
                 group.RefreshHeaderVisibility();
 
             ShowResults();
+        }
+
+        private void ReorderGroups()
+        {
+            itemsList.Sort((left, right) => string.Compare(left.name, right.name, StringComparison.OrdinalIgnoreCase));
         }
 
         private void OnPageRebuild(IPage page)
@@ -375,6 +421,8 @@ namespace UnityEditor.PackageManager.UI
                     m_PackageListLoaded = true;
                     onPackageListLoaded?.Invoke();
                 }
+
+                ReorderGroups();
             }
 
             foreach (var group in packageGroups)
@@ -439,6 +487,42 @@ namespace UnityEditor.PackageManager.UI
                     return nextVersionItem;
             }
             return nextPackageItem;
+        }
+
+        private void OnFilterTabChanged(PackageFilterTab filterTab)
+        {
+            // Check if groups have changed only for Local tab
+            if (filterTab == PackageFilterTab.Local && PageManager.instance.HasFetchedPageForFilterTab(PackageFilterTab.Local))
+            {
+                var needGroupsReordering = false;
+                var currentPackageItems = packageItems.ToList();
+                foreach (var packageItem in currentPackageItems)
+                {
+                    // Check if group has changed
+                    var package = packageItem.package;
+                    var groupName = PageManager.instance.GetCurrentPage().GetGroupName(package);
+                    if (packageItem.packageGroup.name != groupName)
+                    {
+                        var oldGroup = GetOrCreateGroup(packageItem.packageGroup.name);
+                        var newGroup = GetOrCreateGroup(groupName);
+
+                        var state = PageManager.instance.GetVisualState(package);
+                        if (state != null)
+                            state.groupName = groupName;
+
+                        // Move PackageItem from old group to new group
+                        oldGroup.RemovePackageItem(packageItem);
+                        newGroup.AddPackageItem(packageItem);
+                        needGroupsReordering = true;
+
+                        if (!oldGroup.packageItems.Any())
+                            itemsList.Remove(oldGroup);
+                    }
+                }
+
+                if (needGroupsReordering)
+                    ReorderGroups();
+            }
         }
 
         private static PackageItem FindNextVisiblePackageItem(PackageItem packageItem, bool reverseOrder)

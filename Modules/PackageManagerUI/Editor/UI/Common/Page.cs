@@ -12,9 +12,6 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class Page : IPage, ISerializationCallbackReceiver
     {
-        private const string k_UnityPackageGroupName = "Unity";
-        private const string k_OtherPackageGroupName = "Other";
-
         [Serializable]
         public class FilteredList
         {
@@ -186,14 +183,14 @@ namespace UnityEditor.PackageManager.UI
             RebuildList(addOrUpdateList, removeList);
         }
 
-        private string GetGroupName(IPackage package)
+        public string GetGroupName(IPackage package)
         {
             if (package.Is(PackageType.BuiltIn) || package.Is(PackageType.AssetStore))
                 return string.Empty;
-            else if (package.Is(PackageType.Unity))
-                return tab == PackageFilterTab.Unity ? string.Empty : L10n.Tr(k_UnityPackageGroupName);
-            else
-                return string.IsNullOrEmpty(package.primaryVersion?.author) ? L10n.Tr(k_OtherPackageGroupName) : package.primaryVersion?.author;
+            if (package.Is(PackageType.Unity))
+                return tab == PackageFilterTab.Unity ? string.Empty : L10n.Tr(PageManager.k_UnityPackageGroupName);
+
+            return string.IsNullOrEmpty(package.primaryVersion?.author) ? L10n.Tr(PageManager.k_OtherPackageGroupName) : package.primaryVersion?.author;
         }
 
         public void RebuildList(IEnumerable<IPackage> addOrUpdateList = null, IEnumerable<IPackage> removeList = null)
