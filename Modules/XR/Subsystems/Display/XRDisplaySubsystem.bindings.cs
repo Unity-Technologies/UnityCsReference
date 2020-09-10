@@ -31,6 +31,8 @@ namespace UnityEngine.XR
         extern public bool singlePassRenderingDisabled { get; set; }
         extern public bool displayOpaque { get; }
         extern public bool contentProtectionEnabled { get; set; }
+        extern public float scaleOfAllViewports { get; set; }
+        extern public float scaleOfAllRenderTargets { get; set; }
         extern public float zNear { get; set; }
         extern public float zFar { get; set; }
         extern public bool  sRGB { get; set; }
@@ -42,7 +44,7 @@ namespace UnityEngine.XR
             PositionAndOrientation,
             OrientationOnly,
             None
-        };
+        }
 
         extern public ReprojectionMode reprojectionMode { get; set; }
 

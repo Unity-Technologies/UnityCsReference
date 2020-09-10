@@ -11,6 +11,9 @@ namespace UnityEditor.PackageManager.UI
 {
     internal sealed class PageManager
     {
+        internal const string k_UnityPackageGroupName = "Unity";
+        internal const string k_OtherPackageGroupName = "Other";
+
         static IPageManager s_Instance = null;
         public static IPageManager instance { get { return s_Instance ?? PageManagerInternal.instance; } }
 
@@ -103,6 +106,11 @@ namespace UnityEditor.PackageManager.UI
             public IPage GetCurrentPage()
             {
                 return GetPageFromFilterTab();
+            }
+
+            public virtual bool HasPage(PackageFilterTab tab)
+            {
+                return m_Pages.ContainsKey(tab);
             }
 
             public IPackageVersion GetSelectedVersion()

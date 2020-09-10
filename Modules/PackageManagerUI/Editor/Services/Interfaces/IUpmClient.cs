@@ -49,5 +49,8 @@ namespace UnityEditor.PackageManager.UI
         void ClearCache();
 
         void ClearProductCache();
+
+        bool IsUnityPackage(PackageInfo packageInfo);
+        bool IsUnityUrl(string url);
     }
 }

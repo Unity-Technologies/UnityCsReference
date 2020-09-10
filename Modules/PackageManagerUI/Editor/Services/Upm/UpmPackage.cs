@@ -57,7 +57,7 @@ namespace UnityEditor.PackageManager.UI
             return (m_Type & type) != 0;
         }
 
-        public UpmPackage(string name, bool isDiscoverable, PackageType type = PackageType.None)
+        public UpmPackage(string name, bool isDiscoverable, PackageType type)
         {
             m_Progress = PackageProgress.None;
             m_Name = name;
@@ -67,13 +67,13 @@ namespace UnityEditor.PackageManager.UI
             m_Type = type;
         }
 
-        public UpmPackage(PackageInfo info, bool isInstalled, bool isDiscoverable)
+        public UpmPackage(PackageInfo info, bool isInstalled, bool isDiscoverable, bool isUnityPackage)
         {
             m_Progress = PackageProgress.None;
             m_Name = info.name;
             m_UpmErrors = new List<Error>();
             m_IsDiscoverable = isDiscoverable;
-            m_VersionList = new UpmVersionList(info, isInstalled);
+            m_VersionList = new UpmVersionList(info, isInstalled, isUnityPackage);
             m_Type = primaryVersion.HasTag(PackageTag.BuiltIn) ? PackageType.BuiltIn : PackageType.Installable;
             RefreshUnityType();
         }

@@ -16,5 +16,6 @@ namespace UnityEditor.PackageManager.UI
         VisualState GetSelectedVisualState();
         void LoadMore();
         void Load(IPackage package, IPackageVersion version = null);
+        string GetGroupName(IPackage package);
     }
 }

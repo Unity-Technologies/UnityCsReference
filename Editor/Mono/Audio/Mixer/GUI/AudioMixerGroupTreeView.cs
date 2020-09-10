@@ -65,6 +65,7 @@ namespace UnityEditor
 
                     m_owner.Controller.ReparentSelection(parentGroup, insertionIndex, draggedGroups);
                     m_owner.ReloadTree();
+                    m_owner.Controller.OnSubAssetChanged();
                     m_TreeView.SetSelection(draggedIDs.ToArray(), true);   // Ensure dropped item(s) are selected and revealed (fixes selection if click dragging a single item that is not selected when drag was started)
                 }
                 return validDrag ? DragAndDropVisualMode.Move : DragAndDropVisualMode.Rejected;
@@ -336,10 +337,7 @@ namespace UnityEditor
         {
             m_AudioGroupTree.ReloadData();
             if (m_Controller != null)
-            {
                 m_Controller.SanitizeGroupViews();
-                m_Controller.OnSubAssetChanged();
-            }
         }
 
         public void AddChildGroupPopupCallback(object obj)
@@ -377,6 +375,7 @@ namespace UnityEditor
             m_Controller.OnUnitySelectionChanged();
             m_AudioGroupTree.SetSelection(new int[] { newGroup.GetInstanceID() }, true);
             ReloadTree();
+            m_Controller.OnSubAssetChanged();
             m_AudioGroupTree.BeginNameEditing(0f);
         }
 
@@ -402,6 +401,7 @@ namespace UnityEditor
 
             m_Controller.DeleteGroups(groups.ToArray());
             ReloadTree();
+            m_Controller.OnSubAssetChanged();
         }
 
         public void DuplicateGroups(List<AudioMixerGroupController> groups, bool recordUndo)
@@ -416,6 +416,7 @@ namespace UnityEditor
             if (duplicatedRoots.Count > 0)
             {
                 ReloadTree();
+                m_Controller.OnSubAssetChanged();
                 var instanceIDs = duplicatedRoots.Select(audioMixerGroup => audioMixerGroup.GetInstanceID()).ToArray();
                 m_AudioGroupTree.SetSelection(instanceIDs, false);
                 m_AudioGroupTree.Frame(instanceIDs[instanceIDs.Length - 1], true, false);
@@ -678,6 +679,8 @@ namespace UnityEditor
         public void OnUndoRedoPerformed()
         {
             ReloadTree();
+            if (m_Controller != null)
+                m_Controller.OnSubAssetChanged();
         }
     }
 }

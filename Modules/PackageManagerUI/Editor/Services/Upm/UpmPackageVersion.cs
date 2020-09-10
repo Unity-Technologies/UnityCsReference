@@ -16,6 +16,7 @@ namespace UnityEditor.PackageManager.UI
     internal class UpmPackageVersion : IPackageVersion
     {
         private const string k_UnityPrefix = "com.unity.";
+        private const string k_UnityAuthor = "Unity Technologies";
 
         private PackageInfo m_PackageInfo;
         public PackageInfo packageInfo { get { return m_PackageInfo; } }
@@ -34,13 +35,29 @@ namespace UnityEditor.PackageManager.UI
         public EntitlementsInfo entitlements => m_PackageInfo.entitlements;
         Error entitlementsError => !entitlements.isAllowed && isInstalled ? new Error(NativeErrorCode.Unknown, L10n.Tr("You do not have entitlements for this package.")) : null;
 
+        [SerializeField]
+        private bool m_IsUnityPackage;
+        public bool isUnityPackage
+        {
+            get
+            {
+                if (HasTag(PackageTag.Bundled))
+                    return true;
+                if (HasTag(PackageTag.Git | PackageTag.Local | PackageTag.InDevelopment))
+                    return false;
+                return m_IsUnityPackage;
+            }
+        }
 
+        [SerializeField]
         private string m_PackageId;
         public string uniqueId { get { return m_PackageId; } }
 
+        [SerializeField]
         private string m_PackageUniqueId;
         public string packageUniqueId => m_PackageUniqueId;
 
+        [SerializeField]
         private string m_Author;
         public string author => m_Author;
 
@@ -48,6 +65,9 @@ namespace UnityEditor.PackageManager.UI
 
         private string m_DisplayName;
         public string displayName { get { return m_DisplayName; } }
+
+        [SerializeField]
+        private string m_VersionString;
 
         private SemVersion m_Version;
         public SemVersion version { get { return m_Version; } }
@@ -133,46 +153,35 @@ namespace UnityEditor.PackageManager.UI
 
         public IEnumerable<PackageSizeInfo> sizes => Enumerable.Empty<PackageSizeInfo>();
 
-        public bool isUnityPackage
-        {
-            get
-            {
-                if (HasTag(PackageTag.Bundled))
-                    return true;
-
-                if (HasTag(PackageTag.Git | PackageTag.Local | PackageTag.InDevelopment))
-                    return false;
-
-                var registry = m_PackageInfo?.registry;
-                if (registry?.isDefault != true || string.IsNullOrEmpty(registry?.url))
-                    return false;
-
-                return new Uri(registry.url).Host.EndsWith(".unity.com", StringComparison.InvariantCultureIgnoreCase);
-            }
-        }
-
         public bool isFromScopedRegistry => m_PackageInfo?.registry?.isDefault == false;
 
-        public UpmPackageVersion(PackageInfo packageInfo, bool isInstalled, SemVersion version, string displayName)
+        public UpmPackageVersion(PackageInfo packageInfo, bool isInstalled, SemVersion version, string displayName, bool isUnityPackage)
         {
             m_Version = version;
             m_DisplayName = displayName;
             m_IsInstalled = isInstalled;
             m_PackageUniqueId = packageInfo.name;
 
-            UpdatePackageInfo(packageInfo);
+            UpdatePackageInfo(packageInfo, isUnityPackage);
         }
 
-        public UpmPackageVersion(PackageInfo packageInfo, bool isInstalled)
-            : this(packageInfo, isInstalled, SemVersion.Parse(packageInfo.version), packageInfo.displayName)
+        public UpmPackageVersion(PackageInfo packageInfo, bool isInstalled, bool isUnityPackage)
         {
+            SemVersion.TryParse(packageInfo.version, out m_Version);
+            m_VersionString = m_Version?.ToString();
+            m_DisplayName = packageInfo.displayName;
+            m_IsInstalled = isInstalled;
+            m_PackageUniqueId = packageInfo.name;
+
+            UpdatePackageInfo(packageInfo, isUnityPackage);
         }
 
-        internal void UpdatePackageInfo(PackageInfo newPackageInfo)
+        internal void UpdatePackageInfo(PackageInfo newPackageInfo, bool isUnityPackage)
         {
             m_IsFullyFetched = m_Version == newPackageInfo.version;
             m_PackageInfo = newPackageInfo;
             m_PackageUniqueId = m_PackageInfo.name;
+            m_IsUnityPackage = isUnityPackage;
 
             RefreshTags();
 
@@ -181,7 +190,7 @@ namespace UnityEditor.PackageManager.UI
             if (HasTag(PackageTag.Bundled) && m_PackageInfo.datePublished == null)
                 m_PublishedDateTicks = new DateTime(1970, 1, 1).Ticks + InternalEditorUtility.GetUnityVersionDate() * TimeSpan.TicksPerSecond;
 
-            m_Author = string.IsNullOrEmpty(m_PackageInfo.author.name) && name.StartsWith(k_UnityPrefix) ? "Unity Technologies Inc." : m_PackageInfo.author.name;
+            m_Author = this.isUnityPackage ? k_UnityAuthor : m_PackageInfo.author?.name ?? string.Empty;
 
             if (HasTag(PackageTag.BuiltIn))
                 m_Description = UpmPackageDocs.SplitBuiltinDescription(this)[0];
