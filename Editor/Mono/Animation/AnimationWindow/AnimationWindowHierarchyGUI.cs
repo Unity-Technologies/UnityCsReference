@@ -40,6 +40,7 @@ namespace UnityEditorInternal
         public const float k_AddCurveButtonNodeHeight = 40f;
         public const float k_RowBackgroundColorBrightness = 0.28f;
         private const float k_SelectedPhantomCurveColorMultiplier = 1.4f;
+        private const float k_CurveColorIndicatorIconSize = 11;
 
         private readonly static Color k_KeyColorInDopesheetMode = new Color(0.7f, 0.7f, 0.7f, 1);
         private readonly static Color k_KeyColorForNonCurves = new Color(0.7f, 0.7f, 0.7f, 0.5f);
@@ -286,6 +287,7 @@ namespace UnityEditorInternal
                 SetStyleTextColor(lineStyle, textColor);
 
                 rect.xMin += (int)(indent + foldoutStyleWidth + lineStyle.margin.left);
+                rect.yMin = rect.y + (rect.height - EditorGUIUtility.singleLineHeight) / 2;
                 GUI.Label(rect, Styles.content, lineStyle);
 
                 SetStyleTextColor(lineStyle, oldColor);
@@ -431,7 +433,7 @@ namespace UnityEditorInternal
         {
             rect = new Rect(
                 rect.xMax - k_RowRightOffset - 12,
-                rect.yMin + 2,
+                rect.yMin + 2 + (rect.height - EditorGUIUtility.singleLineHeight) / 2,
                 22, 12);
 
             // case 767863.
@@ -472,9 +474,8 @@ namespace UnityEditorInternal
                     }
                 }
             }
-
             Texture icon = hasKey ? CurveUtility.GetIconKey() : CurveUtility.GetIconCurve();
-            rect = new Rect(rect.xMax - k_RowRightOffset - (icon.width / 2) - 5, rect.yMin + k_ColorIndicatorTopMargin, icon.width, icon.height);
+            rect = new Rect(rect.xMax - k_RowRightOffset - (k_CurveColorIndicatorIconSize / 2) - 5, rect.yMin + k_ColorIndicatorTopMargin + (rect.height - EditorGUIUtility.singleLineHeight) / 2, k_CurveColorIndicatorIconSize, k_CurveColorIndicatorIconSize);
             GUI.DrawTexture(rect, icon, ScaleMode.ScaleToFit, true, 1);
 
             GUI.color = originalColor;

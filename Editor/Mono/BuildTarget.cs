@@ -122,6 +122,8 @@ namespace UnityEditor
 
         Stadia = 40,
 
+        CloudRendering = 41,
+
         // obsolete identifiers. We're using different values so that ToString() works.
         [System.Obsolete("Use iOS instead (UnityUpgradable) -> iOS", true)]
         iPhone = -1,

@@ -1737,6 +1737,9 @@ namespace UnityEditor
 
         new internal static class Styles
         {
+            public const float pointIconCenterOffsetX = 7;
+            public const float pointIconCenterOffsetY = 8;
+            public const float pointIconSize = 16;
             public static Texture2D pointIcon = EditorGUIUtility.LoadIcon("curvekeyframe");
             public static Texture2D pointIconWeighted = EditorGUIUtility.LoadIcon("curvekeyframeweighted");
             public static Texture2D pointIconSelected = EditorGUIUtility.LoadIcon("curvekeyframeselected");
@@ -3630,7 +3633,7 @@ namespace UnityEditor
         {
             // Important to take floor of positions of GUI stuff to get pixel correct alignment of
             // stuff drawn with both GUI and Handles/GL. Otherwise things are off by one pixel half the time.
-            var rect = new Rect(Mathf.Floor(viewPos.x) - 4, Mathf.Floor(viewPos.y) - 4, Styles.pointIcon.width, Styles.pointIcon.height);
+            var rect = new Rect(Mathf.Floor(viewPos.x) - Styles.pointIconCenterOffsetX, Mathf.Floor(viewPos.y) - Styles.pointIconCenterOffsetY, Styles.pointIconSize, Styles.pointIconSize);
 
             if (selected == CurveWrapper.SelectionMode.None)
             {
@@ -3656,7 +3659,7 @@ namespace UnityEditor
         {
             // Important to take floor of positions of GUI stuff to get pixel correct alignment of
             // stuff drawn with both GUI and Handles/GL. Otherwise things are off by one pixel half the time.
-            var rect = new Rect(Mathf.Floor(viewPos.x) - 4, Mathf.Floor(viewPos.y) - 4, Styles.pointIcon.width, Styles.pointIcon.height);
+            var rect = new Rect(Mathf.Floor(viewPos.x) - Styles.pointIconCenterOffsetX, Mathf.Floor(viewPos.y) - Styles.pointIconCenterOffsetY, Styles.pointIconSize, Styles.pointIconSize);
 
             if (weighted)
             {

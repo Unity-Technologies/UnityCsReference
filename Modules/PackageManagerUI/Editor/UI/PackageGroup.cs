@@ -17,7 +17,7 @@ namespace UnityEditor.PackageManager.UI
 
         public IEnumerable<PackageItem> packageItems => groupContainer.Children().Cast<PackageItem>();
 
-        public PackageGroup(string groupName, bool expanded = true, bool hidden = false)
+        public PackageGroup(string groupName, string displayName, bool expanded = true, bool hidden = false)
         {
             name = groupName;
             var root = Resources.GetTemplate("PackageGroup.uxml");
@@ -33,10 +33,8 @@ namespace UnityEditor.PackageManager.UI
                 EditorApplication.delayCall += () => onGroupToggle?.Invoke(evt.newValue);
             });
 
-            headerCaret.text = groupName;
-            var label = headerCaret.Q<Label>();
-            if (label != null)
-                label.pickingMode = PickingMode.Position;
+            headerTag.pickingMode = PickingMode.Ignore;
+            headerCaret.text = displayName;
 
             if (hidden)
                 AddToClassList("hidden");
@@ -69,7 +67,7 @@ namespace UnityEditor.PackageManager.UI
             groupContainer.Clear();
         }
 
-        internal void Remove(PackageItem item)
+        internal void RemovePackageItem(PackageItem item)
         {
             if (groupContainer.Contains(item))
                 groupContainer.Remove(item);
@@ -78,6 +76,8 @@ namespace UnityEditor.PackageManager.UI
         private readonly VisualElementCache m_Cache;
 
         public VisualElement groupContainer => m_Cache.Get<VisualElement>("groupContainer");
+        public VisualElement headerContainer => m_Cache.Get<VisualElement>("headerContainer");
         private Toggle headerCaret => m_Cache.Get<Toggle>("headerCaret");
+        private Label headerTag => m_Cache.Get<Label>("headerTag");
     }
 }

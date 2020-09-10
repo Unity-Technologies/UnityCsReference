@@ -71,7 +71,7 @@ namespace UnityEditor
         [Serializable]
         class AssetPostProcessorAnalyticsData
         {
-            public double importActionId;
+            public string importActionId;
             public List<AssetPostProcessorMethodCallAnalyticsData> postProcessorCalls = new List<AssetPostProcessorMethodCallAnalyticsData>();
         }
 
@@ -235,7 +235,7 @@ namespace UnityEditor
         {
             m_ImportProcessors = new ArrayList();
             var analyticsEvent = new AssetPostProcessorAnalyticsData();
-            analyticsEvent.importActionId = AssetImporter.GetAtPath(pathName).GetImportStartTime();
+            analyticsEvent.importActionId = ((int)Math.Floor(AssetImporter.GetAtPath(pathName).GetImportStartTime() * 1000)).ToString();
             s_AnalyticsEventsStack.Push(analyticsEvent);
 
             // @TODO: This is just a temporary workaround for the import settings.

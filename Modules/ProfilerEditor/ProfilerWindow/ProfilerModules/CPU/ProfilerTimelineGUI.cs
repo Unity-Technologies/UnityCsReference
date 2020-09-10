@@ -682,7 +682,8 @@ namespace UnityEditorInternal
 
             m_TimeArea.SetShownHRangeInsideMargins(t - dt * 0.2f, t + dt * 1.2f);
 
-            if (m_SelectedEntry.instanceCount >= 0 && verticallyFrameSelected)
+            // [Case 1248631] The Analyzer may set m_SelectedEntry via reflection whilst m_SelectedThread is not assigned until later in DoProfilerFrame. Therefore it's possible we get here with a null m_SelectedThread.
+            if (m_SelectedEntry.instanceCount >= 0 && verticallyFrameSelected && m_SelectedThread != null)
             {
                 if (m_SelectedEntry.relativeYPos > m_SelectedThread.height)
                 {

@@ -12,9 +12,6 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class SimplePage : BasePage
     {
-        private const string k_UnityPackageGroupName = "Unity";
-        private const string k_OtherPackageGroupName = "Other";
-
         [SerializeField]
         private VisualStateList m_VisualStateList = new VisualStateList();
 
@@ -64,16 +61,6 @@ namespace UnityEditor.PackageManager.UI
             RebuildOrderedVisualStates();
             TriggerOnListRebuild();
             RefreshVisualStates();
-        }
-
-        private string GetGroupName(IPackage package)
-        {
-            if (package.Is(PackageType.BuiltIn) || package.Is(PackageType.AssetStore))
-                return string.Empty;
-            else if (package.Is(PackageType.Unity))
-                return tab == PackageFilterTab.UnityRegistry ? string.Empty : L10n.Tr(k_UnityPackageGroupName);
-            else
-                return string.IsNullOrEmpty(package.versions.primary?.author) ? L10n.Tr(k_OtherPackageGroupName) : package.versions.primary?.author;
         }
 
         private void RebuildOrderedVisualStates()
