@@ -83,17 +83,23 @@ namespace UnityEditorInternal.APIUpdating
             if (assembliesToUpdate.Count == 0)
                 return;
 
-            if (!WaitForVCSServerConnection(true))
-            {
-                assembliesToUpdate.Clear();
-                return;
-            }
-
             var assemblyPaths = assembliesToUpdate.Select(c => c.Path);
-            if (Provider.enabled && !APIUpdaterHelper.CheckoutAndValidateVCSFiles(assemblyPaths))
+            var anyAssemblyInAssetsFolder = assemblyPaths.Any(path => path.IndexOf("Assets/", StringComparison.OrdinalIgnoreCase) != -1);
+
+            // Only try to connect to VCS if there are files under VCS that need to be updated
+            if (anyAssemblyInAssetsFolder)
             {
-                assembliesToUpdate.Clear();
-                return;
+                var failedToConnectToVcs = false;
+                if (WaitForVCSServerConnection(true))
+                {
+                    failedToConnectToVcs = Provider.enabled && !APIUpdaterHelper.CheckoutAndValidateVCSFiles(assemblyPaths);
+                }
+
+                if (failedToConnectToVcs)
+                {
+                    assembliesToUpdate.Clear();
+                    return;
+                }
             }
 
             var sw = Stopwatch.StartNew();
