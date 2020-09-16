@@ -90,15 +90,24 @@ namespace UnityEditor.PackageManager.UI
             {
                 AddError(new UIError(UIErrorCode.AssetStorePackageError, ApplicationUtil.instance.GetTranslationForText("Invalid product details.")));
             }
-            else if (localInfo == null)
-            {
-                m_VersionList.AddVersion(new AssetStorePackageVersion(productInfo));
-            }
             else
             {
-                m_VersionList.AddVersion(new AssetStorePackageVersion(productInfo, localInfo));
-                if (localInfo.canUpdate && (localInfo.versionId != productInfo.versionId || localInfo.versionString != productInfo.versionString))
-                    m_VersionList.AddVersion(new AssetStorePackageVersion(productInfo));
+                // The version we get from the product info is the latest on the server
+                // The version we get from the localInfo is the version publisher set when uploading the .unitypackage file
+                // The publisher could update the version on the server but NOT upload a new .unitypackage file, that will
+                // result in a case where localInfo and productInfo have different version numbers but no update is available
+                // Because of this, we prefer showing version from the server (even when localInfo version is different)
+                // and we only want to show the localInfo version when `localInfo.canUpdate` is set to true
+                var latestVersion = new AssetStorePackageVersion(productInfo);
+                if (localInfo != null)
+                {
+                    // When no update is available, we just ignore most of the info in the `localInfo` and only take the path
+                    if (!localInfo.canUpdate)
+                        latestVersion.SetLocalPath(localInfo.packagePath);
+                    else
+                        m_VersionList.AddVersion(new AssetStorePackageVersion(productInfo, localInfo));
+                }
+                m_VersionList.AddVersion(latestVersion);
             }
         }
 
