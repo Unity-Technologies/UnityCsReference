@@ -133,6 +133,11 @@ namespace Unity.CodeEditor
 
         public static void SetExternalScriptEditor(string path)
         {
+            if (CurrentEditorInstallation == path)
+            {
+                return;
+            }
+
             EditorPrefs.SetString("kScriptsDefaultApp", path);
             Editor.Current.Initialize(path);
         }

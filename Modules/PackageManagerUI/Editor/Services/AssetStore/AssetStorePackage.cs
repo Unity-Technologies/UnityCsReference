@@ -112,15 +112,24 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             {
                 AddError(new Error(NativeErrorCode.Unknown, "Invalid product details."));
             }
-            else if (localInfo == null)
-            {
-                m_VersionList.AddVersion(new AssetStorePackageVersion(fetchedInfo));
-            }
             else
             {
-                m_VersionList.AddVersion(new AssetStorePackageVersion(fetchedInfo, localInfo));
-                if (localInfo.canUpdate && (localInfo.versionId != fetchedInfo.versionId || localInfo.versionString != fetchedInfo.versionString))
-                    m_VersionList.AddVersion(new AssetStorePackageVersion(fetchedInfo));
+                // The version we get from the product info is the latest on the server
+                // The version we get from the localInfo is the version publisher set when uploading the .unitypackage file
+                // The publisher could update the version on the server but NOT upload a new .unitypackage file, that will
+                // result in a case where localInfo and fetchedInfo have different version numbers but no update is available
+                // Because of this, we prefer showing version from the server (even when localInfo version is different)
+                // and we only want to show the localInfo version when `localInfo.canUpdate` is set to true
+                var latestVersion = new AssetStorePackageVersion(fetchedInfo);
+                if (localInfo != null)
+                {
+                    // When no update is available, we just ignore most of the info in the `localInfo` and only take the path
+                    if (!localInfo.canUpdate)
+                        latestVersion.localPath = localInfo.packagePath;
+                    else
+                        m_VersionList.AddVersion(new AssetStorePackageVersion(fetchedInfo, localInfo));
+                }
+                m_VersionList.AddVersion(latestVersion);
             }
         }
 
