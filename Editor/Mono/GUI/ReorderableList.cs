@@ -63,6 +63,7 @@ namespace UnityEditorInternal
 
         private SerializedObject m_SerializedObject;
         private SerializedProperty m_Elements;
+        private string m_PropertyPath;
         private IList m_ElementList;
         private bool m_Draggable;
         private float m_DraggedY;
@@ -78,28 +79,61 @@ namespace UnityEditorInternal
 
         private int id = -1;
 
-        internal struct PropertyCacheEntry
+        internal class PropertyCacheEntry
         {
             public SerializedProperty property;
             public float height;
             public float offset;
+            public int lastControlCount;
 
             public PropertyCacheEntry(SerializedProperty property, float height, float offset)
             {
                 this.property = property;
                 this.height = height;
                 this.offset = offset;
+                lastControlCount = 0;
             }
         }
         List<PropertyCacheEntry> m_PropertyCache = new List<PropertyCacheEntry>();
+        static List<string> m_OutdatedProperties = new List<string>();
         internal bool IsCacheClear => m_PropertyCache.Count == 0;
+
+        static string GetParentListPath(string propertyPath)
+        {
+            int parentPathLength = propertyPath.LastIndexOf(".Array.data[");
+
+            if (parentPathLength < 0) return null;
+
+            return propertyPath.Substring(0, parentPathLength);
+        }
+
+        internal static void InvalidateParentCaches(string propertyPath)
+        {
+            string parentPath = GetParentListPath(propertyPath);
+            while (parentPath != null)
+            {
+                m_OutdatedProperties.Add(parentPath);
+                parentPath = GetParentListPath(parentPath);
+            }
+        }
+
+        bool CheckForChildInvalidation()
+        {
+            if (m_OutdatedProperties.BinarySearch(m_PropertyPath) >= 0)
+            {
+                ClearCache();
+                m_OutdatedProperties = m_OutdatedProperties.Where(e => !e.Equals(m_PropertyPath)).ToList();
+                return true;
+            }
+            return false;
+        }
 
         // class for default rendering and behavior of reorderable list - stores styles and is statically available as s_Defaults
         public class Defaults
         {
-            public GUIContent iconToolbarPlus = EditorGUIUtility.TrIconContent("Toolbar Plus", "Add to list");
-            public GUIContent iconToolbarPlusMore = EditorGUIUtility.TrIconContent("Toolbar Plus More", "Choose to add to list");
-            public GUIContent iconToolbarMinus = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove selection or last element from list");
+            public GUIContent iconToolbarPlus = EditorGUIUtility.TrIconContent("Toolbar Plus", "Add to the list");
+            public GUIContent iconToolbarPlusMore = EditorGUIUtility.TrIconContent("Toolbar Plus More", "Choose to add to the list");
+            public GUIContent iconToolbarMinus = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove selection from the list");
             public readonly GUIStyle draggingHandle = "RL DragHandle";
             public readonly GUIStyle headerBackground = "RL Header";
             private readonly GUIStyle emptyHeaderBackground = "RL Empty Header";
@@ -107,6 +141,7 @@ namespace UnityEditorInternal
             public readonly GUIStyle boxBackground = "RL Background";
             public readonly GUIStyle preButton = "RL FooterButton";
             public readonly GUIStyle elementBackground = "RL Element";
+            internal readonly GUIStyle defaultLabel = new GUIStyle(EditorStyles.label);
             public const int padding = 6;
             public const int dragHandleWidth = 20;
             internal const int propertyDrawerPadding = 8;
@@ -116,6 +151,14 @@ namespace UnityEditorInternal
             internal static readonly string undoRemove = "Remove Element From Array";
             internal static readonly string undoMove = "Reorder Element In Array";
             internal static readonly Rect infinityRect = new Rect(float.NegativeInfinity, float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity);
+
+            public Defaults()
+            {
+                defaultLabel.wordWrap = true;
+                defaultLabel.alignment = TextAnchor.MiddleCenter;
+            }
+
+            private static GUIContent OverMaxMultiEditLimit(int maxMultiEditElementCount) => EditorGUIUtility.TrTextContent($"This field cannot display arrays with more than {maxMultiEditElementCount} elements when multiple objects are selected.");
 
             // draw the default footer
             public void DrawFooter(Rect rect, ReorderableList list)
@@ -136,7 +179,7 @@ namespace UnityEditorInternal
                 if (list.displayAdd)
                 {
                     using (new EditorGUI.DisabledScope(
-                        list.onCanAddCallback != null && !list.onCanAddCallback(list)))
+                        list.onCanAddCallback != null && !list.onCanAddCallback(list) || list.isOverMaxMultiEditLimit))
                     {
                         if (GUI.Button(addRect, list.onAddDropdownCallback != null ? iconToolbarPlusMore : iconToolbarPlus, preButton))
                         {
@@ -155,7 +198,8 @@ namespace UnityEditorInternal
                 if (list.displayRemove)
                 {
                     using (new EditorGUI.DisabledScope(list.index < 0 || list.index >= list.count
-                        || (list.onCanRemoveCallback != null && !list.onCanRemoveCallback(list))))
+                        || (list.onCanRemoveCallback != null && !list.onCanRemoveCallback(list))
+                        || list.isOverMaxMultiEditLimit))
                     {
                         if (GUI.Button(removeRect, iconToolbarMinus, preButton))
                         {
@@ -176,6 +220,8 @@ namespace UnityEditorInternal
             // default add button behavior
             internal void DoAddButton(ReorderableList list, Object value)
             {
+                if (GUIUtility.keyboardControl != list.id) list.GrabKeyboardFocus();
+
                 if (list.serializedProperty != null)
                 {
                     if (list.serializedProperty.hasMultipleDifferentValues &&
@@ -215,6 +261,7 @@ namespace UnityEditorInternal
                         Debug.LogError("Cannot add element of type Null.");
                 }
                 Undo.SetCurrentGroupName(undoAdd);
+                list.ClearCache();
             }
 
             public void DoAddButton(ReorderableList list)
@@ -225,6 +272,8 @@ namespace UnityEditorInternal
             // default remove button behavior
             public void DoRemoveButton(ReorderableList list)
             {
+                if (GUIUtility.keyboardControl != list.id) list.GrabKeyboardFocus();
+
                 int removeIndex = list.index;
                 if (removeIndex < 0 || removeIndex >= list.count) removeIndex = list.count - 1;
 
@@ -253,8 +302,8 @@ namespace UnityEditorInternal
                         list.index = list.list.Count - 1;
                 }
 
-                list.GrabKeyboardFocus();
                 Undo.SetCurrentGroupName(undoRemove);
+                list.ClearCache();
             }
 
             // draw the default header background
@@ -321,7 +370,12 @@ namespace UnityEditorInternal
             // draw the default element
             public void DrawNoneElement(Rect rect, bool draggable)
             {
-                EditorGUI.LabelField(rect, Defaults.s_ListIsEmpty);
+                EditorGUI.LabelField(rect, s_ListIsEmpty);
+            }
+
+            public void DrawOverMaxMultiEditElement(Rect rect, int maxMultiEditElementCount, bool draggable)
+            {
+                EditorGUI.LabelField(rect, OverMaxMultiEditLimit(maxMultiEditElementCount), defaultLabel);
             }
         }
         static Defaults s_Defaults;
@@ -372,10 +426,12 @@ namespace UnityEditorInternal
             displayAdd = displayAddButton;
             m_DisplayHeader = displayHeader;
             displayRemove = displayRemoveButton;
-            if (m_Elements != null && m_Elements.editable == false)
-                m_Draggable = false;
-            if (m_Elements != null && m_Elements.isArray == false)
-                Debug.LogError("Input elements should be an Array SerializedProperty");
+            if (m_Elements != null)
+            {
+                m_PropertyPath = m_Elements.propertyPath;
+                if (m_Elements.editable == false) m_Draggable = false;
+                if (m_Elements.isArray == false) Debug.LogError("Input elements should be an Array SerializedProperty");
+            }
 
             s_Instances.Add(this);
         }
@@ -387,6 +443,7 @@ namespace UnityEditorInternal
             {
                 m_Elements = value;
                 m_SerializedObject = m_Elements.serializedObject;
+                m_PropertyPath = m_Elements.propertyPath;
             }
         }
 
@@ -399,9 +456,7 @@ namespace UnityEditorInternal
         // active element index accessor
         public int index
         {
-            // In order to always return a valid index to list element, we should
-            // return the last item if there are no active element
-            get { return m_ActiveElement >= 0 ? m_ActiveElement : count - 1; }
+            get { return m_ActiveElement; }
             set { m_ActiveElement = value; }
         }
 
@@ -426,9 +481,10 @@ namespace UnityEditorInternal
             set { m_Draggable = value; }
         }
 
-        internal void CacheIfNeeded(bool cacheCount = false)
+        internal void CacheIfNeeded()
         {
-            if (cacheCount) m_Count = count;
+            if (isOverMaxMultiEditLimit) return;
+
             m_PropertyCache.Capacity = Mathf.Max(m_PropertyCache.Capacity, m_Count - 1);
             while (m_Count > m_PropertyCache.Count)
             {
@@ -457,9 +513,19 @@ namespace UnityEditorInternal
                     }
                     else if (m_HasPropertyDrawer)
                     {
-                        height = ScriptAttributeUtility.GetHandler(property).GetHeight(property, null, true);
+                        try
+                        {
+                            height = ScriptAttributeUtility.GetHandler(property).GetHeight(property, null, true);
+                        }
+                        catch
+                        {
+                            // Sometimes we find properties that no longer exist so we don't cache them
+                            height = 0;
+                            m_Count--;
+                        }
                     }
-                    m_PropertyCache.Add(new PropertyCacheEntry(property, height, offset));
+
+                    if (height > 0) m_PropertyCache.Add(new PropertyCacheEntry(property, height, offset));
                 }
                 else
                 {
@@ -545,30 +611,46 @@ namespace UnityEditorInternal
             return new Rect(listRect.x, listRect.y + GetElementYOffset(index), listRect.width, GetElementHeight(index));
         }
 
+        bool isOverMaxMultiEditLimit => m_Elements != null && lastKnownBiggestArray > m_Elements.serializedObject.maxArraySizeForMultiEditing && m_Elements.serializedObject.isEditingMultipleObjects;
+
         public int count
         {
             get
             {
                 if (m_Elements != null)
                 {
-                    if (!m_Elements.hasMultipleDifferentValues)
-                        return m_Elements.arraySize;
-
                     int smallerArraySize = m_Elements.arraySize;
+                    lastKnownBiggestArray = smallerArraySize;
+
+                    try
+                    {
+                        if (!m_Elements.hasMultipleDifferentValues)
+                            return smallerArraySize;
+                    }
+                    catch   // If we catch an exception this probably means we have gone through this property and must reset it to read its data again
+                    {
+                        m_Elements = m_SerializedObject.FindProperty(m_PropertyPath);
+                    }
+
                     foreach (Object targetObject in m_Elements.serializedObject.targetObjects)
                     {
                         using (SerializedObject serializedObject = new SerializedObject(targetObject))
                         {
                             SerializedProperty property = serializedObject.FindProperty(m_Elements.propertyPath);
                             smallerArraySize = Math.Min(property.arraySize, smallerArraySize);
+                            lastKnownBiggestArray = Math.Max(property.arraySize, lastKnownBiggestArray);
                         }
                     }
+
+                    if (isOverMaxMultiEditLimit) return 0;
+
                     return smallerArraySize;
                 }
                 return m_ElementList.Count;
             }
         }
         int m_Count;
+        int lastKnownBiggestArray;
 
         public void DoLayoutList() //TODO: better API?
         {
@@ -622,12 +704,12 @@ namespace UnityEditorInternal
             float listElementPadding = kListElementBottomPadding + listElementTopPadding;
 
             m_Count = count;
-            if (m_Count == 0)
+            if (m_Count == 0 || isOverMaxMultiEditLimit)
             {
-                return elementHeight + listElementPadding;
+                return elementHeight * (isOverMaxMultiEditLimit ? 2 : 1) + listElementPadding;
             }
 
-            CacheIfNeeded(true);
+            CacheIfNeeded();
             return GetElementYOffset(m_Count - 1) + GetElementHeight(m_Count - 1) + listElementPadding;
         }
 
@@ -640,10 +722,11 @@ namespace UnityEditorInternal
             catch
             {
                 ClearCache();
-                CacheIfNeeded(true);
+                CacheIfNeeded();
             }
         }
 
+        int recursionCounter = 0;
         Rect lastRect = Rect.zero;
         private void DoListElements(Rect listRect, Rect visibleRect)
         {
@@ -654,13 +737,10 @@ namespace UnityEditorInternal
                 ClearCacheRecursive();
             }
 
-            CacheIfNeeded(true);
+            CacheIfNeeded();
 
             var prevIndent = EditorGUI.indentLevel;
             EditorGUI.indentLevel = 0;
-
-            // How many elements? If none, make space for showing default line that shows no elements are present
-            m_Count = count;
 
             // draw the background in repaint
             if (showDefaultBackground && Event.current.type == EventType.Repaint)
@@ -684,7 +764,7 @@ namespace UnityEditorInternal
 
             bool handlingInput = Event.current.type == EventType.MouseDown;
 
-            if ((m_Elements != null && m_Elements.isArray || m_ElementList != null) && m_Count > 0)
+            if ((m_Elements != null && m_Elements.isArray || m_ElementList != null) && m_Count > 0 && !isOverMaxMultiEditLimit)
             {
                 EditorGUI.BeginChangeCheck();
                 // If there are elements, we need to draw them -- we will do this differently depending on if we are dragging or not
@@ -786,6 +866,8 @@ namespace UnityEditorInternal
                         if (visibleRect.y + visibleRect.height < GetElementYOffset(i > 0 ? i - 1 : i)) break;
                         if (m_Elements != null) EnsureValidProperty(m_PropertyCache[i].property);
 
+                        int initialProperties = EditorGUI.s_PropertyCount;
+
                         bool activeElement = (i == m_ActiveElement);
                         bool focusedElement =  (i == m_ActiveElement && HasKeyboardControl());
 
@@ -822,6 +904,16 @@ namespace UnityEditorInternal
                             m_ActiveElement = i;
                             handlingInput = false;
                         }
+
+                        // Element drawing could be changed from distant properties or controls
+                        // so if we detect any change in the way the property is drawn, clear cache
+                        int currentControlCount = EditorGUI.s_PropertyCount - initialProperties;
+                        if (m_PropertyCache[i].lastControlCount > 1 && currentControlCount > 1
+                            && m_PropertyCache[i].lastControlCount != currentControlCount)
+                        {
+                            GUI.changed = true;
+                        }
+                        m_PropertyCache[i].lastControlCount = currentControlCount;
                     }
                 }
 
@@ -848,16 +940,34 @@ namespace UnityEditorInternal
                 elementContentRect.xMin += Defaults.padding;
                 elementContentRect.xMax -= Defaults.padding;
                 if (drawNoneElementCallback == null)
-                    defaultBehaviours.DrawNoneElement(elementContentRect, m_Draggable);
+                {
+                    if (isOverMaxMultiEditLimit)
+                    {
+                        elementContentRect.height *= 2;
+                        defaultBehaviours.DrawOverMaxMultiEditElement(elementContentRect, m_Elements.serializedObject.maxArraySizeForMultiEditing, m_Draggable);
+                    }
+                    else
+                    {
+                        defaultBehaviours.DrawNoneElement(elementContentRect, m_Draggable);
+                    }
+                }
                 else
                     drawNoneElementCallback(elementContentRect);
             }
 
             EditorGUI.indentLevel = prevIndent;
+
+            // Redraw if a change happened that could have changed child size
+            if (CheckForChildInvalidation() && recursionCounter < 2)
+            {
+                recursionCounter++;
+                DoListElements(listRect, visibleRect);
+            }
         }
 
         private void DoListHeader(Rect headerRect)
         {
+            recursionCounter = 0;
             // draw the background on repaint
             if (showDefaultBackground && Event.current.type == EventType.Repaint)
                 defaultBehaviours.DrawHeaderBackground(headerRect);
@@ -1100,7 +1210,7 @@ namespace UnityEditorInternal
         // or indexes of of elements that are not interacted with while drag is happening
         private int GetRowIndex(float localY, bool skipActiveElement = false)
         {
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < m_Count; i++)
             {
                 float levelOffset = GetElementYOffset(i);
 
@@ -1122,7 +1232,7 @@ namespace UnityEditorInternal
                 }
             }
 
-            return count - 1;
+            return m_Count - 1;
         }
 
         private bool IsDragging()

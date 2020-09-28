@@ -44,6 +44,7 @@ namespace UnityEditor.Presets
                 }
             }
             InspectorWindow.RepaintAllInspectors();
+            SettingsService.RepaintAllSettingsWindow();
         }
 
         public override void OnSelectionClosed(Preset selection)

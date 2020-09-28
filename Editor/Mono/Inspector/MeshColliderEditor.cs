@@ -60,7 +60,12 @@ namespace UnityEditor
             }
             EditorGUI.indentLevel--;
 
-            SetCookingOptions((MeshColliderCookingOptions)EditorGUILayout.EnumFlagsField(Texts.cookingOptionsText, GetCookingOptions()));
+            EditorGUI.BeginProperty(EditorGUILayout.GetControlRect(), null, m_CookingOptions);
+            EditorGUI.BeginChangeCheck();
+            var newOptions = (MeshColliderCookingOptions)EditorGUILayout.EnumFlagsField(Texts.cookingOptionsText, GetCookingOptions());
+            if (EditorGUI.EndChangeCheck())
+                SetCookingOptions(newOptions);
+            EditorGUI.EndProperty();
 
             EditorGUILayout.PropertyField(m_Material);
 

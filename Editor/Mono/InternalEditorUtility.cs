@@ -199,6 +199,11 @@ namespace UnityEditorInternal
                         ^ (assetReference.guid != null ? assetReference.guid.GetHashCode() : 0);
                 }
             }
+
+            public static bool IsAssetImported(int instanceID)
+            {
+                return instanceID != 0;
+            }
         }
 
         public static List<int> GetNewSelection(int clickedInstanceID, List<int> allInstanceIDs, List<int> selectedInstanceIDs, int lastClickedInstanceID, bool keepMultiSelection, bool useShiftAsActionKey, bool allowMultiSelection)
@@ -218,6 +223,9 @@ namespace UnityEditorInternal
         {
             if (entry.instanceID != 0 || string.IsNullOrEmpty(entry.guid))
                 return true;
+
+            if (entry.instanceID == 0 && EditorUtility.isInSafeMode)
+                return false; // Íf instance id is 0 in safe mode, then don't try to produce it. InstanceIDs are 0 for non script assets in safe mode.
 
             GUID lookupGUID = new GUID(entry.guid);
             var hash = UnityEditor.Experimental.AssetDatabaseExperimental.ProduceArtifactAsync(new ArtifactKey(lookupGUID));
@@ -261,6 +269,9 @@ namespace UnityEditorInternal
                     int instanceID = entryInstanceIds[i];
                     if (instanceID == 0)
                     {
+                        if (EditorUtility.isInSafeMode)
+                            continue; // Íf instance id is 0 in safe mode, then don't try to produce it. InstanceIDs are 0 for non script assets in safe mode.
+
                         string path = AssetDatabase.GUIDToAssetPath(entryInstanceGuids[i]);
                         instanceID = AssetDatabase.GetMainAssetInstanceID(path);
                         entryInstanceIds[i] = instanceID;

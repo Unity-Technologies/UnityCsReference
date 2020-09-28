@@ -758,22 +758,14 @@ namespace UnityEditor
 
         internal static readonly char[] defineSplits = new[] { ';', ',', ' ' };
 
-        // Set user-specified symbols for script compilation for the given build target group.
-        public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string defines)
+        internal static string[] ConvertScriptingDefineStringToArray(string defines)
         {
-            if (!string.IsNullOrEmpty(defines))
-                defines = string.Join(";", defines.Split(defineSplits, StringSplitOptions.RemoveEmptyEntries));
-            SetScriptingDefineSymbolsForGroupInternal(targetGroup, defines);
+            return defines.Split(defineSplits);
         }
 
-        public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string[] defines)
+        internal static string ConvertScriptingDefineArrayToString(string[] defines)
         {
             List<string> list = new List<string>();
-            var joined = new StringBuilder();
-
-            if (defines == null)
-                throw new ArgumentNullException("Value cannot be null");
-
             foreach (var define in defines)
             {
                 string[] split = define.Split(' ', ';');
@@ -792,6 +784,7 @@ namespace UnityEditor
             defines = list.Distinct().ToArray();
 
             // Join all defines to one string
+            var joined = new StringBuilder();
             foreach (var define in defines)
             {
                 if (joined.Length != 0)
@@ -800,7 +793,23 @@ namespace UnityEditor
                 joined.Append(define);
             }
 
-            SetScriptingDefineSymbolsForGroup(targetGroup, joined.ToString());
+            return joined.ToString();
+        }
+
+        // Set user-specified symbols for script compilation for the given build target group.
+        public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string defines)
+        {
+            if (!string.IsNullOrEmpty(defines))
+                defines = string.Join(";", defines.Split(defineSplits, StringSplitOptions.RemoveEmptyEntries));
+            SetScriptingDefineSymbolsForGroupInternal(targetGroup, defines);
+        }
+
+        public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string[] defines)
+        {
+            if (defines == null)
+                throw new ArgumentNullException("Value cannot be null");
+
+            SetScriptingDefineSymbolsForGroup(targetGroup, ConvertScriptingDefineArrayToString(defines));
         }
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
@@ -1227,6 +1236,12 @@ namespace UnityEditor
         [NativeMethod("SetStackTraceType")]
         public static extern void SetStackTraceLogType(LogType logType, StackTraceLogType stackTraceType);
 
+        [NativeMethod("GetGlobalStackTraceType")]
+        internal static extern StackTraceLogType GetGlobalStackTraceLogType(LogType logType);
+
+        [NativeMethod("SetGlobalStackTraceType")]
+        internal static extern void SetGlobalStackTraceLogType(LogType logType, StackTraceLogType stackTraceType);
+
         [Obsolete("Use UnityEditor.PlayerSettings.SetGraphicsAPIs/GetGraphicsAPIs instead")]
         public static bool useDirect3D11
         {
@@ -1272,7 +1287,8 @@ namespace UnityEditor
         [FreeFunction("GetPlayerSettings().SetLightmapStreamingPriority")]
         internal static extern void SetLightmapStreamingPriorityForPlatformGroup(BuildTargetGroup platformGroup, int lightmapStreamingPriority);
 
-        internal static extern bool disableOldInputManagerSupport { get; }
+        [FreeFunction("GetPlayerSettings().GetDisableOldInputManagerSupport")]
+        internal static extern bool GetDisableOldInputManagerSupport();
 
         [StaticAccessor("GetPlayerSettings()")]
         [NativeMethod("GetVirtualTexturingSupportEnabled")]
@@ -1287,5 +1303,16 @@ namespace UnityEditor
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
         public static extern void SetNormalMapEncoding(BuildTargetGroup platform, NormalMapEncoding encoding);
+
+        [FreeFunction("GetPlayerSettings().GetEditorOnly().RecompileScripts")]
+        internal static extern void RecompileScripts(string reason, bool refreshProject = true);
+
+        internal static extern bool isHandlingScriptRecompile
+        {
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            get;
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            set;
+        }
     }
 }

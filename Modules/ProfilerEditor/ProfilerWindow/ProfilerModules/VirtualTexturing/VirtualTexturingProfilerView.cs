@@ -43,7 +43,6 @@ namespace UnityEditor
             aggregatedInfoBox.height *= 0.6f;
             aggregatedInfoBox.width *= 0.4f;
 
-
             if (ProfilerDriver.GetStatisticsAvailabilityState(ProfilerArea.VirtualTexturing, win.GetActiveVisibleFrameIndex()) == 0)
             {
                 GUI.Label(aggregatedInfoBox, "No Virtual Texturing data was collected.\n Virtual Texturing can be enabled in the player settings.");
@@ -76,82 +75,103 @@ namespace UnityEditor
             cacheBiasScollBox.height = rect.height * 0.3f;
             cacheBiasScollBox.y += cacheDemandTitle.height;
 
-            var f = ProfilerDriver.GetRawFrameDataView(win.GetActiveVisibleFrameIndex(), 0);
-            var frameDataIterator = new ProfilerFrameDataIterator();
-
-            if (f.valid)
+            using (RawFrameDataView frameDataView = ProfilerDriver.GetRawFrameDataView(win.GetActiveVisibleFrameIndex(), 0))
             {
-                Assert.IsTrue(f.threadName == "Main Thread");
-
-                //Find render thread
-                var threadCount = frameDataIterator.GetThreadCount(f.frameIndex);
-                RawFrameDataView fRender = null;
-                for (int i = 0; i < threadCount; ++i)
+                if (frameDataView.valid)
                 {
-                    var frameData = ProfilerDriver.GetRawFrameDataView(f.frameIndex, i);
-                    if (frameData.threadName == "Render Thread")
+                    Assert.IsTrue(frameDataView.threadName == "Main Thread");
+
+                    RawFrameDataView fRender = null;
+
+                    //Find render thread
+                    using (ProfilerFrameDataIterator frameDataIterator = new ProfilerFrameDataIterator())
                     {
-                        fRender = frameData;
-                        break;
+                        var threadCount = frameDataIterator.GetThreadCount(frameDataView.frameIndex);
+                        for (int i = 0; i < threadCount; ++i)
+                        {
+                            RawFrameDataView frameData = ProfilerDriver.GetRawFrameDataView(frameDataView.frameIndex, i);
+                            if (frameData.threadName == "Render Thread")
+                            {
+                                fRender = frameData;
+                                break;
+                            }
+                            else
+                            {
+                                frameData.Dispose();
+                            }
+                        }
+                        // If there's no render thread, metadata was pushed on main thread
+                        if (fRender == null)
+                        {
+                            fRender = frameDataView;
+                        }
+                    }
+
+                    var stringBuilder = new StringBuilder(1024);
+                    stringBuilder.AppendLine($"Tiles required this frame: {GetCounterValue(frameDataView, "Required Tiles")}");
+                    stringBuilder.AppendLine($"Atlases: {GetCounterValue(frameDataView, "Atlases")}");
+                    stringBuilder.AppendLine($"Max GPU mip bias: {GetCounterValue(frameDataView, "Max Cache Mip Bias")}");
+                    stringBuilder.AppendLine($"Max GPU cache demand: {GetCounterValue(frameDataView, "Max Cache Demand")}%");
+                    stringBuilder.AppendLine($"Total CPU Cache Size: {EditorUtility.FormatBytes(GetCounterValue(frameDataView, "Total Cpu Cache Size"))}");
+                    stringBuilder.AppendLine($"Total GPU Cache Size: {EditorUtility.FormatBytes(GetCounterValue(frameDataView, "Total Gpu Cache size"))}");
+                    stringBuilder.AppendLine("\nFOLLOWING STATISTICS ARE ONLY AVAILABLE IN A PLAYER BUILD");
+                    stringBuilder.AppendLine($"Missing Disk Data: {EditorUtility.FormatBytes(GetCounterValue(frameDataView, "Missing Disk Data"))}");
+                    stringBuilder.AppendLine($"Missing Streaming tiles: {GetCounterValue(frameDataView, "Missing Streaming Tiles")}");
+                    stringBuilder.AppendLine($"Read From Disk: {EditorUtility.FormatBytes(GetCounterValue(frameDataView, "Read From Disk"))}");
+
+                    //AGGREGATED DATA
+                    string aggregatedText = stringBuilder.ToString();
+                    float aggregateHeight = EditorStyles.wordWrappedLabel.CalcHeight(GUIContent.Temp(aggregatedText), rect.width);
+                    m_ScrollAggregate = GUI.BeginScrollView(aggregatedInfoBox, m_ScrollAggregate, new Rect(0, 0, 200, aggregateHeight));
+                    GUI.Label(new Rect(0, 0, aggregatedInfoBox.width * 0.9f, aggregateHeight), aggregatedText);
+                    GUI.EndScrollView();
+
+                    //CACHE DEMANDS
+                    StringBuilder formats = new StringBuilder();
+                    StringBuilder demands = new StringBuilder();
+
+                    var demandData = fRender.GetFrameMetaData<int>(m_VTProfilerGuid, 1);
+                    for (int i = 0; i < demandData.Length; i += 2)
+                    {
+                        formats.AppendLine(((GraphicsFormat)demandData[i]).ToString());
+                        demands.AppendLine(demandData[i + 1].ToString() + '%');
+                    }
+
+                    GUI.Label(cacheDemandTitle, "% Cache demands");
+                    float demandHeight = EditorStyles.wordWrappedLabel.CalcHeight(GUIContent.Temp(formats.ToString()), rect.width);
+                    m_ScrollDemand = GUI.BeginScrollView(cacheDemandScrollBox, m_ScrollDemand, new Rect(0, 0, 200, demandHeight));
+                    cacheFormatBox.height = demandHeight;
+                    cacheValueBox.height = demandHeight;
+                    GUI.Label(cacheFormatBox, formats.ToString());
+                    GUI.Label(cacheValueBox, demands.ToString());
+                    GUI.EndScrollView();
+
+                    //CACHE BIAS
+                    formats.Clear();
+                    demands.Clear();
+                    var biasData = fRender.GetFrameMetaData<int>(m_VTProfilerGuid, 0);
+                    for (int i = 0; i < biasData.Length; i += 2)
+                    {
+                        formats.AppendLine(((GraphicsFormat)biasData[i]).ToString());
+                        demands.AppendLine(biasData[i + 1].ToString());
+                    }
+
+                    GUI.Label(cacheBiasTitle, "Mipmap bias per format");
+                    m_ScrollBias = GUI.BeginScrollView(cacheBiasScollBox, m_ScrollBias, new Rect(0, 0, 200, demandHeight));
+                    GUI.Label(cacheFormatBox, formats.ToString());
+                    GUI.Label(cacheValueBox, demands.ToString());
+                    GUI.EndScrollView();
+
+                    if (fRender != frameDataView)
+                    {
+                        fRender.Dispose();
                     }
                 }
-                Assert.IsTrue(fRender != null);
-
-                var stringBuilder = new StringBuilder(1024);
-                stringBuilder.AppendLine($"Tiles required this frame: {GetCounterValue(f, "Required Tiles")}");
-                stringBuilder.AppendLine($"Atlases: {GetCounterValue(f, "Atlases")}");
-                stringBuilder.AppendLine($"Max GPU mip bias: {GetCounterValue(f, "Max Cache Mip Bias")}");
-                stringBuilder.AppendLine($"Max GPU cache demand: {GetCounterValue(f, "Max Cache Demand")}%");
-                stringBuilder.AppendLine($"Total CPU Cache Size: {EditorUtility.FormatBytes(GetCounterValue(f, "Total Cpu Cache Size"))}");
-                stringBuilder.AppendLine($"Total GPU Cache Size: {EditorUtility.FormatBytes(GetCounterValue(f, "Total Gpu Cache size"))}");
-                stringBuilder.AppendLine("\nFOLLOWING STATISTICS ARE ONLY AVAILABLE IN A PLAYER BUILD");
-                stringBuilder.AppendLine($"Missing Disk Data: {EditorUtility.FormatBytes(GetCounterValue(f, "Missing Disk Data"))}");
-                stringBuilder.AppendLine($"Missing Streaming tiles: {GetCounterValue(f, "Missing Streaming Tiles")}");
-                stringBuilder.AppendLine($"Read From Disk: {EditorUtility.FormatBytes(GetCounterValue(f, "Read From Disk"))}");
-
-                //AGGREGATED DATA
-                string aggregatedText = stringBuilder.ToString();
-                float aggregateHeight = EditorStyles.wordWrappedLabel.CalcHeight(GUIContent.Temp(aggregatedText), rect.width);
-                m_ScrollAggregate = GUI.BeginScrollView(aggregatedInfoBox, m_ScrollAggregate, new Rect(0, 0, 200, aggregateHeight));
-                GUI.Label(new Rect(0, 0, aggregatedInfoBox.width * 0.9f, aggregateHeight), aggregatedText);
-                GUI.EndScrollView();
-
-                //CACHE DEMANDS
-                StringBuilder formats = new StringBuilder();
-                StringBuilder demands = new StringBuilder();
-                var demandData = fRender.GetFrameMetaData<int>(m_VTProfilerGuid, 1);
-                for (int i = 0; i < demandData.Length; i += 2)
+                else
                 {
-                    formats.AppendLine(((GraphicsFormat)demandData[i]).ToString());
-                    demands.AppendLine(demandData[i + 1].ToString() + '%');
+                    GUI.Label(aggregatedInfoBox, "No frame data available");
                 }
-
-                GUI.Label(cacheDemandTitle, "% Cache demands");
-                float demandHeight = EditorStyles.wordWrappedLabel.CalcHeight(GUIContent.Temp(formats.ToString()), rect.width);
-                m_ScrollDemand = GUI.BeginScrollView(cacheDemandScrollBox, m_ScrollDemand, new Rect(0, 0, 200, demandHeight));
-                cacheFormatBox.height = demandHeight;
-                cacheValueBox.height = demandHeight;
-                GUI.Label(cacheFormatBox, formats.ToString());
-                GUI.Label(cacheValueBox, demands.ToString());
-                GUI.EndScrollView();
-
-                //CACHE BIAS
-                formats.Clear();
-                demands.Clear();
-                var biasData = fRender.GetFrameMetaData<int>(m_VTProfilerGuid, 0);
-                for (int i = 0; i < biasData.Length; i += 2)
-                {
-                    formats.AppendLine(((GraphicsFormat)biasData[i]).ToString());
-                    demands.AppendLine(biasData[i + 1].ToString());
-                }
-
-                GUI.Label(cacheBiasTitle, "Mipmap bias per format");
-                m_ScrollBias = GUI.BeginScrollView(cacheBiasScollBox, m_ScrollBias, new Rect(0, 0, 200, demandHeight));
-                GUI.Label(cacheFormatBox, formats.ToString());
-                GUI.Label(cacheValueBox, demands.ToString());
-                GUI.EndScrollView();
             }
-            else GUI.Label(aggregatedInfoBox, "No frame data available");
             EditorGUILayout.EndVertical();
         }
 

@@ -889,7 +889,7 @@ namespace UnityEditor
             bool showSize = true;
             bool isPackedSprite = textureImporter && textureImporter.qualifiesForSpritePacking;
             bool isNormalmap = IsNormalMap(t);
-            bool stillNeedsCompression = TextureUtil.DoesTextureStillNeedToBeCompressed(AssetDatabase.GetAssetPath(t));
+            bool stillNeedsCompression = textureImporter && textureImporter.textureStillNeedsToBeCompressed;
             bool isNPOT = t2 != null && TextureUtil.IsNonPowerOfTwo(t2);
             GraphicsFormat format = t.graphicsFormat;
 

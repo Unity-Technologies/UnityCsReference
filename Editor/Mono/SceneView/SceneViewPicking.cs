@@ -47,11 +47,13 @@ namespace UnityEditor
             s_RetainHashes = true;
 
             var enumerator = GetAllOverlapping(mousePosition).GetEnumerator();
+
             if (!enumerator.MoveNext())
                 return null;
 
             var topmost = enumerator.Current;
-            var selectionBase = HandleUtility.FindSelectionBaseForPicking(topmost);
+            // Selection base is only interesting if it's not the topmost
+            var selectionBase = HandleUtility.FindSelectionBaseForPicking(topmost.transform.parent);
             var first = (selectionBase == null ? topmost : selectionBase);
             int topmostHash = topmost.GetHashCode();
             int prefixHash = topmostHash;
@@ -81,11 +83,8 @@ namespace UnityEditor
             {
                 if (prefixHash == s_PreviousPrefixHash)
                     return topmost;
-                else
-                {
-                    s_PreviousPrefixHash = prefixHash;
-                    return selectionBase;
-                }
+                s_PreviousPrefixHash = prefixHash;
+                return selectionBase;
             }
 
             // Check if active game object will appear in selection stack

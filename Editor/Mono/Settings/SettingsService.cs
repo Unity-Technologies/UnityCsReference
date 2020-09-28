@@ -14,6 +14,8 @@ namespace UnityEditor
     [InitializeOnLoad]
     public static class SettingsService
     {
+        internal static event Action repaintAllSettingsWindow;
+
         public static EditorWindow OpenProjectSettings(string settingsPath = null)
         {
             return SettingsWindow.Show(SettingsScope.Project, settingsPath);
@@ -27,6 +29,11 @@ namespace UnityEditor
         public static void NotifySettingsProviderChanged()
         {
             settingsProviderChanged?.Invoke();
+        }
+
+        public static void RepaintAllSettingsWindow()
+        {
+            repaintAllSettingsWindow?.Invoke();
         }
 
         const string k_ProjectSettings = "Edit/Project Settings";

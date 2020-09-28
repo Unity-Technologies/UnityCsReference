@@ -955,7 +955,7 @@ namespace UnityEditor
                 m_Parent.window.Close();
             }
             UnityEngine.Object.DestroyImmediate(this, true);
-            EditorWindow.UpdateWindowMenuListing();
+            UpdateWindowMenuListing();
         }
 
         // Make the window repaint.
@@ -1183,6 +1183,9 @@ namespace UnityEditor
 
         internal static void BuildWindowMenuListing()
         {
+            if (ModeService.HasCapability(ModeCapability.SafeMode))
+                return;
+
             const string k_RootMenuItemName = "Window/Panels";
 
             Menu.RemoveMenuItem(k_RootMenuItemName);

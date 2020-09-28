@@ -395,12 +395,10 @@ namespace UnityEditor.UIElements
                 if ((mode & Mode.DebugMod) > 0)
                 {
                     AddToClassList(debugVariantUssClassName);
-                    editor.inspectorMode = InspectorMode.Debug;
                 }
                 else if ((mode & Mode.DebugInternalMod) > 0)
                 {
                     AddToClassList(debugInternalVariantUssClassName);
-                    editor.inspectorMode = InspectorMode.DebugInternal;
                 }
             }
             else
@@ -422,9 +420,6 @@ namespace UnityEditor.UIElements
             m_IgnoreOnInspectorGUIErrors = false;
             inspector.onGUIHandler = () =>
             {
-                if (editor && editor.target && (editor.target.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
-                    return;
-
                 // It's possible to run 2-3 frames after the tracker of this inspector window has
                 // been recreated, and with it the Editor and its SerializedObject. One example of
                 // when this happens is when the Preview window is detached from a *second* instance
@@ -462,25 +457,6 @@ namespace UnityEditor.UIElements
                 EditorGUIUtility.ResetGUIState();
                 using (new EditorGUI.DisabledScope(!editor.IsEnabled()))
                 {
-                    var genericEditor = editor as GenericInspector;
-                    if (genericEditor != null)
-                    {
-                        switch (mode)
-                        {
-                            case Mode.Normal:
-                                genericEditor.inspectorMode = InspectorMode.Normal;
-                                break;
-                            case Mode.Default:
-                                genericEditor.inspectorMode = InspectorMode.Debug;
-                                break;
-                            case Mode.Custom:
-                                genericEditor.inspectorMode = InspectorMode.DebugInternal;
-                                break;
-                            case Mode.IMGUI:
-                                break;
-                        }
-                    }
-
                     //set the current PropertyHandlerCache to the current editor
                     ScriptAttributeUtility.propertyHandlerCache = editor.propertyHandlerCache;
 

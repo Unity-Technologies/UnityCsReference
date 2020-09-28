@@ -33,6 +33,7 @@ namespace UnityEditor.SceneManagement
         public static event Action<GenericMenu, GameObject> addItemsToGameObjectContextMenu;
         public static event Action<GenericMenu, Scene> addItemsToSceneHeaderContextMenu;
         public static event Action<GenericMenu, SubSceneInfo> addItemsToSubSceneHeaderContextMenu;
+        public static event Action<GenericMenu> addItemsToCreateMenu;
 
         public static void ReloadAllSceneHierarchies()
         {
@@ -91,6 +92,11 @@ namespace UnityEditor.SceneManagement
         internal static void AddCustomSubSceneHeaderContextMenuItems(GenericMenu menu, SubSceneInfo subSceneInfo)
         {
             addItemsToSubSceneHeaderContextMenu?.Invoke(menu, subSceneInfo);
+        }
+
+        internal static void AddCustomItemsToCreateMenu(GenericMenu menu)
+        {
+            addItemsToCreateMenu?.Invoke(menu);
         }
     }
 }

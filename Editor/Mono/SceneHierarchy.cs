@@ -886,6 +886,9 @@ namespace UnityEditor
                 var targetSceneHandle = m_CustomParentForNewGameObjects != null ? m_CustomParentForNewGameObjects.gameObject.scene.handle : kInvalidSceneHandle;
                 // The context should be null, just like it is in the main menu. Case 1185434.
                 AddCreateGameObjectItemsToMenu(menu, null, true, true, false, targetSceneHandle, MenuUtils.ContextMenuOrigin.Toolbar);
+
+                SceneHierarchyHooks.AddCustomItemsToCreateMenu(menu);
+
                 menu.DropDown(rect);
 
                 Event.current.Use();

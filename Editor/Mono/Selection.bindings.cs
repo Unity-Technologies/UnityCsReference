@@ -128,6 +128,6 @@ namespace UnityEditor
 
         [StaticAccessor("Selection", StaticAccessorType.DoubleColon)]
         [NativeName("SelectionCount")]
-        internal extern static int count { get; }
+        public extern static int count { get; }
     }
 }

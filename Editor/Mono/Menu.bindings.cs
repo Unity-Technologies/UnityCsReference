@@ -16,6 +16,9 @@ namespace UnityEditor
         [NativeMethod("MenuController::GetChecked", true)]
         public static extern bool GetChecked(string menuPath);
 
+        [NativeMethod("MenuController::GetEnabled", true)]
+        public static extern bool GetEnabled(string menuPath);
+
         [FreeFunction("MenuController::GetMenuItemDefaultShortcuts")]
         internal static extern void GetMenuItemDefaultShortcuts(List<string> outItemNames, List<string> outItemDefaultShortcuts);
 
@@ -29,7 +32,7 @@ namespace UnityEditor
         internal static extern void ResetMenus(bool resetToDefault);
 
         [FreeFunction("MenuController::AddMenuItem")]
-        internal static extern void AddExistingMenuItem(string name, string existingMenuItemId, int priority);
+        internal static extern void AddExistingMenuItem(string name, string existingMenuItemId, int priority, int parentPriority);
 
         [FreeFunction("MenuController::AddMenuItem")]
         internal static extern void AddMenuItem(string name, string shortcut, bool @checked, int priority, System.Action execute, System.Func<bool> validate);

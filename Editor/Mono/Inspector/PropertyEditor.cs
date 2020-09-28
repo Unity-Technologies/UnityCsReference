@@ -363,7 +363,7 @@ namespace UnityEditor
             bool wantsRepaint = false;
             foreach (var myEditor in s_Editors)
             {
-                if (myEditor != null && myEditor.RequiresConstantRepaint() && !myEditor.hideInspector)
+                if (myEditor != null && myEditor.RequiresConstantRepaint() && !EditorUtility.IsHiddenInInspector(myEditor))
                     wantsRepaint = true;
             }
 
@@ -453,8 +453,46 @@ namespace UnityEditor
             RestoreVerticalScrollIfNeeded();
         }
 
+        private void SetUseUIEDefaultInspector()
+        {
+            useUIElementsDefaultInspector = !useUIElementsDefaultInspector;
+            // Clear the editors Element so that a real rebuild is done
+            editorsElement.Clear();
+            RebuildContentsContainers();
+        }
+
+        private void SetDebug()
+        {
+            inspectorMode = InspectorMode.Debug;
+        }
+
+        private void SetNormal()
+        {
+            inspectorMode = InspectorMode.Normal;
+        }
+
+        private void SetDebugInternal()
+        {
+            inspectorMode = InspectorMode.DebugInternal;
+        }
+
+        public virtual void AddDebugItemsToMenu(GenericMenu menu)
+        {
+            menu.AddItem(EditorGUIUtility.TrTextContent("Normal"), m_InspectorMode == InspectorMode.Normal, SetNormal);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Debug"), m_InspectorMode == InspectorMode.Debug, SetDebug);
+
+            if (Unsupported.IsDeveloperMode())
+            {
+                menu.AddItem(EditorGUIUtility.TrTextContent("Debug-Internal"), m_InspectorMode == InspectorMode.DebugInternal, SetDebugInternal);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Use UI Toolkit Default Inspector"), useUIElementsDefaultInspector, SetUseUIEDefaultInspector);
+            }
+        }
+
         public virtual void AddItemsToMenu(GenericMenu menu)
         {
+            AddDebugItemsToMenu(menu);
+            menu.AddSeparator(String.Empty);
+
             if (IsAnyComponentCollapsed())
                 menu.AddItem(EditorGUIUtility.TrTextContent("Expand All Components"), false, ExpandAllComponents);
             else
@@ -1528,20 +1566,17 @@ namespace UnityEditor
                     prefabComponentIndex++;
                 }
 
-                if (ShouldCullEditor(editors, editorIndex))
-                {
-                    editors[editorIndex].isInspectorDirty = false;
-                    continue;
-                }
-
-                var editor = editors[editorIndex];
-                Object editorTarget = editor.targets[0];
-
-                if (editorTarget && (editorTarget?.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
-                    continue;
-
                 try
                 {
+                    if (ShouldCullEditor(editors, editorIndex))
+                    {
+                        editors[editorIndex].isInspectorDirty = false;
+                        continue;
+                    }
+
+                    var editor = editors[editorIndex];
+                    Object editorTarget = editor.targets[0];
+
                     if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetInstanceID(), out var editorContainer))
                     {
                         string editorTitle = editorTarget == null ?
@@ -1601,6 +1636,9 @@ namespace UnityEditor
 
         void OnPrefabInstanceUnpacked(GameObject unpackedPrefabInstance)
         {
+            if (m_RemovedComponents == null)
+                return;
+
             // We don't use the input 'unpackedPrefabInstance', instead we reuse the ExtractPrefabComponents logic to detect
             // if RebuildContentsContainers if actually needed to clear any "Component Name (Removed)" title headers.
             // This prevents performance issues when unpacking a large multiselection.
@@ -1716,7 +1754,7 @@ namespace UnityEditor
 
         public bool ShouldCullEditor(Editor[] editors, int editorIndex)
         {
-            if (editors[editorIndex].hideInspector)
+            if (EditorUtility.IsHiddenInInspector(editors[editorIndex]))
                 return true;
 
             Object currentTarget = editors[editorIndex].target;

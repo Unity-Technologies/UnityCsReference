@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine.Assertions;
+
 namespace UnityEditor
 {
     internal static class SerializedPropertyExtensions
@@ -36,6 +37,19 @@ namespace UnityEditor
                     entry = element;
                     return true;
                 }
+            }
+            entry = null;
+            return false;
+        }
+
+        public static bool TryGetMapEntry(this SerializedProperty map, string key, string elementMapKey, out SerializedProperty entry)
+        {
+            Assert.IsTrue(map.type == "map" && !map.serializedObject.isEditingMultipleObjects);
+            if (map.TryGetMapEntry(key, out var element))
+            {
+                var innerMap = element.FindPropertyRelative("second");
+                Assert.IsTrue(innerMap.type == "map");
+                return innerMap.TryGetMapEntry(elementMapKey, out entry);
             }
             entry = null;
             return false;
@@ -97,15 +111,19 @@ namespace UnityEditor
             Assert.IsTrue(map.type == "map" && !map.serializedObject.isEditingMultipleObjects);
             if (map.TryGetMapEntry(key, out var entry))
             {
-                entry.FindPropertyRelative("second").SetMapValue(elementMapKey, elementMapValue);
+                var innerMap = entry.FindPropertyRelative("second");
+                Assert.IsTrue(innerMap.type == "map");
+                innerMap.SetMapValue(elementMapKey, elementMapValue);
             }
             else
             {
                 var index = map.arraySize;
                 map.arraySize += 1;
                 var element = map.GetArrayElementAtIndex(index);
+                var innerMap = element.FindPropertyRelative("second");
+                Assert.IsTrue(innerMap.type == "map");
                 element.FindPropertyRelative("first").stringValue = key;
-                element.FindPropertyRelative("second").SetMapValue(elementMapKey, elementMapValue);
+                innerMap.SetMapValue(elementMapKey, elementMapValue);
             }
         }
     }

@@ -262,6 +262,10 @@ namespace UnityEditor
         {
             float height = 0;
 
+            if (m_DecoratorDrawers != null && !isCurrentlyNested)
+                foreach (DecoratorDrawer drawer in m_DecoratorDrawers)
+                    height += drawer.GetHeight();
+
             if (UseReorderabelListControl(property))
             {
                 ReorderableListWrapper reorderableList;
@@ -275,13 +279,9 @@ namespace UnityEditor
                 }
 
                 reorderableList.Property = property;
-                height = s_reorderableLists[key].GetHeight();
+                height += s_reorderableLists[key].GetHeight();
                 return height;
             }
-
-            if (m_DecoratorDrawers != null && !isCurrentlyNested)
-                foreach (DecoratorDrawer drawer in m_DecoratorDrawers)
-                    height += drawer.GetHeight();
 
             if (propertyDrawer != null)
             {
@@ -398,7 +398,7 @@ namespace UnityEditor
 
             FieldInfo listInfo = null;
             Queue<string> propertyName = new Queue<string>(property.propertyPath.Split(".".ToCharArray(), StringSplitOptions.RemoveEmptyEntries));
-            listInfo = property.serializedObject.targetObject.GetType().GetField(propertyName.Dequeue());
+            listInfo = property.serializedObject.targetObject.GetType().GetField(propertyName.Dequeue(), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             if (listInfo == null) return false;
 

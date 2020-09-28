@@ -9,6 +9,7 @@ using System.Reflection;
 using UnityEditor.AssetImporters;
 using UnityEngine;
 using UnityEngine.Internal;
+using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 using UnityObject = UnityEngine.Object;
 
@@ -295,11 +296,17 @@ namespace UnityEditor
 
         public CustomEditorForRenderPipelineAttribute(Type inspectedType, Type renderPipeline) : base(inspectedType)
         {
+            if (renderPipeline != null && !typeof(RenderPipelineAsset).IsAssignableFrom(renderPipeline))
+                Debug.LogError($"The CustomEditorForRenderPipeline Attribute targets an invalid RenderPipelineAsset. {renderPipeline} cannot be assigned from RenderPipelineAsset.");
+
             renderPipelineType = renderPipeline;
         }
 
         public CustomEditorForRenderPipelineAttribute(Type inspectedType, Type renderPipeline, bool editorForChildClasses) : base(inspectedType, editorForChildClasses)
         {
+            if (renderPipeline != null && !typeof(RenderPipelineAsset).IsAssignableFrom(renderPipeline))
+                Debug.LogError($"The CustomEditorForRenderPipeline Attribute targets an invalid RenderPipelineAsset. {renderPipeline} cannot be assigned from RenderPipelineAsset.");
+
             renderPipelineType = renderPipeline;
         }
     }
@@ -343,24 +350,7 @@ namespace UnityEditor
 
         internal SerializedObject m_SerializedObject = null;
         internal SerializedProperty m_EnabledProperty = null;
-        private InspectorMode m_InspectorMode = InspectorMode.Normal;
-        internal InspectorMode inspectorMode
-        {
-            get
-            {
-                return m_InspectorMode;
-            }
-            set
-            {
-                if (m_InspectorMode != value)
-                {
-                    m_InspectorMode = value;
-                    m_SerializedObject = null;
-                    m_EnabledProperty = null;
-                }
-            }
-        }
-
+        internal InspectorMode inspectorMode => propertyViewer?.inspectorMode ?? InspectorMode.Normal;
 
         internal static float kLineHeight = EditorGUI.kSingleLineHeight;
 

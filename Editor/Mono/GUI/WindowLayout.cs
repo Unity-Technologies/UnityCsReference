@@ -73,7 +73,8 @@ namespace UnityEditor
         [UsedImplicitly, RequiredByNativeCode]
         public static void LoadDefaultWindowPreferences()
         {
-            LoadCurrentModeLayout(keepMainWindow: false);
+            LoadCurrentModeLayout(keepMainWindow: FindMainWindow());
+            ModeService.InitializeCurrentMode();
         }
 
         public static void LoadCurrentModeLayout(bool keepMainWindow)
@@ -183,19 +184,21 @@ namespace UnityEditor
             return view;
         }
 
-        private static ContainerWindow GenerateLayout(bool keepMainWindow, Type[] availableEditorWindowTypes, LayoutViewInfo center, LayoutViewInfo top, LayoutViewInfo bottom)
+        internal static ContainerWindow FindMainWindow()
         {
-            ContainerWindow mainContainerWindow = null;
             var containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
             foreach (ContainerWindow window in containers)
             {
-                if (window.showMode != ShowMode.MainWindow)
-                    continue;
-
-                mainContainerWindow = window;
-                break;
+                if (window.showMode == ShowMode.MainWindow)
+                    return window;
             }
 
+            return null;
+        }
+
+        private static ContainerWindow GenerateLayout(bool keepMainWindow, Type[] availableEditorWindowTypes, LayoutViewInfo center, LayoutViewInfo top, LayoutViewInfo bottom)
+        {
+            ContainerWindow mainContainerWindow = FindMainWindow();
             if (keepMainWindow && mainContainerWindow == null)
             {
                 Debug.LogWarning($"No main window to restore layout from while loading dynamic layout for mode {ModeService.currentId}");

@@ -1876,6 +1876,12 @@ namespace UnityEditorInternal
 
                     using (var frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, threadInfo.threadIndex))
                     {
+                        // In case we're crossing a boundary between data (f.e. captured and loaded, or captured from different devices)
+                        // Some threads present in the first part might not be present in the second part
+                        // As we use m_Groups from the first part, GetRawFrameDataView returns invalid object for the second
+                        if ((frameData == null) || !frameData.valid)
+                            continue;
+
                         frameData.GetFlowEvents(m_CachedThreadFlowEvents);
                         foreach (var threadFlowEvent in m_CachedThreadFlowEvents)
                         {

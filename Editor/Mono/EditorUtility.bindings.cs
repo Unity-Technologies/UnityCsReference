@@ -263,6 +263,16 @@ namespace UnityEditor
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
         extern public static void RequestScriptReload();
 
+        [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
+        [NativeThrows]
+        extern internal static void RequestPartialScriptReload();
+
+        internal static extern bool isInSafeMode
+        {
+            [FreeFunction("GetApplication().IsInSafeMode")]
+            get;
+        }
+
         [FreeFunction("IsRunningUnderCPUEmulation", IsThreadSafe = true)]
         extern public static bool IsRunningUnderCPUEmulation();
     }

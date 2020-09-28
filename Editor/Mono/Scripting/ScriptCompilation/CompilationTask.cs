@@ -17,7 +17,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
     [Flags]
     enum CompilationTaskOptions
     {
-        None = 0,
+        None = 0, // TODO: rename to NoStopOnError or something along those lines
         StopOnFirstError = (1 << 0),
         RoslynAnalyzers = 1 << 1
     }

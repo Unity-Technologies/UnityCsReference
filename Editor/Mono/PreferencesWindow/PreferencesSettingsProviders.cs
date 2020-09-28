@@ -85,6 +85,8 @@ namespace UnityEditor
             public static readonly GUIContent progressDialogDelay = EditorGUIUtility.TrTextContent("Busy Progress Delay", "Delay in seconds before 'Unity is busy' progress bar shows up.");
             public static readonly GUIContent enableSnapping = EditorGUIUtility.TrTextContent("Graph Snapping", "If enabled, GraphElements in Graph Views (such as Shader Graph) align with one another when you move them. If disabled, GraphElements move freely.");
 
+            public static readonly GUIContent enterSafeModeDialog = EditorGUIUtility.TrTextContent("Show Enter Safe Mode Dialog");
+
             public static readonly GUIContent packageManagerLogLevel = EditorGUIUtility.TrTextContent("Package Manager Log Level",
                 "Determines the level of detail when the Package Manager writes information to log files.\n"
                 + "\nFrom least detailed to most detailed:"
@@ -170,6 +172,7 @@ namespace UnityEditor
         private bool m_ShowRepaintDots;
         private bool m_DeveloperModeDirty;
         private bool m_ScriptDebugInfoEnabled;
+        private bool m_EnterSafeModeDialog;
         private string m_GpuDeviceInUse;
         private string m_GpuDevice;
         private string[] m_CachedGpuDevices;
@@ -662,6 +665,9 @@ namespace UnityEditor
                 }
             }
             m_GraphSnapping = EditorGUILayout.Toggle(GeneralProperties.enableSnapping, m_GraphSnapping);
+
+            m_EnterSafeModeDialog = EditorGUILayout.Toggle(GeneralProperties.enterSafeModeDialog, m_EnterSafeModeDialog);
+
             ApplyChangesToPrefs();
 
             if (oldAlphaNumeric != m_AllowAlphaNumericHierarchy)
@@ -1183,6 +1189,7 @@ namespace UnityEditor
             UnityEditor.Lightmapping.UpdateCachePath();
 
             EditorPrefs.SetBool("GraphSnapping", m_GraphSnapping);
+            EditorPrefs.SetBool("EnterSafeModeDialog", m_EnterSafeModeDialog);
         }
 
         private int CurrentEditorScalingValue
@@ -1299,6 +1306,7 @@ namespace UnityEditor
             }
 
             m_GraphSnapping = EditorPrefs.GetBool("GraphSnapping", true);
+            m_EnterSafeModeDialog = EditorPrefs.GetBool("EnterSafeModeDialog", true);
         }
 
         private string StripMicrosoftFromVisualStudioName(string arg)

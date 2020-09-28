@@ -147,9 +147,6 @@ namespace UnityEditor
         public static extern void SetFilterModeNoDirty(Texture tex, FilterMode mode);
 
         [FreeFunction]
-        public static extern bool DoesTextureStillNeedToBeCompressed(string assetPath);
-
-        [FreeFunction]
         public static extern bool IsCubemapReadable([NotNull("NullExceptionObject")] Cubemap cubemapRef);
 
         [FreeFunction]

@@ -437,13 +437,21 @@ namespace UnityEditorInternal.APIUpdating
             var sb = new StringBuilder(L10n.Tr("Failed to check following assemblies for updater configurations:\r\n"));
             foreach (var failedAssemblyInfo in withErrors)
             {
-                sb.AppendFormat(L10n.Tr("{0} (ret = {1}):\r\n{2}\r\n{3}\r\n"), failedAssemblyInfo.Candidate.Path, failedAssemblyInfo.Result, failedAssemblyInfo.StdOut, failedAssemblyInfo.StdErr);
+                sb.AppendFormat(L10n.Tr("{0} (ret = {1}):\r\n{2}{3}{4}"), failedAssemblyInfo.Candidate.Path, failedAssemblyInfo.Result, HumanMessage("StdOut", failedAssemblyInfo.StdOut), HumanMessage("StdErr", failedAssemblyInfo.StdErr), HumanMessage("Exception", failedAssemblyInfo.Exception?.ToString()));
             }
             sb.Append("\r\n--------------");
 
             APIUpdaterLogger.WriteErrorToConsole(sb.ToString());
 
             return true;
+        }
+
+        private static string HumanMessage(string header, string msg)
+        {
+            if (string.IsNullOrEmpty(msg))
+                return string.Empty;
+
+            return $"{header}:\r\n{msg}\r\n";
         }
 
         private static void AddDependentAssembliesToUpdateList(HashSet<AssemblyUpdateCandidate> assembliesToUpdate, AssemblyDependencyGraph depGraph, AssemblyUpdateCandidate imported)
