@@ -7,6 +7,7 @@ using System;
 namespace UnityEditor
 {
     // Determines how a gizmo is drawn or picked in the Unity editor.
+    [Flags]
     public enum GizmoType
     {
         // The gizmo can be picked in the editor.

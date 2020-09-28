@@ -21,7 +21,7 @@ namespace UnityEditor
         static readonly List<InspectorWindow> m_AllInspectors = new List<InspectorWindow>();
         static bool s_AllOptimizedGUIBlocksNeedsRebuild;
 
-        [SerializeField] EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker m_LockTracker = new EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker();
+        [SerializeField] EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker m_LockTracker;
         [SerializeField] PreviewWindow m_PreviewWindow;
 
         private IMGUIContainer m_TrackerResetter;
@@ -40,10 +40,6 @@ namespace UnityEditor
                 m_LockTracker.tracker = tracker;
                 m_LockTracker.isLocked = value;
             }
-        }
-
-        internal InspectorWindow()
-        {
         }
 
         internal void Awake()
@@ -66,6 +62,9 @@ namespace UnityEditor
 
         protected override void OnEnable()
         {
+            if (m_LockTracker == null)
+                m_LockTracker = new EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker();
+
             // Enable MSAA for UIElements inspectors, which is the only supported
             // antialiasing solution for UIElements.
             antiAliasing = 4;
@@ -159,15 +158,6 @@ namespace UnityEditor
 
         public override void AddItemsToMenu(GenericMenu menu)
         {
-            menu.AddItem(EditorGUIUtility.TrTextContent("Normal"), m_InspectorMode == InspectorMode.Normal, SetNormal);
-            menu.AddItem(EditorGUIUtility.TrTextContent("Debug"), m_InspectorMode == InspectorMode.Debug, SetDebug);
-
-            if (Unsupported.IsDeveloperMode())
-            {
-                menu.AddItem(EditorGUIUtility.TrTextContent("Debug-Internal"), m_InspectorMode == InspectorMode.DebugInternal, SetDebugInternal);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Use UI Toolkit Default Inspector"), useUIElementsDefaultInspector, SetUseUIEDefaultInspector);
-            }
-
             m_LockTracker.AddItemsToMenu(menu);
             menu.AddSeparator(String.Empty);
             base.AddItemsToMenu(menu);
@@ -180,29 +170,6 @@ namespace UnityEditor
                 titleContent = EditorGUIUtility.TrTextContentWithIcon("Inspector", iconName);
             else
                 titleContent = EditorGUIUtility.TrTextContentWithIcon("Debug", iconName);
-        }
-
-        private void SetUseUIEDefaultInspector()
-        {
-            useUIElementsDefaultInspector = !useUIElementsDefaultInspector;
-            // Clear the editors Element so that a real rebuild is done
-            editorsElement.Clear();
-            RebuildContentsContainers();
-        }
-
-        private void SetDebug()
-        {
-            inspectorMode = InspectorMode.Debug;
-        }
-
-        private void SetNormal()
-        {
-            inspectorMode = InspectorMode.Normal;
-        }
-
-        private void SetDebugInternal()
-        {
-            inspectorMode = InspectorMode.DebugInternal;
         }
 
         protected override void CreateTracker()

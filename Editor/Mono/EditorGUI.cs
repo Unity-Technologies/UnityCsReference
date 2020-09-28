@@ -222,6 +222,7 @@ namespace UnityEditor
 
         internal static void ClearStacks()
         {
+            s_PropertyCount = 0;
             s_EnabledStack.Clear();
             s_ChangedStack.Clear();
             s_PropertyStack.Clear();
@@ -229,6 +230,10 @@ namespace UnityEditor
             s_FoldoutHeaderGroupActive = false;
         }
 
+        // Property counting is required by ReorderableList. Element rendering callbacks can change and use
+        // different number of properties to represent an element each frame. We need a way to be able to track
+        // if the property count changed from the last frame so we can recache those elements.
+        internal static int s_PropertyCount = 0;
         private static readonly Stack<PropertyGUIData> s_PropertyStack = new Stack<PropertyGUIData>();
 
         private static readonly Stack<bool> s_EnabledStack = new Stack<bool>();
@@ -5877,6 +5882,7 @@ namespace UnityEditor
         // Create a Property wrapper, useful for making regular GUI controls work with [[SerializedProperty]].
         internal static GUIContent BeginPropertyInternal(Rect totalPosition, GUIContent label, SerializedProperty property)
         {
+            s_PropertyCount++;
             if (s_PendingPropertyKeyboardHandling != null)
             {
                 DoPropertyFieldKeyboardHandling(s_PendingPropertyKeyboardHandling);
@@ -5916,8 +5922,7 @@ namespace UnityEditor
             }
 
             bool wasBoldDefaultFont = EditorGUIUtility.GetBoldDefaultFont();
-            if (Event.current.type == EventType.Repaint &&
-                property.serializedObject.targetObjectsCount == 1 &&
+            if (property.serializedObject.targetObjectsCount == 1 &&
                 property.isInstantiatedPrefab &&
                 EditorGUIUtility.comparisonViewMode != EditorGUIUtility.ComparisonViewMode.Original)
             {
@@ -5927,7 +5932,8 @@ namespace UnityEditor
                 var hasPrefabOverride = property.prefabOverride;
                 if (!linkedProperties || hasPrefabOverride)
                     EditorGUIUtility.SetBoldDefaultFont(hasPrefabOverride);
-                if (hasPrefabOverride && !property.isDefaultOverride && !property.isDrivenRectTransformProperty)
+
+                if (Event.current.type == EventType.Repaint && hasPrefabOverride && !property.isDefaultOverride && !property.isDrivenRectTransformProperty)
                 {
                     Rect highlightRect = totalPosition;
                     highlightRect.xMin += EditorGUI.indent;
@@ -6423,7 +6429,7 @@ namespace UnityEditor
             get { return GetPreviewMaterial(ref s_GUITextureClipVertically, "Inspectors/Internal-GUITextureClipVertically.shader"); }
         }
 
-        private static void SetExpandedRecurse(SerializedProperty property, bool expanded)
+        internal static void SetExpandedRecurse(SerializedProperty property, bool expanded)
         {
             SerializedProperty search = property.Copy();
             search.isExpanded = expanded;
@@ -6466,7 +6472,7 @@ namespace UnityEditor
             // would otherwise eat too much of the label space.
             if (type == SerializedPropertyType.Bounds || type == SerializedPropertyType.BoundsInt)
             {
-                return (!LabelHasContent(label) ? 0f : kStructHeaderLineHeight + kVerticalSpacingMultiField) + kSingleLineHeight * 2;
+                return (!LabelHasContent(label) ? 0f : kStructHeaderLineHeight + kVerticalSpacingMultiField) + kSingleLineHeight * 2 + kVerticalSpacingMultiField;
             }
 
             return kSingleLineHeight;
@@ -7946,7 +7952,7 @@ namespace UnityEditor
                 {
                     // Calc result and cache it
                     result = false;
-                    EditorCompilation.TargetAssemblyInfo[] allTargetAssemblies = EditorCompilationInterface.GetTargetAssemblies();
+                    EditorCompilation.TargetAssemblyInfo[] allTargetAssemblies = EditorCompilationInterface.GetTargetAssemblyInfos();
 
                     string assemblyName = obj.GetType().Assembly.ManifestModule.Name;
                     for (int i = 0; i < allTargetAssemblies.Length; ++i)
@@ -8131,7 +8137,7 @@ namespace UnityEditor
             var position = s_LastRect = GUILayoutUtility.GetRect(label, EditorStyles.linkLabel, options);
 
             Handles.color = EditorStyles.linkLabel.normal.textColor;
-            Handles.DrawLine(new Vector3(position.xMin, position.yMax), new Vector3(position.xMax, position.yMax));
+            Handles.DrawLine(new Vector3(position.xMin + EditorStyles.linkLabel.padding.left, position.yMax), new Vector3(position.xMax - EditorStyles.linkLabel.padding.right, position.yMax));
             Handles.color = Color.white;
 
             EditorGUIUtility.AddCursorRect(position, MouseCursor.Link);

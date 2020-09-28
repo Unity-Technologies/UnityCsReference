@@ -77,10 +77,16 @@ namespace UnityEditor
                         var rpType = GraphicsSettings.currentRenderPipeline.GetType();
                         foreach (var editor in s_SearchCache)
                         {
+                            // if an editor targets the current RP directly, use it immediately.
+                            // else use an inherited RP editor as fallback, but continue searching for a direct option.
                             if (editor.m_RenderPipelineType == rpType)
                             {
                                 toUse = editor.m_InspectorType;
                                 break;
+                            }
+                            else if (editor.m_RenderPipelineType != null && editor.m_RenderPipelineType.IsAssignableFrom(rpType))
+                            {
+                                toUse = editor.m_InspectorType;
                             }
                         }
                     }

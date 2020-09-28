@@ -5782,6 +5782,9 @@
     <Compile Include="..\..\Modules\UIServiceEditor\Progress\ProgressWindow.cs">
       <Link>Modules\UIServiceEditor\Progress\ProgressWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIServiceEditor\SafeMode\SafeModeToolbarWindow.cs">
+      <Link>Modules\UIServiceEditor\SafeMode\SafeModeToolbarWindow.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIServiceEditor\ShortcutManager\ShortcutManagerWindowView.cs">
       <Link>Modules\UIServiceEditor\ShortcutManager\ShortcutManagerWindowView.cs</Link>
     </Compile>

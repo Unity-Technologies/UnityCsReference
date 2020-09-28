@@ -270,6 +270,7 @@ namespace UnityEditor
         {
             // To be able to frame the object we need to clear the search filter
             SetSearchFilter("", SearchableEditorWindow.SearchMode.All, true);
+            UnfocusSearchField();
             m_SceneHierarchy.FrameObject(instanceID, ping);
         }
 

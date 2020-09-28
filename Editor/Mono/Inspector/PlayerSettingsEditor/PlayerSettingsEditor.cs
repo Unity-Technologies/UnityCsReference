@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEditor.Build;
 using UnityEditor.SceneManagement;
 using UnityEditor.PlatformSupport;
+using UnityEditor.Presets;
 using UnityEditorInternal;
 using System;
 using System.Collections.Generic;
@@ -162,7 +163,6 @@ namespace UnityEditor
             public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols", "Preprocessor defines passed to the C# script compiler");
             public static readonly GUIContent scriptingDefineSymbolsApply = EditorGUIUtility.TrTextContent("Apply");
             public static readonly GUIContent scriptingDefineSymbolsApplyRevert = EditorGUIUtility.TrTextContent("Revert");
-            public static readonly GUIContent scriptingDefineSymbolsCopyDefines = EditorGUIUtility.TrTextContent("Copy Defines", "Copy applied defines");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
@@ -207,6 +207,15 @@ namespace UnityEditor
             public static string undoChangedScriptingDefineString { get { return LocalizationDatabase.GetLocalizedString("Changed Scripting Define Settings"); } }
             public static string undoChangedGraphicsJobsString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics Jobs Setting"); } }
             public static string undoChangedGraphicsJobModeString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics Job Mode Setting"); } }
+        }
+
+        class RecompileReason
+        {
+            public static readonly string scriptingDefineSymbolsModified = "Scripting define symbols setting modified";
+            public static readonly string allowUnsafeCodeModified = "Allow 'unsafe' code setting modified";
+            public static readonly string apiCompatibilityLevelModified = "API Compatibility level modified";
+            public static readonly string useDeterministicCompilationModified = "Use deterministic compilation modified";
+            public static readonly string playerSettingsModified = "Player settings modified";
         }
 
         PlayerSettingsSplashScreenEditor m_SplashScreenEditor;
@@ -298,8 +307,6 @@ namespace UnityEditor
         SerializedProperty m_ActionOnDotNetUnhandledException;
         SerializedProperty m_LogObjCUncaughtExceptions;
         SerializedProperty m_EnableCrashReportAPI;
-        SerializedProperty m_EnableInputSystem;
-        SerializedProperty m_DisableInputManager;
 
         SerializedProperty m_AllowUnsafeCode;
         SerializedProperty m_GCIncremental;
@@ -371,7 +378,15 @@ namespace UnityEditor
         // Scripting
         SerializedProperty m_UseDeterministicCompilation;
         SerializedProperty m_UseReferenceAssemblies;
+        SerializedProperty m_ScriptingBackend;
         SerializedProperty m_EnableRoslynAnalyzers;
+        SerializedProperty m_APICompatibilityLevel;
+        SerializedProperty m_DefaultAPICompatibilityLevel;
+        SerializedProperty m_Il2CppCompilerConfiguration;
+        SerializedProperty m_ScriptingDefines;
+        SerializedProperty m_StackTraceTypes;
+        SerializedProperty m_ManagedStrippingLevel;
+        SerializedProperty m_ActiveInputHandler;
 
         // Localization Cache
         string m_LocalizedTargetName;
@@ -396,9 +411,16 @@ namespace UnityEditor
 
         int selectedPlatform = 0;
         int scriptingDefinesControlID = 0;
-        string[] appliedScriptingDefines;
-        List<string>  scriptDefinesList;
-        bool hasScriptDefinesBeenModified;
+
+        int serializedActiveInputHandler = 0;
+        bool serializedAllowUnsafeCode = false;
+        string serializedScriptingDefines;
+        ApiCompatibilityLevel serializedAPICompatibilityLevel;
+        bool serializedUseDeterministicCompilation;
+
+        List<string>  scriptingDefinesList;
+        bool hasScriptingDefinesBeenModified;
+        ReorderableList scriptingDefineSymbolsList;
 
         ISettingEditorExtension[] m_SettingsExtensions;
 
@@ -408,7 +430,12 @@ namespace UnityEditor
         readonly AnimBool m_ShowDefaultIsNativeResolution = new AnimBool();
         readonly AnimBool m_ShowResolution = new AnimBool();
         private static Texture2D s_WarningIcon;
-        private bool bIsPreset;
+
+        // Preset check
+        bool isPreset = false;
+        bool isPresetWindowOpen = false;
+        bool hasPresetWindowClosed = false;
+        bool scriptRecompileRequired = false;
 
         public SerializedProperty FindPropertyAssert(string name)
         {
@@ -420,6 +447,7 @@ namespace UnityEditor
 
         void OnEnable()
         {
+            isPreset = !AssetDatabase.Contains(target);
             validPlatforms = BuildPlatforms.instance.GetValidPlatforms(true).ToArray();
 
             m_StripEngineCode               = FindPropertyAssert("stripEngineCode");
@@ -476,14 +504,20 @@ namespace UnityEditor
             m_ActionOnDotNetUnhandledException  = FindPropertyAssert("actionOnDotNetUnhandledException");
             m_LogObjCUncaughtExceptions     = FindPropertyAssert("logObjCUncaughtExceptions");
             m_EnableCrashReportAPI          = FindPropertyAssert("enableCrashReportAPI");
-            m_EnableInputSystem             = FindPropertyAssert("enableNativePlatformBackendsForNewInputSystem");
-            m_DisableInputManager           = FindPropertyAssert("disableOldInputManagerSupport");
 
             m_AllowUnsafeCode               = FindPropertyAssert("allowUnsafeCode");
             m_GCIncremental                 = FindPropertyAssert("gcIncremental");
-            m_UseDeterministicCompilation = FindPropertyAssert("useDeterministicCompilation");
-            m_UseReferenceAssemblies = FindPropertyAssert("useReferenceAssemblies");
+            m_UseDeterministicCompilation   = FindPropertyAssert("useDeterministicCompilation");
+            m_UseReferenceAssemblies        = FindPropertyAssert("useReferenceAssemblies");
+            m_ScriptingBackend              = FindPropertyAssert("scriptingBackend");
             m_EnableRoslynAnalyzers = FindPropertyAssert("enableRoslynAnalyzers");
+            m_APICompatibilityLevel         = FindPropertyAssert("apiCompatibilityLevelPerPlatform");
+            m_DefaultAPICompatibilityLevel  = FindPropertyAssert("apiCompatibilityLevel");
+            m_Il2CppCompilerConfiguration   = FindPropertyAssert("il2cppCompilerConfiguration");
+            m_ScriptingDefines              = FindPropertyAssert("scriptingDefineSymbols");
+            m_StackTraceTypes               = FindPropertyAssert("m_StackTraceTypes");
+            m_ManagedStrippingLevel         = FindPropertyAssert("managedStrippingLevel");
+            m_ActiveInputHandler            = FindPropertyAssert("activeInputHandler");
 
             m_DefaultScreenWidth            = FindPropertyAssert("defaultScreenWidth");
             m_DefaultScreenHeight           = FindPropertyAssert("defaultScreenHeight");
@@ -555,23 +589,31 @@ namespace UnityEditor
             // we access this cache both from player settings editor and script side when changing api
             s_GraphicsDeviceLists.Clear();
 
-            if (m_SerializedObject == null || m_SerializedObject.targetObject == null)
-                bIsPreset = false;
-            else
-                bIsPreset = m_SerializedObject.targetObject is Component ? ((int)(m_SerializedObject.targetObject as Component).gameObject.hideFlags == 93) : !AssetDatabase.Contains(m_SerializedObject.targetObject);
+            // Setup initial values to prevent immediate script recompile (or editor restart)
+            BuildTargetGroup targetGroup = validPlatforms[selectedPlatform].targetGroup;
+            serializedActiveInputHandler = m_ActiveInputHandler.intValue;
+            serializedAllowUnsafeCode = m_AllowUnsafeCode.boolValue;
+            serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(targetGroup);
+            serializedAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(targetGroup);
+            serializedUseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
         }
 
         void OnDisable()
         {
-            if (hasScriptDefinesBeenModified)
+            if (hasScriptingDefinesBeenModified)
             {
                 if (EditorUtility.DisplayDialog("Scripting Define Symbols Have Been Modified", "Do you want to save changes?", "Apply", "Revert"))
                 {
-                    PlayerSettings.SetScriptingDefineSymbolsForGroup(lastTargetGroup, scriptDefinesList.ToArray());
+                    SetScriptingDefineSymbolsForGroup(lastTargetGroup, scriptingDefinesList.ToArray());
+                    RecompileScripts(RecompileReason.scriptingDefineSymbolsModified);
                 }
 
-                hasScriptDefinesBeenModified = false;
+                hasScriptingDefinesBeenModified = false;
             }
+
+            // Ensure script compilation handling is returned to to EditorOnlyPlayerSettings
+            if (!isPreset)
+                PlayerSettings.isHandlingScriptRecompile = true;
         }
 
         public void SetValueChangeListeners(UnityAction action)
@@ -604,6 +646,117 @@ namespace UnityEditor
             }
         }
 
+        private void CheckUpdatePresetSelectorStatus()
+        {
+            if (isPreset)
+                return;
+
+            var selectors = Resources.FindObjectsOfTypeAll<PresetSelector>();
+            var isOpen = selectors != null && selectors.Length > 0;
+            hasPresetWindowClosed = (isPresetWindowOpen && !isOpen);
+            isPresetWindowOpen = isOpen;
+
+            if (isPresetWindowOpen)
+                PlayerSettings.isHandlingScriptRecompile = false;
+        }
+
+        private void CheckConsistency(BuildTargetGroup targetGroup)
+        {
+            if (isPreset)
+                return;
+
+            // Scripting define symbols
+            var currentDefines = GetScriptingDefineSymbolsForGroup(targetGroup);
+            if (serializedScriptingDefines != currentDefines)
+            {
+                if (!hasScriptingDefinesBeenModified)
+                {
+                    serializedScriptingDefines = currentDefines;
+                    UpdateScriptingDefineSymbolsLists();
+                }
+
+                if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
+                    scriptRecompileRequired = true;
+            }
+
+            // API compatibility level
+            var currentAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(targetGroup);
+            if (serializedAPICompatibilityLevel != currentAPICompatibilityLevel)
+            {
+                serializedAPICompatibilityLevel = currentAPICompatibilityLevel;
+                if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
+                    scriptRecompileRequired = true;
+            }
+
+            // Use determinisitc compilation
+            if (serializedUseDeterministicCompilation != m_UseDeterministicCompilation.boolValue)
+            {
+                serializedUseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
+                scriptRecompileRequired = true;
+            }
+
+            // Allow unsafe code
+            if (serializedAllowUnsafeCode != m_AllowUnsafeCode.boolValue)
+            {
+                serializedAllowUnsafeCode = m_AllowUnsafeCode.boolValue;
+                scriptRecompileRequired = true;
+            }
+
+            // Active input handler
+            if (serializedActiveInputHandler != m_ActiveInputHandler.intValue)
+            {
+                // Give the user a chance to change mind and revert changes.
+                if (ShouldRestartEditorToApplySetting())
+                {
+                    serializedActiveInputHandler = m_ActiveInputHandler.intValue;
+                    m_ActiveInputHandler.serializedObject.ApplyModifiedProperties();
+                    EditorApplication.RestartEditorAndRecompileScripts();
+                }
+                else
+                    m_ActiveInputHandler.intValue = serializedActiveInputHandler;
+            }
+
+            // Stack trace log type
+            foreach (LogType logType in Enum.GetValues(typeof(LogType)))
+            {
+                var globalLogType = PlayerSettings.GetGlobalStackTraceLogType(logType);
+                var serializedLogType = (StackTraceLogType)m_StackTraceTypes.GetArrayElementAtIndex((int)logType).intValue;
+
+                if (serializedLogType != globalLogType)
+                    PlayerSettings.SetGlobalStackTraceLogType(logType, serializedLogType);
+            }
+        }
+
+        private void RecompileScripts(string reason)
+        {
+            if (isPreset)
+                return;
+
+            if (isPresetWindowOpen)
+            {
+                scriptRecompileRequired = true;
+            }
+            else
+            {
+                scriptRecompileRequired = false;
+                PlayerSettings.RecompileScripts(reason);
+            }
+        }
+
+        private void OnPresetSelectorClosed()
+        {
+            if (isPreset)
+                return;
+
+            if (scriptRecompileRequired)
+            {
+                PlayerSettings.RecompileScripts(RecompileReason.playerSettingsModified);
+                scriptRecompileRequired = false;
+            }
+
+            PlayerSettings.isHandlingScriptRecompile = true;
+        }
+
         public override void OnInspectorGUI()
         {
             var serializedObjectUpdated = serializedObject.UpdateIfRequiredOrScript();
@@ -625,19 +778,27 @@ namespace UnityEditor
                 {
                     EditorGUI.EndEditingActiveTextField();
                     GUIUtility.keyboardControl = 0;
-                    PlayerSettings.SetScriptingDefineSymbolsForGroup(validPlatforms[oldPlatform].targetGroup, EditorGUI.s_DelayedTextEditor.text);
+                    string[] defines = PlayerSettings.ConvertScriptingDefineStringToArray(EditorGUI.s_DelayedTextEditor.text);
+                    SetScriptingDefineSymbolsForGroup(validPlatforms[oldPlatform].targetGroup, defines);
                 }
                 // Reset focus when changing between platforms.
                 // If we don't do this, the resolution width/height value will not update correctly when they have the focus
                 GUI.FocusControl("");
             }
+
+            BuildPlatform platform = validPlatforms[selectedPlatform];
+            BuildTargetGroup targetGroup = platform.targetGroup;
+
+            if (!isPreset)
+            {
+                CheckUpdatePresetSelectorStatus();
+                CheckConsistency(targetGroup);
+            }
+
             GUILayout.Label(string.Format(L10n.Tr("Settings for {0}"), validPlatforms[selectedPlatform].title.text));
 
             // Increase the offset to accomodate large labels, though keep a minimum of 150.
             EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth + 4);
-
-            BuildPlatform platform = validPlatforms[selectedPlatform];
-            BuildTargetGroup targetGroup = platform.targetGroup;
 
             int sectionIndex = 0;
 
@@ -664,6 +825,12 @@ namespace UnityEditor
             EditorGUILayout.EndPlatformGrouping();
 
             serializedObject.ApplyModifiedProperties();
+
+            if (hasPresetWindowClosed)
+            {
+                OnPresetSelectorClosed();
+                hasPresetWindowClosed = false;
+            }
         }
 
         private void CommonSettings()
@@ -850,12 +1017,12 @@ namespace UnityEditor
                         EditorGUILayout.PropertyField(m_ForceSingleInstance);
                         EditorGUILayout.PropertyField(m_UseFlipModelSwapchain, SettingsContent.useFlipModelSwapChain);
 
-                        if (bIsPreset)
+                        if (isPreset)
                             EditorGUI.indentLevel++;
 
                         EditorGUILayout.PropertyField(m_SupportedAspectRatios, true);
 
-                        if (bIsPreset)
+                        if (isPreset)
                             EditorGUI.indentLevel--;
 
                         EditorGUILayout.Space();
@@ -2017,6 +2184,44 @@ namespace UnityEditor
             return EditorUtility.DisplayDialog("Unity editor restart required", "The Unity editor must be restarted for this change to take effect.  Cancel to revert changes.", "Apply", "Cancel");
         }
 
+        private ScriptingImplementation GetCurrentBackendForTarget(BuildTargetGroup targetGroup)
+        {
+            if (m_ScriptingBackend.TryGetMapEntry(targetGroup.ToString(), out var entry))
+                return (ScriptingImplementation)entry.FindPropertyRelative("second").intValue;
+            else
+                return PlayerSettings.GetDefaultScriptingBackend(targetGroup);
+        }
+
+        private Il2CppCompilerConfiguration GetCurrentIl2CppCompilerConfigurationForTarget(BuildTargetGroup targetGroup)
+        {
+            if (m_Il2CppCompilerConfiguration.TryGetMapEntry(targetGroup.ToString(), out var entry))
+                return (Il2CppCompilerConfiguration)entry.FindPropertyRelative("second").intValue;
+            else
+                return Il2CppCompilerConfiguration.Release;
+        }
+
+        private ManagedStrippingLevel GetCurrentManagedStrippingLevelForTarget(BuildTargetGroup targetGroup, ScriptingImplementation backend)
+        {
+            if (m_ManagedStrippingLevel.TryGetMapEntry(targetGroup.ToString(), out var entry))
+                return (ManagedStrippingLevel)entry.FindPropertyRelative("second").intValue;
+            else
+            {
+                if (backend == ScriptingImplementation.IL2CPP)
+                    return ManagedStrippingLevel.Low;
+                else
+                    return ManagedStrippingLevel.Disabled;
+            }
+        }
+
+        private ApiCompatibilityLevel GetApiCompatibilityLevelForTarget(BuildTargetGroup targetGroup)
+        {
+            if (m_APICompatibilityLevel.TryGetMapEntry(targetGroup.ToString(), out var entry))
+                return (ApiCompatibilityLevel)entry.FindPropertyRelative("second").intValue;
+            else
+                // See comment in EditorOnlyPlayerSettings regarding defaultApiCompatibilityLevel
+                return (ApiCompatibilityLevel)m_DefaultAPICompatibilityLevel.intValue;
+        }
+
         private void OtherSectionConfigurationGUI(BuildPlatform platform, BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
         {
             // Configuration
@@ -2026,60 +2231,102 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(EditorApplication.isPlaying))
             {
                 // Scripting back-end
-                IScriptingImplementations scripting = ModuleManager.GetScriptingImplementations(targetGroup);
-                bool allowCompilerConfigurationSelection;
-
-                if (scripting == null)
+                bool allowCompilerConfigurationSelection = false;
+                ScriptingImplementation currentBackend = GetCurrentBackendForTarget(targetGroup);
+                using (new EditorGUI.DisabledScope(m_SerializedObject.isEditingMultipleObjects))
                 {
-                    allowCompilerConfigurationSelection = true; // All platforms that support only one scripting backend are IL2CPP platforms
-                    BuildDisabledEnumPopup(SettingsContent.scriptingDefault, SettingsContent.scriptingBackend);
-                }
-                else
-                {
-                    var backends = scripting.Enabled();
-
-                    ScriptingImplementation currBackend = PlayerSettings.GetScriptingBackend(targetGroup);
-                    allowCompilerConfigurationSelection = currBackend == ScriptingImplementation.IL2CPP && scripting.AllowIL2CPPCompilerConfigurationSelection();
-                    ScriptingImplementation newBackend;
-
-                    if (backends.Length == 1)
+                    using (var horizontal = new EditorGUILayout.HorizontalScope())
                     {
-                        newBackend = backends[0];
-                        BuildDisabledEnumPopup(GetNiceScriptingBackendName(backends[0]), SettingsContent.scriptingBackend);
-                    }
-                    else
-                    {
-                        newBackend = BuildEnumPopup(SettingsContent.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends));
-                    }
+                        using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_ScriptingBackend))
+                        {
+                            IScriptingImplementations scripting = ModuleManager.GetScriptingImplementations(targetGroup);
 
-                    if (newBackend != currBackend)
-                        PlayerSettings.SetScriptingBackend(targetGroup, newBackend);
+                            if (scripting == null)
+                            {
+                                allowCompilerConfigurationSelection = true; // All platforms that support only one scripting backend are IL2CPP platforms
+                                BuildDisabledEnumPopup(SettingsContent.scriptingDefault, SettingsContent.scriptingBackend);
+                            }
+                            else
+                            {
+                                var backends = scripting.Enabled();
+
+                                allowCompilerConfigurationSelection = currentBackend == ScriptingImplementation.IL2CPP && scripting.AllowIL2CPPCompilerConfigurationSelection();
+                                ScriptingImplementation newBackend;
+
+                                if (backends.Length == 1)
+                                {
+                                    newBackend = backends[0];
+                                    BuildDisabledEnumPopup(GetNiceScriptingBackendName(backends[0]), SettingsContent.scriptingBackend);
+                                }
+                                else
+                                {
+                                    newBackend = BuildEnumPopup(SettingsContent.scriptingBackend, currentBackend, backends, GetNiceScriptingBackendNames(backends));
+                                }
+
+                                if (newBackend != currentBackend)
+                                {
+                                    m_ScriptingBackend.SetMapValue(targetGroup.ToString(), (int)newBackend);
+                                    currentBackend = newBackend;
+                                }
+                            }
+                        }
+                    }
                 }
 
                 // Api Compatibility Level
-                var currentCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(targetGroup);
-                var availableCompatibilityLevels = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_4_6, ApiCompatibilityLevel.NET_Standard_2_0 };
-
-                var newCompatibilityLevel = BuildEnumPopup(SettingsContent.apiCompatibilityLevel, currentCompatibilityLevel, availableCompatibilityLevels, GetNiceApiCompatibilityLevelNames(availableCompatibilityLevels));
-
-                if (currentCompatibilityLevel != newCompatibilityLevel)
-                    PlayerSettings.SetApiCompatibilityLevel(targetGroup, newCompatibilityLevel);
-
-                using (new EditorGUI.DisabledScope(!allowCompilerConfigurationSelection))
+                using (new EditorGUI.DisabledScope(m_SerializedObject.isEditingMultipleObjects))
                 {
-                    var currentConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(targetGroup);
-                    var configurations = GetIl2CppCompilerConfigurations();
-                    var configurationNames = GetIl2CppCompilerConfigurationNames();
+                    using (var horizontal = new EditorGUILayout.HorizontalScope())
+                    {
+                        using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_APICompatibilityLevel))
+                        {
+                            var currentAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(targetGroup);
+                            var availableCompatibilityLevels = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_4_6, ApiCompatibilityLevel.NET_Standard_2_0 };
+                            currentAPICompatibilityLevel = BuildEnumPopup(
+                                SettingsContent.apiCompatibilityLevel,
+                                currentAPICompatibilityLevel,
+                                availableCompatibilityLevels,
+                                GetNiceApiCompatibilityLevelNames(availableCompatibilityLevels)
+                            );
 
-                    var newConfiguration = BuildEnumPopup(SettingsContent.il2cppCompilerConfiguration, currentConfiguration, configurations, configurationNames);
+                            if (serializedAPICompatibilityLevel != currentAPICompatibilityLevel)
+                            {
+                                m_APICompatibilityLevel.SetMapValue(targetGroup.ToString(), (int)currentAPICompatibilityLevel);
+                                serializedAPICompatibilityLevel = currentAPICompatibilityLevel;
 
-                    if (currentConfiguration != newConfiguration)
-                        PlayerSettings.SetIl2CppCompilerConfiguration(targetGroup, newConfiguration);
+                                if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
+                                    RecompileScripts(RecompileReason.apiCompatibilityLevelModified);
+                            }
+                        }
+                    }
+                }
+
+                // Il2cpp Compiler Configuration
+                using (new EditorGUI.DisabledScope(m_SerializedObject.isEditingMultipleObjects))
+                {
+                    using (var horizontal = new EditorGUILayout.HorizontalScope())
+                    {
+                        using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_Il2CppCompilerConfiguration))
+                        {
+                            using (new EditorGUI.DisabledScope(!allowCompilerConfigurationSelection))
+                            {
+                                Il2CppCompilerConfiguration currentConfiguration = GetCurrentIl2CppCompilerConfigurationForTarget(targetGroup);
+
+                                var configurations = GetIl2CppCompilerConfigurations();
+                                var configurationNames = GetIl2CppCompilerConfigurationNames();
+
+                                var newConfiguration = BuildEnumPopup(SettingsContent.il2cppCompilerConfiguration, currentConfiguration, configurations, configurationNames);
+
+                                if (currentConfiguration != newConfiguration)
+                                    m_Il2CppCompilerConfiguration.SetMapValue(targetGroup.ToString(), (int)newConfiguration);
+                            }
+                        }
+                    }
                 }
 
                 bool gcIncrementalEnabled = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", platform.defaultTarget);
                 if (targetGroup == BuildTargetGroup.iOS)
-                    gcIncrementalEnabled = gcIncrementalEnabled && PlayerSettings.GetScriptingBackend(targetGroup) == ScriptingImplementation.IL2CPP;
+                    gcIncrementalEnabled = gcIncrementalEnabled && currentBackend == ScriptingImplementation.IL2CPP;
 
                 using (new EditorGUI.DisabledScope(!gcIncrementalEnabled))
                 {
@@ -2090,7 +2337,7 @@ namespace UnityEditor
                         // Give the user a chance to change mind and revert changes.
                         if (ShouldRestartEditorToApplySetting())
                         {
-                            m_EnableInputSystem.serializedObject.ApplyModifiedProperties();
+                            m_GCIncremental.serializedObject.ApplyModifiedProperties();
                             EditorApplication.OpenProject(Environment.CurrentDirectory);
                         }
                         else
@@ -2099,6 +2346,7 @@ namespace UnityEditor
                 }
             }
 
+            // Privacy permissions
             bool showPrivacyPermissions =
                 targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS ||
                 platform.defaultTarget == BuildTarget.StandaloneOSX;
@@ -2157,27 +2405,30 @@ namespace UnityEditor
                 settingsExtension.ConfigurationSectionGUI();
 
             // Active input handling
-            int inputOption = (!m_EnableInputSystem.boolValue) ? 0 : m_DisableInputManager.boolValue ? 1 : 2;
-            int oldInputOption = inputOption;
-            EditorGUI.BeginChangeCheck();
-            inputOption = EditorGUILayout.Popup(SettingsContent.activeInputHandling, inputOption, SettingsContent.activeInputHandlingOptions);
-            if (EditorGUI.EndChangeCheck())
+            using (var vertical = new EditorGUILayout.VerticalScope())
             {
-                if (inputOption != oldInputOption)
+                using (var propertyScope = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_ActiveInputHandler))
                 {
-                    // Give the user a chance to change mind and revert changes.
-                    if (ShouldRestartEditorToApplySetting())
-                    {
-                        m_EnableInputSystem.boolValue = (inputOption == 1 || inputOption == 2);
-                        m_DisableInputManager.boolValue = !(inputOption == 0 || inputOption == 2);
-                        m_EnableInputSystem.serializedObject.ApplyModifiedProperties();
-                        EditorApplication.RestartEditorAndRecompileScripts();
-                    }
+                    m_ActiveInputHandler.intValue = EditorGUILayout.Popup(SettingsContent.activeInputHandling, m_ActiveInputHandler.intValue, SettingsContent.activeInputHandlingOptions);
                 }
-                EditorGUIUtility.ExitGUI();
             }
 
             EditorGUILayout.Space();
+        }
+
+        private string GetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup)
+        {
+            string defines = string.Empty;
+            if (m_ScriptingDefines.TryGetMapEntry((int)targetGroup, out var entry))
+            {
+                defines = entry.FindPropertyRelative("second").stringValue;
+            }
+            return defines;
+        }
+
+        private void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string[] defines)
+        {
+            m_ScriptingDefines.SetMapValue((int)targetGroup, PlayerSettings.ConvertScriptingDefineArrayToString(defines));
         }
 
         private void OtherSectionScriptCompilationGUI(BuildTargetGroup targetGroup)
@@ -2186,90 +2437,71 @@ namespace UnityEditor
             GUILayout.Label(SettingsContent.scriptCompilationTitle, EditorStyles.boldLabel);
 
             // User script defines
+            using (new EditorGUI.DisabledScope(m_SerializedObject.isEditingMultipleObjects))
             {
-                EditorGUI.BeginChangeCheck();
-
-                lastTargetGroup = targetGroup;
-
-                if (appliedScriptingDefines == null || s_ScriptingDefineSymbolsList == null)
+                using (var vertical = new EditorGUILayout.VerticalScope())
                 {
-                    InitReorderableScriptingDefineSymbolsList(targetGroup);
-                }
+                    lastTargetGroup = targetGroup;
 
-                s_ScriptingDefineSymbolsList.DoLayoutList();
+                    if (serializedScriptingDefines == null || scriptingDefineSymbolsList == null)
+                        InitReorderableScriptingDefineSymbolsList(targetGroup);
 
-                EditorGUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
+                    using (var propertyScope = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_ScriptingDefines))
+                    {
+                        scriptingDefineSymbolsList.DoLayoutList();
 
-                var GUIState = GUI.enabled;
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            GUILayout.FlexibleSpace();
 
-                if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsCopyDefines, EditorStyles.miniButton))
-                {
-                    EditorGUIUtility.systemCopyBuffer = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup);
-                }
+                            var GUIState = GUI.enabled;
 
-                GUI.enabled = hasScriptDefinesBeenModified;
+                            GUI.enabled = hasScriptingDefinesBeenModified;
 
-                if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApplyRevert, EditorStyles.miniButton))
-                {
-                    UpdateScriptingDefineSymbolsLists();
-                }
+                            if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApplyRevert, EditorStyles.miniButton))
+                            {
+                                UpdateScriptingDefineSymbolsLists();
+                            }
 
-                if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApply, EditorStyles.miniButton))
-                {
-                    PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, scriptDefinesList.ToArray());
+                            if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApply, EditorStyles.miniButton))
+                            {
+                                SetScriptingDefineSymbolsForGroup(targetGroup, scriptingDefinesList.ToArray());
 
-                    // Get Scripting Define Symbols without duplicates
-                    PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup, out appliedScriptingDefines);
-                    UpdateScriptingDefineSymbolsLists();
-                }
+                                // Get Scripting Define Symbols without duplicates
+                                serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(targetGroup);
+                                UpdateScriptingDefineSymbolsLists();
 
-                // Set previous GUIState
-                GUI.enabled = GUIState;
-                EditorGUILayout.EndHorizontal();
+                                if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
+                                    RecompileScripts(RecompileReason.scriptingDefineSymbolsModified);
+                            }
 
-                scriptingDefinesControlID = EditorGUIUtility.s_LastControlID;
-                if (EditorGUI.EndChangeCheck())
-                {
-                    Undo.RecordObject(this.target, SettingsContent.undoChangedScriptingDefineString);
+                            // Set previous GUIState
+                            GUI.enabled = GUIState;
+                        }
+                    }
+
+                    scriptingDefinesControlID = EditorGUIUtility.s_LastControlID;
                 }
             }
 
+            // Allow unsafe code
+            EditorGUILayout.PropertyField(m_AllowUnsafeCode, SettingsContent.allowUnsafeCode);
+            if (serializedAllowUnsafeCode != m_AllowUnsafeCode.boolValue)
             {
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_AllowUnsafeCode, SettingsContent.allowUnsafeCode);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    PlayerSettings.allowUnsafeCode = m_AllowUnsafeCode.boolValue;
-                }
+                serializedAllowUnsafeCode = m_AllowUnsafeCode.boolValue;
+                RecompileScripts(RecompileReason.allowUnsafeCodeModified);
             }
 
+            // Use deterministic compliation
+            EditorGUILayout.PropertyField(m_UseDeterministicCompilation, SettingsContent.useDeterministicCompilation);
+            if (serializedUseDeterministicCompilation != m_UseDeterministicCompilation.boolValue)
             {
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_UseDeterministicCompilation, SettingsContent.useDeterministicCompilation);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    PlayerSettings.UseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
-                }
+                serializedUseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
+                RecompileScripts(RecompileReason.useDeterministicCompilationModified);
             }
 
-            {
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_EnableRoslynAnalyzers, SettingsContent.enableRoslynAnalyzers);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    PlayerSettings.EnableRoslynAnalyzers = m_EnableRoslynAnalyzers.boolValue;
-                }
-            }
-
-            {
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_UseReferenceAssemblies, SettingsContent.useReferenceAssembclies);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    PlayerSettings.useReferenceAssemblies = m_UseReferenceAssemblies.boolValue;
-                }
-            }
+            EditorGUILayout.PropertyField(m_EnableRoslynAnalyzers, SettingsContent.enableRoslynAnalyzers);
+            EditorGUILayout.PropertyField(m_UseReferenceAssemblies, SettingsContent.useReferenceAssembclies);
         }
 
         void DrawTextField(Rect rect, int index)
@@ -2278,34 +2510,34 @@ namespace UnityEditor
             Event evt = Event.current;
             if (evt.type == EventType.MouseDown && rect.Contains(evt.mousePosition))
             {
-                if (s_ScriptingDefineSymbolsList.index != index)
+                if (scriptingDefineSymbolsList.index != index)
                 {
-                    s_ScriptingDefineSymbolsList.index = index;
-                    s_ScriptingDefineSymbolsList.onSelectCallback?.Invoke(s_ScriptingDefineSymbolsList);
+                    scriptingDefineSymbolsList.index = index;
+                    scriptingDefineSymbolsList.onSelectCallback?.Invoke(scriptingDefineSymbolsList);
                 }
             }
 
-            string define = scriptDefinesList[index];
-            scriptDefinesList[index] = GUI.TextField(rect, scriptDefinesList[index]);
-            if (!scriptDefinesList[index].Equals(define))
+            string define = scriptingDefinesList[index];
+            scriptingDefinesList[index] = GUI.TextField(rect, scriptingDefinesList[index]);
+            if (!scriptingDefinesList[index].Equals(define))
                 SetScriptingDefinesListDirty();
         }
 
         void AddScriptingDefineCallback(ReorderableList list)
         {
-            scriptDefinesList.Add("");
+            scriptingDefinesList.Add("");
             SetScriptingDefinesListDirty();
         }
 
         void RemoveScriptingDefineCallback(ReorderableList list)
         {
-            scriptDefinesList.RemoveAt(list.index);
+            scriptingDefinesList.RemoveAt(list.index);
             SetScriptingDefinesListDirty();
         }
 
         void SetScriptingDefinesListDirty(ReorderableList list = null)
         {
-            hasScriptDefinesBeenModified = true;
+            hasScriptingDefinesBeenModified = true;
         }
 
         private void OtherSectionOptimizationGUI(BuildPlatform platform, BuildTargetGroup targetGroup)
@@ -2316,12 +2548,12 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_BakeCollisionMeshes, SettingsContent.bakeCollisionMeshes);
             EditorGUILayout.PropertyField(m_KeepLoadedShadersAlive, SettingsContent.keepLoadedShadersAlive);
 
-            if (bIsPreset)
+            if (isPreset)
                 EditorGUI.indentLevel++;
 
             EditorGUILayout.PropertyField(m_PreloadedAssets, SettingsContent.preloadedAssets, true);
 
-            if (bIsPreset)
+            if (isPreset)
                 EditorGUI.indentLevel--;
 
             bool platformUsesAOT =
@@ -2337,19 +2569,23 @@ namespace UnityEditor
 
             if (platformSupportsStripping)
             {
-                ScriptingImplementation backend = PlayerSettings.GetScriptingBackend(targetGroup);
-                var availableStrippingLevels = GetAvailableManagedStrippingLevels(backend);
-                ManagedStrippingLevel currentManagedStrippingLevel = PlayerSettings.GetManagedStrippingLevel(targetGroup);
-                ManagedStrippingLevel newManagedStrippingLevel;
-
+                ScriptingImplementation backend = GetCurrentBackendForTarget(targetGroup);
                 if (BuildPipeline.IsFeatureSupported("ENABLE_ENGINE_CODE_STRIPPING", platform.defaultTarget) && backend == ScriptingImplementation.IL2CPP)
-                {
                     EditorGUILayout.PropertyField(m_StripEngineCode, SettingsContent.stripEngineCode);
-                }
 
-                newManagedStrippingLevel = BuildEnumPopup(SettingsContent.managedStrippingLevel, currentManagedStrippingLevel, availableStrippingLevels, GetNiceManagedStrippingLevelNames(availableStrippingLevels));
-                if (newManagedStrippingLevel != currentManagedStrippingLevel)
-                    PlayerSettings.SetManagedStrippingLevel(targetGroup, newManagedStrippingLevel);
+                using (var vertical = new EditorGUILayout.VerticalScope())
+                {
+                    using (var propertyScope = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_ManagedStrippingLevel))
+                    {
+                        var availableStrippingLevels = GetAvailableManagedStrippingLevels(backend);
+                        ManagedStrippingLevel currentManagedStrippingLevel = GetCurrentManagedStrippingLevelForTarget(targetGroup, backend);
+                        ManagedStrippingLevel newManagedStrippingLevel;
+
+                        newManagedStrippingLevel = BuildEnumPopup(SettingsContent.managedStrippingLevel, currentManagedStrippingLevel, availableStrippingLevels, GetNiceManagedStrippingLevelNames(availableStrippingLevels));
+                        if (newManagedStrippingLevel != currentManagedStrippingLevel)
+                            m_ManagedStrippingLevel.SetMapValue(targetGroup.ToString(), (int)newManagedStrippingLevel);
+                    }
+                }
             }
 
             if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
@@ -2369,13 +2605,7 @@ namespace UnityEditor
             m_VertexChannelCompressionMask.intValue = (int)vertexFlags;
 
             EditorGUILayout.PropertyField(m_StripUnusedMeshComponents, SettingsContent.stripUnusedMeshComponents);
-
-            EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_MipStripping, SettingsContent.mipStripping);
-            if (EditorGUI.EndChangeCheck())
-            {
-                PlayerSettings.mipStripping = m_MipStripping.boolValue;
-            }
 
             EditorGUILayout.Space();
         }
@@ -2436,33 +2666,40 @@ namespace UnityEditor
         {
             GUILayout.Label(SettingsContent.loggingTitle, EditorStyles.boldLabel);
 
-            GUILayout.BeginVertical();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Log Type");
-            foreach (StackTraceLogType stackTraceLogType in Enum.GetValues(typeof(StackTraceLogType)))
+            using (var vertical = new EditorGUILayout.VerticalScope())
             {
-                GUILayout.Label(stackTraceLogType.ToString(), GUILayout.Width(70));
-            }
-            GUILayout.EndHorizontal();
-
-            foreach (LogType logType in Enum.GetValues(typeof(LogType)))
-            {
-                GUILayout.BeginHorizontal();
-                GUILayout.Label(logType.ToString());
-                foreach (StackTraceLogType stackTraceLogType in Enum.GetValues(typeof(StackTraceLogType)))
+                using (var propertyScope = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_StackTraceTypes))
                 {
-                    StackTraceLogType inStackTraceLogType = PlayerSettings.GetStackTraceLogType(logType);
-                    EditorGUI.BeginChangeCheck();
-                    bool val = EditorGUILayout.ToggleLeft(" ", inStackTraceLogType == stackTraceLogType, GUILayout.Width(70));
-                    if (EditorGUI.EndChangeCheck() && val)
+                    using (new EditorGUILayout.HorizontalScope())
                     {
-                        PlayerSettings.SetStackTraceLogType(logType, stackTraceLogType);
+                        GUILayout.Label("Log Type");
+                        foreach (StackTraceLogType stackTraceLogType in Enum.GetValues(typeof(StackTraceLogType)))
+                            GUILayout.Label(stackTraceLogType.ToString(), GUILayout.Width(70));
+                    }
+
+                    foreach (LogType logType in Enum.GetValues(typeof(LogType)))
+                    {
+                        var logProperty = m_StackTraceTypes.GetArrayElementAtIndex((int)logType);
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            GUILayout.Label(logType.ToString());
+                            foreach (StackTraceLogType stackTraceLogType in Enum.GetValues(typeof(StackTraceLogType)))
+                            {
+                                StackTraceLogType inStackTraceLogType = (StackTraceLogType)logProperty.intValue;
+                                EditorGUI.BeginChangeCheck();
+                                bool val = EditorGUILayout.ToggleLeft(" ", inStackTraceLogType == stackTraceLogType, GUILayout.Width(70));
+                                if (EditorGUI.EndChangeCheck() && val)
+                                {
+                                    logProperty.intValue = (int)stackTraceLogType;
+
+                                    if (!isPreset)
+                                        PlayerSettings.SetGlobalStackTraceLogType(logType, stackTraceLogType);
+                                }
+                            }
+                        }
                     }
                 }
-                GUILayout.EndHorizontal();
             }
-
-            GUILayout.EndVertical();
 
             EditorGUILayout.Space();
         }
@@ -2737,24 +2974,24 @@ namespace UnityEditor
         void InitReorderableScriptingDefineSymbolsList(BuildTargetGroup targetGroup)
         {
             // Get Scripting Define Symbols data
-            PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup, out appliedScriptingDefines);
-            scriptDefinesList = appliedScriptingDefines.ToList();
+            string defines = GetScriptingDefineSymbolsForGroup(targetGroup);
+            scriptingDefinesList = new List<string>(PlayerSettings.ConvertScriptingDefineStringToArray(serializedScriptingDefines));
 
             // Initialize Reorderable List
-            s_ScriptingDefineSymbolsList = new ReorderableList(scriptDefinesList, typeof(string), true, true, true, true);
-            s_ScriptingDefineSymbolsList.drawElementCallback = (rect, index, isActive, isFocused) => DrawTextField(rect, index);
-            s_ScriptingDefineSymbolsList.drawHeaderCallback = (rect) => GUI.Label(rect, SettingsContent.scriptingDefineSymbols, EditorStyles.label);
-            s_ScriptingDefineSymbolsList.onAddCallback = AddScriptingDefineCallback;
-            s_ScriptingDefineSymbolsList.onRemoveCallback = RemoveScriptingDefineCallback;
-            s_ScriptingDefineSymbolsList.onChangedCallback += SetScriptingDefinesListDirty;
+            scriptingDefineSymbolsList = new ReorderableList(scriptingDefinesList, typeof(string), true, true, true, true);
+            scriptingDefineSymbolsList.drawElementCallback = (rect, index, isActive, isFocused) => DrawTextField(rect, index);
+            scriptingDefineSymbolsList.drawHeaderCallback = (rect) => GUI.Label(rect, SettingsContent.scriptingDefineSymbols, EditorStyles.label);
+            scriptingDefineSymbolsList.onAddCallback = AddScriptingDefineCallback;
+            scriptingDefineSymbolsList.onRemoveCallback = RemoveScriptingDefineCallback;
+            scriptingDefineSymbolsList.onChangedCallback += SetScriptingDefinesListDirty;
         }
 
         void UpdateScriptingDefineSymbolsLists()
         {
-            scriptDefinesList = appliedScriptingDefines.ToList();
-            s_ScriptingDefineSymbolsList.list = scriptDefinesList;
-            s_ScriptingDefineSymbolsList.DoLayoutList();
-            hasScriptDefinesBeenModified = false;
+            scriptingDefinesList = new List<string>(PlayerSettings.ConvertScriptingDefineStringToArray(serializedScriptingDefines));
+            scriptingDefineSymbolsList.list = scriptingDefinesList;
+            scriptingDefineSymbolsList.DoLayoutList();
+            hasScriptingDefinesBeenModified = false;
         }
     }
 }

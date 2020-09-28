@@ -73,7 +73,10 @@ namespace UnityEditor
             m_StageHeaderContent = GUIContent.none; // Stage header content is being rebuild on demand in a OnGUI code path (required since it uses EditorStyles)
 
             if (m_SceneHierarchyWindow.hasSearchFilter)
+            {
                 m_SceneHierarchyWindow.SetSearchFilter(string.Empty, m_SceneHierarchyWindow.searchMode, true);
+                m_SceneHierarchyWindow.UnfocusSearchField();
+            }
         }
 
         internal void CacheStageHeaderContent()

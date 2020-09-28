@@ -80,7 +80,7 @@ namespace UnityEditor
     {
         public override void OnInspectorGUI()
         {
-            if (PlayerSettings.disableOldInputManagerSupport)
+            if (PlayerSettings.GetDisableOldInputManagerSupport())
                 EditorGUILayout.HelpBox("This is where you can configure the controls to use with the UnityEngine.Input API. But you have switched input handling to \"Input System Package\" in your Player Settings. The Input Manager will not be used.", MessageType.Error);
             else
                 EditorGUILayout.HelpBox("This is where you can configure the controls to use with the UnityEngine.Input API. Consider using the new Input System Package instead.", MessageType.Info);

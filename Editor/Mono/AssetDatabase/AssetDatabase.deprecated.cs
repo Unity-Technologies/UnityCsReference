@@ -98,7 +98,7 @@ namespace UnityEditor.Experimental
         public static event Action<CacheServerConnectionChangedParameters> cacheServerConnectionChanged;
 #pragma warning restore 67
 
-        [FreeFunction("IsConnectedToCacheServerV2")]
+        [FreeFunction("AcceleratorClientIsConnected")]
         [Obsolete("AssetDatabaseExperimental.IsConnectedToCacheServer() has been deprecated. Use AssetDatabase.IsConnectedToCacheServer() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.IsConnectedToCacheServer(*)", false)]
         public extern static bool IsConnectedToCacheServer();
 

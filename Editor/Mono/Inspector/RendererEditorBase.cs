@@ -26,7 +26,7 @@ namespace UnityEditor
             private GUIContent m_LightProbeUsageStyle = EditorGUIUtility.TrTextContent("Light Probes", "Specifies how Light Probes will handle the interpolation of lighting and occlusion. Disabled if the object is set to receive Global Illumination from lightmaps.");
             private GUIContent m_LightProbeVolumeOverrideStyle = EditorGUIUtility.TrTextContent("Proxy Volume Override", "If set, the Renderer will use the Light Probe Proxy Volume component from another GameObject.");
             private GUIContent m_ReflectionProbeUsageStyle = EditorGUIUtility.TrTextContent("Reflection Probes", "Specifies if or how the object is affected by reflections in the Scene.  This property cannot be disabled in deferred rendering modes.");
-            private GUIContent m_ProbeAnchorStyle = EditorGUIUtility.TrTextContent("Anchor Override", "Specifies the Transform position that will be used for sampling the light probes and reflection probes.");
+            private GUIContent m_ProbeAnchorStyle;
             private GUIContent m_DeferredNote = EditorGUIUtility.TrTextContent("In Deferred Shading, all objects receive shadows and get per-pixel reflection probes.");
             private GUIContent m_LightProbeVolumeNote = EditorGUIUtility.TrTextContent("A valid Light Probe Proxy Volume component could not be found.");
             private GUIContent m_LightProbeVolumeUnsupportedNote = EditorGUIUtility.TrTextContent("The Light Probe Proxy Volume feature is unsupported by the current graphics hardware or API configuration. Simple 'Blend Probes' mode will be used instead.");
@@ -43,6 +43,7 @@ namespace UnityEditor
                 m_ReflectionProbeUsage = serializedObject.FindProperty("m_ReflectionProbeUsage");
                 m_ProbeAnchor = serializedObject.FindProperty("m_ProbeAnchor");
                 m_ReceiveShadows = serializedObject.FindProperty("m_ReceiveShadows");
+                m_ProbeAnchorStyle = EditorGUIUtility.TrTextContent("Anchor Override", SupportedRenderingFeatures.active.probeAnchorTooltip);
             }
 
             internal bool IsUsingLightProbeProxyVolume(int selectionCount)

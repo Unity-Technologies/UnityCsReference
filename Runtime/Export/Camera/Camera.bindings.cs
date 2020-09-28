@@ -208,7 +208,7 @@ namespace UnityEngine
         extern public static float VerticalToHorizontalFieldOfView(float verticalFieldOfView, float aspectRatio);
 
         extern public static Camera main {[FreeFunction("FindMainCamera")] get; }
-        extern public static Camera current {[FreeFunction("GetCurrentCameraPtr")] get; }
+        extern public static Camera current {[FreeFunction("GetCurrentCameraPPtr")] get; }
 
         extern public UnityEngine.SceneManagement.Scene scene
         {

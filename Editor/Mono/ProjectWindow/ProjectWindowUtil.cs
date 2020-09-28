@@ -536,6 +536,12 @@ namespace UnityEditor
 
         public static void StartNameEditingIfProjectWindowExists(int instanceID, EndNameEditAction endAction, string pathName, Texture2D icon, string resourceFile)
         {
+            // instanceID 0 is used for assets that haven't been imported, which can conflict with
+            // asset under creations, which might also use instanceID 0. To avoid this conflict the instanceID
+            // is changed if 0.
+            if (instanceID == 0)
+                instanceID = ProjectBrowser.kAssetCreationInstanceID_ForNonExistingAssets;
+
             ProjectBrowser pb = GetProjectBrowserIfExists();
             if (pb)
             {

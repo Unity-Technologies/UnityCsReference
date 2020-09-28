@@ -70,7 +70,6 @@ namespace UnityEditor.Connect
             if (s_Instance == null)
             {
                 s_Instance = GetWindow<ServicesEditorWindow>(typeof(InspectorWindow));
-                s_Instance.titleContent = new GUIContent(L10n.Tr(k_WindowTitle));
                 s_Instance.minSize = new Vector2(300, 150);
             }
             else
@@ -121,6 +120,7 @@ namespace UnityEditor.Connect
             {
                 s_Instance = this;
             }
+            s_Instance.titleContent = new GUIContent(L10n.Tr(k_WindowTitle));
             LoadWindow();
         }
 

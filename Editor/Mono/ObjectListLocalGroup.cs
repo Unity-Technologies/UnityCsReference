@@ -337,8 +337,17 @@ namespace UnityEditor
                         }
                         else if (Event.current.button == 1 && rect.Contains(Event.current.mousePosition))
                         {
-                            // Right mouse down selection (do NOT use event since we need ContextClick event, which is not fired if right click is used)
-                            m_Owner.SetSelection(GetNewSelection(ref assetReference, true, false).ToArray(), false);
+                            if (assetReference.instanceID == 0)
+                            {
+                                // For non selectable assets, don't show context menu. Selection is deselected
+                                m_Owner.SetSelection(new int[0], false);
+                                Event.current.Use();
+                            }
+                            else
+                            {
+                                // Right mouse down selection (do NOT use event since we need ContextClick event, which is not fired if right click is used)
+                                m_Owner.SetSelection(GetNewSelection(ref assetReference, true, false).ToArray(), false);
+                            }
                         }
                         break;
                     case EventType.MouseDrag:
@@ -768,7 +777,7 @@ namespace UnityEditor
                         DrawIconAndLabel(new Rect(contentStartX, position.y, position.width - contentStartX, position.height),
                             filterItem, labeltext, icon, selected, m_Owner.HasFocus());
 
-                        // Foldout
+                        // Foldout!
                         if (showFoldout)
                             s_Styles.groupFoldout.Draw(foldoutRect, !ListMode, !ListMode, IsExpanded(assetReference.instanceID), false);
                     }
@@ -813,6 +822,7 @@ namespace UnityEditor
                         Rect actualImageDrawPosition = (m_Content.image == null) ? new Rect() : ActualImageDrawPosition(position, m_Content.image.width, m_Content.image.height);
                         m_Content.text = null;
                         float alpha = 1f;
+
                         if (filterItem != null)
                         {
                             AddDirtyStateFor(filterItem.instanceID);
@@ -836,43 +846,47 @@ namespace UnityEditor
                                 s_Styles.previewBg.Draw(actualImageDrawPosition, GUIContent.none, false, false, false, false);
                         }
 
-                        Color orgColor = GUI.color;
-                        if (selected)
-                            GUI.color = GUI.color * new Color(0.85f, 0.9f, 1f);
+                        var color = ProjectBrowser.GetAssetItemColor(assetReference.instanceID);
 
-                        if (m_Content.image != null)
+                        using (new GUI.ColorScope(color))
                         {
-                            Color orgColor2 = GUI.color;
-                            if (alpha < 1f)
-                                GUI.color =  new Color(GUI.color.r, GUI.color.g, GUI.color.b, alpha);
+                            Color orgColor = GUI.color;
+                            if (selected)
+                                GUI.color = GUI.color * new Color(0.85f, 0.9f, 1f);
 
-                            s_Styles.resultsGrid.Draw(actualImageDrawPosition, m_Content, false, false, selected, m_Owner.HasFocus());
+                            if (m_Content.image != null)
+                            {
+                                Color orgColor2 = GUI.color;
+                                if (alpha < 1f)
+                                    GUI.color = new Color(GUI.color.r, GUI.color.g, GUI.color.b, alpha);
 
-                            if (alpha < 1f)
-                                GUI.color = orgColor2;
-                        }
+                                s_Styles.resultsGrid.Draw(actualImageDrawPosition, m_Content, false, false, selected, m_Owner.HasFocus());
 
-                        if (selected)
-                            GUI.color = orgColor;
+                                if (alpha < 1f)
+                                    GUI.color = orgColor2;
+                            }
 
-                        if (drawDropShadow)
-                        {
-                            Rect borderPosition = new RectOffset(1, 1, 1, 1).Remove(s_Styles.textureIconDropShadow.border.Add(actualImageDrawPosition));
-                            s_Styles.textureIconDropShadow.Draw(borderPosition, GUIContent.none, false, false, selected || isDropTarget, m_Owner.HasFocus() || isRenaming || isDropTarget);
-                        }
+                            if (selected)
+                                GUI.color = orgColor;
 
+                            if (drawDropShadow)
+                            {
+                                Rect borderPosition = new RectOffset(1, 1, 1, 1).Remove(s_Styles.textureIconDropShadow.border.Add(actualImageDrawPosition));
+                                s_Styles.textureIconDropShadow.Draw(borderPosition, GUIContent.none, false, false, selected || isDropTarget, m_Owner.HasFocus() || isRenaming || isDropTarget);
+                            }
 
-                        // Draw label
-                        if (!isRenaming)
-                        {
-                            if (isDropTarget)
-                                s_Styles.resultsLabel.Draw(new Rect(labelRect.x - 10, labelRect.y, labelRect.width + 20, labelRect.height), GUIContent.none, true, true, false, false);
+                            // Draw label
+                            if (!isRenaming)
+                            {
+                                if (isDropTarget)
+                                    s_Styles.resultsLabel.Draw(new Rect(labelRect.x - 10, labelRect.y, labelRect.width + 20, labelRect.height), GUIContent.none, true, true, false, false);
 
-                            labeltext = m_Owner.GetCroppedLabelText(assetReference, labeltext, position.width);
-                            var labelNewRect = s_Styles.resultsGridLabel.CalcSizeWithConstraints(GUIContent.Temp(labeltext), position.size);
-                            labelRect.x = position.x + (position.width - labelNewRect.x) / 2.0f;
-                            labelRect.width = labelNewRect.x;
-                            s_Styles.resultsGridLabel.Draw(labelRect, labeltext, false, false, selected, m_Owner.HasFocus());
+                                labeltext = m_Owner.GetCroppedLabelText(assetReference, labeltext, position.width);
+                                var labelNewRect = s_Styles.resultsGridLabel.CalcSizeWithConstraints(GUIContent.Temp(labeltext), position.size);
+                                labelRect.x = position.x + (position.width - labelNewRect.x) / 2.0f;
+                                labelRect.width = labelNewRect.x;
+                                s_Styles.resultsGridLabel.Draw(labelRect, labeltext, false, false, selected, m_Owner.HasFocus());
+                            }
                         }
 
                         if (showFoldout)
@@ -1396,35 +1410,40 @@ namespace UnityEditor
 
             public void DrawIconAndLabel(Rect rect, FilteredHierarchy.FilterResult filterItem, string label, Texture2D icon, bool selected, bool focus)
             {
+                var color = filterItem == null ? GUI.color : ProjectBrowser.GetAssetItemColor(filterItem.instanceID);
+
                 float vcPadding = s_VCEnabled ? k_ListModeVersionControlOverlayPadding : 0f;
-                rect.xMin += s_Styles.resultsLabel.margin.left;
-
-                // Reduce the label width to allow delegate drawing on the right.
-                float delegateDrawWidth = (k_ListModeExternalIconPadding * 2) + k_IconWidth;
-                Rect delegateDrawRect = new Rect(rect.xMax - delegateDrawWidth, rect.y, delegateDrawWidth, rect.height);
-                Rect labelRect = new Rect(rect);
-                if (DrawExternalPostLabelInList(delegateDrawRect, filterItem))
+                using (new GUI.ColorScope(color))
                 {
-                    labelRect.width = (rect.width - delegateDrawWidth);
+                    rect.xMin += s_Styles.resultsLabel.margin.left;
+
+                    // Reduce the label width to allow delegate drawing on the right.
+                    float delegateDrawWidth = (k_ListModeExternalIconPadding * 2) + k_IconWidth;
+                    Rect delegateDrawRect = new Rect(rect.xMax - delegateDrawWidth, rect.y, delegateDrawWidth, rect.height);
+                    Rect labelRect = new Rect(rect);
+                    if (DrawExternalPostLabelInList(delegateDrawRect, filterItem))
+                    {
+                        labelRect.width = (rect.width - delegateDrawWidth);
+                    }
+
+                    s_Styles.resultsLabel.padding.left = (int)(vcPadding + k_IconWidth + k_SpaceBetweenIconAndText);
+                    s_Styles.resultsLabel.Draw(labelRect, label, false, false, selected, focus);
+
+                    Rect iconRect = rect;
+                    iconRect.width = k_IconWidth;
+                    iconRect.x += vcPadding * 0.5f;
+
+                    if (selected && focus)
+                    {
+                        var activeIcon = EditorUtility.GetIconInActiveState(icon) as Texture2D;
+
+                        if (activeIcon)
+                            icon = activeIcon;
+                    }
+
+                    if (icon != null)
+                        GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
                 }
-
-                s_Styles.resultsLabel.padding.left = (int)(vcPadding + k_IconWidth + k_SpaceBetweenIconAndText);
-                s_Styles.resultsLabel.Draw(labelRect, label, false, false, selected, focus);
-
-                Rect iconRect = rect;
-                iconRect.width = k_IconWidth;
-                iconRect.x += vcPadding * 0.5f;
-
-                if (selected && focus)
-                {
-                    var activeIcon = EditorUtility.GetIconInActiveState(icon) as Texture2D;
-
-                    if (activeIcon)
-                        icon = activeIcon;
-                }
-
-                if (icon != null)
-                    GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
 
                 if (filterItem != null && filterItem.guid != null && filterItem.isMainRepresentation)
                 {

@@ -127,7 +127,7 @@ namespace UnityEditor
 
         extern public static bool IsNativeAsset(int instanceID);
 
-        [FreeFunction("AssetDatabase::GetCurrentCacheServerIpAddress")]
+        [FreeFunction()]
         extern public static string GetCurrentCacheServerIp();
 
         extern public static string GenerateUniqueAssetPath(string path);
@@ -693,8 +693,14 @@ namespace UnityEditor
             }
         }
 
-        [FreeFunction("IsConnectedToCacheServerV2")]
+        [FreeFunction("AcceleratorClientIsConnected")]
         public extern static bool IsConnectedToCacheServer();
+
+        [FreeFunction("AcceleratorClientResetReconnectTimer")]
+        public extern static void ResetCacheServerReconnectTimer();
+
+        [FreeFunction("AcceleratorClientCloseConnection")]
+        public extern static void CloseCacheServerConnection();
 
         [FreeFunction()]
         public extern static string GetCacheServerAddress();

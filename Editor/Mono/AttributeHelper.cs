@@ -56,12 +56,11 @@ namespace UnityEditor
                         continue;
                     }
 
-                    var item = new MonoGizmoMethod();
-
+                    Type targetType;
                     if (gizmoAttr.drawnType == null)
-                        item.drawnType = parameters[0].ParameterType;
+                        targetType = parameters[0].ParameterType;
                     else if (parameters[0].ParameterType.IsAssignableFrom(gizmoAttr.drawnType))
-                        item.drawnType = gizmoAttr.drawnType;
+                        targetType = gizmoAttr.drawnType;
                     else
                     {
                         Debug.LogWarningFormat(
@@ -81,10 +80,32 @@ namespace UnityEditor
                         continue;
                     }
 
-                    item.drawGizmo = mi;
-                    item.options = (int)gizmoAttr.drawOptions;
+                    if (targetType.IsInterface)
+                    {
+                        var types = TypeCache.GetTypesDerivedFrom(targetType);
+                        foreach (var type in types)
+                        {
+                            //Limit the types to the classes that have the interface and not it's children
+                            if (type.BaseType != null && type.BaseType.IsAssignableFrom(targetType))
+                                continue;
 
-                    commands.Add(item);
+                            commands.Add(new MonoGizmoMethod
+                            {
+                                drawnType = type,
+                                drawGizmo = mi,
+                                options = (int)gizmoAttr.drawOptions,
+                            });
+                        }
+                    }
+                    else
+                    {
+                        commands.Add(new MonoGizmoMethod
+                        {
+                            drawnType = targetType,
+                            drawGizmo = mi,
+                            options = (int)gizmoAttr.drawOptions,
+                        });
+                    }
                 }
             }
             return commands.ToArray();

@@ -595,6 +595,9 @@ namespace UnityEditor
                     case Scene.LoadingState.Loading:
                         label += " (is loading)";
                         break;
+                    case Scene.LoadingState.Unloading:
+                        label += " (is unloading)";
+                        break;
                 }
 
                 // Render disabled if scene is unloaded

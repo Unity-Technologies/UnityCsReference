@@ -176,6 +176,12 @@ namespace UnityEditor
             }
         }
 
+        internal void UnfocusSearchField()
+        {
+            if (hasSearchFilterFocus)
+                GUIUtility.keyboardControl = 0;
+        }
+
         internal void FocusSearchField()
         {
             m_FocusSearchField = true;

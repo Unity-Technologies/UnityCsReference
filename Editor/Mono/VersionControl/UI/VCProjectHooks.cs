@@ -19,6 +19,7 @@ namespace UnityEditorInternal.VersionControl
         static double s_LastInvalidArtifactHashTime = 0;
         static readonly List<Action> s_ProgressRepainters = new List<Action>();
         static readonly CallbackController s_CallbackController = new CallbackController(RepaintProgress, k_AnimatedProgressImageUpdateInterval);
+        static readonly GUIContent s_NotImportedAssetTooltip = EditorGUIUtility.TrTextContent(string.Empty, "Asset is not available because Unity is in Safe Mode");
 
         static void RepaintProgress()
         {
@@ -34,6 +35,7 @@ namespace UnityEditorInternal.VersionControl
         {
             HandleVersionControlOverlays(guid, drawRect);
             HandleOndemandProgressOverlay(guid, drawRect, repaintAction);
+            HandleNotImportedAssetsInSafeModeOverlay(guid, drawRect);
         }
 
         static void HandleVersionControlOverlays(string guid, Rect drawRect)
@@ -58,6 +60,9 @@ namespace UnityEditorInternal.VersionControl
 
         static void HandleOndemandProgressOverlay(string guid, Rect drawRect, Action repaintAction)
         {
+            if (AssetDatabaseExperimental.ActiveOnDemandMode == AssetDatabaseExperimental.OnDemandMode.Off)
+                return;
+
             var now = EditorApplication.timeSinceStartup;
             if (repaintAction != null)
             {
@@ -91,6 +96,17 @@ namespace UnityEditorInternal.VersionControl
             {
                 s_CallbackController.Stop();
                 s_ProgressRepainters.Clear();
+            }
+        }
+
+        static void HandleNotImportedAssetsInSafeModeOverlay(string guid, Rect drawRect)
+        {
+            if (EditorUtility.isInSafeMode)
+            {
+                GUID lookupGUID = new GUID(guid);
+                var hash = AssetDatabaseExperimental.LookupArtifact(new ArtifactKey(lookupGUID));
+                if (!hash.isValid)
+                    GUI.Label(drawRect, s_NotImportedAssetTooltip);
             }
         }
 

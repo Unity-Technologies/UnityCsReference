@@ -518,6 +518,12 @@ namespace UnityEditor
         [NativeMethod("SwitchActiveBuildTargetAsync")]
         public static extern bool SwitchActiveBuildTargetAsync(BuildTargetGroup targetGroup, BuildTarget target);
 
+        // This is used by tests -- note that it does tell the editor that current platform is X, without
+        // validating if support for it is installed. However it does not do things like script recompile
+        // or domain reload -- generally only useful for asset import testing.
+        [NativeMethod("SwitchActiveBuildTargetSyncNoCheck")]
+        internal static extern bool SwitchActiveBuildTargetNoCheck(BuildTargetGroup targetGroup, BuildTarget target);
+
         // DEFINE directives for the compiler.
         public static extern string[] activeScriptCompilationDefines
         {

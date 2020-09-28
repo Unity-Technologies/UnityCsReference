@@ -47,6 +47,8 @@ namespace UnityEngine.SceneManagement
     [RequiredByNativeCode]
     public partial class SceneManager
     {
+        static internal bool s_AllowLoadScene = true;
+
         public static extern int sceneCount
         {
             [NativeHeader("Runtime/SceneManager/SceneManager.h")]
@@ -96,11 +98,20 @@ namespace UnityEngine.SceneManagement
 
         private static AsyncOperation LoadSceneAsyncNameIndexInternal(string sceneName, int sceneBuildIndex, LoadSceneParameters parameters, bool mustCompleteNextFrame)
         {
+            if (!s_AllowLoadScene)
+                return null;
+
             return SceneManagerAPI.ActiveAPI.LoadSceneAsyncByNameOrIndex(sceneName, sceneBuildIndex, parameters, mustCompleteNextFrame);
         }
 
         private static AsyncOperation UnloadSceneNameIndexInternal(string sceneName, int sceneBuildIndex, bool immediately, UnloadSceneOptions options, out bool outSuccess)
         {
+            if (!s_AllowLoadScene)
+            {
+                outSuccess = false;
+                return null;
+            }
+
             return SceneManagerAPI.ActiveAPI.UnloadSceneAsyncByNameOrIndex(sceneName, sceneBuildIndex, immediately, options, out outSuccess);
         }
 

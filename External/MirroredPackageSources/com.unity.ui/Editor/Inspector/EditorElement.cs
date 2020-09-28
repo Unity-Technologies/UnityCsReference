@@ -206,15 +206,12 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            var target = editor.target;
-            if (target && (target.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
-                return;
-
             // Avoid drawing editor if native target object is not alive, unless it's a MonoBehaviour/ScriptableObject
             // We want to draw the generic editor with a warning about missing/invalid script
             // Case 891450:
             // - ActiveEditorTracker will automatically create editors for materials of components on tracked game objects
             // - UnityEngine.UI.Mask will destroy this material in OnDisable (e.g. disabling it with the checkbox) causing problems when drawing the material editor
+            var target = editor.target;
             if (target == null && !NativeClassExtensionUtilities.ExtendsANativeType(target))
             {
                 SetElementVisible(m_InspectorElement, false);
@@ -434,14 +431,11 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            var target = ed.target;
-            if ((target.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
-                return;
-
             m_ContentRect.y = -m_ContentRect.height;
             inspectorWindow.editorDragging.HandleDraggingToEditor(editors, m_EditorIndex, m_DragRect, m_ContentRect);
             HandleComponentScreenshot(m_ContentRect, ed);
 
+            var target = ed.target;
             var comp = target as Component;
 
             if (EditorGUI.ShouldDrawOverrideBackground(ed.targets, Event.current, comp))

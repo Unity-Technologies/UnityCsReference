@@ -179,7 +179,7 @@ namespace UnityEditor.AssetImporters
         // we are applying changes directly to the target and ignore the Apply/Revert mechanism.
         bool m_InstantApply = true;
         // This allow Importers to ignore the Apply/Revert mechanism and save their changes each update like normal Editor.
-        protected virtual bool needsApplyRevert => !m_InstantApply;
+        protected virtual bool needsApplyRevert => !m_InstantApply && !EditorUtility.IsHiddenInInspector(target);
 
         // we need to keep a list of unreleased instances in case the user cancel the de-selection
         // we are using these instances to keep the same apply/revert status with the forced re-selection

@@ -137,6 +137,8 @@ namespace UnityEditor.Presets
 
         void Init(PresetType presetType, Preset currentSelection, bool createNewAllowed, PresetSelectorReceiver eventReceiver)
         {
+            AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
+            AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             m_ModalUndoGroup = Undo.GetCurrentGroup();
 
             // Freeze to prevent flicker on OSX.
@@ -170,6 +172,11 @@ namespace UnityEditor.Presets
 
             // Add after unfreezing display because AuxWindowManager.cpp assumes that aux windows are added after we get 'got/lost'- focus calls.
             m_Parent.AddToAuxWindowList();
+        }
+
+        void OnBeforeAssemblyReload()
+        {
+            Close();
         }
 
         void Init(Object target, Preset currentSelection, bool createNewAllowed, PresetSelectorReceiver eventReceiver)
@@ -306,6 +313,7 @@ namespace UnityEditor.Presets
 
         void OnDisable()
         {
+            AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
             if (m_ListArea != null)
                 m_StartGridSize.value = m_ListArea.gridSize;
             if (m_EventObject != null)

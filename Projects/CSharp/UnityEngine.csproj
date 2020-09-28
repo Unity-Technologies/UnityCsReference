@@ -1639,9 +1639,6 @@
     <Compile Include="..\..\Modules\UnityCurl\FriendAttributes.cs">
       <Link>Modules\UnityCurl\FriendAttributes.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UnityCurl\Public\UnityCurl.bindings.cs">
-      <Link>Modules\UnityCurl\Public\UnityCurl.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UnityWebRequestAssetBundle\Public\DownloadHandlerAssetBundle.bindings.cs">
       <Link>Modules\UnityWebRequestAssetBundle\Public\DownloadHandlerAssetBundle.bindings.cs</Link>
     </Compile>

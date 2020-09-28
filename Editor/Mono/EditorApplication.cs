@@ -66,6 +66,7 @@ namespace UnityEditor
         internal static UnityAction projectWasLoaded;
         internal static UnityAction editorApplicationQuit;
 
+        [RequiredByNativeCode]
         static void Internal_ProjectWasLoaded()
         {
             projectWasLoaded?.Invoke();
@@ -364,6 +365,7 @@ namespace UnityEditor
             hierarchyChanged?.Invoke();
         }
 
+        [RequiredByNativeCode]
         static void Internal_CallProjectHasChanged()
         {
             #pragma warning disable 618
