@@ -137,7 +137,8 @@ namespace UnityEditor
             public static readonly GUIContent framebufferDepthMemorylessMode = EditorGUIUtility.TrTextContent("Memoryless Depth", "Memoryless mode of framebuffer depth");
             public static readonly GUIContent[] memorylessModeNames = { EditorGUIUtility.TrTextContent("Unused"), EditorGUIUtility.TrTextContent("Forced"), EditorGUIUtility.TrTextContent("Automatic")};
             public static readonly GUIContent vulkanEnableSetSRGBWrite = EditorGUIUtility.TrTextContent("SRGB Write Mode*", "If set, enables Graphics.SetSRGBWrite() for toggling sRGB write mode during the frame but may decrease performance especially on tiled GPUs.");
-            public static readonly GUIContent vulkanNumSwapchainBuffers = EditorGUIUtility.TrTextContent("Number of swapchain buffers");
+            public static readonly GUIContent vulkanNumSwapchainBuffers = EditorGUIUtility.TrTextContent("Number of swapchain buffers*");
+            public static readonly GUIContent vulkanEnableLateAcquireNextImage = EditorGUIUtility.TrTextContent("Acquire swapchain image late as possible*", "If set, renders to a staging image to delay acquiring the swapchain buffer.");
             public static readonly GUIContent mTRendering = EditorGUIUtility.TrTextContent("Multithreaded Rendering*");
             public static readonly GUIContent staticBatching = EditorGUIUtility.TrTextContent("Static Batching");
             public static readonly GUIContent dynamicBatching = EditorGUIUtility.TrTextContent("Dynamic Batching");
@@ -244,6 +245,7 @@ namespace UnityEditor
 
         // vulkan
         SerializedProperty m_VulkanNumSwapchainBuffers;
+        SerializedProperty m_VulkanEnableLateAcquireNextImage;
 
         // iOS, tvOS
 #pragma warning disable 169
@@ -485,19 +487,20 @@ namespace UnityEditor
             m_SupportedAspectRatios         = FindPropertyAssert("m_SupportedAspectRatios");
             m_UsePlayerLog                  = FindPropertyAssert("usePlayerLog");
 
-            m_KeepLoadedShadersAlive        = FindPropertyAssert("keepLoadedShadersAlive");
-            m_PreloadedAssets               = FindPropertyAssert("preloadedAssets");
-            m_BakeCollisionMeshes           = FindPropertyAssert("bakeCollisionMeshes");
-            m_ResizableWindow               = FindPropertyAssert("resizableWindow");
-            m_UseMacAppStoreValidation      = FindPropertyAssert("useMacAppStoreValidation");
-            m_MacAppStoreCategory           = FindPropertyAssert("macAppStoreCategory");
-            m_VulkanNumSwapchainBuffers     = FindPropertyAssert("vulkanNumSwapchainBuffers");
-            m_FullscreenMode                = FindPropertyAssert("fullscreenMode");
-            m_VisibleInBackground           = FindPropertyAssert("visibleInBackground");
-            m_AllowFullscreenSwitch         = FindPropertyAssert("allowFullscreenSwitch");
-            m_SkinOnGPU                     = FindPropertyAssert("gpuSkinning");
-            m_ForceSingleInstance           = FindPropertyAssert("forceSingleInstance");
-            m_UseFlipModelSwapchain         = FindPropertyAssert("useFlipModelSwapchain");
+            m_KeepLoadedShadersAlive           = FindPropertyAssert("keepLoadedShadersAlive");
+            m_PreloadedAssets                  = FindPropertyAssert("preloadedAssets");
+            m_BakeCollisionMeshes              = FindPropertyAssert("bakeCollisionMeshes");
+            m_ResizableWindow                  = FindPropertyAssert("resizableWindow");
+            m_UseMacAppStoreValidation         = FindPropertyAssert("useMacAppStoreValidation");
+            m_MacAppStoreCategory              = FindPropertyAssert("macAppStoreCategory");
+            m_VulkanNumSwapchainBuffers        = FindPropertyAssert("vulkanNumSwapchainBuffers");
+            m_VulkanEnableLateAcquireNextImage = FindPropertyAssert("vulkanEnableLateAcquireNextImage");
+            m_FullscreenMode                   = FindPropertyAssert("fullscreenMode");
+            m_VisibleInBackground              = FindPropertyAssert("visibleInBackground");
+            m_AllowFullscreenSwitch            = FindPropertyAssert("allowFullscreenSwitch");
+            m_SkinOnGPU                        = FindPropertyAssert("gpuSkinning");
+            m_ForceSingleInstance              = FindPropertyAssert("forceSingleInstance");
+            m_UseFlipModelSwapchain            = FindPropertyAssert("useFlipModelSwapchain");
 
             m_RequireES31                   = FindPropertyAssert("openGLRequireES31");
             m_RequireES31AEP                = FindPropertyAssert("openGLRequireES31AEP");
@@ -2041,6 +2044,7 @@ namespace UnityEditor
             PlayerSettings.vulkanEnableSetSRGBWrite = EditorGUILayout.Toggle(SettingsContent.vulkanEnableSetSRGBWrite, PlayerSettings.vulkanEnableSetSRGBWrite);
             EditorGUILayout.PropertyField(m_VulkanNumSwapchainBuffers, SettingsContent.vulkanNumSwapchainBuffers);
             PlayerSettings.vulkanNumSwapchainBuffers = (UInt32)m_VulkanNumSwapchainBuffers.intValue;
+            EditorGUILayout.PropertyField(m_VulkanEnableLateAcquireNextImage, SettingsContent.vulkanEnableLateAcquireNextImage);
 
             if (settingsExtension != null && settingsExtension.ShouldShowVulkanSettings())
                 settingsExtension.VulkanSectionGUI();

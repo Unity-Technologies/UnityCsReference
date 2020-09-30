@@ -8,9 +8,22 @@ using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCode
 namespace UnityEngine.SceneManagement
 {
     [NativeHeader("Runtime/Export/SceneManager/SceneManager.bindings.h")]
+    [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
+    internal static class SceneManagerAPIInternal
+    {
+        [NativeThrows]
+        public static extern AsyncOperation LoadSceneAsyncNameIndexInternal(string sceneName, int sceneBuildIndex, LoadSceneParameters parameters, bool mustCompleteNextFrame);
+
+        [NativeThrows]
+        public static extern AsyncOperation UnloadSceneNameIndexInternal(string sceneName, int sceneBuildIndex, bool immediately, UnloadSceneOptions options, out bool outSuccess);
+    }
+
+    [NativeHeader("Runtime/Export/SceneManager/SceneManager.bindings.h")]
     [RequiredByNativeCode]
     public partial class SceneManager
     {
+        static internal bool s_AllowLoadScene = true;
+
         public extern static int sceneCount
         {
             [NativeHeader("Runtime/SceneManager/SceneManager.h")]
@@ -59,13 +72,24 @@ namespace UnityEngine.SceneManagement
         [NativeThrows]
         extern private static AsyncOperation UnloadSceneAsyncInternal(Scene scene, UnloadSceneOptions options);
 
-        [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
-        extern private static AsyncOperation LoadSceneAsyncNameIndexInternal(string sceneName, int sceneBuildIndex, LoadSceneParameters parameters, bool mustCompleteNextFrame);
+        private static AsyncOperation LoadSceneAsyncNameIndexInternal(string sceneName, int sceneBuildIndex, LoadSceneParameters parameters, bool mustCompleteNextFrame)
+        {
+            if (!s_AllowLoadScene)
+                return null;
 
-        [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
-        extern private static AsyncOperation UnloadSceneNameIndexInternal(string sceneName, int sceneBuildIndex, bool immediately, UnloadSceneOptions options, out bool outSuccess);
+            return SceneManagerAPIInternal.LoadSceneAsyncNameIndexInternal(sceneName, sceneBuildIndex, parameters, mustCompleteNextFrame);
+        }
+
+        private static AsyncOperation UnloadSceneNameIndexInternal(string sceneName, int sceneBuildIndex, bool immediately, UnloadSceneOptions options, out bool outSuccess)
+        {
+            if (!s_AllowLoadScene)
+            {
+                outSuccess = false;
+                return null;
+            }
+
+            return SceneManagerAPIInternal.UnloadSceneNameIndexInternal(sceneName, sceneBuildIndex, immediately, options, out outSuccess);
+        }
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]

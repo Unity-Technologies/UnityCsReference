@@ -420,7 +420,7 @@ namespace UnityEditor.StyleSheets
                 }
 
                 var borderRadius = block.GetRect(StyleCatalogKeyword.borderRadius);
-                radius = new Vector4(borderRadius.left, borderRadius.top, borderRadius.right, borderRadius.bottom);
+                radius = new Vector4(borderRadius.top, borderRadius.right, borderRadius.bottom, borderRadius.left);
             }
 
             public bool any => widths != Vector4.zero;
