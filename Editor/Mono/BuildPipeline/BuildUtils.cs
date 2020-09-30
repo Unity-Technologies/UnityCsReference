@@ -147,9 +147,7 @@ namespace UnityEditorInternal
                             Debug.LogPlayerBuildError(message.message, message.file, message.line, message.column);
                     }
 
-                    Debug.LogError("Failed running " + exe + " " + args + "\n\n" + p.GetAllOutput());
-
-                    throw new Exception(string.Format("{0} did not run properly!", exe));
+                    throw new Exception(string.Format("{0} did not run properly!\n\nFailed running \"{0}\" {1} \n\n{2}", exe, args, p.GetAllOutput()));
                 }
                 else
                 {

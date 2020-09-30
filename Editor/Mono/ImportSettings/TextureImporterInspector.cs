@@ -1272,7 +1272,17 @@ namespace UnityEditor
             // Filter mode, aniso, and wrap mode GUI
             TextureSettingsGUI();
 
-            BaseTextureImportPlatformSettings.ShowPlatformSpecificSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings));
+            using (var changed = new EditorGUI.ChangeCheckScope())
+            {
+                BaseTextureImportPlatformSettings.InitPlatformSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings));
+                BaseTextureImportPlatformSettings.ShowPlatformSpecificSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings));
+                // Doing it this way is slow, but it ensure Presets get updated correctly whenever the UI is being changed.
+                if (changed.changed)
+                {
+                    Undo.RegisterCompleteObjectUndo(targets, "Inspector");
+                    BaseTextureImportPlatformSettings.ApplyPlatformSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings));
+                }
+            }
 
             serializedObject.ApplyModifiedProperties();
 

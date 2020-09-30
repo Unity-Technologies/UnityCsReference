@@ -7833,7 +7833,7 @@ namespace UnityEditor
             return PropertyFieldInternal(position, property, label, includeChildren);
         }
 
-        static class EnumNamesCache
+        internal static class EnumNamesCache
         {
             static Dictionary<Type, GUIContent[]> s_EnumTypeLocalizedGUIContents = new Dictionary<Type, GUIContent[]>();
             static Dictionary<int, GUIContent[]> s_SerializedPropertyEnumLocalizedGUIContents = new Dictionary<int, GUIContent[]>();
@@ -7860,10 +7860,14 @@ namespace UnityEditor
 
             internal static GUIContent[] GetEnumLocalizedGUIContents(SerializedProperty property)
             {
+                if (property.serializedObject.targetObject == null)
+                    return EditorGUIUtility.TempContent(property.enumLocalizedDisplayNames);
+
                 var propertyHash = property.hashCodeForPropertyPathWithoutArrayIndex;
                 var typeHash = property.serializedObject.targetObject.GetType().GetHashCode();
                 var hashCode = typeHash ^ propertyHash;
                 GUIContent[] result;
+
                 if (s_SerializedPropertyEnumLocalizedGUIContents.TryGetValue(hashCode, out result))
                 {
                     return result;
