@@ -1775,7 +1775,8 @@ namespace UnityEngine.Rendering
         UNITY_LIGHTMAP_FULL_HDR,
         UNITY_VIRTUAL_TEXTURING,
         UNITY_PRETRANSFORM_TO_DISPLAY_ORIENTATION,
-        UNITY_ASTC_NORMALMAP_ENCODING
+        UNITY_ASTC_NORMALMAP_ENCODING,
+        SHADER_API_GLES30
     }
 
     // Match VideoShadersMode on C++ side
@@ -1867,6 +1868,16 @@ namespace UnityEngine.Rendering
         LegacyJobified = 3,
         NativeGraphicsJobs = 4,
         NativeGraphicsJobsWithoutRenderThread = 5,
+    }
+
+    public enum OpenGLESVersion
+    {
+        None,
+        OpenGLES20,
+        OpenGLES30,
+        OpenGLES31,
+        OpenGLES31AEP,
+        OpenGLES32
     }
 } // namespace UnityEngine.Rendering
 

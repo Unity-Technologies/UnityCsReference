@@ -280,6 +280,9 @@ namespace UnityEditor.UIElements
                 }
             });
 
+            if (!(parent is InspectorElement inspectorElement))
+                return field;
+
             field.RegisterCallback<GeometryChangedEvent>(evt =>
             {
                 var baseField = field as BaseField<TValue>;
@@ -288,15 +291,11 @@ namespace UnityEditor.UIElements
                 var totalPadding = resolvedStyle.paddingLeft + resolvedStyle.paddingRight +
                                    resolvedStyle.marginLeft + resolvedStyle.marginRight;
 
-                // Get inspector element padding if present next
-                var inspectorElement = baseField.GetFirstAncestorOfType<InspectorElement>();
-                if (inspectorElement != null)
-                {
-                    totalPadding += inspectorElement.resolvedStyle.paddingLeft +
-                                    inspectorElement.resolvedStyle.paddingRight +
-                                    inspectorElement.resolvedStyle.marginLeft +
-                                    inspectorElement.resolvedStyle.marginRight;
-                }
+                // Get inspector element padding next
+                totalPadding += inspectorElement.resolvedStyle.paddingLeft +
+                                inspectorElement.resolvedStyle.paddingRight +
+                                inspectorElement.resolvedStyle.marginLeft +
+                                inspectorElement.resolvedStyle.marginRight;
 
                 var labelElement = baseField.labelElement;
 
@@ -312,9 +311,11 @@ namespace UnityEditor.UIElements
                 // that information.  Instead we add a flat value to totalPadding to best match the hard coded
                 // calculation in IMGUI
                 totalPadding += m_LabelExtraPadding;
-                    
+
                 // Formula to follow IMGUI label width settings
-                labelElement.style.width = resolvedStyle.width * m_LabelWidthRatio - totalPadding;
+                var newWidth = resolvedStyle.width * m_LabelWidthRatio - totalPadding;
+                if (Mathf.Abs(labelElement.resolvedStyle.width - newWidth) > Mathf.Epsilon)
+                    labelElement.style.width = newWidth;
             });
 
             return field;

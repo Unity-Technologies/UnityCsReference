@@ -191,7 +191,7 @@ namespace UnityEngine.UIElements
             get { return m_TextInputBase.maskChar; }
             set { m_TextInputBase.maskChar = value; }
         }
-        
+
         /// <summary>
         /// Computes the size needed to display a text string based on element style values such as font, font-size, word-wrap, and so on.
         /// </summary>

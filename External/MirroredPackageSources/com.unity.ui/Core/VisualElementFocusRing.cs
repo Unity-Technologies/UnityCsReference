@@ -333,7 +333,7 @@ namespace UnityEngine.UIElements
             // We could implement an extendable adapter system to convert event to a focus change direction.
             // This would enable new event sources to change the focus.
 
-            if (e.eventTypeId == PointerDownEvent.TypeId())
+            if (e.eventTypeId == MouseDownEvent.TypeId())
             {
                 if (e.target is Focusable focusable)
                     return VisualElementFocusChangeTarget.GetPooled(focusable);

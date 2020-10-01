@@ -35,6 +35,8 @@ namespace UnityEditor
 
         public IEditorElement CreateEditorElement(int editorIndex, IPropertyView iw, string title) => new EditorElement(editorIndex, iw) {name = title};
 
+        public IEditorElement CreateCulledEditorElement(int editorIndex, IPropertyView iw, string title) => new EditorElement(editorIndex, iw, true) {name = title};
+
         public void PackageManagerOpen() => PackageManagerWindow.OpenPackageManager(null);
 
         public IShortcutManagerWindowView CreateShortcutManagerWindowView(IShortcutManagerWindowViewController viewController, IKeyBindingStateProvider bindingStateProvider) =>

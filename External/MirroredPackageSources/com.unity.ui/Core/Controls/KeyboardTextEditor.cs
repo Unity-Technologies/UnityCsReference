@@ -247,7 +247,8 @@ namespace UnityEngine.UIElements
                     return;
                 }
 
-                if (evt.actionKey)
+                // Ignore command and control keys, but not AltGr characters
+                if (evt.actionKey && !(evt.altKey && c != '\0'))
                     return;
 
                 evt.StopPropagation();
