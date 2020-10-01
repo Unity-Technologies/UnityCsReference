@@ -19,6 +19,7 @@ namespace UnityEditor
 
         // Inspector
         IEditorElement CreateEditorElement(int editorIndex, IPropertyView iw, string title);
+        IEditorElement CreateCulledEditorElement(int editorIndex, IPropertyView iw, string title);
 
         // PackageManagerUI
         void PackageManagerOpen();

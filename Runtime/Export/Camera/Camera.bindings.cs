@@ -278,9 +278,32 @@ namespace UnityEngine
             None = 0,
             ObjectId = 1,
             Depth = 2,
-            Normals = 3,
+            VertexNormal = 3,
             WorldPosition = 4,
             EntityId = 5,
+            BaseColor = 6,
+            SpecularColor = 7,
+            Metallic = 8,
+            Emission = 9,
+            Normal = 10,
+            Smoothness = 11,
+            Occlusion = 12,
+            DiffuseColor = 13
+        }
+
+
+        public enum RenderRequestOutputSpace
+        {
+            ScreenSpace = -1,
+            UV0 = 0,
+            UV1 = 1,
+            UV2 = 2,
+            UV3 = 3,
+            UV4 = 4,
+            UV5 = 5,
+            UV6 = 6,
+            UV7 = 7,
+            UV8 = 8,
         }
 
         public struct RenderRequest
@@ -288,16 +311,27 @@ namespace UnityEngine
             readonly RenderRequestMode m_CameraRenderMode;
             readonly RenderTexture m_ResultRT;
 
+            private readonly RenderRequestOutputSpace m_OutputSpace;
+
             public RenderRequest(RenderRequestMode mode, RenderTexture rt)
             {
                 m_CameraRenderMode = mode;
                 m_ResultRT = rt;
+                m_OutputSpace = RenderRequestOutputSpace.ScreenSpace;
+            }
+
+            public RenderRequest(RenderRequestMode mode, RenderRequestOutputSpace space, RenderTexture rt)
+            {
+                m_CameraRenderMode = mode;
+                m_ResultRT = rt;
+                m_OutputSpace = space;
             }
 
             public bool isValid => m_CameraRenderMode != 0 && m_ResultRT != null;
 
             public RenderRequestMode mode => m_CameraRenderMode;
             public RenderTexture result => m_ResultRT;
+            public RenderRequestOutputSpace outputSpace => m_OutputSpace;
         }
 
         [FreeFunction("CameraScripting::Render", HasExplicitThis = true)]            extern public void Render();

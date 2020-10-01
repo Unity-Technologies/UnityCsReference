@@ -33,22 +33,36 @@ namespace UnityEngine.Rendering
     [UsedByNativeCode]
     unsafe public struct BatchCullingContext
     {
-        [Obsolete("Please use the other constructor instead")]
+        [Obsolete("For internal BatchRendererGroup use only")]
         public BatchCullingContext(NativeArray<Plane> inCullingPlanes, NativeArray<BatchVisibility> inOutBatchVisibility, NativeArray<int> outVisibleIndices, LODParameters inLodParameters)
         {
             cullingPlanes = inCullingPlanes;
             batchVisibility = inOutBatchVisibility;
             visibleIndices = outVisibleIndices;
+            visibleIndicesY = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(null, 0, Allocator.Invalid);
             lodParameters = inLodParameters;
             cullingMatrix = Matrix4x4.identity;
             nearPlane = 0.0f;
         }
 
+        [Obsolete("For internal BatchRendererGroup use only")]
         public BatchCullingContext(NativeArray<Plane> inCullingPlanes, NativeArray<BatchVisibility> inOutBatchVisibility, NativeArray<int> outVisibleIndices, LODParameters inLodParameters, Matrix4x4 inCullingMatrix, float inNearPlane)
         {
             cullingPlanes = inCullingPlanes;
             batchVisibility = inOutBatchVisibility;
             visibleIndices = outVisibleIndices;
+            visibleIndicesY = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(null, 0, Allocator.Invalid);
+            lodParameters = inLodParameters;
+            cullingMatrix = inCullingMatrix;
+            nearPlane = inNearPlane;
+        }
+
+        internal BatchCullingContext(NativeArray<Plane> inCullingPlanes, NativeArray<BatchVisibility> inOutBatchVisibility, NativeArray<int> outVisibleIndices, NativeArray<int> outVisibleIndicesY, LODParameters inLodParameters, Matrix4x4 inCullingMatrix, float inNearPlane)
+        {
+            cullingPlanes = inCullingPlanes;
+            batchVisibility = inOutBatchVisibility;
+            visibleIndices = outVisibleIndices;
+            visibleIndicesY = outVisibleIndicesY;
             lodParameters = inLodParameters;
             cullingMatrix = inCullingMatrix;
             nearPlane = inNearPlane;
@@ -57,6 +71,7 @@ namespace UnityEngine.Rendering
         readonly public NativeArray<Plane> cullingPlanes;
         public NativeArray<BatchVisibility> batchVisibility;
         public NativeArray<int> visibleIndices;
+        public NativeArray<int> visibleIndicesY;
         readonly public LODParameters lodParameters;
         readonly public Matrix4x4 cullingMatrix;
         readonly public float nearPlane;
@@ -72,6 +87,7 @@ namespace UnityEngine.Rendering
         public Plane*              cullingPlanes;
         public BatchVisibility*    batchVisibility;
         public int*                visibleIndices;
+        public int*                visibleIndicesY;
         public int                 cullingPlanesCount;
         public int                 batchVisibilityCount;
         public int                 visibleIndicesCount;
@@ -242,6 +258,8 @@ namespace UnityEngine.Rendering
         extern private AtomicSafetyHandle GetBatchArraySafetyHandle(int batchIndex, string propertyName);
         [NativeName("GetBatchArraySafetyHandle")]
         extern private AtomicSafetyHandle GetBatchArraySafetyHandle_Int(int batchIndex, int propertyName);
+        public extern void EnableVisibleIndicesYArray(bool enabled);
+
         static extern IntPtr Create(BatchRendererGroup group);
         static extern void Destroy(IntPtr groupHandle);
 
@@ -251,14 +269,16 @@ namespace UnityEngine.Rendering
             NativeArray<Plane> cullingPlanes = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Plane>(context.cullingPlanes, context.cullingPlanesCount, Allocator.Invalid);
             NativeArray<BatchVisibility> batchVisibility = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<BatchVisibility>(context.batchVisibility, context.batchVisibilityCount, Allocator.Invalid);
             NativeArray<int> visibleIndices = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(context.visibleIndices, context.visibleIndicesCount, Allocator.Invalid);
+            NativeArray<int> visibleIndicesY = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(context.visibleIndicesY, context.visibleIndicesCount, Allocator.Invalid);
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref cullingPlanes, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref batchVisibility, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref visibleIndices, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref visibleIndicesY, AtomicSafetyHandle.Create());
 
             try
             {
-                context.cullingJobsFence = group.m_PerformCulling(group, new BatchCullingContext(cullingPlanes, batchVisibility, visibleIndices, lodParameters, context.cullingMatrix, context.nearPlane));
+                context.cullingJobsFence = group.m_PerformCulling(group, new BatchCullingContext(cullingPlanes, batchVisibility, visibleIndices, visibleIndicesY, lodParameters, context.cullingMatrix, context.nearPlane));
             }
             finally
             {
@@ -268,6 +288,7 @@ namespace UnityEngine.Rendering
                 AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(cullingPlanes));
                 AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(batchVisibility));
                 AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(visibleIndices));
+                AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(visibleIndicesY));
             }
         }
     }

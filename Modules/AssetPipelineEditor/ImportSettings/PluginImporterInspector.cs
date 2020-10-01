@@ -31,9 +31,53 @@ namespace UnityEditor
         // * ShowGeneralOptions (when clicking on 'Standalone' toggle, it enables or disables all those targets)
         // * DesktopPluginImporterExtension (where it's possible to individually enable or disable specific Standalone target)
 
-        public static readonly GUIContent defineConstraints = EditorGUIUtility.TrTextContent("Define Constraints");
-        public static readonly GUIContent loadSettings = EditorGUIUtility.TrTextContent("Plugin load settings");
-        public static readonly GUIContent preload = EditorGUIUtility.TrTextContent("Load on startup", "Always load plugin during startup instead of on-demand");
+        internal class Styles
+        {
+            public static readonly GUIContent kDefineConstraints = EditorGUIUtility.TrTextContent("Define Constraints");
+            public static readonly GUIContent kLoadSettings = EditorGUIUtility.TrTextContent("Plugin load settings");
+            public static readonly GUIContent kPreload = EditorGUIUtility.TrTextContent("Load on startup", "Always load plugin during startup instead of on-demand");
+            public static readonly GUIContent kPluginPlatforms = EditorGUIUtility.TrTextContent("Select platforms for plugin");
+            public static readonly GUIContent kPlatformSettings = EditorGUIUtility.TrTextContent("Platform settings");
+            public static readonly GUIContent kInformation = EditorGUIUtility.TrTextContent("Information");
+
+            static string kCompatibleTextIndividual = L10n.Tr("Define constraint is compatible.");
+            static string kIncompatibleTextIndividual = L10n.Tr("Define constraint is incompatible.");
+            static string kInvalidTextIndividual = L10n.Tr("Define constraint is invalid.");
+
+            // This is used to make everything in reorderable list elements centered vertically.
+            public const int kCenterHeightOffset = 1;
+
+            public const int kValidityIconHeight = 16;
+            public const int kValidityIconWidth = 16;
+            static readonly Texture2D kValidDefineConstraint = EditorGUIUtility.FindTexture("Valid");
+            static readonly Texture2D kValidDefineConstraintHighDpi = EditorGUIUtility.FindTexture("Valid@2x");
+            static readonly Texture2D kInvalidDefineConstraint = EditorGUIUtility.FindTexture("Invalid");
+            static readonly Texture2D kInvalidDefineConstraintHighDpi = EditorGUIUtility.FindTexture("Invalid@2x");
+
+            public static Texture2D validDefineConstraint => EditorGUIUtility.pixelsPerPoint > 1 ? kValidDefineConstraintHighDpi : kValidDefineConstraint;
+            public static Texture2D invalidDefineConstraint => EditorGUIUtility.pixelsPerPoint > 1 ? kInvalidDefineConstraintHighDpi : kInvalidDefineConstraint;
+
+            static string kCompatibleTextTitle = L10n.Tr("Define constraints are compatible.");
+            static string kIncompatibleTextTitle = L10n.Tr("One or more define constraints are invalid or incompatible.");
+
+            public static string GetTitleTooltipFromDefineConstraintCompatibility(bool compatible)
+            {
+                return compatible ? kCompatibleTextTitle : kIncompatibleTextTitle;
+            }
+
+            public static string GetIndividualTooltipFromDefineConstraintStatus(DefineConstraintsHelper.DefineConstraintStatus status)
+            {
+                switch (status)
+                {
+                    case DefineConstraintsHelper.DefineConstraintStatus.Compatible:
+                        return kCompatibleTextIndividual;
+                    case DefineConstraintsHelper.DefineConstraintStatus.Incompatible:
+                        return kIncompatibleTextIndividual;
+                    default:
+                        return kInvalidTextIndividual;
+                }
+            }
+        }
 
         internal enum Compatibility : int
         {
@@ -204,7 +248,7 @@ namespace UnityEditor
                 if (!IsValidBuildTarget(platform))
                     continue;
 
-                // Ignore Unknown or deprectated value
+                // Ignore Unknown or deprecated value
                 if (IgnorePlatform(platform))
                     continue;
 
@@ -289,13 +333,13 @@ namespace UnityEditor
                     try
                     {
                         var symbolName = importerDefineConstraint.StartsWith(DefineConstraintsHelper.Not) ? importerDefineConstraint.Substring(1) : importerDefineConstraint;
-                        if (!SymbolNameRestrictions.IsValid(symbolName))
+                        Compatibility mixedValue = importerDefineConstraints[i] != baseImporterDefineConstraints[i] ? Compatibility.Mixed : Compatibility.Compatible;
+                        m_DefineConstraintState.Add(new DefineConstraint { name = importerDefineConstraint, displayValue = mixedValue });
+
+                        if (!DefineConstraintsHelper.IsDefineConstraintValid(symbolName))
                         {
                             throw new PrecompiledAssemblyException($"Invalid define constraint {symbolName}", symbolName);
                         }
-
-                        Compatibility mixedValue = importerDefineConstraints[i] != baseImporterDefineConstraints[i] ? Compatibility.Mixed : Compatibility.Compatible;
-                        m_DefineConstraintState.Add(new DefineConstraint { name = importerDefineConstraint, displayValue = mixedValue });
                     }
                     catch (PrecompiledAssemblyException exception)
                     {
@@ -441,7 +485,7 @@ namespace UnityEditor
         {
             base.OnEnable();
 
-            m_DefineConstraints = new ReorderableList(m_DefineConstraintState, typeof(DefineConstraint), false, false, true, true);
+            m_DefineConstraints = new ReorderableList(m_DefineConstraintState, typeof(DefineConstraint), true, false, true, true);
             m_DefineConstraints.drawElementCallback = DrawDefineConstraintListElement;
             m_DefineConstraints.onRemoveCallback = RemoveDefineConstraintListElement;
 
@@ -504,16 +548,32 @@ namespace UnityEditor
         {
             var list = m_DefineConstraints.list;
             var defineConstraint = list[index] as DefineConstraint;
+
             rect.height -= EditorGUIUtility.standardVerticalSpacing;
+
+
+            var textFieldRect = new Rect(rect.x, rect.y + Styles.kCenterHeightOffset, rect.width - ReorderableList.Defaults.dragHandleWidth, rect.height);
 
             string noValue = L10n.Tr("(Missing)");
 
-            var label = defineConstraint.name != null ? defineConstraint.name : noValue;
-
+            var label = string.IsNullOrEmpty(defineConstraint.name) ? noValue : defineConstraint.name;
             bool mixed = defineConstraint.displayValue == Compatibility.Mixed;
             EditorGUI.showMixedValue = mixed;
-            var textFieldValue = EditorGUI.TextField(rect, mixed ? L10n.Tr("(Multiple Values)") : label);
+            var textFieldValue = EditorGUI.TextField(textFieldRect, mixed ? L10n.Tr("(Multiple Values)") : label);
             EditorGUI.showMixedValue = false;
+
+            var defines = InternalEditorUtility.GetCompilationDefines(EditorScriptCompilationOptions.BuildingForEditor, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
+
+            if (defines != null)
+            {
+                var status = DefineConstraintsHelper.GetDefineConstraintCompatibility(defines, defineConstraint.name);
+                var image = status == DefineConstraintsHelper.DefineConstraintStatus.Compatible ? Styles.validDefineConstraint : Styles.invalidDefineConstraint;
+
+                var content = new GUIContent(image, Styles.GetIndividualTooltipFromDefineConstraintStatus(status));
+
+                var constraintValidityRect = new Rect(rect.width + ReorderableList.Defaults.dragHandleWidth + Styles.kValidityIconWidth / 4, rect.y + Styles.kCenterHeightOffset, Styles.kValidityIconWidth, Styles.kValidityIconHeight);
+                EditorGUI.LabelField(constraintValidityRect, content);
+            }
 
             if (!string.IsNullOrEmpty(textFieldValue) && textFieldValue != noValue && defineConstraint.name != textFieldValue)
             {
@@ -626,7 +686,7 @@ namespace UnityEditor
             BuildPlatform[] validPlatforms = GetBuildPlayerValidPlatforms();
             if (validPlatforms.Length > 0)
             {
-                GUILayout.Label("Platform settings", EditorStyles.boldLabel);
+                GUILayout.Label(Styles.kPlatformSettings, EditorStyles.boldLabel);
                 int platformIndex = EditorGUILayout.BeginPlatformGrouping(validPlatforms, null);
 
                 if (validPlatforms[platformIndex].name == BuildPipeline.GetEditorTargetName())
@@ -653,7 +713,7 @@ namespace UnityEditor
         private void ShowLoadSettings()
         {
             EditorGUI.BeginChangeCheck();
-            m_Preload = ToggleWithMixedValue(m_Preload, preload.text);
+            m_Preload = ToggleWithMixedValue(m_Preload, Styles.kPreload.text);
             if (EditorGUI.EndChangeCheck())
                 m_HasModified = true;
         }
@@ -685,7 +745,7 @@ namespace UnityEditor
                     GUILayout.Space(10f);
                 }
 
-                GUILayout.Label("Select platforms for plugin", EditorStyles.boldLabel);
+                GUILayout.Label(Styles.kPluginPlatforms, EditorStyles.boldLabel);
                 EditorGUILayout.BeginVertical(GUI.skin.box);
                 ShowGeneralOptions();
                 EditorGUILayout.EndVertical();
@@ -696,14 +756,45 @@ namespace UnityEditor
 
                 if (isManagedPlugin)
                 {
-                    GUILayout.Label(defineConstraints, EditorStyles.boldLabel);
+                    GUILayout.Label(Styles.kDefineConstraints, EditorStyles.boldLabel);
+
+                    if (m_DefineConstraints.list.Count > 0)
+                    {
+                        var defines = InternalEditorUtility.GetCompilationDefines(EditorScriptCompilationOptions.BuildingForEditor, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
+
+                        var defineConstraintsCompatible = true;
+
+                        if (defines != null)
+                        {
+                            for (var i = 0; i < m_DefineConstraints.list.Count && defineConstraintsCompatible; ++i)
+                            {
+                                var defineConstraint = ((DefineConstraint)m_DefineConstraints.list[i]).name;
+
+                                if (DefineConstraintsHelper.GetDefineConstraintCompatibility(defines, defineConstraint) != DefineConstraintsHelper.DefineConstraintStatus.Compatible)
+                                {
+                                    defineConstraintsCompatible = false;
+                                }
+                            }
+
+                            var constraintValidityRect = new Rect(GUILayoutUtility.GetLastRect());
+                            constraintValidityRect.x = constraintValidityRect.width - Styles.kValidityIconWidth / 4;
+                            var image = defineConstraintsCompatible ? Styles.validDefineConstraint : Styles.invalidDefineConstraint;
+                            var tooltip = Styles.GetTitleTooltipFromDefineConstraintCompatibility(defineConstraintsCompatible);
+                            var content = new GUIContent(image, tooltip);
+
+                            constraintValidityRect.width = Styles.kValidityIconWidth;
+                            constraintValidityRect.height = Styles.kValidityIconHeight;
+                            EditorGUI.LabelField(constraintValidityRect, content);
+                        }
+                    }
+
                     m_DefineConstraints.DoLayoutList();
                 }
 
                 if (importers.All(imp => imp.isNativePlugin))
                 {
                     GUILayout.Space(10f);
-                    GUILayout.Label(loadSettings, EditorStyles.boldLabel);
+                    GUILayout.Label(Styles.kLoadSettings, EditorStyles.boldLabel);
                     ShowLoadSettings();
                 }
             }
@@ -716,7 +807,7 @@ namespace UnityEditor
             if (targets.Length > 1)
                 return;
 
-            GUILayout.Label("Information", EditorStyles.boldLabel);
+            GUILayout.Label(Styles.kInformation, EditorStyles.boldLabel);
 
             m_InformationScrollPosition = EditorGUILayout.BeginVerticalScrollView(m_InformationScrollPosition);
 

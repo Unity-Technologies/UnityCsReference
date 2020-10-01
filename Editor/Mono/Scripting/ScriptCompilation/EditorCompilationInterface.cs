@@ -278,7 +278,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var result = EmitExceptionAsError(() => Instance.GetAllCompiledAndResolvedTargetAssemblies(options, buildTarget, out assembliesWithMissingReference), new EditorCompilation.TargetAssemblyInfo[0]);
 
-            if (assembliesWithMissingReference.Length > 0)
+            if (assembliesWithMissingReference != null && assembliesWithMissingReference.Length > 0)
             {
                 foreach (var assemblyAndReference in assembliesWithMissingReference)
                 {

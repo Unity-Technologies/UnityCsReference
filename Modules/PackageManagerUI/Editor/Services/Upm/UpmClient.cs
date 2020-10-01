@@ -472,6 +472,9 @@ namespace UnityEditor.PackageManager.UI
         // if no installed version or installed version is not preview, we hide the preview versions according to the `show previews` toggle
         private static bool HasHidablePreviewVersions(IPackage package)
         {
+            if ((package.versions.primary as UpmPackageVersion)?.isUnityPackage != true)
+                return false;
+
             var previewInstalled = (!package.versions.installed?.HasTag(PackageTag.Release)) ?? false;
             if (previewInstalled)
                 return false;

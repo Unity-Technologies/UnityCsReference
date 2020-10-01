@@ -77,11 +77,17 @@ namespace UnityEditor.UIElements
             }
         }
 
-        internal EditorElement(int editorIndex, IPropertyView iw)
+        internal EditorElement(int editorIndex, IPropertyView iw, bool isCulled = false)
         {
             m_EditorIndex = editorIndex;
             inspectorWindow = iw;
             pickingMode = PickingMode.Ignore;
+
+            if (isCulled)
+            {
+                InitCulled();
+                return;
+            }
 
             Init();
 
@@ -94,6 +100,23 @@ namespace UnityEditor.UIElements
             }
 
             Add(m_Footer);
+        }
+
+        void InitCulled()
+        {
+            PopulateCache();
+            var container = inspectorWindow.CreateIMGUIContainer(() =>
+            {
+                if (editor != null)
+                {
+                    // Reset dirtiness when repainting, just like in EditorElement.HeaderOnGUI.
+                    if (Event.current.type == EventType.Repaint)
+                    {
+                        editor.isInspectorDirty = false;
+                    }
+                }
+            }, name);
+            Add(container);
         }
 
         void Init()

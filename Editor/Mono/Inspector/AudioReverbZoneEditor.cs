@@ -29,6 +29,27 @@ namespace UnityEditor
         SerializedProperty  m_Diffusion; //  Value that controls the echo density in the late reverberation decay
         SerializedProperty  m_Density; // Value that controls the modal density in the late reverberation decay
 
+        private static class Styles
+        {
+            public static readonly GUIContent MinDistanceTooltip = EditorGUIUtility.TrTextContent("MinDistance", "The distance from the centerpoint that the reverb will have full effect at");
+            public static readonly GUIContent MaxDistanceTooltip = EditorGUIUtility.TrTextContent("MaxDistance", "The distance from the centerpoint that the reverb will not have any effect");
+            public static readonly GUIContent ReverbPresetTooltip = EditorGUIUtility.TrTextContent("ReverbPreset", "The reverb preset");
+            public static readonly GUIContent RoomTooltip = EditorGUIUtility.TrTextContent("Room", "Room effect level (at mid frequencies)");
+            public static readonly GUIContent RoomHFTooltip = EditorGUIUtility.TrTextContent("Room HF", "Relative room effect level at high frequencies");
+            public static readonly GUIContent RoomLFTooltip = EditorGUIUtility.TrTextContent("Room LF", "Relative room effect level at low frequencies");
+            public static readonly GUIContent DecayTimeTooltip = EditorGUIUtility.TrTextContent("Decay Time", "Reverberation decay time at mid frequencies");
+            public static readonly GUIContent DecayHFRatioTooltip = EditorGUIUtility.TrTextContent("Decay HF Ratio", "High-frequency to mid-frequency decay time ratio");
+            public static readonly GUIContent ReflectionsTooltip = EditorGUIUtility.TrTextContent("Reflections", "Early reflections level relative to room effect");
+            public static readonly GUIContent ReflectionsDelayTooltip = EditorGUIUtility.TrTextContent("Reflections Delay", "Initial reflection delay time");
+            public static readonly GUIContent ReverbTooltip = EditorGUIUtility.TrTextContent("Reverb", "Late reverberation level relative to room effect");
+            public static readonly GUIContent ReverbDelayTooltip = EditorGUIUtility.TrTextContent("Reverb Delay", "Late reverberation delay time relative to initial reflection");
+            public static readonly GUIContent HFReferenceTooltip = EditorGUIUtility.TrTextContent("HF Reference", "Reference high frequency (Hz)");
+            public static readonly GUIContent LFReferenceTooltip = EditorGUIUtility.TrTextContent("LF Reference", "Reference low frequency (Hz)");
+            public static readonly GUIContent DiffusionTooltip = EditorGUIUtility.TrTextContent("Diffusion", "Value that controls the echo density in the late reverberation decay");
+            public static readonly GUIContent DensityTooltip = EditorGUIUtility.TrTextContent("Density", "Value that controls the modal density in the late reverberation decay");
+        }
+
+
         void OnEnable()
         {
             m_MinDistance = serializedObject.FindProperty("m_MinDistance");
@@ -53,31 +74,31 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            EditorGUILayout.PropertyField(m_MinDistance);
-            EditorGUILayout.PropertyField(m_MaxDistance);
+            EditorGUILayout.PropertyField(m_MinDistance, Styles.MinDistanceTooltip);
+            EditorGUILayout.PropertyField(m_MaxDistance, Styles.MaxDistanceTooltip);
 
             EditorGUILayout.Space();
             EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(m_ReverbPreset);
+            EditorGUILayout.PropertyField(m_ReverbPreset, Styles.ReverbPresetTooltip);
             // Changing the preset changes all the other properties as well, so we need to do a full refresh afterwards
             if (EditorGUI.EndChangeCheck())
                 serializedObject.SetIsDifferentCacheDirty();
 
             using (new EditorGUI.DisabledScope(m_ReverbPreset.enumValueIndex != 27 || m_ReverbPreset.hasMultipleDifferentValues))
             {
-                EditorGUILayout.IntSlider(m_Room, -10000, 0);
-                EditorGUILayout.IntSlider(m_RoomHF, -10000, 0);
-                EditorGUILayout.IntSlider(m_RoomLF, -10000, 0);
-                EditorGUILayout.Slider(m_DecayTime, 0.1f, 20.0f);
-                EditorGUILayout.Slider(m_DecayHFRatio, 0.1f, 2.0f);
-                EditorGUILayout.IntSlider(m_Reflections, -10000, 1000);
-                EditorGUILayout.Slider(m_ReflectionsDelay, 0.0f, 0.3f);
-                EditorGUILayout.IntSlider(m_Reverb, -10000, 2000);
-                EditorGUILayout.Slider(m_ReverbDelay, 0.0f, 0.1f);
-                EditorGUILayout.Slider(m_HFReference, 1000.0f, 20000.0f);
-                EditorGUILayout.Slider(m_LFReference, 20.0f, 1000.0f);
-                EditorGUILayout.Slider(m_Diffusion, 0.0f, 100.0f);
-                EditorGUILayout.Slider(m_Density, 0.0f, 100.0f);
+                EditorGUILayout.IntSlider(m_Room, -10000, 0, Styles.RoomTooltip);
+                EditorGUILayout.IntSlider(m_RoomHF, -10000, 0, Styles.RoomHFTooltip);
+                EditorGUILayout.IntSlider(m_RoomLF, -10000, 0, Styles.RoomLFTooltip);
+                EditorGUILayout.Slider(m_DecayTime, 0.1f, 20.0f, Styles.DecayTimeTooltip);
+                EditorGUILayout.Slider(m_DecayHFRatio, 0.1f, 2.0f, Styles.DecayHFRatioTooltip);
+                EditorGUILayout.IntSlider(m_Reflections, -10000, 1000, Styles.ReflectionsTooltip);
+                EditorGUILayout.Slider(m_ReflectionsDelay, 0.0f, 0.3f, Styles.ReflectionsDelayTooltip);
+                EditorGUILayout.IntSlider(m_Reverb, -10000, 2000, Styles.ReverbTooltip);
+                EditorGUILayout.Slider(m_ReverbDelay, 0.0f, 0.1f, Styles.ReverbDelayTooltip);
+                EditorGUILayout.Slider(m_HFReference, 1000.0f, 20000.0f, Styles.HFReferenceTooltip);
+                EditorGUILayout.Slider(m_LFReference, 20.0f, 1000.0f, Styles.LFReferenceTooltip);
+                EditorGUILayout.Slider(m_Diffusion, 0.0f, 100.0f, Styles.DiffusionTooltip);
+                EditorGUILayout.Slider(m_Density, 0.0f, 100.0f, Styles.DensityTooltip);
             }
 
             serializedObject.ApplyModifiedProperties();

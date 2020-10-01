@@ -2400,6 +2400,25 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 targetAssemblyCondition: targetAssemblyCondition);
         }
 
+        public static string[] GetTargetAssemblyDefines(TargetAssembly targetAssembly, ScriptAssemblySettings settings)
+        {
+            var editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, ApiCompatibilityLevel.NET_4_6);
+            var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel);
+            var settingsExtraGeneralDefines = settings.ExtraGeneralDefines;
+
+            string[] allDefines = new string[editorOnlyCompatibleDefines.Length + playerAssembliesDefines.Length + settingsExtraGeneralDefines.Length];
+
+            var definesIndex = 0;
+
+            Array.Copy(editorOnlyCompatibleDefines, allDefines, editorOnlyCompatibleDefines.Length);
+            definesIndex += editorOnlyCompatibleDefines.Length;
+            Array.Copy(playerAssembliesDefines, 0, allDefines, definesIndex, playerAssembliesDefines.Length);
+            definesIndex += playerAssembliesDefines.Length;
+            Array.Copy(settingsExtraGeneralDefines, 0, allDefines, definesIndex, settingsExtraGeneralDefines.Length);
+
+            return allDefines;
+        }
+
         // TODO: Get rid of calls to this method and ensure that the defines are always setup correctly at all times.
         private static void UpdateAllTargetAssemblyDefines(IDictionary<string, TargetAssembly> customScriptAssemblies, TargetAssembly[] predefinedTargetAssemblies, Dictionary<string, string> assetPathVersionMetaDatas, ScriptAssemblySettings settings)
         {

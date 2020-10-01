@@ -1568,14 +1568,28 @@ namespace UnityEditor
 
                 try
                 {
+                    var editor = editors[editorIndex];
+                    Object editorTarget = editor.targets[0];
+
                     if (ShouldCullEditor(editors, editorIndex))
                     {
-                        editors[editorIndex].isInspectorDirty = false;
+                        editor.isInspectorDirty = false;
+
+                        // Adds an empty IMGUIContainer to prevent infinite repainting (case 1264833).
+                        if (mapping == null || !mapping.TryGetValue(editor.target.GetInstanceID(),
+                            out var culledEditorContainer))
+                        {
+                            string editorTitle = editorTarget == null
+                                ? "Nothing Selected"
+                                : ObjectNames.GetInspectorTitle(editorTarget);
+                            culledEditorContainer = EditorUIService.instance.CreateCulledEditorElement(editorIndex, this, editorTitle);
+
+                            editorsElement.Add(culledEditorContainer as VisualElement);
+                        }
+
                         continue;
                     }
 
-                    var editor = editors[editorIndex];
-                    Object editorTarget = editor.targets[0];
 
                     if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetInstanceID(), out var editorContainer))
                     {

@@ -232,7 +232,7 @@ namespace UnityEngine
         extern public bool doubleSidedGI { get; set; }
         [NativeProperty("EnableInstancingVariants")] extern public bool enableInstancing { get; set; }
 
-        extern public int passCount { get; }
+        extern public int passCount { [NativeName("GetShader()->GetPassCount")] get; }
         [FreeFunction("MaterialScripting::SetShaderPassEnabled", HasExplicitThis = true)] extern public void SetShaderPassEnabled(string passName, bool enabled);
         [FreeFunction("MaterialScripting::GetShaderPassEnabled", HasExplicitThis = true)] extern public bool GetShaderPassEnabled(string passName);
         extern public string GetPassName(int pass);

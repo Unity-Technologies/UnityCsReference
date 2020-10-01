@@ -15,6 +15,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public const string Not = "!";
         public const string Or = "||";
 
+        // Characters that we consider valid whitespaces.
         public static readonly char[] k_ValidWhitespaces = { ' ', '\t' };
 
         static Regex s_SplitAndKeep = new Regex("(\\|\\|)", RegexOptions.Compiled);
@@ -29,13 +30,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static bool IsDefineConstraintsCompatible(string[] defines, string[] defineConstraints)
         {
-            if (defines == null && defineConstraints == null || defineConstraints == null)
+            if (defines == null && defineConstraints == null || defineConstraints == null || defineConstraints.Length == 0)
             {
                 return true;
             }
 
-            bool[] defineConstraintsValidity;
-            GetDefineConstraintsCompatibility(defines, defineConstraints, out defineConstraintsValidity);
+            GetDefineConstraintsCompatibility(defines, defineConstraints, out bool[] defineConstraintsValidity);
 
             return defineConstraintsValidity.All(c => c);
         }
@@ -52,6 +52,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         internal static DefineConstraintStatus GetDefineConstraintCompatibility(string[] defines, string defineConstraints)
         {
+            if (string.IsNullOrEmpty(defineConstraints))
+            {
+                return DefineConstraintStatus.Invalid;
+            }
+
             // Split by "||" (OR) and keep it in the resulting array
             var splitDefines = s_SplitAndKeep.Split(defineConstraints);
 
@@ -106,6 +111,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 notExpectedDefines.ExceptWith(complement);
             }
 
+            if (expectedDefines.Count == 0 && notExpectedDefines.Count == 0)
+            {
+                return DefineConstraintStatus.Invalid;
+            }
+
             var expectedDefinesResult = DefineConstraintStatus.Incompatible;
             foreach (var define in expectedDefines)
             {
@@ -155,7 +165,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var splitDefines = define.Split(new[] { Or }, StringSplitOptions.RemoveEmptyEntries);
             foreach (var d in splitDefines)
             {
-                var finalDefine = (d.StartsWith(Not, StringComparison.Ordinal) ? d.Substring(1) : d).Trim();
+                var finalDefine = d.Trim(k_ValidWhitespaces);
+                finalDefine = finalDefine.StartsWith(Not, StringComparison.Ordinal) ? finalDefine.Substring(1) : finalDefine;
                 if (!SymbolNameRestrictions.IsValid(finalDefine))
                 {
                     return false;
