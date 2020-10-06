@@ -48,7 +48,9 @@ namespace UnityEditorInternal
         InstancedMesh,
         BeginRenderpass,
         NextSubpass,
-        EndSubpass
+        EndSubpass,
+        SRPBatch,
+        HybridBatch
         // ReSharper restore InconsistentNaming
     }
 
@@ -255,7 +257,8 @@ namespace UnityEditor
             "Begin Renderpass",
             "Next Subpass",
             "End Renderpass",
-            "SRP Batch"
+            "SRP Batch",
+            "Hybrid Batch Group"
         };
 
         // Cached strings built from FrameDebuggerEventData.
@@ -263,6 +266,7 @@ namespace UnityEditor
         private struct EventDataStrings
         {
             public string drawCallCount;
+            public string drawInstancedCallCount;
 
             public string shader;
             public string pass;
@@ -508,6 +512,7 @@ namespace UnityEditor
         {
             // we will show that only if drawcall count is bigger than one so update unconditionally
             m_CurEventDataStrings.drawCallCount = string.Format("{0}", m_CurEventData.drawCallCount);
+            m_CurEventDataStrings.drawInstancedCallCount = string.Format("{0}", m_CurEventData.instanceCount);
 
             // shader name & subshader index
             m_CurEventDataStrings.shader = string.Format("{0}, SubShader #{1}", m_CurEventData.shaderName, m_CurEventData.subShaderIndex.ToString());
@@ -872,7 +877,12 @@ namespace UnityEditor
 
         private void DrawEventDrawCallInfo()
         {
-            if (m_CurEventData.drawCallCount > 1)
+            if (m_CurEventData.instanceCount > 1)
+            {
+                EditorGUILayout.LabelField("DrawInstanced Calls", m_CurEventDataStrings.drawCallCount);
+                EditorGUILayout.LabelField("Instances", m_CurEventDataStrings.drawInstancedCallCount);
+            }
+            else if (m_CurEventData.drawCallCount > 1)
                 EditorGUILayout.LabelField("Draw Calls", m_CurEventDataStrings.drawCallCount);
 
             // shader, pass & keyword information
@@ -1391,7 +1401,12 @@ namespace UnityEditor
 
                 if (!FrameDebuggerUtility.locallySupported)
                 {
-                    EditorGUILayout.HelpBox("Frame Debugger requires multi-threaded renderer. Usually Unity uses that; if it does not, try starting with -force-gfx-mt command line argument.", MessageType.Warning, true);
+                    var supportMessage = "The Frame Debugger requires multi-threaded renderer. If this error persists, try starting the Editor with -force-gfx-mt command line argument.";
+
+                    if (Application.platform == RuntimePlatform.LinuxEditor && SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLCore)
+                        supportMessage += " On Linux, the editor does not support a multi-threaded renderer when using OpenGL.";
+
+                    EditorGUILayout.HelpBox(supportMessage, MessageType.Warning, true);
                 }
 
                 // info box

@@ -233,6 +233,9 @@ namespace UnityEditor
 
         internal string GetWindowID()
         {
+            if (!rootView)
+                return string.Empty;
+
             HostView v = rootView as HostView;
 
             if (v == null && rootView is SplitView && rootView.children.Length > 0)
