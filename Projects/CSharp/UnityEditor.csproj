@@ -5293,35 +5293,8 @@
     <Compile Include="..\..\Modules\TextCoreEditor\Managed\AssemblyInfo.cs">
       <Link>Modules\TextCoreEditor\Managed\AssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\CharacterPropertyDrawer.cs">
-      <Link>Modules\TextCoreEditor\Managed\CharacterPropertyDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\FontAssetCreationMenu.cs">
-      <Link>Modules\TextCoreEditor\Managed\FontAssetCreationMenu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\FontAssetEditor.cs">
-      <Link>Modules\TextCoreEditor\Managed\FontAssetEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\TextCoreEditor\Managed\FontEngineEditor.bindings.cs">
       <Link>Modules\TextCoreEditor\Managed\FontEngineEditor.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\GlyphMetricsPropertyDrawer.cs">
-      <Link>Modules\TextCoreEditor\Managed\GlyphMetricsPropertyDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\GlyphPropertyDrawer.cs">
-      <Link>Modules\TextCoreEditor\Managed\GlyphPropertyDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\GlyphRectPropertyDrawer.cs">
-      <Link>Modules\TextCoreEditor\Managed\GlyphRectPropertyDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\SpriteAssetCreationMenu.cs">
-      <Link>Modules\TextCoreEditor\Managed\SpriteAssetCreationMenu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\TextCoreEditorStyles.cs">
-      <Link>Modules\TextCoreEditor\Managed\TextCoreEditorStyles.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\TextSettingsCreationMenu.cs">
-      <Link>Modules\TextCoreEditor\Managed\TextSettingsCreationMenu.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextRenderingEditor\TextRenderingCommands.cs">
       <Link>Modules\TextRenderingEditor\TextRenderingCommands.cs</Link>
