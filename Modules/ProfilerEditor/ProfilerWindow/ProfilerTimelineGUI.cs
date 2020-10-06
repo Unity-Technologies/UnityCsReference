@@ -1285,8 +1285,8 @@ namespace UnityEditorInternal
                 if (initializing)
                     PerformFrameSelected(iter.frameTimeMS);
 
-                DoTimeRulerGUI(timeRulerRect, sideWidth, iter.frameTimeMS);
                 DoTimeArea();
+                DoTimeRulerGUI(timeRulerRect, sideWidth, iter.frameTimeMS);
 
                 Rect fullThreadsRect = new Rect(fullRect.x, fullRect.y + timeRulerRect.height, fullRect.width - m_TimeArea.vSliderWidth, fullRect.height - timeRulerRect.height - m_TimeArea.hSliderHeight);
 
@@ -1294,6 +1294,12 @@ namespace UnityEditorInternal
                 fullThreadsRectWithoutSidebar.x += sideWidth;
                 fullThreadsRectWithoutSidebar.width -= sideWidth;
 
+                Rect sideRect = new Rect(fullThreadsRect.x, fullThreadsRect.y, sideWidth, fullThreadsRect.height);
+                if (sideRect.Contains(Event.current.mousePosition) && Event.current.isScrollWheel)
+                {
+                    m_TimeArea.SetTransform(new Vector2(m_TimeArea.m_Translation.x, m_TimeArea.m_Translation.y - (Event.current.delta.y * 4)), m_TimeArea.m_Scale);
+                    m_Window.Repaint();
+                }
                 // The splitters need to be handled after the time area so that they don't interfere with the input for panning/scrolling the ZoomableArea
                 DoThreadSplitters(fullThreadsRect, fullThreadsRectWithoutSidebar, frameDataView.frameIndex, ThreadSplitterCommand.HandleThreadSplitter);
 
