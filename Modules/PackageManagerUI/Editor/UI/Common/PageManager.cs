@@ -277,6 +277,8 @@ namespace UnityEditor.PackageManager.UI
                 AssetStore.AssetStoreClient.instance.onProductListFetched += OnProductListFetched;
                 AssetStore.AssetStoreClient.instance.onProductFetched += OnProductFetched;
 
+                UpmRegistryClient.instance.onRegistriesModified += OnRegistriesModified;
+
                 PackageDatabase.instance.onInstallSuccess += OnInstalled;
                 PackageDatabase.instance.onUninstallSuccess += OnUninstalled;
                 PackageDatabase.instance.onPackagesChanged += OnPackagesChanged;
@@ -297,6 +299,8 @@ namespace UnityEditor.PackageManager.UI
                 AssetStore.AssetStoreClient.instance.onProductListFetched -= OnProductListFetched;
                 AssetStore.AssetStoreClient.instance.onProductFetched -= OnProductFetched;
 
+                UpmRegistryClient.instance.onRegistriesModified -= OnRegistriesModified;
+
                 PackageDatabase.instance.onInstallSuccess -= OnInstalled;
                 PackageDatabase.instance.onUninstallSuccess -= OnUninstalled;
                 PackageDatabase.instance.onPackagesChanged -= OnPackagesChanged;
@@ -307,6 +311,11 @@ namespace UnityEditor.PackageManager.UI
                 ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
 
                 PackageDatabase.instance.UnregisterEvents();
+            }
+
+            private void OnRegistriesModified()
+            {
+                Refresh(RefreshOptions.UpmSearch);
             }
 
             internal void Reload()

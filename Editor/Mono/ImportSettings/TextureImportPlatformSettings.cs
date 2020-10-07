@@ -257,10 +257,16 @@ namespace UnityEditor
             m_Inspector = inspector;
             m_PlatformSettings.overridden = false;
             m_Importers = inspector.targets.Select(x => x as TextureImporter).ToArray();
+
+            Init();
+        }
+
+        internal void Init()
+        {
             for (int i = 0; i < importers.Length; i++)
             {
                 TextureImporter imp = importers[i];
-                TextureImporterPlatformSettings curPlatformSettings = imp.GetPlatformTextureSettings(name);
+                TextureImporterPlatformSettings curPlatformSettings = imp.GetPlatformTextureSettings(m_PlatformSettings.name);
 
                 if (i == 0)
                 {
@@ -289,7 +295,6 @@ namespace UnityEditor
                         m_AndroidETC2FallbackOverrideIsDifferent = true;
                 }
             }
-
             Sync();
         }
 

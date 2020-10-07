@@ -623,10 +623,17 @@ namespace UnityEditor.PackageManager.UI
                 }
             }
 
-            public virtual long GetRefreshTimestamp(PackageFilterTab? tab = null)
+            public long GetRefreshTimestamp(PackageFilterTab? tab = null)
             {
                 var filterTab = tab ?? PackageFiltering.instance.currentFilterTab;
                 return GetRefreshTimestamp(GetRefreshOptionsFromFilterTab(filterTab));
+            }
+
+            public bool IsRefreshInProgress(PackageFilterTab? tab = null)
+            {
+                var filterTab = tab ?? PackageFiltering.instance.currentFilterTab;
+                var refreshOptions = GetRefreshOptionsFromFilterTab(filterTab);
+                return m_RefreshOperationsInProgress.Any(operation => (operation.refreshOptions & refreshOptions) != 0);
             }
 
             private long GetRefreshTimestamp(RefreshOptions option)

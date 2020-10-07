@@ -122,6 +122,10 @@ namespace UnityEditor.PackageManager.UI
                 Application.OpenURL(url);
             }
 
+            public bool isBatchMode => Application.isBatchMode;
+
+            public bool isUpmRunning => !Application.HasARGV("noUpm");
+
             public bool isCompiling
             {
                 get

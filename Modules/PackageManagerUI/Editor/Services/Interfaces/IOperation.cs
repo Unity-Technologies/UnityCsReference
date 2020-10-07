@@ -23,5 +23,7 @@ namespace UnityEditor.PackageManager.UI
         long lastSuccessTimestamp { get; }
         bool isOfflineMode { get; }
         bool isInProgress { get; }
+
+        RefreshOptions refreshOptions { get; }
     }
 }

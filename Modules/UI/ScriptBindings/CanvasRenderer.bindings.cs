@@ -29,6 +29,7 @@ namespace UnityEngine
         public extern void SetColor(Color color);
         public extern Color GetColor();
         public extern void EnableRectClipping(Rect rect);
+        public extern Vector2 clippingSoftness { get; set; }
         public extern void DisableRectClipping();
         public extern void SetMaterial(Material material, int index);
         public extern Material GetMaterial(int index);

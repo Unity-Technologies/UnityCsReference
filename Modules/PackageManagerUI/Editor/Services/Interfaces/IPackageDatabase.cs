@@ -77,5 +77,7 @@ namespace UnityEditor.PackageManager.UI
         IEnumerable<IPackage> packagesInError { get; }
 
         long GetRefreshTimestamp(PackageFilterTab? tab = null);
+
+        bool IsRefreshInProgress(PackageFilterTab? tab = null);
     }
 }

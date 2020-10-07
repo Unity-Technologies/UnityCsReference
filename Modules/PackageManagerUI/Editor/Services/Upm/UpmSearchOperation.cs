@@ -10,6 +10,8 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class UpmSearchOperation : UpmBaseOperation<SearchRequest>
     {
+        public override RefreshOptions refreshOptions => isOfflineMode ? RefreshOptions.UpmSearchOffline : RefreshOptions.UpmSearch;
+
         private string m_PackageNameOrId;
         private void SetPackageNameOrId(string packageNameOrId)
         {

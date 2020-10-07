@@ -20,6 +20,10 @@ namespace UnityEditor.PackageManager.UI
 
         bool isInternetReachable { get; }
 
+        bool isBatchMode { get; }
+
+        bool isUpmRunning { get; }
+
         bool isCompiling { get; }
 
         bool isUserLoggedIn { get; }

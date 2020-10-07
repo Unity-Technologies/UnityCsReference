@@ -3805,6 +3805,9 @@
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\ContentBuildInterface.deprecated.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\ContentBuildInterface.deprecated.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\ContentBuildInterfaceProfile.bindings.cs">
+      <Link>Modules\BuildPipeline\Editor\Managed\ContentBuildInterfaceProfile.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\ObjectIdentifier.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\ObjectIdentifier.cs</Link>
     </Compile>
@@ -4195,6 +4198,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IUpmClient.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IUpmClient.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IUpmRegistryClient.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IUpmRegistryClient.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IVersionList.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IVersionList.cs</Link>
     </Compile>
@@ -4234,8 +4240,20 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageType.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageType.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettings.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettingsProvider.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettingsProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\RegistryInfoDraft.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\RegistryInfoDraft.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmAddOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmAddOperation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmAddRegistryOperation.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmAddRegistryOperation.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmBaseOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmBaseOperation.cs</Link>
@@ -4245,6 +4263,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmEmbedOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmEmbedOperation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmGetRegistriesOperation.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmGetRegistriesOperation.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmListOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmListOperation.cs</Link>
@@ -4258,11 +4279,20 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageVersion.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageVersion.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmRegistryClient.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmRegistryClient.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmRemoveOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmRemoveOperation.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmRemoveRegistryOperation.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmRemoveRegistryOperation.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmSearchOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmSearchOperation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmUpdateRegistryOperation.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmUpdateRegistryOperation.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmVersionList.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmVersionList.cs</Link>
@@ -4374,6 +4404,12 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackagesAction.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackagesAction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ScopedRegistriesSettings.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\ScopedRegistriesSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ScopedRegistryAddedPopup.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\ScopedRegistryAddedPopup.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\AuthorInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\AuthorInfo.cs</Link>
@@ -5068,35 +5104,8 @@
     <Compile Include="..\..\Modules\TextCoreEditor\Managed\AssemblyInfo.cs">
       <Link>Modules\TextCoreEditor\Managed\AssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\CharacterPropertyDrawer.cs">
-      <Link>Modules\TextCoreEditor\Managed\CharacterPropertyDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\FontAssetCreationMenu.cs">
-      <Link>Modules\TextCoreEditor\Managed\FontAssetCreationMenu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\FontAssetEditor.cs">
-      <Link>Modules\TextCoreEditor\Managed\FontAssetEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\TextCoreEditor\Managed\FontEngineEditor.bindings.cs">
       <Link>Modules\TextCoreEditor\Managed\FontEngineEditor.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\GlyphMetricsPropertyDrawer.cs">
-      <Link>Modules\TextCoreEditor\Managed\GlyphMetricsPropertyDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\GlyphPropertyDrawer.cs">
-      <Link>Modules\TextCoreEditor\Managed\GlyphPropertyDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\GlyphRectPropertyDrawer.cs">
-      <Link>Modules\TextCoreEditor\Managed\GlyphRectPropertyDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\SpriteAssetCreationMenu.cs">
-      <Link>Modules\TextCoreEditor\Managed\SpriteAssetCreationMenu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\TextCoreEditorStyles.cs">
-      <Link>Modules\TextCoreEditor\Managed\TextCoreEditorStyles.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\TextSettingsCreationMenu.cs">
-      <Link>Modules\TextCoreEditor\Managed\TextSettingsCreationMenu.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextRenderingEditor\TextRenderingCommands.cs">
       <Link>Modules\TextRenderingEditor\TextRenderingCommands.cs</Link>

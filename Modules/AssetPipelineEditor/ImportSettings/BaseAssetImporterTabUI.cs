@@ -62,8 +62,6 @@ namespace UnityEditor
         internal virtual void PreApply() {}
 
 
-        internal virtual void PostApply() {}
-
         internal virtual void ResetValues() {}
 
         public abstract void OnInspectorGUI();

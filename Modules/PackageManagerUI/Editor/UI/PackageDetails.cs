@@ -267,11 +267,13 @@ namespace UnityEditor.PackageManager.UI
 
                 RefreshCategories();
 
-                detailVersion.text = $"Version {displayVersion.version.StripTag()}";
-                if (displayVersion.versionString != displayVersion.version.ToString())
-                {
-                    detailVersion.text = $"Version {displayVersion.versionString}";
-                }
+                var versionString = displayVersion.version?.ToString() ?? displayVersion.versionString;
+                var releaseDateString = displayVersion.publishedDate?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US"));
+                if (string.IsNullOrEmpty(releaseDateString))
+                    detailVersion.text = string.Format(L10n.Tr("Version {0}"), versionString);
+                else
+                    detailVersion.text = string.Format(L10n.Tr("Version {0} - {1}"), versionString, releaseDateString);
+                UIUtils.SetElementDisplay(detailVersion, !package.Is(PackageType.BuiltIn) && !string.IsNullOrEmpty(versionString));
 
                 foreach (var tag in k_VisibleTags)
                     UIUtils.SetElementDisplay(GetTagLabel(tag.ToString()), displayVersion.HasTag(tag));

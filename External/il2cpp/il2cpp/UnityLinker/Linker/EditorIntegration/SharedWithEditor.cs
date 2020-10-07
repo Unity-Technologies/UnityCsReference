@@ -14,6 +14,9 @@ namespace UnityEditorInternal
     internal class EditorToLinkerData
     {
         [UnityEngine.SerializeField]
+        public SerializedTypeData[] serializedTypes;
+
+        [UnityEngine.SerializeField]
         public TypeInSceneData[] typesInScenes;
 
         [UnityEngine.SerializeField]
@@ -24,6 +27,15 @@ namespace UnityEditorInternal
 
         [UnityEngine.SerializeField]
         public string[] forceExcludeModules;
+
+        [System.Serializable]
+        public class SerializedTypeData
+        {
+            [UnityEngine.SerializeField]
+            public string managedAssemblyName;
+            [UnityEngine.SerializeField]
+            public string fullManagedTypeName;
+        }
 
         [System.Serializable]
         public class TypeInSceneData

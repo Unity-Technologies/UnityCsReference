@@ -17,7 +17,12 @@ namespace UnityEngine
 
         public static bool RectangleContainsScreenPoint(RectTransform rect, Vector2 screenPoint, Camera cam)
         {
-            return PointInRectangle(screenPoint, rect, cam);
+            return RectangleContainsScreenPoint(rect, screenPoint, cam, Vector4.zero);
+        }
+
+        public static bool RectangleContainsScreenPoint(RectTransform rect, Vector2 screenPoint, Camera cam, Vector4 offset)
+        {
+            return PointInRectangle(screenPoint, rect, cam, offset);
         }
 
         public static bool ScreenPointToWorldPointInRectangle(RectTransform rect, Vector2 screenPoint, Camera cam, out Vector3 worldPoint)
