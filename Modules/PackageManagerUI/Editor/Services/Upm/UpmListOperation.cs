@@ -10,6 +10,8 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class UpmListOperation : UpmBaseOperation<ListRequest>
     {
+        public override RefreshOptions refreshOptions => isOfflineMode ? RefreshOptions.UpmListOffline : RefreshOptions.UpmList;
+
         public void List()
         {
             m_OfflineMode = false;

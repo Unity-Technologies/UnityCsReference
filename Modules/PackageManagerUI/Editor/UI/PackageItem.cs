@@ -242,7 +242,7 @@ namespace UnityEditor.PackageManager.UI
             if (version?.version == null || version?.version?.ToString() == "0.0.0")
                 return version?.versionString;
 
-            var label = version.version.StripTag();
+            var label = version.version.ToString();
             if (!simplified)
             {
                 if (version.HasTag(PackageTag.Local))

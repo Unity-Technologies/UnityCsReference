@@ -84,10 +84,10 @@ namespace UnityEditor.PackageManager.UI
                 PackageFiltering.instance.currentFilterTab = PackageManagerPrefs.instance.lastUsedPackageFilter ?? PackageFilterTab.Unity;
 
                 if (!PageManager.instance.HasFetchedPageForFilterTab(PackageFiltering.instance.currentFilterTab))
-                    PageManager.instance.Refresh(RefreshOptions.CurrentFilter);
+                    EditorApplication.delayCall += () => PageManager.instance.Refresh(RefreshOptions.CurrentFilter);
 
                 if (PackageFiltering.instance.currentFilterTab != PackageFilterTab.Unity && !PageManager.instance.HasFetchedPageForFilterTab(PackageFilterTab.Unity))
-                    PageManager.instance.Refresh(RefreshOptions.All);
+                    EditorApplication.delayCall += () => PageManager.instance.Refresh(RefreshOptions.All);
 
                 mainContainer.leftWidth = m_SplitPaneLeftWidth;
                 mainContainer.onSizeChanged += width => { m_SplitPaneLeftWidth = width; };
@@ -224,8 +224,16 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnRefreshOperationStart()
         {
-            packageManagerToolbar.SetEnabled(false);
-            packageDetails.packageToolbarContainer.SetEnabled(false);
+            DisableToolbarIfRefreshInProgress();
+        }
+
+        private void DisableToolbarIfRefreshInProgress(PackageFilterTab? tab = null)
+        {
+            if (PackageDatabase.instance.IsRefreshInProgress(tab))
+            {
+                packageManagerToolbar.SetEnabled(false);
+                packageDetails.packageToolbarContainer.SetEnabled(false);
+            }
         }
 
         private void OnRefreshOperationError(Error error)
@@ -271,6 +279,13 @@ namespace UnityEditor.PackageManager.UI
             }
 
             SelectPackageAndFilter(packageNameOrDisplayName);
+        }
+
+        [UsedByNativeCode]
+        internal static void OnPackageManagerResolve()
+        {
+            if (!ApplicationUtil.instance.isBatchMode)
+                UpmRegistryClient.instance.CheckRegistriesChanged();
         }
 
         internal static void SelectPackageAndFilter(string packageIdOrDisplayName, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")

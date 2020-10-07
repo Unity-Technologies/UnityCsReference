@@ -680,10 +680,5 @@ With this option, this model will not create any avatar but only import animatio
                 return false;
             }
         }
-
-        internal override void PostApply()
-        {
-            UpdateBipedMappingReport();
-        }
     }
 }

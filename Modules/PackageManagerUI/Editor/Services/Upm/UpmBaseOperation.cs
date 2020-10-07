@@ -51,6 +51,8 @@ namespace UnityEditor.PackageManager.UI
         public abstract bool isInProgress { get; }
 
         public Error error { get; protected set; }        // Keep last error
+
+        public virtual RefreshOptions refreshOptions => RefreshOptions.None;
     }
 
     internal abstract class UpmBaseOperation<T> : UpmBaseOperation where T : Request
@@ -61,8 +63,10 @@ namespace UnityEditor.PackageManager.UI
         public Action<T> onProcessResult = delegate {};
 
         protected T m_Request;
+        [SerializeField]
+        protected bool m_IsCompleted;
 
-        public override bool isInProgress { get { return m_Request != null && m_Request.Id != 0 && !m_Request.IsCompleted; } }
+        public override bool isInProgress { get { return m_Request != null && m_Request.Id != 0 && !m_IsCompleted; } }
 
         protected abstract T CreateRequest();
 
@@ -77,8 +81,23 @@ namespace UnityEditor.PackageManager.UI
 
             if (!isOfflineMode)
                 m_Timestamp = DateTime.Now.Ticks;
-            m_Request = CreateRequest();
+            // Usually the timestamp for an offline operation is the last success timestamp of its online equivalence (to indicate the freshness of the data)
+            // But in the rare case where we start an offline operation before an online one, we use the start timestamp of the editor instead of 0,
+            // because we consider a `0` refresh timestamp as `not initialized`/`no refreshes have been done`.
+            else if (m_Timestamp == 0)
+                m_Timestamp = DateTime.Now.Ticks - (long)(EditorApplication.timeSinceStartup * TimeSpan.TicksPerSecond);
+
             error = null;
+            try
+            {
+                m_Request = CreateRequest();
+            }
+            catch (ArgumentException e)
+            {
+                OnError(new Error(NativeErrorCode.Unknown, e.Message));
+                return;
+            }
+            m_IsCompleted = false;
             EditorApplication.update += Progress;
         }
 
@@ -91,7 +110,8 @@ namespace UnityEditor.PackageManager.UI
         // Common progress code for all classes
         protected void Progress()
         {
-            if (m_Request.IsCompleted)
+            m_IsCompleted = m_Request.IsCompleted;
+            if (m_IsCompleted)
             {
                 if (m_Request.Status == StatusCode.Success)
                     OnSuccess();

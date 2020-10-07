@@ -1367,6 +1367,12 @@ namespace UnityEditor
             }
         }
 
+        void InitPlatformSettings()
+        {
+            foreach (TextureImportPlatformSettings ps in m_PlatformSettings)
+                ps.Init();
+        }
+
         void SyncPlatformSettings()
         {
             foreach (TextureImportPlatformSettings ps in m_PlatformSettings)
@@ -1391,39 +1397,52 @@ namespace UnityEditor
 
         protected void ShowPlatformSpecificSettings()
         {
-            BuildPlatform[] validPlatforms = GetBuildPlayerValidPlatforms().ToArray();
-            GUILayout.Space(10);
-            int shownTextureFormatPage = EditorGUILayout.BeginPlatformGrouping(validPlatforms, s_Styles.defaultPlatform);
-            TextureImportPlatformSettings realPS = m_PlatformSettings[shownTextureFormatPage + 1];
+            InitPlatformSettings();
 
-            if (!realPS.isDefault)
+            using (var changed = new EditorGUI.ChangeCheckScope())
             {
-                EditorGUI.BeginChangeCheck();
-                EditorGUI.showMixedValue = realPS.overriddenIsDifferent;
+                BuildPlatform[] validPlatforms = GetBuildPlayerValidPlatforms().ToArray();
+                GUILayout.Space(10);
+                int shownTextureFormatPage =
+                    EditorGUILayout.BeginPlatformGrouping(validPlatforms, s_Styles.defaultPlatform);
+                TextureImportPlatformSettings realPS = m_PlatformSettings[shownTextureFormatPage + 1];
 
-                string title = "Override for " + validPlatforms[shownTextureFormatPage].title.text;
-                bool newOverride = EditorGUILayout.ToggleLeft(title, realPS.overridden);
-                EditorGUI.showMixedValue = false;
-                if (EditorGUI.EndChangeCheck())
+                if (!realPS.isDefault)
                 {
-                    realPS.SetOverriddenForAll(newOverride);
+                    EditorGUI.BeginChangeCheck();
+                    EditorGUI.showMixedValue = realPS.overriddenIsDifferent;
+
+                    string title = "Override for " + validPlatforms[shownTextureFormatPage].title.text;
+                    bool newOverride = EditorGUILayout.ToggleLeft(title, realPS.overridden);
+                    EditorGUI.showMixedValue = false;
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        realPS.SetOverriddenForAll(newOverride);
+                        SyncPlatformSettings();
+                    }
+                }
+
+                // Disable size and format GUI if not overwritten for all objects
+                bool notAllOverriddenForThisPlatform = (!realPS.isDefault && !realPS.allAreOverridden);
+                using (new EditorGUI.DisabledScope(notAllOverriddenForThisPlatform))
+                {
+                    // acquire the platform support module for this platform, and present the appropriate UI
+                    ITextureImportSettingsExtension textureSettingsExtension =
+                        ModuleManager.GetTextureImportSettingsExtension(realPS.m_Target);
+                    textureSettingsExtension.ShowImportSettings(this, realPS);
+
+                    //just do this once, regardless of whether things changed
                     SyncPlatformSettings();
                 }
+
+                EditorGUILayout.EndPlatformGrouping();
+                if (changed.changed)
+                {
+                    Undo.RecordObjects(targets, "Inspector");
+                    foreach (TextureImportPlatformSettings ps in m_PlatformSettings)
+                        ps.Apply();
+                }
             }
-
-            // Disable size and format GUI if not overwritten for all objects
-            bool notAllOverriddenForThisPlatform = (!realPS.isDefault && !realPS.allAreOverridden);
-            using (new EditorGUI.DisabledScope(notAllOverriddenForThisPlatform))
-            {
-                // acquire the platform support module for this platform, and present the appropriate UI
-                ITextureImportSettingsExtension textureSettingsExtension = ModuleManager.GetTextureImportSettingsExtension(realPS.m_Target);
-                textureSettingsExtension.ShowImportSettings(this, realPS);
-
-                //just do this once, regardless of whether things changed
-                SyncPlatformSettings();
-            }
-
-            EditorGUILayout.EndPlatformGrouping();
         }
 
         private static bool IsPowerOfTwo(int f)

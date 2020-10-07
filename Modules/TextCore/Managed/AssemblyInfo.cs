@@ -4,20 +4,25 @@
 
 using System.Runtime.CompilerServices;
 
-// Allow internal visibility for testing purposes.
+// Allow internal visibility to other assemblies
 [assembly: InternalsVisibleTo("Unity.TextCore")]
-[assembly: InternalsVisibleTo("Unity.TextCore.Editor")]
 [assembly: InternalsVisibleTo("Unity.TextMeshPro")]
-[assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor")]
 [assembly: InternalsVisibleTo("Unity.TextCore.FontEngine")]
 [assembly: InternalsVisibleTo("Unity.TextCore.FontEngine.Tools")]
+[assembly: InternalsVisibleTo("UnityEngine.TextCoreModule")]
+[assembly: InternalsVisibleTo("Unity.TextCore.Editor")]
+[assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor")]
+
+// Make internal visible for testing
+[assembly: InternalsVisibleTo("Unity.FontEngine.Tests")]
+[assembly: InternalsVisibleTo("Unity.TextCore.Tests")]
+[assembly: InternalsVisibleTo("Unity.TextCore.FontEngine.Tests")]
+[assembly: InternalsVisibleTo("Unity.FontEngine.Editor.Tests")]
+[assembly: InternalsVisibleTo("Unity.TextCore.Editor.Tests")]
 
 // Make internal visible to UIElements module.
 [assembly: InternalsVisibleTo("UnityEngine.UIElementsModule")]
-
-// Make internal visible to various tests.
-[assembly: InternalsVisibleTo("Unity.FontEngine.Tests")]
-[assembly: InternalsVisibleTo("Unity.FontEngine.Editor.Tests")]
-[assembly: InternalsVisibleTo("Unity.TextCore.Tests")]
-[assembly: InternalsVisibleTo("Unity.TextCore.Editor.Tests")]
-[assembly: InternalsVisibleTo("Unity.TextCore.FontEngine.Tests")]
+[assembly: InternalsVisibleTo("Unity.UIElements")]
+[assembly: InternalsVisibleTo("Unity.UIElements.Tests")]
+[assembly: InternalsVisibleTo("Unity.UIElements.Editor")]
+[assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]

@@ -16,6 +16,6 @@ namespace UnityEngine
         public static extern Vector2 PixelAdjustPoint(Vector2 point, Transform elementTransform, Canvas canvas);
         public static extern Rect PixelAdjustRect(RectTransform rectTransform, Canvas canvas);
 
-        private static extern bool PointInRectangle(Vector2 screenPoint, RectTransform rect, Camera cam);
+        private static extern bool PointInRectangle(Vector2 screenPoint, RectTransform rect, Camera cam, Vector4 offset);
     }
 }

@@ -262,6 +262,18 @@ namespace UnityEditor.PackageManager.UI
                 foreach (var extension in PackageManagerExtensions.MenuExtensions)
                     extension.OnAdvancedMenuCreate(advancedMenu.menu);
             });
+
+            advancedMenu.menu.AppendSeparator();
+            advancedMenu.menu.AppendAction(L10n.Tr("Advanced Project Settings"), a =>
+            {
+                if (!PackageManagerProjectSettings.instance.scopedRegistriesSettingsExpanded)
+                {
+                    PackageManagerProjectSettings.instance.scopedRegistriesSettingsExpanded = true;
+                    PackageManagerProjectSettings.instance.Save();
+                }
+                SettingsWindow.Show(SettingsScope.Project, PackageManagerProjectSettingsProvider.k_PackageManagerSettingsPath);
+                PackageManagerWindowAnalytics.SendEvent("advancedProjectSettings");
+            });
         }
 
         private void ToggleDependencies()
