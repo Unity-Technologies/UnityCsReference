@@ -82,7 +82,7 @@ namespace UnityEngine.Profiling
         public extern static bool enabled
         {
             [NativeConditional("ENABLE_PROFILER")]
-            [NativeMethod(Name = "profiler_is_enabled", IsFreeFunction = true)]
+            [NativeMethod(Name = "profiler_is_enabled", IsFreeFunction = true, IsThreadSafe = true)]
             get;
 
             [NativeMethod(Name = "ProfilerBindings::SetProfilerEnabled", IsFreeFunction = true)]
@@ -344,14 +344,12 @@ namespace UnityEngine.Profiling
             Internal_EmitFrameMetaData_Native(id.ToByteArray(), tag, (IntPtr)data.GetUnsafeReadOnlyPtr(), data.Length, UnsafeUtility.SizeOf<T>());
         }
 
-        [NativeMethod(Name = "ProfilerBindings::Internal_EmitFrameMetaData_Array", IsFreeFunction = true)]
+        [NativeMethod(Name = "ProfilerBindings::Internal_EmitFrameMetaData_Array", IsFreeFunction = true, IsThreadSafe = true)]
         [NativeConditional("ENABLE_PROFILER")]
-        [ThreadSafe]
-        extern static void Internal_EmitFrameMetaData_Array(byte[] id, int tag, Array data, int count, int elementSize);
+        static extern void Internal_EmitFrameMetaData_Array(byte[] id, int tag, Array data, int count, int elementSize);
 
-        [NativeMethod(Name = "ProfilerBindings::Internal_EmitFrameMetaData_Native", IsFreeFunction = true)]
+        [NativeMethod(Name = "ProfilerBindings::Internal_EmitFrameMetaData_Native", IsFreeFunction = true, IsThreadSafe = true)]
         [NativeConditional("ENABLE_PROFILER")]
-        [ThreadSafe]
-        extern static void Internal_EmitFrameMetaData_Native(byte[] id, int tag, IntPtr data, int count, int elementSize);
+        static extern void Internal_EmitFrameMetaData_Native(byte[] id, int tag, IntPtr data, int count, int elementSize);
     }
 }

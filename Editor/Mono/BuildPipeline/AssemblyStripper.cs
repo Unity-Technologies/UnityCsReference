@@ -46,7 +46,7 @@ namespace UnityEditorInternal
         {
             get
             {
-                return Path.Combine(IL2CPPUtils.GetIl2CppFolder(), "build/deploy/net471/UnityLinker.exe");
+                return Path.Combine(IL2CPPUtils.GetIl2CppFolder(), "build/deploy/netcoreapp3.1/UnityLinker" + (Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : ""));
             }
         }
 
@@ -156,7 +156,7 @@ namespace UnityEditorInternal
             var responseFile = Path.Combine(workingDirectory, "response.rsp");
             File.WriteAllText(responseFile, argString);
             Console.WriteLine("Invoking UnityLinker with response file. response.rsp contents: " + argString);
-            Runner.RunManagedProgram(linkerPath, $"@{CommandLineFormatter.PrepareFileName(responseFile)}", workingDirectory, null, null);
+            Runner.RunNetCoreProgram(linkerPath, $"@{CommandLineFormatter.PrepareFileName(responseFile)}", workingDirectory, null, null);
 
             @out = "";
             err = "";

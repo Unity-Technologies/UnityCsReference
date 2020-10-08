@@ -4,17 +4,13 @@
 
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEditor;
-using UnityEditorInternal;
 using UnityEditor.AnimatedValues;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Text.RegularExpressions;
 using UnityEngine.Video;
 using UnityEditor.Build;
+using UnityEngineObject = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -607,7 +603,7 @@ namespace UnityEditor
                                 rect = EditorGUI.PrefixLabel(rect, id, label);
                                 EditorGUI.BeginChangeCheck();
 
-                                var result = EditorGUI.DoObjectField(rect, rect, id, property.objectReferenceValue, property.serializedObject.targetObject, typeof(AudioSource), null, true);
+                                var result = EditorGUI.DoObjectField(rect, rect, id, property.objectReferenceValue, property.serializedObject.targetObject, typeof(AudioSource), ValidateAudioSource, true);
                                 if (EditorGUI.EndChangeCheck())
                                 {
                                     if (!EditorUtility.IsPersistent(result))
@@ -631,6 +627,21 @@ namespace UnityEditor
                 }
             }
             EditorGUILayout.EndFadeGroup();
+        }
+
+        private static UnityEngineObject ValidateAudioSource(UnityEngineObject[] references, Type objtype, SerializedProperty property, EditorGUI.ObjectFieldValidatorOptions options)
+        {
+            foreach (var reference in references)
+            {
+                if (reference == null || IsPersistent(reference))
+                    continue;
+                if (reference is AudioSource)
+                    return reference;
+                if (reference is GameObject gameObject && gameObject.TryGetComponent<AudioSource>(out _))
+                    return gameObject;
+            }
+
+            return null;
         }
 
         GUIContent GetAudioTrackEnabledContent(ushort trackIdx)
