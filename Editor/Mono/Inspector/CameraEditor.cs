@@ -42,6 +42,9 @@ namespace UnityEditor
             public static GUIContent gateFit = EditorGUIUtility.TrTextContent("Gate Fit", "Determines how the rendered area (resolution gate) fits into the sensor area (film gate).");
             public static GUIContent allowDynamicResolution = EditorGUIUtility.TrTextContent("Allow Dynamic Resolution", "Scales render textures to support dynamic resolution if the target platform/graphics API supports it.");
             public static GUIContent FOVAxisMode = EditorGUIUtility.TrTextContent("FOV Axis", "Field of view axis.");
+            public static GUIContent targetDisplay = EditorGUIUtility.TrTextContent("Target Display", "Set the target display for this camera.");
+            public static GUIContent xrTargetEye = EditorGUIUtility.TrTextContent("Target Eye", "Allows XR rendering for target eye. This disables stereo rendering and only works for the selected eye.");
+
             public static GUIStyle invisibleButton = "InvisibleButton";
             public static GUIContent[] displayedOptions = new[] { new GUIContent("Off"), new GUIContent("Use Graphics Settings") };
             public static int[] optionValues = new[] { 0, 1 };
@@ -423,7 +426,7 @@ namespace UnityEditor
                 if (ModuleManager.ShouldShowMultiDisplayOption())
                 {
                     int prevDisplay = targetDisplay.intValue;
-                    EditorGUILayout.IntPopup(targetDisplay, DisplayUtility.GetDisplayNames(), DisplayUtility.GetDisplayIndices(), EditorGUIUtility.TempContent("Target Display"));
+                    EditorGUILayout.IntPopup(targetDisplay, DisplayUtility.GetDisplayNames(), DisplayUtility.GetDisplayIndices(), Styles.targetDisplay);
                     if (prevDisplay != targetDisplay.intValue)
                         GameView.RepaintAll();
                 }
@@ -431,7 +434,7 @@ namespace UnityEditor
 
             public void DrawTargetEye()
             {
-                EditorGUILayout.IntPopup(targetEye, kTargetEyes, kTargetEyeValues, EditorGUIUtility.TempContent("Target Eye"));
+                EditorGUILayout.IntPopup(targetEye, kTargetEyes, kTargetEyeValues, Styles.xrTargetEye);
             }
 
             public static void DrawCameraWarnings(Camera camera)

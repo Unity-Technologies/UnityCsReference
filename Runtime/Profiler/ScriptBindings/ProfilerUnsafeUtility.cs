@@ -85,7 +85,7 @@ namespace Unity.Profiling.LowLevel.Unsafe
         public static extern ProfilerCategoryDescription GetCategoryDescription(ushort categoryId);
 
         [ThreadSafe]
-        public static extern unsafe IntPtr CreateMarker(string name, ushort categoryId, MarkerFlags flags, int metadataCount);
+        public static extern IntPtr CreateMarker(string name, ushort categoryId, MarkerFlags flags, int metadataCount);
         // Burst shadow
         [ThreadSafe]
         internal static extern unsafe IntPtr CreateMarker__Unmanaged(byte* name, int nameLen, ushort categoryId, MarkerFlags flags, int metadataCount);
@@ -94,14 +94,14 @@ namespace Unity.Profiling.LowLevel.Unsafe
         [MethodImpl(256)]
         public static unsafe IntPtr CreateMarker(char* name, int nameLen, ushort categoryId, MarkerFlags flags, int metadataCount)
         {
-            return CreateMarker(name, nameLen, categoryId, flags, metadataCount);
+            return CreateMarker_Unsafe(name, nameLen, categoryId, flags, metadataCount);
         }
 
         [ThreadSafe]
         static extern unsafe IntPtr CreateMarker_Unsafe(char* name, int nameLen, ushort categoryId, MarkerFlags flags, int metadataCount);
 
         [ThreadSafe]
-        public static extern unsafe void SetMarkerMetadata(IntPtr markerPtr, int index, string name, byte type, byte unit);
+        public static extern void SetMarkerMetadata(IntPtr markerPtr, int index, string name, byte type, byte unit);
         // Burst shadow
         [ThreadSafe]
         internal static extern unsafe void SetMarkerMetadata__Unmanaged(IntPtr markerPtr, int index, byte* name, int nameLen, byte type, byte unit);

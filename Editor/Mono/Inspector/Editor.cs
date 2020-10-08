@@ -350,7 +350,24 @@ namespace UnityEditor
 
         internal SerializedObject m_SerializedObject = null;
         internal SerializedProperty m_EnabledProperty = null;
-        internal InspectorMode inspectorMode => propertyViewer?.inspectorMode ?? InspectorMode.Normal;
+        private InspectorMode m_InspectorMode = InspectorMode.Normal;
+        internal InspectorMode inspectorMode
+        {
+            get
+            {
+                return propertyViewer?.inspectorMode ?? m_InspectorMode;
+            }
+            set
+            {
+                if (m_InspectorMode != value)
+                {
+                    m_InspectorMode = value;
+                    m_SerializedObject = null;
+                    m_EnabledProperty = null;
+                }
+            }
+        }
+
 
         internal static float kLineHeight = EditorGUI.kSingleLineHeight;
 
