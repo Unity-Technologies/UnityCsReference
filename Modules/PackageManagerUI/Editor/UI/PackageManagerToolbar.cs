@@ -16,7 +16,7 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<PackageManagerToolbar> {}
 
-        static bool HasPackageInDevelopment => PackageDatabase.instance.allPackages.Any(p => p.versions.installed?.HasTag(PackageTag.InDevelopment) ?? false);
+        static bool HasCustomPackage => PackageDatabase.instance.allPackages.Any(p => p.versions.installed?.HasTag(PackageTag.Custom) ?? false);
 
         private long m_SearchTextChangeTimestamp;
 

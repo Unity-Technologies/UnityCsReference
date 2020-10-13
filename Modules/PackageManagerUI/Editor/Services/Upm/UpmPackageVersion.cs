@@ -47,7 +47,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (HasTag(PackageTag.Bundled))
                     return true;
-                if (HasTag(PackageTag.Git | PackageTag.Local | PackageTag.InDevelopment))
+                if (HasTag(PackageTag.Git | PackageTag.Local | PackageTag.Custom))
                     return false;
                 return m_IsUnityPackage;
             }
@@ -86,7 +86,7 @@ namespace UnityEditor.PackageManager.UI
             get { return m_IsInstalled; }
         }
 
-        public bool installedFromPath => HasTag(PackageTag.Local | PackageTag.InDevelopment | PackageTag.Git);
+        public bool installedFromPath => HasTag(PackageTag.Local | PackageTag.Custom | PackageTag.Git);
 
         public override bool isAvailableOnDisk => m_IsFullyFetched && !string.IsNullOrEmpty(m_PackageInfo.resolvedPath);
 
@@ -186,7 +186,7 @@ namespace UnityEditor.PackageManager.UI
                     break;
 
                 case PackageSource.Embedded:
-                    m_Tag = PackageTag.InDevelopment | PackageTag.VersionLocked;
+                    m_Tag = PackageTag.Custom | PackageTag.VersionLocked;
                     break;
 
                 case PackageSource.Local:

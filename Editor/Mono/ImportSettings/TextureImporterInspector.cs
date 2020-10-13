@@ -1100,13 +1100,10 @@ namespace UnityEditor
 
         void TextureSettingsGUI()
         {
-            EditorGUI.BeginChangeCheck();
-
             // Wrap mode
             // NOTE: once we get ability to have 3D/Volume texture shapes, should pass true for isVolume based on m_TextureShape
             bool isVolume = false;
             TextureInspector.WrapModePopup(m_WrapU, m_WrapV, m_WrapW, isVolume, ref m_ShowPerAxisWrapModes, assetTarget == null);
-
 
             // Display warning about repeat wrap mode on restricted npot emulation
             if (m_NPOTScale.intValue == (int)TextureImporterNPOTScale.None &&
@@ -1167,9 +1164,6 @@ namespace UnityEditor
 
                 TextureInspector.DoAnisoGlobalSettingNote(aniso);
             }
-
-            if (EditorGUI.EndChangeCheck())
-                ApplySettingsToTexture();
         }
 
         public override void OnInspectorGUI()
@@ -1205,7 +1199,6 @@ namespace UnityEditor
                 SetSerializedPropertySettings(settings);
 
                 BaseTextureImportPlatformSettings.SyncPlatformSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings));
-                ApplySettingsToTexture();
             }
 
             // Texture Shape
@@ -1310,28 +1303,6 @@ namespace UnityEditor
                     m_GUIElementMethods[guiElement](guiElements);
                 }
             }
-        }
-
-        void ApplySettingsToTexture()
-        {
-            foreach (AssetImporter importer in targets)
-            {
-                Texture tex = AssetDatabase.LoadMainAssetAtPath(importer.assetPath) as Texture;
-                if (tex != null) // This can happen if the texture fails to import (for example, cube texture with non-PoT input).
-                {
-                    if (m_Aniso.intValue != -1)
-                        TextureUtil.SetAnisoLevelNoDirty(tex, m_Aniso.intValue);
-                    if (m_FilterMode.intValue != -1)
-                        TextureUtil.SetFilterModeNoDirty(tex, (FilterMode)m_FilterMode.intValue);
-                    if ((m_WrapU.intValue != -1 || m_WrapV.intValue != -1 || m_WrapW.intValue != -1) &&
-                        !m_WrapU.hasMultipleDifferentValues && !m_WrapV.hasMultipleDifferentValues && !m_WrapW.hasMultipleDifferentValues)
-                    {
-                        TextureUtil.SetWrapModeNoDirty(tex, (TextureWrapMode)m_WrapU.intValue, (TextureWrapMode)m_WrapV.intValue, (TextureWrapMode)m_WrapW.intValue);
-                    }
-                }
-            }
-
-            SceneView.RepaintAll();
         }
 
         // Returns false if method fails to get info
@@ -1460,7 +1431,6 @@ namespace UnityEditor
 
             BuildTargetList();
             System.Diagnostics.Debug.Assert(!HasModified(), "TextureImporter settings are marked as modified after calling Reset.");
-            ApplySettingsToTexture();
         }
 
         protected override void Apply()

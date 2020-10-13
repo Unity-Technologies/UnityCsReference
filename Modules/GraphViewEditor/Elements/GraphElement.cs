@@ -179,6 +179,21 @@ namespace UnityEditor.Experimental.GraphView
             return (capabilities & Capabilities.Copiable) == Capabilities.Copiable;
         }
 
+        public virtual bool IsGroupable()
+        {
+            // stack children grouping is also not supported.
+            return !IsStackable() && ((capabilities & Capabilities.Groupable) == Capabilities.Groupable);
+        }
+
+        public virtual bool IsStackable()
+        {
+            bool capable = (capabilities & Capabilities.Stackable) == Capabilities.Stackable;
+            // Dependencies will need to define the cabilities of their stack children nodes,
+            // we will make some safe assumptions until dependencies can be updated.
+            bool situational = ClassListContains("stack-child-element") || parent is StackNode;
+            return capable || situational;
+        }
+
         public virtual Vector3 GetGlobalCenter()
         {
             var globalCenter = layout.center + parent.layout.position;
@@ -231,10 +246,10 @@ namespace UnityEditor.Experimental.GraphView
                     }
                     else // prevent heterogenous selections between stack child nodes and other nodes
                     {
-                        var selected = selection.selection.Cast<VisualElement>();
-                        bool selectionHasChildren = selected.Any(item => item.ClassListContains("stack-child-element"));
+                        var selected = selection.selection.Cast<GraphElement>();
+                        bool selectionHasChildren = selected.Any(item => item.IsStackable());
                         bool selectionHasSiblings = selected.All(item => item.parent == parent);
-                        bool targetIsChild = ClassListContains("stack-child-element");
+                        bool targetIsChild = this.IsStackable();
                         bool isSelectionHomogeneous = !targetIsChild && !selectionHasChildren || targetIsChild && selectionHasSiblings;
 
                         if (isSelectionHomogeneous)
@@ -246,7 +261,7 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        public virtual void Unselect(VisualElement  selectionContainer)
+        public virtual void Unselect(VisualElement selectionContainer)
         {
             var selection = selectionContainer as ISelection;
             if (selection != null)

@@ -43,6 +43,8 @@ namespace UnityEditor
 
         public const string ObjectSelectorClosedCommand = "ObjectSelectorClosed";
         public const string ObjectSelectorUpdatedCommand = "ObjectSelectorUpdated";
+        public const string ObjectSelectorCanceledCommand = "ObjectSelectorCanceled";
+        public const string ObjectSelectorSelectionDoneCommand = "ObjectSelectorSelectionDone";
 
         // Filters
         string m_RequiredType;
@@ -451,6 +453,8 @@ namespace UnityEditor
 
         void ItemWasDoubleClicked()
         {
+            SendEvent(ObjectSelectorSelectionDoneCommand, false);
+
             Close();
             GUIUtility.ExitGUI();
         }
@@ -829,6 +833,8 @@ namespace UnityEditor
             // Clear selection so that object field doesn't grab it
             m_ListArea?.InitSelection(new int[0]);
             m_ObjectTreeWithSearch.Clear();
+
+            SendEvent(ObjectSelectorCanceledCommand, false);
 
             Close();
             GUI.changed = true;
