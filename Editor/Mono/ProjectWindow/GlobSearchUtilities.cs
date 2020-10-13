@@ -15,19 +15,27 @@ namespace UnityEditor
         static readonly Regex k_ComplexSymbolsRegex = new Regex(@"(?<or>\\\(.+(?:\\\|.+)+\\\))");
         static Dictionary<string, Func<string, string>> s_GlobToRegexMatch;
 
+        static GlobSearchUtilities()
+        {
+            s_GlobToRegexMatch = new Dictionary<string, Func<string, string>>();
+
+            //Match any number of characters, where characters exist - end in a fold.
+            s_GlobToRegexMatch.Add("dstarfold", match => "(.+/)?");
+
+            //Match any number of characters
+            s_GlobToRegexMatch.Add("dstar", match => ".*");
+
+            //Match any number of non-"/" characters
+            s_GlobToRegexMatch.Add("star", match => @"[^/]*");
+
+            //Match a single non-"/" character
+            s_GlobToRegexMatch.Add("single", match => @"[^/]");
+            s_GlobToRegexMatch.Add("range", match => match.Replace(@"\[", "["));
+            s_GlobToRegexMatch.Add("or", match => match.Replace(@"\(", "(").Replace(@"\|", "|").Replace(@"\)", ")"));
+        }
+
         static string GlobToRegex(string glob)
         {
-            if (s_GlobToRegexMatch == null)
-            {
-                s_GlobToRegexMatch = new Dictionary<string, Func<string, string>>();
-                s_GlobToRegexMatch.Add("dstarfold", match => "(.*/)?");
-                s_GlobToRegexMatch.Add("dstar", match => ".*");
-                s_GlobToRegexMatch.Add("star", match => @"[^/]*");
-                s_GlobToRegexMatch.Add("single", match => @"[^/]");
-                s_GlobToRegexMatch.Add("range", match => match.Replace(@"\[", "["));
-                s_GlobToRegexMatch.Add("or", match => match.Replace(@"\(", "(").Replace(@"\|", "|").Replace(@"\)", ")"));
-            }
-
             // Escape any glob character that could be interpreted in the regex
             var regex = Regex.Escape(glob);
 

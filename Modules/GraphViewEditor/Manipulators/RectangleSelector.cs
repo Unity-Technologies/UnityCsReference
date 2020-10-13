@@ -131,7 +131,7 @@ namespace UnityEditor.Experimental.GraphView
             List<ISelectable> selection = graphView.selection;
 
             // Do not add to a selection that already contains a stack node-- the behavior is not supported.
-            bool hasStackChild = selection.Any(ge => (ge is GraphElement) && ((GraphElement)ge).ClassListContains("stack-child-element"));
+            bool hasStackChild = selection.Any(ge => (ge is GraphElement) && ((GraphElement)ge).IsStackable());
             if (!hasStackChild)
             {
                 // a copy is necessary because Add To selection might cause a SendElementToFront which will change the order.
@@ -139,7 +139,7 @@ namespace UnityEditor.Experimental.GraphView
                 graphView.graphElements.ForEach(child =>
                 {
                     var localSelRect = graphView.contentViewContainer.ChangeCoordinatesTo(child, selectionRect);
-                    if (child.IsSelectable() && child.Overlaps(localSelRect) && !child.ClassListContains("stack-child-element")) // Exclude StackNode children
+                    if (child.IsSelectable() && child.Overlaps(localSelRect) && !child.IsStackable()) // Exclude StackNode children
                     {
                         newSelection.Add(child);
                     }

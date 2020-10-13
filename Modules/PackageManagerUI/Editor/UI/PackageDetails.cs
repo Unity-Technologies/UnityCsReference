@@ -70,7 +70,7 @@ namespace UnityEditor.PackageManager.UI
         internal static readonly PackageTag[] k_VisibleTags =
         {
             PackageTag.Verified,
-            PackageTag.InDevelopment,
+            PackageTag.Custom,
             PackageTag.Local,
             PackageTag.Git,
             PackageTag.Preview,
@@ -809,7 +809,7 @@ namespace UnityEditor.PackageManager.UI
                 return;
             }
 
-            if (displayVersion.HasTag(PackageTag.InDevelopment))
+            if (displayVersion.HasTag(PackageTag.Custom))
             {
                 if (!EditorUtility.DisplayDialog(ApplicationUtil.instance.GetTranslationForText("Unity Package Manager"), ApplicationUtil.instance.GetTranslationForText("You will lose all your changes (if any) if you delete a package in development. Are you sure?"), ApplicationUtil.instance.GetTranslationForText("Yes"), ApplicationUtil.instance.GetTranslationForText("No")))
                     return;

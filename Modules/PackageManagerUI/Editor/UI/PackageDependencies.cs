@@ -88,8 +88,8 @@ namespace UnityEditor.PackageManager.UI
             if (installedVersion == null)
                 return string.Empty;
 
-            if (installedVersion.HasTag(PackageTag.InDevelopment))
-                return ApplicationUtil.instance.GetTranslationForText("(in development)");
+            if (installedVersion.HasTag(PackageTag.Custom))
+                return ApplicationUtil.instance.GetTranslationForText("(custom)");
 
             if (installedVersion.HasTag(PackageTag.Local))
                 return ApplicationUtil.instance.GetTranslationForText("(local)");
