@@ -32,7 +32,7 @@ namespace UnityEditor.PackageManager.UI
                 }
 
                 var primary = versions.primary;
-                if (primary.HasTag(PackageTag.InDevelopment))
+                if (primary.HasTag(PackageTag.Custom))
                     return PackageState.InDevelopment;
 
                 if (primary.isInstalled && !primary.isDirectDependency)

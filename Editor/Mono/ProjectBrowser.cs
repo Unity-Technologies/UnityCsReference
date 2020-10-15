@@ -163,6 +163,9 @@ namespace UnityEditor
         internal ObjectListArea ListArea // Exposed for usage in tests
         {
             get { return m_ListArea; }
+
+            // Used for tests only;
+            set { m_ListArea = value; }
         }
         int m_ListKeyboardControlID;
         bool m_GrabKeyboardFocusForListArea = false;
@@ -1095,7 +1098,11 @@ namespace UnityEditor
 
             if (projectBrowser != null)
             {
-                int[] selectedInstanceIDs = projectBrowser.m_ListArea.GetSelection();
+                int[] selectedInstanceIDs = projectBrowser.m_ListArea?.GetSelection();
+
+                if (selectedInstanceIDs == null || selectedInstanceIDs.Length == 0)
+                    return;
+
                 if (projectBrowser.m_ViewMode == ViewMode.TwoColumns)
                 {
                     projectBrowser.SetFolderSelection(selectedInstanceIDs, false);

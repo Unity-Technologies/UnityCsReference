@@ -14,6 +14,7 @@ namespace UnityEditor.PackageManager.UI
     {
         internal const string k_UnityPackageGroupName = "Unity";
         internal const string k_OtherPackageGroupName = "Other";
+        internal const string k_CustomPackageGroupName = "Custom";
 
         internal const int k_DefaultPageSize = 25;
 

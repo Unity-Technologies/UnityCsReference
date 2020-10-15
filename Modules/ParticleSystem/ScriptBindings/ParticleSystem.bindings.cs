@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
+using UnityEngine.Internal;
 using UnityEngine.Scripting;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using Unity.Collections;
@@ -138,30 +139,30 @@ namespace UnityEngine
 
         // Playback
         [FreeFunction(Name = "ParticleSystemScriptBindings::Simulate", HasExplicitThis = true)]
-        extern public void Simulate(float t, bool withChildren, bool restart, bool fixedTimeStep);
-        public void Simulate(float t, bool withChildren, bool restart) { Simulate(t, withChildren, restart, true); }
-        public void Simulate(float t, bool withChildren) { Simulate(t, withChildren, true); }
+        extern public void Simulate(float t, [DefaultValue("true")] bool withChildren, [DefaultValue("true")] bool restart, [DefaultValue("true")] bool fixedTimeStep);
+        public void Simulate(float t, [DefaultValue("true")] bool withChildren, [DefaultValue("true")] bool restart) { Simulate(t, withChildren, restart, true); }
+        public void Simulate(float t, [DefaultValue("true")] bool withChildren) { Simulate(t, withChildren, true); }
         public void Simulate(float t) { Simulate(t, true); }
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::Play", HasExplicitThis = true)]
-        extern public void Play(bool withChildren);
+        extern public void Play([DefaultValue("true")] bool withChildren);
         public void Play() { Play(true);  }
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::Pause", HasExplicitThis = true)]
-        extern public void Pause(bool withChildren);
+        extern public void Pause([DefaultValue("true")] bool withChildren);
         public void Pause() { Pause(true); }
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::Stop", HasExplicitThis = true)]
-        extern public void Stop(bool withChildren, ParticleSystemStopBehavior stopBehavior);
-        public void Stop(bool withChildren) { Stop(withChildren, ParticleSystemStopBehavior.StopEmitting); }
+        extern public void Stop([DefaultValue("true")] bool withChildren, [DefaultValue("ParticleSystemStopBehavior.StopEmitting")] ParticleSystemStopBehavior stopBehavior);
+        public void Stop([DefaultValue("true")] bool withChildren) { Stop(withChildren, ParticleSystemStopBehavior.StopEmitting); }
         public void Stop() { Stop(true); }
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::Clear", HasExplicitThis = true)]
-        extern public void Clear(bool withChildren);
+        extern public void Clear([DefaultValue("true")] bool withChildren);
         public void Clear() { Clear(true); }
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::IsAlive", HasExplicitThis = true)]
-        extern public bool IsAlive(bool withChildren);
+        extern public bool IsAlive([DefaultValue("true")] bool withChildren);
         public bool IsAlive() { return IsAlive(true); }
 
         // Emission

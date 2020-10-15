@@ -12,7 +12,8 @@ namespace UnityEditor.PackageManager.UI
         None            = 0,
 
         // package type
-        InDevelopment   = 1 << 0,
+        InDevelopment   = Custom, // Used by UPM develop package
+        Custom          = 1 << 0,
         Local           = 1 << 1,
         Git             = 1 << 2,
         Bundled         = 1 << 3,

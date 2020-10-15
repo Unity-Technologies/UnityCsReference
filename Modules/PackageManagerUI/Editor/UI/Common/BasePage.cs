@@ -204,6 +204,9 @@ namespace UnityEditor.PackageManager.UI
             if (package.Is(PackageType.BuiltIn) || package.Is(PackageType.AssetStore))
                 return string.Empty;
 
+            if (tab == PackageFilterTab.InProject && package.versions.primary.HasTag(PackageTag.Custom | PackageTag.Local))
+                return PageManager.k_CustomPackageGroupName;
+
             if (package.Is(PackageType.Unity))
                 return tab == PackageFilterTab.UnityRegistry ? string.Empty : PageManager.k_UnityPackageGroupName;
 

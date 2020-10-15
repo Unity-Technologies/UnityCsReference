@@ -3856,6 +3856,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\WindowBackends\DefaultWindowBackend.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\WindowBackends\DefaultWindowBackend.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\il2cpp\builds\Il2CppEditorIntegration\SharedWithEditor.cs">
+      <Link>External\il2cpp\builds\Il2CppEditorIntegration\SharedWithEditor.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\il2cpp\builds\LinkerEditorIntegration\SharedWithEditor.cs">
       <Link>External\il2cpp\builds\LinkerEditorIntegration\SharedWithEditor.cs</Link>
     </Compile>

@@ -179,6 +179,27 @@ namespace UnityEditor.Experimental.GraphView
             return (capabilities & Capabilities.Copiable) == Capabilities.Copiable;
         }
 
+        public virtual bool IsSnappable()
+        {
+            // stack children snapping is not supported/implemented.
+            return !IsStackable() && (capabilities & Capabilities.Snappable) == Capabilities.Snappable;
+        }
+
+        public virtual bool IsGroupable()
+        {
+            // stack children grouping is also not supported.
+            return !IsStackable() && ((capabilities & Capabilities.Groupable) == Capabilities.Groupable);
+        }
+
+        public virtual bool IsStackable()
+        {
+            bool capable = (capabilities & Capabilities.Stackable) == Capabilities.Stackable;
+            // Dependencies will need to define the cabilities of their stack children nodes,
+            // we will make some safe assumptions until dependencies can be updated.
+            bool situational = ClassListContains("stack-child-element") || parent is StackNode;
+            return capable || situational;
+        }
+
         public virtual Vector3 GetGlobalCenter()
         {
             var globalCenter = layout.center + parent.layout.position;
@@ -220,7 +241,6 @@ namespace UnityEditor.Experimental.GraphView
         public virtual void Select(VisualElement selectionContainer, bool additive)
         {
             var selection = selectionContainer as ISelection;
-            var selected = selection.selection.Cast<VisualElement>();
             if (selection != null)
             {
                 if (!selection.selection.Contains(this))
@@ -232,12 +252,13 @@ namespace UnityEditor.Experimental.GraphView
                     }
                     else // prevent heterogenous selections between stack child nodes and other nodes
                     {
-                        bool hasStackNodes = selected.Any(item => item.ClassListContains("stack-child-element"));
-                        bool hasSiblings = selected.All(item => item.parent == parent);
-                        bool isStackNode = ClassListContains("stack-child-element");
-                        bool isHomogenous = !isStackNode && !hasStackNodes || isStackNode && hasSiblings;
+                        var selected = selection.selection.Cast<GraphElement>();
+                        bool selectionHasChildren = selected.Any(item => item.IsStackable());
+                        bool selectionHasSiblings = selected.All(item => item.parent == parent);
+                        bool targetIsChild = IsStackable();
+                        bool isSelectionHomogenous = !targetIsChild && !selectionHasChildren || targetIsChild && selectionHasSiblings;
 
-                        if (isHomogenous)
+                        if (isSelectionHomogenous)
                         {
                             selection.AddToSelection(this);
                         }

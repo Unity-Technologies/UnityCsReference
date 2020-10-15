@@ -203,10 +203,8 @@ namespace UnityEditor
                 {
                     option |= InternalEditorUtility.HierarchyDropMode.kHierarchyDropAbove;
                 }
-                else
-                {
-                    option |= InternalEditorUtility.HierarchyDropMode.kHierarchyDropBetween;
-                }
+
+                option |= InternalEditorUtility.HierarchyDropMode.kHierarchyDropBetween;
             }
 
             bool isDroppingBetweenParentAndFirstChild = parentItem != null && targetItem != parentItem && dropPos == DropPosition.Above && parentItem.children[0] == targetItem;

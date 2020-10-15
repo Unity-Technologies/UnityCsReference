@@ -19,6 +19,8 @@ namespace UnityEditor.Experimental.GraphView
         Renamable = 1 << 7,
         Copiable = 1 << 8,
         Snappable = 1 << 9,
+        Groupable = 1 << 10,
+        Stackable = 1 << 11
     }
 
     internal enum ResizeRestriction
