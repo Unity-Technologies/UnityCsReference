@@ -62,6 +62,11 @@ namespace UnityEditor.PackageManager.UI
 
         internal Dictionary<string, bool> m_RegistriesUrl = new Dictionary<string, bool>();
 
+        // a list of unique ids (could be specialUniqueId or packageId)
+        [SerializeField]
+        private List<string> m_SpecialInstallations = new List<string>();
+        public List<string> specialInstallations => m_SpecialInstallations;
+
         [NonSerialized]
         private UpmCache m_UpmCache;
         [NonSerialized]
@@ -120,7 +125,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void SetupAddOperation()
         {
-            addOperation.onProcessResult += OnProcessAddResult;
+            addOperation.onProcessResult += (request) => OnProcessAddResult(addOperation, request);
             addOperation.onOperationError += (op, error) =>
             {
                 var packageId = string.IsNullOrEmpty(addOperation.packageId) ? addOperation.specialUniqueId : addOperation.packageId;
@@ -129,10 +134,12 @@ namespace UnityEditor.PackageManager.UI
             onAddOperation(addOperation);
         }
 
-        private void OnProcessAddResult(Request<PackageInfo> request)
+        private void OnProcessAddResult(IOperation operation, Request<PackageInfo> request)
         {
             var packageInfo = request.Result;
-            m_UpmCache.SetInstalledPackageInfo(packageInfo);
+            var specialUniqueId = (operation as UpmAddOperation)?.specialUniqueId;
+
+            m_UpmCache.SetInstalledPackageInfo(packageInfo, !string.IsNullOrEmpty(specialUniqueId));
 
             PackageManagerExtensions.ExtensionCallback(() =>
             {
@@ -203,7 +210,7 @@ namespace UnityEditor.PackageManager.UI
             if (isAddRemoveOrEmbedInProgress)
                 return;
             embedOperation.Embed(packageName, m_UpmCache.GetProductId(packageName));
-            embedOperation.onProcessResult += OnProcessAddResult;
+            embedOperation.onProcessResult += (request) => OnProcessAddResult(embedOperation, request);
             embedOperation.onOperationError += (op, error) => Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Error embedding package: {0}."), embedOperation.packageName));
             onEmbedOperation(embedOperation);
         }

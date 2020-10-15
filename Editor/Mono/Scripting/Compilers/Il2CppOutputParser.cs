@@ -7,18 +7,44 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using UnityEditorInternal;
+using UnityEngine;
 
 namespace UnityEditor.Scripting.Compilers
 {
-    class Il2CppOutputParser : CompilerOutputParserBase
+    sealed class Il2CppOutputParser : CompilerOutputParserBase
     {
         private const string _errorIdentifier = "IL2CPP error";
         private static readonly Regex sErrorRegexWithSourceInformation = new Regex(@"\s*(?<message>.*) in (?<filename>.*):(?<line>\d+)");
 
+        private readonly string _jsonFileName;
+
+        public Il2CppOutputParser(string jsonFileName)
+        {
+            _jsonFileName = jsonFileName;
+        }
+
         public override IEnumerable<CompilerMessage> Parse(string[] errorOutput, string[] standardOutput, bool compilationHadFailure, string assemblyName)
         {
-            // This code is not unit tested, so modify it with caution.
             var messages = new List<CompilerMessage>();
+            if (File.Exists(_jsonFileName))
+            {
+                var jsonText = File.ReadAllText(_jsonFileName);
+                var data = JsonUtility.FromJson<Il2CppToEditorData>(jsonText);
+                foreach (var message in data.Messages)
+                    messages.Add(new CompilerMessage
+                        {message = message.Text, type = ToCompilerMessageType(message.Type)});
+            }
+            else
+            {
+                ParseMessageFromStandardOutput(standardOutput, assemblyName, messages);
+            }
+
+            return messages;
+        }
+
+        private static void ParseMessageFromStandardOutput(string[] standardOutput, string assemblyName, List<CompilerMessage> messages)
+        {
             for (int i = 0; i < standardOutput.Length; ++i)
             {
                 var line = standardOutput[i];
@@ -55,8 +81,13 @@ namespace UnityEditor.Scripting.Compilers
                     });
                 }
             }
+        }
 
-            return messages;
+        CompilerMessageType ToCompilerMessageType(Il2CppMessageType il2cppMessageType)
+        {
+            if (il2cppMessageType == Il2CppMessageType.Warning)
+                return CompilerMessageType.Warning;
+            return CompilerMessageType.Error;
         }
 
         protected override string GetErrorIdentifier()

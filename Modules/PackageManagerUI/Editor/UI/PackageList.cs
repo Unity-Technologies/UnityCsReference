@@ -14,7 +14,6 @@ namespace UnityEditor.PackageManager.UI
     internal class PackageList : VisualElement
     {
         private const string k_UnityPackageGroupDisplayName = "Unity Technologies";
-        private const string k_OtherPackageGroupDisplayName = "Other";
 
         internal new class UxmlFactory : UxmlFactory<PackageList> {}
 
@@ -354,8 +353,8 @@ namespace UnityEditor.PackageManager.UI
             if (groupName == PageManager.k_UnityPackageGroupName)
                 return k_UnityPackageGroupDisplayName;
 
-            if (groupName == PageManager.k_OtherPackageGroupName)
-                return L10n.Tr(k_OtherPackageGroupDisplayName);
+            if (groupName == PageManager.k_OtherPackageGroupName || groupName == PageManager.k_CustomPackageGroupName)
+                return L10n.Tr(groupName);
 
             return groupName;
         }
