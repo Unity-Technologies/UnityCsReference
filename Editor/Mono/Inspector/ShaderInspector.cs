@@ -194,7 +194,7 @@ namespace UnityEditor
             for (int i = 0; i < n; ++i)
             {
                 string pname = s.GetPropertyName(i);
-                string pdesc = s.GetPropertyType(i) + s.GetPropertyDescription(i);
+                string pdesc = s.GetPropertyDescription(i) + " (" + s.GetPropertyType(i) + ")";
                 EditorGUILayout.LabelField(pname, pdesc);
             }
         }

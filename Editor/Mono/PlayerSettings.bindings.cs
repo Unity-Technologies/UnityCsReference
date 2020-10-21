@@ -1197,5 +1197,16 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings()")]
         [NativeMethod("SetVirtualTexturingSupportEnabled")]
         public static extern void SetVirtualTexturingSupportEnabled(bool enabled);
+
+        // note that we dont expose it in ui (yet) and keep it hidden on purpose
+        // when the time comes we can totally rename this before making it public
+        [NativeProperty("IOSCopyPluginsCodeInsteadOfSymlink")]
+        internal static extern bool iosCopyPluginsCodeInsteadOfSymlink
+        {
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            get;
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+            set;
+        }
     }
 }
