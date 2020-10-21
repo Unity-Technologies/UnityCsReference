@@ -288,6 +288,15 @@ namespace UnityEditor
             if (!ValidateLocationPathNameForBuildTargetGroup(locationPathName, buildTargetGroup, target, options, out locationPathNameError))
                 throw new ArgumentException(locationPathNameError);
 
+            if ((options & BuildOptions.AcceptExternalModificationsToPlayer) == BuildOptions.AcceptExternalModificationsToPlayer)
+            {
+                UnityEditorInternal.CanAppendBuild canAppend = UnityEditorInternal.InternalEditorUtility.BuildCanBeAppended(target, locationPathName);
+                if (canAppend == UnityEditorInternal.CanAppendBuild.Unsupported)
+                    throw new InvalidOperationException("The build target does not support build appending.");
+                if (canAppend == UnityEditorInternal.CanAppendBuild.No)
+                    throw new InvalidOperationException("The build cannot be appended.");
+            }
+
             try
             {
                 return BuildPlayerInternal(scenes, locationPathName, assetBundleManifestPath, buildTargetGroup, target, options, extraScriptingDefines);
