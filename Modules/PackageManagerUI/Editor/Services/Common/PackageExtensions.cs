@@ -17,8 +17,8 @@ namespace UnityEditor.PackageManager.UI
                 return PackageState.Error;
 
             var primary = package.primaryVersion;
-            if (primary.HasTag(PackageTag.InDevelopment))
-                return PackageState.InDevelopment;
+            if (primary.HasTag(PackageTag.Custom))
+                return PackageState.Custom;
 
             if (primary != package.recommendedVersion)
                 return PackageState.Outdated;

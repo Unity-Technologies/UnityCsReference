@@ -36,7 +36,7 @@ namespace UnityEditor.PackageManager.UI
                 case PackageFilterTab.AssetStore:
                     options |= RefreshOptions.Purchased;
                     break;
-                case PackageFilterTab.InDevelopment:
+                case PackageFilterTab.Custom:
                     options |= RefreshOptions.UpmList;
                     break;
             }

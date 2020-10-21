@@ -3227,6 +3227,20 @@ namespace UnityEditor
             }
         }
 
+        bool CollectionTypeCheck(Object[] objects)
+        {
+            if (objects.Length < 2) return true;
+
+            for (int i = 1; i < objects.Length; i++)
+            {
+                if (AssetDatabase.GetMainAssetTypeAtPath(AssetDatabase.GetAssetPath(objects[0]))
+                    != AssetDatabase.GetMainAssetTypeAtPath(AssetDatabase.GetAssetPath(objects[i])))
+                    return false;
+            }
+
+            return true;
+        }
+
         void HandleDragging()
         {
             Event evt = Event.current;
@@ -3235,6 +3249,12 @@ namespace UnityEditor
             {
                 case EventType.DragPerform:
                 case EventType.DragUpdated:
+                    if (!CollectionTypeCheck(DragAndDrop.objectReferences))
+                    {
+                        DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
+                        break;
+                    }
+
                     CallEditorDragFunctions();
 
                     if (evt.type == EventType.Used)

@@ -4423,7 +4423,7 @@ namespace UnityEditor
 
             switch (eventType)
             {
-                case EventType.MouseDown:
+                case EventType.MouseUp:
                     if (showEyedropper)
                     {
                         hovered ^= hoveredEyedropper;
@@ -4431,13 +4431,14 @@ namespace UnityEditor
 
                     if (hovered)
                     {
+                        var currentView = GUIView.current;
                         switch (evt.button)
                         {
                             case 0:
                                 // Left click: Show the ColorPicker
                                 GUIUtility.keyboardControl = id;
                                 showMixedValue = false;
-                                ColorPicker.Show(GUIView.current, value, showAlpha, hdr);
+                                ColorPicker.Show(currentView, value, showAlpha, hdr);
                                 GUIUtility.ExitGUI();
                                 break;
 
@@ -4448,7 +4449,6 @@ namespace UnityEditor
 
                                 var names = new[] { L10n.Tr("Copy"), L10n.Tr("Paste") };
                                 var enabled = new[] {true, wasEnabled && ColorClipboard.HasColor()};
-                                var currentView = GUIView.current;
 
                                 EditorUtility.DisplayCustomMenu(
                                     position,
@@ -4469,6 +4469,7 @@ namespace UnityEditor
                                         }
                                     },
                                     null);
+                                evt.Use();
                                 return origColor;
                         }
                     }
@@ -7507,7 +7508,7 @@ namespace UnityEditor
             return PropertyFieldInternal(position, property, label, includeChildren);
         }
 
-        static class EnumNamesCache
+        internal static class EnumNamesCache
         {
             static Dictionary<Type, GUIContent[]> s_EnumTypeLocalizedGUIContents = new Dictionary<Type, GUIContent[]>();
             static Dictionary<int, GUIContent[]> s_SerializedPropertyEnumLocalizedGUIContents = new Dictionary<int, GUIContent[]>();
@@ -7534,10 +7535,14 @@ namespace UnityEditor
 
             internal static GUIContent[] GetEnumLocalizedGUIContents(SerializedProperty property)
             {
+                if (property.serializedObject.targetObject == null)
+                    return EditorGUIUtility.TempContent(property.enumLocalizedDisplayNames);
+
                 var propertyHash = property.hashCodeForPropertyPathWithoutArrayIndex;
                 var typeHash = property.serializedObject.targetObject.GetType().GetHashCode();
                 var hashCode = typeHash ^ propertyHash;
                 GUIContent[] result;
+
                 if (s_SerializedPropertyEnumLocalizedGUIContents.TryGetValue(hashCode, out result))
                 {
                     return result;

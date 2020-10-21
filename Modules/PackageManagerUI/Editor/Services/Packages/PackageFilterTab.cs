@@ -7,10 +7,11 @@ namespace UnityEditor.PackageManager.UI
     internal enum PackageFilterTab
     {
         Unity = 0,
-        Local,
-        Modules,
-        AssetStore,
-        InDevelopment,
-        Other
+        Local = 1,
+        Modules = 2,
+        AssetStore = 3,
+        InDevelopment = Custom, // Used by UPM develop package
+        Custom = 4,
+        Other = 5
     }
 }

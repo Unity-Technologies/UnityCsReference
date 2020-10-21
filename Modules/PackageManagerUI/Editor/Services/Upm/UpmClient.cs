@@ -391,19 +391,25 @@ namespace UnityEditor.PackageManager.UI
                     }
                 }
                 else
-                {
-                    AddExtraPackageInfo(packageInfo);
+                    ProcessExtraFetchResult(packageInfo);
+            }
 
-                    // only trigger the call when the package is not installed, as installed version always have the most up-to-date package info
-                    var installedPackageInfo = m_InstalledPackageInfos.Get(packageInfo.name);
-                    if (installedPackageInfo?.packageId != packageInfo.packageId)
-                    {
-                        productId = m_ProductIdMap.Get(packageInfo.name);
-                        if (string.IsNullOrEmpty(productId))
-                            onPackageVersionUpdated?.Invoke(packageInfo.name, new UpmPackageVersion(packageInfo, false, false));
-                        else
-                            onProductPackageVersionUpdated?.Invoke(productId, new UpmPackageVersion(packageInfo, false, IsUnityPackage(packageInfo)));
-                    }
+            public void ProcessExtraFetchResult(PackageInfo packageInfo)
+            {
+                if (packageInfo == null)
+                    return;
+
+                AddExtraPackageInfo(packageInfo);
+
+                // only trigger the call when the package is not installed, as installed version always have the most up-to-date package info
+                var installedPackageInfo = m_InstalledPackageInfos.Get(packageInfo.name);
+                if (installedPackageInfo?.packageId != packageInfo.packageId)
+                {
+                    var productId = m_ProductIdMap.Get(packageInfo.name);
+                    if (string.IsNullOrEmpty(productId))
+                        onPackageVersionUpdated?.Invoke(packageInfo.name, new UpmPackageVersion(packageInfo, false, IsUnityPackage(packageInfo)));
+                    else
+                        onProductPackageVersionUpdated?.Invoke(productId, new UpmPackageVersion(packageInfo, false, false));
                 }
             }
 
@@ -562,7 +568,7 @@ namespace UnityEditor.PackageManager.UI
             // check if the preview versions be filtered out if the user have `show previews` turned off
             private static bool ShouldPreviewsBeRemoved(IVersionList versions)
             {
-                if (IsPreviewInstalled(versions))
+                if (IsPreviewInstalled(versions) || (versions.primary as UpmPackageVersion)?.isUnityPackage != true)
                     return false;
                 return versions.all.Any(v => !v.HasTag(PackageTag.Release));
             }

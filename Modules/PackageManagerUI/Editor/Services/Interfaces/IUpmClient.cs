@@ -29,6 +29,7 @@ namespace UnityEditor.PackageManager.UI
 
         void SearchAll(bool offlineMode = false);
         void ExtraFetch(string packageId);
+        void ProcessExtraFetchResult(PackageInfo packageInfo);
 
         void FetchForProduct(string productId, string packageName);
 

@@ -39,8 +39,8 @@ namespace UnityEditor.PackageManager.UI
             if (installedVersion == null)
                 return string.Empty;
 
-            if (installedVersion.HasTag(PackageTag.InDevelopment))
-                return "(in development)";
+            if (installedVersion.HasTag(PackageTag.Custom))
+                return L10n.Tr("(custom)");
 
             if (installedVersion.HasTag(PackageTag.Local))
                 return "(local)";

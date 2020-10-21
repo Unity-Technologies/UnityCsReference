@@ -189,6 +189,8 @@ namespace UnityEditor.PackageManager.UI
                 return string.Empty;
             if (package.Is(PackageType.Unity))
                 return tab == PackageFilterTab.Unity ? string.Empty : L10n.Tr(PageManager.k_UnityPackageGroupName);
+            if ((tab == PackageFilterTab.Local || tab == PackageFilterTab.Custom) && package.primaryVersion.HasTag(PackageTag.Custom | PackageTag.Local))
+                return PageManager.k_CustomPackageGroupName;
 
             return string.IsNullOrEmpty(package.primaryVersion?.author) ? L10n.Tr(PageManager.k_OtherPackageGroupName) : package.primaryVersion?.author;
         }
@@ -204,7 +206,7 @@ namespace UnityEditor.PackageManager.UI
                     orderedPackages = orderedPackages.OrderByDescending(p => p.Is(PackageType.Unity)).
                         ThenBy(p => string.IsNullOrEmpty(p.primaryVersion?.author)).
                         ThenBy(p => p.Is(PackageType.Unity) ? null : p.primaryVersion?.author).
-                        ThenBy(p => p.displayName);
+                        ThenBy(p => p.primaryVersion?.displayName ?? p.displayName);
 
                 // the normal way
                 m_OrderedPackageVisualStates = orderedPackages.Select(p => GetVisualState(p.uniqueId) ?? new VisualState(p.uniqueId, GetGroupName(p))).ToList();

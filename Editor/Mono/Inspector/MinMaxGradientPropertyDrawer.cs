@@ -97,7 +97,10 @@ namespace UnityEditorInternal
             var modeRect = new Rect(fieldRect.xMax, fieldRect.y, s_Styles.stateButtonWidth, fieldRect.height);
             EditorGUI.BeginProperty(modeRect, GUIContent.none, m_Property.mode);
             EditorGUI.BeginChangeCheck();
+            int prevIndentLevel = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = 0;
             int newSelection = EditorGUI.Popup(modeRect, GUIContent.none, m_Property.mode.intValue, s_Styles.modes, EditorStyles.minMaxStateDropdown);
+            EditorGUI.indentLevel = prevIndentLevel;
             if (EditorGUI.EndChangeCheck())
                 m_Property.mode.intValue = newSelection;
             EditorGUI.EndProperty();

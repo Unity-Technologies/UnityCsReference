@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEditor.PackageManager.UI
 {
     internal enum PackageState
@@ -9,7 +11,9 @@ namespace UnityEditor.PackageManager.UI
         UpToDate,
         Installed,
         ImportAvailable,
-        InDevelopment,
+        Custom,
+        [Obsolete("use PackageState.Custom instead.")]
+        InDevelopment = Custom,
         Outdated,
         InProgress,
         Error
