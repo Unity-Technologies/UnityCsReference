@@ -13,6 +13,7 @@ namespace UnityEditor.PackageManager.UI
     {
         internal const string k_UnityPackageGroupName = "Unity";
         internal const string k_OtherPackageGroupName = "Other";
+        internal const string k_CustomPackageGroupName = "Custom";
 
         static IPageManager s_Instance = null;
         public static IPageManager instance { get { return s_Instance ?? PageManagerInternal.instance; } }

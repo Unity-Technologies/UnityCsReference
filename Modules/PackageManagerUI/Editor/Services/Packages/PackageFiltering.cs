@@ -27,8 +27,8 @@ namespace UnityEditor.PackageManager.UI
                     return !package.Is(PackageType.BuiltIn) && (package.installedVersion?.isDirectDependency ?? false);
                 case PackageFilterTab.AssetStore:
                     return ApplicationUtil.instance.isUserLoggedIn && package.Is(PackageType.AssetStore);
-                case PackageFilterTab.InDevelopment:
-                    return package.installedVersion?.HasTag(PackageTag.InDevelopment) ?? false;
+                case PackageFilterTab.Custom:
+                    return package.installedVersion?.HasTag(PackageTag.Custom | PackageTag.Local) ?? false;
                 default:
                     return false;
             }

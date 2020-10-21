@@ -67,7 +67,7 @@ namespace UnityEditor.PackageManager.UI
         internal static readonly PackageTag[] k_VisibleTags =
         {
             PackageTag.Verified,
-            PackageTag.InDevelopment,
+            PackageTag.Custom,
             PackageTag.Local,
             PackageTag.Git,
             PackageTag.Preview,
@@ -770,7 +770,7 @@ namespace UnityEditor.PackageManager.UI
                 return;
             }
 
-            if (displayVersion.HasTag(PackageTag.InDevelopment))
+            if (displayVersion.HasTag(PackageTag.Custom))
             {
                 if (!EditorUtility.DisplayDialog("Unity Package Manager", "You will loose all your changes (if any) if you delete a package in development. Are you sure?", "Yes", "No"))
                     return;
@@ -784,14 +784,14 @@ namespace UnityEditor.PackageManager.UI
                 EditorApplication.delayCall += () =>
                 {
                     PackageFilterTab? newFilterTab = null;
-                    if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.InDevelopment)
+                    if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.Custom)
                     {
-                        var hasOtherInDevelopment = PackageDatabase.instance.allPackages.Any(p =>
+                        var hasOtherCustom = PackageDatabase.instance.allPackages.Any(p =>
                         {
                             var installed = p.installedVersion;
-                            return installed != null && installed.HasTag(PackageTag.InDevelopment) && p.uniqueId != package.uniqueId;
+                            return installed != null && installed.HasTag(PackageTag.Custom) && p.uniqueId != package.uniqueId;
                         });
-                        newFilterTab = hasOtherInDevelopment ? PackageFilterTab.InDevelopment : PackageFilterTab.Local;
+                        newFilterTab = hasOtherCustom ? PackageFilterTab.Custom : PackageFilterTab.Local;
                     }
                     PackageManagerWindow.SelectPackageAndFilter(displayVersion.uniqueId, newFilterTab, true);
                 };

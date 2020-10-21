@@ -16,7 +16,7 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<PackageManagerToolbar> {}
 
-        static bool HasPackageInDevelopment => PackageDatabase.instance.allPackages.Any(p => p.installedVersion?.HasTag(PackageTag.InDevelopment) ?? false);
+        static bool HasPackageCustom => PackageDatabase.instance.allPackages.Any(p => p.installedVersion?.HasTag(PackageTag.Custom) ?? false);
 
         static bool HasPackageInScopeRegistries => PackageDatabase.instance.allPackages.Any(p => p.Is(PackageType.ScopedRegistry));
 
@@ -66,10 +66,10 @@ namespace UnityEditor.PackageManager.UI
         private void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
         {
             // If we have a filter set and no packages are in this filter, reset the filter to local packages.
-            if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.InDevelopment)
+            if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.Custom)
             {
                 var changed = added.Concat(removed).Concat(preUpdate).Concat(postUpdate);
-                if (changed.Any(p => p.installedVersion?.HasTag(PackageTag.InDevelopment) == true) && !HasPackageInDevelopment)
+                if (changed.Any(p => p.installedVersion?.HasTag(PackageTag.Custom) == true) && !HasPackageCustom)
                     SetFilter(PackageFilterTab.Local);
             }
             else if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.Other)
@@ -119,8 +119,8 @@ namespace UnityEditor.PackageManager.UI
                     return L10n.Tr("Built-in packages");
                 case PackageFilterTab.AssetStore:
                     return L10n.Tr("My Assets");
-                case PackageFilterTab.InDevelopment:
-                    return L10n.Tr("In Development");
+                case PackageFilterTab.Custom:
+                    return L10n.Tr("Custom");
                 default:
                     return filter.ToString();
             }
@@ -214,11 +214,11 @@ namespace UnityEditor.PackageManager.UI
 
             filterMenu.menu.AppendSeparator();
             AddFilterTabToDropdownMenu(PackageFilterTab.Local);
-            AddFilterTabToDropdownMenu(PackageFilterTab.InDevelopment, null, a =>
+            AddFilterTabToDropdownMenu(PackageFilterTab.Custom, null, a =>
             {
-                if (!HasPackageInDevelopment)
+                if (!HasPackageCustom)
                     return DropdownMenuAction.Status.Hidden;
-                else if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.InDevelopment)
+                else if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.Custom)
                     return DropdownMenuAction.Status.Checked;
                 return DropdownMenuAction.Status.Normal;
             });

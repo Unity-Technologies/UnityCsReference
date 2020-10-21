@@ -246,7 +246,7 @@ namespace UnityEditor
                         EditorGUI.DropShadowLabel(new Rect(r.x, labelY, r.width, 20), "Can not show PCM data for this file");
                 }
 
-                if (m_Clip == clip)
+                if (m_Clip == clip && playing)
                 {
                     float t = AudioUtil.GetClipPosition(clip);
 
@@ -273,7 +273,7 @@ namespace UnityEditor
                     }
                 }
 
-                if (m_Clip == clip)
+                if (m_Clip == clip && playing)
                 {
                     float t = AudioUtil.GetClipPosition(clip);
 
