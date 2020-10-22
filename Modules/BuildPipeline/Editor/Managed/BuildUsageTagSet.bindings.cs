@@ -52,7 +52,9 @@ namespace UnityEditor.Build.Content
         [NativeMethod(IsThreadSafe = true)]
         public extern Hash128 GetHash128();
 
+        [NativeMethod(IsThreadSafe = true)]
         internal extern string SerializeToJson();
+        [NativeMethod(IsThreadSafe = true)]
         internal extern void DeserializeFromJson(string data);
 
         [ThreadSafe]
@@ -60,11 +62,17 @@ namespace UnityEditor.Build.Content
         [ThreadSafe]
         internal extern void DeserializeFromBinary([Out] byte[] data);
 
+        [NativeMethod(IsThreadSafe = true)]
         internal extern string GetBuildUsageJson(ObjectIdentifier objectId);
 
+        [NativeMethod(IsThreadSafe = true)]
         public extern ObjectIdentifier[] GetObjectIdentifiers();
 
+        [NativeMethod(IsThreadSafe = true)]
         public extern void UnionWith(BuildUsageTagSet other);
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern void FilterToSubset(ObjectIdentifier[] objectIds);
 
         public override bool Equals(object obj)
         {

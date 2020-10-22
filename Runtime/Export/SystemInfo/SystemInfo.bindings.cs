@@ -869,6 +869,9 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::GetGraphicsFormat")]
         extern public static GraphicsFormat GetGraphicsFormat(DefaultFormat format);
 
+        [FreeFunction("ScriptingGraphicsCaps::GetRenderTextureSupportedMSAASampleCount")]
+        extern public static int GetRenderTextureSupportedMSAASampleCount(RenderTextureDescriptor desc);
+
         [FreeFunction("ScriptingGraphicsCaps::UsesLoadStoreActions")]
         static extern bool UsesLoadStoreActions();
 
@@ -1086,6 +1089,11 @@ namespace UnityEngine
         public static GraphicsFormat GetGraphicsFormat(DefaultFormat format)
         {
             return ShimManager.systemInfoShim.GetGraphicsFormat(format);
+        }
+
+        public static int GetRenderTextureSupportedMSAASampleCount(RenderTextureDescriptor desc)
+        {
+            return ShimManager.systemInfoShim.GetRenderTextureSupportedMSAASampleCount(desc);
         }
 
         [Obsolete("supportsRenderTextures always returns true, no need to call it")]

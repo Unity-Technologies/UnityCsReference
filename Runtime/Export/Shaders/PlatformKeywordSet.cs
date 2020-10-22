@@ -11,9 +11,9 @@ namespace UnityEngine.Rendering
     [UsedByNativeCode]
     public struct PlatformKeywordSet
     {
-        private uint ComputeKeywordMask(BuiltinShaderDefine define)
+        private ulong ComputeKeywordMask(BuiltinShaderDefine define)
         {
-            return (uint)(1 << ((int)define % k_SizeInBits));
+            return (ulong)(1 << ((int)define % k_SizeInBits));
         }
 
         public bool IsEnabled(BuiltinShaderDefine define)
@@ -31,9 +31,7 @@ namespace UnityEngine.Rendering
             m_Bits &= ~ComputeKeywordMask(define);
         }
 
-        // Note: We currently only have 28 Platform Keywords, once we go over 32,
-        // we will need to use a ulong (64 bits, unsigned)
-        const int k_SizeInBits = sizeof(uint) * 8;
-        internal uint m_Bits;
+        const int k_SizeInBits = sizeof(ulong) * 8;
+        internal ulong m_Bits;
     }
 }

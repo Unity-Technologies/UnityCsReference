@@ -26,13 +26,24 @@ namespace UnityEditor
             private GUIContent m_LightProbeUsageStyle = EditorGUIUtility.TrTextContent("Light Probes", "Specifies how Light Probes will handle the interpolation of lighting and occlusion. Disabled if the object is set to receive Global Illumination from lightmaps.");
             private GUIContent m_LightProbeVolumeOverrideStyle = EditorGUIUtility.TrTextContent("Proxy Volume Override", "If set, the Renderer will use the Light Probe Proxy Volume component from another GameObject.");
             private GUIContent m_ReflectionProbeUsageStyle = EditorGUIUtility.TrTextContent("Reflection Probes", "Specifies if or how the object is affected by reflections in the Scene.  This property cannot be disabled in deferred rendering modes.");
-            private GUIContent m_ProbeAnchorStyle;
+            private GUIContent m_ProbeAnchorStyle = EditorGUIUtility.TrTextContent("Anchor Override", "Specifies the Transform position that will be used for sampling the light probes and reflection probes.");
+            private GUIContent m_ProbeAnchorNoReflectionProbesStyle = EditorGUIUtility.TrTextContent("Anchor Override", "Specifies the Transform position that will be used for sampling the light probes.");
             private GUIContent m_DeferredNote = EditorGUIUtility.TrTextContent("In Deferred Shading, all objects receive shadows and get per-pixel reflection probes.");
             private GUIContent m_LightProbeVolumeNote = EditorGUIUtility.TrTextContent("A valid Light Probe Proxy Volume component could not be found.");
             private GUIContent m_LightProbeVolumeUnsupportedNote = EditorGUIUtility.TrTextContent("The Light Probe Proxy Volume feature is unsupported by the current graphics hardware or API configuration. Simple 'Blend Probes' mode will be used instead.");
             private GUIContent m_LightProbeVolumeUnsupportedOnTreesNote = EditorGUIUtility.TrTextContent("The Light Probe Proxy Volume feature is not supported on tree rendering. Simple 'Blend Probes' mode will be used instead.");
             private GUIContent m_LightProbeCustomNote = EditorGUIUtility.TrTextContent("The Custom Provided mode requires SH properties to be sent via MaterialPropertyBlock.");
             private GUIContent[] m_ReflectionProbeUsageOptions = (Enum.GetNames(typeof(ReflectionProbeUsage)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
+
+            private GUIContent probeAnchorStyle
+            {
+                get
+                {
+                    if (!SupportedRenderingFeatures.active.reflectionProbes)
+                        return m_ProbeAnchorNoReflectionProbesStyle;
+                    return m_ProbeAnchorStyle;
+                }
+            }
 
             private List<ReflectionProbeBlendInfo> m_BlendInfo = new List<ReflectionProbeBlendInfo>();
 
@@ -43,7 +54,6 @@ namespace UnityEditor
                 m_ReflectionProbeUsage = serializedObject.FindProperty("m_ReflectionProbeUsage");
                 m_ProbeAnchor = serializedObject.FindProperty("m_ProbeAnchor");
                 m_ReceiveShadows = serializedObject.FindProperty("m_ReceiveShadows");
-                m_ProbeAnchorStyle = EditorGUIUtility.TrTextContent("Anchor Override", SupportedRenderingFeatures.active.probeAnchorTooltip);
             }
 
             internal bool IsUsingLightProbeProxyVolume(int selectionCount)
@@ -178,7 +188,7 @@ namespace UnityEditor
 
             internal bool RenderProbeAnchor(bool useMiniStyle)
             {
-                bool useReflectionProbes = !m_ReflectionProbeUsage.hasMultipleDifferentValues && (ReflectionProbeUsage)m_ReflectionProbeUsage.intValue != ReflectionProbeUsage.Off;
+                bool useReflectionProbes = !m_ReflectionProbeUsage.hasMultipleDifferentValues && (ReflectionProbeUsage)m_ReflectionProbeUsage.intValue != ReflectionProbeUsage.Off && SupportedRenderingFeatures.active.reflectionProbes;
                 bool lightProbesEnabled = !m_LightProbeUsage.hasMultipleDifferentValues && (LightProbeUsage)m_LightProbeUsage.intValue != LightProbeUsage.Off;
                 bool needsRendering = useReflectionProbes || lightProbesEnabled;
 
@@ -186,9 +196,9 @@ namespace UnityEditor
                 {
                     // anchor field
                     if (!useMiniStyle)
-                        EditorGUILayout.PropertyField(m_ProbeAnchor, m_ProbeAnchorStyle);
+                        EditorGUILayout.PropertyField(m_ProbeAnchor, probeAnchorStyle);
                     else
-                        ModuleUI.GUIObject(m_ProbeAnchorStyle, m_ProbeAnchor);
+                        ModuleUI.GUIObject(probeAnchorStyle, m_ProbeAnchor);
                 }
 
                 return needsRendering;
@@ -233,7 +243,7 @@ namespace UnityEditor
 
                 if (needsProbeAnchorField)
                 {
-                    bool useReflectionProbes = !m_ReflectionProbeUsage.hasMultipleDifferentValues && (ReflectionProbeUsage)m_ReflectionProbeUsage.intValue != ReflectionProbeUsage.Off;
+                    bool useReflectionProbes = !m_ReflectionProbeUsage.hasMultipleDifferentValues && (ReflectionProbeUsage)m_ReflectionProbeUsage.intValue != ReflectionProbeUsage.Off && SupportedRenderingFeatures.active.reflectionProbes;
 
                     if (useReflectionProbes)
                     {

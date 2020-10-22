@@ -235,6 +235,13 @@ namespace UnityEditor
         High = 2
     }
 
+    // Must be in sync with ShaderPrecisionModel enum in EditorOnlyPlayerSettings.h
+    public enum ShaderPrecisionModel
+    {
+        PlatformDefault = 0,
+        Unified = 1,
+    }
+
     public enum NormalMapEncoding
     {
         XYZ = 0,
@@ -1299,6 +1306,12 @@ namespace UnityEditor
         public static extern void SetVirtualTexturingSupportEnabled(bool enabled);
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        public static extern ShaderPrecisionModel GetShaderPrecisionModel();
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        public static extern void SetShaderPrecisionModel(ShaderPrecisionModel model);
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         public static extern NormalMapEncoding GetNormalMapEncoding(BuildTargetGroup platform);
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
@@ -1312,6 +1325,17 @@ namespace UnityEditor
             [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
             get;
             [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            set;
+        }
+
+        // note that we dont expose it in ui (yet) and keep it hidden on purpose
+        // when the time comes we can totally rename this before making it public
+        [NativeProperty("IOSCopyPluginsCodeInsteadOfSymlink")]
+        internal static extern bool iosCopyPluginsCodeInsteadOfSymlink
+        {
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            get;
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
             set;
         }
     }

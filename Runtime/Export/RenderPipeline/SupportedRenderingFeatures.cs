@@ -83,18 +83,6 @@ namespace UnityEngine.Rendering
             }
         }
 
-        public string overrideProbeAnchorTooltip { get; set; } = "";
-
-        public string probeAnchorTooltip
-        {
-            get
-            {
-                if (String.IsNullOrEmpty(overrideProbeAnchorTooltip))
-                    return "Specifies the Transform position that will be used for sampling the light probes and reflection probes.";
-                return overrideProbeAnchorTooltip;
-            }
-        }
-
         internal static unsafe MixedLightingMode FallbackMixedLightingMode()
         {
             MixedLightingMode fallbackMode;

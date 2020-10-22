@@ -123,6 +123,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct Physics2DFixedUpdate {}
         [RequiredByNativeCode]
+        struct PhysicsClothFixedUpdate {}
+        [RequiredByNativeCode]
         public struct DirectorFixedUpdatePostPhysics {}
         [RequiredByNativeCode]
         public struct ScriptRunDelayedFixedFrameRate {}
