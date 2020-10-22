@@ -1028,8 +1028,7 @@ namespace UnityEditorInternal
                 case EventType.MouseDown:
 
                     if (!listRect.Contains(Event.current.mousePosition)
-                        || (Event.current.button != 0 && Event.current.button != 1)
-                        || m_Dragging && Event.current.button > 0)
+                        || Event.current.button > 0)
                         break;
 
                     // clicking on the list should end editing any existing edits

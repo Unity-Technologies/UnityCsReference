@@ -38,6 +38,8 @@ namespace UnityEngine
         [NativeName("HDR")]
         public extern bool hdr { get; set; }
 
+        [NativeName("RenderDynamicObjects")]
+        public extern bool renderDynamicObjects { get; set; }
         public extern float shadowDistance { get; set; }
         public extern int resolution { get; set; }
         public extern int cullingMask { get; set; }

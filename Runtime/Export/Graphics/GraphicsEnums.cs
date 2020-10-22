@@ -1776,7 +1776,8 @@ namespace UnityEngine.Rendering
         UNITY_VIRTUAL_TEXTURING,
         UNITY_PRETRANSFORM_TO_DISPLAY_ORIENTATION,
         UNITY_ASTC_NORMALMAP_ENCODING,
-        SHADER_API_GLES30
+        SHADER_API_GLES30,
+        UNITY_UNIFIED_SHADER_PRECISION_MODEL
     }
 
     // Match VideoShadersMode on C++ side

@@ -240,13 +240,33 @@ namespace UnityEditor.Networking.PlayerConnection
             menuOptions.AddItem(new GUIContent(lastIP), isConnected, () => DirectIPConnect(lastIP));
         }
 
+        static string GetConnectionName(int guid)
+        {
+            // Connection identifier is constructed in the PlayerConnection::ConstructWhoamiString()
+            // in a form "{platform name}(host name or ip)[:port]
+            var name = ProfilerDriver.GetConnectionIdentifier(guid);
+
+            // Ignore Editor connections which named explicitly after project name.
+            var portSpacerIndex = name.LastIndexOf(')');
+            if (portSpacerIndex == -1)
+                return name;
+
+            // Port already specified
+            if (name.Length > (portSpacerIndex + 1) && name[portSpacerIndex + 1] == ':')
+                return name;
+
+            // If port hasn't been specified in the connection identifier, we place it with "host name or ip" segment.
+            var port = ProfilerDriver.GetConnectionPort(guid);
+            return string.Format("{0}:{1})", name.Substring(0, portSpacerIndex), port);
+        }
+
         void AddAvailablePlayerConnections(GenericMenu menuOptions, ref bool hasOpenConnection)
         {
             int[] connectionGuids = ProfilerDriver.GetAvailableProfilers();
             for (int index = 0; index < connectionGuids.Length; index++)
             {
                 int guid = connectionGuids[index];
-                string name = ProfilerDriver.GetConnectionIdentifier(guid);
+                string name = GetConnectionName(guid);
                 bool isProhibited = ProfilerDriver.IsIdentifierOnLocalhost(guid) && (name.Contains("MetroPlayerX") || name.Contains("UWPPlayerX"));
                 bool enabled = !isProhibited && ProfilerDriver.IsIdentifierConnectable(guid);
 

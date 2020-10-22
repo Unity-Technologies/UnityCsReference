@@ -200,6 +200,8 @@ namespace UnityEditor
             public static readonly GUIContent virtualTexturingUnsupportedAPIWin = EditorGUIUtility.TrTextContent("The target Windows graphics API does not support Virtual Texturing. To target compatible graphics APIs, uncheck 'Auto Graphics API for Windows', and remove OpenGL ES 2/3 and OpenGLCore.");
             public static readonly GUIContent virtualTexturingUnsupportedAPIMac = EditorGUIUtility.TrTextContent("The target Mac graphics API does not support Virtual Texturing. To target compatible graphics APIs, uncheck 'Auto Graphics API for Mac', and remove OpenGLCore.");
             public static readonly GUIContent virtualTexturingUnsupportedAPILinux = EditorGUIUtility.TrTextContent("The target Linux graphics API does not support Virtual Texturing. To target compatible graphics APIs, uncheck 'Auto Graphics API for Linux', and remove OpenGLCore.");
+            public static readonly GUIContent shaderPrecisionModel = EditorGUIUtility.TrTextContent("Shader precision model*", "Mobile targets prefer lower precision by default to improve performance, but your rendering pipeline may prefer full precision by default and to optimize against lower precision cases explicitly.");
+            public static readonly GUIContent[] shaderPrecisionModelOptions = { EditorGUIUtility.TrTextContent("Use platform defaults for sampler precision"), EditorGUIUtility.TrTextContent("Use full sampler precision by default, lower precision explicitly declared") };
             public static readonly GUIContent stereo360CaptureCheckbox = EditorGUIUtility.TrTextContent("360 Stereo Capture*");
 
             public static string undoChangedBatchingString { get { return LocalizationDatabase.GetLocalizedString("Changed Batching Settings"); } }
@@ -374,6 +376,7 @@ namespace UnityEditor
         SerializedProperty m_Enable360StereoCapture;
 
         SerializedProperty m_VirtualTexturingSupportEnabled;
+        SerializedProperty m_ShaderPrecisionModel;
 
         // Scripting
         SerializedProperty m_UseDeterministicCompilation;
@@ -568,6 +571,7 @@ namespace UnityEditor
                 m_Enable360StereoCapture = property.FindPropertyRelative("enable360StereoCapture");
 
             m_VirtualTexturingSupportEnabled = FindPropertyAssert("virtualTexturingSupportEnabled");
+            m_ShaderPrecisionModel = FindPropertyAssert("shaderPrecisionModel");
 
             m_SettingsExtensions = new ISettingEditorExtension[validPlatforms.Length];
             for (int i = 0; i < validPlatforms.Length; i++)
@@ -2038,6 +2042,19 @@ namespace UnityEditor
                     {
                         EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedAPI.text, MessageType.Warning);
                     }
+                }
+            }
+
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || EditorApplication.isCompiling))
+            {
+                EditorGUI.BeginChangeCheck();
+
+                ShaderPrecisionModel currShaderPrecisionModel = PlayerSettings.GetShaderPrecisionModel();
+                ShaderPrecisionModel[] shaderPrecisionModelValues = { ShaderPrecisionModel.PlatformDefault, ShaderPrecisionModel.Unified };
+                ShaderPrecisionModel newShaderPrecisionModel = BuildEnumPopup(SettingsContent.shaderPrecisionModel, currShaderPrecisionModel, shaderPrecisionModelValues, SettingsContent.shaderPrecisionModelOptions);
+                if (EditorGUI.EndChangeCheck() && currShaderPrecisionModel != newShaderPrecisionModel)
+                {
+                    PlayerSettings.SetShaderPrecisionModel(newShaderPrecisionModel);
                 }
             }
 
