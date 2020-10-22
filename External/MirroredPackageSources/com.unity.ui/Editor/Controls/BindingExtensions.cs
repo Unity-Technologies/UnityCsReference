@@ -170,6 +170,7 @@ namespace UnityEditor.UIElements
         private static Gradient GetGradientPropertyValue(SerializedProperty p) { return p.gradientValue; }
         private static Quaternion GetQuaternionPropertyValue(SerializedProperty p) { return p.quaternionValue; }
         private static char GetCharacterPropertyValue(SerializedProperty p) { return (char)p.intValue; }
+        private static Hash128 GetHash128PropertyValue(SerializedProperty p) { return p.hash128Value; }
 
 
         // Basic conversions
@@ -206,6 +207,7 @@ namespace UnityEditor.UIElements
         private static void SetGradientPropertyValue(SerializedProperty p, Gradient v) {p.gradientValue = v; }
         private static void SetQuaternionPropertyValue(SerializedProperty p, Quaternion v) { p.quaternionValue = v; }
         private static void SetCharacterPropertyValue(SerializedProperty p, char v) { p.intValue = v; }
+        private static void SetHash128PropertyValue(SerializedProperty p, Hash128 v) { p.hash128Value = v; }
 
         // Conversions
         private static void SetDoublePropertyValueFromFloat(SerializedProperty p, float v) { p.doubleValue = v; }
@@ -497,6 +499,9 @@ namespace UnityEditor.UIElements
                 case SerializedPropertyType.BoundsInt:
                     DefaultBind(element, objWrapper, prop, GetBoundsIntPropertyValue, SetBoundsIntPropertyValue, ValueEquals);
                     break;
+                case SerializedPropertyType.Hash128:
+                    DefaultBind(element, objWrapper, prop, GetHash128PropertyValue, SetHash128PropertyValue, ValueEquals);
+                    break;
                 case SerializedPropertyType.Character:
                     if (element is INotifyValueChanged<string>)
                     {
@@ -683,6 +688,9 @@ namespace UnityEditor.UIElements
                     }
                     while (propCopy.NextVisible(false)); // Never expand children.
                 }
+
+                if (element is IMixedValueSupport mixedValuePropertyField)
+                    mixedValuePropertyField.showMixedValue = prop.hasMultipleDifferentValues;
 
                 // It's possible for there to be no label in a compound field, for example. So, nothing to style.
                 if (element == null)

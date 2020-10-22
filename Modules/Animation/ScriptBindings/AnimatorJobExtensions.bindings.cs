@@ -100,7 +100,18 @@ namespace UnityEngine.Animations
 
         internal static void UnbindAllHandles(this Animator animator)
         {
-            InternalUnbindAllHandles(animator);
+            InternalUnbindAllStreamHandles(animator);
+            InternalUnbindAllSceneHandles(animator);
+        }
+
+        public static void UnbindAllStreamHandles(this Animator animator)
+        {
+            InternalUnbindAllStreamHandles(animator);
+        }
+
+        public static void UnbindAllSceneHandles(this Animator animator)
+        {
+            InternalUnbindAllSceneHandles(animator);
         }
 
         extern private static void InternalAddJobDependency([NotNull] Animator animator, JobHandle jobHandle);
@@ -123,6 +134,8 @@ namespace UnityEngine.Animations
 
         extern private static void InternalResolveAllSceneHandles([NotNull] Animator animator);
 
-        extern private static void InternalUnbindAllHandles([NotNull] Animator animator);
+        extern private static void InternalUnbindAllStreamHandles([NotNull] Animator animator);
+
+        extern private static void InternalUnbindAllSceneHandles([NotNull] Animator animator);
     }
 }

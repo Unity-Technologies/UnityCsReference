@@ -44,6 +44,19 @@ namespace UnityEditor
 
         static readonly CameraFlyModeContext s_CameraFlyModeContext = new CameraFlyModeContext();
 
+        static bool s_ViewToolActive = false;
+        internal static bool viewToolActive
+        {
+            get
+            {
+                var evt = Event.current;
+                if (evt != null)
+                    UpdateViewToolState(evt);
+                return s_ViewToolActive;
+            }
+        }
+        internal static event Action viewToolActiveChanged;
+
         static void Init()
         {
             if (s_Initialized)
@@ -65,6 +78,9 @@ namespace UnityEditor
 
             // Ensure we always call the GetControlID the same number of times
             int id = s_ViewToolID;
+
+            UpdateViewToolState(evt);
+            UpdateViewToolMode(evt);
 
             EventType eventType = evt.GetTypeForControl(id);
 
@@ -110,6 +126,59 @@ namespace UnityEditor
             }
         }
 
+        static void UpdateViewToolState(Event evt)
+        {
+            bool shouldBeActive = false;
+            if (GUIUtility.hotControl == 0 || Tools.s_LockedViewTool != ViewTool.None)
+            {
+                bool viewShortcut = evt.type != EventType.Used && (evt.alt || evt.button == 1 || evt.button == 2);
+                shouldBeActive = Tools.s_LockedViewTool != ViewTool.None || Tools.current == Tool.View || viewShortcut;
+            }
+            if (shouldBeActive != s_ViewToolActive)
+            {
+                s_ViewToolActive = shouldBeActive;
+                viewToolActiveChanged?.Invoke();
+            }
+        }
+
+        static void UpdateViewToolMode(Event evt)
+        {
+            if (evt != null && s_ViewToolActive)
+            {
+                if (Tools.s_LockedViewTool == ViewTool.None)
+                {
+                    bool controlKeyOnMac = (evt.control && Application.platform == RuntimePlatform.OSXEditor);
+                    bool actionKey = EditorGUI.actionKey;
+                    bool noModifiers = (!actionKey && !controlKeyOnMac && !evt.alt);
+                    if ((Tools.s_ButtonDown <= 0 && noModifiers)
+                        || (Tools.s_ButtonDown <= 0 && actionKey)
+                        || Tools.s_ButtonDown == 2
+                        || SceneView.lastActiveSceneView != null && (SceneView.lastActiveSceneView.in2DMode || SceneView.lastActiveSceneView.isRotationLocked) && !(Tools.s_ButtonDown == 1 && evt.alt || Tools.s_ButtonDown <= 0 && controlKeyOnMac)
+                    )
+                    {
+                        Tools.viewTool = ViewTool.Pan;
+                    }
+                    else if ((Tools.s_ButtonDown <= 0 && controlKeyOnMac)
+                             || (Tools.s_ButtonDown == 1 && evt.alt))
+                    {
+                        Tools.viewTool = ViewTool.Zoom;
+                    }
+                    else if (Tools.s_ButtonDown <= 0 && evt.alt)
+                    {
+                        Tools.viewTool = ViewTool.Orbit;
+                    }
+                    else if (Tools.s_ButtonDown == 1 && !evt.alt)
+                    {
+                        Tools.viewTool = ViewTool.FPS;
+                    }
+                }
+            }
+            else
+            {
+                Tools.viewTool = ViewTool.Pan;
+            }
+        }
+
         static Vector3 GetMovementDirection()
         {
             s_Moving = s_Motion.sqrMagnitude > 0f;
@@ -148,7 +217,7 @@ namespace UnityEditor
         {
             s_CurrentState = MotionState.kInactive;
 
-            if (Tools.viewToolActive)
+            if (s_ViewToolActive)
             {
                 ViewTool wantedViewTool = Tools.viewTool;
 

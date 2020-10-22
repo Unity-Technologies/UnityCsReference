@@ -64,5 +64,9 @@ namespace UnityEditor.Build.Content
         [NativeName("includedTypes")]
         internal Type[] m_IncludedTypes;
         public ReadOnlyCollection<Type> includedTypes { get { return Array.AsReadOnly(m_IncludedTypes); } }
+
+        [NativeName("includedSerializeReferenceFQN")]
+        internal String[] m_IncludedSerializeReferenceFQN;
+        public ReadOnlyCollection<String> includedSerializeReferenceFQN { get { return Array.AsReadOnly(m_IncludedSerializeReferenceFQN); } }
     }
 }

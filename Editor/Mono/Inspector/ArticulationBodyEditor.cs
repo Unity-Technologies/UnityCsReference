@@ -45,6 +45,33 @@ namespace UnityEditor
         private const float GizmoLinearSize = 0.5f;
         private const float CapScale = 0.03f;
 
+        private class Styles
+        {
+            public static GUIContent mass = EditorGUIUtility.TrTextContent("Mass", "Mass of this articulation body");
+            public static GUIContent immovable = EditorGUIUtility.TrTextContent("Immovable", "Is this articulation body immovable by forces and torques? Only applies to the root body of the articulation.");
+            public static GUIContent useGravity = EditorGUIUtility.TrTextContent("Use Gravity", "Controls whether gravity affects this articulation body.");
+            public static GUIContent computeParentAnchor = EditorGUIUtility.TrTextContent("Compute Parent Anchor", "Controls whether to set the anchor relative to the parent to be the same as the anchor relative to this body.");
+            public static GUIContent anchorPosition = EditorGUIUtility.TrTextContent("Anchor Position", "Position of the anchor relative to this body.");
+            public static GUIContent parentAnchorPosition = EditorGUIUtility.TrTextContent("Parent Anchor Position", "Position of the anchor relative to the parent body.");
+            public static GUIContent anchorRotation =  EditorGUIUtility.TrTextContent("Anchor Rotation", "Rotation of the anchor relative to this body.");
+            public static GUIContent parentAnchorRotation = EditorGUIUtility.TrTextContent("Parent Anchor Rotation", "Rotation of the anchor relative to the parent body.");
+
+            public static GUIContent linearDamping = EditorGUIUtility.TrTextContent("Linear Damping", "Damping factor that affects how this body resists linear motion.");
+            public static GUIContent angularDamping = EditorGUIUtility.TrTextContent("Angular Damping", "Damping factor that affects how this body resists rotations.");
+            public static GUIContent jointFriction = EditorGUIUtility.TrTextContent("Joint Friction", "Amount of friction that is applied as a result of connected bodies moving relative to this body.");
+
+            public static GUIContent prismaticAxis = EditorGUIUtility.TrTextContent("Axis", "The only axis the joint allows linear motion along.");
+            public static GUIContent unlockedMotionType = EditorGUIUtility.TrTextContent("Motion", "Controls whether the motion is free or limited.");
+
+            public static GUIContent lowerLimit = EditorGUIUtility.TrTextContent("Lower limit", "Limit the minimum linear or angular coordinate this drive allows.");
+            public static GUIContent upperLimit = EditorGUIUtility.TrTextContent("Upper limit", "Limit the maximum linear or angular coordinate this drive allows.");
+
+            public static GUIContent stiffness = EditorGUIUtility.TrTextContent("Stiffness", "The stiffness of the spring connected to this drive.");
+            public static GUIContent damping = EditorGUIUtility.TrTextContent("Damping", "The damping of the spring attached to this drive.");
+            public static GUIContent forceLimit = EditorGUIUtility.TrTextContent("Force Limit", "The maximum force this drive can apply to a body.");
+            public static GUIContent target = EditorGUIUtility.TrTextContent("Target", "The target value for the drive to try reaching.");
+            public static GUIContent targetVelocity = EditorGUIUtility.TrTextContent("Target Velocity", "The target velocity for the drive to try reaching.");
+        }
 
         internal enum NonLockedMotion
         {
@@ -100,7 +127,7 @@ namespace UnityEditor
             m_ShowInfo.valueChanged.RemoveListener(Repaint);
         }
 
-        private void QuaternionAsEulerAnglesPropertyField(string tag, SerializedProperty quaternionProperty, Quaternion rotation)
+        private void QuaternionAsEulerAnglesPropertyField(GUIContent tag, SerializedProperty quaternionProperty, Quaternion rotation)
         {
             quaternionProperty.quaternionValue = Quaternion.Euler(EditorGUILayout.Vector3Field(tag, rotation.eulerAngles));
         }
@@ -111,26 +138,26 @@ namespace UnityEditor
 
             ArticulationBody body = (ArticulationBody)target;
 
-            EditorGUILayout.PropertyField(m_Mass);
+            EditorGUILayout.PropertyField(m_Mass, Styles.mass);
 
             if (body.isRoot)
             {
-                EditorGUILayout.PropertyField(m_Immovable);
-                EditorGUILayout.PropertyField(m_UseGravity);
+                EditorGUILayout.PropertyField(m_Immovable, Styles.immovable);
+                EditorGUILayout.PropertyField(m_UseGravity, Styles.useGravity);
 
                 EditorGUILayout.HelpBox("This is the root body of the articulation.", MessageType.Info);
             }
             else
             {
-                EditorGUILayout.PropertyField(m_UseGravity);
-                EditorGUILayout.PropertyField(m_ComputeParentAnchor);
+                EditorGUILayout.PropertyField(m_UseGravity, Styles.useGravity);
+                EditorGUILayout.PropertyField(m_ComputeParentAnchor, Styles.computeParentAnchor);
 
                 // Show anchor edit fields and set to joint if changed
                 // The reason we have change checks here is because in AwakeFromLoad we won't overwrite anchors
                 // If we were to do that, simulation would drift caused by anchors reset relative to current poses
                 EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_AnchorPosition);
-                QuaternionAsEulerAnglesPropertyField("Anchor Rotation", m_AnchorRotation, body.anchorRotation);
+                EditorGUILayout.PropertyField(m_AnchorPosition, Styles.anchorPosition);
+                QuaternionAsEulerAnglesPropertyField(Styles.anchorRotation, m_AnchorRotation, body.anchorRotation);
                 if (EditorGUI.EndChangeCheck())
                 {
                     body.anchorPosition = m_AnchorPosition.vector3Value;
@@ -149,9 +176,8 @@ namespace UnityEditor
                 if (!m_ComputeParentAnchor.boolValue)
                 {
                     EditorGUI.BeginChangeCheck();
-                    EditorGUILayout.PropertyField(m_ParentAnchorPosition);
-                    QuaternionAsEulerAnglesPropertyField("Parent Anchor Rotation", m_ParentAnchorRotation,
-                        body.parentAnchorRotation);
+                    EditorGUILayout.PropertyField(m_ParentAnchorPosition, Styles.parentAnchorPosition);
+                    QuaternionAsEulerAnglesPropertyField(Styles.parentAnchorRotation, m_ParentAnchorRotation, body.parentAnchorRotation);
 
                     if (EditorGUI.EndChangeCheck())
                     {
@@ -172,11 +198,11 @@ namespace UnityEditor
                         body.transform.InverseTransformDirection(com - closestOnSurface).normalized);
                 }
 
-                EditorGUILayout.PropertyField(m_ArticulationJointType);
+                EditorGUILayout.PropertyField(m_ArticulationJointType); // the tooltip for this is still in the header
 
-                EditorGUILayout.PropertyField(m_LinearDamping);
-                EditorGUILayout.PropertyField(m_AngularDamping);
-                EditorGUILayout.PropertyField(m_JointFriction);
+                EditorGUILayout.PropertyField(m_LinearDamping, Styles.linearDamping);
+                EditorGUILayout.PropertyField(m_AngularDamping, Styles.angularDamping);
+                EditorGUILayout.PropertyField(m_JointFriction, Styles.jointFriction);
 
                 switch (body.jointType)
                 {
@@ -214,9 +240,9 @@ namespace UnityEditor
 
                         EditorGUI.BeginChangeCheck();
                         EditorGUILayout.Space();
-                        linearDof = (LinearDof)EditorGUILayout.EnumPopup("Axis", linearDof);
+                        linearDof = (LinearDof)EditorGUILayout.EnumPopup(Styles.prismaticAxis, linearDof);
                         NonLockedMotion motion = (dofLockSetting == ArticulationDofLock.FreeMotion) ? NonLockedMotion.Free : NonLockedMotion.Limited;
-                        motion = (NonLockedMotion)EditorGUILayout.EnumPopup("Motion", motion);
+                        motion = (NonLockedMotion)EditorGUILayout.EnumPopup(Styles.unlockedMotionType, motion);
                         if (EditorGUI.EndChangeCheck() || overrideDof)
                         {
                             m_LinearX.enumValueIndex = (linearDof == LinearDof.X) ? (int)motion : 0;
@@ -240,7 +266,7 @@ namespace UnityEditor
                             : NonLockedMotion.Free;
 
                         EditorGUILayout.Space();
-                        motion = (NonLockedMotion)EditorGUILayout.EnumPopup("Motion", revoluteMotion);
+                        motion = (NonLockedMotion)EditorGUILayout.EnumPopup(Styles.unlockedMotionType, revoluteMotion);
 
                         ArticulationDofLock newDofLock = (ArticulationDofLock)motion;
 
@@ -532,16 +558,16 @@ namespace UnityEditor
             // Display limit fields only if drive is LimitedMotion
             if (dofLock == ArticulationDofLock.LimitedMotion)
             {
-                EditorGUILayout.PropertyField(drive.FindPropertyRelative("lowerLimit"));
-                EditorGUILayout.PropertyField(drive.FindPropertyRelative("upperLimit"));
+                EditorGUILayout.PropertyField(drive.FindPropertyRelative("lowerLimit"), Styles.lowerLimit);
+                EditorGUILayout.PropertyField(drive.FindPropertyRelative("upperLimit"), Styles.upperLimit);
             }
 
             // Always display fields
-            EditorGUILayout.PropertyField(drive.FindPropertyRelative("stiffness"));
-            EditorGUILayout.PropertyField(drive.FindPropertyRelative("damping"));
-            EditorGUILayout.PropertyField(drive.FindPropertyRelative("forceLimit"));
-            EditorGUILayout.PropertyField(drive.FindPropertyRelative("target"));
-            EditorGUILayout.PropertyField(drive.FindPropertyRelative("targetVelocity"));
+            EditorGUILayout.PropertyField(drive.FindPropertyRelative("stiffness"), Styles.stiffness);
+            EditorGUILayout.PropertyField(drive.FindPropertyRelative("damping"), Styles.damping);
+            EditorGUILayout.PropertyField(drive.FindPropertyRelative("forceLimit"), Styles.forceLimit);
+            EditorGUILayout.PropertyField(drive.FindPropertyRelative("target"), Styles.target);
+            EditorGUILayout.PropertyField(drive.FindPropertyRelative("targetVelocity"), Styles.targetVelocity);
 
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();

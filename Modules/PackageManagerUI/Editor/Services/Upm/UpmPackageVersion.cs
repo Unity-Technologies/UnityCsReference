@@ -46,7 +46,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (HasTag(PackageTag.Bundled))
                     return true;
-                if (HasTag(PackageTag.Git | PackageTag.Local | PackageTag.InDevelopment))
+                if (HasTag(PackageTag.Git | PackageTag.Local | PackageTag.Custom))
                     return false;
                 return m_IsUnityPackage;
             }
@@ -78,7 +78,7 @@ namespace UnityEditor.PackageManager.UI
             get { return m_IsInstalled; }
         }
 
-        public bool installedFromPath => HasTag(PackageTag.Local | PackageTag.InDevelopment | PackageTag.Git);
+        public bool installedFromPath => HasTag(PackageTag.Local | PackageTag.Custom | PackageTag.Git);
 
         public override bool isAvailableOnDisk => m_IsFullyFetched && !string.IsNullOrEmpty(m_PackageInfo.resolvedPath);
 
@@ -179,7 +179,7 @@ namespace UnityEditor.PackageManager.UI
                     break;
 
                 case PackageSource.Embedded:
-                    m_Tag = PackageTag.InDevelopment | PackageTag.VersionLocked;
+                    m_Tag = PackageTag.Custom | PackageTag.VersionLocked;
                     break;
 
                 case PackageSource.Local:
@@ -202,20 +202,29 @@ namespace UnityEditor.PackageManager.UI
             if (isInstalled && isDirectDependency && !installedFromPath && !HasTag(PackageTag.BuiltIn))
                 m_Tag |= PackageTag.Embeddable;
 
-            if (m_Version?.IsRelease() == true)
+            // lifecycle tags should not apply to scoped registry packages
+            if (isUnityPackage)
             {
-                m_Tag |= PackageTag.Release;
-                SemVersion? verified;
-                bool isVerifiedParsed = SemVersionParser.TryParse(m_PackageInfo.versions.verified, out verified);
+                var previewTagString = "Preview";
+                SemVersion? lifecycleVersionParsed;
+                SemVersionParser.TryParse(packageInfo.unityLifecycle?.version, out lifecycleVersionParsed);
 
-                if (isVerifiedParsed && m_Version == verified && !installedFromPath)
-                    m_Tag |= PackageTag.Verified;
-            }
-            else
-            {
-                if ((version?.Major == 0 && string.IsNullOrEmpty(version?.Prerelease)) ||
-                    PackageTag.Preview.ToString().Equals(version?.Prerelease.Split('.')[0], StringComparison.InvariantCultureIgnoreCase))
-                    m_Tag |= PackageTag.Preview;
+                if (m_Version?.HasPreReleaseVersionTag() == true)
+                {
+                    // must match exactly to be release candidate
+                    if (m_VersionString == packageInfo.unityLifecycle?.version)
+                        m_Tag |= PackageTag.ReleaseCandidate;
+                    else
+                        m_Tag |= PackageTag.PreRelease;
+                }
+                else if (m_Version?.IsNotPreReleaseOrExperimental() == true)
+                {
+                    m_Tag |= PackageTag.Release;
+                }
+                else if ((version?.Major == 0 && string.IsNullOrEmpty(version?.Prerelease)) ||
+                         m_Version?.IsExperimental() == true ||
+                         previewTagString.Equals(version?.Prerelease.Split('.')[0], StringComparison.InvariantCultureIgnoreCase))
+                    m_Tag |= PackageTag.Experimental;
             }
         }
 

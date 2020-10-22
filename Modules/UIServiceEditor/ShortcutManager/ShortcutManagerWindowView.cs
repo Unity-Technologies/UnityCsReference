@@ -1371,6 +1371,11 @@ namespace UnityEditor.ShortcutManagement
                 SaveViewData();
             MarkDirtyRepaint();
         }
+
+        protected override string ValueToString(List<KeyCombination> value)
+        {
+            return KeyCombination.SequenceToString(value);
+        }
     }
 
     internal class ShortcutSearchField : SearchFieldBase<ShortcutTextField, List<KeyCombination>>
@@ -1546,8 +1551,8 @@ namespace UnityEditor.ShortcutManagement
 
         void UpdateElement(VisualElement el, float handlePosition, float offset)
         {
-            var totalPadding = el.ElementAt(0).computedStyle.paddingLeft.value.value + el.ElementAt(0).computedStyle.paddingRight.value.value + el.ElementAt(1).computedStyle.paddingLeft.value.value + el.ElementAt(1).computedStyle.paddingRight.value.value;
-            var percentage = (handlePosition + (target.computedStyle.width.value.value) / 2 - totalPadding / 2) / (target.parent.layout.width - (totalPadding + offset));
+            var totalPadding = el.ElementAt(0).computedStyle.paddingLeft.value + el.ElementAt(0).computedStyle.paddingRight.value + el.ElementAt(1).computedStyle.paddingLeft.value + el.ElementAt(1).computedStyle.paddingRight.value;
+            var percentage = (handlePosition + (target.computedStyle.width.value) / 2 - totalPadding / 2) / (target.parent.layout.width - (totalPadding + offset));
 
             el.ElementAt(0).style.flexGrow = percentage;
             el.ElementAt(1).style.flexGrow = 1 - percentage;

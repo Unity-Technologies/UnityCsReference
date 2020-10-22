@@ -448,7 +448,7 @@ namespace UnityEditor
             var headerRows = new List<int>();
             while (property.NextWithDepthCheck(null, minAllowedDepth))
             {
-                if (!SearchService.Scene.Filter(m_SearchString, property, searchContext))
+                if (!SearchService.SceneSearch.Filter(m_SearchString, property, searchContext))
                 {
                     property.SetFilteredVisibility(false);
                     continue;

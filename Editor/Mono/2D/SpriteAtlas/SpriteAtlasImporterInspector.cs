@@ -76,6 +76,7 @@ namespace UnityEditor.U2D
             public readonly int packableElementHash = "PackableElement".GetHashCode();
             public readonly int packableSelectorHash = "PackableSelector".GetHashCode();
 
+            public readonly string swapObjectRegisterUndo = L10n.Tr("Swap Packable");
             public readonly string secondaryTextureNameTextControlName = "secondary_texture_name_text_field";
             public readonly string defaultTextForSecondaryTextureName = L10n.Tr("(Matches the names of the Secondary Textures in your Sprites.)");
             public readonly string nameUniquenessWarning = L10n.Tr("Secondary Texture names must be unique within a Sprite or Sprite Atlas.");
@@ -345,6 +346,7 @@ namespace UnityEditor.U2D
             {
                 // Always call Remove() on the previous object if we swapping the object field item.
                 // This ensure the Sprites was pack in this atlas will be refreshed of it unbound.
+                Undo.RegisterCompleteObjectUndo(spriteAtlasAsset, styles.swapObjectRegisterUndo);
                 if (previousObject != null)
                     spriteAtlasAsset.Remove(new Object[] { previousObject });
                 property.objectReferenceValue = changedObject;

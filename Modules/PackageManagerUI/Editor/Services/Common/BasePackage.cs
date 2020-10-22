@@ -32,13 +32,20 @@ namespace UnityEditor.PackageManager.UI
                 }
 
                 var primary = versions.primary;
-                if (primary.HasTag(PackageTag.InDevelopment))
+                var recommended = versions.recommended;
+                var latestKeyVersion = versions.key.LastOrDefault();
+                if (primary.HasTag(PackageTag.Custom))
                     return PackageState.InDevelopment;
 
                 if (primary.isInstalled && !primary.isDirectDependency)
                     return PackageState.InstalledAsDependency;
 
-                if (primary != versions.recommended)
+                // UPM packages may not have a recommended version anymore, so check if there's a higher
+                //  version listed in keyVersions
+                // but this also needs to cover AssetStore assets where the latest update
+                //  is not in keyVersions- in which case we still need to check recommended
+                if ((primary.isInstalled && primary != latestKeyVersion) ||
+                    (this is AssetStorePackage && primary != recommended))
                     return PackageState.UpdateAvailable;
 
                 if (versions.importAvailable != null)

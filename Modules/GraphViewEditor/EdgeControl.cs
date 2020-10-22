@@ -848,7 +848,7 @@ namespace UnityEditor.Experimental.GraphView
 
             float halfWidth = edgeWidth * 0.5f;
             float currentLength = 0;
-            Color32 flags = new Color32(0, 0, 0, (byte)VertexFlags.LastType);
+            Color32 flags = new Color32(0, 0, 0, (byte)VertexFlags.IsGraphViewEdge);
 
             Vector2 unitPreviousSegment = Vector2.zero;
             for (int i = 0; i < cpt; ++i)

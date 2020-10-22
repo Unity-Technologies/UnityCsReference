@@ -439,8 +439,14 @@ namespace Unity.Collections
             if (srcIndex + length > srcLength)
                 throw new ArgumentException("length is greater than the number of elements from srcIndex to the end of the source NativeArray.", nameof(length));
 
+            if (srcIndex + length < 0)
+                throw new ArgumentException("srcIndex + length causes an integer overflow");
+
             if (dstIndex + length > dstLength)
                 throw new ArgumentException("length is greater than the number of elements from dstIndex to the end of the destination NativeArray.", nameof(length));
+
+            if (dstIndex + length < 0)
+                throw new ArgumentException("dstIndex + length causes an integer overflow");
         }
 
         public static void Copy(NativeArray<T> src, int srcIndex, NativeArray<T> dst, int dstIndex, int length)
@@ -635,6 +641,11 @@ namespace Unity.Collections
             if (start + length > Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(length), $"sub array range {start}-{start + length - 1} is outside the range of the native array 0-{Length - 1}");
+            }
+
+            if (start + length < 0)
+            {
+                throw new ArgumentException($"sub array range {start}-{start + length - 1} caused an integer overflow and is outside the range of the native array 0-{Length - 1}");
             }
         }
 

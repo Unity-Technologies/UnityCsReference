@@ -600,7 +600,7 @@ namespace UnityEditor
             internal partial class Styles
             {
                 public static readonly GUIContent[] tierName =
-                { EditorGUIUtility.TrTextContent("Low (Tier1)"), EditorGUIUtility.TrTextContent("Medium (Tier 2)"), EditorGUIUtility.TrTextContent("High (Tier 3)") };
+                { EditorGUIUtility.TrTextContent("Low (Tier 1)"), EditorGUIUtility.TrTextContent("Medium (Tier 2)"), EditorGUIUtility.TrTextContent("High (Tier 3)") };
 
                 public static readonly GUIContent empty = EditorGUIUtility.TextContent("");
                 public static readonly GUIContent autoSettings = EditorGUIUtility.TrTextContent("Use Defaults");

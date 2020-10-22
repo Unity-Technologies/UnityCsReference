@@ -62,6 +62,8 @@ namespace UnityEditor
         internal static OnHeaderGUIDelegate OnPostHeaderGUI = null;
         private Dictionary<int, Asset[]> m_HierarchyPrefabToAssetIDMap;
 
+        internal event Action<bool, int, string, string> renameEnded;
+
         private static Dictionary<string, int> s_ActiveParentObjectPerSceneGUID;
 
         internal static void UpdateActiveParentObjectValuesForScene(string sceneGUID, int instanceID)
@@ -319,22 +321,11 @@ namespace UnityEditor
 
         override protected void RenameEnded()
         {
-            string name = string.IsNullOrEmpty(GetRenameOverlay().name) ? GetRenameOverlay().originalName : GetRenameOverlay().name;
+            bool userAcceptedRename = GetRenameOverlay().userAcceptedRename;
             int instanceID = GetRenameOverlay().userData;
-            bool userAccepted = GetRenameOverlay().userAcceptedRename;
-
-            if (userAccepted)
-            {
-                ObjectNames.SetNameSmartWithInstanceID(instanceID, name);
-
-                // Manually set the name so no visual pop happens
-                TreeViewItem item = m_TreeView.data.FindItem(instanceID);
-
-                if (item != null)
-                    item.displayName = name;
-
-                EditorApplication.RepaintAnimationWindow();
-            }
+            string name = string.IsNullOrEmpty(GetRenameOverlay().name) ? GetRenameOverlay().originalName : GetRenameOverlay().name;
+            string originalname = GetRenameOverlay().originalName;
+            renameEnded?.Invoke(userAcceptedRename, instanceID, name, originalname);
         }
 
         private bool isDragging
@@ -595,6 +586,9 @@ namespace UnityEditor
                     case Scene.LoadingState.Loading:
                         label += " (is loading)";
                         break;
+                    case Scene.LoadingState.Unloading:
+                        label += " (is unloading)";
+                        break;
                 }
 
                 // Render disabled if scene is unloaded
@@ -638,7 +632,7 @@ namespace UnityEditor
             }
 
             lineStyle.padding.left = 0;
-            Texture icon = GetEffectiveIcon(goItem);
+            Texture icon = GetEffectiveIcon(goItem, selected, focused);
 
             if (icon != null)
             {

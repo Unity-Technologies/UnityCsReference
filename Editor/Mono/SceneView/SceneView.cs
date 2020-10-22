@@ -1895,6 +1895,14 @@ namespace UnityEditor
             m_SceneTargetTexture.Create();
         }
 
+        public bool IsCameraDrawModeSupported(CameraMode mode)
+        {
+            if (!Handles.IsCameraDrawModeSupported(m_Camera, mode.drawMode))
+                return false;
+            return (onValidateCameraMode == null ||
+                onValidateCameraMode.GetInvocationList().All(validate => ((Func<CameraMode, bool>)validate)(mode)));
+        }
+
         public bool IsCameraDrawModeEnabled(CameraMode mode)
         {
             if (!Handles.IsCameraDrawModeEnabled(m_Camera, mode.drawMode))
@@ -3313,13 +3321,9 @@ namespace UnityEditor
                     {
                         var gameObjects = FindObjectsOfType<GameObject>();
                         var objs = new List<Object>(gameObjects.Length);
-
                         foreach (var go in gameObjects)
-                        {
-                            if (!SceneVisibilityManager.instance.IsPickingDisabled(go)
-                                && !SceneVisibilityManager.instance.IsHidden(go))
+                            if (SceneVisibilityManager.instance.IsSelectable(go))
                                 objs.Add(go);
-                        }
                         Selection.objects = objs.ToArray();
                     }
 
@@ -3332,7 +3336,7 @@ namespace UnityEditor
                     break;
                 case EventCommandNames.InvertSelection:
                     if (execute)
-                        Selection.objects = FindObjectsOfType(typeof(GameObject)).Except(Selection.gameObjects).ToArray();
+                        Selection.objects = FindObjectsOfType<GameObject>().Except(Selection.gameObjects).Where(SceneVisibilityManager.instance.IsSelectable).ToArray();
                     Event.current.Use();
                     break;
                 case EventCommandNames.SelectChildren:

@@ -92,7 +92,7 @@ namespace UnityEditor.PackageManager.UI
             if (string.IsNullOrEmpty(registryName))
                 return false;
             if (!m_UpmCache.installedPackageInfos.Any())
-                m_UpmCache.SetInstalledPackageInfos(PackageInfo.GetAll());
+                m_UpmCache.SetInstalledPackageInfos(PackageInfo.GetAllRegisteredPackages());
             return m_UpmCache.installedPackageInfos.Any(p => p.registry?.name == registryName);
         }
 

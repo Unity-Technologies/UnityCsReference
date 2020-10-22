@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine.Yoga;
 using UnityEngine.UIElements.StyleSheets;
@@ -44,6 +45,10 @@ namespace UnityEngine.UIElements
         RequireMeasureFunction = 1 << 7,
         // Element has view data persistence
         EnableViewDataPersistence = 1 << 8,
+        // Element never clip regardless of overflow style (useful for ScrollView)
+        DisableClipping = 1 << 9,
+        // Element needs to receive an AttachToPanel event
+        NeedsAttachToPanelEvent = 1 << 10,
         // Element initial flags
         Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty
     }
@@ -308,14 +313,6 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Return the event interpreter for this element.
-        /// </summary>
-        internal IEventInterpreter eventInterpreter
-        {
-            get { return elementPanel?.eventInterpreter ?? EventInterpreter.s_Instance; }
-        }
-
-        /// <summary>
         /// A combination of hint values that specify high-level intended usage patterns for the <see cref="VisualElement"/>.
         /// This property can only be set when the <see cref="VisualElement"/> is not yet part of a <see cref="Panel"/>. Once part of a <see cref="Panel"/>, this property becomes effectively read-only, and attempts to change it will throw an exception.
         /// The specification of proper <see cref="UsageHints"/> drives the system to make better decisions on how to process or accelerate certain operations based on the anticipated usage pattern.
@@ -532,23 +529,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal static Rect TransformAlignedRect(Matrix4x4 lhc, Rect rect)
-        {
-            var min = MultiplyMatrix44Point2(lhc, rect.min);
-            var max = MultiplyMatrix44Point2(lhc, rect.max);
-
-            // We assume that the transform performs translation/scaling without rotation.
-            return Rect.MinMaxRect(Math.Min(min.x, max.x), Math.Min(min.y, max.y), Math.Max(min.x, max.x), Math.Max(min.y, max.y));
-        }
-
-        internal static Vector2 MultiplyMatrix44Point2(Matrix4x4 lhs, Vector2 point)
-        {
-            Vector2 res;
-            res.x = lhs.m00 * point.x + lhs.m01 * point.y + lhs.m03;
-            res.y = lhs.m10 * point.x + lhs.m11 * point.y + lhs.m13;
-            return res;
-        }
-
         internal bool isBoundingBoxDirty
         {
             get => (m_Flags & VisualElementFlags.BoundingBoxDirty) == VisualElementFlags.BoundingBoxDirty;
@@ -591,6 +571,17 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private Rect boundingBoxInParentSpace
+        {
+            get
+            {
+                var bb = boundingBox;
+                TransformAlignedRect(ref bb);
+                bb.position += layout.position;
+                return bb;
+            }
+        }
+
         internal void UpdateBoundingBox()
         {
             if (float.IsNaN(rect.x) || float.IsNaN(rect.y) || float.IsNaN(rect.width) || float.IsNaN(rect.height))
@@ -601,17 +592,17 @@ namespace UnityEngine.UIElements
             else
             {
                 m_BoundingBox = rect;
-                var childCount = m_Children.Count;
-                for (int i = 0; i < childCount; i++)
+                if (!ShouldClip())
                 {
-                    var childBB = m_Children[i].boundingBox;
-
-                    // Use localtransform instead
-                    childBB = m_Children[i].ChangeCoordinatesTo(this, childBB);
-                    m_BoundingBox.xMin = Math.Min(m_BoundingBox.xMin, childBB.xMin);
-                    m_BoundingBox.xMax = Math.Max(m_BoundingBox.xMax, childBB.xMax);
-                    m_BoundingBox.yMin = Math.Min(m_BoundingBox.yMin, childBB.yMin);
-                    m_BoundingBox.yMax = Math.Max(m_BoundingBox.yMax, childBB.yMax);
+                    var childCount = m_Children.Count;
+                    for (int i = 0; i < childCount; i++)
+                    {
+                        var childBB = m_Children[i].boundingBoxInParentSpace;
+                        m_BoundingBox.xMin = Math.Min(m_BoundingBox.xMin, childBB.xMin);
+                        m_BoundingBox.xMax = Math.Max(m_BoundingBox.xMax, childBB.xMax);
+                        m_BoundingBox.yMin = Math.Min(m_BoundingBox.yMin, childBB.yMin);
+                        m_BoundingBox.yMax = Math.Max(m_BoundingBox.yMax, childBB.yMax);
+                    }
                 }
             }
 
@@ -620,7 +611,8 @@ namespace UnityEngine.UIElements
 
         internal void UpdateWorldBoundingBox()
         {
-            m_WorldBoundingBox = TransformAlignedRect(worldTransform, boundingBox);
+            m_WorldBoundingBox = boundingBox;
+            TransformAlignedRect(in worldTransformRef, ref m_WorldBoundingBox);
         }
 
         /// <summary>
@@ -630,9 +622,9 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var g = worldTransform;
-
-                return TransformAlignedRect(g, rect);
+                var result = rect;
+                TransformAlignedRect(in worldTransformRef, ref result);
+                return result;
             }
         }
 
@@ -643,11 +635,9 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var g = transform.matrix;
-
                 var l = layout;
-
-                return TransformAlignedRect(g, l);
+                TransformAlignedRect(ref l);
+                return l;
             }
         }
 
@@ -655,7 +645,8 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                return new Rect(0.0f, 0.0f, layout.width, layout.height);
+                var l = layout;
+                return new Rect(0.0f, 0.0f, l.width, l.height);
             }
         }
 
@@ -690,27 +681,32 @@ namespace UnityEngine.UIElements
             get
             {
                 if (isWorldTransformDirty)
-                {
                     UpdateWorldTransform();
-                }
                 return m_WorldTransformCache;
             }
         }
 
-        internal Matrix4x4 worldTransformInverse
+        internal ref Matrix4x4 worldTransformRef
+        {
+            get
+            {
+                if (isWorldTransformDirty)
+                    UpdateWorldTransform();
+                return ref m_WorldTransformCache;
+            }
+        }
+
+        internal ref Matrix4x4 worldTransformInverse
         {
             get
             {
                 if (isWorldTransformDirty || isWorldTransformInverseDirty)
-                {
-                    m_WorldTransformInverseCache = worldTransform.inverse;
-                    isWorldTransformInverseDirty = false;
-                }
-                return m_WorldTransformInverseCache;
+                    UpdateWorldTransformInverse();
+                return ref m_WorldTransformInverseCache;
             }
         }
 
-        private void UpdateWorldTransform()
+        internal void UpdateWorldTransform()
         {
             // If we are during a layout we don't want to remove the dirty transform flag
             // since this could lead to invalid computed transform (see ScopeContentainer.DoMeasure)
@@ -719,18 +715,24 @@ namespace UnityEngine.UIElements
                 isWorldTransformDirty = false;
             }
 
-            var offset = Matrix4x4.Translate(new Vector3(layout.x, layout.y, 0));
             if (hierarchy.parent != null)
             {
-                m_WorldTransformCache = hierarchy.parent.worldTransform * offset * transform.matrix;
+                var mat = matrixWithLayout;
+                MultiplyMatrix34(in hierarchy.parent.worldTransformRef,  in mat, out m_WorldTransformCache);
             }
             else
             {
-                m_WorldTransformCache = offset * transform.matrix;
+                m_WorldTransformCache = matrixWithLayout;
             }
 
             isWorldTransformInverseDirty = true;
             isWorldBoundingBoxDirty = true;
+        }
+
+        internal void UpdateWorldTransformInverse()
+        {
+            Matrix4x4.Inverse3DAffine(worldTransform, ref m_WorldTransformInverseCache);
+            isWorldTransformInverseDirty = false;
         }
 
         internal bool isWorldClipDirty
@@ -996,7 +998,9 @@ namespace UnityEngine.UIElements
             }
             else if (evt.eventTypeId == MouseEnterEvent.TypeId())
             {
-                pseudoStates |= PseudoStates.Hover;
+                var capturingElement = panel?.GetCapturingElement(PointerId.mousePointerId);
+                if (capturingElement == null || capturingElement == this)
+                    pseudoStates |= PseudoStates.Hover;
             }
             else if (evt.eventTypeId == MouseLeaveEvent.TypeId())
             {
@@ -1010,6 +1014,11 @@ namespace UnityEngine.UIElements
             {
                 pseudoStates = pseudoStates | PseudoStates.Focus;
             }
+            else
+            {
+                HandlePanelAttachmentEvents(evt);
+            }
+
         }
 
         public sealed override void Focus()
@@ -1048,12 +1057,39 @@ namespace UnityEngine.UIElements
                     panelDispatcherGate = new EventDispatcherGate(panel.dispatcher);
                 }
 
+                BaseVisualElementPanel previousPanel = elementPanel;
+
                 using (pDispatcherGate)
                 using (panelDispatcherGate)
                 {
                     foreach (var e in elements)
                     {
-                        e.ChangePanel(p);
+                        e.WillChangePanel(p);
+                    }
+
+                    VisualElementFlags flagToAdd = p != null ? VisualElementFlags.NeedsAttachToPanelEvent : 0;
+
+                    foreach (var e in elements)
+                    {
+                        // this can happen if the elements gets re-parented during a user callback
+                        // in this case another SetPanel() call should already have notified the element
+                        // so we simply ignore it
+                        if (previousPanel != e.elementPanel)
+                            continue;
+
+                        e.elementPanel = p;
+                        e.m_Flags |= flagToAdd;
+                    }
+
+                    foreach (var e in elements)
+                    {
+                        // this can happen if the elements gets re-parented during a user callback
+                        // in this case another SetPanel() call should already have notified the element
+                        // so we simply ignore it
+                        if (p != e.elementPanel)
+                            continue;
+
+                        e.HasChangedPanel(previousPanel);
                     }
                 }
             }
@@ -1063,34 +1099,40 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void ChangePanel(BaseVisualElementPanel p)
+        void WillChangePanel(BaseVisualElementPanel destinationPanel)
         {
-            if (panel == p)
-            {
-                return;
-            }
-
             if (panel != null)
             {
-                using (var e = DetachFromPanelEvent.GetPooled(panel, p))
+                // Only send this event if the element isn't waiting for an attach event already
+                if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == 0)
                 {
-                    e.target = this;
-                    elementPanel.SendEvent(e, DispatchMode.Immediate);
+                    using (var e = DetachFromPanelEvent.GetPooled(panel, destinationPanel))
+                    {
+                        e.target = this;
+                        elementPanel.SendEvent(e, DispatchMode.Immediate);
+                    }
                 }
+
                 UnregisterRunningAnimations();
             }
+        }
 
-            IPanel prevPanel = panel;
-            elementPanel = p;
-
+        void HasChangedPanel(BaseVisualElementPanel prevPanel)
+        {
             if (panel != null)
             {
                 yogaNode.Config = elementPanel.yogaConfig;
                 RegisterRunningAnimations();
-                using (var e = AttachToPanelEvent.GetPooled(prevPanel, p))
+
+                // Only send this event if the element hasn't received it yet
+                if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == VisualElementFlags.NeedsAttachToPanelEvent)
                 {
-                    e.target = this;
-                    elementPanel.SendEvent(e, DispatchMode.Default);
+                    using (var e = AttachToPanelEvent.GetPooled(prevPanel, panel))
+                    {
+                        e.target = this;
+                        elementPanel.SendEvent(e, DispatchMode.Immediate);
+                    }
+                    m_Flags &= ~VisualElementFlags.NeedsAttachToPanelEvent;
                 }
             }
             else
@@ -1802,7 +1844,7 @@ namespace UnityEngine.UIElements
             {
                 if (eventType == MouseOverEvent.TypeId() && elementPanel.GetTopElementUnderPointer(PointerId.mousePointerId) == this)
                 {
-                    elementPanel.cursorManager.SetCursor(computedStyle.cursor.value);
+                    elementPanel.cursorManager.SetCursor(computedStyle.cursor);
                 }
                 else if (eventType == MouseOutEvent.TypeId())
                 {
@@ -1815,70 +1857,8 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// VisualElementExtensions is a set of extension methods useful for VisualElement.
     /// </summary>
-    public static class VisualElementExtensions
+    public static partial class VisualElementExtensions
     {
-        // transforms a point assumed in Panel space to the referential inside of the element bound (local)
-        public static Vector2 WorldToLocal(this VisualElement ele, Vector2 p)
-        {
-            if (ele == null)
-            {
-                throw new ArgumentNullException(nameof(ele));
-            }
-
-            return VisualElement.MultiplyMatrix44Point2(ele.worldTransformInverse, p);
-        }
-
-        // transforms a point to Panel space referential
-        public static Vector2 LocalToWorld(this VisualElement ele, Vector2 p)
-        {
-            if (ele == null)
-            {
-                throw new ArgumentNullException(nameof(ele));
-            }
-
-            return VisualElement.MultiplyMatrix44Point2(ele.worldTransform, p);
-        }
-
-        // transforms a rect assumed in Panel space to the referential inside of the element bound (local)
-        public static Rect WorldToLocal(this VisualElement ele, Rect r)
-        {
-            if (ele == null)
-            {
-                throw new ArgumentNullException(nameof(ele));
-            }
-
-            Vector2 position = VisualElement.MultiplyMatrix44Point2(ele.worldTransformInverse, r.position);
-            r.position = position;
-            r.size = ele.worldTransformInverse.MultiplyVector(r.size);
-            return r;
-        }
-
-        // transforms a rect to Panel space referential
-        public static Rect LocalToWorld(this VisualElement ele, Rect r)
-        {
-            if (ele == null)
-            {
-                throw new ArgumentNullException(nameof(ele));
-            }
-
-            var toWorldMatrix = ele.worldTransform;
-            r.position = VisualElement.MultiplyMatrix44Point2(toWorldMatrix, r.position);
-            r.size = toWorldMatrix.MultiplyVector(r.size);
-            return r;
-        }
-
-        // transform point from the local space of one element to to the local space of another
-        public static Vector2 ChangeCoordinatesTo(this VisualElement src, VisualElement dest, Vector2 point)
-        {
-            return dest.WorldToLocal(src.LocalToWorld(point));
-        }
-
-        // transform Rect from the local space of one element to to the local space of another
-        public static Rect ChangeCoordinatesTo(this VisualElement src, VisualElement dest, Rect rect)
-        {
-            return dest.WorldToLocal(src.LocalToWorld(rect));
-        }
-
         public static void StretchToParentSize(this VisualElement elem)
         {
             if (elem == null)

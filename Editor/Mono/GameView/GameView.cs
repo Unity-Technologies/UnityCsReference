@@ -504,7 +504,7 @@ namespace UnityEditor
                 {
                     var typeNames = availableTypes.Values.ToList();
                     var types = availableTypes.Keys.ToList();
-                    int viewIndex = EditorGUILayout.Popup(typeNames.IndexOf(titleContent.text), typeNames.ToArray(),
+                    int viewIndex = EditorGUILayout.Popup(typeNames.IndexOf(GetWindowTitle(GetType())), typeNames.ToArray(),
                         EditorStyles.toolbarPopup,
                         GUILayout.Width(90));
                     EditorGUILayout.Space();
@@ -772,8 +772,36 @@ namespace UnityEditor
             Repaint();
         }
 
+        private bool HandleCommand(Event evt)
+        {
+            if (!EditorApplication.isPlayingOrWillChangePlaymode)
+                return false;
+
+            if (evt.type != EventType.ValidateCommand && evt.type != EventType.ExecuteCommand)
+                return false;
+
+            // Disable certain commands when in play mode with GameView focused. Executing commands has a noticeable
+            // impact on performance, especially when the default global shortcut is a single alphanumeric key.
+            switch (evt.commandName)
+            {
+                case EventCommandNames.FrameSelected:
+                case EventCommandNames.FrameSelectedWithLock:
+                    evt.Use();
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
         private void OnGUI()
         {
+            Event evt = Event.current;
+            EventType type = evt.type;
+
+            if (HandleCommand(evt))
+                return;
+
             if (position.size * EditorGUIUtility.pixelsPerPoint != m_LastWindowPixelSize) // pixelsPerPoint only reliable in OnGUI()
             {
                 UpdateZoomAreaAndParent();
@@ -785,9 +813,8 @@ namespace UnityEditor
             // This isn't ideal. Custom Cursors set by editor extensions for other windows can leak into the game view.
             // To fix this we should probably stop using the global custom cursor (intended for runtime) for custom editor cursors.
             // This has been noted for Cursors tech debt.
-            EditorGUIUtility.AddCursorRect(viewInWindow, MouseCursor.CustomCursor);
-
-            EventType type = Event.current.type;
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                EditorGUIUtility.AddCursorRect(viewInWindow, MouseCursor.CustomCursor);
 
             // Gain mouse lock when clicking on game view content
             if (type == EventType.MouseDown && viewInWindow.Contains(Event.current.mousePosition))

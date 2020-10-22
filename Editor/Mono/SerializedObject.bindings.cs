@@ -196,5 +196,13 @@ namespace UnityEditor
             [NativeMethod("IsValid")]
             get;
         }
+
+        public extern bool forceChildVisibility
+        {
+            [NativeMethod("GetForceChildVisibiltyFlag")]
+            get;
+            [NativeMethod("SetForceChildVisibiltyFlag")]
+            set;
+        }
     }
 }

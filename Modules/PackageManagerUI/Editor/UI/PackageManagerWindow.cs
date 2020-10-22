@@ -152,7 +152,7 @@ namespace UnityEditor.PackageManager.UI
             if (pageManager.GetRefreshTimestamp(RefreshOptions.UpmList | RefreshOptions.UpmListOffline) == 0)
                 return;
             var upmCache = ServicesContainer.instance.Resolve<UpmCache>();
-            upmCache.SetInstalledPackageInfos(PackageInfo.GetAll());
+            upmCache.SetInstalledPackageInfos(PackageInfo.GetAllRegisteredPackages());
         }
 
         internal static void SelectPackageAndFilterStatic(string packageToSelect, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")

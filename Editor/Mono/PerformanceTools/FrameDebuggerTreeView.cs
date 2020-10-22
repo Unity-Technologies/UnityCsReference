@@ -35,6 +35,9 @@ namespace UnityEditorInternal
             int id = selectedIDs[0];
             int eventIndex = id;
 
+            if (PopupWindowWithoutFocus.IsVisible())
+                PopupWindowWithoutFocus.Hide();
+
             // For tree hierarchy nodes, their IDs are not the frame event indices;
             // fetch the ID from the node itself in that case.
             // IDs for hierarchy nodes are negative and need to stay consistently ordered so

@@ -16,7 +16,7 @@ using UnityEngine.SceneManagement;
 namespace UnityEngine
 {
     [NativeHeader("Modules/Physics/PhysicMaterial.h")]
-    public class PhysicMaterial : UnityEngine.Object
+    partial class PhysicMaterial : UnityEngine.Object
     {
         public PhysicMaterial() { Internal_CreateDynamicsMaterial(this, "DynamicMaterial"); }
         public PhysicMaterial(string name) { Internal_CreateDynamicsMaterial(this, name); }
@@ -27,32 +27,13 @@ namespace UnityEngine
         extern public float staticFriction { get; set; }
         extern public PhysicMaterialCombine frictionCombine { get; set; }
         extern public PhysicMaterialCombine bounceCombine { get; set; }
-
-        [Obsolete("Use PhysicMaterial.bounciness instead (UnityUpgradable) -> bounciness")]
-        public float bouncyness { get { return bounciness; } set { bounciness = value; } }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Anisotropic friction is no longer supported since Unity 5.0.", true)]
-        public Vector3 frictionDirection2 { get { return Vector3.zero; } set {} }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Anisotropic friction is no longer supported since Unity 5.0.", true)]
-        public float dynamicFriction2 { get { return 0; } set {} }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Anisotropic friction is no longer supported since Unity 5.0.", true)]
-        public float staticFriction2 { get { return 0; } set {} }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Anisotropic friction is no longer supported since Unity 5.0.", true)]
-        public Vector3 frictionDirection { get { return Vector3.zero; } set {} }
     }
 
     [NativeHeader("Runtime/Interfaces/IRaycast.h")]
     [NativeHeader("PhysicsScriptingClasses.h")]
     [NativeHeader("Modules/Physics/RaycastHit.h")]
     [UsedByNativeCode]
-    public struct RaycastHit
+    public partial struct RaycastHit
     {
         [NativeName("point")] internal Vector3 m_Point;
         [NativeName("normal")] internal Vector3 m_Normal;
@@ -73,9 +54,6 @@ namespace UnityEngine
 
         public Vector2 textureCoord { get { return CalculateRaycastTexCoord(collider, m_UV, m_Point, m_FaceID, 0); } }
         public Vector2 textureCoord2 { get { return CalculateRaycastTexCoord(collider, m_UV, m_Point, m_FaceID, 1); } }
-
-        [Obsolete("Use textureCoord2 instead. (UnityUpgradable) -> textureCoord2")]
-        public Vector2 textureCoord1 { get { return textureCoord2;  } }
 
         public Transform transform
         {
@@ -112,7 +90,7 @@ namespace UnityEngine
 
     [RequireComponent(typeof(Transform))]
     [NativeHeader("Modules/Physics/Rigidbody.h")]
-    public class Rigidbody : UnityEngine.Component
+    public partial class Rigidbody : UnityEngine.Component
     {
         extern public Vector3 velocity { get; set; }
         extern public Vector3 angularVelocity { get; set; }
@@ -147,24 +125,6 @@ namespace UnityEngine
         extern public Vector3 GetRelativePointVelocity(Vector3 relativePoint);
         extern public Vector3 GetPointVelocity(Vector3 worldPoint);
         extern public int solverVelocityIterations { get; set; }
-
-        [Obsolete("The sleepVelocity is no longer supported. Use sleepThreshold. Note that sleepThreshold is energy but not velocity.")]
-        extern public float sleepVelocity { get; set; }
-
-        [Obsolete("The sleepAngularVelocity is no longer supported. Set Use sleepThreshold to specify energy.")]
-        extern public float sleepAngularVelocity { get; set; }
-
-        [Obsolete("Use Rigidbody.maxAngularVelocity instead.")]
-        public void SetMaxAngularVelocity(float a) { maxAngularVelocity = a; }
-
-        [Obsolete("Cone friction is no longer supported.")]
-        public bool useConeFriction { get { return false; } set {} }
-
-        [Obsolete("Please use Rigidbody.solverIterations instead. (UnityUpgradable) -> solverIterations")]
-        public int solverIterationCount { get { return solverIterations; } set { solverIterations = value; } }
-
-        [Obsolete("Please use Rigidbody.solverVelocityIterations instead. (UnityUpgradable) -> solverVelocityIterations")]
-        public int solverVelocityIterationCount { get { return solverVelocityIterations; } set { solverVelocityIterations = value; } }
 
         extern public void AddForce(Vector3 force, [DefaultValue("ForceMode.Force")] ForceMode mode);
 
@@ -390,24 +350,12 @@ namespace UnityEngine
     [RequiredByNativeCode]
     [NativeHeader("Modules/Physics/MeshCollider.h")]
     [NativeHeader("Runtime/Graphics/Mesh/Mesh.h")]
-    public class MeshCollider : Collider
+    public partial class MeshCollider : Collider
     {
         extern public Mesh sharedMesh { get; set; }
         extern public bool convex { get; set; }
 
-        [Obsolete("MeshCollider.inflateMesh is no longer supported. The new cooking algorithm doesn't need inflation to be used.")]
-        public bool inflateMesh
-        {
-            get { return false; } set {}
-        }
-
         extern public MeshColliderCookingOptions cookingOptions { get; set; }
-
-        [Obsolete("MeshCollider.skinWidth is no longer used.")]
-        public float skinWidth { get { return 0f; } set {} }
-
-        [Obsolete("Configuring smooth sphere collisions is no longer needed.")]
-        public bool smoothSphereCollisions { get { return true; } set {} }
     }
 
     [RequiredByNativeCode]
@@ -425,13 +373,10 @@ namespace UnityEngine
 
     [RequiredByNativeCode]
     [NativeHeader("Modules/Physics/BoxCollider.h")]
-    public class BoxCollider : Collider
+    public partial class BoxCollider : Collider
     {
         extern public Vector3 center { get; set; }
         extern public Vector3 size { get; set; }
-
-        [Obsolete("Use BoxCollider.size instead.")]
-        public Vector3 extents { get { return size * 0.5F; }  set { size = value * 2.0F; } }
     }
 
     [RequiredByNativeCode]
@@ -531,7 +476,7 @@ namespace UnityEngine
 
     [NativeHeader("Modules/Physics/CharacterJoint.h")]
     [NativeClass("Unity::CharacterJoint")]
-    public class CharacterJoint : Joint
+    public partial class CharacterJoint : Joint
     {
         extern public Vector3 swingAxis { get; set; }
         extern public SoftJointLimitSpring twistLimitSpring { get; set; }
@@ -543,15 +488,6 @@ namespace UnityEngine
         extern public bool enableProjection { get; set; }
         extern public float projectionDistance { get; set; }
         extern public float projectionAngle { get; set; }
-
-        [Obsolete("TargetRotation not in use for Unity 5 and assumed disabled.", true)]
-        public Quaternion targetRotation;
-
-        [Obsolete("TargetAngularVelocity not in use for Unity 5 and assumed disabled.", true)]
-        public Vector3 targetAngularVelocity;
-
-        [Obsolete("RotationDrive not in use for Unity 5 and assumed disabled.")]
-        public JointDrive rotationDrive;
     }
 
     [NativeHeader("Modules/Physics/ConfigurableJoint.h")]
@@ -921,245 +857,9 @@ namespace UnityEngine
 
     #endregion
 
-    public enum ArticulationJointType
-    {
-        FixedJoint = 0,
-        PrismaticJoint = 1,
-        RevoluteJoint = 2,
-        SphericalJoint = 3
-    };
-
-    public enum ArticulationDofLock
-    {
-        LockedMotion = 0,
-        LimitedMotion = 1,
-        FreeMotion = 2
-    };
-
-    [NativeHeader("Modules/Physics/ArticulationBody.h")]
-    [StructLayout(LayoutKind.Sequential)]
-    public struct ArticulationDrive
-    {
-        public float lowerLimit;
-        public float upperLimit;
-        public float stiffness;
-        public float damping;
-        public float forceLimit;
-        public float target;
-        public float targetVelocity;
-    }
-
-    [NativeHeader("Modules/Physics/ArticulationBody.h")]
-    [StructLayout(LayoutKind.Sequential)]
-    public struct ArticulationReducedSpace
-    {
-        private unsafe fixed float x[3];
-
-        public unsafe float this[int i]
-        {
-            get
-            {
-                if (i < 0 || i >= dofCount) throw new IndexOutOfRangeException();
-
-                return x[i];
-            }
-
-            set
-            {
-                if (i < 0 || i >= dofCount) throw new IndexOutOfRangeException();
-
-                x[i] = value;
-            }
-        }
-
-        public unsafe ArticulationReducedSpace(float a)
-        {
-            x[0] = a;
-            dofCount = 1;
-        }
-
-        public unsafe ArticulationReducedSpace(float a, float b)
-        {
-            x[0] = a;
-            x[1] = b;
-            dofCount = 2;
-        }
-
-        public unsafe ArticulationReducedSpace(float a, float b, float c)
-        {
-            x[0] = a;
-            x[1] = b;
-            x[2] = c;
-            dofCount = 3;
-        }
-
-        public int dofCount; // currently, dofCoumt <= 3
-    }
-
-    [NativeHeader("Modules/Physics/ArticulationBody.h")]
-    public struct ArticulationJacobian
-    {
-        private int rowsCount;
-        private int colsCount;
-        private List<float> matrixData;
-
-        public ArticulationJacobian(int rows, int cols)
-        {
-            rowsCount = rows;
-            colsCount = cols;
-            matrixData = new List<float>(rows * cols);
-            for (int i = 0; i < rows * cols; i++)
-                matrixData.Add(0.0f);
-        }
-
-        public float this[int row, int col]
-        {
-            get
-            {
-                if (row < 0 || row >= rowsCount)
-                    throw new IndexOutOfRangeException();
-                if (col < 0 || col >= colsCount)
-                    throw new IndexOutOfRangeException();
-                return matrixData[row * colsCount + col];
-            }
-            set
-            {
-                if (row < 0 || row >= rowsCount)
-                    throw new IndexOutOfRangeException();
-                if (col < 0 || col >= colsCount)
-                    throw new IndexOutOfRangeException();
-                matrixData[row * colsCount + col] = value;
-            }
-        }
-        public int rows
-        {
-            get
-            {
-                return rowsCount;
-            }
-            set
-            {
-                rowsCount = value;
-            }
-        }
-        public int columns
-        {
-            get
-            {
-                return colsCount;
-            }
-            set
-            {
-                colsCount = value;
-            }
-        }
-        public List<float> elements
-        {
-            get
-            {
-                return matrixData;
-            }
-            set
-            {
-                matrixData = value;
-            }
-        }
-    }
-
-    [NativeHeader("Modules/Physics/ArticulationBody.h")]
-    [NativeClass("Unity::ArticulationBody")]
-    public class ArticulationBody : Behaviour
-    {
-        extern public ArticulationJointType jointType { get; set; }
-        extern public Vector3 anchorPosition { get; set; }
-        extern public Vector3 parentAnchorPosition { get; set; }
-        extern public Quaternion anchorRotation { get; set; }
-        extern public Quaternion parentAnchorRotation { get; set; }
-        extern public bool isRoot { get; }
-
-        extern public ArticulationDofLock linearLockX { get; set; }
-        extern public ArticulationDofLock linearLockY { get; set; }
-        extern public ArticulationDofLock linearLockZ { get; set; }
-
-        extern public ArticulationDofLock swingYLock { get; set; }
-        extern public ArticulationDofLock swingZLock { get; set; }
-        extern public ArticulationDofLock twistLock { get; set; }
-
-        extern public ArticulationDrive xDrive { get; set; }
-        extern public ArticulationDrive yDrive { get; set; }
-        extern public ArticulationDrive zDrive { get; set; }
-
-        extern public bool immovable { get; set; }
-        extern public bool useGravity { get; set; }
-
-        extern public float linearDamping { get; set; }
-        extern public float angularDamping { get; set; }
-        extern public float jointFriction { get; set; }
-
-        extern public void AddForce(Vector3 force);
-        extern public void AddRelativeForce(Vector3 force);
-        extern public void AddTorque(Vector3 torque);
-        extern public void AddRelativeTorque(Vector3 torque);
-        extern public void AddForceAtPosition(Vector3 force, Vector3 position);
-
-        extern public Vector3 velocity { get; set; }
-        extern public Vector3 angularVelocity { get; set; }
-
-        extern public float mass { get; set; }
-        extern public Vector3 centerOfMass { get; set; }
-        extern public Vector3 worldCenterOfMass { get; }
-        extern public Vector3 inertiaTensor { get; set; }
-        extern public Quaternion inertiaTensorRotation { get; set; }
-        extern public void ResetCenterOfMass();
-        extern public void ResetInertiaTensor();
-
-        extern public void Sleep();
-        extern public bool IsSleeping();
-        extern public void WakeUp();
-        extern public float sleepThreshold { get; set; }
-
-        extern public int solverIterations { get; set; }
-        extern public int solverVelocityIterations { get; set; }
-
-        extern public float maxAngularVelocity { get; set; }
-        extern public float maxLinearVelocity { get; set; }
-        extern public float maxJointVelocity { get; set; }
-        extern public float maxDepenetrationVelocity { get; set; }
-
-        extern public ArticulationReducedSpace jointPosition { get; set; }
-        extern public ArticulationReducedSpace jointVelocity { get; set; }
-        extern public ArticulationReducedSpace jointAcceleration { get; set; }
-        extern public ArticulationReducedSpace jointForce { get; set; }
-
-        extern public int dofCount { get; }
-        extern public int index { [NativeMethod("GetBodyIndex")] get; }
-
-        extern public void TeleportRoot(Vector3 position, Quaternion rotation);
-        extern public Vector3 GetClosestPoint(Vector3 point);
-
-        extern public Vector3 GetRelativePointVelocity(Vector3 relativePoint);
-        extern public Vector3 GetPointVelocity(Vector3 worldPoint);
-
-        extern public int GetDenseJacobian(ref ArticulationJacobian jacobian);
-
-        extern public int GetJointPositions(List<float> positions);
-        extern public void SetJointPositions(List<float> positions);
-        extern public int GetJointVelocities(List<float> velocities);
-        extern public void SetJointVelocities(List<float> velocities);
-        extern public int GetJointAccelerations(List<float> accelerations);
-        extern public void SetJointAccelerations(List<float> accelerations);
-        extern public int GetJointForces(List<float> forces);
-        extern public void SetJointForces(List<float> forces);
-        extern public int GetDriveTargets(List<float> targets);
-        extern public void SetDriveTargets(List<float> targets);
-        extern public int GetDriveTargetVelocities(List<float> targetVelocities);
-        extern public void SetDriveTargetVelocities(List<float> targetVelocities);
-        extern public int GetDofStartIndices(List<int> dofStartIndices);
-    }
-
     [NativeHeader("Modules/Physics/PhysicsManager.h")]
     [StaticAccessor("GetPhysicsManager()", StaticAccessorType.Dot)]
-    public class Physics
+    public partial class Physics
     {
         // PX_MAX_F32_MINUS_EPS; currently used in e.g., EnforceJointLimitsConsistency()
         internal const float k_MaxFloatMinusEpsilon = 340282326356119260000000000000000000000f;
@@ -1167,22 +867,6 @@ namespace UnityEngine
         public const int IgnoreRaycastLayer = 1 << 2;
         public const int DefaultRaycastLayers = ~IgnoreRaycastLayer;
         public const int AllLayers = ~0;
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Please use Physics.IgnoreRaycastLayer instead. (UnityUpgradable) -> IgnoreRaycastLayer", true)]
-        public const int kIgnoreRaycastLayer = IgnoreRaycastLayer;
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Please use Physics.DefaultRaycastLayers instead. (UnityUpgradable) -> DefaultRaycastLayers", true)]
-        public const int kDefaultRaycastLayers = DefaultRaycastLayers;
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Please use Physics.AllLayers instead. (UnityUpgradable) -> AllLayers", true)]
-        public const int kAllLayers = AllLayers;
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Use Physics.defaultContactOffset or Collider.contactOffset instead.", true)]
-        public static float minPenetrationForPenalty { get { return 0f; } set {} }
 
         extern public static Vector3 gravity {[ThreadSafe] get; set; }
         extern public static float defaultContactOffset { get; set; }
@@ -1194,27 +878,6 @@ namespace UnityEngine
         extern public static int defaultSolverIterations { get; set; }
         extern public static int defaultSolverVelocityIterations { get; set; }
 
-        [Obsolete("Please use bounceThreshold instead.")]
-        public static float bounceTreshold { get { return bounceThreshold; } set { bounceThreshold = value; }  }
-
-        [Obsolete("The sleepVelocity is no longer supported. Use sleepThreshold. Note that sleepThreshold is energy but not velocity.")]
-        public static float sleepVelocity { get { return 0f; } set {} }
-
-        [Obsolete("The sleepAngularVelocity is no longer supported. Use sleepThreshold. Note that sleepThreshold is energy but not velocity.")]
-        public static float sleepAngularVelocity { get { return 0f; } set {} }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Use Rigidbody.maxAngularVelocity instead.", true)]
-        public static float maxAngularVelocity { get { return 0f; } set {} }
-
-        [Obsolete("Please use Physics.defaultSolverIterations instead. (UnityUpgradable) -> defaultSolverIterations")]
-        public static int solverIterationCount { get { return defaultSolverIterations; } set { defaultSolverIterations = value; } }
-
-        [Obsolete("Please use Physics.defaultSolverVelocityIterations instead. (UnityUpgradable) -> defaultSolverVelocityIterations")]
-        public static int solverVelocityIterationCount { get { return defaultSolverVelocityIterations; } set { defaultSolverVelocityIterations = value; } }
-
-        [Obsolete("penetrationPenaltyForce has no effect.")]
-        public static float penetrationPenaltyForce { get { return 0f; } set {} }
         extern static public float defaultMaxAngularSpeed { get; set; }
 
         [NativeProperty("DefaultPhysicsSceneHandle")]

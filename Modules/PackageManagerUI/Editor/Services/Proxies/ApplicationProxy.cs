@@ -47,6 +47,8 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
+        public virtual string unityVersion => Application.unityVersion;
+
         public virtual string shortUnityVersion
         {
             get

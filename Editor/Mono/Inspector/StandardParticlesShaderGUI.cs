@@ -562,9 +562,9 @@ namespace UnityEditor
 
                     bool streamsValid;
                     if (useGPUInstancing && renderer.renderMode == ParticleSystemRenderMode.Mesh && renderer.supportsMeshInstancing)
-                        streamsValid = rendererStreams.SequenceEqual(instancedStreams);
+                        streamsValid = CompareVertexStreams(rendererStreams, instancedStreams);
                     else
-                        streamsValid = rendererStreams.SequenceEqual(streams);
+                        streamsValid = CompareVertexStreams(rendererStreams, streams);
 
                     if (!streamsValid)
                         Warnings += "  " + renderer.name + "\n";
@@ -576,6 +576,25 @@ namespace UnityEditor
             }
 
             EditorGUILayout.Space();
+        }
+
+        private static bool CompareVertexStreams(IEnumerable<ParticleSystemVertexStream> a, IEnumerable<ParticleSystemVertexStream> b)
+        {
+            var differenceA = a.Except(b);
+            var differenceB = b.Except(a);
+            var difference = differenceA.Union(differenceB).Distinct();
+
+            if (!difference.Any())
+                return true;
+
+            // If normals are the only difference, ignore them, because the default particle streams include normals, to make it easy for users to switch between lit and unlit
+            if (difference.Count() == 1)
+            {
+                if (difference.First() == ParticleSystemVertexStream.Normal)
+                    return true;
+            }
+
+            return false;
         }
 
         public static void SetupMaterialWithBlendMode(Material material, BlendMode blendMode)

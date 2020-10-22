@@ -115,16 +115,13 @@ namespace UnityEditor
                     {
                         int option = EditorUtility.DisplayDialogComplex(
                             "C# Debugger Attached",
-@"You're trying to attach a debugger, but Debug Mode is switched off in your Project.
+@"You are trying to attach a debugger, but Debug Mode is switched off in your project.
 
-When Unity is in Debug Mode, C# performance is reduced, but you can attach a debugger.
-Switching to Debug Mode also recompiles and reloads all scripts.
+When Unity is in Debug Mode, C# performance is reduced, but you can attach a debugger. Switching to Debug Mode also recompiles and reloads all scripts.
 
-You can enable Debug Mode temporarily for this Editor session, switch it on
-for all projects until further notice, or cancel attaching the debugger.
+You can enable Debug Mode temporarily for this Editor session, switch it on for all projects until further notice, or cancel attaching the debugger.
 
-If you switch it on for all projects, you can change it later in the
-""Code Optimization on Startup"" setting in the Preferences window.",
+If you switch it on for all projects, you can change it later in the ""Code Optimization on Startup"" setting in the Preferences window.",
                             "Enable debugging for this session",
                             "Cancel",
                             "Enable debugging for all projects");

@@ -121,7 +121,23 @@ namespace UnityEditor.UIElements.Debugger
 
         private void TrySelectWindow()
         {
-            var root = m_WindowToDebug.rootVisualElement;
+            VisualElement root = null;
+
+            if (m_WindowToDebug is GameView)
+            {
+                var runtimePanels = UIElementsRuntimeUtility.GetSortedPlayerPanels();
+                if (runtimePanels != null && runtimePanels.Count > 0)
+                {
+                    root = runtimePanels[0].visualTree;
+                }
+            }
+
+            if (root == null)
+            {
+                root = m_WindowToDebug.rootVisualElement;
+            }
+
+
             if (root == null)
                 return;
 

@@ -105,10 +105,28 @@ namespace UnityEditor.Experimental.TerrainAPI
             return treeHeight * Random.Range(1.0F - v, 1.0F + v);
         }
 
-        private float GetTreeWidth()
+        private float GetRandomizedTreeWidth()
         {
             float v = allowWidthVar ? treeWidthVariation : 0.0f;
             return treeWidth * Random.Range(1.0F - v, 1.0F + v);
+        }
+
+        private float GetTreeWidth(float height)
+        {
+            float width;
+
+            if (lockWidthToHeight)
+            {
+                // keep scales equal since these scales are applied to the
+                // prefab scale to get the final tree instance scale
+                width = height;
+            }
+            else
+            {
+                width = GetRandomizedTreeWidth();
+            }
+
+            return width;
         }
 
         private float GetTreeRotation()
@@ -145,7 +163,8 @@ namespace UnityEditor.Experimental.TerrainAPI
                 {
                     TerrainPaintUtilityEditor.UpdateTerrainDataUndo(terrain.terrainData, "Terrain - Place Trees");
 
-                    PaintTreesUtils.PlaceTree(terrain, treePrototype, position, GetTreeColor(), GetTreeHeight(), lockWidthToHeight ? GetTreeHeight() : GetTreeWidth(), GetTreeRotation());
+                    var instanceHeight = GetTreeHeight();
+                    PaintTreesUtils.PlaceTree(terrain, treePrototype, position, GetTreeColor(), instanceHeight, GetTreeWidth(instanceHeight), GetTreeRotation());
                     ++placedTreeCount;
                 }
             }
@@ -182,7 +201,8 @@ namespace UnityEditor.Experimental.TerrainAPI
                             {
                                 TerrainPaintUtilityEditor.UpdateTerrainDataUndo(ctxTerrain.terrainData, "Terrain - Place Trees");
 
-                                PaintTreesUtils.PlaceTree(ctxTerrain, treePrototype, position, GetTreeColor(), GetTreeHeight(), lockWidthToHeight ? GetTreeHeight() : GetTreeWidth(), GetTreeRotation());
+                                var instanceHeight = GetTreeHeight();
+                                PaintTreesUtils.PlaceTree(ctxTerrain, treePrototype, position, GetTreeColor(), instanceHeight, GetTreeWidth(instanceHeight), GetTreeRotation());
                                 ++placedTreeCount;
                             }
                         }
@@ -243,7 +263,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                     instance.prototypeIndex = Random.Range(0, nbPrototypes);
 
                     instance.heightScale = GetTreeHeight();
-                    instance.widthScale = lockWidthToHeight ? instance.heightScale : GetTreeWidth();
+                    instance.widthScale = GetTreeWidth(instance.heightScale);
 
                     instance.rotation = GetTreeRotation();
 

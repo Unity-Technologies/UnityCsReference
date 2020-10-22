@@ -395,8 +395,13 @@ namespace UnityEngine
         [NativeMethod("LoadAssetAsync_Internal")]
         private extern AssetBundleRequest LoadAssetAsync_Internal(string name, Type type);
 
+        [NativeThrows]
         [NativeMethod("Unload")]
         public extern void Unload(bool unloadAllLoadedObjects);
+
+        [NativeThrows]
+        [NativeMethod("UnloadAsync")]
+        public extern AsyncOperation UnloadAsync(bool unloadAllLoadedObjects);
 
         [NativeMethod("GetAllAssetNames")]
         public extern string[] GetAllAssetNames();

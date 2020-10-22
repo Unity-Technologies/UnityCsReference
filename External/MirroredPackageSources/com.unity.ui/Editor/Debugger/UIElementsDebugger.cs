@@ -1,7 +1,5 @@
 using System;
-using UnityEditor;
 using UnityEditor.ShortcutManagement;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -128,18 +126,6 @@ namespace UnityEditor.UIElements.Debugger
                 onStateChange?.Invoke();
             }
         }
-
-        public bool uxmlLiveReload
-        {
-            get { return RetainedMode.UxmlLiveReloadIsEnabled; }
-            set
-            {
-                if (RetainedMode.UxmlLiveReloadIsEnabled == value)
-                    return;
-                RetainedMode.UxmlLiveReloadIsEnabled = value;
-                onStateChange?.Invoke();
-            }
-        }
     }
 
     internal class UIElementsDebugger : EditorWindow
@@ -225,7 +211,6 @@ namespace UnityEditor.UIElements.Debugger
         private ToolbarToggle m_PickToggle;
         private ToolbarToggle m_ShowLayoutToggle;
         private ToolbarToggle m_RepaintOverlayToggle;
-        private ToolbarToggle m_UXMLLiveReloadToggle;
         private ToolbarToggle m_ShowDrawStatsToggle;
 
         private DebuggerTreeView m_TreeViewContainer;
@@ -288,11 +273,6 @@ namespace UnityEditor.UIElements.Debugger
                 m_RepaintOverlayToggle.text = "Repaint Overlay";
                 m_RepaintOverlayToggle.RegisterValueChangedCallback((e) => m_Context.showRepaintOverlay = e.newValue);
                 m_Toolbar.Add(m_RepaintOverlayToggle);
-
-                m_UXMLLiveReloadToggle = new ToolbarToggle() { name = "UXMLReloadToggle" };
-                m_UXMLLiveReloadToggle.text = "UXML Live Reload";
-                m_UXMLLiveReloadToggle.RegisterValueChangedCallback((e) => m_Context.uxmlLiveReload = e.newValue);
-                m_Toolbar.Add(m_UXMLLiveReloadToggle);
 
                 m_ShowDrawStatsToggle = new ToolbarToggle() { name = "drawStatsToggle" };
                 m_ShowDrawStatsToggle.text = "Draw Stats";
@@ -364,7 +344,6 @@ namespace UnityEditor.UIElements.Debugger
             if (Unsupported.IsDeveloperBuild())
             {
                 m_RepaintOverlayToggle.SetValueWithoutNotify(m_Context.showRepaintOverlay);
-                m_UXMLLiveReloadToggle.SetValueWithoutNotify(m_Context.uxmlLiveReload);
                 m_ShowDrawStatsToggle.SetValueWithoutNotify(m_Context.showDrawStats);
 
                 var updater = (panel as BaseVisualElementPanel)?.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;

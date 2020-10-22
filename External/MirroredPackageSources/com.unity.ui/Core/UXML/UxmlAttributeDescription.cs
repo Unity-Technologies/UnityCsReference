@@ -751,4 +751,49 @@ namespace UnityEngine.UIElements
             return l;
         }
     }
+
+    /// <summary>
+    /// Describes a XML <c>Hash128</c> attribute.
+    /// </summary>
+    public class UxmlHash128AttributeDescription : TypedUxmlAttributeDescription<Hash128>
+    {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public UxmlHash128AttributeDescription()
+        {
+            type = "string";
+            typeNamespace = xmlSchemaNamespace;
+            defaultValue = new Hash128();
+        }
+
+        /// <summary>
+        /// The default value for the attribute, as a string.
+        /// </summary>
+        public override string defaultValueAsString { get { return defaultValue.ToString(); } }
+
+        /// <summary>
+        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <returns>The value of the attribute.</returns>
+        public override Hash128 GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
+        {
+            return GetValueFromBag(bag, cc, (s, i) => i = Hash128.Parse(s), defaultValue);
+        }
+
+        /// <summary>
+        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <param name="value">The value of the attribute.</param>
+        /// <returns>True if the value could be retrieved, false otherwise.</returns>
+        public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref Hash128 value)
+        {
+            return TryGetValueFromBag(bag, cc, (s, i) => i = Hash128.Parse(s), defaultValue, ref value);
+        }
+    }
+
 }

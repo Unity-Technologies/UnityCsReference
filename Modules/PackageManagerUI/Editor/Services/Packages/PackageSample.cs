@@ -111,7 +111,7 @@ namespace UnityEditor.PackageManager.UI
                             "Samples",
                             IOUtils.SanitizeFileName(package.displayName),
                             package.version,
-                            IOUtils.SanitizeFileName(displayName)
+                            string.IsNullOrEmpty(displayName) ? string.Empty : IOUtils.SanitizeFileName(displayName)
                         );
                         return new Sample(ioProxy, assetDatabaseProxy, displayName, description, resolvedSamplePath, importPath, interactiveImport);
                     });
@@ -134,7 +134,7 @@ namespace UnityEditor.PackageManager.UI
         {
             var upmCache = ServicesContainer.instance.Resolve<UpmCache>();
             if (upmCache.installedPackageInfos.Count() == 0)
-                upmCache.SetInstalledPackageInfos(PackageInfo.GetAll());
+                upmCache.SetInstalledPackageInfos(PackageInfo.GetAllRegisteredPackages());
 
             var package = upmCache.GetInstalledPackageInfo(packageName);
             if (package?.version == packageVersion || string.IsNullOrEmpty(packageVersion))

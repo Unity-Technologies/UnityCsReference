@@ -38,6 +38,7 @@ namespace UnityEditor
             public static readonly GUIStyle richTextMiniLabel = new GUIStyle(EditorStyles.miniLabel) { richText = true };
             public static readonly GUIContent shadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the line width at each segment.");
             public static readonly GUIContent generateLightingData = EditorGUIUtility.TrTextContent("Generate Lighting Data", "Toggle generation of normal and tangent data, for use in lit shaders.");
+            public static readonly GUIContent sceneTools = EditorGUIUtility.TrTextContent("Scene Tools");
 
             public static readonly GUIContent[] toolContents =
             {
@@ -180,6 +181,7 @@ namespace UnityEditor
         void PositionsViewSelectionChanged(List<int> selected)
         {
             m_PointEditor.m_Selection = selected;
+            SceneView.RepaintAll();
         }
 
         public void OnDisable()
@@ -257,6 +259,9 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox(Styles.disabledEditMessage, MessageType.Info);
             }
 
+            EditorGUILayout.BeginVertical("GroupBox");
+            GUILayout.Label(Styles.sceneTools);
+
             EditorGUI.BeginDisabled(!canEditInScene);
             EditorGUILayout.Space();
             GUILayout.BeginHorizontal();
@@ -310,6 +315,8 @@ namespace UnityEditor
                 EditorGUILayout.EndHorizontal();
             }
             EditorGUI.EndDisabled();
+
+            EditorGUILayout.EndVertical();
         }
 
         private bool HasAdjacentPointsSelected()

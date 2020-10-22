@@ -42,10 +42,6 @@ namespace UnityEditor
             }
         }
 
-        internal InspectorWindow()
-        {
-        }
-
         internal void Awake()
         {
             AddInspectorWindow(this);
@@ -159,15 +155,6 @@ namespace UnityEditor
 
         public override void AddItemsToMenu(GenericMenu menu)
         {
-            menu.AddItem(EditorGUIUtility.TrTextContent("Normal"), m_InspectorMode == InspectorMode.Normal, SetNormal);
-            menu.AddItem(EditorGUIUtility.TrTextContent("Debug"), m_InspectorMode == InspectorMode.Debug, SetDebug);
-
-            if (Unsupported.IsDeveloperMode())
-            {
-                menu.AddItem(EditorGUIUtility.TrTextContent("Debug-Internal"), m_InspectorMode == InspectorMode.DebugInternal, SetDebugInternal);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Use UI Toolkit Default Inspector"), useUIElementsDefaultInspector, SetUseUIEDefaultInspector);
-            }
-
             m_LockTracker.AddItemsToMenu(menu);
             menu.AddSeparator(String.Empty);
             base.AddItemsToMenu(menu);
@@ -180,29 +167,6 @@ namespace UnityEditor
                 titleContent = EditorGUIUtility.TrTextContentWithIcon("Inspector", iconName);
             else
                 titleContent = EditorGUIUtility.TrTextContentWithIcon("Debug", iconName);
-        }
-
-        private void SetUseUIEDefaultInspector()
-        {
-            useUIElementsDefaultInspector = !useUIElementsDefaultInspector;
-            // Clear the editors Element so that a real rebuild is done
-            editorsElement.Clear();
-            RebuildContentsContainers();
-        }
-
-        private void SetDebug()
-        {
-            inspectorMode = InspectorMode.Debug;
-        }
-
-        private void SetNormal()
-        {
-            inspectorMode = InspectorMode.Normal;
-        }
-
-        private void SetDebugInternal()
-        {
-            inspectorMode = InspectorMode.DebugInternal;
         }
 
         protected override void CreateTracker()

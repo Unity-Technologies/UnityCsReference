@@ -22,6 +22,7 @@ namespace UnityEngine.UIElements.UIR
 
             // Additional allocation params
             internal Texture texture;
+            internal TextureId svgTexture;
             internal Material material;
             internal MeshGenerationContext.MeshFlags flags;
         }
@@ -56,7 +57,7 @@ namespace UnityEngine.UIElements.UIR
             else MakeSlicedQuad(ref rectParams, posZ, meshAlloc);
         }
 
-        private static Vertex ConvertTextVertexToUIRVertex(TextCore.MeshInfo info, int index, Vector2 offset)
+        private static Vertex ConvertTextVertexToUIRVertex(TextMeshInfo info, int index, Vector2 offset)
         {
             return new Vertex
             {
@@ -92,18 +93,18 @@ namespace UnityEngine.UIElements.UIR
             return maxTextMeshVertices;
         }
 
-        internal static void MakeText(TextCore.MeshInfo meshInfo, Vector2 offset, AllocMeshData meshAlloc)
+        internal static void MakeText(TextMeshInfo textMeshInfo, Vector2 offset, AllocMeshData meshAlloc)
         {
-            int vertexCount = LimitTextVertices(meshInfo.vertexCount);
+            int vertexCount = LimitTextVertices(textMeshInfo.vertexCount);
             int quadCount = vertexCount / 4;
             var mesh = meshAlloc.Allocate((uint)(quadCount * 4), (uint)(quadCount * 6));
 
             for (int q = 0, v = 0, i = 0; q < quadCount; ++q, v += 4, i += 6)
             {
-                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(meshInfo, v + 0, offset));
-                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(meshInfo, v + 1, offset));
-                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(meshInfo, v + 2, offset));
-                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(meshInfo, v + 3, offset));
+                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(textMeshInfo, v + 0, offset));
+                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(textMeshInfo, v + 1, offset));
+                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(textMeshInfo, v + 2, offset));
+                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(textMeshInfo, v + 3, offset));
 
                 mesh.SetNextIndex((UInt16)(v + 0));
                 mesh.SetNextIndex((UInt16)(v + 1));

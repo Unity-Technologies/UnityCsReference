@@ -50,19 +50,19 @@ namespace UnityEditor.MPE
             s_ImportedAssets = new string[] {};
         }
 
-        [UsedImplicitly, RoleProvider(ProcessLevel.Master, ProcessEvent.AfterDomainReload)]
+        [UsedImplicitly, RoleProvider(ProcessLevel.Main, ProcessEvent.AfterDomainReload)]
         private static void InitializeMaster()
         {
             s_ImportRefreshEnabled = true;
         }
 
-        [UsedImplicitly, RoleProvider(ProcessLevel.Slave, ProcessEvent.AfterDomainReload)]
+        [UsedImplicitly, RoleProvider(ProcessLevel.Secondary, ProcessEvent.AfterDomainReload)]
         private static void InitializeSlave()
         {
             EventService.RegisterEventHandler(nameof(DataServiceEvent.AUTO_REFRESH), (eventType, data) =>
             {
                 string[] paths = data.Cast<string>().ToArray();
-                Console.WriteLine($"Slave need to refresh the following assets: {String.Join(", ", paths)}");
+                Console.WriteLine($"Secondary process need to refresh the following assets: {String.Join(", ", paths)}");
                 AssetDatabase.Refresh();
                 if (paths.Any(p => p.EndsWith(".cs")))
                     EditorUtility.RequestScriptReload();

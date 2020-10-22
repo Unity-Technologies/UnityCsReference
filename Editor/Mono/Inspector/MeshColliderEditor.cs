@@ -15,11 +15,12 @@ namespace UnityEditor
         private SerializedProperty m_Convex;
         private SerializedProperty m_CookingOptions;
 
-        static class Texts
+        private static class Styles
         {
-            public static GUIContent isTriggerText = EditorGUIUtility.TrTextContent("Is Trigger", "Is this collider a trigger? Triggers are only supported on convex colliders.");
-            public static GUIContent convextText = EditorGUIUtility.TrTextContent("Convex", "Is this collider convex?");
-            public static GUIContent cookingOptionsText = EditorGUIUtility.TrTextContent("Cooking Options", "Options affecting the result of the mesh processing by the physics engine.");
+            public static readonly GUIContent isTriggerText = EditorGUIUtility.TrTextContent("Is Trigger", "Is this collider a trigger? Triggers are only supported on convex colliders.");
+            public static readonly GUIContent convexText = EditorGUIUtility.TrTextContent("Convex", "Is this collider convex?");
+            public static readonly GUIContent cookingOptionsText = EditorGUIUtility.TrTextContent("Cooking Options", "Options affecting the result of the mesh processing by the physics engine.");
+            public static readonly GUIContent meshText = EditorGUIUtility.TrTextContent("Mesh", "Reference to the Mesh to use for collisions.");
         }
 
         public override void OnEnable()
@@ -46,7 +47,7 @@ namespace UnityEditor
             serializedObject.Update();
 
             EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(m_Convex, Texts.convextText);
+            EditorGUILayout.PropertyField(m_Convex, Styles.convexText);
 
             if (EditorGUI.EndChangeCheck() && m_Convex.boolValue == false)
             {
@@ -56,15 +57,20 @@ namespace UnityEditor
             EditorGUI.indentLevel++;
             using (new EditorGUI.DisabledScope(!m_Convex.boolValue))
             {
-                EditorGUILayout.PropertyField(m_IsTrigger, Texts.isTriggerText);
+                EditorGUILayout.PropertyField(m_IsTrigger, Styles.isTriggerText);
             }
             EditorGUI.indentLevel--;
 
-            SetCookingOptions((MeshColliderCookingOptions)EditorGUILayout.EnumFlagsField(Texts.cookingOptionsText, GetCookingOptions()));
+            EditorGUI.BeginProperty(EditorGUILayout.GetControlRect(), null, m_CookingOptions);
+            EditorGUI.BeginChangeCheck();
+            var newOptions = (MeshColliderCookingOptions)EditorGUILayout.EnumFlagsField(Styles.cookingOptionsText, GetCookingOptions());
+            if (EditorGUI.EndChangeCheck())
+                SetCookingOptions(newOptions);
+            EditorGUI.EndProperty();
 
-            EditorGUILayout.PropertyField(m_Material);
+            EditorGUILayout.PropertyField(m_Material, BaseStyles.materialContent);
 
-            EditorGUILayout.PropertyField(m_Mesh);
+            EditorGUILayout.PropertyField(m_Mesh, Styles.meshText);
 
             serializedObject.ApplyModifiedProperties();
         }

@@ -271,12 +271,15 @@ namespace UnityEngine
     }
 
     [NativeHeader("Runtime/Graphics/Mesh/MeshScriptBindings.h")]
+    [NativeHeader("Runtime/Graphics/Mesh/MeshCombiner.h")]
     internal struct StaticBatchingHelper
     {
         [FreeFunction("MeshScripting::CombineMeshVerticesForStaticBatching")]
         extern internal static Mesh InternalCombineVertices(MeshSubsetCombineUtility.MeshInstance[] meshes, string meshName);
         [FreeFunction("MeshScripting::CombineMeshIndicesForStaticBatching")]
         extern internal static void InternalCombineIndices(MeshSubsetCombineUtility.SubMeshInstance[] submeshes, Mesh combinedMesh);
+        [FreeFunction("IsMeshBatchable")]
+        extern internal static bool IsMeshBatchable(Mesh mesh);
     }
 
     [NativeHeader("Runtime/Graphics/Mesh/MeshScriptBindings.h")]

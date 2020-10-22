@@ -22,6 +22,16 @@ namespace UnityEditor
         SerializedProperty m_ForwardFriction;
         SerializedProperty m_SidewaysFriction;
 
+        private static class Styles
+        {
+            public static readonly GUIContent forceAppPointDistanceContent = EditorGUIUtility.TrTextContent("Force App Point Distance", "The point where the wheel forces are applied");
+            public static readonly GUIContent centerContent = EditorGUIUtility.TrTextContent("Center", "The position of the Collider in the GameObject's local space.");
+            public static readonly GUIContent suspensionDistanceContent = EditorGUIUtility.TrTextContent("Suspension Distance", "Maximum extension distance of wheel suspension, measured in local space. Suspension always extends downwards through the local Y-axis.");
+            public static readonly GUIContent suspensionSpringContent = EditorGUIUtility.TrTextContent("Suspension Spring", "The suspension attempts to reach a Target Position by adding spring and damping forces.");
+            public static readonly GUIContent forwardFrictionContent = EditorGUIUtility.TrTextContent("Forward Friction", "Tire friction properties when the wheel is rolling forward.");
+            public static readonly GUIContent sidewaysFrictionContent = EditorGUIUtility.TrTextContent("Sideways Friction", "Tire friction properties when the wheel is rolling sideways.");
+        }
+
         public void OnEnable()
         {
             // Wheel Collider does not serialize Collider properties, so we don't use base OnEnable like other collider types
@@ -43,14 +53,14 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_Mass);
             EditorGUILayout.PropertyField(m_Radius);
             EditorGUILayout.PropertyField(m_WheelDampingRate);
-            EditorGUILayout.PropertyField(m_SuspensionDistance);
-            EditorGUILayout.PropertyField(m_ForceAppPointDistance);
+            EditorGUILayout.PropertyField(m_SuspensionDistance, Styles.suspensionDistanceContent);
+            EditorGUILayout.PropertyField(m_ForceAppPointDistance, Styles.forceAppPointDistanceContent);
             EditorGUILayout.Space();
-            EditorGUILayout.PropertyField(m_Center);
+            EditorGUILayout.PropertyField(m_Center, Styles.centerContent);
             EditorGUILayout.Space();
-            StructPropertyGUILayout.GenericStruct(m_SuspensionSpring);
-            StructPropertyGUILayout.GenericStruct(m_ForwardFriction);
-            StructPropertyGUILayout.GenericStruct(m_SidewaysFriction);
+            EditorGUILayout.PropertyField(m_SuspensionSpring, Styles.suspensionSpringContent);
+            EditorGUILayout.PropertyField(m_ForwardFriction, Styles.forwardFrictionContent);
+            EditorGUILayout.PropertyField(m_SidewaysFriction, Styles.sidewaysFrictionContent);
 
             serializedObject.ApplyModifiedProperties();
         }

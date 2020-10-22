@@ -86,14 +86,16 @@ namespace UnityEngine.UIElements
             styleSheets.Remove(sheetAsset);
         }
 
-        private StyleFloat ResolveLengthValue(StyleLength styleLength, bool isRow)
+        private StyleFloat ResolveLengthValue(Length length, bool isRow)
         {
-            if (styleLength.keyword != StyleKeyword.Undefined)
-                return styleLength.ToStyleFloat();
+            if (length.IsAuto())
+                return new StyleFloat(StyleKeyword.Auto);
 
-            var length = styleLength.value;
+            if (length.IsNone())
+                return new StyleFloat(StyleKeyword.None);
+
             if (length.unit != LengthUnit.Percent)
-                return styleLength.ToStyleFloat();
+                return new StyleFloat(length.value);
 
             var parent = hierarchy.parent;
             if (parent == null)

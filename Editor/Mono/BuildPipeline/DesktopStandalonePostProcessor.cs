@@ -16,16 +16,25 @@ using UnityEngine;
 
 internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocessor
 {
+    readonly bool m_HasMonoPlayers;
     readonly bool m_HasIl2CppPlayers;
     protected const string k_MonoDirectoryName = "MonoBleedingEdge";
 
-    protected DesktopStandalonePostProcessor(bool hasIl2CppPlayers)
+    protected DesktopStandalonePostProcessor(bool hasMonoPlayers, bool hasIl2CppPlayers)
     {
+        m_HasMonoPlayers = hasMonoPlayers;
         m_HasIl2CppPlayers = hasIl2CppPlayers;
     }
 
     public override string PrepareForBuild(BuildOptions options, BuildTarget target)
     {
+        if (!m_HasMonoPlayers)
+        {
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
+            if (PlayerSettings.GetScriptingBackend(buildTargetGroup) != ScriptingImplementation.IL2CPP)
+                return "Currently selected scripting backend (Mono) is not installed.";
+        }
+
         if (!m_HasIl2CppPlayers)
         {
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);

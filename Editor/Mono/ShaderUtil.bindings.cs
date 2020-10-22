@@ -193,7 +193,7 @@ namespace UnityEditor
             UpdateShaderAsset(null, shader, source, compileInitialShaderVariants);
         }
 
-        [FreeFunction("GetScriptMapper().AddShader")] extern public static void RegisterShader([NotNull("NullExceptionObject")] Shader shader);
+        [FreeFunction("GetShaderNameRegistry().AddShader")] extern public static void RegisterShader([NotNull("NullExceptionObject")] Shader shader);
 
 
         extern internal static void OpenCompiledShader(Shader shader, int mode, int externPlatformsMask, bool includeAllVariants, bool preprocessOnly, bool stripLineDirectives);

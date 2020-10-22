@@ -391,15 +391,13 @@ namespace TreeEditor
             // If a Tree is opened in Prefab Mode the Tree should be saved by the Prefab Mode logic (manual- or auto-save)
             // Note: When opened in Prefab Mode the Tree will be unpacked (have no connection to its Prefab).
             // so we have to dirty its scene instead.
-            if (PrefabUtility.IsPartOfNonAssetPrefabInstance(tree.gameObject))
-            {
+            // IsPartOfNonAssetPrefabInstance checks if the gameObject is an instance of a prefab.
+            // The additional check of the scene name is to ensure we don't write the prefab when updating an instance of a prefab
+            // and not the prefab itself.
+            if (tree.gameObject.scene.IsValid())
+                EditorSceneManager.MarkSceneDirty(tree.gameObject.scene);
+            else if (PrefabUtility.IsPartOfNonAssetPrefabInstance(tree.gameObject))
                 PrefabUtility.ApplyPrefabInstance(tree.gameObject);
-            }
-            else
-            {
-                if (tree.gameObject.scene.IsValid())
-                    EditorSceneManager.MarkSceneDirty(tree.gameObject.scene);
-            }
 
             s_SavedSourceMaterialsHash = treeData.materialHash;
 
@@ -1914,7 +1912,7 @@ namespace TreeEditor
         {
             GUILayout.BeginVertical(EditorStyles.helpBox);
 
-            GUIContent labelContent = TreeEditorHelper.GetGUIContent("This group has been edited by hand. Some parameters may not be available.|");
+            GUIContent labelContent = TreeEditorHelper.GetGUIContent("This group has been edited by hand. Some parameters may not be available. \nIt cannot be parented to another group |");
             labelContent.image = styles.warningIcon.image;
             GUILayout.Label(labelContent, EditorStyles.wordWrappedMiniLabel);
 
@@ -2648,6 +2646,7 @@ namespace TreeEditor
                     if (GetHierachyNodeVisRect(nodes[i].rect).Contains(Event.current.mousePosition))
                         continue;
 
+                    // don't drag root node
                     if (nodes[i].group is TreeGroupRoot)
                         continue;
 
@@ -2717,8 +2716,8 @@ namespace TreeEditor
                 {
                     if (GUIUtility.hotControl == handleID)
                     {
-                        // finish dragging
-                        if (dropNode != null)
+                        // finish dragging && don't reparent the group if the group is locked
+                        if (dropNode != null && dragNode.group.lockFlags == 0)
                         {
                             // Store Complete Undo..
                             UndoStoreSelected(EditMode.Everything);
@@ -2726,6 +2725,7 @@ namespace TreeEditor
                             // Relink
                             TreeGroup sourceGroup = dragNode.group;
                             TreeGroup targetGroup = dropNode.group;
+
                             treeData.SetGroupParent(sourceGroup, targetGroup);
 
                             // Tell editor to do full mesh update

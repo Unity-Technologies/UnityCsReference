@@ -136,5 +136,15 @@ namespace UnityEditor
 
             return Enumerable.ElementAt(enumerable.Cast<object>(), index);
         }
+
+        internal static bool TryGetValue(JSONObject data, string key, out object value)
+        {
+            value = null;
+            if (data == null || !data.Contains(key))
+                return false;
+
+            value = data[key];
+            return true;
+        }
     }
 }

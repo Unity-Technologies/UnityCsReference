@@ -49,6 +49,11 @@ namespace UnityEditor.Presets
         string m_NotSupportedEditorName = null;
         Texture2D m_UnsupportedIcon;
 
+        internal static bool IsPreset(Object obj)
+        {
+            return obj is Component ? ((int)(obj as Component).gameObject.hideFlags == 93) : !AssetDatabase.Contains(obj);
+        }
+
         void OnEnable()
         {
             m_InspectedTypes.Clear();

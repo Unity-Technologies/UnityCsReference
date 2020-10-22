@@ -16,7 +16,7 @@ namespace UnityEditor.Experimental.GraphView
             if (selection.Count == 0)
                 return false;
 
-            return !selection.Cast<GraphElement>().Any(ge => ge == null || ge is Group);
+            return !selection.Cast<GraphElement>().Any(ge => ge == null || ge is Group || !ge.IsGroupable());
         }
 
         public bool DragLeave(DragLeaveEvent evt, IEnumerable<ISelectable> selection, IDropTarget leftTarget, ISelection dragSource)
@@ -43,7 +43,7 @@ namespace UnityEditor.Experimental.GraphView
             List<GraphElement> elemsToAdd =
                 selection
                     .Cast<GraphElement>()
-                    .Where(e => e != group && !group.containedElements.Contains(e) && !(e.GetContainingScope() is Group))
+                    .Where(e => e != group && !group.containedElements.Contains(e) && !(e.GetContainingScope() is Group) && e.IsGroupable())
                     .ToList(); // ToList required here as the enumeration might be done again *after* the elements are added to the group
 
             if (elemsToAdd.Any())
@@ -66,8 +66,12 @@ namespace UnityEditor.Experimental.GraphView
                     continue;
 
                 var selectedGraphElement = selectedElement as GraphElement;
+                bool dropCondition = selectedGraphElement != null
+                    && !group.containedElements.Contains(selectedGraphElement)
+                    && !(selectedGraphElement.GetContainingScope() is Group)
+                    && selectedGraphElement.IsGroupable();
 
-                if (!group.containedElements.Contains(selectedGraphElement) && !(selectedGraphElement.GetContainingScope() is Group))
+                if (dropCondition)
                 {
                     canDrop = true;
                 }

@@ -64,7 +64,6 @@ namespace UnityEditor.PackageManager.UI
                 p1.version != p2.version ||
                 p1.source != p2.source ||
                 p1.resolvedPath != p2.resolvedPath ||
-                p1.status != p2.status ||
                 p1.isAssetStorePackage != p2.isAssetStorePackage ||
                 p1.entitlements.isAllowed != p2.entitlements.isAllowed ||
                 p1.registry?.id != p2.registry?.id ||
@@ -142,11 +141,11 @@ namespace UnityEditor.PackageManager.UI
 
         public virtual PackageInfo GetInstalledPackageInfo(string packageName) => m_InstalledPackageInfos.Get(packageName);
 
-        public virtual void SetInstalledPackageInfo(PackageInfo info)
+        public virtual void SetInstalledPackageInfo(PackageInfo info, bool isSpecialInstallation)
         {
             var oldInfo = m_InstalledPackageInfos.Get(info.name);
             m_InstalledPackageInfos[info.name] = info;
-            if (oldInfo == null || IsDifferent(oldInfo, info))
+            if (isSpecialInstallation || oldInfo == null || IsDifferent(oldInfo, info))
                 onPackageInfosUpdated?.Invoke(new PackageInfo[] { info });
         }
 
@@ -188,17 +187,6 @@ namespace UnityEditor.PackageManager.UI
         }
 
         public virtual string GetProductId(string packageName) => m_ProductIdMap.Get(packageName);
-
-        private static bool IsPreviewInstalled(PackageInfo packageInfo)
-        {
-            if (packageInfo == null)
-                return false;
-
-            SemVersion? packageInfoVersion;
-
-            return packageInfo.isDirectDependency && packageInfo.source == PackageSource.Registry
-                && SemVersionParser.TryParse(packageInfo.version, out packageInfoVersion) && !((SemVersion)packageInfoVersion).IsRelease();
-        }
 
         public virtual void ClearCache()
         {

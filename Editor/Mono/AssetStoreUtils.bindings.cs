@@ -14,12 +14,15 @@ namespace UnityEditor
         private const string kAssetStoreUrl = "https://shawarma.unity3d.com";
         public delegate void DownloadDoneCallback(string package_id, string message, int bytes, int total);
 
+        extern public static string BuildBaseDownloadPath(string publisher, string category);
+        extern public static string BuildFinalDownloadPath(string baseDir, string packageName);
+
         [NativeThrows]
         extern public static void Download(string id, string url, string[] destination, string key, string jsonData, bool resumeOK, DownloadDoneCallback doneCallback = null);
         [NativeThrows]
         extern public static string CheckDownload(string id, string url, string[] destination, string key);
         [NativeThrows]
-        extern public static bool AbortDownload(string id, string[] destination);
+        extern public static bool AbortDownload(string[] destination);
         extern public static void RegisterDownloadDelegate([NotNull] ScriptableObject d);
         extern public static void UnRegisterDownloadDelegate([NotNull] ScriptableObject d);
         extern public static string GetLoaderPath();

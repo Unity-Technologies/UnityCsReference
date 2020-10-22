@@ -5,10 +5,19 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    /// <summary>
+    /// A <see cref="BoundsInt"/> editor field.
+    /// </summary>
     public class BoundsIntField : BaseField<BoundsInt>
     {
+        /// <summary>
+        /// Instantiates a <see cref="BoundsIntField"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<BoundsIntField, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="BoundsIntField"/>.
+        /// </summary>
         public new class UxmlTraits : BaseField<BoundsInt>.UxmlTraits
         {
             UxmlIntAttributeDescription m_PositionXValue = new UxmlIntAttributeDescription { name = "px" };
@@ -19,6 +28,12 @@ namespace UnityEditor.UIElements
             UxmlIntAttributeDescription m_SizeYValue = new UxmlIntAttributeDescription { name = "sy" };
             UxmlIntAttributeDescription m_SizeZValue = new UxmlIntAttributeDescription { name = "sz" };
 
+            /// <summary>
+            /// Initializes the <see cref="UxmlTraits"/> for the <see cref="BoundsIntField"/>.
+            /// </summary>
+            /// <param name="ve">The <see cref="VisualElement"/> to be initialized.</param>
+            /// <param name="bag">Bag of attributes.</param>
+            /// <param name="cc">CreationContext, unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
@@ -32,11 +47,26 @@ namespace UnityEditor.UIElements
         private Vector3IntField m_PositionField;
         private Vector3IntField m_SizeField;
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-bounds-int-field";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        /// <summary>
+        /// USS class name of position fields in elements of this type.
+        /// </summary>
         public static readonly string positionUssClassName = ussClassName + "__position-field";
+        /// <summary>
+        /// USS class name of size fields in elements of this type.
+        /// </summary>
         public static readonly string sizeUssClassName = ussClassName + "__size-field";
 
         public BoundsIntField()
@@ -83,6 +113,12 @@ namespace UnityEditor.UIElements
             base.SetValueWithoutNotify(newValue);
             m_PositionField.SetValueWithoutNotify(rawValue.position);
             m_SizeField.SetValueWithoutNotify(rawValue.size);
+        }
+
+        protected override void UpdateMixedValueContent()
+        {
+            m_PositionField.showMixedValue = showMixedValue;
+            m_SizeField.showMixedValue = showMixedValue;
         }
     }
 }

@@ -172,6 +172,7 @@ namespace UnityEngine.VFX
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<AnimationCurve*>", HasExplicitThis = true)] extern public bool HasAnimationCurve(int nameID);
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<Gradient*>", HasExplicitThis = true)] extern public bool HasGradient(int nameID);
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<Mesh*>", HasExplicitThis = true)] extern public bool HasMesh(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<SkinnedMeshRenderer*>", HasExplicitThis = true)] extern public bool HasSkinnedMeshRenderer(int nameID);
 
         // Value setters
         [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<bool>", HasExplicitThis = true)] extern public void SetBool(int nameID, bool b);
@@ -182,10 +183,11 @@ namespace UnityEngine.VFX
         [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<Vector3f>", HasExplicitThis = true)] extern public void SetVector3(int nameID, Vector3 v);
         [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<Vector4f>", HasExplicitThis = true)] extern public void SetVector4(int nameID, Vector4 v);
         [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<Matrix4x4f>", HasExplicitThis = true)] extern public void SetMatrix4x4(int nameID, Matrix4x4 v);
-        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<Texture*>", HasExplicitThis = true)] extern public void SetTexture(int nameID, Texture t);
-        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<AnimationCurve*>", HasExplicitThis = true)] extern public void SetAnimationCurve(int nameID, AnimationCurve c);
-        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<Gradient*>", HasExplicitThis = true)] extern public void SetGradient(int nameID, Gradient g);
-        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<Mesh*>", HasExplicitThis = true)] extern public void SetMesh(int nameID, Mesh m);
+        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<Texture*>", HasExplicitThis = true)] extern public void SetTexture(int nameID, [NotNull] Texture t);
+        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<AnimationCurve*>", HasExplicitThis = true)] extern public void SetAnimationCurve(int nameID, [NotNull] AnimationCurve c);
+        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<Gradient*>", HasExplicitThis = true)] extern public void SetGradient(int nameID, [NotNull] Gradient g);
+        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<Mesh*>", HasExplicitThis = true)] extern public void SetMesh(int nameID, [NotNull] Mesh m);
+        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<SkinnedMeshRenderer*>", HasExplicitThis = true)] extern public void SetSkinnedMeshRenderer(int nameID, SkinnedMeshRenderer m);
 
         // Value getters
         [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<bool>", HasExplicitThis = true)] extern public bool GetBool(int nameID);
@@ -198,6 +200,7 @@ namespace UnityEngine.VFX
         [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<Matrix4x4f>", HasExplicitThis = true)] extern public Matrix4x4 GetMatrix4x4(int nameID);
         [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<Texture*>", HasExplicitThis = true)] extern public Texture GetTexture(int nameID);
         [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<Mesh*>", HasExplicitThis = true)] extern public Mesh GetMesh(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<SkinnedMeshRenderer*>", HasExplicitThis = true)] extern public SkinnedMeshRenderer GetSkinnedMeshRenderer(int nameID);
         public Gradient GetGradient(int nameID)
         {
             var gradient = new Gradient();
@@ -308,6 +311,11 @@ namespace UnityEngine.VFX
             return HasMesh(Shader.PropertyToID(name));
         }
 
+        public bool HasSkinnedMeshRenderer(string name)
+        {
+            return HasSkinnedMeshRenderer(Shader.PropertyToID(name));
+        }
+
         public bool HasBool(string name)
         {
             return HasBool(Shader.PropertyToID(name));
@@ -369,6 +377,11 @@ namespace UnityEngine.VFX
             SetMesh(Shader.PropertyToID(name), m);
         }
 
+        public void SetSkinnedMeshRenderer(string name, SkinnedMeshRenderer m)
+        {
+            SetSkinnedMeshRenderer(Shader.PropertyToID(name), m);
+        }
+
         public void SetBool(string name, bool b)
         {
             SetBool(Shader.PropertyToID(name), b);
@@ -418,6 +431,11 @@ namespace UnityEngine.VFX
         public Mesh GetMesh(string name)
         {
             return GetMesh(Shader.PropertyToID(name));
+        }
+
+        public SkinnedMeshRenderer GetSkinnedMeshRenderer(string name)
+        {
+            return GetSkinnedMeshRenderer(Shader.PropertyToID(name));
         }
 
         public bool GetBool(string name)

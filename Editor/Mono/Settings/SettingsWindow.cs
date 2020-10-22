@@ -112,6 +112,9 @@ namespace UnityEditor
             SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
             SettingsService.settingsProviderChanged += OnSettingsProviderChanged;
 
+            SettingsService.repaintAllSettingsWindow -= OnRepaintAllWindows;
+            SettingsService.repaintAllSettingsWindow += OnRepaintAllWindows;
+
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
 
@@ -134,6 +137,7 @@ namespace UnityEditor
                 EditorPrefs.SetString(GetPrefKeyName(titleContent.text + "_current_provider"), m_TreeView.currentProvider.settingsPath);
 
             SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
+            SettingsService.repaintAllSettingsWindow -= OnRepaintAllWindows;
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
         }
@@ -144,6 +148,11 @@ namespace UnityEditor
         }
 
         private void OnUndoRedoPerformed()
+        {
+            Repaint();
+        }
+
+        private void OnRepaintAllWindows()
         {
             Repaint();
         }

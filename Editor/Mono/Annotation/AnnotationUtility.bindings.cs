@@ -69,5 +69,10 @@ namespace UnityEditor
 
         [StaticAccessor("GetAnnotationManager()", StaticAccessorType.Dot)]
         internal extern static float iconSize { get; set; }
+
+        [StaticAccessor("GetAnnotationManager()", StaticAccessorType.Dot)]
+        internal extern static float fadeGizmoSize { get; set; }
+        [StaticAccessor("GetAnnotationManager()", StaticAccessorType.Dot)]
+        internal extern static bool fadeGizmos { get; set; }
     }
 }

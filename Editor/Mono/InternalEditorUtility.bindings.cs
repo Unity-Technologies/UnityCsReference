@@ -638,6 +638,9 @@ namespace UnityEditorInternal
         [FreeFunction("SetCustomDiffToolData")]
         extern internal static void SetCustomDiffToolData(string  path, string diff2Command, string diff3Command, string mergeCommand);
 
+        [FreeFunction("SetCustomDiffToolPrefs")]
+        extern internal static void SetCustomDiffToolPrefs(string  path, string diff2Command, string diff3Command, string mergeCommand);
+
         [FreeFunction("InternalEditorUtilityBindings::TransformBounds")]
         extern public static Bounds TransformBounds(Bounds b, Transform t);
 
@@ -927,5 +930,9 @@ namespace UnityEditorInternal
 
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
         internal static extern bool IsScriptReloadRequested();
+
+        [FreeFunction]
+        [NativeHeader("Editor/Src/Undo/DefaultParentObjectUndo.h")]
+        internal static extern void RegisterSetDefaultParentObjectUndo(string sceneGUID, int instanceID, string undoName);
     }
 }

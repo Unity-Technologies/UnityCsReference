@@ -23,9 +23,20 @@ namespace UnityEngine.UIElements
                 style.borderBottomRightRadius < Mathf.Epsilon);
         }
 
+        public static void Multiply2D(this Quaternion rotation, ref Vector2 point)
+        {
+            // Even though Quaternion coordinates aren't the same as Euler angles, it so happens that a rotation only
+            // in the z axis will also have only a z (and w) value that is non-zero. Cool, heh!
+            // Here we'll assume rotation.x = rotation.y = 0.
+            float z = rotation.z * 2f;
+            float zz = 1f - rotation.z * z;
+            float wz = rotation.w * z;
+            point = new Vector2(zz * point.x - wz * point.y, wz * point.x + zz * point.y);
+        }
+
         public static bool IsVectorImageBackground(VisualElement ve)
         {
-            return ve.computedStyle.backgroundImage.value.vectorImage != null;
+            return ve.computedStyle.backgroundImage.vectorImage != null;
         }
 
         public static void Destroy(Object obj)

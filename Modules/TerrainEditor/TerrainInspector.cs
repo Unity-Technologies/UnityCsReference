@@ -101,11 +101,11 @@ namespace UnityEditor
             public readonly GUIContent trees = EditorGUIUtility.TrTextContent("Trees");
             public readonly GUIContent editTrees = EditorGUIUtility.TrTextContent("Edit Trees...", "Add/remove tree types.");
             public readonly GUIContent treeDensity = EditorGUIUtility.TrTextContent("Tree Density", "How dense trees are you painting");
-            public readonly GUIContent treeHeight = EditorGUIUtility.TrTextContent("Tree Height", "Height of the planted trees");
+            public readonly GUIContent treeHeight = EditorGUIUtility.TrTextContent("Tree Height", "The height scale of the planted trees");
             public readonly GUIContent treeHeightRandomLabel = EditorGUIUtility.TrTextContent("Random?", "Enable random variation in tree height (variation)");
             public readonly GUIContent treeHeightRandomToggle = EditorGUIUtility.TrTextContent("", "Enable random variation in tree height (variation)");
-            public readonly GUIContent lockWidth = EditorGUIUtility.TrTextContent("Lock Width to Height", "Let the tree width be the same with height");
-            public readonly GUIContent treeWidth = EditorGUIUtility.TrTextContent("Tree Width", "Width of the planted trees");
+            public readonly GUIContent lockWidthToHeight = EditorGUIUtility.TrTextContent("Lock Width to Height", "Let the tree width scale be equal to the tree height scale");
+            public readonly GUIContent treeWidth = EditorGUIUtility.TrTextContent("Tree Width", "The width scale of the planted trees");
             public readonly GUIContent treeWidthRandomLabel = EditorGUIUtility.TrTextContent("Random?", "Enable random variation in tree width (variation)");
             public readonly GUIContent treeWidthRandomToggle = EditorGUIUtility.TrTextContent("", "Enable random variation in tree width (variation)");
             public readonly GUIContent treeColorVar = EditorGUIUtility.TrTextContent("Color Variation", "Amount of random shading applied to trees. This only works if the shader supports _TreeInstanceColor (for example, Speedtree shaders do not use this)");
@@ -349,7 +349,6 @@ namespace UnityEditor
         static internal ITerrainPaintTool[] m_Tools = null;
         static internal string[] m_ToolNames = null;
         static internal ITerrainPaintTool m_CreateTool = null;
-
         static OnPaintContext onPaintEditContext = new OnPaintContext(new RaycastHit(), null, Vector2.zero, 0.0f, 0.0f);
         static OnInspectorGUIContext onInspectorGUIEditContext = new OnInspectorGUIContext();
         static OnSceneGUIContext onSceneGUIEditContext = new OnSceneGUIContext(null, new RaycastHit(), null, 0.0f, 0.0f);
@@ -425,18 +424,26 @@ namespace UnityEditor
                 var instanceProperty = toolType.GetProperty("instance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
                 var mi = instanceProperty.GetGetMethod();
                 var tool = (ITerrainPaintTool)mi.Invoke(null, null);
-
-                for (int index = 0; index < m_Tools.Length; index++)
-                {
-                    if (m_Tools[index] == tool)
-                    {
-                        // found it!
-                        SelectPaintTool(index);
-                        return;
-                    }
-                }
-                Debug.LogError("SelectPaintTool: Cannot find tool '" + tool.GetName() + "'");
+                SelectPaintTool(tool.GetName());
             }
+        }
+
+        /// <summary>
+        /// Use the PaintTool instance GetName value to select the paint tool
+        /// </summary>
+        /// <param name="toolName"></param>
+        private void SelectPaintTool(string toolName)
+        {
+            for (int index = 0; index < m_Tools.Length; index++)
+            {
+                if (m_Tools[index].GetName() == toolName)
+                {
+                    // found it!
+                    SelectPaintTool(index);
+                    return;
+                }
+            }
+            Debug.LogError("SelectPaintTool: Cannot find tool '" + toolName + "'");
         }
 
         private void SelectPaintTool(int index)
@@ -719,14 +726,13 @@ namespace UnityEditor
                     int existingIndex = arrNames.FindIndex(x => x == toolName);
                     if (existingIndex >= 0)
                     {
-                        // check if existing is builtin.
+                        // check if the tool is built in
                         if (klass.Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Length > 0)
-                            continue;
-                        else
                         {
-                            arrTools[existingIndex] = tool;
-                            arrNames[existingIndex] = toolName;
+                            continue;
                         }
+                        arrTools[existingIndex] = tool;
+                        arrNames[existingIndex] = toolName;
                     }
                     else
                     {
@@ -1153,13 +1159,7 @@ namespace UnityEditor
 
             GUILayout.Space(5);
 
-            PaintTreesTool.instance.lockWidthToHeight = EditorGUILayout.Toggle(styles.lockWidth, PaintTreesTool.instance.lockWidthToHeight);
-            if (PaintTreesTool.instance.lockWidthToHeight)
-            {
-                PaintTreesTool.instance.treeWidth = PaintTreesTool.instance.treeHeight;
-                PaintTreesTool.instance.treeWidthVariation = PaintTreesTool.instance.treeHeightVariation;
-                PaintTreesTool.instance.allowWidthVar = PaintTreesTool.instance.allowHeightVar;
-            }
+            PaintTreesTool.instance.lockWidthToHeight = EditorGUILayout.Toggle(styles.lockWidthToHeight, PaintTreesTool.instance.lockWidthToHeight);
 
             GUILayout.Space(5);
 
@@ -1583,7 +1583,7 @@ namespace UnityEditor
                 ITerrainPaintTool activeTool = GetActiveTool();
 
                 GUILayout.BeginVertical(EditorStyles.helpBox);
-                GUILayout.Label(activeTool.GetDesc());
+                GUILayout.Label(activeTool.GetDesc(), EditorStyles.wordWrappedMiniLabel);
                 GUILayout.EndVertical();
                 EditorGUILayout.Space();
 

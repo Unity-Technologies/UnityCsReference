@@ -216,7 +216,7 @@ namespace UnityEditorInternal.Profiling
             // Check if it already exists (deserialized from window layout file or scriptable object)
             if (m_TreeViewState == null)
                 m_TreeViewState = new TreeViewState();
-            m_TreeView = new ProfilerFrameDataTreeView(m_TreeViewState, multiColumnHeader, cpuModule);
+            m_TreeView = new ProfilerFrameDataTreeView(m_TreeViewState, multiColumnHeader, cpuModule, m_ProfilerWindow);
             m_TreeView.selectionChanged += OnMainTreeViewSelectionChanged;
             m_TreeView.searchChanged += OnMainTreeViewSearchChanged;
             m_TreeView.Reload();
@@ -361,7 +361,7 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        public void DoGUI(HierarchyFrameDataView frameDataView, bool fetchData, ref bool updateViewLive)
+        public void DoGUI(HierarchyFrameDataView frameDataView, bool fetchData, ref bool updateViewLive, ProfilerViewType viewType)
         {
             using (m_DoGUIMarker.Auto())
             {
@@ -384,7 +384,7 @@ namespace UnityEditorInternal.Profiling
                 // Hierarchy view area
                 GUILayout.BeginVertical();
 
-                DrawToolbar(frameDataView, showDetailedView, ref updateViewLive);
+                DrawToolbar(frameDataView, showDetailedView, ref updateViewLive, viewType);
 
                 if (!string.IsNullOrEmpty(dataAvailabilityMessage))
                 {
@@ -452,14 +452,11 @@ namespace UnityEditorInternal.Profiling
             treeView.searchString = m_SearchField.OnToolbarGUI(rect, treeView.searchString);
         }
 
-        void DrawToolbar(HierarchyFrameDataView frameDataView, bool showDetailedView, ref bool updateViewLive)
+        void DrawToolbar(HierarchyFrameDataView frameDataView, bool showDetailedView, ref bool updateViewLive, ProfilerViewType viewType)
         {
             EditorGUILayout.BeginHorizontal(BaseStyles.toolbar);
 
-            if (frameDataView != null && frameDataView.valid)
-                DrawViewTypePopup((frameDataView.viewMode & HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName) != 0 ? ProfilerViewType.Hierarchy : ProfilerViewType.RawHierarchy);
-            else
-                DrawViewTypePopup(ProfilerViewType.Hierarchy);
+            DrawViewTypePopup(viewType);
 
             DrawLiveUpdateToggle(ref updateViewLive);
             if (!gpuView)

@@ -64,6 +64,7 @@ namespace UnityEngine.UIElements.UIR
                 return;
             }
 
+            // TODO: Re-init should be deferred.
             m_Allocator = new BestFitAllocator((uint)m_Length);
             UIRUtility.Destroy(m_Atlas);
             m_RawAtlas = new RawTexture();

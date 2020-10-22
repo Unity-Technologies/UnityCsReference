@@ -293,6 +293,12 @@ namespace UnityEngine
         extern internal static bool GetPreserveFramebufferAlpha();
         public static bool preserveFramebufferAlpha { get { return GetPreserveFramebufferAlpha(); } }
 
+        [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+        [NativeMethod(Name = "GetMinOpenGLESVersion")]
+        extern internal static OpenGLESVersion GetMinOpenGLESVersion();
+        public static OpenGLESVersion minOpenGLESVersion { get { return GetMinOpenGLESVersion(); } }
+
+
         [FreeFunction("GraphicsScripting::GetActiveColorBuffer")] extern private static RenderBuffer GetActiveColorBuffer();
         [FreeFunction("GraphicsScripting::GetActiveDepthBuffer")] extern private static RenderBuffer GetActiveDepthBuffer();
 

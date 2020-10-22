@@ -79,7 +79,8 @@ namespace UnityEditor
                 public static readonly GUIContent ColorTemperature = EditorGUIUtility.TrTextContent("Temperature", "Also known as CCT (Correlated color temperature). The color temperature of the electromagnetic radiation emitted from an ideal black body is defined as its surface temperature in Kelvin. White is 6500K");
                 public static readonly GUIContent Intensity = EditorGUIUtility.TrTextContent("Intensity", "Controls the brightness of the light. Light color is multiplied by this value.");
                 public static readonly GUIContent LightmappingMode = EditorGUIUtility.TrTextContent("Mode", "Specifies the light mode used to determine if and how a light will be baked. Possible modes are Baked, Mixed, and Realtime.");
-                public static readonly GUIContent LightBounceIntensity = EditorGUIUtility.TrTextContent("Indirect Multiplier", "Controls the intensity of indirect light being contributed to the scene. A value of 0 will cause Realtime lights to be removed from realtime global illumination and Baked and Mixed lights to no longer emit indirect lighting. Has no effect when both Realtime and Baked Global Illumination are disabled.");
+                public static readonly GUIContent LightBounceIntensityRealtimeGISupport = EditorGUIUtility.TrTextContent("Indirect Multiplier", "Controls the intensity of indirect light being contributed to the scene. A value of 0 will cause Realtime lights to be removed from realtime global illumination and Baked and Mixed lights to no longer emit indirect lighting. Has no effect when both Realtime and Baked Global Illumination are disabled.");
+                public static readonly GUIContent LightBounceIntensity = EditorGUIUtility.TrTextContent("Indirect Multiplier", "Controls the intensity of indirect light being contributed to the scene. A value of 0 will cause Baked and Mixed lights to no longer emit indirect lighting. Has no effect when Baked Global Illumination are disabled.");
                 public static readonly GUIContent ShadowType = EditorGUIUtility.TrTextContent("Shadow Type", "Specifies whether Hard Shadows, Soft Shadows, or No Shadows will be cast by the light.");
                 public static readonly GUIContent CastShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Specifies whether Soft Shadows or No Shadows will be cast by the light.");
                 //realtime
@@ -458,11 +459,21 @@ namespace UnityEditor
 
             public void DrawBounceIntensity()
             {
-                EditorGUILayout.PropertyField(bounceIntensity, Styles.LightBounceIntensity);
-                // Indirect shadows warning (Should be removed when we support realtime indirect shadows)
-                if (showBounceWarning)
+                if (SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime))
                 {
-                    EditorGUILayout.HelpBox(Styles.IndirectBounceShadowWarning.text, MessageType.Warning);
+                    EditorGUILayout.PropertyField(bounceIntensity, Styles.LightBounceIntensityRealtimeGISupport);
+
+                    // Indirect shadows warning (Should be removed when we support realtime indirect shadows)
+                    if (showBounceWarning)
+                    {
+                        EditorGUILayout.HelpBox(Styles.IndirectBounceShadowWarning.text, MessageType.Warning);
+                    }
+                }
+                else
+                {
+                    // no realtime gi support, no need to show this property
+                    if (lightmapping.intValue != (int)LightmapBakeType.Realtime)
+                        EditorGUILayout.PropertyField(bounceIntensity, Styles.LightBounceIntensity);
                 }
             }
 

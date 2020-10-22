@@ -155,19 +155,10 @@ namespace UnityEditor
                 int headers;
                 int modes;
 
-                // TODO: This needs to be fixed and we need to find a way to dif. between disabled and unsupported
-                if (GraphicsSettings.currentRenderPipeline != null)
-                {
-                    // When using SRP, we completely hide disabled builtin modes, including headers
-                    headers = Styles.sBuiltinCameraModes.Where(mode => m_SceneView.IsCameraDrawModeEnabled(mode)).Select(mode => mode.section).Distinct().Count() +
-                        SceneView.userDefinedModes.Where(mode => m_SceneView.IsCameraDrawModeEnabled(mode)).Select(mode => mode.section).Distinct().Count();
-                    modes = Styles.sBuiltinCameraModes.Count(mode => m_SceneView.IsCameraDrawModeEnabled(mode)) + SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeEnabled(mode));
-                }
-                else
-                {
-                    headers = Styles.sBuiltinCameraModes.Select(mode => mode.section).Distinct().Count() + SceneView.userDefinedModes.Where(mode => m_SceneView.IsCameraDrawModeEnabled(mode)).Select(mode => mode.section).Distinct().Count();
-                    modes = Styles.sBuiltinCameraModes.Length + SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeEnabled(mode));
-                }
+                // Hide unsupported items and headers
+                headers = Styles.sBuiltinCameraModes.Where(mode => m_SceneView.IsCameraDrawModeSupported(mode)).Select(mode => mode.section).Distinct().Count() +
+                    SceneView.userDefinedModes.Where(mode => m_SceneView.IsCameraDrawModeSupported(mode)).Select(mode => mode.section).Distinct().Count();
+                modes = Styles.sBuiltinCameraModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode)) + SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode));
 
                 int separators = headers - 1;
                 return ((headers + modes) * EditorGUI.kSingleLineHeight) + (kSeparatorHeight * separators) + kShowLightmapResolutionHeight;
@@ -244,14 +235,13 @@ namespace UnityEditor
         private void Draw(float listElementWidth)
         {
             var drawPos = new Rect(0, 0, listElementWidth, EditorGUI.kSingleLineHeight);
-            bool usingScriptableRenderPipeline = (GraphicsSettings.currentRenderPipeline != null);
             string lastSection = null;
 
             foreach (SceneView.CameraMode mode in SceneView.userDefinedModes.OrderBy(mode => mode.section).Concat(Styles.sBuiltinCameraModes))
             {
                 // Draw separators and headers
-                if (usingScriptableRenderPipeline && mode.drawMode != DrawCameraMode.UserDefined && !m_SceneView.IsCameraDrawModeEnabled(mode))
-                    // When using SRP, we completely hide disabled builtin modes, including headers
+                if (mode.drawMode != DrawCameraMode.UserDefined && !m_SceneView.IsCameraDrawModeSupported(mode))
+                    // Hide unsupported items and headers
                     continue;
 
                 if (lastSection != mode.section)

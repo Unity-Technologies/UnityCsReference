@@ -36,9 +36,10 @@ namespace UnityEditor
         SerializedProperty m_Center;
         SerializedProperty m_Size;
 
-        protected GUIContent centerContent = EditorGUIUtility.TrTextContent("Center", "The position of the Collider in the object's local space.");
-        protected GUIContent sizeContent = EditorGUIUtility.TrTextContent("Size", "The size of the Collider in the X, Y, Z directions.");
-
+        private static class Styles
+        {
+            public static readonly GUIContent sizeContent = EditorGUIUtility.TrTextContent("Size", "The size of the Collider in the X, Y, Z directions.");
+        }
 
         public override void OnEnable()
         {
@@ -54,10 +55,10 @@ namespace UnityEditor
 
             EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), target);
             GUILayout.Space(5);
-            EditorGUILayout.PropertyField(m_IsTrigger, triggerContent);
-            EditorGUILayout.PropertyField(m_Material, materialContent);
-            EditorGUILayout.PropertyField(m_Center, centerContent);
-            EditorGUILayout.PropertyField(m_Size, sizeContent);
+            EditorGUILayout.PropertyField(m_IsTrigger, BaseStyles.triggerContent);
+            EditorGUILayout.PropertyField(m_Material, BaseStyles.materialContent);
+            EditorGUILayout.PropertyField(m_Center, BaseStyles.centerContent);
+            EditorGUILayout.PropertyField(m_Size, Styles.sizeContent);
 
             serializedObject.ApplyModifiedProperties();
         }

@@ -35,6 +35,7 @@ namespace UnityEditor
             public static GUIContent cacheServerEnableAuthLabel = EditorGUIUtility.TrTextContent("Authentication", "Enable authentication for cache server. Also forces TLS/SSL encryption.");
             public static GUIContent cacheServerAuthUserLabel = EditorGUIUtility.TrTextContent("User");
             public static GUIContent cacheServerAuthPasswordLabel = EditorGUIUtility.TrTextContent("Password");
+            public static readonly GUIContent cacheServerLearnMore = new GUIContent("Learn more...", "Go to cacheserver documentation.");
 
             public static GUIContent assetSerialization = EditorGUIUtility.TrTextContent("Asset Serialization");
             public static GUIContent textSerializeMappingsOnOneLine = EditorGUIUtility.TrTextContent("Force Serialize References On One Line", "Forces Unity to write references and other inline mappings on one line, to help reduce version control noise");
@@ -105,6 +106,12 @@ namespace UnityEditor
             public PopupElement(string content)
             {
                 this.id = content;
+                this.content = new GUIContent(content);
+            }
+
+            public PopupElement(string id, string content)
+            {
+                this.id = id;
                 this.content = new GUIContent(content);
             }
         }
@@ -562,19 +569,19 @@ namespace UnityEditor
 
             GUILayout.Label(Content.etcTextureCompressor, EditorStyles.boldLabel);
 
-            int index = Mathf.Clamp(m_EtcTextureCompressorBehavior.intValue, 0, etcTextureCompressorPopupList.Length - 1);
+            int index = Mathf.Clamp(m_IsGlobalSettings ? EditorSettings.etcTextureCompressorBehavior : m_EtcTextureCompressorBehavior.intValue, 0, etcTextureCompressorPopupList.Length - 1);
             CreatePopupMenu(Content.behavior.text, etcTextureCompressorPopupList, index, SetEtcTextureCompressorBehavior);
 
             EditorGUI.indentLevel++;
             EditorGUI.BeginDisabledGroup(index < 2);
 
-            index = Mathf.Clamp(m_EtcTextureFastCompressor.intValue, 0, etcTextureFastCompressorPopupList.Length - 1);
+            index = Mathf.Clamp(m_IsGlobalSettings ? EditorSettings.etcTextureFastCompressor : m_EtcTextureFastCompressor.intValue, 0, etcTextureFastCompressorPopupList.Length - 1);
             CreatePopupMenu(Content.fast.text, etcTextureFastCompressorPopupList, index, SetEtcTextureFastCompressor);
 
-            index = Mathf.Clamp(m_EtcTextureNormalCompressor.intValue, 0, etcTextureNormalCompressorPopupList.Length - 1);
+            index = Mathf.Clamp(m_IsGlobalSettings ? EditorSettings.etcTextureNormalCompressor : m_EtcTextureNormalCompressor.intValue, 0, etcTextureNormalCompressorPopupList.Length - 1);
             CreatePopupMenu(Content.normal.text, etcTextureNormalCompressorPopupList, index, SetEtcTextureNormalCompressor);
 
-            index = Mathf.Clamp(m_EtcTextureBestCompressor.intValue, 0, etcTextureBestCompressorPopupList.Length - 1);
+            index = Mathf.Clamp(m_IsGlobalSettings ? EditorSettings.etcTextureBestCompressor : m_EtcTextureBestCompressor.intValue, 0, etcTextureBestCompressorPopupList.Length - 1);
             CreatePopupMenu(Content.best.text, etcTextureBestCompressorPopupList, index, SetEtcTextureBestCompressor);
 
             EditorGUI.EndDisabledGroup();
@@ -601,7 +608,15 @@ namespace UnityEditor
         {
             Assert.IsTrue(m_IsGlobalSettings);
             GUILayout.Space(10);
+
+            GUILayout.BeginHorizontal();
             GUILayout.Label(Content.cacheServer, EditorStyles.boldLabel);
+
+            if (GUILayout.Button(Content.cacheServerLearnMore, EditorStyles.linkLabel))
+            {
+                Application.OpenURL("https://docs.unity3d.com/Manual/UnityAccelerator.html#UsingWithAssetPipeline");
+            }
+            GUILayout.EndHorizontal();
 
             var overrideAddress = CacheServerPreferences.GetCommandLineRemoteAddressOverride();
             if (overrideAddress != null)
@@ -963,8 +978,6 @@ namespace UnityEditor
         private void SetEtcTextureCompressorBehavior(object data)
         {
             int newValue = (int)data;
-            m_EtcTextureCompressorBehavior.intValue = newValue;
-
             if (m_IsGlobalSettings)
             {
                 if (EditorSettings.etcTextureCompressorBehavior == newValue)
@@ -977,27 +990,34 @@ namespace UnityEditor
                 else
                     EditorSettings.SetEtcTextureCompressorDefaultBehavior();
             }
+            else
+            {
+                m_EtcTextureCompressorBehavior.intValue = newValue;
+            }
         }
 
         private void SetEtcTextureFastCompressor(object data)
         {
-            m_EtcTextureFastCompressor.intValue = (int)data;
             if (m_IsGlobalSettings)
                 EditorSettings.etcTextureFastCompressor = (int)data;
+            else
+                m_EtcTextureFastCompressor.intValue = (int)data;
         }
 
         private void SetEtcTextureNormalCompressor(object data)
         {
-            m_EtcTextureNormalCompressor.intValue = (int)data;
             if (m_IsGlobalSettings)
                 EditorSettings.etcTextureNormalCompressor = (int)data;
+            else
+                m_EtcTextureNormalCompressor.intValue = (int)data;
         }
 
         private void SetEtcTextureBestCompressor(object data)
         {
-            m_EtcTextureBestCompressor.intValue = (int)data;
             if (m_IsGlobalSettings)
                 EditorSettings.etcTextureBestCompressor = (int)data;
+            else
+                m_EtcTextureBestCompressor.intValue = (int)data;
         }
 
         private void SetLineEndingsForNewScripts(object data)

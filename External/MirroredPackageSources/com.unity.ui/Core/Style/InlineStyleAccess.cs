@@ -50,7 +50,16 @@ namespace UnityEngine.UIElements
             if (TryGetStyleValue(id, ref inline))
             {
                 var texture = inline.resource.IsAllocated ? inline.resource.Target as Texture2D : null;
-                return new StyleBackground(texture, inline.keyword);
+                if (texture != null)
+                    return new StyleBackground(texture, inline.keyword);
+
+                var sprite = inline.resource.IsAllocated ? inline.resource.Target as Sprite : null;
+                if (sprite != null)
+                    return new StyleBackground(sprite, inline.keyword);
+
+                var vectorImage = inline.resource.IsAllocated ? inline.resource.Target as VectorImage : null;
+                if (vectorImage != null)
+                    return new StyleBackground(vectorImage, inline.keyword);
             }
             return StyleKeyword.Null;
         }
@@ -127,7 +136,7 @@ namespace UnityEngine.UIElements
 
             if (ve.computedStyle.isShared)
             {
-                var inlineStyle = ComputedStyle.Create(false);
+                var inlineStyle = ComputedStyle.CreateUninitialized(false);
                 inlineStyle.CopyShared(ve.m_SharedStyle);
 
                 ve.m_Style = inlineStyle;
@@ -180,9 +189,9 @@ namespace UnityEngine.UIElements
                 ApplyStyleValue(sv);
             }
 
-            if (ve.style.cursor != StyleKeyword.Null)
+            if (ve.style.cursor.keyword != StyleKeyword.Null)
             {
-                ve.computedStyle.ApplyStyleCursor(ve.style.cursor);
+                ve.computedStyle.ApplyStyleCursor(ve.style.cursor.value);
             }
         }
 
@@ -204,7 +213,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleLength inlineValue, StyleLength sharedValue)
+        private bool SetStyleValue(StylePropertyId id, StyleLength inlineValue, Length sharedValue)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
@@ -219,21 +228,20 @@ namespace UnityEngine.UIElements
 
             sv.id = id;
             sv.keyword = inlineValue.keyword;
-            sv.length = inlineValue.value;
+            sv.length = inlineValue.ToLength();
 
             SetStyleValue(sv);
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                sv.keyword = sharedValue.keyword;
-                sv.length = sharedValue.value;
+                sv.length = sharedValue;
             }
 
             ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleFloat inlineValue, StyleFloat sharedValue)
+        private bool SetStyleValue(StylePropertyId id, StyleFloat inlineValue, float sharedValue)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
@@ -254,15 +262,14 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                sv.keyword = sharedValue.keyword;
-                sv.number = sharedValue.value;
+                sv.number = sharedValue;
             }
 
             ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleInt inlineValue, StyleInt sharedValue)
+        private bool SetStyleValue(StylePropertyId id, StyleInt inlineValue, int sharedValue)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
@@ -283,15 +290,14 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                sv.keyword = sharedValue.keyword;
-                sv.number = sharedValue.value;
+                sv.number = sharedValue;
             }
 
             ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleColor inlineValue, StyleColor sharedValue)
+        private bool SetStyleValue(StylePropertyId id, StyleColor inlineValue, Color sharedValue)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
@@ -312,15 +318,14 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                sv.keyword = sharedValue.keyword;
-                sv.color = sharedValue.value;
+                sv.color = sharedValue;
             }
 
             ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetStyleValue<T>(StylePropertyId id, StyleEnum<T> inlineValue, StyleEnum<T> sharedValue) where T : struct, IConvertible
+        private bool SetStyleValue<T>(StylePropertyId id, StyleEnum<T> inlineValue, T sharedValue) where T : struct, IConvertible
         {
             var sv = new StyleValue();
             int intValue = UnsafeUtility.EnumToInt(inlineValue.value);
@@ -342,22 +347,26 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                sv.keyword = sharedValue.keyword;
-                sv.number = UnsafeUtility.EnumToInt(sharedValue.value);
+                sv.number = UnsafeUtility.EnumToInt(sharedValue);
             }
 
             ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleBackground inlineValue, StyleBackground sharedValue)
+        private bool SetStyleValue(StylePropertyId id, StyleBackground inlineValue, Background sharedValue)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
             {
                 var vectorImage = sv.resource.IsAllocated ? sv.resource.Target as VectorImage : null;
+                var sprite = sv.resource.IsAllocated ? sv.resource.Target as Sprite : null;
                 var texture = sv.resource.IsAllocated ? sv.resource.Target as Texture2D : null;
-                if ((vectorImage == inlineValue.value.vectorImage && texture == inlineValue.value.texture) && sv.keyword == inlineValue.keyword)
+                var renderTexture = sv.resource.IsAllocated ? sv.resource.Target as RenderTexture : null;
+                if ((vectorImage == inlineValue.value.vectorImage &&
+                     texture == inlineValue.value.texture &&
+                     sprite == inlineValue.value.sprite &&
+                     renderTexture == inlineValue.value.renderTexture) && sv.keyword == inlineValue.keyword)
                     return false;
 
                 if (sv.resource.IsAllocated)
@@ -372,8 +381,12 @@ namespace UnityEngine.UIElements
             sv.keyword = inlineValue.keyword;
             if (inlineValue.value.vectorImage != null)
                 sv.resource = GCHandle.Alloc(inlineValue.value.vectorImage);
+            else if (inlineValue.value.sprite != null)
+                sv.resource = GCHandle.Alloc(inlineValue.value.sprite);
             else if (inlineValue.value.texture != null)
                 sv.resource = GCHandle.Alloc(inlineValue.value.texture);
+            else if (inlineValue.value.renderTexture != null)
+                sv.resource = GCHandle.Alloc(inlineValue.value.renderTexture);
             else
                 sv.resource = new GCHandle();
 
@@ -381,11 +394,14 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                sv.keyword = sharedValue.keyword;
-                if (sharedValue.value.texture != null)
-                    sv.resource = GCHandle.Alloc(sharedValue.value.texture);
-                else if (sharedValue.value.vectorImage != null)
-                    sv.resource = GCHandle.Alloc(sharedValue.value.vectorImage);
+                if (sharedValue.texture != null)
+                    sv.resource = GCHandle.Alloc(sharedValue.texture);
+                else if (sharedValue.sprite != null)
+                    sv.resource = GCHandle.Alloc(sharedValue.sprite);
+                else if (sharedValue.renderTexture != null)
+                    sv.resource = GCHandle.Alloc(sharedValue.renderTexture);
+                else if (sharedValue.vectorImage != null)
+                    sv.resource = GCHandle.Alloc(sharedValue.vectorImage);
                 else
                     sv.resource = new GCHandle();
             }
@@ -394,7 +410,7 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleFont inlineValue, StyleFont sharedValue)
+        private bool SetStyleValue(StylePropertyId id, StyleFont inlineValue, Font sharedValue)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
@@ -422,15 +438,14 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                sv.keyword = sharedValue.keyword;
-                sv.resource = sharedValue.value != null ? GCHandle.Alloc(sharedValue.value) : new GCHandle();
+                sv.resource = sharedValue != null ? GCHandle.Alloc(sharedValue) : new GCHandle();
             }
 
             ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetInlineCursor(StyleCursor inlineValue, StyleCursor sharedValue)
+        private bool SetInlineCursor(StyleCursor inlineValue, Cursor sharedValue)
         {
             var styleCursor = new StyleCursor();
             if (TryGetInlineCursor(ref styleCursor))
@@ -450,11 +465,10 @@ namespace UnityEngine.UIElements
 
             if (styleCursor.keyword == StyleKeyword.Null)
             {
-                styleCursor.keyword = sharedValue.keyword;
-                styleCursor.value = sharedValue.value;
+                styleCursor.value = sharedValue;
             }
 
-            ve.computedStyle.ApplyStyleCursor(styleCursor);
+            ve.computedStyle.ApplyStyleCursor(styleCursor.value);
             return true;
         }
 

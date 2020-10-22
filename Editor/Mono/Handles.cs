@@ -1484,8 +1484,8 @@ namespace UnityEditor
             [DefaultValue("null")] Gradient customColorRamp = null)
         {
             Vector3 localScale = new Vector3(matrix.GetColumn(0).magnitude, matrix.GetColumn(1).magnitude, matrix.GetColumn(2).magnitude);
-            Texture3DInspector.PrepareSDFPreview(Texture3DInspector.Materials.SDF, texture, localScale, stepScale, surfaceOffset, customColorRamp);
-            Texture3DInspector.Materials.SDF.SetPass(0);
+            Texture3DPreview.PrepareSDFPreview(Texture3DPreview.Materials.SDF, texture, localScale, stepScale, surfaceOffset, customColorRamp);
+            Texture3DPreview.Materials.SDF.SetPass(0);
             Graphics.DrawMeshNow(cubeMesh, matrix);
         }
 
@@ -1495,8 +1495,8 @@ namespace UnityEditor
             [DefaultValue("null")] Gradient customColorRamp = null)
         {
             Vector3 localScale = new Vector3(matrix.GetColumn(0).magnitude, matrix.GetColumn(1).magnitude, matrix.GetColumn(2).magnitude);
-            Texture3DInspector.PrepareSlicePreview(Texture3DInspector.Materials.Slice, texture, slicePositions, filterMode, useColorRamp, customColorRamp);
-            Texture3DInspector.Materials.Slice.SetPass(0);
+            Texture3DPreview.PrepareSlicePreview(Texture3DPreview.Materials.Slice, texture, slicePositions, filterMode, useColorRamp, customColorRamp);
+            Texture3DPreview.Materials.Slice.SetPass(0);
             Graphics.DrawMeshNow(cubeMesh, matrix);
         }
 
@@ -1508,9 +1508,9 @@ namespace UnityEditor
             [DefaultValue("null")] Gradient customColorRamp = null)
         {
             Vector3 localScale = new Vector3(matrix.GetColumn(0).magnitude, matrix.GetColumn(1).magnitude, matrix.GetColumn(2).magnitude);
-            int sampleCount = Texture3DInspector.PrepareVolumePreview(Texture3DInspector.Materials.Volume, texture, localScale, opacity,
+            int sampleCount = Texture3DPreview.PrepareVolumePreview(Texture3DPreview.Materials.Volume, texture, localScale, opacity,
                 filterMode, useColorRamp, customColorRamp, Camera.current, matrix, qualityModifier);
-            Texture3DInspector.Materials.Volume.SetPass(0);
+            Texture3DPreview.Materials.Volume.SetPass(0);
             Graphics.DrawProceduralNow(MeshTopology.Quads, 4, sampleCount);
         }
     }

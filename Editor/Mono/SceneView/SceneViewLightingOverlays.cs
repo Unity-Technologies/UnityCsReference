@@ -64,6 +64,9 @@ namespace UnityEditor
             m_PBRSettingsOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("PBR Validation Settings"), PBRValidationGUI, (int)SceneViewOverlay.Ordering.PhysicsDebug, sceneView, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
             m_LightingExposureSettingsOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Lighting Exposure"), LightingExposureGUI, (int)SceneViewOverlay.Ordering.PhysicsDebug, sceneView, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
             m_GIContributorsReceiversOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("GI Contributors / Receivers"), GIContributorsReceiversGUI, (int)SceneViewOverlay.Ordering.PhysicsDebug, sceneView, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+
+            //Ensure lightmap exposure is initialize to the right value
+            Unsupported.SetSceneViewDebugModeExposureNoDirty(m_SceneView.bakedLightmapExposure);
         }
 
         public void Dispose()

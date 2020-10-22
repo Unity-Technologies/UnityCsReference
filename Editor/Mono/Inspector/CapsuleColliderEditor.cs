@@ -111,6 +111,11 @@ namespace UnityEditor
         SerializedProperty m_Height;
         SerializedProperty m_Direction;
 
+        private static class Styles
+        {
+            public static readonly GUIContent directionContent = EditorGUIUtility.TrTextContent("Direction", "The axis of the capsule’s lengthwise orientation in the GameObject’s local space.");
+        }
+
         public override void OnEnable()
         {
             base.OnEnable();
@@ -127,12 +132,12 @@ namespace UnityEditor
 
             EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), target);
             GUILayout.Space(5);
-            EditorGUILayout.PropertyField(m_IsTrigger);
-            EditorGUILayout.PropertyField(m_Material);
-            EditorGUILayout.PropertyField(m_Center);
+            EditorGUILayout.PropertyField(m_IsTrigger, BaseStyles.triggerContent);
+            EditorGUILayout.PropertyField(m_Material, BaseStyles.materialContent);
+            EditorGUILayout.PropertyField(m_Center, BaseStyles.centerContent);
             EditorGUILayout.PropertyField(m_Radius);
             EditorGUILayout.PropertyField(m_Height);
-            EditorGUILayout.PropertyField(m_Direction);
+            EditorGUILayout.PropertyField(m_Direction, Styles.directionContent);
 
             serializedObject.ApplyModifiedProperties();
         }

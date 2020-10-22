@@ -106,7 +106,7 @@ namespace UnityEditorInternal.Profiling
 
         protected void DrawLiveUpdateToggle(ref bool updateViewLive)
         {
-            using (new EditorGUI.DisabledScope(ProcessService.level != ProcessLevel.Master))
+            using (new EditorGUI.DisabledScope(ProcessService.level != ProcessLevel.Main))
             {
                 // This button is only needed in the Master Process
                 updateViewLive = GUILayout.Toggle(updateViewLive, BaseStyles.updateLive, EditorStyles.toolbarButton);

@@ -7,6 +7,9 @@ using UnityEngine.Profiling;
 
 namespace UnityEditor.UIElements
 {
+    /// <summary>
+    /// Base class implementing the shared functionality for editing bit mask values.
+    /// </summary>
     public abstract class BaseMaskField<TChoice> : BasePopupField<TChoice, string>
     {
         internal abstract TChoice MaskToValue(int newMask);
@@ -161,6 +164,9 @@ namespace UnityEditor.UIElements
 
         internal string GetDisplayedValue(int itemIndex)
         {
+            if (showMixedValue)
+                return mixedValueString;
+
             var newValueToShowUser = "";
 
             switch (itemIndex)
@@ -356,13 +362,22 @@ namespace UnityEditor.UIElements
         }
     }
 
+    /// <summary>
+    /// Make a field for masks.
+    /// </summary>
     public class MaskField : BaseMaskField<int>
     {
         internal override int MaskToValue(int newMask) => newMask;
         internal override int ValueToMask(int value) => value;
 
+        /// <summary>
+        /// Instantiates a <see cref="MaskField"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<MaskField, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="MaskField"/>.
+        /// </summary>
         public new class UxmlTraits : BasePopupField<int, UxmlIntAttributeDescription>.UxmlTraits
         {
             UxmlStringAttributeDescription m_MaskChoices = new UxmlStringAttributeDescription { name = "choices" };
@@ -384,6 +399,12 @@ namespace UnityEditor.UIElements
                 return null;
             }
 
+            /// <summary>
+            /// Initialize the <see cref="UxmlTraits"/> for <see cref="MaskField"/>.
+            /// </summary>
+            /// <param name="ve">The VisualElement that will be populated.</param>
+            /// <param name="bag">The bag from which the attributes are taken.</param>
+            /// <param name="cc">The creation context, unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 var f = (MaskField)ve;
@@ -404,6 +425,9 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// Callback that provides a string representation used to display the selected value.
+        /// </summary>
         public virtual Func<string, string> formatSelectedValueCallback
         {
             get { return m_FormatSelectedValueCallback; }
@@ -414,6 +438,9 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// Callback that provides a string representation used to populate the popup menu.
+        /// </summary>
         public virtual Func<string, string> formatListItemCallback
         {
             get { return m_FormatListItemCallback; }
@@ -447,8 +474,17 @@ namespace UnityEditor.UIElements
             return rawValue != 0 && rawValue != -1 && m_FormatSelectedValueCallback != null && IsPowerOf2(rawValue);
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-mask-field";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
 

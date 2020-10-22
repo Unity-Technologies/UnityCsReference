@@ -61,29 +61,8 @@ namespace UnityEngine
         VelocityChange = 2,
     }
 
-    // The [[ConfigurableJoint]] attempts to attain position / velocity targets based on this flag
-    [Flags()]
-    [Obsolete("JointDriveMode is no longer supported")]
-    public enum JointDriveMode
-    {
-        [Obsolete("JointDriveMode.None is no longer supported")]
-        // Don't apply any forces to reach the target
-        None = 0,
-
-        [Obsolete("JointDriveMode.Position is no longer supported")]
-        // Try to reach the specified target position
-        Position = 1,
-
-        [Obsolete("JointDriveMode.Velocity is no longer supported")]
-        // Try to reach the specified target velocity
-        Velocity = 2,
-
-        [Obsolete("JointDriveMode.PositionAndvelocity is no longer supported")]
-        // Try to reach the specified target position and velocity
-        PositionAndVelocity = 3
-    }
-
     // Determines how to snap physics joints back to its constrained position when it drifts off too much. Note: PositionOnly is not supported anymore!
+    // TODO: We should just move to a flag and remove this enum
     public enum JointProjectionMode
     {
         // Don't snap at all
@@ -135,7 +114,7 @@ namespace UnityEngine
     }
 
     // The limits defined by the [[CharacterJoint]]
-    public struct SoftJointLimit
+    public partial struct SoftJointLimit
     {
         private float m_Limit;
         private float m_Bounciness;
@@ -144,23 +123,11 @@ namespace UnityEngine
         // The limit position/angle of the joint.
         public float limit { get { return m_Limit; } set { m_Limit = value; } }
 
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Spring has been moved to SoftJointLimitSpring class in Unity 5", true)]
-        public float spring { get { return 0; } set {} }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Damper has been moved to SoftJointLimitSpring class in Unity 5", true)]
-        public float damper { get { return 0; } set {} }
-
         // When the joint hits the limit, it can be made to bounce off it.
         public float bounciness { get { return m_Bounciness; } set { m_Bounciness = value; } }
 
         /// Within the contact distance from the limit contacts will persist in order to avoid jitter.
         public float contactDistance { get { return m_ContactDistance; } set { m_ContactDistance = value; } }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Use SoftJointLimit.bounciness instead", true)]
-        public float bouncyness { get { return m_Bounciness; } set { m_Bounciness = value; } }
     }
 
     public struct SoftJointLimitSpring
@@ -176,15 +143,11 @@ namespace UnityEngine
     }
 
     // How the joint's movement will behave along its local X axis
-    public struct JointDrive
+    public partial struct JointDrive
     {
         private float m_PositionSpring;
         private float m_PositionDamper;
         private float m_MaximumForce;
-
-        [Obsolete("JointDriveMode is obsolete")]
-        // Whether the drive should attempt to reach position, velocity, both or nothing
-        public JointDriveMode mode { get { return (JointDriveMode)0; } set {} }
 
         // Strength of a rubber-band pull toward the defined direction. Only used if /mode/ includes Position.
         public float positionSpring { get { return m_PositionSpring; } set { m_PositionSpring = value; } }
@@ -259,6 +222,7 @@ namespace UnityEngine
 
         public float contactDistance { get { return m_ContactDistance; } set { m_ContactDistance = value; } }
 
+        // NB - member fields can't be in other partial structs, so we cannot move this out; work out a plan to remove them then
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("minBounce and maxBounce are replaced by a single JointLimits.bounciness for both limit ends.", true)]
         public float minBounce;
@@ -328,7 +292,7 @@ namespace UnityEngine
     // Describes collision.
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
-    public class Collision
+    public partial class Collision
     {
         internal Vector3 m_Impulse;
         internal Vector3 m_RelativeVelocity;
@@ -406,25 +370,7 @@ namespace UnityEngine
             return contactCount;
         }
 
-        //*undocumented*
-        [Obsolete("Do not use Collision.GetEnumerator(), enumerate using non-allocating array returned by Collision.GetContacts() or enumerate using Collision.GetContact(index) instead.", false)]
-        public virtual IEnumerator GetEnumerator()
-        {
-            return contacts.GetEnumerator();
-        }
-
         public Vector3 impulse { get { return m_Impulse; }}
-
-        //*undocumented* DEPRECATED
-        [Obsolete("Use Collision.relativeVelocity instead.", false)]
-        public Vector3 impactForceSum { get { return relativeVelocity; } }
-
-        //*undocumented* DEPRECATED
-        [Obsolete("Will always return zero.", false)]
-        public Vector3 frictionForceSum { get { return Vector3.zero; } }
-
-        [Obsolete("Please use Collision.rigidbody, Collision.transform or Collision.collider instead", false)]
-        public Component other { get { return m_Rigidbody != null ? (Component)m_Rigidbody : (Component)m_Collider; } }
     }
 
     // CollisionFlags is a bitmask returned by CharacterController.Move.

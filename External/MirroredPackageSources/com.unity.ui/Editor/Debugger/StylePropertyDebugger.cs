@@ -49,7 +49,7 @@ namespace UnityEditor.UIElements.Debugger
                 var info = new StylePropertyInfo();
                 info.name = name;
                 info.id = id;
-                info.type = StyleDebug.GetComputedStyleType(name);
+                info.type = StyleDebug.GetInlineStyleType(name);
                 info.longhands = StyleDebug.GetLonghandPropertyNames(name);
 
                 s_StylePropertyInfos.Add(info);
@@ -171,7 +171,7 @@ namespace UnityEditor.UIElements.Debugger
                     continue;
 
                 var id = propertyInfo.id;
-                object val = StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, id);
+                object val = StyleDebug.GetComputedStyleActualValue(m_SelectedElement.computedStyle, id);
                 Type type = propertyInfo.type;
 
                 int specificity = 0;
@@ -245,76 +245,76 @@ namespace UnityEditor.UIElements.Debugger
 
         public void RefreshPropertyValue(object val, int specificity)
         {
-            if (val is StyleFloat)
+            if (val is float floatValue)
             {
-                var style = (StyleFloat)val;
                 FloatField field = GetOrCreateField<FloatField, float>();
                 if (!IsFocused(field))
-                    field.SetValueWithoutNotify(style.value);
+                    field.SetValueWithoutNotify(floatValue);
             }
-            else if (val is StyleInt)
+            else if (val is int intValue)
             {
-                var style = (StyleInt)val;
                 IntegerField field = GetOrCreateField<IntegerField, int>();
                 if (!IsFocused(field))
-                    field.SetValueWithoutNotify(style.value);
+                    field.SetValueWithoutNotify(intValue);
             }
-            else if (val is StyleLength)
+            else if (val is Length lengthValue)
             {
-                var style = (StyleLength)val;
                 StyleLengthField field = GetOrCreateField<StyleLengthField, StyleLength>();
                 if (!IsFocused(field))
-                    field.SetValueWithoutNotify(style);
+                    field.SetValueWithoutNotify(new StyleLength(lengthValue));
             }
-            else if (val is StyleColor)
+            else if (val is Color colorValue)
             {
-                var style = (StyleColor)val;
                 ColorField field = GetOrCreateField<ColorField, Color>();
                 if (!IsFocused(field))
-                    field.SetValueWithoutNotify(style.value);
+                    field.SetValueWithoutNotify(colorValue);
             }
-            else if (val is StyleFont)
+            // Note: val may be null in case of reference type like "Font"
+            else if (m_PropertyInfo.type == typeof(StyleFont))
             {
-                var style = (StyleFont)val;
                 ObjectField field = GetOrCreateObjectField<Font>();
                 if (!IsFocused(field))
-                    field.SetValueWithoutNotify(style.value);
+                    field.SetValueWithoutNotify(val as Font);
             }
-            else if (val is StyleBackground)
+            else if (val is Background bgValue)
             {
-                var background = ((StyleBackground)val).value;
                 ObjectField field;
-                if (background.vectorImage != null)
+                if (bgValue.vectorImage != null)
                     field = GetOrCreateObjectField<VectorImage>();
+                else if (bgValue.sprite != null)
+                    field = GetOrCreateObjectField<Sprite>();
+                else if (bgValue.renderTexture != null)
+                    field = GetOrCreateObjectField<RenderTexture>();
                 else
                     field = GetOrCreateObjectField<Texture2D>();
                 if (!IsFocused(field))
-                    field.SetValueWithoutNotify(background.vectorImage != null ? (UnityEngine.Object)background.vectorImage : (UnityEngine.Object)background.texture);
+                    field.SetValueWithoutNotify(
+                        bgValue.vectorImage != null ? (UnityEngine.Object)bgValue.vectorImage :
+                        (bgValue.sprite != null ? (UnityEngine.Object)bgValue.sprite :
+                            (bgValue.renderTexture != null ? (UnityEngine.Object)bgValue.renderTexture :
+                                (UnityEngine.Object)bgValue.texture)));
             }
-            else if (val is StyleCursor)
+            else if (val is Cursor cursorValue)
             {
                 // Recreate the cursor fields every time since StyleCursor
                 // can be made of different fields (based on the value)
                 Clear();
 
-                StyleCursor style = (StyleCursor)val;
-                if (style.value.texture != null)
+                if (cursorValue.texture != null)
                 {
-                    var uiTextureField = new ObjectField(m_PropertyName) { value = style.value.texture };
+                    var uiTextureField = new ObjectField(m_PropertyName) { value = cursorValue.texture };
                     uiTextureField.RegisterValueChangedCallback(e =>
                     {
-                        StyleCursor styleCursor = (StyleCursor)StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
-                        var currentCursor = styleCursor.value;
+                        var currentCursor = (Cursor)StyleDebug.GetComputedStyleActualValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
                         currentCursor.texture = e.newValue as Texture2D;
                         SetPropertyValue(new StyleCursor(currentCursor));
                     });
                     Add(uiTextureField);
 
-                    var uiHotspotField = new Vector2Field("hotspot") { value = style.value.hotspot };
+                    var uiHotspotField = new Vector2Field("hotspot") { value = cursorValue.hotspot };
                     uiHotspotField.RegisterValueChangedCallback(e =>
                     {
-                        StyleCursor styleCursor = (StyleCursor)StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
-                        var currentCursor = styleCursor.value;
+                        var currentCursor = (Cursor)StyleDebug.GetComputedStyleActualValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
                         currentCursor.hotspot = e.newValue;
                         SetPropertyValue(new StyleCursor(currentCursor));
                     });
@@ -322,7 +322,7 @@ namespace UnityEditor.UIElements.Debugger
                 }
                 else
                 {
-                    int mouseId = style.value.defaultCursorId;
+                    int mouseId = cursorValue.defaultCursorId;
                     var uiField = new EnumField(m_PropertyName, (MouseCursor)mouseId);
                     uiField.RegisterValueChangedCallback(e =>
                     {
@@ -337,10 +337,9 @@ namespace UnityEditor.UIElements.Debugger
             }
             else
             {
-                // StyleEnum<T>
-                var type = val.GetType();
-                var propInfo = type.GetProperty("value");
-                Enum enumValue = propInfo.GetValue(val, null) as Enum;
+                // Enum
+                Debug.Assert(val is Enum, "Expected Enum value");
+                Enum enumValue = (Enum)val;
                 EnumField field = GetOrCreateEnumField(enumValue);
                 if (!IsFocused(field))
                     field.SetValueWithoutNotify(enumValue);
@@ -417,7 +416,7 @@ namespace UnityEditor.UIElements.Debugger
 
         private void SetPropertyValue(object newValue)
         {
-            object val = StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
+            object val = StyleDebug.GetComputedStyleActualValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
             Type type = m_PropertyInfo.type;
 
             if (newValue == null)
@@ -430,6 +429,7 @@ namespace UnityEditor.UIElements.Debugger
             }
             else if (type == newValue.GetType())
             {
+                // For StyleLengthField
                 val = newValue;
             }
             else
@@ -446,10 +446,11 @@ namespace UnityEditor.UIElements.Debugger
                 }
                 else
                 {
-                    var valueInfo = type.GetProperty("value");
+                    var underlyingType = type.GetProperty("value").PropertyType;
+                    var ctor = type.GetConstructor(new[] { underlyingType });
                     try
                     {
-                        valueInfo.SetValue(val, newValue, null);
+                        val = ctor.Invoke(new[] { newValue });
                     }
                     catch (Exception)
                     {

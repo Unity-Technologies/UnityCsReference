@@ -15,7 +15,7 @@ namespace UnityEditor.Profiling
             public static readonly GUIContent k_FrameCountText = EditorGUIUtility.TrTextContent("Frame Count", "Maximum of visible frames in the Profiler Window.");
             public static readonly GUIContent k_FrameCountWarningText = EditorGUIUtility.TrTextContent("Profiler overhead and memory usage can increase significantly the more frames are kept visible in the Profiler Window through the 'Frame Count' setting.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public static readonly GUIContent k_DefaultRecordState = EditorGUIUtility.TrTextContent("Default recording state", "Recording state in which the profiler should start the first time, or when not remembering state.");
-            public static readonly GUIContent k_DefaultTargetMode = EditorGUIUtility.TrTextContent("Default editor target mode");
+            public static readonly GUIContent k_DefaultTargetMode = EditorGUIUtility.TrTextContent("Default editor target mode on start", "Default profiler recording target mode, which is set on editor start.");
 
             public static readonly GUIContent[] k_RecordStates =
             {
@@ -26,8 +26,8 @@ namespace UnityEditor.Profiling
 
             public static readonly GUIContent[] k_TargetModes =
             {
-                EditorGUIUtility.TrTextContent("Playmode"),
-                EditorGUIUtility.TrTextContent("Editmode")
+                EditorGUIUtility.TrTextContent("Playmode", "The editor starts with play mode as a recording target."),
+                EditorGUIUtility.TrTextContent("Editmode", "The editor starts with the editor as a recording target.")
             };
         }
 

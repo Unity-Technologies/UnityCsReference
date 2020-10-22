@@ -5,6 +5,9 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    /// <summary>
+    /// A <see cref="Rect"/> editor field.
+    /// </summary>
     public class RectField : BaseCompositeField<Rect, FloatField, float>
     {
         internal override FieldDescription[] DescribeFields()
@@ -18,8 +21,14 @@ namespace UnityEditor.UIElements
             };
         }
 
+        /// <summary>
+        /// Instantiates a <see cref="RectField"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<RectField, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="RectField"/>.
+        /// </summary>
         public new class UxmlTraits : BaseCompositeField<Rect, FloatField, float>.UxmlTraits
         {
             UxmlFloatAttributeDescription m_XValue = new UxmlFloatAttributeDescription { name = "x" };
@@ -27,6 +36,12 @@ namespace UnityEditor.UIElements
             UxmlFloatAttributeDescription m_WValue = new UxmlFloatAttributeDescription { name = "w" };
             UxmlFloatAttributeDescription m_HValue = new UxmlFloatAttributeDescription { name = "h" };
 
+            /// <summary>
+            /// Initialize <see cref="RectField"/> properties using values from the attribute bag.
+            /// </summary>
+            /// <param name="ve">The object to initialize.</param>
+            /// <param name="bag">The attribute bag.</param>
+            /// <param name="cc">The creation context; unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
@@ -36,8 +51,17 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-rect-field";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
         public RectField()
@@ -53,6 +77,9 @@ namespace UnityEditor.UIElements
         }
     }
 
+    /// <summary>
+    /// A <see cref="RectInt"/> editor field.
+    /// </summary>
     public class RectIntField : BaseCompositeField<RectInt, IntegerField, int>
     {
         internal override FieldDescription[] DescribeFields()
@@ -66,8 +93,14 @@ namespace UnityEditor.UIElements
             };
         }
 
+        /// <summary>
+        /// Instantiates a <see cref="RectIntField"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<RectIntField, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="RectIntField"/>.
+        /// </summary>
         public new class UxmlTraits : BaseCompositeField<RectInt, IntegerField, int>.UxmlTraits
         {
             UxmlIntAttributeDescription m_XValue = new UxmlIntAttributeDescription { name = "x" };
@@ -75,6 +108,12 @@ namespace UnityEditor.UIElements
             UxmlIntAttributeDescription m_WValue = new UxmlIntAttributeDescription { name = "w" };
             UxmlIntAttributeDescription m_HValue = new UxmlIntAttributeDescription { name = "h" };
 
+            /// <summary>
+            /// Initializes the <see cref="UxmlTraits"/> for the <see cref="RectIntField"/>.
+            /// </summary>
+            /// <param name="ve">The <see cref="VisualElement"/> to be initialized.</param>
+            /// <param name="bag">Bags of attributes where the values come from.</param>
+            /// <param name="cc">Creation Context, unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
@@ -84,8 +123,17 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-rect-int-field";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
         public RectIntField()
@@ -101,6 +149,9 @@ namespace UnityEditor.UIElements
         }
     }
 
+    /// <summary>
+    /// A <see cref="Vector2"/> editor field.
+    /// </summary>
     public class Vector2Field : BaseCompositeField<Vector2, FloatField, float>
     {
         internal override FieldDescription[] DescribeFields()
@@ -112,13 +163,25 @@ namespace UnityEditor.UIElements
             };
         }
 
+        /// <summary>
+        /// Instantiates a <see cref="Vector2Field"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<Vector2Field, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="Vector2Field"/>.
+        /// </summary>
         public new class UxmlTraits : BaseCompositeField<Vector2, FloatField, float>.UxmlTraits
         {
             UxmlFloatAttributeDescription m_XValue = new UxmlFloatAttributeDescription { name = "x" };
             UxmlFloatAttributeDescription m_YValue = new UxmlFloatAttributeDescription { name = "y" };
 
+            /// <summary>
+            /// Initialize <see cref="Vector2Field"/> properties using values from the attribute bag.
+            /// </summary>
+            /// <param name="ve">The object to initialize.</param>
+            /// <param name="bag">The attribute bag.</param>
+            /// <param name="cc">The creation context; unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
@@ -128,13 +191,28 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-vector2-field";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public Vector2Field()
             : this(null) {}
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public Vector2Field(string label)
             : base(label, 2)
         {
@@ -144,6 +222,9 @@ namespace UnityEditor.UIElements
         }
     }
 
+    /// <summary>
+    /// A <see cref="Vector3"/> editor field.
+    /// </summary>
     public class Vector3Field : BaseCompositeField<Vector3, FloatField, float>
     {
         internal override FieldDescription[] DescribeFields()
@@ -156,14 +237,26 @@ namespace UnityEditor.UIElements
             };
         }
 
+        /// <summary>
+        /// Instantiates a <see cref="Vector3Field"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<Vector3Field, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="Vetor3Field"/>.
+        /// </summary>
         public new class UxmlTraits : BaseCompositeField<Vector3, FloatField, float>.UxmlTraits
         {
             UxmlFloatAttributeDescription m_XValue = new UxmlFloatAttributeDescription { name = "x" };
             UxmlFloatAttributeDescription m_YValue = new UxmlFloatAttributeDescription { name = "y" };
             UxmlFloatAttributeDescription m_ZValue = new UxmlFloatAttributeDescription { name = "z" };
 
+            /// <summary>
+            /// Initialize <see cref="Vector3Field"/> properties using values from the attribute bag.
+            /// </summary>
+            /// <param name="ve">The object to initialize.</param>
+            /// <param name="bag">The attribute bag.</param>
+            /// <param name="cc">The creation context; unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
@@ -173,13 +266,28 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-vector3-field";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public Vector3Field()
             : this(null) {}
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public Vector3Field(string label)
             : base(label, 3)
         {
@@ -190,6 +298,9 @@ namespace UnityEditor.UIElements
     }
 
 
+    /// <summary>
+    /// A <see cref="Vector4"/> editor field.
+    /// </summary>
     public class Vector4Field : BaseCompositeField<Vector4, FloatField, float>
     {
         internal override FieldDescription[] DescribeFields()
@@ -203,8 +314,14 @@ namespace UnityEditor.UIElements
             };
         }
 
+        /// <summary>
+        /// Instantiates a <see cref="Vector4Field"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<Vector4Field, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="Vector4Field"/>.
+        /// </summary>
         public new class UxmlTraits : BaseCompositeField<Vector4, FloatField, float>.UxmlTraits
         {
             UxmlFloatAttributeDescription m_XValue = new UxmlFloatAttributeDescription { name = "x" };
@@ -212,6 +329,11 @@ namespace UnityEditor.UIElements
             UxmlFloatAttributeDescription m_ZValue = new UxmlFloatAttributeDescription { name = "z" };
             UxmlFloatAttributeDescription m_WValue = new UxmlFloatAttributeDescription { name = "w" };
 
+            /// <summary>
+            /// Initialize <see cref="Vector4Field"/> properties using values from the attribute bag.
+            /// </summary>
+            /// <param name="ve">The object to initialize.</param>
+            /// <param name="bag">The attribute bag.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
@@ -221,13 +343,28 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-vector4-field";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public Vector4Field()
             : this(null) {}
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public Vector4Field(string label)
             : base(label, 4)
         {
@@ -238,6 +375,9 @@ namespace UnityEditor.UIElements
     }
 
 
+    /// <summary>
+    /// A <see cref="Vector2Int"/> editor field.
+    /// </summary>
     public class Vector2IntField : BaseCompositeField<Vector2Int, IntegerField, int>
     {
         internal override FieldDescription[] DescribeFields()
@@ -249,13 +389,25 @@ namespace UnityEditor.UIElements
             };
         }
 
+        /// <summary>
+        /// Instantiates a <see cref="Vector2IntField"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<Vector2IntField, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="Vector2IntField"/>.
+        /// </summary>
         public new class UxmlTraits : BaseCompositeField<Vector2Int, IntegerField, int>.UxmlTraits
         {
             UxmlIntAttributeDescription m_XValue = new UxmlIntAttributeDescription { name = "x" };
             UxmlIntAttributeDescription m_YValue = new UxmlIntAttributeDescription { name = "y" };
 
+            /// <summary>
+            /// Initializes the <see cref="UxmlTraits"/> for the <see cref="Vector2IntField"/>.
+            /// </summary>
+            /// <param name="ve"><see cref="VisualElement"/> to initialize.</param>
+            /// <param name="bag">Bag of attributes where to get them.</param>
+            /// <param name="cc">Creation Context, unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
@@ -265,13 +417,28 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-vector2-int-field";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public Vector2IntField()
             : this(null) {}
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public Vector2IntField(string label)
             : base(label, 2)
         {
@@ -281,6 +448,9 @@ namespace UnityEditor.UIElements
         }
     }
 
+    /// <summary>
+    /// A <see cref="Vector3Int"/> editor field.
+    /// </summary>
     public class Vector3IntField : BaseCompositeField<Vector3Int, IntegerField, int>
     {
         internal override FieldDescription[] DescribeFields()
@@ -293,14 +463,26 @@ namespace UnityEditor.UIElements
             };
         }
 
+        /// <summary>
+        /// Instantiates a <see cref="Vector3IntField"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<Vector3IntField, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="Vector3IntField"/>.
+        /// </summary>
         public new class UxmlTraits : BaseCompositeField<Vector3Int, IntegerField, int>.UxmlTraits
         {
             UxmlIntAttributeDescription m_XValue = new UxmlIntAttributeDescription { name = "x" };
             UxmlIntAttributeDescription m_YValue = new UxmlIntAttributeDescription { name = "y" };
             UxmlIntAttributeDescription m_ZValue = new UxmlIntAttributeDescription { name = "z" };
 
+            /// <summary>
+            /// Initializes the <see cref="UxmlTraits"/> for the <see cref="Vector3IntField"/>.
+            /// </summary>
+            /// <param name="ve">[[VisualElement] to initialize.</param>
+            /// <param name="bag">Bag of attributes where to get them.</param>
+            /// <param name="cc">Context Creation, unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
@@ -310,13 +492,28 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-vector3-int-field";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public Vector3IntField()
             : this(null) {}
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public Vector3IntField(string label)
             : base(label, 3)
         {

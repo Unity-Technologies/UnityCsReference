@@ -23,6 +23,14 @@ namespace UnityEditor
     internal class ProjectBrowser : EditorWindow, IHasCustomMenu
     {
         public const int kPackagesFolderInstanceId = int.MaxValue;
+        public const int kAssetCreationInstanceID_ForNonExistingAssets = Int32.MaxValue - 1;
+
+        private static readonly Color kColorModifierForNonImportedAssetsInSafeMode = new Color(1, 1, 1, 0.5f);
+
+        public static Color GetAssetItemColor(int instanceID)
+        {
+            return EditorUtility.isInSafeMode && !InternalEditorUtility.AssetReference.IsAssetImported(instanceID) ? GUI.color * kColorModifierForNonImportedAssetsInSafeMode : GUI.color;
+        }
 
         private static readonly int[] k_EmptySelection = new int[0];
 
@@ -155,6 +163,9 @@ namespace UnityEditor
         internal ObjectListArea ListArea // Exposed for usage in tests
         {
             get { return m_ListArea; }
+
+            // Used for tests only;
+            set { m_ListArea = value; }
         }
         int m_ListKeyboardControlID;
         bool m_GrabKeyboardFocusForListArea = false;
@@ -329,6 +340,9 @@ namespace UnityEditor
 
         void EnsureValidFolders()
         {
+            if (m_SearchFilter == null)
+                return;
+
             HashSet<string> validFolders = new HashSet<string>();
             foreach (string folder in m_SearchFilter.folders)
             {
@@ -1084,7 +1098,11 @@ namespace UnityEditor
 
             if (projectBrowser != null)
             {
-                int[] selectedInstanceIDs = projectBrowser.m_ListArea.GetSelection();
+                int[] selectedInstanceIDs = projectBrowser.m_ListArea?.GetSelection();
+
+                if (selectedInstanceIDs == null || selectedInstanceIDs.Length == 0)
+                    return;
+
                 if (projectBrowser.m_ViewMode == ViewMode.TwoColumns)
                 {
                     projectBrowser.SetFolderSelection(selectedInstanceIDs, false);
@@ -1940,8 +1958,13 @@ namespace UnityEditor
                     if (listRect.Contains(evt.mousePosition))
                     {
                         GUIUtility.hotControl = 0;
-                        // Context click in list area
-                        EditorUtility.DisplayPopupMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), "Assets/", null);
+
+                        // Only show menu if there are instances selected
+                        if (Selection.instanceIDs.Length > 0)
+                        {
+                            // Context click in list area
+                            EditorUtility.DisplayPopupMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), "Assets/", null);
+                        }
 
                         evt.Use();
                     }
@@ -1953,8 +1976,17 @@ namespace UnityEditor
         {
             Event evt = Event.current;
 
-            // Context click with a selected Asset
-            EditorUtility.DisplayPopupMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), "Assets/", null);
+            if (clickedItemID == 0)
+            {
+                // For non selectable assets, don't show context menu. Selection is deselected
+                m_AssetTree.SetSelection(k_EmptySelection, false);
+                AssetTreeSelectionCallback(k_EmptySelection);
+            }
+            else
+            {
+                // Context click with a selected Asset
+                EditorUtility.DisplayPopupMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), "Assets/", null);
+            }
 
             evt.Use();
         }
@@ -2179,9 +2211,7 @@ namespace UnityEditor
 
         void CreateDropdown()
         {
-            var isInReadOnlyContext = AssetsMenuUtility.SelectionHasImmutable();
-            if (!isInReadOnlyContext)
-                isInReadOnlyContext = SelectionIsPackagesRootFolder();
+            var isInReadOnlyContext = AssetsMenuUtility.SelectionHasImmutable() || SelectionIsPackagesRootFolder() || !ModeService.HasCapability(ModeCapability.AllowAssetCreation, true);
             EditorGUI.BeginDisabledGroup(isInReadOnlyContext);
             Rect r = GUILayoutUtility.GetRect(s_Styles.m_CreateDropdownContent, EditorStyles.toolbarCreateAddNewDropDown);
             if (EditorGUI.DropdownButton(r, s_Styles.m_CreateDropdownContent, FocusType.Passive, EditorStyles.toolbarCreateAddNewDropDown))
@@ -2397,7 +2427,7 @@ namespace UnityEditor
 
         void SearchAreaBar()
         {
-            if (SearchService.Project.HasEngineOverride())
+            if (SearchService.ProjectSearch.HasEngineOverride())
                 return;
 
             // Background

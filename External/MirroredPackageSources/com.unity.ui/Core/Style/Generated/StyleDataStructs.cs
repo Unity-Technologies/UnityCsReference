@@ -11,27 +11,23 @@ namespace UnityEngine.UIElements
 {
     internal struct InheritedData : IEquatable<InheritedData>
     {
-        public StyleColor color;
-        public StyleLength fontSize;
-        public StyleFont unityFont;
-        public StyleEnum<FontStyle> unityFontStyleAndWeight;
-        public StyleEnum<TextAnchor> unityTextAlign;
-        public StyleEnum<Visibility> visibility;
-        public StyleEnum<WhiteSpace> whiteSpace;
+        public Color color;
+        public Length fontSize;
+        public Font unityFont;
+        public FontStyle unityFontStyleAndWeight;
+        public TextAnchor unityTextAlign;
+        public Visibility visibility;
+        public WhiteSpace whiteSpace;
 
         public static bool operator==(InheritedData lhs, InheritedData rhs)
         {
             return lhs.color == rhs.color &&
                 lhs.fontSize == rhs.fontSize &&
                 lhs.unityFont == rhs.unityFont &&
-                lhs.unityFontStyleAndWeight.value == rhs.unityFontStyleAndWeight.value &&
-                lhs.unityFontStyleAndWeight.keyword == rhs.unityFontStyleAndWeight.keyword &&
-                lhs.unityTextAlign.value == rhs.unityTextAlign.value &&
-                lhs.unityTextAlign.keyword == rhs.unityTextAlign.keyword &&
-                lhs.visibility.value == rhs.visibility.value &&
-                lhs.visibility.keyword == rhs.visibility.keyword &&
-                lhs.whiteSpace.value == rhs.whiteSpace.value &&
-                lhs.whiteSpace.keyword == rhs.whiteSpace.keyword;
+                lhs.unityFontStyleAndWeight == rhs.unityFontStyleAndWeight &&
+                lhs.unityTextAlign == rhs.unityTextAlign &&
+                lhs.visibility == rhs.visibility &&
+                lhs.whiteSpace == rhs.whiteSpace;
         }
 
         public static bool operator!=(InheritedData lhs, InheritedData rhs)
@@ -58,11 +54,11 @@ namespace UnityEngine.UIElements
             {
                 var hashCode = color.GetHashCode();
                 hashCode = (hashCode * 397) ^ fontSize.GetHashCode();
-                hashCode = (hashCode * 397) ^ unityFont.GetHashCode();
-                hashCode = (hashCode * 397) ^ unityFontStyleAndWeight.GetHashCode();
-                hashCode = (hashCode * 397) ^ unityTextAlign.GetHashCode();
-                hashCode = (hashCode * 397) ^ visibility.GetHashCode();
-                hashCode = (hashCode * 397) ^ whiteSpace.GetHashCode();
+                hashCode = (hashCode * 397) ^ (unityFont == null ? 0 : unityFont.GetHashCode());
+                hashCode = (hashCode * 397) ^ (int)unityFontStyleAndWeight;
+                hashCode = (hashCode * 397) ^ (int)unityTextAlign;
+                hashCode = (hashCode * 397) ^ (int)visibility;
+                hashCode = (hashCode * 397) ^ (int)whiteSpace;
                 return hashCode;
             }
         }
@@ -70,70 +66,67 @@ namespace UnityEngine.UIElements
 
     internal struct NonInheritedData : IEquatable<NonInheritedData>
     {
-        public StyleEnum<Align> alignContent;
-        public StyleEnum<Align> alignItems;
-        public StyleEnum<Align> alignSelf;
-        public StyleColor backgroundColor;
-        public StyleBackground backgroundImage;
-        public StyleColor borderBottomColor;
-        public StyleLength borderBottomLeftRadius;
-        public StyleLength borderBottomRightRadius;
-        public StyleFloat borderBottomWidth;
-        public StyleColor borderLeftColor;
-        public StyleFloat borderLeftWidth;
-        public StyleColor borderRightColor;
-        public StyleFloat borderRightWidth;
-        public StyleColor borderTopColor;
-        public StyleLength borderTopLeftRadius;
-        public StyleLength borderTopRightRadius;
-        public StyleFloat borderTopWidth;
-        public StyleLength bottom;
-        public StyleCursor cursor;
-        public StyleEnum<DisplayStyle> display;
-        public StyleLength flexBasis;
-        public StyleEnum<FlexDirection> flexDirection;
-        public StyleFloat flexGrow;
-        public StyleFloat flexShrink;
-        public StyleEnum<Wrap> flexWrap;
-        public StyleLength height;
-        public StyleEnum<Justify> justifyContent;
-        public StyleLength left;
-        public StyleLength marginBottom;
-        public StyleLength marginLeft;
-        public StyleLength marginRight;
-        public StyleLength marginTop;
-        public StyleLength maxHeight;
-        public StyleLength maxWidth;
-        public StyleLength minHeight;
-        public StyleLength minWidth;
-        public StyleFloat opacity;
-        public StyleEnum<OverflowInternal> overflow;
-        public StyleLength paddingBottom;
-        public StyleLength paddingLeft;
-        public StyleLength paddingRight;
-        public StyleLength paddingTop;
-        public StyleEnum<Position> position;
-        public StyleLength right;
-        public StyleEnum<TextOverflow> textOverflow;
-        public StyleLength top;
-        public StyleColor unityBackgroundImageTintColor;
-        public StyleEnum<ScaleMode> unityBackgroundScaleMode;
-        public StyleEnum<OverflowClipBox> unityOverflowClipBox;
-        public StyleInt unitySliceBottom;
-        public StyleInt unitySliceLeft;
-        public StyleInt unitySliceRight;
-        public StyleInt unitySliceTop;
-        public StyleEnum<TextOverflowPosition> unityTextOverflowPosition;
-        public StyleLength width;
+        public Align alignContent;
+        public Align alignItems;
+        public Align alignSelf;
+        public Color backgroundColor;
+        public Background backgroundImage;
+        public Color borderBottomColor;
+        public Length borderBottomLeftRadius;
+        public Length borderBottomRightRadius;
+        public float borderBottomWidth;
+        public Color borderLeftColor;
+        public float borderLeftWidth;
+        public Color borderRightColor;
+        public float borderRightWidth;
+        public Color borderTopColor;
+        public Length borderTopLeftRadius;
+        public Length borderTopRightRadius;
+        public float borderTopWidth;
+        public Length bottom;
+        public Cursor cursor;
+        public DisplayStyle display;
+        public Length flexBasis;
+        public FlexDirection flexDirection;
+        public float flexGrow;
+        public float flexShrink;
+        public Wrap flexWrap;
+        public Length height;
+        public Justify justifyContent;
+        public Length left;
+        public Length marginBottom;
+        public Length marginLeft;
+        public Length marginRight;
+        public Length marginTop;
+        public Length maxHeight;
+        public Length maxWidth;
+        public Length minHeight;
+        public Length minWidth;
+        public float opacity;
+        public OverflowInternal overflow;
+        public Length paddingBottom;
+        public Length paddingLeft;
+        public Length paddingRight;
+        public Length paddingTop;
+        public Position position;
+        public Length right;
+        public TextOverflow textOverflow;
+        public Length top;
+        public Color unityBackgroundImageTintColor;
+        public ScaleMode unityBackgroundScaleMode;
+        public OverflowClipBox unityOverflowClipBox;
+        public int unitySliceBottom;
+        public int unitySliceLeft;
+        public int unitySliceRight;
+        public int unitySliceTop;
+        public TextOverflowPosition unityTextOverflowPosition;
+        public Length width;
 
         public static bool operator==(NonInheritedData lhs, NonInheritedData rhs)
         {
-            return lhs.alignContent.value == rhs.alignContent.value &&
-                lhs.alignContent.keyword == rhs.alignContent.keyword &&
-                lhs.alignItems.value == rhs.alignItems.value &&
-                lhs.alignItems.keyword == rhs.alignItems.keyword &&
-                lhs.alignSelf.value == rhs.alignSelf.value &&
-                lhs.alignSelf.keyword == rhs.alignSelf.keyword &&
+            return lhs.alignContent == rhs.alignContent &&
+                lhs.alignItems == rhs.alignItems &&
+                lhs.alignSelf == rhs.alignSelf &&
                 lhs.backgroundColor == rhs.backgroundColor &&
                 lhs.backgroundImage == rhs.backgroundImage &&
                 lhs.borderBottomColor == rhs.borderBottomColor &&
@@ -150,18 +143,14 @@ namespace UnityEngine.UIElements
                 lhs.borderTopWidth == rhs.borderTopWidth &&
                 lhs.bottom == rhs.bottom &&
                 lhs.cursor == rhs.cursor &&
-                lhs.display.value == rhs.display.value &&
-                lhs.display.keyword == rhs.display.keyword &&
+                lhs.display == rhs.display &&
                 lhs.flexBasis == rhs.flexBasis &&
-                lhs.flexDirection.value == rhs.flexDirection.value &&
-                lhs.flexDirection.keyword == rhs.flexDirection.keyword &&
+                lhs.flexDirection == rhs.flexDirection &&
                 lhs.flexGrow == rhs.flexGrow &&
                 lhs.flexShrink == rhs.flexShrink &&
-                lhs.flexWrap.value == rhs.flexWrap.value &&
-                lhs.flexWrap.keyword == rhs.flexWrap.keyword &&
+                lhs.flexWrap == rhs.flexWrap &&
                 lhs.height == rhs.height &&
-                lhs.justifyContent.value == rhs.justifyContent.value &&
-                lhs.justifyContent.keyword == rhs.justifyContent.keyword &&
+                lhs.justifyContent == rhs.justifyContent &&
                 lhs.left == rhs.left &&
                 lhs.marginBottom == rhs.marginBottom &&
                 lhs.marginLeft == rhs.marginLeft &&
@@ -172,29 +161,23 @@ namespace UnityEngine.UIElements
                 lhs.minHeight == rhs.minHeight &&
                 lhs.minWidth == rhs.minWidth &&
                 lhs.opacity == rhs.opacity &&
-                lhs.overflow.value == rhs.overflow.value &&
-                lhs.overflow.keyword == rhs.overflow.keyword &&
+                lhs.overflow == rhs.overflow &&
                 lhs.paddingBottom == rhs.paddingBottom &&
                 lhs.paddingLeft == rhs.paddingLeft &&
                 lhs.paddingRight == rhs.paddingRight &&
                 lhs.paddingTop == rhs.paddingTop &&
-                lhs.position.value == rhs.position.value &&
-                lhs.position.keyword == rhs.position.keyword &&
+                lhs.position == rhs.position &&
                 lhs.right == rhs.right &&
-                lhs.textOverflow.value == rhs.textOverflow.value &&
-                lhs.textOverflow.keyword == rhs.textOverflow.keyword &&
+                lhs.textOverflow == rhs.textOverflow &&
                 lhs.top == rhs.top &&
                 lhs.unityBackgroundImageTintColor == rhs.unityBackgroundImageTintColor &&
-                lhs.unityBackgroundScaleMode.value == rhs.unityBackgroundScaleMode.value &&
-                lhs.unityBackgroundScaleMode.keyword == rhs.unityBackgroundScaleMode.keyword &&
-                lhs.unityOverflowClipBox.value == rhs.unityOverflowClipBox.value &&
-                lhs.unityOverflowClipBox.keyword == rhs.unityOverflowClipBox.keyword &&
+                lhs.unityBackgroundScaleMode == rhs.unityBackgroundScaleMode &&
+                lhs.unityOverflowClipBox == rhs.unityOverflowClipBox &&
                 lhs.unitySliceBottom == rhs.unitySliceBottom &&
                 lhs.unitySliceLeft == rhs.unitySliceLeft &&
                 lhs.unitySliceRight == rhs.unitySliceRight &&
                 lhs.unitySliceTop == rhs.unitySliceTop &&
-                lhs.unityTextOverflowPosition.value == rhs.unityTextOverflowPosition.value &&
-                lhs.unityTextOverflowPosition.keyword == rhs.unityTextOverflowPosition.keyword &&
+                lhs.unityTextOverflowPosition == rhs.unityTextOverflowPosition &&
                 lhs.width == rhs.width;
         }
 
@@ -220,9 +203,9 @@ namespace UnityEngine.UIElements
         {
             unchecked
             {
-                var hashCode = alignContent.GetHashCode();
-                hashCode = (hashCode * 397) ^ alignItems.GetHashCode();
-                hashCode = (hashCode * 397) ^ alignSelf.GetHashCode();
+                var hashCode = (int)alignContent;
+                hashCode = (hashCode * 397) ^ (int)alignItems;
+                hashCode = (hashCode * 397) ^ (int)alignSelf;
                 hashCode = (hashCode * 397) ^ backgroundColor.GetHashCode();
                 hashCode = (hashCode * 397) ^ backgroundImage.GetHashCode();
                 hashCode = (hashCode * 397) ^ borderBottomColor.GetHashCode();
@@ -239,14 +222,14 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ borderTopWidth.GetHashCode();
                 hashCode = (hashCode * 397) ^ bottom.GetHashCode();
                 hashCode = (hashCode * 397) ^ cursor.GetHashCode();
-                hashCode = (hashCode * 397) ^ display.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)display;
                 hashCode = (hashCode * 397) ^ flexBasis.GetHashCode();
-                hashCode = (hashCode * 397) ^ flexDirection.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)flexDirection;
                 hashCode = (hashCode * 397) ^ flexGrow.GetHashCode();
                 hashCode = (hashCode * 397) ^ flexShrink.GetHashCode();
-                hashCode = (hashCode * 397) ^ flexWrap.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)flexWrap;
                 hashCode = (hashCode * 397) ^ height.GetHashCode();
-                hashCode = (hashCode * 397) ^ justifyContent.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)justifyContent;
                 hashCode = (hashCode * 397) ^ left.GetHashCode();
                 hashCode = (hashCode * 397) ^ marginBottom.GetHashCode();
                 hashCode = (hashCode * 397) ^ marginLeft.GetHashCode();
@@ -257,23 +240,23 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ minHeight.GetHashCode();
                 hashCode = (hashCode * 397) ^ minWidth.GetHashCode();
                 hashCode = (hashCode * 397) ^ opacity.GetHashCode();
-                hashCode = (hashCode * 397) ^ overflow.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)overflow;
                 hashCode = (hashCode * 397) ^ paddingBottom.GetHashCode();
                 hashCode = (hashCode * 397) ^ paddingLeft.GetHashCode();
                 hashCode = (hashCode * 397) ^ paddingRight.GetHashCode();
                 hashCode = (hashCode * 397) ^ paddingTop.GetHashCode();
-                hashCode = (hashCode * 397) ^ position.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)position;
                 hashCode = (hashCode * 397) ^ right.GetHashCode();
-                hashCode = (hashCode * 397) ^ textOverflow.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)textOverflow;
                 hashCode = (hashCode * 397) ^ top.GetHashCode();
                 hashCode = (hashCode * 397) ^ unityBackgroundImageTintColor.GetHashCode();
-                hashCode = (hashCode * 397) ^ unityBackgroundScaleMode.GetHashCode();
-                hashCode = (hashCode * 397) ^ unityOverflowClipBox.GetHashCode();
-                hashCode = (hashCode * 397) ^ unitySliceBottom.GetHashCode();
-                hashCode = (hashCode * 397) ^ unitySliceLeft.GetHashCode();
-                hashCode = (hashCode * 397) ^ unitySliceRight.GetHashCode();
-                hashCode = (hashCode * 397) ^ unitySliceTop.GetHashCode();
-                hashCode = (hashCode * 397) ^ unityTextOverflowPosition.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)unityBackgroundScaleMode;
+                hashCode = (hashCode * 397) ^ (int)unityOverflowClipBox;
+                hashCode = (hashCode * 397) ^ unitySliceBottom;
+                hashCode = (hashCode * 397) ^ unitySliceLeft;
+                hashCode = (hashCode * 397) ^ unitySliceRight;
+                hashCode = (hashCode * 397) ^ unitySliceTop;
+                hashCode = (hashCode * 397) ^ (int)unityTextOverflowPosition;
                 hashCode = (hashCode * 397) ^ width.GetHashCode();
                 return hashCode;
             }

@@ -144,7 +144,7 @@ namespace UnityEditor
         public override void OnFooterBarGUI()
         {
             if (settingsEditor != null)
-                InspectorWindow.VersionControlBar(settingsEditor);
+                PropertyEditor.VersionControlBar(settingsEditor);
         }
 
         private static Editor CreateEditorFromSettingsObject(UnityEngine.Object settingsObj)

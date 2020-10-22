@@ -9,6 +9,7 @@ using System.Text;
 using UnityEditor.Experimental;
 using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Internal;
 using Object = UnityEngine.Object;
@@ -237,21 +238,28 @@ namespace UnityEditor
 
         public static void DisplayPopupMenu(Rect position, string menuItemPath, MenuCommand command)
         {
-            // Validate input. Fixes case 406024: 'Custom context menu in a custom window crashes Unity'
-            if (menuItemPath == "CONTEXT" || menuItemPath == "CONTEXT/" || menuItemPath == "CONTEXT\\")
+            if (ModeService.HasContextMenu(menuItemPath))
             {
-                bool error = command == null || command.context == null;
-                if (error)
-                {
-                    Debug.LogError("DisplayPopupMenu: invalid arguments: using CONTEXT requires a valid MenuCommand object. If you want a custom context menu then try using the GenericMenu.");
-                    return;
-                }
+                ModeService.PopupContextMenu(menuItemPath);
             }
+            else
+            {
+                // Validate input. Fixes case 406024: 'Custom context menu in a custom window crashes Unity'
+                if (menuItemPath == "CONTEXT" || menuItemPath == "CONTEXT/" || menuItemPath == "CONTEXT\\")
+                {
+                    bool error = command == null || command.context == null;
+                    if (error)
+                    {
+                        Debug.LogError("DisplayPopupMenu: invalid arguments: using CONTEXT requires a valid MenuCommand object. If you want a custom context menu then try using the GenericMenu.");
+                        return;
+                    }
+                }
 
-            Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(position.x, position.y));
-            position.x = temp.x;
-            position.y = temp.y;
-            Internal_DisplayPopupMenu(position, menuItemPath, command?.context, command?.userData ?? 0);
+                Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(position.x, position.y));
+                position.x = temp.x;
+                position.y = temp.y;
+                Internal_DisplayPopupMenu(position, menuItemPath, command?.context, command?.userData ?? 0);
+            }
             ResetMouseDown();
         }
 
@@ -310,6 +318,29 @@ namespace UnityEditor
             foreach (Type t in components)
                 go.AddComponent(t);
             return go;
+        }
+
+        internal static bool IsHiddenInInspector(Editor editor)
+        {
+            if (!editor || editor.hideInspector)
+                return true;
+
+            if (editor.inspectorMode != InspectorMode.Normal)
+                return false;
+
+            // Check for missing scripts
+            if (editor.target == null && editor.serializedObject?.FindProperty("m_Script") != null)
+                return false;
+
+            return IsHiddenInInspector(editor.target);
+        }
+
+        internal static bool IsHiddenInInspector(UnityEngine.Object target)
+        {
+            if (!target)
+                return true;
+
+            return (target.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector;
         }
 
         public static string[] CompileCSharp(string[] sources, string[] references, string[] defines, string outputFile)
@@ -665,6 +696,14 @@ namespace UnityEditor
             {
                 _SbPool.Push(sb);
             }
+        }
+
+        public static void SetCustomDiffTool(string  path, string twoWayDiff, string threeWayDiff, string mergeCommand, bool forceEnableCustomTool = false)
+        {
+            InternalEditorUtility.SetCustomDiffToolPrefs(path, twoWayDiff, threeWayDiff, mergeCommand);
+            PreferencesProvider.ReloadCustomDiffToolData();
+            if (forceEnableCustomTool)
+                PreferencesProvider.ForceEnableCustomTool();
         }
     }
 }

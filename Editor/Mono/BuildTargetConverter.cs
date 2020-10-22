@@ -38,6 +38,10 @@ namespace UnityEditor
                     return RuntimePlatform.WebGLPlayer;
                 case BuildTarget.Lumin:
                     return RuntimePlatform.Lumin;
+                case BuildTarget.GameCoreScarlett:
+                    return RuntimePlatform.GameCoreScarlett;
+                case BuildTarget.GameCoreXboxOne:
+                    return RuntimePlatform.GameCoreXboxOne;
                 default:
                     return null;
             }

@@ -52,6 +52,16 @@ namespace UnityEditor.PackageManager.UI
             return null;
         }
 
+        public virtual string BuildBaseDownloadPath(string publisher, string category)
+        {
+            return UnityAssetStoreUtils.BuildBaseDownloadPath(publisher, category);
+        }
+
+        public virtual string BuildFinalDownloadPath(string basePath, string packageName)
+        {
+            return UnityAssetStoreUtils.BuildFinalDownloadPath(basePath, packageName);
+        }
+
         public virtual void Download(string id, string url, string[] destination, string key, string jsonData, bool resumeOK)
         {
             UnityAssetStoreUtils.Download(id, url, destination, key, jsonData, resumeOK);
@@ -62,9 +72,9 @@ namespace UnityEditor.PackageManager.UI
             return UnityAssetStoreUtils.CheckDownload(id, url, destination, key);
         }
 
-        public virtual bool AbortDownload(string id, string[] destination)
+        public virtual bool AbortDownload(string[] destination)
         {
-            return UnityAssetStoreUtils.AbortDownload(id, destination);
+            return UnityAssetStoreUtils.AbortDownload(destination);
         }
 
         public virtual void RegisterDownloadDelegate(ScriptableObject d)

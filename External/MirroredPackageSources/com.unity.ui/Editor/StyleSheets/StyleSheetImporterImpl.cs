@@ -56,11 +56,30 @@ namespace UnityEditor.UIElements.StyleSheets
 
         public string assetPath => m_AssetPath;
 
-        // Allow overriding this in tests
         public virtual UnityEngine.Object DeclareDependencyAndLoad(string path)
         {
-            m_Context.DependsOnSourceAsset(path);
-            return AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
+            return DeclareDependencyAndLoad(path, null);
+        }
+
+        // Allow overriding this in tests
+        public virtual UnityEngine.Object DeclareDependencyAndLoad(string path, string subAssetPath)
+        {
+            m_Context?.DependsOnSourceAsset(path);
+
+            if (string.IsNullOrEmpty(subAssetPath))
+                return AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
+
+            var mainAsset = AssetDatabase.LoadMainAssetAtPath(path);
+            foreach (var o in AssetDatabase.LoadAllAssetsAtPath(path))
+            {
+                if (o == mainAsset)
+                    continue; // We're looking for a sub-asset here
+
+                if (o.name == subAssetPath)
+                    return o;
+            }
+
+            return null;
         }
 
         protected void VisitResourceFunction(GenericFunction funcTerm)
@@ -100,9 +119,9 @@ namespace UnityEditor.UIElements.StyleSheets
         {
             string path = (string)term.Value;
 
-            string projectRelativePath, errorMessage;
+            string projectRelativePath, subAssetPath, errorMessage;
 
-            URIValidationResult result = URIHelpers.ValidAssetURL(assetPath, path, out errorMessage, out projectRelativePath);
+            URIValidationResult result = URIHelpers.ValidAssetURL(assetPath, path, out errorMessage, out projectRelativePath, out subAssetPath);
 
             if (result != URIValidationResult.OK)
             {
@@ -111,11 +130,21 @@ namespace UnityEditor.UIElements.StyleSheets
             }
             else
             {
-                UnityEngine.Object asset = DeclareDependencyAndLoad(projectRelativePath);
+                UnityEngine.Object asset = DeclareDependencyAndLoad(projectRelativePath, subAssetPath);
 
                 bool isTexture = asset is Texture2D;
 
-                if (isTexture || asset is Font || IsFontAssetInternal(asset) || asset is VectorImage)
+                if (isTexture && string.IsNullOrEmpty(subAssetPath))
+                {
+                    // Try to load a sprite sub-asset associated with this texture.
+                    // Sprites have extra data, such as slices and tight-meshes that
+                    // aren't stored in plain textures.
+                    var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(projectRelativePath);
+                    if (sprite != null)
+                        asset = sprite;
+                }
+
+                if (isTexture || asset is Sprite || asset is Font || IsFontAssetInternal(asset) || asset is VectorImage || asset is RenderTexture)
                 {
                     // Looking suffixed images files only
                     if (isTexture)
@@ -143,7 +172,7 @@ namespace UnityEditor.UIElements.StyleSheets
                 }
                 else
                 {
-                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURIProjectAssetType, string.Format("Invalid asset type {0}, only Font, FontAsset, Texture2D and VectorImage are supported", asset.GetType().Name));
+                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURIProjectAssetType, string.Format("Invalid asset type {0}, only Font, FontAsset, Texture2D, Sprite and VectorImage are supported", asset.GetType().Name));
                 }
             }
         }

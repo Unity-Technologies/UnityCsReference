@@ -486,7 +486,7 @@ namespace UnityEditor
         };
         static public string GetPlaybackEngineDownloadURL(string moduleName)
         {
-            if (moduleName == "PS4" || moduleName == "XboxOne" || moduleName == "GameCoreXboxOne" || moduleName == "GameCoreScarlett")
+            if (moduleName == "PS4" || moduleName == "XboxOne")
                 return "https://unity3d.com/platform-installation";
 
             string fullVersion = InternalEditorUtility.GetFullUnityVersion();

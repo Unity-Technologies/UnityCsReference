@@ -22,11 +22,10 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var tmp = new StyleEnum<Align>((Align)value.value, value.keyword);
-                if (SetStyleValue(StylePropertyId.AlignContent, tmp, ve.sharedStyle.alignContent))
+                if (SetStyleValue(StylePropertyId.AlignContent, value, ve.sharedStyle.alignContent))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
-                    ve.yogaNode.AlignContent = (YogaAlign)ve.computedStyle.alignContent.value;
+                    ve.yogaNode.AlignContent = (YogaAlign)ve.computedStyle.alignContent;
                 }
             }
         }
@@ -41,11 +40,10 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var tmp = new StyleEnum<Align>((Align)value.value, value.keyword);
-                if (SetStyleValue(StylePropertyId.AlignItems, tmp, ve.sharedStyle.alignItems))
+                if (SetStyleValue(StylePropertyId.AlignItems, value, ve.sharedStyle.alignItems))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
-                    ve.yogaNode.AlignItems = (YogaAlign)ve.computedStyle.alignItems.value;
+                    ve.yogaNode.AlignItems = (YogaAlign)ve.computedStyle.alignItems;
                 }
             }
         }
@@ -60,11 +58,10 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var tmp = new StyleEnum<Align>((Align)value.value, value.keyword);
-                if (SetStyleValue(StylePropertyId.AlignSelf, tmp, ve.sharedStyle.alignSelf))
+                if (SetStyleValue(StylePropertyId.AlignSelf, value, ve.sharedStyle.alignSelf))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
-                    ve.yogaNode.AlignSelf = (YogaAlign)ve.computedStyle.alignSelf.value;
+                    ve.yogaNode.AlignSelf = (YogaAlign)ve.computedStyle.alignSelf;
                 }
             }
         }
@@ -161,7 +158,7 @@ namespace UnityEngine.UIElements
                 if (SetStyleValue(StylePropertyId.BorderBottomWidth, value, ve.sharedStyle.borderBottomWidth))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
-                    ve.yogaNode.BorderBottomWidth = ve.computedStyle.borderBottomWidth.value;
+                    ve.yogaNode.BorderBottomWidth = ve.computedStyle.borderBottomWidth;
                 }
             }
         }
@@ -194,7 +191,7 @@ namespace UnityEngine.UIElements
                 if (SetStyleValue(StylePropertyId.BorderLeftWidth, value, ve.sharedStyle.borderLeftWidth))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
-                    ve.yogaNode.BorderLeftWidth = ve.computedStyle.borderLeftWidth.value;
+                    ve.yogaNode.BorderLeftWidth = ve.computedStyle.borderLeftWidth;
                 }
             }
         }
@@ -227,7 +224,7 @@ namespace UnityEngine.UIElements
                 if (SetStyleValue(StylePropertyId.BorderRightWidth, value, ve.sharedStyle.borderRightWidth))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
-                    ve.yogaNode.BorderRightWidth = ve.computedStyle.borderRightWidth.value;
+                    ve.yogaNode.BorderRightWidth = ve.computedStyle.borderRightWidth;
                 }
             }
         }
@@ -292,7 +289,7 @@ namespace UnityEngine.UIElements
                 if (SetStyleValue(StylePropertyId.BorderTopWidth, value, ve.sharedStyle.borderTopWidth))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
-                    ve.yogaNode.BorderTopWidth = ve.computedStyle.borderTopWidth.value;
+                    ve.yogaNode.BorderTopWidth = ve.computedStyle.borderTopWidth;
                 }
             }
         }
@@ -340,11 +337,10 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var tmp = new StyleEnum<DisplayStyle>((DisplayStyle)value.value, value.keyword);
-                if (SetStyleValue(StylePropertyId.Display, tmp, ve.sharedStyle.display))
+                if (SetStyleValue(StylePropertyId.Display, value, ve.sharedStyle.display))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
-                    ve.yogaNode.Display = (YogaDisplay)ve.computedStyle.display.value;
+                    ve.yogaNode.Display = (YogaDisplay)ve.computedStyle.display;
                 }
             }
         }
@@ -376,11 +372,10 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var tmp = new StyleEnum<FlexDirection>((FlexDirection)value.value, value.keyword);
-                if (SetStyleValue(StylePropertyId.FlexDirection, tmp, ve.sharedStyle.flexDirection))
+                if (SetStyleValue(StylePropertyId.FlexDirection, value, ve.sharedStyle.flexDirection))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
-                    ve.yogaNode.FlexDirection = (YogaFlexDirection)ve.computedStyle.flexDirection.value;
+                    ve.yogaNode.FlexDirection = (YogaFlexDirection)ve.computedStyle.flexDirection;
                 }
             }
         }
@@ -397,7 +392,7 @@ namespace UnityEngine.UIElements
                 if (SetStyleValue(StylePropertyId.FlexGrow, value, ve.sharedStyle.flexGrow))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
-                    ve.yogaNode.FlexGrow = ve.computedStyle.flexGrow.value;
+                    ve.yogaNode.FlexGrow = ve.computedStyle.flexGrow;
                 }
             }
         }
@@ -414,7 +409,7 @@ namespace UnityEngine.UIElements
                 if (SetStyleValue(StylePropertyId.FlexShrink, value, ve.sharedStyle.flexShrink))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
-                    ve.yogaNode.FlexShrink = ve.computedStyle.flexShrink.value;
+                    ve.yogaNode.FlexShrink = ve.computedStyle.flexShrink;
                 }
             }
         }
@@ -429,11 +424,10 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var tmp = new StyleEnum<Wrap>((Wrap)value.value, value.keyword);
-                if (SetStyleValue(StylePropertyId.FlexWrap, tmp, ve.sharedStyle.flexWrap))
+                if (SetStyleValue(StylePropertyId.FlexWrap, value, ve.sharedStyle.flexWrap))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
-                    ve.yogaNode.Wrap = (YogaWrap)ve.computedStyle.flexWrap.value;
+                    ve.yogaNode.Wrap = (YogaWrap)ve.computedStyle.flexWrap;
                 }
             }
         }
@@ -481,11 +475,10 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var tmp = new StyleEnum<Justify>((Justify)value.value, value.keyword);
-                if (SetStyleValue(StylePropertyId.JustifyContent, tmp, ve.sharedStyle.justifyContent))
+                if (SetStyleValue(StylePropertyId.JustifyContent, value, ve.sharedStyle.justifyContent))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
-                    ve.yogaNode.JustifyContent = (YogaJustify)ve.computedStyle.justifyContent.value;
+                    ve.yogaNode.JustifyContent = (YogaJustify)ve.computedStyle.justifyContent;
                 }
             }
         }
@@ -673,7 +666,7 @@ namespace UnityEngine.UIElements
                 if (SetStyleValue(StylePropertyId.Overflow, tmp, ve.sharedStyle.overflow))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Overflow);
-                    ve.yogaNode.Overflow = (YogaOverflow)ve.computedStyle.overflow.value;
+                    ve.yogaNode.Overflow = (YogaOverflow)ve.computedStyle.overflow;
                 }
             }
         }
@@ -756,11 +749,10 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var tmp = new StyleEnum<Position>((Position)value.value, value.keyword);
-                if (SetStyleValue(StylePropertyId.Position, tmp, ve.sharedStyle.position))
+                if (SetStyleValue(StylePropertyId.Position, value, ve.sharedStyle.position))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
-                    ve.yogaNode.PositionType = (YogaPositionType)ve.computedStyle.position.value;
+                    ve.yogaNode.PositionType = (YogaPositionType)ve.computedStyle.position;
                 }
             }
         }
@@ -792,8 +784,7 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var tmp = new StyleEnum<TextOverflow>((TextOverflow)value.value, value.keyword);
-                if (SetStyleValue(StylePropertyId.TextOverflow, tmp, ve.sharedStyle.textOverflow))
+                if (SetStyleValue(StylePropertyId.TextOverflow, value, ve.sharedStyle.textOverflow))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
                 }
@@ -843,8 +834,7 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var tmp = new StyleEnum<ScaleMode>((ScaleMode)value.value, value.keyword);
-                if (SetStyleValue(StylePropertyId.UnityBackgroundScaleMode, tmp, ve.sharedStyle.unityBackgroundScaleMode))
+                if (SetStyleValue(StylePropertyId.UnityBackgroundScaleMode, value, ve.sharedStyle.unityBackgroundScaleMode))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -877,8 +867,7 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var tmp = new StyleEnum<FontStyle>((FontStyle)value.value, value.keyword);
-                if (SetStyleValue(StylePropertyId.UnityFontStyleAndWeight, tmp, ve.sharedStyle.unityFontStyleAndWeight))
+                if (SetStyleValue(StylePropertyId.UnityFontStyleAndWeight, value, ve.sharedStyle.unityFontStyleAndWeight))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint);
                 }
@@ -895,8 +884,7 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var tmp = new StyleEnum<OverflowClipBox>((OverflowClipBox)value.value, value.keyword);
-                if (SetStyleValue(StylePropertyId.UnityOverflowClipBox, tmp, ve.sharedStyle.unityOverflowClipBox))
+                if (SetStyleValue(StylePropertyId.UnityOverflowClipBox, value, ve.sharedStyle.unityOverflowClipBox))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -977,8 +965,7 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var tmp = new StyleEnum<TextAnchor>((TextAnchor)value.value, value.keyword);
-                if (SetStyleValue(StylePropertyId.UnityTextAlign, tmp, ve.sharedStyle.unityTextAlign))
+                if (SetStyleValue(StylePropertyId.UnityTextAlign, value, ve.sharedStyle.unityTextAlign))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint);
                 }
@@ -995,8 +982,7 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var tmp = new StyleEnum<TextOverflowPosition>((TextOverflowPosition)value.value, value.keyword);
-                if (SetStyleValue(StylePropertyId.UnityTextOverflowPosition, tmp, ve.sharedStyle.unityTextOverflowPosition))
+                if (SetStyleValue(StylePropertyId.UnityTextOverflowPosition, value, ve.sharedStyle.unityTextOverflowPosition))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -1013,8 +999,7 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var tmp = new StyleEnum<Visibility>((Visibility)value.value, value.keyword);
-                if (SetStyleValue(StylePropertyId.Visibility, tmp, ve.sharedStyle.visibility))
+                if (SetStyleValue(StylePropertyId.Visibility, value, ve.sharedStyle.visibility))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint);
                 }
@@ -1031,8 +1016,7 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var tmp = new StyleEnum<WhiteSpace>((WhiteSpace)value.value, value.keyword);
-                if (SetStyleValue(StylePropertyId.WhiteSpace, tmp, ve.sharedStyle.whiteSpace))
+                if (SetStyleValue(StylePropertyId.WhiteSpace, value, ve.sharedStyle.whiteSpace))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout);
                 }

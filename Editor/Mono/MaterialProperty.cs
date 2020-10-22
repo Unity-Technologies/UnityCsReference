@@ -116,6 +116,25 @@ namespace UnityEditor
             }
         }
 
+        public int intValue
+        {
+            get
+            {
+                if (m_Type == ShaderPropertyType.Int)
+                    return (int)m_Value;
+                return 0;
+            }
+            set
+            {
+                if (m_Type != ShaderPropertyType.Int)
+                    return;
+                if (!hasMixedValue && value == (int)m_Value)
+                    return;
+
+                ApplyProperty(value);
+            }
+        }
+
         public Texture textureValue
         {
             get

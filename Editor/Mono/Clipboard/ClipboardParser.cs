@@ -24,6 +24,15 @@ namespace UnityEditor
             return GUID.TryParse(text, out res);
         }
 
+        public static bool ParseHash128(string text, out Hash128 res)
+        {
+            res = new Hash128();
+            if (string.IsNullOrEmpty(text))
+                return false;
+            res = Hash128.Parse(text);
+            return res.isValid;
+        }
+
         public static bool ParseBool(string text, out bool res)
         {
             res = false;

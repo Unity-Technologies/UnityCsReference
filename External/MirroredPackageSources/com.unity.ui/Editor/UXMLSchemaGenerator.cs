@@ -12,12 +12,26 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    /// <summary>
+    /// Attribute that can be used on an assembly to define an XML namespace prefix for a namespace.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
     public sealed class UxmlNamespacePrefixAttribute : Attribute
     {
+        /// <summary>
+        /// The namespace name.
+        /// </summary>
         public string ns { get; }
+        /// <summary>
+        /// The namespace prefix.
+        /// </summary>
         public string prefix { get; }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="ns">The XML/C# namespace to which a prefix will be associated.</param>
+        /// <param name="prefix">The prefix to associate to the namespace.</param>
         public UxmlNamespacePrefixAttribute(string ns, string prefix)
         {
             this.ns = ns;

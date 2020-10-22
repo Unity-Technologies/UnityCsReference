@@ -6,6 +6,7 @@ using System;
 using UnityEditor.PackageManager.UI;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.StyleSheets;
+using UnityEditor.Toolbars;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
@@ -30,10 +31,12 @@ namespace UnityEditor
 
         public IWindowBackend GetDefaultWindowBackend(IWindowModel model) => model is IEditorWindowModel ? new DefaultEditorWindowBackend() : new DefaultWindowBackend();
 
-        public Type GetDefaultToolbarType() => typeof(UnityMainToolbar);
-        public void AddSubToolbar(SubToolbar subToolbar) => UnityMainToolbar.AddSubToolbar(subToolbar);
+        public Type GetDefaultToolbarType() => typeof(DefaultMainToolbar);
+        public void AddSubToolbar(SubToolbar subToolbar) => MainToolbarImguiContainer.AddDeprecatedSubToolbar(subToolbar);
 
         public IEditorElement CreateEditorElement(int editorIndex, IPropertyView iw, string title) => new EditorElement(editorIndex, iw) {name = title};
+
+        public IEditorElement CreateCulledEditorElement(int editorIndex, IPropertyView iw, string title) => new EditorElement(editorIndex, iw, true) {name = title};
 
         public void PackageManagerOpen() => PackageManagerWindow.OpenPackageManager(null);
 

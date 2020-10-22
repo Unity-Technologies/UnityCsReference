@@ -6,6 +6,7 @@ namespace UnityEngine.UIElements
 {
     internal class UIRRepaintUpdater : BaseVisualTreeUpdater
     {
+        BaseVisualElementPanel attachedPanel;
         internal RenderChain renderChain;
 
         static ProfilerMarker s_MarkerDrawChain = new ProfilerMarker("DrawChain");
@@ -45,18 +46,25 @@ namespace UnityEngine.UIElements
 
         public override void Update()
         {
-            if (renderChain?.device == null)
+            if (renderChain == null)
+                InitRenderChain();
+
+            if (renderChain == null || renderChain.device == null)
                 return;
 
             using (s_MarkerDrawChain.Auto())
             {
                 renderChain.ProcessChanges();
 
-                PanelClearFlags clearFlags = panel.clearFlags;
-                if (clearFlags != PanelClearFlags.None)
+                PanelClearSettings clearSettings = panel.clearSettings;
+                if (clearSettings.clearColor || clearSettings.clearDepthStencil)
                 {
-                    GL.Clear((clearFlags & PanelClearFlags.Depth) != 0, // Clearing may impact MVP
-                        (clearFlags & PanelClearFlags.Color) != 0, Color.clear, UIRUtility.k_ClearZ);
+                    // Case 1277149: Clear color must be pre-multiplied like when we render.
+                    Color clearColor = clearSettings.color;
+                    clearColor = clearColor.RGBMultiplied(clearColor.a);
+
+                    GL.Clear(clearSettings.clearDepthStencil, // Clearing may impact MVP
+                        clearSettings.clearColor, clearColor, UIRUtility.k_ClearZ);
                 }
 
                 renderChain.Render();
@@ -80,12 +88,10 @@ namespace UnityEngine.UIElements
 
             var it = UIElementsUtility.GetPanelsIterator();
             while (it.MoveNext())
-            {
-                var renderChain = (it.Current.Value.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater)?.renderChain;
                 if (recreate)
-                    renderChain?.AfterRenderDeviceRelease();
-                else renderChain?.BeforeRenderDeviceRelease();
-            }
+                    it.Current.Value.atlas?.Reset();
+                else
+                    (it.Current.Value.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater)?.DestroyRenderChain();
 
             if (!recreate)
                 UIRenderDevice.FlushAllPendingDeviceDisposes();
@@ -94,28 +100,68 @@ namespace UnityEngine.UIElements
 
         void OnPanelChanged(BaseVisualElementPanel obj)
         {
-            DisposeRenderChain();
-            if (panel != null)
-            {
-                renderChain = CreateRenderChain();
-                if (panel.visualTree != null)
-                {
-                    renderChain.UIEOnChildAdded(panel.visualTree.hierarchy.parent, panel.visualTree,
-                        panel.visualTree.hierarchy.parent == null ? 0 : panel.visualTree.hierarchy.parent.IndexOf(panel.visualTree));
-                    renderChain.UIEOnVisualsChanged(panel.visualTree, true);
-                }
-                panel.standardShaderChanged += OnPanelStandardShaderChanged;
-                panel.standardWorldSpaceShaderChanged += OnPanelStandardWorldSpaceShaderChanged;
-                panel.hierarchyChanged += OnPanelHierarchyChanged;
-                OnPanelStandardShaderChanged();
-                if (panel.contextType == ContextType.Player)
-                    OnPanelStandardWorldSpaceShaderChanged();
-            }
+            DetachFromPanel();
+            AttachToPanel();
+        }
+
+        void AttachToPanel()
+        {
+            Debug.Assert(attachedPanel == null);
+
+            if (panel == null)
+                return;
+
+            attachedPanel = panel;
+            attachedPanel.atlasChanged += OnPanelAtlasChanged;
+            attachedPanel.standardShaderChanged += OnPanelStandardShaderChanged;
+            attachedPanel.standardWorldSpaceShaderChanged += OnPanelStandardWorldSpaceShaderChanged;
+            attachedPanel.hierarchyChanged += OnPanelHierarchyChanged;
+        }
+
+        void DetachFromPanel()
+        {
+            if (attachedPanel == null)
+                return;
+
+            DestroyRenderChain();
+
+            attachedPanel.atlasChanged -= OnPanelAtlasChanged;
+            attachedPanel.standardShaderChanged -= OnPanelStandardShaderChanged;
+            attachedPanel.standardWorldSpaceShaderChanged -= OnPanelStandardWorldSpaceShaderChanged;
+            attachedPanel.hierarchyChanged -= OnPanelHierarchyChanged;
+            attachedPanel = null;
+        }
+
+        void InitRenderChain()
+        {
+            renderChain = CreateRenderChain();
+
+            if (attachedPanel.visualTree != null)
+                renderChain.UIEOnChildAdded(null, attachedPanel.visualTree, 0);
+
+            OnPanelStandardShaderChanged();
+            if (panel.contextType == ContextType.Player)
+                OnPanelStandardWorldSpaceShaderChanged();
+        }
+
+        internal void DestroyRenderChain()
+        {
+            if (renderChain == null)
+                return;
+
+            renderChain.Dispose();
+            renderChain = null;
+            ResetAllElementsDataRecursive(attachedPanel.visualTree);
+        }
+
+        void OnPanelAtlasChanged()
+        {
+            DestroyRenderChain();
         }
 
         void OnPanelHierarchyChanged(VisualElement ve, HierarchyChangeType changeType)
         {
-            if (renderChain == null || ve.panel == null)
+            if (renderChain == null)
                 return;
 
             switch (changeType)
@@ -176,22 +222,6 @@ namespace UnityEngine.UIElements
                 ResetAllElementsDataRecursive(ve.hierarchy[childrenCount--]);
         }
 
-        void DisposeRenderChain()
-        {
-            if (renderChain != null)
-            {
-                var oldPanel = renderChain.panel;
-                renderChain.Dispose();
-                renderChain = null;
-                if (oldPanel != null)
-                {
-                    panel.hierarchyChanged -= OnPanelHierarchyChanged;
-                    panel.standardShaderChanged -= OnPanelStandardShaderChanged;
-                    ResetAllElementsDataRecursive(oldPanel.visualTree);
-                }
-            }
-        }
-
         #region Dispose Pattern
         protected bool disposed { get; private set; }
         protected override void Dispose(bool disposing)
@@ -200,7 +230,7 @@ namespace UnityEngine.UIElements
                 return;
 
             if (disposing)
-                DisposeRenderChain();
+                DetachFromPanel();
             else UnityEngine.UIElements.DisposeHelper.NotifyMissingDispose(this);
 
             disposed = true;

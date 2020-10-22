@@ -14,68 +14,68 @@ namespace UnityEngine.UIElements
         public InheritedData inheritedData = new InheritedData();
         public NonInheritedData nonInheritedData = new NonInheritedData();
 
-        public StyleEnum<Align> alignContent => nonInheritedData.alignContent;
-        public StyleEnum<Align> alignItems => nonInheritedData.alignItems;
-        public StyleEnum<Align> alignSelf => nonInheritedData.alignSelf;
-        public StyleColor backgroundColor => nonInheritedData.backgroundColor;
-        public StyleBackground backgroundImage => nonInheritedData.backgroundImage;
-        public StyleColor borderBottomColor => nonInheritedData.borderBottomColor;
-        public StyleLength borderBottomLeftRadius => nonInheritedData.borderBottomLeftRadius;
-        public StyleLength borderBottomRightRadius => nonInheritedData.borderBottomRightRadius;
-        public StyleFloat borderBottomWidth => nonInheritedData.borderBottomWidth;
-        public StyleColor borderLeftColor => nonInheritedData.borderLeftColor;
-        public StyleFloat borderLeftWidth => nonInheritedData.borderLeftWidth;
-        public StyleColor borderRightColor => nonInheritedData.borderRightColor;
-        public StyleFloat borderRightWidth => nonInheritedData.borderRightWidth;
-        public StyleColor borderTopColor => nonInheritedData.borderTopColor;
-        public StyleLength borderTopLeftRadius => nonInheritedData.borderTopLeftRadius;
-        public StyleLength borderTopRightRadius => nonInheritedData.borderTopRightRadius;
-        public StyleFloat borderTopWidth => nonInheritedData.borderTopWidth;
-        public StyleLength bottom => nonInheritedData.bottom;
-        public StyleColor color => inheritedData.color;
-        public StyleCursor cursor => nonInheritedData.cursor;
-        public StyleEnum<DisplayStyle> display => nonInheritedData.display;
-        public StyleLength flexBasis => nonInheritedData.flexBasis;
-        public StyleEnum<FlexDirection> flexDirection => nonInheritedData.flexDirection;
-        public StyleFloat flexGrow => nonInheritedData.flexGrow;
-        public StyleFloat flexShrink => nonInheritedData.flexShrink;
-        public StyleEnum<Wrap> flexWrap => nonInheritedData.flexWrap;
-        public StyleLength fontSize => inheritedData.fontSize;
-        public StyleLength height => nonInheritedData.height;
-        public StyleEnum<Justify> justifyContent => nonInheritedData.justifyContent;
-        public StyleLength left => nonInheritedData.left;
-        public StyleLength marginBottom => nonInheritedData.marginBottom;
-        public StyleLength marginLeft => nonInheritedData.marginLeft;
-        public StyleLength marginRight => nonInheritedData.marginRight;
-        public StyleLength marginTop => nonInheritedData.marginTop;
-        public StyleLength maxHeight => nonInheritedData.maxHeight;
-        public StyleLength maxWidth => nonInheritedData.maxWidth;
-        public StyleLength minHeight => nonInheritedData.minHeight;
-        public StyleLength minWidth => nonInheritedData.minWidth;
-        public StyleFloat opacity => nonInheritedData.opacity;
-        public StyleEnum<OverflowInternal> overflow => nonInheritedData.overflow;
-        public StyleLength paddingBottom => nonInheritedData.paddingBottom;
-        public StyleLength paddingLeft => nonInheritedData.paddingLeft;
-        public StyleLength paddingRight => nonInheritedData.paddingRight;
-        public StyleLength paddingTop => nonInheritedData.paddingTop;
-        public StyleEnum<Position> position => nonInheritedData.position;
-        public StyleLength right => nonInheritedData.right;
-        public StyleEnum<TextOverflow> textOverflow => nonInheritedData.textOverflow;
-        public StyleLength top => nonInheritedData.top;
-        public StyleColor unityBackgroundImageTintColor => nonInheritedData.unityBackgroundImageTintColor;
-        public StyleEnum<ScaleMode> unityBackgroundScaleMode => nonInheritedData.unityBackgroundScaleMode;
-        public StyleFont unityFont => inheritedData.unityFont;
-        public StyleEnum<FontStyle> unityFontStyleAndWeight => inheritedData.unityFontStyleAndWeight;
-        public StyleEnum<OverflowClipBox> unityOverflowClipBox => nonInheritedData.unityOverflowClipBox;
-        public StyleInt unitySliceBottom => nonInheritedData.unitySliceBottom;
-        public StyleInt unitySliceLeft => nonInheritedData.unitySliceLeft;
-        public StyleInt unitySliceRight => nonInheritedData.unitySliceRight;
-        public StyleInt unitySliceTop => nonInheritedData.unitySliceTop;
-        public StyleEnum<TextAnchor> unityTextAlign => inheritedData.unityTextAlign;
-        public StyleEnum<TextOverflowPosition> unityTextOverflowPosition => nonInheritedData.unityTextOverflowPosition;
-        public StyleEnum<Visibility> visibility => inheritedData.visibility;
-        public StyleEnum<WhiteSpace> whiteSpace => inheritedData.whiteSpace;
-        public StyleLength width => nonInheritedData.width;
+        public Align alignContent => nonInheritedData.alignContent;
+        public Align alignItems => nonInheritedData.alignItems;
+        public Align alignSelf => nonInheritedData.alignSelf;
+        public Color backgroundColor => nonInheritedData.backgroundColor;
+        public Background backgroundImage => nonInheritedData.backgroundImage;
+        public Color borderBottomColor => nonInheritedData.borderBottomColor;
+        public Length borderBottomLeftRadius => nonInheritedData.borderBottomLeftRadius;
+        public Length borderBottomRightRadius => nonInheritedData.borderBottomRightRadius;
+        public float borderBottomWidth => nonInheritedData.borderBottomWidth;
+        public Color borderLeftColor => nonInheritedData.borderLeftColor;
+        public float borderLeftWidth => nonInheritedData.borderLeftWidth;
+        public Color borderRightColor => nonInheritedData.borderRightColor;
+        public float borderRightWidth => nonInheritedData.borderRightWidth;
+        public Color borderTopColor => nonInheritedData.borderTopColor;
+        public Length borderTopLeftRadius => nonInheritedData.borderTopLeftRadius;
+        public Length borderTopRightRadius => nonInheritedData.borderTopRightRadius;
+        public float borderTopWidth => nonInheritedData.borderTopWidth;
+        public Length bottom => nonInheritedData.bottom;
+        public Color color => inheritedData.color;
+        public Cursor cursor => nonInheritedData.cursor;
+        public DisplayStyle display => nonInheritedData.display;
+        public Length flexBasis => nonInheritedData.flexBasis;
+        public FlexDirection flexDirection => nonInheritedData.flexDirection;
+        public float flexGrow => nonInheritedData.flexGrow;
+        public float flexShrink => nonInheritedData.flexShrink;
+        public Wrap flexWrap => nonInheritedData.flexWrap;
+        public Length fontSize => inheritedData.fontSize;
+        public Length height => nonInheritedData.height;
+        public Justify justifyContent => nonInheritedData.justifyContent;
+        public Length left => nonInheritedData.left;
+        public Length marginBottom => nonInheritedData.marginBottom;
+        public Length marginLeft => nonInheritedData.marginLeft;
+        public Length marginRight => nonInheritedData.marginRight;
+        public Length marginTop => nonInheritedData.marginTop;
+        public Length maxHeight => nonInheritedData.maxHeight;
+        public Length maxWidth => nonInheritedData.maxWidth;
+        public Length minHeight => nonInheritedData.minHeight;
+        public Length minWidth => nonInheritedData.minWidth;
+        public float opacity => nonInheritedData.opacity;
+        public OverflowInternal overflow => nonInheritedData.overflow;
+        public Length paddingBottom => nonInheritedData.paddingBottom;
+        public Length paddingLeft => nonInheritedData.paddingLeft;
+        public Length paddingRight => nonInheritedData.paddingRight;
+        public Length paddingTop => nonInheritedData.paddingTop;
+        public Position position => nonInheritedData.position;
+        public Length right => nonInheritedData.right;
+        public TextOverflow textOverflow => nonInheritedData.textOverflow;
+        public Length top => nonInheritedData.top;
+        public Color unityBackgroundImageTintColor => nonInheritedData.unityBackgroundImageTintColor;
+        public ScaleMode unityBackgroundScaleMode => nonInheritedData.unityBackgroundScaleMode;
+        public Font unityFont => inheritedData.unityFont;
+        public FontStyle unityFontStyleAndWeight => inheritedData.unityFontStyleAndWeight;
+        public OverflowClipBox unityOverflowClipBox => nonInheritedData.unityOverflowClipBox;
+        public int unitySliceBottom => nonInheritedData.unitySliceBottom;
+        public int unitySliceLeft => nonInheritedData.unitySliceLeft;
+        public int unitySliceRight => nonInheritedData.unitySliceRight;
+        public int unitySliceTop => nonInheritedData.unitySliceTop;
+        public TextAnchor unityTextAlign => inheritedData.unityTextAlign;
+        public TextOverflowPosition unityTextOverflowPosition => nonInheritedData.unityTextOverflowPosition;
+        public Visibility visibility => inheritedData.visibility;
+        public WhiteSpace whiteSpace => inheritedData.whiteSpace;
+        public Length width => nonInheritedData.width;
 
         public void CopyFrom(ComputedStyle other)
         {
@@ -92,208 +92,208 @@ namespace UnityEngine.UIElements
                 switch (id)
                 {
                     case StylePropertyId.AlignContent:
-                        nonInheritedData.alignContent = (Align)reader.ReadStyleEnum(StyleEnumType.Align, 0).value;
+                        nonInheritedData.alignContent = (Align)reader.ReadEnum(StyleEnumType.Align, 0);
                         break;
                     case StylePropertyId.AlignItems:
-                        nonInheritedData.alignItems = (Align)reader.ReadStyleEnum(StyleEnumType.Align, 0).value;
+                        nonInheritedData.alignItems = (Align)reader.ReadEnum(StyleEnumType.Align, 0);
                         break;
                     case StylePropertyId.AlignSelf:
-                        nonInheritedData.alignSelf = (Align)reader.ReadStyleEnum(StyleEnumType.Align, 0).value;
+                        nonInheritedData.alignSelf = (Align)reader.ReadEnum(StyleEnumType.Align, 0);
                         break;
                     case StylePropertyId.BackgroundColor:
-                        nonInheritedData.backgroundColor = reader.ReadStyleColor(0);
+                        nonInheritedData.backgroundColor = reader.ReadColor(0);
                         break;
                     case StylePropertyId.BackgroundImage:
-                        nonInheritedData.backgroundImage = reader.ReadStyleBackground(0);
+                        nonInheritedData.backgroundImage = reader.ReadBackground(0);
                         break;
                     case StylePropertyId.BorderBottomColor:
-                        nonInheritedData.borderBottomColor = reader.ReadStyleColor(0);
+                        nonInheritedData.borderBottomColor = reader.ReadColor(0);
                         break;
                     case StylePropertyId.BorderBottomLeftRadius:
-                        nonInheritedData.borderBottomLeftRadius = reader.ReadStyleLength(0);
+                        nonInheritedData.borderBottomLeftRadius = reader.ReadLength(0);
                         break;
                     case StylePropertyId.BorderBottomRightRadius:
-                        nonInheritedData.borderBottomRightRadius = reader.ReadStyleLength(0);
+                        nonInheritedData.borderBottomRightRadius = reader.ReadLength(0);
                         break;
                     case StylePropertyId.BorderBottomWidth:
-                        nonInheritedData.borderBottomWidth = reader.ReadStyleFloat(0);
+                        nonInheritedData.borderBottomWidth = reader.ReadFloat(0);
                         break;
                     case StylePropertyId.BorderColor:
                         ShorthandApplicator.ApplyBorderColor(reader, this);
                         break;
                     case StylePropertyId.BorderLeftColor:
-                        nonInheritedData.borderLeftColor = reader.ReadStyleColor(0);
+                        nonInheritedData.borderLeftColor = reader.ReadColor(0);
                         break;
                     case StylePropertyId.BorderLeftWidth:
-                        nonInheritedData.borderLeftWidth = reader.ReadStyleFloat(0);
+                        nonInheritedData.borderLeftWidth = reader.ReadFloat(0);
                         break;
                     case StylePropertyId.BorderRadius:
                         ShorthandApplicator.ApplyBorderRadius(reader, this);
                         break;
                     case StylePropertyId.BorderRightColor:
-                        nonInheritedData.borderRightColor = reader.ReadStyleColor(0);
+                        nonInheritedData.borderRightColor = reader.ReadColor(0);
                         break;
                     case StylePropertyId.BorderRightWidth:
-                        nonInheritedData.borderRightWidth = reader.ReadStyleFloat(0);
+                        nonInheritedData.borderRightWidth = reader.ReadFloat(0);
                         break;
                     case StylePropertyId.BorderTopColor:
-                        nonInheritedData.borderTopColor = reader.ReadStyleColor(0);
+                        nonInheritedData.borderTopColor = reader.ReadColor(0);
                         break;
                     case StylePropertyId.BorderTopLeftRadius:
-                        nonInheritedData.borderTopLeftRadius = reader.ReadStyleLength(0);
+                        nonInheritedData.borderTopLeftRadius = reader.ReadLength(0);
                         break;
                     case StylePropertyId.BorderTopRightRadius:
-                        nonInheritedData.borderTopRightRadius = reader.ReadStyleLength(0);
+                        nonInheritedData.borderTopRightRadius = reader.ReadLength(0);
                         break;
                     case StylePropertyId.BorderTopWidth:
-                        nonInheritedData.borderTopWidth = reader.ReadStyleFloat(0);
+                        nonInheritedData.borderTopWidth = reader.ReadFloat(0);
                         break;
                     case StylePropertyId.BorderWidth:
                         ShorthandApplicator.ApplyBorderWidth(reader, this);
                         break;
                     case StylePropertyId.Bottom:
-                        nonInheritedData.bottom = reader.ReadStyleLength(0);
+                        nonInheritedData.bottom = reader.ReadLength(0);
                         break;
                     case StylePropertyId.Color:
-                        inheritedData.color = reader.ReadStyleColor(0);
+                        inheritedData.color = reader.ReadColor(0);
                         break;
                     case StylePropertyId.Cursor:
-                        nonInheritedData.cursor = reader.ReadStyleCursor(0);
+                        nonInheritedData.cursor = reader.ReadCursor(0);
                         break;
                     case StylePropertyId.Display:
-                        nonInheritedData.display = (DisplayStyle)reader.ReadStyleEnum(StyleEnumType.DisplayStyle, 0).value;
+                        nonInheritedData.display = (DisplayStyle)reader.ReadEnum(StyleEnumType.DisplayStyle, 0);
                         break;
                     case StylePropertyId.Flex:
                         ShorthandApplicator.ApplyFlex(reader, this);
                         break;
                     case StylePropertyId.FlexBasis:
-                        nonInheritedData.flexBasis = reader.ReadStyleLength(0);
+                        nonInheritedData.flexBasis = reader.ReadLength(0);
                         break;
                     case StylePropertyId.FlexDirection:
-                        nonInheritedData.flexDirection = (FlexDirection)reader.ReadStyleEnum(StyleEnumType.FlexDirection, 0).value;
+                        nonInheritedData.flexDirection = (FlexDirection)reader.ReadEnum(StyleEnumType.FlexDirection, 0);
                         break;
                     case StylePropertyId.FlexGrow:
-                        nonInheritedData.flexGrow = reader.ReadStyleFloat(0);
+                        nonInheritedData.flexGrow = reader.ReadFloat(0);
                         break;
                     case StylePropertyId.FlexShrink:
-                        nonInheritedData.flexShrink = reader.ReadStyleFloat(0);
+                        nonInheritedData.flexShrink = reader.ReadFloat(0);
                         break;
                     case StylePropertyId.FlexWrap:
-                        nonInheritedData.flexWrap = (Wrap)reader.ReadStyleEnum(StyleEnumType.Wrap, 0).value;
+                        nonInheritedData.flexWrap = (Wrap)reader.ReadEnum(StyleEnumType.Wrap, 0);
                         break;
                     case StylePropertyId.FontSize:
-                        inheritedData.fontSize = reader.ReadStyleLength(0);
+                        inheritedData.fontSize = reader.ReadLength(0);
                         break;
                     case StylePropertyId.Height:
-                        nonInheritedData.height = reader.ReadStyleLength(0);
+                        nonInheritedData.height = reader.ReadLength(0);
                         break;
                     case StylePropertyId.JustifyContent:
-                        nonInheritedData.justifyContent = (Justify)reader.ReadStyleEnum(StyleEnumType.Justify, 0).value;
+                        nonInheritedData.justifyContent = (Justify)reader.ReadEnum(StyleEnumType.Justify, 0);
                         break;
                     case StylePropertyId.Left:
-                        nonInheritedData.left = reader.ReadStyleLength(0);
+                        nonInheritedData.left = reader.ReadLength(0);
                         break;
                     case StylePropertyId.Margin:
                         ShorthandApplicator.ApplyMargin(reader, this);
                         break;
                     case StylePropertyId.MarginBottom:
-                        nonInheritedData.marginBottom = reader.ReadStyleLength(0);
+                        nonInheritedData.marginBottom = reader.ReadLength(0);
                         break;
                     case StylePropertyId.MarginLeft:
-                        nonInheritedData.marginLeft = reader.ReadStyleLength(0);
+                        nonInheritedData.marginLeft = reader.ReadLength(0);
                         break;
                     case StylePropertyId.MarginRight:
-                        nonInheritedData.marginRight = reader.ReadStyleLength(0);
+                        nonInheritedData.marginRight = reader.ReadLength(0);
                         break;
                     case StylePropertyId.MarginTop:
-                        nonInheritedData.marginTop = reader.ReadStyleLength(0);
+                        nonInheritedData.marginTop = reader.ReadLength(0);
                         break;
                     case StylePropertyId.MaxHeight:
-                        nonInheritedData.maxHeight = reader.ReadStyleLength(0);
+                        nonInheritedData.maxHeight = reader.ReadLength(0);
                         break;
                     case StylePropertyId.MaxWidth:
-                        nonInheritedData.maxWidth = reader.ReadStyleLength(0);
+                        nonInheritedData.maxWidth = reader.ReadLength(0);
                         break;
                     case StylePropertyId.MinHeight:
-                        nonInheritedData.minHeight = reader.ReadStyleLength(0);
+                        nonInheritedData.minHeight = reader.ReadLength(0);
                         break;
                     case StylePropertyId.MinWidth:
-                        nonInheritedData.minWidth = reader.ReadStyleLength(0);
+                        nonInheritedData.minWidth = reader.ReadLength(0);
                         break;
                     case StylePropertyId.Opacity:
-                        nonInheritedData.opacity = reader.ReadStyleFloat(0);
+                        nonInheritedData.opacity = reader.ReadFloat(0);
                         break;
                     case StylePropertyId.Overflow:
-                        nonInheritedData.overflow = (OverflowInternal)reader.ReadStyleEnum(StyleEnumType.OverflowInternal, 0).value;
+                        nonInheritedData.overflow = (OverflowInternal)reader.ReadEnum(StyleEnumType.OverflowInternal, 0);
                         break;
                     case StylePropertyId.Padding:
                         ShorthandApplicator.ApplyPadding(reader, this);
                         break;
                     case StylePropertyId.PaddingBottom:
-                        nonInheritedData.paddingBottom = reader.ReadStyleLength(0);
+                        nonInheritedData.paddingBottom = reader.ReadLength(0);
                         break;
                     case StylePropertyId.PaddingLeft:
-                        nonInheritedData.paddingLeft = reader.ReadStyleLength(0);
+                        nonInheritedData.paddingLeft = reader.ReadLength(0);
                         break;
                     case StylePropertyId.PaddingRight:
-                        nonInheritedData.paddingRight = reader.ReadStyleLength(0);
+                        nonInheritedData.paddingRight = reader.ReadLength(0);
                         break;
                     case StylePropertyId.PaddingTop:
-                        nonInheritedData.paddingTop = reader.ReadStyleLength(0);
+                        nonInheritedData.paddingTop = reader.ReadLength(0);
                         break;
                     case StylePropertyId.Position:
-                        nonInheritedData.position = (Position)reader.ReadStyleEnum(StyleEnumType.Position, 0).value;
+                        nonInheritedData.position = (Position)reader.ReadEnum(StyleEnumType.Position, 0);
                         break;
                     case StylePropertyId.Right:
-                        nonInheritedData.right = reader.ReadStyleLength(0);
+                        nonInheritedData.right = reader.ReadLength(0);
                         break;
                     case StylePropertyId.TextOverflow:
-                        nonInheritedData.textOverflow = (TextOverflow)reader.ReadStyleEnum(StyleEnumType.TextOverflow, 0).value;
+                        nonInheritedData.textOverflow = (TextOverflow)reader.ReadEnum(StyleEnumType.TextOverflow, 0);
                         break;
                     case StylePropertyId.Top:
-                        nonInheritedData.top = reader.ReadStyleLength(0);
+                        nonInheritedData.top = reader.ReadLength(0);
                         break;
                     case StylePropertyId.UnityBackgroundImageTintColor:
-                        nonInheritedData.unityBackgroundImageTintColor = reader.ReadStyleColor(0);
+                        nonInheritedData.unityBackgroundImageTintColor = reader.ReadColor(0);
                         break;
                     case StylePropertyId.UnityBackgroundScaleMode:
-                        nonInheritedData.unityBackgroundScaleMode = (ScaleMode)reader.ReadStyleEnum(StyleEnumType.ScaleMode, 0).value;
+                        nonInheritedData.unityBackgroundScaleMode = (ScaleMode)reader.ReadEnum(StyleEnumType.ScaleMode, 0);
                         break;
                     case StylePropertyId.UnityFont:
-                        inheritedData.unityFont = reader.ReadStyleFont(0);
+                        inheritedData.unityFont = reader.ReadFont(0);
                         break;
                     case StylePropertyId.UnityFontStyleAndWeight:
-                        inheritedData.unityFontStyleAndWeight = (FontStyle)reader.ReadStyleEnum(StyleEnumType.FontStyle, 0).value;
+                        inheritedData.unityFontStyleAndWeight = (FontStyle)reader.ReadEnum(StyleEnumType.FontStyle, 0);
                         break;
                     case StylePropertyId.UnityOverflowClipBox:
-                        nonInheritedData.unityOverflowClipBox = (OverflowClipBox)reader.ReadStyleEnum(StyleEnumType.OverflowClipBox, 0).value;
+                        nonInheritedData.unityOverflowClipBox = (OverflowClipBox)reader.ReadEnum(StyleEnumType.OverflowClipBox, 0);
                         break;
                     case StylePropertyId.UnitySliceBottom:
-                        nonInheritedData.unitySliceBottom = reader.ReadStyleInt(0);
+                        nonInheritedData.unitySliceBottom = reader.ReadInt(0);
                         break;
                     case StylePropertyId.UnitySliceLeft:
-                        nonInheritedData.unitySliceLeft = reader.ReadStyleInt(0);
+                        nonInheritedData.unitySliceLeft = reader.ReadInt(0);
                         break;
                     case StylePropertyId.UnitySliceRight:
-                        nonInheritedData.unitySliceRight = reader.ReadStyleInt(0);
+                        nonInheritedData.unitySliceRight = reader.ReadInt(0);
                         break;
                     case StylePropertyId.UnitySliceTop:
-                        nonInheritedData.unitySliceTop = reader.ReadStyleInt(0);
+                        nonInheritedData.unitySliceTop = reader.ReadInt(0);
                         break;
                     case StylePropertyId.UnityTextAlign:
-                        inheritedData.unityTextAlign = (TextAnchor)reader.ReadStyleEnum(StyleEnumType.TextAnchor, 0).value;
+                        inheritedData.unityTextAlign = (TextAnchor)reader.ReadEnum(StyleEnumType.TextAnchor, 0);
                         break;
                     case StylePropertyId.UnityTextOverflowPosition:
-                        nonInheritedData.unityTextOverflowPosition = (TextOverflowPosition)reader.ReadStyleEnum(StyleEnumType.TextOverflowPosition, 0).value;
+                        nonInheritedData.unityTextOverflowPosition = (TextOverflowPosition)reader.ReadEnum(StyleEnumType.TextOverflowPosition, 0);
                         break;
                     case StylePropertyId.Visibility:
-                        inheritedData.visibility = (Visibility)reader.ReadStyleEnum(StyleEnumType.Visibility, 0).value;
+                        inheritedData.visibility = (Visibility)reader.ReadEnum(StyleEnumType.Visibility, 0);
                         break;
                     case StylePropertyId.WhiteSpace:
-                        inheritedData.whiteSpace = (WhiteSpace)reader.ReadStyleEnum(StyleEnumType.WhiteSpace, 0).value;
+                        inheritedData.whiteSpace = (WhiteSpace)reader.ReadEnum(StyleEnumType.WhiteSpace, 0);
                         break;
                     case StylePropertyId.Width:
-                        nonInheritedData.width = reader.ReadStyleLength(0);
+                        nonInheritedData.width = reader.ReadLength(0);
                         break;
                     case StylePropertyId.Custom:
                         ApplyCustomStyleProperty(reader);
@@ -312,195 +312,195 @@ namespace UnityEngine.UIElements
             switch (sv.id)
             {
                 case StylePropertyId.AlignContent:
-                    nonInheritedData.alignContent = new StyleEnum<Align>((Align)sv.number, sv.keyword);
+                    nonInheritedData.alignContent = (Align)sv.number;
                     if (sv.keyword == StyleKeyword.Auto)
                         nonInheritedData.alignContent = Align.Auto;
                     break;
                 case StylePropertyId.AlignItems:
-                    nonInheritedData.alignItems = new StyleEnum<Align>((Align)sv.number, sv.keyword);
+                    nonInheritedData.alignItems = (Align)sv.number;
                     if (sv.keyword == StyleKeyword.Auto)
                         nonInheritedData.alignItems = Align.Auto;
                     break;
                 case StylePropertyId.AlignSelf:
-                    nonInheritedData.alignSelf = new StyleEnum<Align>((Align)sv.number, sv.keyword);
+                    nonInheritedData.alignSelf = (Align)sv.number;
                     if (sv.keyword == StyleKeyword.Auto)
                         nonInheritedData.alignSelf = Align.Auto;
                     break;
                 case StylePropertyId.BackgroundColor:
-                    nonInheritedData.backgroundColor = new StyleColor(sv.color, sv.keyword);
+                    nonInheritedData.backgroundColor = sv.color;
                     break;
                 case StylePropertyId.BackgroundImage:
-                    nonInheritedData.backgroundImage = new StyleBackground(sv.resource, sv.keyword);
+                    nonInheritedData.backgroundImage = sv.resource.IsAllocated ? Background.FromObject(sv.resource.Target) : new Background();
                     break;
                 case StylePropertyId.BorderBottomColor:
-                    nonInheritedData.borderBottomColor = new StyleColor(sv.color, sv.keyword);
+                    nonInheritedData.borderBottomColor = sv.color;
                     break;
                 case StylePropertyId.BorderBottomLeftRadius:
-                    nonInheritedData.borderBottomLeftRadius = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.borderBottomLeftRadius = sv.length;
                     break;
                 case StylePropertyId.BorderBottomRightRadius:
-                    nonInheritedData.borderBottomRightRadius = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.borderBottomRightRadius = sv.length;
                     break;
                 case StylePropertyId.BorderBottomWidth:
-                    nonInheritedData.borderBottomWidth = new StyleFloat(sv.number, sv.keyword);
+                    nonInheritedData.borderBottomWidth = sv.number;
                     break;
                 case StylePropertyId.BorderLeftColor:
-                    nonInheritedData.borderLeftColor = new StyleColor(sv.color, sv.keyword);
+                    nonInheritedData.borderLeftColor = sv.color;
                     break;
                 case StylePropertyId.BorderLeftWidth:
-                    nonInheritedData.borderLeftWidth = new StyleFloat(sv.number, sv.keyword);
+                    nonInheritedData.borderLeftWidth = sv.number;
                     break;
                 case StylePropertyId.BorderRightColor:
-                    nonInheritedData.borderRightColor = new StyleColor(sv.color, sv.keyword);
+                    nonInheritedData.borderRightColor = sv.color;
                     break;
                 case StylePropertyId.BorderRightWidth:
-                    nonInheritedData.borderRightWidth = new StyleFloat(sv.number, sv.keyword);
+                    nonInheritedData.borderRightWidth = sv.number;
                     break;
                 case StylePropertyId.BorderTopColor:
-                    nonInheritedData.borderTopColor = new StyleColor(sv.color, sv.keyword);
+                    nonInheritedData.borderTopColor = sv.color;
                     break;
                 case StylePropertyId.BorderTopLeftRadius:
-                    nonInheritedData.borderTopLeftRadius = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.borderTopLeftRadius = sv.length;
                     break;
                 case StylePropertyId.BorderTopRightRadius:
-                    nonInheritedData.borderTopRightRadius = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.borderTopRightRadius = sv.length;
                     break;
                 case StylePropertyId.BorderTopWidth:
-                    nonInheritedData.borderTopWidth = new StyleFloat(sv.number, sv.keyword);
+                    nonInheritedData.borderTopWidth = sv.number;
                     break;
                 case StylePropertyId.Bottom:
-                    nonInheritedData.bottom = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.bottom = sv.length;
                     break;
                 case StylePropertyId.Color:
-                    inheritedData.color = new StyleColor(sv.color, sv.keyword);
+                    inheritedData.color = sv.color;
                     break;
                 case StylePropertyId.Display:
-                    nonInheritedData.display = new StyleEnum<DisplayStyle>((DisplayStyle)sv.number, sv.keyword);
+                    nonInheritedData.display = (DisplayStyle)sv.number;
                     if (sv.keyword == StyleKeyword.None)
                         nonInheritedData.display = DisplayStyle.None;
                     break;
                 case StylePropertyId.FlexBasis:
-                    nonInheritedData.flexBasis = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.flexBasis = sv.length;
                     break;
                 case StylePropertyId.FlexDirection:
-                    nonInheritedData.flexDirection = new StyleEnum<FlexDirection>((FlexDirection)sv.number, sv.keyword);
+                    nonInheritedData.flexDirection = (FlexDirection)sv.number;
                     break;
                 case StylePropertyId.FlexGrow:
-                    nonInheritedData.flexGrow = new StyleFloat(sv.number, sv.keyword);
+                    nonInheritedData.flexGrow = sv.number;
                     break;
                 case StylePropertyId.FlexShrink:
-                    nonInheritedData.flexShrink = new StyleFloat(sv.number, sv.keyword);
+                    nonInheritedData.flexShrink = sv.number;
                     break;
                 case StylePropertyId.FlexWrap:
-                    nonInheritedData.flexWrap = new StyleEnum<Wrap>((Wrap)sv.number, sv.keyword);
+                    nonInheritedData.flexWrap = (Wrap)sv.number;
                     break;
                 case StylePropertyId.FontSize:
-                    inheritedData.fontSize = new StyleLength(sv.length, sv.keyword);
+                    inheritedData.fontSize = sv.length;
                     break;
                 case StylePropertyId.Height:
-                    nonInheritedData.height = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.height = sv.length;
                     break;
                 case StylePropertyId.JustifyContent:
-                    nonInheritedData.justifyContent = new StyleEnum<Justify>((Justify)sv.number, sv.keyword);
+                    nonInheritedData.justifyContent = (Justify)sv.number;
                     break;
                 case StylePropertyId.Left:
-                    nonInheritedData.left = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.left = sv.length;
                     break;
                 case StylePropertyId.MarginBottom:
-                    nonInheritedData.marginBottom = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.marginBottom = sv.length;
                     break;
                 case StylePropertyId.MarginLeft:
-                    nonInheritedData.marginLeft = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.marginLeft = sv.length;
                     break;
                 case StylePropertyId.MarginRight:
-                    nonInheritedData.marginRight = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.marginRight = sv.length;
                     break;
                 case StylePropertyId.MarginTop:
-                    nonInheritedData.marginTop = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.marginTop = sv.length;
                     break;
                 case StylePropertyId.MaxHeight:
-                    nonInheritedData.maxHeight = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.maxHeight = sv.length;
                     break;
                 case StylePropertyId.MaxWidth:
-                    nonInheritedData.maxWidth = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.maxWidth = sv.length;
                     break;
                 case StylePropertyId.MinHeight:
-                    nonInheritedData.minHeight = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.minHeight = sv.length;
                     break;
                 case StylePropertyId.MinWidth:
-                    nonInheritedData.minWidth = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.minWidth = sv.length;
                     break;
                 case StylePropertyId.Opacity:
-                    nonInheritedData.opacity = new StyleFloat(sv.number, sv.keyword);
+                    nonInheritedData.opacity = sv.number;
                     break;
                 case StylePropertyId.Overflow:
-                    nonInheritedData.overflow = new StyleEnum<OverflowInternal>((OverflowInternal)sv.number, sv.keyword);
+                    nonInheritedData.overflow = (OverflowInternal)sv.number;
                     break;
                 case StylePropertyId.PaddingBottom:
-                    nonInheritedData.paddingBottom = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.paddingBottom = sv.length;
                     break;
                 case StylePropertyId.PaddingLeft:
-                    nonInheritedData.paddingLeft = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.paddingLeft = sv.length;
                     break;
                 case StylePropertyId.PaddingRight:
-                    nonInheritedData.paddingRight = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.paddingRight = sv.length;
                     break;
                 case StylePropertyId.PaddingTop:
-                    nonInheritedData.paddingTop = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.paddingTop = sv.length;
                     break;
                 case StylePropertyId.Position:
-                    nonInheritedData.position = new StyleEnum<Position>((Position)sv.number, sv.keyword);
+                    nonInheritedData.position = (Position)sv.number;
                     break;
                 case StylePropertyId.Right:
-                    nonInheritedData.right = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.right = sv.length;
                     break;
                 case StylePropertyId.TextOverflow:
-                    nonInheritedData.textOverflow = new StyleEnum<TextOverflow>((TextOverflow)sv.number, sv.keyword);
+                    nonInheritedData.textOverflow = (TextOverflow)sv.number;
                     break;
                 case StylePropertyId.Top:
-                    nonInheritedData.top = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.top = sv.length;
                     break;
                 case StylePropertyId.UnityBackgroundImageTintColor:
-                    nonInheritedData.unityBackgroundImageTintColor = new StyleColor(sv.color, sv.keyword);
+                    nonInheritedData.unityBackgroundImageTintColor = sv.color;
                     break;
                 case StylePropertyId.UnityBackgroundScaleMode:
-                    nonInheritedData.unityBackgroundScaleMode = new StyleEnum<ScaleMode>((ScaleMode)sv.number, sv.keyword);
+                    nonInheritedData.unityBackgroundScaleMode = (ScaleMode)sv.number;
                     break;
                 case StylePropertyId.UnityFont:
-                    inheritedData.unityFont = new StyleFont(sv.resource, sv.keyword);
+                    inheritedData.unityFont = sv.resource.IsAllocated ? sv.resource.Target as Font : null;
                     break;
                 case StylePropertyId.UnityFontStyleAndWeight:
-                    inheritedData.unityFontStyleAndWeight = new StyleEnum<FontStyle>((FontStyle)sv.number, sv.keyword);
+                    inheritedData.unityFontStyleAndWeight = (FontStyle)sv.number;
                     break;
                 case StylePropertyId.UnityOverflowClipBox:
-                    nonInheritedData.unityOverflowClipBox = new StyleEnum<OverflowClipBox>((OverflowClipBox)sv.number, sv.keyword);
+                    nonInheritedData.unityOverflowClipBox = (OverflowClipBox)sv.number;
                     break;
                 case StylePropertyId.UnitySliceBottom:
-                    nonInheritedData.unitySliceBottom = new StyleInt((int)sv.number, sv.keyword);
+                    nonInheritedData.unitySliceBottom = (int)sv.number;
                     break;
                 case StylePropertyId.UnitySliceLeft:
-                    nonInheritedData.unitySliceLeft = new StyleInt((int)sv.number, sv.keyword);
+                    nonInheritedData.unitySliceLeft = (int)sv.number;
                     break;
                 case StylePropertyId.UnitySliceRight:
-                    nonInheritedData.unitySliceRight = new StyleInt((int)sv.number, sv.keyword);
+                    nonInheritedData.unitySliceRight = (int)sv.number;
                     break;
                 case StylePropertyId.UnitySliceTop:
-                    nonInheritedData.unitySliceTop = new StyleInt((int)sv.number, sv.keyword);
+                    nonInheritedData.unitySliceTop = (int)sv.number;
                     break;
                 case StylePropertyId.UnityTextAlign:
-                    inheritedData.unityTextAlign = new StyleEnum<TextAnchor>((TextAnchor)sv.number, sv.keyword);
+                    inheritedData.unityTextAlign = (TextAnchor)sv.number;
                     break;
                 case StylePropertyId.UnityTextOverflowPosition:
-                    nonInheritedData.unityTextOverflowPosition = new StyleEnum<TextOverflowPosition>((TextOverflowPosition)sv.number, sv.keyword);
+                    nonInheritedData.unityTextOverflowPosition = (TextOverflowPosition)sv.number;
                     break;
                 case StylePropertyId.Visibility:
-                    inheritedData.visibility = new StyleEnum<Visibility>((Visibility)sv.number, sv.keyword);
+                    inheritedData.visibility = (Visibility)sv.number;
                     break;
                 case StylePropertyId.WhiteSpace:
-                    inheritedData.whiteSpace = new StyleEnum<WhiteSpace>((WhiteSpace)sv.number, sv.keyword);
+                    inheritedData.whiteSpace = (WhiteSpace)sv.number;
                     break;
                 case StylePropertyId.Width:
-                    nonInheritedData.width = new StyleLength(sv.length, sv.keyword);
+                    nonInheritedData.width = sv.length;
                     break;
                 default:
                     Debug.LogAssertion($"Unexpected property id {sv.id}");
@@ -508,9 +508,9 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public void ApplyStyleCursor(StyleCursor sc)
+        public void ApplyStyleCursor(Cursor cursor)
         {
-            nonInheritedData.cursor = sc;
+            nonInheritedData.cursor = cursor;
         }
 
         public void ApplyInitialValue(StylePropertyReader reader)

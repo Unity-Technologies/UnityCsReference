@@ -29,6 +29,8 @@ namespace UnityEditor.PackageManager.UI
         [NonSerialized]
         private UnityConnectProxy m_UnityConnect;
         [NonSerialized]
+        private IOProxy m_IOProxy;
+        [NonSerialized]
         private AssetStoreCache m_AssetStoreCache;
         [NonSerialized]
         private AssetStoreUtils m_AssetStoreUtils;
@@ -37,12 +39,14 @@ namespace UnityEditor.PackageManager.UI
         public void ResolveDependencies(ApplicationProxy application,
             HttpClientFactory httpClientFactory,
             UnityConnectProxy unityConnect,
+            IOProxy ioProxy,
             AssetStoreCache assetStoreCache,
             AssetStoreUtils assetStoreUtils,
             AssetStoreRestAPI assetStoreRestAPI)
         {
             m_Application = application;
             m_UnityConnect = unityConnect;
+            m_IOProxy = ioProxy;
             m_HttpClientFactory = httpClientFactory;
             m_AssetStoreCache = assetStoreCache;
             m_AssetStoreUtils = assetStoreUtils;
@@ -112,13 +116,18 @@ namespace UnityEditor.PackageManager.UI
             return m_DownloadOperations.Values.Any(d => d.isInProgress);
         }
 
-        public virtual void Download(string productId)
+        public virtual void Download(IPackage package)
         {
-            var operation = GetDownloadOperation(productId);
+            var packageId = package?.uniqueId;
+            if (string.IsNullOrEmpty(packageId))
+                return;
+            var v = package.versions.importAvailable as AssetStorePackageVersion;
+
+            var operation = GetDownloadOperation(packageId);
             if (operation?.isInProgress ?? false)
                 return;
 
-            operation = new AssetStoreDownloadOperation(m_AssetStoreUtils, m_AssetStoreRestAPI, productId);
+            operation = new AssetStoreDownloadOperation(m_AssetStoreUtils, m_AssetStoreRestAPI, packageId, v?.localPath);
             SetupDownloadOperation(operation);
             operation.Download(false);
         }
@@ -137,9 +146,24 @@ namespace UnityEditor.PackageManager.UI
         {
             m_DownloadOperations[operation.packageUniqueId] = operation;
             operation.onOperationError += (op, error) => onDownloadError?.Invoke(op, error);
-            operation.onOperationFinalized += (op) => onDownloadFinalized?.Invoke(op);
+            operation.onOperationFinalized += OnDownloadFinalized;
             operation.onOperationProgress += (op) => onDownloadProgress?.Invoke(op);
             operation.onOperationPaused += (op) => onDownloadPaused?.Invoke(op);
+        }
+
+        private void OnDownloadFinalized(IOperation operation)
+        {
+            onDownloadFinalized?.Invoke(operation);
+
+            var downloadOperation = operation as AssetStoreDownloadOperation;
+            if (downloadOperation == null)
+                return;
+
+            if (downloadOperation.state == DownloadState.Completed &&
+                !string.IsNullOrEmpty(downloadOperation.packageOldPath) && downloadOperation.packageNewPath != downloadOperation.packageOldPath)
+            {
+                m_IOProxy.FileDelete(downloadOperation.packageOldPath);
+            }
         }
 
         private void RemoveDownloadOperation(string productId)
@@ -161,12 +185,10 @@ namespace UnityEditor.PackageManager.UI
 
             // `GetDownloadOperation` could return null when the user starts the download in the legacy `Asset Store` window
             // in those cases, we create a download operation to track it
+            // NOTE: Now that the CEF window doesn't exist anymore if we have a null operation we shouldn't manage it.
             var operation = GetDownloadOperation(productId);
             if (operation == null)
-            {
-                operation = new AssetStoreDownloadOperation(m_AssetStoreUtils, m_AssetStoreRestAPI, productId);
-                SetupDownloadOperation(operation);
-            }
+                return;
             operation.OnDownloadProgress(message, bytes, total);
 
             if (!operation.isInProgress && !operation.isInPause)

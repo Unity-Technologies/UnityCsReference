@@ -297,7 +297,7 @@ namespace UnityEditor
                 var newResults = new List<FilterResult>();
                 while (property.Next(null))
                 {
-                    if (!SearchService.Scene.Filter(searchQuery, property, searchContext))
+                    if (!SearchService.SceneSearch.Filter(searchQuery, property, searchContext))
                         continue;
                     FilterResult newResult = new FilterResult();
                     CopyPropertyData(ref newResult, property);

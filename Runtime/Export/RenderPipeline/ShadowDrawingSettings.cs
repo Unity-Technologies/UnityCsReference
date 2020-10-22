@@ -16,6 +16,7 @@ namespace UnityEngine.Rendering
         int m_LightIndex;
         int m_UseRenderingLayerMaskTest;
         ShadowSplitData m_SplitData;
+        ShadowObjectsFilter m_ObjectsFilter;
 
         public CullingResults cullingResults
         {
@@ -45,6 +46,12 @@ namespace UnityEngine.Rendering
             set { m_SplitData = value; }
         }
 
+        public ShadowObjectsFilter objectsFilter
+        {
+            get { return m_ObjectsFilter; }
+            set { m_ObjectsFilter = value; }
+        }
+
         public ShadowDrawingSettings(CullingResults cullingResults, int lightIndex)
         {
             m_CullingResults = cullingResults;
@@ -52,11 +59,12 @@ namespace UnityEngine.Rendering
             m_UseRenderingLayerMaskTest = 0;
             m_SplitData = default(ShadowSplitData);
             m_SplitData.shadowCascadeBlendCullingFactor = 1f;
+            m_ObjectsFilter = ShadowObjectsFilter.AllObjects;
         }
 
         public bool Equals(ShadowDrawingSettings other)
         {
-            return m_CullingResults.Equals(other.m_CullingResults) && m_LightIndex == other.m_LightIndex && m_SplitData.Equals(other.m_SplitData) && m_UseRenderingLayerMaskTest.Equals(other.m_UseRenderingLayerMaskTest);
+            return m_CullingResults.Equals(other.m_CullingResults) && m_LightIndex == other.m_LightIndex && m_SplitData.Equals(other.m_SplitData) && m_UseRenderingLayerMaskTest.Equals(other.m_UseRenderingLayerMaskTest) && m_ObjectsFilter.Equals(other.m_ObjectsFilter);
         }
 
         public override bool Equals(object obj)
@@ -73,6 +81,7 @@ namespace UnityEngine.Rendering
                 hashCode = (hashCode * 397) ^ m_LightIndex;
                 hashCode = (hashCode * 397) ^ m_UseRenderingLayerMaskTest;
                 hashCode = (hashCode * 397) ^ m_SplitData.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)m_ObjectsFilter;
                 return hashCode;
             }
         }

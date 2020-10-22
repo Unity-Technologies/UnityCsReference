@@ -99,6 +99,9 @@ namespace UnityEditor
 
         Stadia = 29,
 
-        CloudRendering = 30
+        CloudRendering = 30,
+
+        GameCoreScarlett = 31,
+        GameCoreXboxOne = 32
     }
 }

@@ -33,6 +33,7 @@ namespace UnityEditor.Experimental.GraphView
 
         public StackNode() : base("UXML/GraphView/StackNode.uxml")
         {
+            capabilities &= ~Capabilities.Groupable;
             VisualElement stackNodeContentContainerPlaceholder = this.Q("stackNodeContentContainerPlaceholder");
 
             headerContainer = this.Q("stackNodeHeaderContainer");
@@ -196,8 +197,12 @@ namespace UnityEditor.Experimental.GraphView
 
         private void OnChildAdded(GraphElement element)
         {
-            element.capabilities &= ~Capabilities.Snappable;
             element.AddToClassList("stack-child-element");
+            // these capabilities should be set correctly on contruction of stackable nodes (in client/dependent code),
+            // -- Since the module didn't have a way of identifying stackable nodes previously, we can provide some identity here.
+            // TODO: Remove this once deps have an opportunity to use the flags.
+            element.capabilities &= ~(Capabilities.Snappable | Capabilities.Stackable | Capabilities.Groupable);
+
             element.ResetPositionProperties();
             element.RegisterCallback<DetachFromPanelEvent>(OnChildDetachedFromPanel);
             UpdatePlaceholderVisibility();

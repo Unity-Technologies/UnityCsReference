@@ -98,6 +98,27 @@ namespace UnityEditor
             set => EditorGUIUtility.systemCopyBuffer = value.ToString();
         }
 
+        public static bool hasHash128
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchHash128();
+                return m_State.m_HasHash128.Value;
+            }
+        }
+
+        public static Hash128 hash128Value
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchHash128();
+                return m_State.m_ValueHash128;
+            }
+            set => EditorGUIUtility.systemCopyBuffer = value.ToString();
+        }
+
         public static bool hasVector3
         {
             get

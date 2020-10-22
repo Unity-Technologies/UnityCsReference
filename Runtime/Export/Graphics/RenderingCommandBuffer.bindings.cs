@@ -508,7 +508,7 @@ namespace UnityEngine.Rendering
         extern private void CopyCounterValueGG(GraphicsBuffer src, GraphicsBuffer dst, uint dstOffsetBytes);
 
         extern public string name { get; set; }
-        extern public int sizeInBytes {[NativeMethod("GetBufferSize")] get; }
+        extern public int sizeInBytes { [NativeMethod("GetBufferSize")] get; }
 
         [NativeMethod("ClearCommands")]
         extern public void Clear();
@@ -1029,7 +1029,7 @@ namespace UnityEngine.Rendering
 
         // Set buffer data.
         [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
-        public void SetComputeBufferData(ComputeBuffer buffer, System.Array data)
+        public void SetBufferData(ComputeBuffer buffer, Array data)
         {
             if (data == null)
                 throw new ArgumentNullException("data");
@@ -1045,7 +1045,7 @@ namespace UnityEngine.Rendering
 
         // Set buffer data.
         [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
-        public void SetComputeBufferData<T>(ComputeBuffer buffer, List<T> data) where T : struct
+        public void SetBufferData<T>(ComputeBuffer buffer, List<T> data) where T : struct
         {
             if (data == null)
                 throw new ArgumentNullException("data");
@@ -1060,15 +1060,15 @@ namespace UnityEngine.Rendering
         }
 
         [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
-        unsafe public void SetComputeBufferData<T>(ComputeBuffer buffer, NativeArray<T> data) where T : struct
+        public void SetBufferData<T>(ComputeBuffer buffer, NativeArray<T> data) where T : struct
         {
             // Note: no IsBlittable test here because it's already done at NativeArray creation time
-            InternalSetComputeBufferNativeData(buffer, (IntPtr)data.GetUnsafeReadOnlyPtr(), 0, 0, data.Length, UnsafeUtility.SizeOf<T>());
+            unsafe { InternalSetComputeBufferNativeData(buffer, (IntPtr)data.GetUnsafeReadOnlyPtr(), 0, 0, data.Length, UnsafeUtility.SizeOf<T>()); };
         }
 
         // Set partial buffer data
         [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
-        public void SetComputeBufferData(ComputeBuffer buffer, System.Array data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count)
+        public void SetBufferData(ComputeBuffer buffer, Array data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count)
         {
             if (data == null)
                 throw new ArgumentNullException("data");
@@ -1081,14 +1081,14 @@ namespace UnityEngine.Rendering
             }
 
             if (managedBufferStartIndex < 0 || graphicsBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Length)
-                throw new ArgumentOutOfRangeException(String.Format("Bad indices/count arguments (managedBufferStartIndex:{0} graphicsBufferStartIndex:{1} count:{2})", managedBufferStartIndex, graphicsBufferStartIndex, count));
+                throw new ArgumentOutOfRangeException(string.Format("Bad indices/count arguments (managedBufferStartIndex:{0} graphicsBufferStartIndex:{1} count:{2})", managedBufferStartIndex, graphicsBufferStartIndex, count));
 
             InternalSetComputeBufferData(buffer, data, managedBufferStartIndex, graphicsBufferStartIndex, count, Marshal.SizeOf(data.GetType().GetElementType()));
         }
 
         // Set partial buffer data
         [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
-        public void SetComputeBufferData<T>(ComputeBuffer buffer, List<T> data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count) where T : struct
+        public void SetBufferData<T>(ComputeBuffer buffer, List<T> data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count) where T : struct
         {
             if (data == null)
                 throw new ArgumentNullException("data");
@@ -1101,19 +1101,24 @@ namespace UnityEngine.Rendering
             }
 
             if (managedBufferStartIndex < 0 || graphicsBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Count)
-                throw new ArgumentOutOfRangeException(String.Format("Bad indices/count arguments (managedBufferStartIndex:{0} graphicsBufferStartIndex:{1} count:{2})", managedBufferStartIndex, graphicsBufferStartIndex, count));
+                throw new ArgumentOutOfRangeException(string.Format("Bad indices/count arguments (managedBufferStartIndex:{0} graphicsBufferStartIndex:{1} count:{2})", managedBufferStartIndex, graphicsBufferStartIndex, count));
 
             InternalSetComputeBufferData(buffer, NoAllocHelpers.ExtractArrayFromList(data), managedBufferStartIndex, graphicsBufferStartIndex, count, Marshal.SizeOf(typeof(T)));
         }
 
         [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
-        public unsafe void SetComputeBufferData<T>(ComputeBuffer buffer, NativeArray<T> data, int nativeBufferStartIndex, int graphicsBufferStartIndex, int count) where T : struct
+        public void SetBufferData<T>(ComputeBuffer buffer, NativeArray<T> data, int nativeBufferStartIndex, int graphicsBufferStartIndex, int count) where T : struct
         {
             // Note: no IsBlittable test here because it's already done at NativeArray creation time
             if (nativeBufferStartIndex < 0 || graphicsBufferStartIndex < 0 || count < 0 || nativeBufferStartIndex + count > data.Length)
-                throw new ArgumentOutOfRangeException(String.Format("Bad indices/count arguments (nativeBufferStartIndex:{0} graphicsBufferStartIndex:{1} count:{2})", nativeBufferStartIndex, graphicsBufferStartIndex, count));
+                throw new ArgumentOutOfRangeException(string.Format("Bad indices/count arguments (nativeBufferStartIndex:{0} graphicsBufferStartIndex:{1} count:{2})", nativeBufferStartIndex, graphicsBufferStartIndex, count));
 
-            InternalSetComputeBufferNativeData(buffer, (IntPtr)data.GetUnsafeReadOnlyPtr(), nativeBufferStartIndex, graphicsBufferStartIndex, count, UnsafeUtility.SizeOf<T>());
+            unsafe { InternalSetComputeBufferNativeData(buffer, (IntPtr)data.GetUnsafeReadOnlyPtr(), nativeBufferStartIndex, graphicsBufferStartIndex, count, UnsafeUtility.SizeOf<T>()); };
+        }
+
+        public void SetBufferCounterValue(ComputeBuffer buffer, uint counterValue)
+        {
+            InternalSetComputeBufferCounterValue(buffer, counterValue);
         }
 
         [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
@@ -1122,9 +1127,114 @@ namespace UnityEngine.Rendering
 
         [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
         [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetComputeBufferData", HasExplicitThis = true, ThrowsException = true)]
-        extern private void InternalSetComputeBufferData([NotNull] ComputeBuffer buffer, System.Array data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
+        extern private void InternalSetComputeBufferData([NotNull] ComputeBuffer buffer, Array data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
 
         [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetComputeBufferCounterValue", HasExplicitThis = true)]
-        extern public void SetComputeBufferCounterValue([NotNull] ComputeBuffer buffer, uint counterValue);
+        extern private void InternalSetComputeBufferCounterValue([NotNull] ComputeBuffer buffer, uint counterValue);
+
+        // Set buffer data.
+        [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
+        public void SetBufferData(GraphicsBuffer buffer, Array data)
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
+
+            if (!UnsafeUtility.IsArrayBlittable(data))
+            {
+                throw new ArgumentException(
+                    string.Format("Array passed to RenderingCommandBuffer.SetBufferData(array) must be blittable.\n{0}",
+                        UnsafeUtility.GetReasonForArrayNonBlittable(data)));
+            }
+            InternalSetGraphicsBufferData(buffer, data, 0, 0, data.Length, UnsafeUtility.SizeOf(data.GetType().GetElementType()));
+        }
+
+        // Set buffer data.
+        [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
+        public void SetBufferData<T>(GraphicsBuffer buffer, List<T> data) where T : struct
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
+
+            if (!UnsafeUtility.IsGenericListBlittable<T>())
+            {
+                throw new ArgumentException(
+                    string.Format("List<{0}> passed to RenderingCommandBuffer.SetBufferData(List<>) must be blittable.\n{1}",
+                        typeof(T), UnsafeUtility.GetReasonForGenericListNonBlittable<T>()));
+            }
+            InternalSetGraphicsBufferData(buffer, NoAllocHelpers.ExtractArrayFromList(data), 0, 0, NoAllocHelpers.SafeLength(data), Marshal.SizeOf(typeof(T)));
+        }
+
+        [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
+        public void SetBufferData<T>(GraphicsBuffer buffer, NativeArray<T> data) where T : struct
+        {
+            // Note: no IsBlittable test here because it's already done at NativeArray creation time
+            unsafe { InternalSetGraphicsBufferNativeData(buffer, (IntPtr)data.GetUnsafeReadOnlyPtr(), 0, 0, data.Length, UnsafeUtility.SizeOf<T>()); };
+        }
+
+        // Set partial buffer data
+        [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
+        public void SetBufferData(GraphicsBuffer buffer, Array data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count)
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
+
+            if (!UnsafeUtility.IsArrayBlittable(data))
+            {
+                throw new ArgumentException(
+                    string.Format("Array passed to RenderingCommandBuffer.SetBufferData(array) must be blittable.\n{0}",
+                        UnsafeUtility.GetReasonForArrayNonBlittable(data)));
+            }
+
+            if (managedBufferStartIndex < 0 || graphicsBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Length)
+                throw new ArgumentOutOfRangeException(string.Format("Bad indices/count arguments (managedBufferStartIndex:{0} graphicsBufferStartIndex:{1} count:{2})", managedBufferStartIndex, graphicsBufferStartIndex, count));
+
+            InternalSetGraphicsBufferData(buffer, data, managedBufferStartIndex, graphicsBufferStartIndex, count, Marshal.SizeOf(data.GetType().GetElementType()));
+        }
+
+        // Set partial buffer data
+        [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
+        public void SetBufferData<T>(GraphicsBuffer buffer, List<T> data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count) where T : struct
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
+
+            if (!UnsafeUtility.IsGenericListBlittable<T>())
+            {
+                throw new ArgumentException(
+                    string.Format("List<{0}> passed to RenderingCommandBuffer.SetBufferData(List<>) must be blittable.\n{1}",
+                        typeof(T), UnsafeUtility.GetReasonForGenericListNonBlittable<T>()));
+            }
+
+            if (managedBufferStartIndex < 0 || graphicsBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Count)
+                throw new ArgumentOutOfRangeException(string.Format("Bad indices/count arguments (managedBufferStartIndex:{0} graphicsBufferStartIndex:{1} count:{2})", managedBufferStartIndex, graphicsBufferStartIndex, count));
+
+            InternalSetGraphicsBufferData(buffer, NoAllocHelpers.ExtractArrayFromList(data), managedBufferStartIndex, graphicsBufferStartIndex, count, Marshal.SizeOf(typeof(T)));
+        }
+
+        [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
+        public void SetBufferData<T>(GraphicsBuffer buffer, NativeArray<T> data, int nativeBufferStartIndex, int graphicsBufferStartIndex, int count) where T : struct
+        {
+            // Note: no IsBlittable test here because it's already done at NativeArray creation time
+            if (nativeBufferStartIndex < 0 || graphicsBufferStartIndex < 0 || count < 0 || nativeBufferStartIndex + count > data.Length)
+                throw new ArgumentOutOfRangeException(string.Format("Bad indices/count arguments (nativeBufferStartIndex:{0} graphicsBufferStartIndex:{1} count:{2})", nativeBufferStartIndex, graphicsBufferStartIndex, count));
+
+            unsafe { InternalSetGraphicsBufferNativeData(buffer, (IntPtr)data.GetUnsafeReadOnlyPtr(), nativeBufferStartIndex, graphicsBufferStartIndex, count, UnsafeUtility.SizeOf<T>()); };
+        }
+
+        public void SetBufferCounterValue(GraphicsBuffer buffer, uint counterValue)
+        {
+            InternalSetGraphicsBufferCounterValue(buffer, counterValue);
+        }
+
+        [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
+        [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetGraphicsBufferNativeData", HasExplicitThis = true, ThrowsException = true)]
+        extern private void InternalSetGraphicsBufferNativeData([NotNull] GraphicsBuffer buffer, IntPtr data, int nativeBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
+
+        [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
+        [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetGraphicsBufferData", HasExplicitThis = true, ThrowsException = true)]
+        extern private void InternalSetGraphicsBufferData([NotNull] GraphicsBuffer buffer, Array data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
+
+        [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetGraphicsBufferCounterValue", HasExplicitThis = true)]
+        extern private void InternalSetGraphicsBufferCounterValue([NotNull] GraphicsBuffer buffer, uint counterValue);
     }
 }

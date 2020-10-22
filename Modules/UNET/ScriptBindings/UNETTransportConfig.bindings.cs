@@ -256,11 +256,6 @@ namespace UnityEngine.Networking
             if (config.ThreadPoolSize == 0 || config.ThreadPoolSize > 254)
                 throw new ArgumentOutOfRangeException("Worker thread pool size should be >= 1 && < 254 (for server only)");
             byte threadPoolSize = config.ThreadPoolSize;
-            if (config.ThreadPoolSize > 1)
-            {
-                Debug.LogWarning("Worker thread pool size can be > 1 only for server platforms: Win, OSX or Linux");
-                threadPoolSize = 1;
-            }
             this.ThreadPoolSize = threadPoolSize;
             this.MinTimerTimeout = config.MinTimerTimeout;
             this.MaxTimerTimeout = config.MaxTimerTimeout;

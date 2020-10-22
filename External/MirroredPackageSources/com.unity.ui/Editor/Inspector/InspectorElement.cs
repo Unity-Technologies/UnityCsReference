@@ -7,27 +7,78 @@ using AssetImporterEditor = UnityEditor.AssetImporters.AssetImporterEditor;
 
 namespace UnityEditor.UIElements
 {
+    /// <summary>
+    /// Create a VisualElement inspector from a SerializedObject.
+    /// </summary>
+    /// <remarks>
+    /// Upon Bind(), the InspectorElement will generate PropertyFields inside according to the SerializedProperties inside the bound SerializedObject.
+    /// </remarks>
     public class InspectorElement : BindableElement
     {
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public static readonly string ussClassName = "unity-inspector-element";
+        /// <summary>
+        /// USS class name of custom inspector elements in elements of this type.
+        /// </summary>
         public static readonly string customInspectorUssClassName = ussClassName + "__custom-inspector-container";
+        /// <summary>
+        /// USS class name of IMGUI containers in elements of this type.
+        /// </summary>
         public static readonly string iMGUIContainerUssClassName = ussClassName + "__imgui-container";
 
+        /// <summary>
+        /// USS class name of elements of this type, when they are displayed in IMGUI inspector mode.
+        /// </summary>
         public static readonly string iMGUIInspectorVariantUssClassName = ussClassName + "--imgui";
+        /// <summary>
+        /// USS class name of elements of this type, when they are displayed in UIElements inspector mode.
+        /// </summary>
         public static readonly string uIEInspectorVariantUssClassName = ussClassName + "--uie";
 
+        /// <summary>
+        /// USS class name of elements of this type, when no inspector is found.
+        /// </summary>
         public static readonly string noInspectorFoundVariantUssClassName = ussClassName + "--no-inspector-found";
+        /// <summary>
+        /// USS class name of elements of this type, when they are displayed in UIElements custom mode.
+        /// </summary>
         public static readonly string uIECustomVariantUssClassName = ussClassName + "--uie-custom";
+        /// <summary>
+        /// USS class name of elements of this type, when they are displayed in IMGUI custom mode.
+        /// </summary>
         public static readonly string iMGUICustomVariantUssClassName = ussClassName + "--imgui-custom";
+        /// <summary>
+        /// USS class name of elements of this type, when they are displayed in IMGUI default mode.
+        /// </summary>
         public static readonly string iMGUIDefaultVariantUssClassName = ussClassName + "--imgui-default";
+        /// <summary>
+        /// USS class name of elements of this type, when they are displayed in UIElements default mode.
+        /// </summary>
         public static readonly string uIEDefaultVariantUssClassName = ussClassName + "--uie-default";
+        /// <summary>
+        /// USS class name of elements of this type, when they are displayed in debug USS mode.
+        /// </summary>
         public static readonly string debugVariantUssClassName = ussClassName + "--debug";
+        /// <summary>
+        /// USS class name of elements of this type, when they are displayed in debug internal mode.
+        /// </summary>
         public static readonly string debugInternalVariantUssClassName = ussClassName + "--debug-internal";
 
+        /// <summary>
+        /// Instantiates a <see cref="InspectorElement"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<InspectorElement, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="InspectorElement"/>.
+        /// </summary>
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
+            /// <summary>
+            /// Constructor.
+            /// </summary>
             public UxmlTraits()
             {
                 m_PickingMode.defaultValue = PickingMode.Ignore;
@@ -82,8 +133,15 @@ namespace UnityEditor.UIElements
 
         private bool m_IgnoreOnInspectorGUIErrors;
 
+        /// <summary>
+        /// InspectorElement constructor.
+        /// </summary>
         public InspectorElement() : this(null as Object) {}
 
+        /// <summary>
+        /// InspectorElement constructor.
+        /// </summary>
+        /// <param name="obj">Create a SerializedObject from given obj and automatically Bind() to it.</param>
         public InspectorElement(Object obj) : this(obj, Mode.Normal) {}
 
         internal InspectorElement(Object obj, Mode mode)
@@ -105,6 +163,10 @@ namespace UnityEditor.UIElements
             this.Bind(new SerializedObject(obj));
         }
 
+        /// <summary>
+        /// InspectorElement constructor.
+        /// </summary>
+        /// <param name="obj">Create a SerializedObject from given obj and automatically Bind() to it.</param>
         public InspectorElement(SerializedObject obj) : this(obj, Mode.Normal) {}
 
         internal InspectorElement(SerializedObject obj, Mode mode)
@@ -124,6 +186,9 @@ namespace UnityEditor.UIElements
             this.Bind(obj);
         }
 
+        /// <summary>
+        /// InspectorElement constructor.
+        /// </summary>
         public InspectorElement(Editor editor) : this(editor, Mode.Normal) {}
 
         internal InspectorElement(Editor editor, Mode mode)
@@ -422,9 +487,6 @@ namespace UnityEditor.UIElements
             m_IgnoreOnInspectorGUIErrors = false;
             inspector.onGUIHandler = () =>
             {
-                if (editor && editor.target && (editor.target.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
-                    return;
-
                 // It's possible to run 2-3 frames after the tracker of this inspector window has
                 // been recreated, and with it the Editor and its SerializedObject. One example of
                 // when this happens is when the Preview window is detached from a *second* instance

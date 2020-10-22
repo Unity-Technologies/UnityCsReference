@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI
 
         VisualState GetVisualState(string packageUniqueId);
         VisualState GetSelectedVisualState();
-        void LoadMore(int numberOfPackages);
+        void LoadMore(long numberOfPackages);
         void ClearFilters();
         void UpdateFilters(PageFilters filters);
 

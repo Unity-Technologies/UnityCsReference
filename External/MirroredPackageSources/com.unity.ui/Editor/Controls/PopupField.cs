@@ -5,8 +5,14 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    /// <summary>
+    /// Generic popup selection field.
+    /// </summary>
     public class PopupField<T> : BasePopupField<T, T>
     {
+        /// <summary>
+        /// Callback that provides a string representation used to display the selected value.
+        /// </summary>
         public virtual Func<T, string> formatSelectedValueCallback
         {
             get { return m_FormatSelectedValueCallback; }
@@ -17,6 +23,9 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// Callback that provides a string representation used to populate the popup menu.
+        /// </summary>
         public virtual Func<T, string> formatListItemCallback
         {
             get { return m_FormatListItemCallback; }
@@ -37,6 +46,9 @@ namespace UnityEditor.UIElements
             return value.ToString();
         }
 
+        /// <summary>
+        /// The currently selected value in the popup menu.
+        /// </summary>
         public override T value
         {
             get { return base.value; }
@@ -66,6 +78,9 @@ namespace UnityEditor.UIElements
         }
 
         private int m_Index = -1;
+        /// <summary>
+        /// The currently selected index in the popup menu.
+        /// </summary>
         public int index
         {
             get { return m_Index; }
@@ -81,14 +96,29 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-popup-field";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        /// <summary>
+        /// Construct a PopupField.
+        /// </summary>
         public PopupField()
             : this(null)
         {}
 
+        /// <summary>
+        /// Construct a PopupField.
+        /// </summary>
         public PopupField(string label = null)
             : base(label)
         {
@@ -97,11 +127,17 @@ namespace UnityEditor.UIElements
             visualInput.AddToClassList(inputUssClassName);
         }
 
+        /// <summary>
+        /// Construct a PopupField.
+        /// </summary>
         public PopupField(List<T> choices, T defaultValue, Func<T, string> formatSelectedValueCallback = null, Func<T, string> formatListItemCallback = null)
             : this(null, choices, defaultValue, formatSelectedValueCallback, formatListItemCallback)
         {
         }
 
+        /// <summary>
+        /// Construct a PopupField.
+        /// </summary>
         public PopupField(string label, List<T> choices, T defaultValue, Func<T, string> formatSelectedValueCallback = null, Func<T, string> formatListItemCallback = null)
             : this(label)
         {
@@ -118,9 +154,15 @@ namespace UnityEditor.UIElements
             this.formatSelectedValueCallback = formatSelectedValueCallback;
         }
 
+        /// <summary>
+        /// Construct a PopupField.
+        /// </summary>
         public PopupField(List<T> choices, int defaultIndex, Func<T, string> formatSelectedValueCallback = null, Func<T, string> formatListItemCallback = null)
             : this(null, choices, defaultIndex, formatSelectedValueCallback, formatListItemCallback) {}
 
+        /// <summary>
+        /// Construct a PopupField.
+        /// </summary>
         public PopupField(string label, List<T> choices, int defaultIndex, Func<T, string> formatSelectedValueCallback = null, Func<T, string> formatListItemCallback = null)
             : this(label)
         {

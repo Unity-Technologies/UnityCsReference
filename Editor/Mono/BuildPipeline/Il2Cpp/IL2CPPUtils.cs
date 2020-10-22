@@ -105,6 +105,10 @@ namespace UnityEditorInternal
                     targetPlatform = "linux";
                     targetArch = "x86_64";
                     return true;
+                case BuildTarget.WebGL:
+                    targetPlatform = "webgl";
+                    targetArch = "";
+                    return true;
             }
 
             targetPlatform = null;
@@ -593,12 +597,13 @@ namespace UnityEditorInternal
                 }
 
                 arguments.Add($"--map-file-parser={CommandLineFormatter.PrepareFileName(GetMapFileParserPath())}");
-                arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(GetShortPathName(Path.GetFullPath(GetCppOutputDirectory(il2cppBuildCacheSource))))}");
+                var generatedCppDirectory = GetShortPathName(Path.GetFullPath(GetCppOutputDirectory(il2cppBuildCacheSource)));
+                arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(generatedCppDirectory)}");
                 arguments.Add(string.Format("--dotnetprofile=\"{0}\"", IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))));
                 arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
                 Action<ProcessStartInfo> setupStartInfo = il2CppNativeCodeBuilder.SetupStartInfo;
 
-                RunIl2CppWithArguments(arguments, setupStartInfo);
+                RunIl2CppWithArguments(arguments, setupStartInfo, generatedCppDirectory);
             }
         }
 
@@ -693,7 +698,8 @@ namespace UnityEditorInternal
 
             arguments.Add($"--directory={CommandLineFormatter.PrepareFileName(GetShortPathName(Path.GetFullPath(data.inputDirectory)))}");
 
-            arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(GetShortPathName(Path.GetFullPath(outputDirectory)))}");
+            var generatedCppDirectory = GetShortPathName(Path.GetFullPath(outputDirectory));
+            arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(generatedCppDirectory)}");
 
             // NOTE: any arguments added here that affect how generated code is built need
             // to also be added to PlatformDependent\Win\Extensions\Managed\VisualStudioProjectHelpers.cs
@@ -726,25 +732,18 @@ namespace UnityEditorInternal
                 arguments.Add($"--extra-types-file={CommandLineFormatter.PrepareFileName(tempFile)}");
             }
 
-            RunIl2CppWithArguments(arguments, setupStartInfo);
+            RunIl2CppWithArguments(arguments, setupStartInfo, generatedCppDirectory);
         }
 
-        private void RunIl2CppWithArguments(List<string> arguments, Action<ProcessStartInfo> setupStartInfo)
+        private void RunIl2CppWithArguments(List<string> arguments, Action<ProcessStartInfo> setupStartInfo,
+            string generatedCppOutputDirectory)
         {
             var args = arguments.Aggregate(String.Empty, (current, arg) => current + arg + " ");
 
             BeeSettingsIl2Cpp il2cppSettings = new BeeSettingsIl2Cpp();
-            CompilerOutputParserBase il2cppOutputParser = m_PlatformProvider.CreateIl2CppOutputParser();
-            if (il2cppOutputParser == null)
-                il2cppOutputParser = new Il2CppOutputParser();
+            var il2cppOutputParser = new Il2CppOutputParser(Path.Combine(generatedCppOutputDirectory, "Il2CppToEditorData.json"));
 
-            if (ShouldUseIl2CppCore())
-                il2cppSettings.ToolPath = $"{EscapeSpacesInPath(GetIl2CppCoreExe())}";
-            else if (Application.platform == RuntimePlatform.WindowsEditor)
-                il2cppSettings.ToolPath = $"{EscapeSpacesInPath(GetIl2CppExe())}";
-            else
-                il2cppSettings.ToolPath = $"{EscapeSpacesInPath(GetMonoBleedingEdgeExe())} {EscapeSpacesInPath(GetIl2CppExe())}";
-
+            il2cppSettings.ToolPath = $"{EscapeSpacesInPath(GetIl2CppExe())}";
             il2cppSettings.Arguments.AddRange(arguments);
             il2cppSettings.Serialize(m_PlatformProvider.il2cppBuildCacheDirectory);
 
@@ -760,8 +759,8 @@ namespace UnityEditorInternal
                 startInfo.EnvironmentVariables.Add("MONO_EXECUTABLE", EscapeSpacesInPath(GetMonoBleedingEdgeExe()));
             }
 
-            Console.WriteLine("Invoking il2cpp with arguments: " + args);
-            Runner.RunManagedProgram(GetIl2CppBeeExe(), "--useprebuiltbuildprogram", m_PlatformProvider.il2cppBuildCacheDirectory, il2cppOutputParser, SetupTundraAndStartInfo);
+            Console.WriteLine("Invoking il2cpp (via bee.exe) with arguments: " + args);
+            Runner.RunManagedProgram(GetIl2CppBeeExe(), "--useprebuiltbuildprogram --no-colors", m_PlatformProvider.il2cppBuildCacheDirectory, il2cppOutputParser, SetupTundraAndStartInfo);
 
             // Copy IL2CPP outputs to StagingArea
             var nativeOutputDirectoryInBuildCache = GetNativeOutputDirectory(m_PlatformProvider.il2cppBuildCacheDirectory);
@@ -791,11 +790,6 @@ namespace UnityEditorInternal
 
         private string GetIl2CppExe()
         {
-            return $"{IL2CPPUtils.GetIl2CppFolder()}/build/deploy/net471/il2cpp.exe";
-        }
-
-        private string GetIl2CppCoreExe()
-        {
             return $"{IL2CPPUtils.GetIl2CppFolder()}/build/deploy/netcoreapp3.1/il2cpp{(Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "")}";
         }
 
@@ -824,35 +818,6 @@ namespace UnityEditorInternal
             var path = Path.Combine(MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge"), "bin");
             return Path.Combine(path, "mono");
         }
-
-        private bool ShouldUseIl2CppCore()
-        {
-            if (!m_PlatformProvider.supportsUsingIl2cppCore)
-                return false;
-
-            var disableIl2CppCoreEnv = System.Environment.GetEnvironmentVariable("UNITY_IL2CPP_DISABLE_NET_CORE");
-            if (disableIl2CppCoreEnv == "1")
-                return false;
-
-            var disableIl2CppCoreDiag = (bool)(Debug.GetDiagnosticSwitch("VMIl2CppDisableNetCore") ?? false);
-            if (disableIl2CppCoreDiag)
-                return false;
-
-            if (Application.platform == RuntimePlatform.OSXEditor)
-            {
-                // .Net Core 3.0 is only supported on MacOSX versions 10.13 and later
-                if (SystemInfo.operatingSystem.StartsWith("Mac OS X 10."))
-                {
-                    var versionText = SystemInfo.operatingSystem.Substring(9);
-                    var version = new Version(versionText);
-
-                    if (version >= new Version(10, 13))
-                        return false;
-                }
-            }
-
-            return true;
-        }
     }
 
     internal interface IIl2CppPlatformProvider
@@ -865,7 +830,6 @@ namespace UnityEditorInternal
         bool enableDeepProfilingSupport { get; }
         string nativeLibraryFileName { get; }
         bool supportsManagedDebugging { get; }
-        bool supportsUsingIl2cppCore { get; }
         bool development { get; }
         bool allowDebugging { get; }
         bool scriptsOnlyBuild { get; }
@@ -878,7 +842,6 @@ namespace UnityEditorInternal
 
         INativeCompiler CreateNativeCompiler();
         Il2CppNativeCodeBuilder CreateIl2CppNativeCodeBuilder();
-        CompilerOutputParserBase CreateIl2CppOutputParser();
 
         BaseUnityLinkerPlatformProvider CreateUnityLinkerPlatformProvider();
     }
@@ -934,11 +897,6 @@ namespace UnityEditorInternal
         public virtual bool supportsManagedDebugging
         {
             get { return false; }
-        }
-
-        public virtual bool supportsUsingIl2cppCore
-        {
-            get { return true; }
         }
 
         public virtual bool development
@@ -1014,11 +972,6 @@ namespace UnityEditorInternal
         }
 
         public virtual Il2CppNativeCodeBuilder CreateIl2CppNativeCodeBuilder()
-        {
-            return null;
-        }
-
-        public virtual CompilerOutputParserBase CreateIl2CppOutputParser()
         {
             return null;
         }

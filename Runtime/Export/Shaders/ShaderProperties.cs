@@ -19,6 +19,7 @@ namespace UnityEngine.Rendering
         Float,
         Range,
         Texture,
+        Int,
     }
 
     // Keep in sync with ShaderLab::SerializedProperty::Flags.
@@ -55,6 +56,8 @@ namespace UnityEngine
         extern private static ShaderPropertyFlags GetPropertyFlags([NotNull] Shader shader, int propertyIndex);
         [FreeFunction("ShaderScripting::GetPropertyAttributes")]
         extern private static string[] GetPropertyAttributes([NotNull] Shader shader, int propertyIndex);
+        [FreeFunction("ShaderScripting::GetPropertyDefaultIntValue")]
+        extern private static int GetPropertyDefaultIntValue([NotNull] Shader shader, int propertyIndex);
         [FreeFunction("ShaderScripting::GetPropertyDefaultValue")]
         extern private static Vector4 GetPropertyDefaultValue([NotNull] Shader shader, int propertyIndex);
         [FreeFunction("ShaderScripting::GetPropertyTextureDimension")]

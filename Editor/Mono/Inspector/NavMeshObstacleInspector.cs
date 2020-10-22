@@ -27,6 +27,7 @@ namespace UnityEditor
             public static readonly GUIContent Carve = EditorGUIUtility.TrTextContent("Carve", "This obstacle cuts a hole in the NavMesh around it.");
             public static readonly GUIContent Radius = EditorGUIUtility.TrTextContent("Radius", "Radius of the obstacle's capsule shape.");
             public static readonly GUIContent Height = EditorGUIUtility.TrTextContent("Height", "Height of the obstacle's capsule shape.");
+            public static readonly float RadiusAndHeightLabelsWidth = 45f;
         }
 
         void OnEnable()
@@ -58,24 +59,45 @@ namespace UnityEditor
             if (m_Shape.enumValueIndex == 0)
             {
                 // NavMeshObstacleShape : kObstacleShapeCapsule
+                var r = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight * 2 + EditorGUI.kControlVerticalSpacing);
+                EditorGUI.BeginProperty(r, GUIContent.none, m_Extents);
+
+                Rect valueRect = EditorGUI.PrefixLabel(r, Styles.Size);
+
+                float oldLabelWidth = EditorGUIUtility.labelWidth;
+                int oldIndentLevel = EditorGUI.indentLevel;
+                EditorGUIUtility.labelWidth = Styles.RadiusAndHeightLabelsWidth;
+                EditorGUI.indentLevel = 0;
+
                 EditorGUI.BeginChangeCheck();
-                float radius = EditorGUILayout.FloatField(Styles.Radius, m_Extents.vector3Value.x);
-                float height = EditorGUILayout.FloatField(Styles.Height, m_Extents.vector3Value.y * 2.0f);
+                valueRect.height = EditorGUI.kSingleLineHeight;
+                float radius = EditorGUI.FloatField(valueRect, Styles.Radius, m_Extents.vector3Value.x);
+                valueRect.y += EditorGUI.kSingleLineHeight + EditorGUI.kControlVerticalSpacing;
+                float height = EditorGUI.FloatField(valueRect, Styles.Height, m_Extents.vector3Value.y * 2.0f);
                 if (EditorGUI.EndChangeCheck())
                 {
                     m_Extents.vector3Value = new Vector3(radius, height / 2.0f, radius);
                 }
+
+                EditorGUI.indentLevel = oldIndentLevel;
+                EditorGUIUtility.labelWidth = oldLabelWidth;
+
+                EditorGUI.EndProperty();
             }
             else if (m_Shape.enumValueIndex == 1)
             {
                 // NavMeshObstacleShape : kObstacleShapeBox
+                var r = EditorGUILayout.GetControlRect();
+                EditorGUI.BeginProperty(r, GUIContent.none, m_Extents);
+
                 EditorGUI.BeginChangeCheck();
                 Vector3 size = m_Extents.vector3Value * 2.0f;
-                size = EditorGUILayout.Vector3Field(Styles.Size, size);
+                size = EditorGUI.Vector3Field(r, Styles.Size, size);
                 if (EditorGUI.EndChangeCheck())
                 {
                     m_Extents.vector3Value = size / 2.0f;
                 }
+                EditorGUI.EndProperty();
             }
 
             EditorGUILayout.PropertyField(m_Carve, Styles.Carve);

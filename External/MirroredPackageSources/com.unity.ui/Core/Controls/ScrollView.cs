@@ -217,12 +217,12 @@ namespace UnityEngine.UIElements
 
         private float scrollableWidth
         {
-            get { return contentContainer.layout.width - contentViewport.layout.width; }
+            get { return contentContainer.boundingBox.width - contentViewport.layout.width; }
         }
 
         private float scrollableHeight
         {
-            get { return contentContainer.layout.height - contentViewport.layout.height; }
+            get { return contentContainer.boundingBox.height - contentViewport.layout.height; }
         }
 
         // For inertia: how quickly the scrollView stops from moving after PointerUp.
@@ -476,6 +476,10 @@ namespace UnityEngine.UIElements
             hierarchy.Add(contentViewport);
 
             m_ContentContainer = new VisualElement() {name = "unity-content-container"};
+            // Content container overflow is set to scroll which clip but we need to disable clipping in this case
+            // or else absolute elements might not be shown. The viewport is in charge of clipping.
+            // See case 1247583
+            m_ContentContainer.disableClipping = true;
             m_ContentContainer.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             m_ContentContainer.AddToClassList(contentUssClassName);
             m_ContentContainer.usageHints = UsageHints.GroupTransform;
@@ -909,15 +913,15 @@ namespace UnityEngine.UIElements
 
         void UpdateScrollers(bool displayHorizontal, bool displayVertical)
         {
-            float horizontalFactor = contentContainer.layout.width > Mathf.Epsilon ? contentViewport.layout.width / contentContainer.layout.width : 1f;
-            float verticalFactor = contentContainer.layout.height > Mathf.Epsilon ? contentViewport.layout.height / contentContainer.layout.height : 1f;
+            float horizontalFactor = contentContainer.boundingBox.width > Mathf.Epsilon ? contentViewport.layout.width / contentContainer.boundingBox.width : 1f;
+            float verticalFactor = contentContainer.boundingBox.height > Mathf.Epsilon ? contentViewport.layout.height / contentContainer.boundingBox.height : 1f;
 
             horizontalScroller.Adjust(horizontalFactor);
             verticalScroller.Adjust(verticalFactor);
 
             // Set availability
-            horizontalScroller.SetEnabled(contentContainer.layout.width - contentViewport.layout.width > 0);
-            verticalScroller.SetEnabled(contentContainer.layout.height - contentViewport.layout.height > 0);
+            horizontalScroller.SetEnabled(contentContainer.boundingBox.width - contentViewport.layout.width > 0);
+            verticalScroller.SetEnabled(contentContainer.boundingBox.height - contentViewport.layout.height > 0);
 
             // Expand content if scrollbars are hidden
             contentViewport.style.marginRight = displayVertical ? verticalScroller.layout.width : 0;
@@ -960,17 +964,34 @@ namespace UnityEngine.UIElements
         void OnScrollWheel(WheelEvent evt)
         {
             var oldValue = verticalScroller.value;
-            if (contentContainer.layout.height - layout.height > 0)
+            if (contentContainer.boundingBox.height - layout.height > 0)
             {
+                var oldVerticalValue = verticalScroller.value;
+
                 if (evt.delta.y < 0)
                     verticalScroller.ScrollPageUp(Mathf.Abs(evt.delta.y));
                 else if (evt.delta.y > 0)
                     verticalScroller.ScrollPageDown(Mathf.Abs(evt.delta.y));
+
+                if (verticalScroller.value != oldVerticalValue)
+                {
+                    evt.StopPropagation();
+                }
             }
 
-            if (verticalScroller.value != oldValue)
+            if (contentContainer.layout.width - layout.width > 0)
             {
-                evt.StopPropagation();
+                var oldHorizontalValue = horizontalScroller.value;
+
+                if (evt.delta.x < 0)
+                    horizontalScroller.ScrollPageUp(Mathf.Abs(evt.delta.x));
+                else if (evt.delta.x > 0)
+                    horizontalScroller.ScrollPageDown(Mathf.Abs(evt.delta.x));
+
+                if (horizontalScroller.value != oldHorizontalValue)
+                {
+                    evt.StopPropagation();
+                }
             }
         }
     }

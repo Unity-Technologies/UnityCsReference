@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Linq;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
@@ -11,24 +12,28 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<PackageLoadBar> {}
 
+        public enum AssetsToLoad
+        {
+            Min = 25,
+            Max = 50,
+            All = -1
+        }
+
         private long m_Total;
         private long m_NumberOfPackagesShown;
-        private const long k_Min = 25;
-        private const long k_Max = 100;
-        private const long k_MinMaxDifference = 25;
+        private const string k_All = "All";
 
-        private long m_Min;
-        private long m_Max;
+        private long m_LoadMore;
         private string m_LoadedText;
-        private bool m_DoShowMinLabel;
-        private bool m_DoShowMaxLabel;
         private bool m_DoShowLoadMoreLabel;
         private bool m_LoadMoreInProgress;
+        private bool m_LoadAllDiff;
 
         private ResourceLoader m_ResourceLoader;
         private ApplicationProxy m_Application;
         private UnityConnectProxy m_UnityConnect;
         private PageManager m_PageManager;
+        private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
@@ -36,6 +41,7 @@ namespace UnityEditor.PackageManager.UI
             m_Application = container.Resolve<ApplicationProxy>();
             m_UnityConnect = container.Resolve<UnityConnectProxy>();
             m_PageManager = container.Resolve<PageManager>();
+            m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
         }
 
         public PackageLoadBar()
@@ -46,8 +52,7 @@ namespace UnityEditor.PackageManager.UI
             Add(root);
             cache = new VisualElementCache(root);
 
-            loadMinLabel.OnLeftClick(LoadMinItemsClicked);
-            loadMaxLabel.OnLeftClick(LoadMaxItemsClicked);
+            loadMoreLabel.OnLeftClick(LoadItemsClicked);
         }
 
         public void OnEnable()
@@ -55,10 +60,57 @@ namespace UnityEditor.PackageManager.UI
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
             m_PageManager.onRefreshOperationFinish += Refresh;
-            Refresh();
 
-            loadMinLabel.SetEnabled(m_Application.isInternetReachable);
-            loadMaxLabel.SetEnabled(m_Application.isInternetReachable);
+            loadAssetsDropdown.clickable.clicked += loadAssetsDropdown.OnDropdownButtonClicked;
+
+            Refresh();
+            UpdateMenu();
+
+            loadMoreLabel.SetEnabled(m_Application.isInternetReachable);
+        }
+
+        public void UpdateMenu()
+        {
+            var menu = new GenericMenu();
+
+            if (m_Total == 0)
+                EditorApplication.delayCall += () => UpdateMenu();
+
+            AddDropdownItems(menu);
+            loadAssetsDropdown.DropdownMenu = menu.GetItemCount() > 0 ? menu : null;
+        }
+
+        public void AddDropdownItems(GenericMenu menu)
+        {
+            m_LoadAllDiff = m_Total - m_NumberOfPackagesShown <= (int)AssetsToLoad.Min;
+            var minDiff = m_LoadAllDiff;
+            if (!minDiff)
+                AddDropdownItem(menu, (int)AssetsToLoad.Min);
+
+            m_LoadAllDiff = m_Total - m_NumberOfPackagesShown <= (int)AssetsToLoad.Max;
+            var maxDiff = m_LoadAllDiff;
+            if (!maxDiff)
+                AddDropdownItem(menu, (int)AssetsToLoad.Max);
+
+            var showDropDownArea = !minDiff || !maxDiff;
+            if (showDropDownArea)
+                AddDropdownItem(menu, (int)AssetsToLoad.All);
+        }
+
+        public void AddDropdownItem(GenericMenu menu, int value)
+        {
+            var textValue = value == (int)AssetsToLoad.All ? k_All : value.ToString();
+            menu.AddItem(new GUIContent(L10n.Tr(textValue)), m_SettingsProxy.loadAssets == value ? true : false, () =>
+            {
+                loadAssetsDropdown.text = L10n.Tr(textValue);
+                m_SettingsProxy.loadAssets = value;
+                m_SettingsProxy.Save();
+                UpdateLoadBarMessage();
+                LoadItemsClicked();
+                UpdateMenu();
+
+                PackageManagerWindowAnalytics.SendEvent($"load {value}");
+            });
         }
 
         public void OnDisable()
@@ -76,14 +128,14 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnInternetReachabilityChange(bool value)
         {
-            loadMinLabel.SetEnabled(value && !m_LoadMoreInProgress);
-            loadMaxLabel.SetEnabled(value && !m_LoadMoreInProgress);
+            loadMoreLabel.SetEnabled(value && !m_LoadMoreInProgress);
         }
 
         public void Refresh()
         {
             var page = m_PageManager.GetCurrentPage();
             Set(page?.numTotalItems ?? 0, page?.numCurrentItems ?? 0);
+            UpdateMenu();
         }
 
         internal void Set(long total, long current)
@@ -92,33 +144,22 @@ namespace UnityEditor.PackageManager.UI
             m_Total = total;
             m_NumberOfPackagesShown = current;
 
-            loadMinLabel.SetEnabled(true);
-            loadMaxLabel.SetEnabled(true);
+            loadMoreLabel.SetEnabled(true);
             m_LoadMoreInProgress = false;
             UpdateLoadBarMessage();
         }
 
         internal void Reset()
         {
-            m_DoShowMinLabel = true;
-            m_DoShowMaxLabel = true;
             m_DoShowLoadMoreLabel = true;
         }
 
-        public void LoadMinItemsClicked()
+        public void LoadItemsClicked()
         {
-            loadMinLabel.SetEnabled(false);
-            loadMaxLabel.SetEnabled(false);
+            loadMoreLabel.SetEnabled(false);
             m_LoadMoreInProgress = true;
-            m_PageManager.LoadMore((int)m_Min);
-        }
-
-        public void LoadMaxItemsClicked()
-        {
-            loadMinLabel.SetEnabled(false);
-            loadMaxLabel.SetEnabled(false);
-            m_LoadMoreInProgress = true;
-            m_PageManager.LoadMore((int)m_Max);
+            m_PageManager.LoadMore(m_LoadMore);
+            UpdateMenu();
         }
 
         private void UpdateLoadBarMessage()
@@ -131,41 +172,25 @@ namespace UnityEditor.PackageManager.UI
 
             if (m_Total == m_NumberOfPackagesShown)
             {
-                m_DoShowMinLabel = false;
-                m_DoShowMaxLabel = false;
                 m_DoShowLoadMoreLabel = false;
                 m_LoadedText = m_Total == 1 ? L10n.Tr("One package shown") : string.Format(L10n.Tr("All {0} packages shown"), m_NumberOfPackagesShown);
             }
             else
             {
                 var diff = m_Total - m_NumberOfPackagesShown;
+                var max = m_SettingsProxy.loadAssets == (long)AssetsToLoad.All ? m_Total : m_SettingsProxy.loadAssets;
 
-                if (diff >= k_Max)
+                if (diff >= max)
                 {
-                    m_Min = k_Min;
-                    m_Max = k_Max;
+                    m_LoadAllDiff = false;
+                    m_LoadMore = max;
                 }
-                else // diff < max
+                else
                 {
-                    // If the difference between the min and the max is bigger than k_MinMaxDifference
-                    // We show the two labels, else we only show that one label of the number of packages left
-                    if (diff > k_Min && (diff - k_Min) > k_MinMaxDifference)
-                    {
-                        m_Min = k_Min;
-                        m_Max = diff;
-                    }
-                    else if (diff > k_Min && (diff - k_Min) <= k_MinMaxDifference)
-                    {
-                        m_Min = k_Min;
-                        m_Max = diff;
-                        m_DoShowMinLabel = false;
-                    }
-                    else // diff <= min
-                    {
-                        m_Min = diff;
-                        m_DoShowMaxLabel = false;
-                    }
+                    m_LoadAllDiff = true;
+                    m_LoadMore = diff;
                 }
+
                 m_LoadedText = string.Format(L10n.Tr("{0} of {1}"), m_NumberOfPackagesShown, m_Total);
             }
             SetLabels();
@@ -173,14 +198,13 @@ namespace UnityEditor.PackageManager.UI
 
         private void SetLabels()
         {
-            loadedLabel.text = m_LoadedText;
-            loadMinLabel.text = m_Min.ToString();
-            loadMaxLabel.text = m_Max.ToString();
-            loadMoreLabel.text = L10n.Tr("Load");
+            var loadAll = m_SettingsProxy.loadAssets == (int)AssetsToLoad.All ? true : false;
+            loadAssetsDropdown.text = loadAll || m_LoadAllDiff ? L10n.Tr(k_All) : m_LoadMore.ToString();
 
+            loadedLabel.text = m_LoadedText;
+
+            UIUtils.SetElementDisplay(loadAssetsDropdown, m_DoShowLoadMoreLabel);
             UIUtils.SetElementDisplay(loadMoreLabel, m_DoShowLoadMoreLabel);
-            UIUtils.SetElementDisplay(loadMinLabel, m_DoShowMinLabel);
-            UIUtils.SetElementDisplay(loadMaxLabel, m_DoShowMaxLabel);
 
             UIUtils.SetElementDisplay(loadBarContainer, true);
         }
@@ -189,8 +213,7 @@ namespace UnityEditor.PackageManager.UI
 
         private Label loadedLabel { get { return cache.Get<Label>("loadedLabel"); } }
         private Label loadMoreLabel { get { return cache.Get<Label>("loadMoreLabel"); } }
-        private Label loadMinLabel { get { return cache.Get<Label>("loadMinLabel"); } }
-        private Label loadMaxLabel { get { return cache.Get<Label>("loadMaxLabel"); } }
         private VisualElement loadBarContainer { get { return cache.Get<VisualElement>("loadBarContainer"); } }
+        private DropdownButton loadAssetsDropdown { get { return cache.Get<DropdownButton>("loadAssetsDropdown"); } }
     }
 }

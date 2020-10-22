@@ -38,6 +38,7 @@ namespace UnityEditor
             Float,
             Range,
             TexEnv,
+            Int,
         }
 
         //[Obsolete("Use Shader.GetPropertyCount instead.", false)]

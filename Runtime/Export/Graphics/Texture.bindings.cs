@@ -703,6 +703,7 @@ namespace UnityEngine
 
 
         extern public void DiscardContents(bool discardColor, bool discardDepth);
+        [Obsolete("This function has no effect.", false)]
         extern public void MarkRestoreExpected();
         public void DiscardContents() { DiscardContents(true, true); }
 

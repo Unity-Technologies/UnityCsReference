@@ -45,6 +45,12 @@ namespace UnityEditorInternal
             {
                 get { return Time.realtimeSinceStartup >= m_DelayTarget; }
             }
+
+            public void Clear()
+            {
+                m_OnSearchChanged = null;
+                EditorApplication.update -= Trigger;
+            }
         }
 
         public static readonly GUIContent kFrameTooltip = EditorGUIUtility.TrTextContent("", "Press 'F' to frame selection");
@@ -88,6 +94,7 @@ namespace UnityEditorInternal
         string m_prevSearchPattern = null;
         [NonSerialized]
         bool m_ShouldExecuteDelayedSearch = false;
+        int m_PrevFrameIndex;
 
         public delegate void SelectionChangedCallback(int id);
         public event SelectionChangedCallback selectionChanged;
@@ -135,6 +142,8 @@ namespace UnityEditorInternal
                 }
             }
 
+            public float sortWeight { get; set; }
+
             public FrameDataTreeViewItem(HierarchyFrameDataView frameDataView, int id, int depth, TreeViewItem parent)
                 : base(id, depth, parent, null)
             {
@@ -154,7 +163,7 @@ namespace UnityEditorInternal
 
             public void Init(ProfilerFrameDataMultiColumnHeader.Column[] columns, IProfilerSampleNameProvider profilerSampleNameProvider)
             {
-                if (m_Initialized)
+                if (m_Initialized || (m_FrameDataView != null && !m_FrameDataView.valid))
                     return;
 
                 m_StringProperties = new string[columns.Length];
@@ -178,7 +187,7 @@ namespace UnityEditorInternal
             }
         }
 
-        public ProfilerFrameDataTreeView(TreeViewState state, ProfilerFrameDataMultiColumnHeader multicolumnHeader, IProfilerSampleNameProvider profilerSampleNameProvider)
+        public ProfilerFrameDataTreeView(TreeViewState state, ProfilerFrameDataMultiColumnHeader multicolumnHeader, IProfilerSampleNameProvider profilerSampleNameProvider, IProfilerWindowController profilerWindowController)
             : base(state, multicolumnHeader)
         {
             Assert.IsNotNull(multicolumnHeader);
@@ -186,6 +195,7 @@ namespace UnityEditorInternal
             m_ProfilerSampleNameProvider = profilerSampleNameProvider;
             m_MultiColumnHeader = multicolumnHeader;
             m_MultiColumnHeader.sortingChanged += OnSortingChanged;
+            profilerWindowController.currentFrameChanged += FrameChanged;
         }
 
         public void SetFrameDataView(HierarchyFrameDataView frameDataView)
@@ -410,8 +420,16 @@ namespace UnityEditorInternal
 
         protected override TreeViewItem BuildRoot()
         {
-            var rootID = m_FrameDataView != null ? m_FrameDataView.GetRootItemID() : 0;
+            var rootID = (m_FrameDataView != null && m_FrameDataView.valid) ? m_FrameDataView.GetRootItemID() : 0;
             return new FrameDataTreeViewItem(m_FrameDataView, rootID, -1, null);
+        }
+
+        void FrameChanged(int i, bool b)
+        {
+            m_DelayedSearch.Clear();
+            m_ShouldExecuteDelayedSearch = true;
+            if (m_FrameDataView != null && m_FrameDataView.valid)
+                Reload();
         }
 
         protected override IList<TreeViewItem> BuildRows(TreeViewItem root)
@@ -451,11 +469,20 @@ namespace UnityEditorInternal
                 else if (m_ShouldExecuteDelayedSearch)
                 {
                     m_ShouldExecuteDelayedSearch = false;
+                    m_Rows.Clear();
+                    Search(root, searchString, m_Rows);
+                }
+
+                if (ProfilerDriver.lastFrameIndex != m_PrevFrameIndex)
+                {
+                    m_Rows.Clear();
                     Search(root, searchString, m_Rows);
                 }
             }
             else
             {
+                m_prevSearchPattern = searchString;
+                m_Rows.Clear();
                 AddAllChildren((FrameDataTreeViewItem)root, m_ExpandedMarkersHierarchy, m_Rows, newExpandedIds);
             }
 
@@ -465,6 +492,7 @@ namespace UnityEditorInternal
                 MigrateSelectedState(false);
             }
 
+            m_PrevFrameIndex = ProfilerDriver.lastFrameIndex;
             return m_Rows;
         }
 
@@ -491,6 +519,10 @@ namespace UnityEditorInternal
                 if (functionName.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     var item = AcquireFrameDataTreeViewItem(m_FrameDataView, current, kItemDepth, searchFromThis);
+
+                    item.displayName = functionName;
+                    item.sortWeight = m_FrameDataView.GetItemColumnDataAsFloat(current, m_FrameDataView.sortColumn);
+
                     searchFromThis.AddChild(item);
                     result.Add(item);
                 }
@@ -499,6 +531,23 @@ namespace UnityEditorInternal
                 foreach (var childId in m_ReusableChildrenIds)
                     stack.Push(childId);
             }
+
+            // Sort filtered results based on HerarchyFrameData sorting settings
+            var sortModifier = m_FrameDataView.sortColumnAscending ? 1 : -1;
+            result.Sort((_x, _y) => {
+                var x = _x as FrameDataTreeViewItem;
+                var y = _y as FrameDataTreeViewItem;
+                if ((x == null) || (y == null))
+                    return 0;
+
+                int retVal;
+                if (x.sortWeight != y.sortWeight)
+                    retVal = x.sortWeight < y.sortWeight ? -1 : 1;
+                else
+                    retVal = EditorUtility.NaturalCompare(x.displayName, y.displayName);
+
+                return retVal * sortModifier;
+            });
         }
 
         // Hierarchy traversal state.
@@ -713,7 +762,8 @@ namespace UnityEditorInternal
             if (m_LegacySelectedItemMarkerNamePath != null)
                 MigrateSelectedState(true);
 
-            base.OnGUI(rect);
+            if (m_FrameDataView != null && m_FrameDataView.valid)
+                base.OnGUI(rect);
         }
 
         protected override void RowGUI(RowGUIArgs args)

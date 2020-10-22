@@ -245,6 +245,7 @@ namespace UnityEngine.UIElements
             foreach (var panel in s_PanelsIterationList)
             {
                 // Dispatch all timer update messages to each scheduled item
+                panel.UpdateAssetTrackers();
                 panel.timerEventScheduler.UpdateScheduledEvents();
                 panel.UpdateAnimations();
                 panel.UpdateBindings();
@@ -498,8 +499,12 @@ namespace UnityEngine.UIElements
             return panel;
         }
 
-        // Empty method signature just to allow the UI Builder to compile while accessing this API.
-        // Related to Live Reload of UXML/USS assets. Implementation coming later.
-        internal static void InMemoryAssetsHaveBeenChanged() {}
+        internal static int m_InMemoryAssetsVersion { get; private set; } = 0;
+
+        internal static void InMemoryAssetsHaveBeenChanged()
+        {
+            m_InMemoryAssetsVersion++;
+        }
+
     }
 }

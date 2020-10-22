@@ -134,6 +134,9 @@ namespace UnityEditorInternal
                     break;
 
                 case EventType.MouseDrag:
+
+                    capFunction?.Invoke(id, position, rotation, handleSize, EventType.Layout);
+
                     if (GUIUtility.hotControl == id)
                     {
                         s_CurrentMousePosition += evt.delta;

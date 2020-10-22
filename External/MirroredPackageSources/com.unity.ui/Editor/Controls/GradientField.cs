@@ -5,17 +5,32 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements
 {
+    /// <summary>
+    /// Makes a field for editing an <see cref="Gradient"/>.
+    /// </summary>
     public class GradientField : BaseField<Gradient>
     {
         static readonly GradientColorKey k_WhiteKeyBegin = new GradientColorKey(Color.white, 0);
         static readonly GradientColorKey k_WhiteKeyEnd = new GradientColorKey(Color.white, 1);
         static readonly GradientAlphaKey k_AlphaKeyBegin = new GradientAlphaKey(1, 0);
         static readonly GradientAlphaKey k_AlphaKeyEnd = new GradientAlphaKey(1, 1);
+        /// <summary>
+        /// Instantiates a <see cref="GradientField"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<GradientField, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="GradientField"/>.
+        /// </summary>
         public new class UxmlTraits : BaseField<Gradient>.UxmlTraits {}
 
         private bool m_ValueNull;
+        /// <summary>
+        /// The <see cref="Gradient"/> currently being exposed by the field.
+        /// </summary>
+        /// <remarks>
+        /// Note that changing this will not trigger a change event to be sent.
+        /// </remarks>
         public override Gradient value
         {
             get
@@ -38,6 +53,9 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// The color space currently used by the field.
+        /// </summary>
         public ColorSpace colorSpace { get; set; }
 
         internal static Gradient GradientCopy(Gradient other)
@@ -49,18 +67,40 @@ namespace UnityEditor.UIElements
             return gradientCopy;
         }
 
+        /// <summary>
+        /// USS class name for elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-gradient-field";
+        /// <summary>
+        /// USS class name for labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name for input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        /// <summary>
+        /// USS class name for the content for the gradient visual in the <see cref="GradientField"/> element.
+        /// </summary>
         public static readonly string contentUssClassName = ussClassName + "__content";
 
+        /// <summary>
+        /// USS class name for border elements in elements of this type.
+        /// </summary>
         public static readonly string borderUssClassName = ussClassName + "__border";
 
         VisualElement m_GradientTextureImage;
+        readonly Background m_DefaultBackground = new Background();
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public GradientField()
             : this(null) {}
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public GradientField(string label)
             : base(label, null)
         {
@@ -71,7 +111,6 @@ namespace UnityEditor.UIElements
             m_GradientTextureImage = new VisualElement() { pickingMode = PickingMode.Ignore };
             m_GradientTextureImage.AddToClassList(contentUssClassName);
             visualInput.Add(m_GradientTextureImage);
-
 
             VisualElement borderElement = new VisualElement() { name = "unity-border", pickingMode = PickingMode.Ignore };
             borderElement.AddToClassList(borderUssClassName);
@@ -146,9 +185,9 @@ namespace UnityEditor.UIElements
 
         void UpdateGradientTexture()
         {
-            if (m_ValueNull)
+            if (m_ValueNull || showMixedValue)
             {
-                visualInput.style.backgroundImage = new Background();
+                visualInput.style.backgroundImage = m_DefaultBackground;
             }
             else
             {
@@ -183,6 +222,20 @@ namespace UnityEditor.UIElements
                 rawValue.mode = GradientMode.Blend;
             }
             UpdateGradientTexture();
+        }
+
+        protected override void UpdateMixedValueContent()
+        {
+            if (showMixedValue)
+            {
+                visualInput.style.backgroundImage = m_DefaultBackground;
+                visualInput.Add(mixedValueLabel);
+            }
+            else
+            {
+                UpdateGradientTexture();
+                mixedValueLabel.RemoveFromHierarchy();
+            }
         }
     }
 }

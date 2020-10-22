@@ -88,6 +88,8 @@ namespace UnityEditor
             public readonly PreviewRenderUtility renderUtility;
             public GameObject gameObject { get; private set; }
 
+            public string prefabAssetPath { get; private set; }
+
             public PreviewData(UnityObject targetObject)
             {
                 renderUtility = new PreviewRenderUtility();
@@ -99,6 +101,8 @@ namespace UnityEditor
             {
                 UnityObject.DestroyImmediate(gameObject);
                 gameObject = EditorUtility.InstantiateForAnimatorPreview(targetObject);
+                var prefabGo = PrefabUtility.GetOriginalSourceOrVariantRoot(targetObject);
+                prefabAssetPath = AssetDatabase.GetAssetPath(prefabGo);
                 renderUtility.AddManagedGO(gameObject);
             }
 
@@ -148,6 +152,9 @@ namespace UnityEditor
             CalculatePrefabStatus();
 
             m_PreviewCache = new Dictionary<int, Texture>();
+
+            if (EditorUtility.IsPersistent(target))
+                AssetEvents.assetsChangedOnHDD += OnAssetsChangedOnHDD;
         }
 
         void CalculatePrefabStatus()
@@ -211,6 +218,14 @@ namespace UnityEditor
                 previewData.Dispose();
             ClearPreviewCache();
             m_PreviewCache = null;
+
+            AssetEvents.assetsChangedOnHDD -= OnAssetsChangedOnHDD;
+        }
+
+        void OnAssetsChangedOnHDD(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+        {
+            foreach (var importedAssetPath in importedAssets)
+                ReloadPreviewInstance(importedAssetPath);
         }
 
         internal override void OnForceReloadInspector()
@@ -533,29 +548,16 @@ namespace UnityEditor
 
         private void DoStaticFlagsDropDown(GameObject go)
         {
-            EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = m_StaticEditorFlags.hasMultipleDifferentValues;
-            int changedFlags;
-            bool changedToValue;
             var rect = GUILayoutUtility.GetRect(GUIContent.none, Styles.staticDropdown, GUILayout.ExpandWidth(false));
 
             rect.height = Math.Max(EditorGUIUtility.singleLineHeight, rect.height);
-            EditorGUI.EnumFlagsField(
-                rect,
-                GUIContent.none,
-                GameObjectUtility.GetStaticEditorFlags(go),
-                false,
-                out changedFlags, out changedToValue,
-                Styles.staticDropdown
-            );
-            EditorGUI.showMixedValue = false;
-            if (EditorGUI.EndChangeCheck())
-            {
-                SceneModeUtility.SetStaticFlags(targets, changedFlags, changedToValue);
-                serializedObject.SetIsDifferentCacheDirty();
 
-                // Displaying the dialog to ask the user whether to update children nukes the gui state (case 962453)
-                EditorGUIUtility.ExitGUI();
+            bool toggled = EditorGUILayout.DropdownButton(GUIContent.none, FocusType.Keyboard, Styles.staticDropdown);
+            if (toggled)
+            {
+                rect = GUILayoutUtility.topLevel.GetLast();
+                PopupWindowWithoutFocus.Show(rect, new StaticFieldDropdown(m_StaticEditorFlags));
+                GUIUtility.ExitGUI();
             }
         }
 
@@ -602,6 +604,24 @@ namespace UnityEditor
             {
                 var go = (GameObject)o;
                 go.layer = layer;
+            }
+        }
+
+        void ReloadPreviewInstance(string prefabAssetPath)
+        {
+            foreach (var pair in m_PreviewInstances)
+            {
+                var index = pair.Key;
+                if (index > targets.Length)
+                    continue;
+
+                var previewData = pair.Value;
+                if (previewData.prefabAssetPath == prefabAssetPath)
+                {
+                    previewData.UpdateGameObject(targets[index]);
+                    ClearPreviewCache();
+                    return;
+                }
             }
         }
 
@@ -935,6 +955,17 @@ namespace UnityEditor
             OnSceneDragInternal(sceneView, index, evt.type, evt.mousePosition, evt.alt);
         }
 
+        static Scene GetDestinationSceneForNewGameObjectsForSceneView(SceneView sceneView)
+        {
+            if (sceneView.customParentForNewGameObjects != null)
+                return sceneView.customParentForNewGameObjects.gameObject.scene;
+
+            if (sceneView.customScene.IsValid())
+                return sceneView.customScene;
+
+            return SceneManager.GetActiveScene();
+        }
+
         internal void OnSceneDragInternal(SceneView sceneView, int index, EventType type, Vector2 mousePosition, bool alt)
         {
             GameObject go = target as GameObject;
@@ -946,7 +977,7 @@ namespace UnityEditor
             switch (type)
             {
                 case EventType.DragUpdated:
-                    Scene destinationScene = sceneView.customScene.IsValid() ? sceneView.customScene : SceneManager.GetActiveScene();
+
                     if (m_DragObject == null)
                     {
                         // While dragging the instantiated prefab we do not want to record undo for this object
@@ -956,6 +987,7 @@ namespace UnityEditor
                         // StartRecordingUndo() is called on DragExited. Fixes case 1223793.
                         DrivenRectTransformTracker.StopRecordingUndo();
 
+                        Scene destinationScene = GetDestinationSceneForNewGameObjectsForSceneView(sceneView);
                         if (!EditorApplication.isPlaying || EditorSceneManager.IsPreviewScene(destinationScene))
                         {
                             m_DragObject = (GameObject)PrefabUtility.InstantiatePrefab(prefabAssetRoot, destinationScene);

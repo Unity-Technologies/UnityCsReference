@@ -167,6 +167,14 @@ namespace UnityEngine
         DistanceShadowmask = 1
     }
 
+    public enum ShadowObjectsFilter
+    {
+        AllObjects = 0,
+        DynamicOnly,
+        StaticOnly
+    }
+
+
     public enum CameraClearFlags
     {
         Skybox = 1,
@@ -723,6 +731,11 @@ namespace UnityEngine
                 RGBA_ASTC12X12_SRGB = 139,
                 RGBA_ASTC12X12_UNorm = 140,
 
+                YUV2 = 141,
+                DepthAuto = 142,
+                ShadowAuto = 143,
+                VideoAuto = 144,
+
                 RGBA_ASTC4X4_UFloat = 145,
                 RGBA_ASTC5X5_UFloat = 146,
                 RGBA_ASTC6X6_UFloat = 147,
@@ -1254,7 +1267,9 @@ namespace UnityEngine.Rendering
         N3DS = 19,
         Vulkan = 21,
         Switch = 22,
-        XboxOneD3D12 = 23
+        XboxOneD3D12 = 23,
+        GameCoreXboxOne = 24,
+        GameCoreScarlett = 25
     }
 
     public enum GraphicsTier
@@ -1775,7 +1790,9 @@ namespace UnityEngine.Rendering
         UNITY_LIGHTMAP_FULL_HDR,
         UNITY_VIRTUAL_TEXTURING,
         UNITY_PRETRANSFORM_TO_DISPLAY_ORIENTATION,
-        UNITY_ASTC_NORMALMAP_ENCODING
+        UNITY_ASTC_NORMALMAP_ENCODING,
+        SHADER_API_GLES30,
+        UNITY_UNIFIED_SHADER_PRECISION_MODEL
     }
 
     // Match VideoShadersMode on C++ side
@@ -1867,6 +1884,16 @@ namespace UnityEngine.Rendering
         LegacyJobified = 3,
         NativeGraphicsJobs = 4,
         NativeGraphicsJobsWithoutRenderThread = 5,
+    }
+
+    public enum OpenGLESVersion
+    {
+        None,
+        OpenGLES20,
+        OpenGLES30,
+        OpenGLES31,
+        OpenGLES31AEP,
+        OpenGLES32
     }
 } // namespace UnityEngine.Rendering
 

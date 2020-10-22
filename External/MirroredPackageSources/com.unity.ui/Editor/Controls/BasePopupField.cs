@@ -18,6 +18,9 @@ namespace UnityEditor.UIElements
         TextElement m_TextElement;
         VisualElement m_ArrowElement;
 
+        /// <summary>
+        /// This is the text displayed.
+        /// </summary>
         protected TextElement textElement
         {
             get { return m_TextElement; }
@@ -46,21 +49,43 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// Allow changing value without triggering any change event.
+        /// </summary>
+        /// <param name="newValue">The new value.</param>
         public override void SetValueWithoutNotify(TValueType newValue)
         {
             base.SetValueWithoutNotify(newValue);
             ((INotifyValueChanged<string>)m_TextElement).SetValueWithoutNotify(GetValueToDisplay());
         }
 
+        /// <summary>
+        /// This is the text displayed to the user for the current selection of the popup.
+        /// </summary>
         public string text
         {
             get { return m_TextElement.text; }
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-base-popup-field";
+        /// <summary>
+        /// USS class name of text elements in elements of this type.
+        /// </summary>
         public static readonly string textUssClassName = ussClassName + "__text";
+        /// <summary>
+        /// USS class name of arrow indicators in elements of this type.
+        /// </summary>
         public static readonly string arrowUssClassName = ussClassName + "__arrow";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
 
@@ -144,6 +169,16 @@ namespace UnityEditor.UIElements
                 }
                 return MeasureTextSize(textToMeasure, desiredWidth, widthMode, desiredHeight, heightMode);
             }
+        }
+
+        protected override void UpdateMixedValueContent()
+        {
+            if (showMixedValue)
+            {
+                textElement.text = mixedValueString;
+            }
+
+            textElement.EnableInClassList(mixedValueLabelUssClassName, showMixedValue);
         }
     }
 }

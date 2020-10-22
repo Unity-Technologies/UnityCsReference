@@ -331,6 +331,10 @@ namespace UnityEngine.UIElements
 
                 if (rootVe != null)
                 {
+                    // Save reference to the VisualTreeAsset itself on the containing VisualElement so it can be
+                    // tracked for live reloading on changes.
+                    rootVe.m_VisualTreeAssetSource = this;
+
                     // if contentContainer == this, the shadow and the logical hierarchy are identical
                     // otherwise, if there is a CC, we want to insert in the shadow
                     target.hierarchy.Add(rootVe);

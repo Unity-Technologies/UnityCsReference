@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using System;
 
 namespace UnityEditor
 {
@@ -64,6 +65,8 @@ namespace UnityEditor
             get { return !incrementalSnapActive && activeToolSupportsGridSnap && instance.snapEnabled; }
         }
 
+        public static event Action gridSnapEnabledChanged;
+
         internal static bool vertexSnapActive
         {
             get { return Tools.vertexDragging; }
@@ -72,7 +75,14 @@ namespace UnityEditor
         public static bool gridSnapEnabled
         {
             get { return instance.snapEnabled; }
-            set { instance.snapEnabled = value; }
+            set
+            {
+                if (gridSnapEnabled != value)
+                {
+                    instance.snapEnabled = value;
+                    gridSnapEnabledChanged?.Invoke();
+                }
+            }
         }
 
         internal static bool hotkeyActive

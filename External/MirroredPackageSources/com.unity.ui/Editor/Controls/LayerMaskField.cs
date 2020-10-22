@@ -6,10 +6,19 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    /// <summary>
+    /// Make a field for layer as masks.
+    /// </summary>
     public class LayerMaskField : MaskField
     {
+        /// <summary>
+        /// Instantiates a <see cref="LayerMaskField"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<LayerMaskField, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="LayerMaskField"/>.
+        /// </summary>
         public new class UxmlTraits : BasePopupField<int, UxmlIntAttributeDescription>.UxmlTraits
         {
             readonly UxmlIntAttributeDescription m_MaskValue = new UxmlIntAttributeDescription { name = "value" };
@@ -24,6 +33,9 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// Unsupported.
+        /// </summary>
         public override Func<string, string> formatSelectedValueCallback
         {
             get { return null; }
@@ -38,6 +50,9 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// Unsupported.
+        /// </summary>
         public override Func<string, string> formatListItemCallback
         {
             get { return null; }
@@ -64,24 +79,49 @@ namespace UnityEditor.UIElements
             choicesMasks = new List<int>(layerValues);
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-layer-mask-field";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
 
+        /// <summary>
+        /// Constructor of the field.
+        /// </summary>
+        /// <param name="defaultMask">The mask to use for a first selection.</param>
         public LayerMaskField(int defaultMask)
             : this(null, defaultMask) {}
 
+        /// <summary>
+        /// Constructor of the field.
+        /// </summary>
+        /// <param name="label">The label to prefix the <see cref="LayerMaskField"/>.</param>
+        /// <param name="defaultMask">The mask to use for a first selection.</param>
         public LayerMaskField(string label, int defaultMask)
             : this(label)
         {
             SetValueWithoutNotify(defaultMask);
         }
 
+        /// <summary>
+        /// Constructor of the field.
+        /// </summary>
         public LayerMaskField()
             : this(null) {}
 
 
+        /// <summary>
+        /// Constructor of the field.
+        /// </summary>
+        /// <param name="label">The label to prefix the <see cref="LayerMaskField"/>.</param>
         public LayerMaskField(string label)
             : base(label)
         {

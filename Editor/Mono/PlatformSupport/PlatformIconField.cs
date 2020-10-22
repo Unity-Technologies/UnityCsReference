@@ -108,6 +108,17 @@ namespace UnityEditor.PlatformSupport
 
             m_IconsFields[kindKey] = kindDictionary;
         }
+
+        public void Reset()
+        {
+            foreach (var group in m_IconsFields)
+                foreach (var subgroup in group.Value)
+                    foreach (var field in subgroup.Value)
+                        field.platformIcon.SetTextures(null);
+            foreach (var kind in m_PlatformIconsByKind)
+                foreach (var icon in kind.Value)
+                    icon.SetTextures(null);
+        }
     }
 
     abstract class PlatformIconField

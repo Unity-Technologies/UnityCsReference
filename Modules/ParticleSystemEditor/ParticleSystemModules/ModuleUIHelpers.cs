@@ -252,11 +252,28 @@ namespace UnityEditor
 
         public static void GUILayerMask(GUIContent guiContent, SerializedProperty layerMaskProp, params GUILayoutOption[] layoutOptions)
         {
+            string[] m_FlagNames = new string[0];
+            int[] m_FlagValues = new int[0];
+            TagManager.GetDefinedLayers(ref m_FlagNames, ref m_FlagValues);
+            var toggleLabel = MaskFieldGUI.GetMaskButtonValue(layerMaskProp.intValue, m_FlagNames, m_FlagValues);
+
+            // the returned rect is off by two pixels so we adjust its position manually
             Rect rect = GetControlRect(kSingleLineHeight, layoutOptions);
-            guiContent = EditorGUI.BeginProperty(rect, guiContent, layerMaskProp);
-            rect = PrefixLabel(rect, guiContent);
-            EditorGUI.LayerMaskField(rect, layerMaskProp, GUIContent.none, ParticleSystemStyles.Get().popup);
-            EditorGUI.EndProperty();
+            toggleLabel = layerMaskProp.hasMultipleDifferentValues ? "—" : toggleLabel;
+            rect.y -= 2;
+
+            // adjusting the rect further to have proper alignment
+            rect = EditorGUI.PrefixLabel(rect, guiContent, ParticleSystemStyles.Get().label);
+            rect.width += 2;
+            rect.x -= 2;
+            rect.y += 2;
+
+            bool toggled = EditorGUI.DropdownButton(rect, new GUIContent(toggleLabel), FocusType.Keyboard, ParticleSystemStyles.Get().popup);
+            if (toggled)
+            {
+                PopupWindowWithoutFocus.Show(rect, new MaskFieldDropDown(layerMaskProp));
+                GUIUtility.ExitGUI();
+            }
         }
 
         public static bool GUIToggle(GUIContent guiContent, bool boolValue, params GUILayoutOption[] layoutOptions)

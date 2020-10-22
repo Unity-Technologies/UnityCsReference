@@ -45,5 +45,20 @@ namespace UnityEditor.U2D
         extern internal bool GetSecondaryColorSpace(string secondaryTextureName);
         extern internal void SetSecondaryColorSpace(string secondaryTextureName, bool srGB);
         extern internal void DeleteSecondaryPlatformSettings(string secondaryTextureName);
+
+        // Load SpriteAtlasAsset
+        public static SpriteAtlasAsset Load(string assetPath)
+        {
+            var objs = UnityEditorInternal.InternalEditorUtility.LoadSerializedFileAndForget(assetPath);
+            return (objs.Length > 0) ? objs[0] as SpriteAtlasAsset : null;
+        }
+
+        public static void Save(SpriteAtlasAsset asset, string assetPath)
+        {
+            if (asset == null)
+                throw new ArgumentNullException("Parameter asset is null");
+            var objs = new UnityEngine.Object[] { asset };
+            UnityEditorInternal.InternalEditorUtility.SaveToSerializedFileAndForget(objs, assetPath, true);
+        }
     }
 };

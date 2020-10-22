@@ -42,6 +42,14 @@ namespace UnityEditor.UIElements.StyleSheets
                 assetIsRetinaTexture = (resource as Texture2D != null);
             }
 
+            if (type == typeof(Sprite))
+            {
+                // Special case for sprites, which are stored as Texture2D sub-assets
+                var spriteResource = Resources.Load(Path.GetFileNameWithoutExtension(pathName), type);
+                if (spriteResource != null)
+                    resource = spriteResource;
+            }
+
             if (resource == null)
             {
                 resource = Resources.Load(pathName, type);

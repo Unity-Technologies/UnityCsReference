@@ -100,9 +100,12 @@ namespace UnityEngine
             Dispose();
         }
 
+        [FreeFunction("ComputeShader_Bindings::IsValidBuffer")]
+        extern private static bool IsValidBuffer(ComputeBuffer buf);
+
         public bool IsValid()
         {
-            return m_Ptr != IntPtr.Zero;
+            return m_Ptr != IntPtr.Zero && IsValidBuffer(this);
         }
 
         // Number of elements in the buffer (RO).
@@ -257,6 +260,9 @@ namespace UnityEngine
 
         public NativeArray<T> BeginWrite<T>(int computeBufferStartIndex, int count) where T : struct
         {
+            if (!IsValid())
+                throw new InvalidOperationException("BeginWrite requires a valid ComputeBuffer");
+
             if (usage != ComputeBufferMode.SubUpdates)
                 throw new ArgumentException("ComputeBuffer must be created with usage mode ComputeBufferMode.SubUpdates to be able to be mapped with BeginWrite");
 

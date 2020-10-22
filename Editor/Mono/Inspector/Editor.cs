@@ -9,6 +9,7 @@ using System.Reflection;
 using UnityEditor.AssetImporters;
 using UnityEngine;
 using UnityEngine.Internal;
+using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 using UnityObject = UnityEngine.Object;
 
@@ -295,11 +296,17 @@ namespace UnityEditor
 
         public CustomEditorForRenderPipelineAttribute(Type inspectedType, Type renderPipeline) : base(inspectedType)
         {
+            if (renderPipeline != null && !typeof(RenderPipelineAsset).IsAssignableFrom(renderPipeline))
+                Debug.LogError($"The CustomEditorForRenderPipeline Attribute targets an invalid RenderPipelineAsset. {renderPipeline} cannot be assigned from RenderPipelineAsset.");
+
             renderPipelineType = renderPipeline;
         }
 
         public CustomEditorForRenderPipelineAttribute(Type inspectedType, Type renderPipeline, bool editorForChildClasses) : base(inspectedType, editorForChildClasses)
         {
+            if (renderPipeline != null && !typeof(RenderPipelineAsset).IsAssignableFrom(renderPipeline))
+                Debug.LogError($"The CustomEditorForRenderPipeline Attribute targets an invalid RenderPipelineAsset. {renderPipeline} cannot be assigned from RenderPipelineAsset.");
+
             renderPipelineType = renderPipeline;
         }
     }
@@ -348,7 +355,7 @@ namespace UnityEditor
         {
             get
             {
-                return m_InspectorMode;
+                return propertyViewer?.inspectorMode ?? m_InspectorMode;
             }
             set
             {

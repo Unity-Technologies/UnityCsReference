@@ -60,6 +60,7 @@ namespace UnityEngine.SocialPlatforms.Impl
     {
         protected string m_UserName;
         protected string m_ID;
+        string m_legacyID;
         protected bool m_IsFriend;
         protected UserState m_State;
         protected Texture2D m_Image;
@@ -69,6 +70,7 @@ namespace UnityEngine.SocialPlatforms.Impl
         {
             m_UserName = "Uninitialized";
             m_ID = "0";
+            m_legacyID = "0";
             m_IsFriend = false;
             m_State = UserState.Offline;
             m_Image = new Texture2D(32, 32);
@@ -106,6 +108,11 @@ namespace UnityEngine.SocialPlatforms.Impl
             m_ID = id;
         }
 
+        public void SetLegacyUserID(string id)
+        {
+            m_legacyID = id;
+        }
+
         public void SetUserGameID(string id)
         {
             m_gameID = id;
@@ -128,6 +135,17 @@ namespace UnityEngine.SocialPlatforms.Impl
 
         public string userName { get { return m_UserName; } }
         public string id { get { return m_ID; } }
+
+        private const string legacyIdObsoleteMessage =
+            @"legacyId returns playerID from GKPlayer, which became obsolete in iOS 12.4 . id returns playerID for devices running versions before iOS 12.4, and the newer teamPlayerID for later versions. Please use IUserProfile.id or UserProfile.id instead";
+        [ObsoleteAttribute(legacyIdObsoleteMessage + " (UnityUpgradable) -> id", true)]
+        public string legacyId
+        {
+            get
+            {
+                throw new NotSupportedException(legacyIdObsoleteMessage);
+            }
+        }
         public string gameId { get { return m_gameID; } }
         public bool isFriend { get { return m_IsFriend; } }
         public UserState state { get { return m_State; } }

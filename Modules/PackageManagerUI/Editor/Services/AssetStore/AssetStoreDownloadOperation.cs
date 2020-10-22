@@ -21,6 +21,15 @@ namespace UnityEditor.PackageManager.UI
         public string packageUniqueId => m_ProductId;
         public string versionUniqueId => string.Empty;
 
+        [SerializeField]
+        private string m_ProductOldPath;
+        public string packageOldPath => m_ProductOldPath;
+
+        [SerializeField]
+        private string m_ProductNewPath;
+        public string packageNewPath => m_ProductNewPath;
+
+
         // a timestamp is added to keep track of how `fresh` the result is
         // it doesn't apply in the case of download operations
         public long timestamp => 0;
@@ -78,11 +87,12 @@ namespace UnityEditor.PackageManager.UI
         {
         }
 
-        public AssetStoreDownloadOperation(AssetStoreUtils assetStoreUtils, AssetStoreRestAPI assetStoreRestAPI, string productId)
+        public AssetStoreDownloadOperation(AssetStoreUtils assetStoreUtils, AssetStoreRestAPI assetStoreRestAPI, string productId, string oldPath)
         {
             ResolveDependencies(assetStoreUtils, assetStoreRestAPI);
 
             m_ProductId = productId;
+            m_ProductOldPath = oldPath;
         }
 
         public void OnDownloadProgress(string message, ulong bytes, ulong total)
@@ -149,7 +159,7 @@ namespace UnityEditor.PackageManager.UI
             m_State = DownloadState.Pausing;
 
             // Pause here is the same as aborting the download, but we don't delete the file so we can resume from where we paused it from
-            if (!m_AssetStoreUtils.AbortDownload($"{k_AssetStoreDownloadPrefix}{m_ProductId}", downloadInfo.destination))
+            if (!m_AssetStoreUtils.AbortDownload(downloadInfo.destination))
                 Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {L10n.Tr(k_AbortErrorMessage)}");
         }
 
@@ -171,7 +181,7 @@ namespace UnityEditor.PackageManager.UI
             }
 
             // the actual download state change from `downloading` to `aborted` happens in `OnDownloadProgress` callback
-            if (!m_AssetStoreUtils.AbortDownload($"{k_AssetStoreDownloadPrefix}{m_ProductId}", downloadInfo.destination))
+            if (!m_AssetStoreUtils.AbortDownload(downloadInfo.destination))
                 Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {L10n.Tr(k_AbortErrorMessage)}");
         }
 
@@ -189,6 +199,20 @@ namespace UnityEditor.PackageManager.UI
                 }
 
                 var dest = downloadInfo.destination;
+
+                var publisher = string.Empty;
+                var category = string.Empty;
+                var packageName = string.Empty;
+
+                if (dest.Length >= 1)
+                    publisher = dest[0];
+                if (dest.Length >= 2)
+                    category = dest[1];
+                if (dest.Length >= 3)
+                    packageName = dest[2];
+
+                var basePath = m_AssetStoreUtils.BuildBaseDownloadPath(publisher, category);
+                m_ProductNewPath = m_AssetStoreUtils.BuildFinalDownloadPath(basePath, packageName);
 
                 var json = m_AssetStoreUtils.CheckDownload(
                     $"{k_AssetStoreDownloadPrefix}{downloadInfo.productId}",

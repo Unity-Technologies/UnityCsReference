@@ -71,7 +71,6 @@ namespace UnityEditor
             public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alphanumeric Sorting");
             public static readonly GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation");
             public static readonly GUIContent codeCoverageEnabled = EditorGUIUtility.TrTextContent("Enable Code Coverage", "Check this to enable Code Coverage. Code Coverage lets you see how much of your code is executed when it is run. Note that Code Coverage lowers Editor performance.");
-            public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("Create Objects at Origin", "Enable this preference to instantiate new 3D objects at World coordinates 0,0,0. Disable it to instantiate them at the Scene pivot (in front of the Scene view Camera).");
             public static readonly GUIContent applicationFrameThrottling = EditorGUIUtility.TrTextContent("Frame Throttling (milliseconds)", "The number of milliseconds the Editor can idle between frames.");
             public static readonly GUIContent inputMaxProcessTime = EditorGUIUtility.TrTextContent("Input Throttling (milliseconds)", "The maximum number of milliseconds the Editor will take to process user inputs.");
             public static readonly GUIContent interactionMode = EditorGUIUtility.TrTextContent("Interaction Mode", "Specifies how long the Editor can idle before it updates.");
@@ -84,6 +83,8 @@ namespace UnityEditor
             };
             public static readonly GUIContent progressDialogDelay = EditorGUIUtility.TrTextContent("Busy Progress Delay", "Delay in seconds before 'Unity is busy' progress bar shows up.");
             public static readonly GUIContent enableSnapping = EditorGUIUtility.TrTextContent("Graph Snapping", "If enabled, GraphElements in Graph Views (such as Shader Graph) align with one another when you move them. If disabled, GraphElements move freely.");
+
+            public static readonly GUIContent enterSafeModeDialog = EditorGUIUtility.TrTextContent("Show Enter Safe Mode Dialog");
 
             public static readonly GUIContent packageManagerLogLevel = EditorGUIUtility.TrTextContent("Package Manager Log Level",
                 "Determines the level of detail when the Package Manager writes information to log files.\n"
@@ -142,6 +143,7 @@ namespace UnityEditor
             public static readonly GUIContent enableFilteringWhileSearching = EditorGUIUtility.TrTextContent("Enable filtering while searching", "If enabled, searching will cause non-matching items in the scene view to be greyed out");
             public static readonly GUIContent enableFilteringWhileLodGroupEditing = EditorGUIUtility.TrTextContent("Enable filtering while editing LOD groups", "If enabled, editing LOD groups will cause other objects in the scene view to be greyed out");
             public static readonly GUIContent handlesLineThickness = EditorGUIUtility.TrTextContent("Line Thickness", "Thickness of manipulator tool handle lines in UI points (0 = single pixel)");
+            public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("Create Objects at Origin", "Enable this preference to instantiate new 3D objects at World coordinates 0,0,0. Disable it to instantiate them at the Scene pivot (in front of the Scene view Camera).");
         }
 
         internal class LanguageProperties
@@ -170,6 +172,7 @@ namespace UnityEditor
         private bool m_ShowRepaintDots;
         private bool m_DeveloperModeDirty;
         private bool m_ScriptDebugInfoEnabled;
+        private bool m_EnterSafeModeDialog;
         private string m_GpuDeviceInUse;
         private string m_GpuDevice;
         private string[] m_CachedGpuDevices;
@@ -191,7 +194,7 @@ namespace UnityEditor
 
         private RefString m_ScriptEditorPath = new RefString("");
         private RefString m_ImageAppPath = new RefString("");
-        private int m_DiffToolIndex;
+        private static int m_DiffToolIndex;
 
         // how many menu items come before the actual list of languages
         // (Default + separator)
@@ -212,10 +215,10 @@ namespace UnityEditor
         private string[] m_ScriptApps;
         private string[] m_ScriptAppsEditions;
         private string[] m_ImageApps;
-        private string[] m_DiffTools;
+        private static string[] m_DiffTools;
 
-        private string m_CustomDiffToolPath = "";
-        private string[] m_CustomDiffToolArguments = new[] {"", "", ""};
+        private static string m_CustomDiffToolPath = "";
+        private static string[] m_CustomDiffToolArguments = new[] {"", "", ""};
 
         private string m_noDiffToolsMessage = string.Empty;
 
@@ -292,7 +295,7 @@ namespace UnityEditor
         [UsedImplicitly, SettingsProvider]
         internal static SettingsProvider CreateGICacheProvider()
         {
-            if (UnityEditor.MPE.ProcessService.level == UnityEditor.MPE.ProcessLevel.Slave && !UnityEditor.MPE.ProcessService.HasCapability("enable-gi"))
+            if (UnityEditor.MPE.ProcessService.level == UnityEditor.MPE.ProcessLevel.Secondary && !UnityEditor.MPE.ProcessService.HasCapability("enable-gi"))
                 return null;
             var settings = new PreferencesProvider("Preferences/GI Cache", GetSearchKeywordsFromGUIContentProperties<GICacheProperties>());
             settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowGICache); };
@@ -662,6 +665,9 @@ namespace UnityEditor
                 }
             }
             m_GraphSnapping = EditorGUILayout.Toggle(GeneralProperties.enableSnapping, m_GraphSnapping);
+
+            m_EnterSafeModeDialog = EditorGUILayout.Toggle(GeneralProperties.enterSafeModeDialog, m_EnterSafeModeDialog);
+
             ApplyChangesToPrefs();
 
             if (oldAlphaNumeric != m_AllowAlphaNumericHierarchy)
@@ -874,7 +880,7 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             GUILayout.Label("General", EditorStyles.boldLabel);
-            m_Create3DObjectsAtOrigin = EditorGUILayout.Toggle(GeneralProperties.createObjectsAtWorldOrigin, m_Create3DObjectsAtOrigin);
+            m_Create3DObjectsAtOrigin = EditorGUILayout.Toggle(SceneViewProperties.createObjectsAtWorldOrigin, m_Create3DObjectsAtOrigin);
 
             GUILayout.Label("Handles", EditorStyles.boldLabel);
             Handles.s_LineThickness.value = EditorGUILayout.IntSlider(SceneViewProperties.handlesLineThickness, (int)Handles.s_LineThickness.value, 0, 5);
@@ -1120,10 +1126,8 @@ namespace UnityEditor
 
             EditorPrefs.SetString("kImagesDefaultApp", m_ImageAppPath);
             EditorPrefs.SetString("kDiffsDefaultApp", m_DiffTools.Length == 0 ? "" : m_DiffTools[m_DiffToolIndex]);
-            EditorPrefs.SetString("customDiffToolPath", m_CustomDiffToolPath);
-            EditorPrefs.SetString("twoWayDiffArguments", m_CustomDiffToolArguments[0]);
-            EditorPrefs.SetString("threeWayDiffArguments", m_CustomDiffToolArguments[1]);
-            EditorPrefs.SetString("mergeArguments", m_CustomDiffToolArguments[2]);
+
+            InternalEditorUtility.SetCustomDiffToolPrefs(m_CustomDiffToolPath, m_CustomDiffToolArguments[0], m_CustomDiffToolArguments[1], m_CustomDiffToolArguments[2]);
 
             WriteRecentAppsList(m_ScriptApps, m_ScriptEditorPath, kRecentScriptAppsKey);
             WriteRecentAppsList(m_ImageApps, m_ImageAppPath, kRecentImageAppsKey);
@@ -1183,6 +1187,7 @@ namespace UnityEditor
             UnityEditor.Lightmapping.UpdateCachePath();
 
             EditorPrefs.SetBool("GraphSnapping", m_GraphSnapping);
+            EditorPrefs.SetBool("EnterSafeModeDialog", m_EnterSafeModeDialog);
         }
 
         private int CurrentEditorScalingValue
@@ -1235,12 +1240,7 @@ namespace UnityEditor
 
             m_DiffTools = InternalEditorUtility.GetAvailableDiffTools();
 
-            m_CustomDiffToolPath = EditorPrefs.GetString("customDiffToolPath", m_CustomDiffToolPath);
-            m_CustomDiffToolArguments[0] = EditorPrefs.GetString("twoWayDiffArguments", m_CustomDiffToolArguments[0]);
-            m_CustomDiffToolArguments[1] = EditorPrefs.GetString("threeWayDiffArguments", m_CustomDiffToolArguments[1]);
-            m_CustomDiffToolArguments[2] = EditorPrefs.GetString("mergeArguments", m_CustomDiffToolArguments[2]);
-            InternalEditorUtility.SetCustomDiffToolData(m_CustomDiffToolPath, m_CustomDiffToolArguments[0], m_CustomDiffToolArguments[1], m_CustomDiffToolArguments[2]);
-
+            ReloadCustomDiffToolData();
 
             if ((m_DiffTools == null || (m_DiffTools.Length == 1 && m_CustomDiffToolPath.Equals(""))))
             {
@@ -1299,6 +1299,32 @@ namespace UnityEditor
             }
 
             m_GraphSnapping = EditorPrefs.GetBool("GraphSnapping", true);
+            m_EnterSafeModeDialog = EditorPrefs.GetBool("EnterSafeModeDialog", true);
+        }
+
+        internal static void ReloadCustomDiffToolData()
+        {
+            m_CustomDiffToolPath = EditorPrefs.GetString("customDiffToolPath", m_CustomDiffToolPath);
+            m_CustomDiffToolArguments[0] = EditorPrefs.GetString("twoWayDiffArguments", m_CustomDiffToolArguments[0]);
+            m_CustomDiffToolArguments[1] = EditorPrefs.GetString("threeWayDiffArguments", m_CustomDiffToolArguments[1]);
+            m_CustomDiffToolArguments[2] = EditorPrefs.GetString("mergeArguments", m_CustomDiffToolArguments[2]);
+            InternalEditorUtility.SetCustomDiffToolData(m_CustomDiffToolPath, m_CustomDiffToolArguments[0], m_CustomDiffToolArguments[1], m_CustomDiffToolArguments[2]);
+        }
+
+        internal static void ForceEnableCustomTool()
+        {
+            // If diff tools are not initialized yet, get available ones
+            if (m_DiffTools == null)
+                m_DiffTools = InternalEditorUtility.GetAvailableDiffTools();
+
+            if (m_DiffTools == null || m_DiffTools.Length == 0)
+                return;
+
+            m_DiffToolIndex = m_DiffTools.Length - 1;
+            EditorPrefs.SetString("kDiffsDefaultApp", m_DiffTools[m_DiffToolIndex]);
+
+            if (EditorWindow.HasOpenInstances<PreferenceSettingsWindow>())
+                EditorWindow.GetWindow<PreferenceSettingsWindow>().Repaint();
         }
 
         private string StripMicrosoftFromVisualStudioName(string arg)

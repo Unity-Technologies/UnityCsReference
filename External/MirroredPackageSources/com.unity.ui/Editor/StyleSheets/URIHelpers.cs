@@ -17,13 +17,23 @@ namespace UnityEditor.UIElements.StyleSheets
 
         public static URIValidationResult ValidAssetURL(string assetPath, string path, out string errorMessage, out string resolvedProjectRelativePath)
         {
+            return ValidAssetURL(assetPath, path, out errorMessage, out resolvedProjectRelativePath, out _);
+        }
+
+        public static URIValidationResult ValidAssetURL(string assetPath, string path, out string errorMessage, out string resolvedProjectRelativePath, out string resolvedSubAssetPath)
+        {
             resolvedProjectRelativePath = null;
+            resolvedSubAssetPath = null;
 
             if (string.IsNullOrEmpty(path))
             {
                 errorMessage = "Empty URI";
                 return URIValidationResult.InvalidURILocation;
             }
+
+            // UriBuilder isn't able to process '#' fragments with our URL scheme,
+            // so we process them manually here instead.
+            resolvedSubAssetPath = ExtractUrlFragment(ref path);
 
             Uri absoluteUri = null;
             // Always treat URIs starting with "/" as implicit project schemes
@@ -67,6 +77,18 @@ namespace UnityEditor.UIElements.StyleSheets
             errorMessage = null;
 
             return URIValidationResult.OK;
+        }
+
+        private static string ExtractUrlFragment(ref string path)
+        {
+            int fragmentLocation = path.LastIndexOf('#');
+            if (fragmentLocation == -1)
+                return string.Empty;
+
+            var fragment = Uri.UnescapeDataString(path.Substring(fragmentLocation + 1));
+            path = path.Substring(0, fragmentLocation);
+
+            return fragment;
         }
 
         public static string InjectFileNameSuffix(string path, string suffix)

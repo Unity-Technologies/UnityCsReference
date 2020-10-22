@@ -8,8 +8,13 @@ namespace UnityEditor
 {
     internal static class AssetPreviewUpdater
     {
-        // Generate a preview texture for an asset
         public static Texture2D CreatePreviewForAsset(Object obj, Object[] subAssets, string assetPath)
+        {
+            return CreatePreview(obj, subAssets, assetPath, 128, 128);
+        }
+
+        // Generate a preview texture for an asset
+        public static Texture2D CreatePreview(Object obj, Object[] subAssets, string assetPath, int width, int height)
         {
             if (obj == null)
                 return null;
@@ -34,7 +39,7 @@ namespace UnityEditor
             if (editor == null)
                 return null;
 
-            Texture2D tex = editor.RenderStaticPreview(assetPath, subAssets, 128, 128);
+            Texture2D tex = editor.RenderStaticPreview(assetPath, subAssets, width, height);
 
             // For debugging we write the preview to a file (keep)
             //{

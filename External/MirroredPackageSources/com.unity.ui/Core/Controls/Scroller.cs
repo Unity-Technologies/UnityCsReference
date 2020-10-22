@@ -164,6 +164,9 @@ namespace UnityEngine.UIElements
             slider.AddToClassList(sliderUssClassName);
             slider.RegisterValueChangedCallback(OnSliderValueChange);
 
+            // We want default behavior for vertical scrollers to be lowValue at the top and highValue at the bottom, instead of the default Slider behavior.
+            slider.inverted = direction == SliderDirection.Vertical;
+
             lowButton = new RepeatButton(ScrollPageUp, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { name = "unity-low-button" };
             lowButton.AddToClassList(lowButtonUssClassName);
             Add(lowButton);

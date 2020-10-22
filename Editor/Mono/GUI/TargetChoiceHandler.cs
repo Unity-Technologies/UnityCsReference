@@ -36,20 +36,22 @@ namespace UnityEditor
 
         internal delegate void TargetChoiceMenuFunction(SerializedProperty property, Object target);
 
-        internal static void DuplicateArrayElement(object userData)
+        internal static bool DuplicateArrayElement(object userData)
         {
             SerializedProperty property = (SerializedProperty)userData;
-            property.DuplicateCommand();
+            bool result = property.DuplicateCommand();
             property.serializedObject.ApplyModifiedProperties();
             EditorUtility.ForceReloadInspectors();
+            return result;
         }
 
-        internal static void DeleteArrayElement(object userData)
+        internal static bool DeleteArrayElement(object userData)
         {
             SerializedProperty property = (SerializedProperty)userData;
-            property.DeleteCommand();
+            bool result = property.DeleteCommand();
             property.serializedObject.ApplyModifiedProperties();
             EditorUtility.ForceReloadInspectors();
+            return result;
         }
 
         internal static void ApplyPrefabPropertyOverride(object userData)
@@ -65,8 +67,7 @@ namespace UnityEditor
         internal static void RevertPrefabPropertyOverride(object userData)
         {
             SerializedProperty[] properties = (SerializedProperty[])userData;
-            for (int i = 0; i < properties.Length; i++)
-                PrefabUtility.RevertPropertyOverride(properties[i], InteractionMode.UserAction);
+            PrefabUtility.RevertPropertyOverrides(properties, InteractionMode.UserAction);
             EditorUtility.ForceReloadInspectors();
         }
 

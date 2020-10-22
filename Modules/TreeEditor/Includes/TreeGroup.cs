@@ -281,13 +281,9 @@ namespace TreeEditor
         {
             Vector2 factor;
             if (node.group.parentGroup.GetType() == typeof(TreeGroupRoot))
-            {
                 factor = new Vector2(0, 0);
-            }
             else
-            {
                 factor = node.parent.group.ComputeWindFactor(node.parent, node.offset);
-            }
 
             float scale = node.GetScale();
 

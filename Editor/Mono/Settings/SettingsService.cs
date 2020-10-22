@@ -14,6 +14,8 @@ namespace UnityEditor
     [InitializeOnLoad]
     public static class SettingsService
     {
+        internal static event Action repaintAllSettingsWindow;
+
         public static EditorWindow OpenProjectSettings(string settingsPath = null)
         {
             return SettingsWindow.Show(SettingsScope.Project, settingsPath);
@@ -29,10 +31,15 @@ namespace UnityEditor
             settingsProviderChanged?.Invoke();
         }
 
+        public static void RepaintAllSettingsWindow()
+        {
+            repaintAllSettingsWindow?.Invoke();
+        }
+
         const string k_ProjectSettings = "Edit/Project Settings";
         static SettingsService()
         {
-            if (UnityEditor.MPE.ProcessService.level == UnityEditor.MPE.ProcessLevel.Master)
+            if (UnityEditor.MPE.ProcessService.level == UnityEditor.MPE.ProcessLevel.Main)
             {
                 EditorApplication.update -= CheckProjectSettings;
                 EditorApplication.update += CheckProjectSettings;

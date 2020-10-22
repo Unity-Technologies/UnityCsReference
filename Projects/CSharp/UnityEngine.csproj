@@ -16,6 +16,12 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\AlignmentUtils.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\AlignmentUtils.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Atlas.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Atlas.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\BaseLiveReloadAssetTracker.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\BaseLiveReloadAssetTracker.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\BindableElement.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\BindableElement.cs</Link>
     </Compile>
@@ -27,6 +33,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Clickable.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Clickable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Collections\DictionaryExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Collections\DictionaryExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ContextualMenuManager.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\ContextualMenuManager.cs</Link>
@@ -54,6 +63,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\HelpBox.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\HelpBox.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\IMixedValueSupport.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\IMixedValueSupport.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\INotifyValueChanged.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\INotifyValueChanged.cs</Link>
@@ -169,9 +181,6 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\EventDispatcher.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\EventDispatcher.cs</Link>
     </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\EventInterpreter.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Core\EventInterpreter.cs</Link>
-    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\CaptureEvents.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\CaptureEvents.cs</Link>
     </Compile>
@@ -253,6 +262,12 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\MouseEventsHelper.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\MouseEventsHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\NavigationEventDispatchingStrategy.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\NavigationEventDispatchingStrategy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\NavigationEvents.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\NavigationEvents.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\PanelEvents.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\PanelEvents.cs</Link>
     </Compile>
@@ -288,6 +303,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\IDataWatchService.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\IDataWatchService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ILiveReloadAssetTracker.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\ILiveReloadAssetTracker.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\IMGUIContainer.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\IMGUIContainer.cs</Link>
@@ -346,12 +364,6 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRAtlasManager.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRAtlasManager.cs</Link>
     </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRChainBuilder.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRChainBuilder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRChainBuilderImpl.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRChainBuilderImpl.cs</Link>
-    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRGradientSettingsAtlas.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRGradientSettingsAtlas.cs</Link>
     </Compile>
@@ -367,17 +379,32 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRMeshGenerationContext.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRMeshGenerationContext.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRRenderChain.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRRenderChain.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRRenderEvents.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRRenderEvents.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRRepaintUpdater.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRRepaintUpdater.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRShaders.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRShaders.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRStylePainter.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRStylePainter.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTessellation.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTessellation.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTextureBlitter.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTextureBlitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTextureRegistry.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTextureRegistry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTextureSlotManager.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTextureSlotManager.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRUtility.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRUtility.cs</Link>
@@ -595,8 +622,14 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\TextElement.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\TextElement.cs</Link>
     </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\TextHandle.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Core\TextHandle.cs</Link>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Text\TextHandle.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Text\TextHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Text\TextInfo.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Text\TextInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Text\TextMeshInfo.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Text\TextMeshInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Transitions.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Transitions.cs</Link>
@@ -664,6 +697,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualElementHierarchy.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualElementHierarchy.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualElementMathUtils.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualElementMathUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualElementScheduler.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualElementScheduler.cs</Link>
     </Compile>
@@ -684,6 +720,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualTreeAnimationUpdater.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualTreeAnimationUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualTreeAssetChangeTrackerUpdater.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualTreeAssetChangeTrackerUpdater.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualTreeHierarchyTracker.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualTreeHierarchyTracker.cs</Link>
@@ -1297,8 +1336,14 @@
     <Compile Include="..\..\Modules\Physics\Managed\Dynamics.cs">
       <Link>Modules\Physics\Managed\Dynamics.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\Articulations.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\Articulations.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\Dynamics.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\Dynamics.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\Dynamics.deprecated.cs">
+      <Link>Modules\Physics\ScriptBindings\Dynamics.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\QueryCommand.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\QueryCommand.bindings.cs</Link>
@@ -1638,9 +1683,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UnityCurl\FriendAttributes.cs">
       <Link>Modules\UnityCurl\FriendAttributes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UnityCurl\Public\UnityCurl.bindings.cs">
-      <Link>Modules\UnityCurl\Public\UnityCurl.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityWebRequestAssetBundle\Public\DownloadHandlerAssetBundle.bindings.cs">
       <Link>Modules\UnityWebRequestAssetBundle\Public\DownloadHandlerAssetBundle.bindings.cs</Link>
@@ -2350,6 +2392,27 @@
     <Compile Include="..\..\Runtime\Export\Networking\PlayerConnection\PlayerEditorConnectionEvents.cs">
       <Link>Runtime\Export\Networking\PlayerConnection\PlayerEditorConnectionEvents.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\ObjectPool\CollectionPool.cs">
+      <Link>Runtime\Export\ObjectPool\CollectionPool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\ObjectPool\GenericPool.cs">
+      <Link>Runtime\Export\ObjectPool\GenericPool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\ObjectPool\IObjectPool.cs">
+      <Link>Runtime\Export\ObjectPool\IObjectPool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\ObjectPool\LinkedPool.cs">
+      <Link>Runtime\Export\ObjectPool\LinkedPool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\ObjectPool\ObjectPools.cs">
+      <Link>Runtime\Export\ObjectPool\ObjectPools.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\ObjectPool\PooledObject.cs">
+      <Link>Runtime\Export\ObjectPool\PooledObject.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\ObjectPool\UnsafeGenericPool.cs">
+      <Link>Runtime\Export\ObjectPool\UnsafeGenericPool.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\PlayerConnection\PlayerConnection.cs">
       <Link>Runtime\Export\PlayerConnection\PlayerConnection.cs</Link>
     </Compile>
@@ -2942,7 +3005,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\artifacts\UnityEngine.dll\Debug</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_ASSETPIPELINE_GUI;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
+    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_ASSETPIPELINE_GUI;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoWarn>0626</NoWarn>

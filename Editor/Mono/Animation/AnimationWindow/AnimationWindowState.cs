@@ -3,15 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Reflection;
 using System.Linq;
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-using System.Collections;
 using UnityEditor.IMGUI.Controls;
 using Object = UnityEngine.Object;
-using Random = UnityEngine.Random;
 
 namespace UnityEditorInternal
 {
@@ -1163,6 +1160,16 @@ namespace UnityEditorInternal
                 EndLiveEdit();
         }
 
+        internal static bool CanPasteKeys()
+        {
+            return s_KeyframeClipboard != null && s_KeyframeClipboard.Count > 0;
+        }
+
+        internal static void ClearKeyframeClipboard()
+        {
+            s_KeyframeClipboard?.Clear();
+        }
+
         public void CopyKeys()
         {
             if (s_KeyframeClipboard == null)
@@ -1187,6 +1194,12 @@ namespace UnityEditorInternal
             {
                 CopyAllActiveCurves();
             }
+
+            // Animation keyframes right now do not go through regular clipboard machinery,
+            // so when copying keyframes, make sure regular clipboard is cleared, or things
+            // get confusing.
+            if (s_KeyframeClipboard.Count > 0)
+                Clipboard.stringValue = string.Empty;
         }
 
         public void CopyAllActiveCurves()

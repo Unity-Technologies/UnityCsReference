@@ -16,15 +16,17 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
     private BuildTarget[] m_StandaloneSubtargets;
     private GUIContent[] m_StandaloneSubtargetStrings;
 
+    protected bool m_HasMonoPlayers;
     protected bool m_HasIl2CppPlayers;
     protected bool m_IsRunningOnHostPlatform;
 
-    public DesktopStandaloneBuildWindowExtension(bool hasIl2CppPlayers)
+    public DesktopStandaloneBuildWindowExtension(bool hasMonoPlayers, bool hasIl2CppPlayers)
     {
         SetupStandaloneSubtargets();
 
         m_IsRunningOnHostPlatform = Application.platform == GetHostPlatform();
         m_HasIl2CppPlayers = hasIl2CppPlayers;
+        m_HasMonoPlayers = hasMonoPlayers;
     }
 
     private void SetupStandaloneSubtargets()
@@ -189,15 +191,12 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
 
         EditorUserBuildSettings.enableHeadlessMode = EditorGUILayout.Toggle(m_HeadlessMode, EditorUserBuildSettings.enableHeadlessMode);
 
-        ShowIl2CppErrorIfNeeded();
+        ShowBackendErrorIfNeeded();
     }
 
-    protected void ShowIl2CppErrorIfNeeded()
+    protected void ShowBackendErrorIfNeeded()
     {
-        if (PlayerSettings.GetScriptingBackend(BuildTargetGroup.Standalone) != ScriptingImplementation.IL2CPP)
-            return;
-
-        var error = GetCannotBuildIl2CppPlayerInCurrentSetupError();
+        var error = GetCannotBuildPlayerInCurrentSetupError();
         if (string.IsNullOrEmpty(error))
             return;
 
@@ -209,16 +208,24 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         if (PlayerSettings.GetScriptingBackend(BuildTargetGroup.Standalone) == ScriptingImplementation.Mono2x)
             return true;
 
-        return string.IsNullOrEmpty(GetCannotBuildIl2CppPlayerInCurrentSetupError());
+        return string.IsNullOrEmpty(GetCannotBuildPlayerInCurrentSetupError());
     }
 
-    protected virtual string GetCannotBuildIl2CppPlayerInCurrentSetupError()
+    protected virtual string GetCannotBuildPlayerInCurrentSetupError()
     {
-        if (!m_IsRunningOnHostPlatform)
-            return string.Format("{0} IL2CPP player can only be built on {0}.", GetHostPlatformName());
+        if (PlayerSettings.GetScriptingBackend(BuildTargetGroup.Standalone) != ScriptingImplementation.IL2CPP)
+        {
+            if (!m_HasMonoPlayers)
+                return "Currently selected scripting backend (Mono) is not installed.";
+        }
+        else
+        {
+            if (!m_IsRunningOnHostPlatform)
+                return string.Format("{0} IL2CPP player can only be built on {0}.", GetHostPlatformName());
 
-        if (!m_HasIl2CppPlayers)
-            return "Currently selected scripting backend (IL2CPP) is not installed."; // Note: error should match UWP player error message for consistency.
+            if (!m_HasIl2CppPlayers)
+                return "Currently selected scripting backend (IL2CPP) is not installed."; // Note: error should match UWP player error message for consistency.
+        }
 
         return null;
     }

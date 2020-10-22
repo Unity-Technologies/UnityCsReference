@@ -71,7 +71,8 @@ namespace UnityEditor.Rendering
         OpenGLCore      = 15, // Desktop OpenGL 3+, compiled with MS D3DCompiler + HLSLcc
         Vulkan          = 18, // Vulkan SPIR-V, compiled with MS D3DCompiler + HLSLcc
         Switch          = 19, // Nintendo Switch (NVN)
-        XboxOneD3D12    = 20  // Xbox One D3D12
+        XboxOneD3D12    = 20, // Xbox One D3D12
+        GameCore        = 21, // Game Core
     }
 
     public enum ShaderCompilerMessageSeverity
@@ -81,7 +82,7 @@ namespace UnityEditor.Rendering
     }
 
     [Flags]
-    public enum ShaderRequirements
+    public enum ShaderRequirements : long
     {
         None                        = 0,
         BaseShaders                 = (1 << 0), // Basic "can have shaders" (SM2.0 level) capability

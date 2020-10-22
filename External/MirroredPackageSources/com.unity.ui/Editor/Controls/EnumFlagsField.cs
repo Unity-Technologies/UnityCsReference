@@ -37,6 +37,9 @@ namespace UnityEditor.UIElements
         }
     }
 
+    /// <summary>
+    /// Makes a dropdown for switching between enum flag values that are marked with the Flags attribute.
+    /// </summary>
     public class EnumFlagsField : BaseMaskField<Enum>
     {
         public new class UxmlFactory : UxmlFactory<EnumFlagsField, UxmlTraits> {}
@@ -63,28 +66,56 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// USS class name for elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-enum-flags-field";
+        /// <summary>
+        /// USS class name for labels of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name for input elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
         private Type m_EnumType;
         private EnumData m_EnumData;
 
+        /// <summary>
+        /// Constructs an EnumFlagsField with a default value, and initializes its underlying type.
+        /// </summary>
+        /// <param name="defaultValue">Initial value. This also detects the Enum type.</param>
         public EnumFlagsField(Enum defaultValue)
             : this(null, defaultValue, false) {}
 
+        /// <summary>
+        /// Constructs an EnumFlagsField with a default value, and initializes its underlying type.
+        /// </summary>
+        /// <param name="defaultValue">Initial value. This also detects the Enum type.</param>
         public EnumFlagsField(Enum defaultValue, bool includeObsoleteValues)
             : this(null, defaultValue, includeObsoleteValues) {}
 
+        /// <summary>
+        /// Constructs an EnumFlagsField with a default value, and initializes its underlying type.
+        /// </summary>
+        /// <param name="defaultValue">Initial value. This also detects the Enum type.</param>
         public EnumFlagsField(string label, Enum defaultValue)
             : this(label, defaultValue, false)
         {
         }
 
+        /// <summary>
+        /// Constructs an EnumFlagsField with a default value, and initializes its underlying type.
+        /// </summary>
         public EnumFlagsField()
             : this(null, null, false) {}
 
 
+        /// <summary>
+        /// Constructs an EnumFlagsField with a default value, and initializes its underlying type.
+        /// </summary>
+        /// <param name="defaultValue">Initial value. This also detects the Enum type.</param>
         public EnumFlagsField(string label, Enum defaultValue, bool includeObsoleteValues)
             : this(label)
         {
@@ -94,6 +125,11 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// Initializes the EnumFlagsField with a default value, and initializes its underlying type.
+        /// </summary>
+        /// <param name="defaultValue">The typed enum value.</param>
+        /// <param name="includeObsoleteValues">Set to true to display obsolete values as choices.</param>
         public void Init(Enum defaultValue, bool includeObsoleteValues = false)
         {
             if (defaultValue == null)
@@ -113,6 +149,9 @@ namespace UnityEditor.UIElements
             SetValueWithoutNotify(defaultValue);
         }
 
+        /// <summary>
+        /// Constructs an EnumFlagsField with a default value, and initializes its underlying type.
+        /// </summary>
         public EnumFlagsField(string label)
             : base(label)
         {

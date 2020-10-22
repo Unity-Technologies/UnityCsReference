@@ -9,15 +9,17 @@ namespace UnityEditor.PackageManager.UI
 {
     internal class PackageManagerProjectSettingsProxy
     {
-        public event Action<bool> onEnablePreviewPackagesChanged = delegate {};
+        public event Action<bool> onEnablePreReleasePackagesChanged = delegate {};
         public event Action<bool> onEnablePackageDependenciesChanged = delegate {};
         public event Action<bool> onAdvancedSettingsFoldoutChanged = delegate {};
         public event Action<bool> onScopedRegistriesSettingsFoldoutChanged = delegate {};
+        public event Action<bool> onSeeAllVersionsChanged = delegate {};
+        public event Action<long> onLoadAssetsChanged = delegate {};
 
-        public virtual bool enablePreviewPackages
+        public virtual bool enablePreReleasePackages
         {
-            get => PackageManagerProjectSettings.instance.enablePreviewPackages;
-            set => PackageManagerProjectSettings.instance.enablePreviewPackages = value;
+            get => PackageManagerProjectSettings.instance.enablePreReleasePackages;
+            set => PackageManagerProjectSettings.instance.enablePreReleasePackages = value;
         }
 
         public virtual bool enablePackageDependencies
@@ -36,6 +38,18 @@ namespace UnityEditor.PackageManager.UI
         {
             get => PackageManagerProjectSettings.instance.scopedRegistriesSettingsExpanded;
             set => PackageManagerProjectSettings.instance.scopedRegistriesSettingsExpanded = value;
+        }
+
+        public virtual bool seeAllPackageVersions
+        {
+            get => PackageManagerProjectSettings.instance.seeAllPackageVersions;
+            set => PackageManagerProjectSettings.instance.seeAllPackageVersions = value;
+        }
+
+        public virtual long loadAssets
+        {
+            get => PackageManagerProjectSettings.instance.loadAssets;
+            set => PackageManagerProjectSettings.instance.loadAssets = value;
         }
 
         public virtual bool oneTimeWarningShown
@@ -83,18 +97,22 @@ namespace UnityEditor.PackageManager.UI
 
         public void OnEnable()
         {
-            PackageManagerProjectSettings.instance.onEnablePreviewPackagesChanged += OnEnablePreviewPackagesChanged;
+            PackageManagerProjectSettings.instance.onEnablePreReleasePackagesChanged += OnEnablePreReleasePackagesChanged;
             PackageManagerProjectSettings.instance.onEnablePackageDependenciesChanged += OnEnablePackageDependenciesChanged;
             PackageManagerProjectSettings.instance.onAdvancedSettingsFoldoutChanged += OnAdvancedSettingsFoldoutChanged;
             PackageManagerProjectSettings.instance.onScopedRegistriesSettingsFoldoutChanged += OnScopedRegistriesSettingsFoldoutChanged;
+            PackageManagerProjectSettings.instance.onSeeAllVersionsChanged += OnSeeAllPackageVersionsChanged;
+            PackageManagerProjectSettings.instance.onLoadAssetsChanged += OnLoadAssetsChanged;
         }
 
         public void OnDisable()
         {
-            PackageManagerProjectSettings.instance.onEnablePreviewPackagesChanged -= OnEnablePreviewPackagesChanged;
+            PackageManagerProjectSettings.instance.onEnablePreReleasePackagesChanged -= OnEnablePreReleasePackagesChanged;
             PackageManagerProjectSettings.instance.onEnablePackageDependenciesChanged -= OnEnablePackageDependenciesChanged;
             PackageManagerProjectSettings.instance.onAdvancedSettingsFoldoutChanged -= OnAdvancedSettingsFoldoutChanged;
             PackageManagerProjectSettings.instance.onScopedRegistriesSettingsFoldoutChanged -= OnScopedRegistriesSettingsFoldoutChanged;
+            PackageManagerProjectSettings.instance.onSeeAllVersionsChanged -= OnSeeAllPackageVersionsChanged;
+            PackageManagerProjectSettings.instance.onLoadAssetsChanged -= OnLoadAssetsChanged;
         }
 
         public virtual void Save()
@@ -102,9 +120,9 @@ namespace UnityEditor.PackageManager.UI
             PackageManagerProjectSettings.instance.Save();
         }
 
-        private void OnEnablePreviewPackagesChanged(bool enablePreviewPackages)
+        private void OnEnablePreReleasePackagesChanged(bool enablePreReleasePackages)
         {
-            onEnablePreviewPackagesChanged?.Invoke(enablePreviewPackages);
+            onEnablePreReleasePackagesChanged?.Invoke(enablePreReleasePackages);
         }
 
         private void OnEnablePackageDependenciesChanged(bool enablePackageDependencies)
@@ -120,6 +138,16 @@ namespace UnityEditor.PackageManager.UI
         private void OnScopedRegistriesSettingsFoldoutChanged(bool scopedRegistriesSettingsExpanded)
         {
             onScopedRegistriesSettingsFoldoutChanged?.Invoke(scopedRegistriesSettingsExpanded);
+        }
+
+        private void OnSeeAllPackageVersionsChanged(bool seeAllPackageVersions)
+        {
+            onSeeAllVersionsChanged?.Invoke(seeAllPackageVersions);
+        }
+
+        private void OnLoadAssetsChanged(long loadAssets)
+        {
+            onLoadAssetsChanged?.Invoke(loadAssets);
         }
     }
 }

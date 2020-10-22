@@ -298,18 +298,20 @@ namespace UnityEngine
 
         public override string ToString()
         {
-            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
+            return ToString(null, null);
         }
 
         public string ToString(string format)
         {
-            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+            return ToString(format, null);
         }
 
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (string.IsNullOrEmpty(format))
                 format = "F1";
+            if (formatProvider == null)
+                formatProvider = CultureInfo.InvariantCulture.NumberFormat;
             return UnityString.Format("({0}, {1}, {2}, {3})", x.ToString(format, formatProvider), y.ToString(format, formatProvider), z.ToString(format, formatProvider), w.ToString(format, formatProvider));
         }
 

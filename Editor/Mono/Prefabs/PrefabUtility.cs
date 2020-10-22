@@ -397,12 +397,52 @@ namespace UnityEditor
             }
         }
 
+        static bool WarnIfInAnimationMode(OverrideOperation overrideOperation, InteractionMode action)
+        {
+            if (!AnimationMode.InAnimationMode())
+                return false;
+
+            if (action == InteractionMode.AutomatedAction)
+            {
+                switch (overrideOperation)
+                {
+                    case OverrideOperation.Apply:
+                        throw new InvalidOperationException("Cannot apply overriden properties in Animation Mode.");
+                    case OverrideOperation.Revert:
+                        throw new InvalidOperationException("Cannot revert overriden properties in Animation Mode.");
+                }
+            }
+            else if (action == InteractionMode.UserAction)
+            {
+                var message = L10n.Tr("Overriden properties cannot be applied or reverted when in Animation Mode.\n\nDisable Animation Mode and try again.");
+                switch (overrideOperation)
+                {
+                    case OverrideOperation.Apply:
+                        EditorUtility.DisplayDialog(
+                            L10n.Tr("Cannot apply property override to Prefab"),
+                            message,
+                            L10n.Tr("OK"));
+                        break;
+                    case OverrideOperation.Revert:
+                        EditorUtility.DisplayDialog(
+                            L10n.Tr("Cannot revert property override"),
+                            message,
+                            L10n.Tr("OK"));
+                        break;
+                }
+            }
+            return true;
+        }
+
         public static void ApplyPropertyOverride(SerializedProperty instanceProperty, string assetPath, InteractionMode action)
         {
             DateTime startTime = DateTime.UtcNow;
 
             Object prefabInstanceObject = instanceProperty.serializedObject.targetObject;
             ThrowExceptionIfNotValidPrefabInstanceObject(prefabInstanceObject, true);
+
+            if (WarnIfInAnimationMode(OverrideOperation.Apply, action))
+                return;
 
             ApplyPropertyOverrides(prefabInstanceObject, instanceProperty, assetPath, true, action);
 
@@ -432,6 +472,9 @@ namespace UnityEditor
         // again require storing information about that for each property in some kind of list, which we want to avoid.
         static void ApplyPropertyOverrides(Object prefabInstanceObject, SerializedProperty optionalSingleInstanceProperty, string assetPath, bool allowApplyDefaultOverride, InteractionMode action)
         {
+            if (WarnIfInAnimationMode(OverrideOperation.Apply, action))
+                return;
+
             Object prefabSourceObject = GetCorrespondingObjectFromSourceAtPath(prefabInstanceObject, assetPath);
             if (prefabSourceObject == null)
                 return;
@@ -497,7 +540,10 @@ namespace UnityEditor
                     // hasHiddenChildren, not hasChildren, to determine which properties to call the method on.
                     // Applying all visible leaf properties applies all data only once and ensures that when an
                     // object reference is applied, it's via its own property and not a parent property.
-                    if (property.prefabOverride && !property.hasVisibleChildren)
+
+                    // NOTE: all property modifications are leafs except in the context of managed references.
+                    // Managed references can be overriden (and have visible children).
+                    if (property.prefabOverride && (property.propertyType == SerializedPropertyType.ManagedReference || !property.hasVisibleChildren))
                         ApplySingleProperty(property, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, false, allowApplyDefaultOverride, serializedObjects, action);
                 }
             }
@@ -735,8 +781,20 @@ namespace UnityEditor
             }
         }
 
+        internal static void RevertPropertyOverrides(SerializedProperty[] instanceProperties, InteractionMode action)
+        {
+            if (WarnIfInAnimationMode(OverrideOperation.Revert, action))
+                return;
+
+            foreach (var property in instanceProperties)
+                RevertPropertyOverride(property, action);
+        }
+
         public static void RevertPropertyOverride(SerializedProperty instanceProperty, InteractionMode action)
         {
+            if (WarnIfInAnimationMode(OverrideOperation.Revert, action))
+                return;
+
             Object prefabInstanceObject = instanceProperty.serializedObject.targetObject;
             ThrowExceptionIfNotValidPrefabInstanceObject(prefabInstanceObject, false);
 
@@ -753,6 +811,9 @@ namespace UnityEditor
             DateTime startTime = DateTime.UtcNow;
 
             ThrowExceptionIfNotValidPrefabInstanceObject(instanceComponentOrGameObject, true);
+
+            if (WarnIfInAnimationMode(OverrideOperation.Apply, action))
+                return;
 
             ApplyPropertyOverrides(instanceComponentOrGameObject, null, assetPath, false, action);
 
@@ -780,6 +841,9 @@ namespace UnityEditor
         public static void RevertObjectOverride(Object instanceComponentOrGameObject, InteractionMode action)
         {
             ThrowExceptionIfNotValidPrefabInstanceObject(instanceComponentOrGameObject, false);
+
+            if (WarnIfInAnimationMode(OverrideOperation.Revert, action))
+                return;
 
             if (action == InteractionMode.UserAction)
                 Undo.RegisterCompleteObjectUndo(instanceComponentOrGameObject, "Revert component property overrides");
@@ -2027,6 +2091,9 @@ namespace UnityEditor
         // we have to handle components with dependencies on other components in just the right order.
         internal static bool ProcessMultipleOverrides(GameObject prefabInstanceRoot, List<PrefabOverride> overrides, PrefabUtility.OverrideOperation operation, InteractionMode mode)
         {
+            if (WarnIfInAnimationMode(operation, mode))
+                return false;
+
             Dictionary<PrefabOverride, List<Component>> overrideDependencies =
                 new Dictionary<PrefabOverride, List<Component>>();
             List<PrefabOverride> acceptedOverrides = new List<PrefabOverride>();

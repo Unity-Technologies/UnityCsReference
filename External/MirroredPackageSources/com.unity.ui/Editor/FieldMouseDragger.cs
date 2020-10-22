@@ -3,8 +3,15 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    /// <summary>
+    /// Allows dragging on a numeric field's label to change the value.
+    /// </summary>
     public class FieldMouseDragger<T>
     {
+        /// <summary>
+        /// FieldMouseDragger's constructor.
+        /// </summary>
+        /// <param name="drivenField">The field.</param>
         public FieldMouseDragger(IValueField<T> drivenField)
         {
             m_DrivenField = drivenField;
@@ -17,14 +24,29 @@ namespace UnityEditor.UIElements
         private VisualElement m_DragElement;
         private Rect m_DragHotZone;
 
+        /// <summary>
+        /// Is dragging.
+        /// </summary>
         public bool dragging { get; set; }
+        /// <summary>
+        /// Start value before drag.
+        /// </summary>
         public T startValue { get; set; }
 
+        /// <summary>
+        /// Set drag zone.
+        /// </summary>
+        /// <param name="dragElement">The drag element (like the label).</param>
         public void SetDragZone(VisualElement dragElement)
         {
             SetDragZone(dragElement, new Rect(0, 0, -1, -1));
         }
 
+        /// <summary>
+        /// Set drag zone.
+        /// </summary>
+        /// <param name="dragElement">The drag element (like the label).</param>
+        /// <param name="hotZone">The rectangle that contains the drag zone.</param>
         public void SetDragZone(VisualElement dragElement, Rect hotZone)
         {
             if (m_DragElement != null)

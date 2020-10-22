@@ -619,6 +619,15 @@ namespace UnityEditor
             GUILayout.Label(EditorGUIUtility.TempContent("Other"), EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(skinWeightsProperty);
             EditorGUILayout.PropertyField(vSyncCountProperty, Content.kVSyncCountLabel);
+
+            if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android ||
+                EditorUserBuildSettings.activeBuildTarget == BuildTarget.iOS ||
+                EditorUserBuildSettings.activeBuildTarget == BuildTarget.tvOS)
+            {
+                if (vSyncCountProperty.intValue > 0)
+                    EditorGUILayout.HelpBox(EditorGUIUtility.TrTextContent($"VSync Count '{vSyncCountProperty.enumLocalizedDisplayNames[vSyncCountProperty.enumValueIndex]}' is ignored on Android, iOS and tvOS.", EditorGUIUtility.GetHelpIcon(MessageType.Warning)));
+            }
+
             if (!SupportedRenderingFeatures.active.overridesLODBias)
                 EditorGUILayout.PropertyField(lodBiasProperty, Content.kLODBiasLabel);
             if (!SupportedRenderingFeatures.active.overridesMaximumLODLevel)

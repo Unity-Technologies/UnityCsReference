@@ -25,7 +25,7 @@ namespace UnityEditor.PackageManager.UI
                 var dest = source.Replace(sourcePath, destinationPath);
                 File.Copy(source, dest, true);
                 if (makeWritable)
-                    new FileInfo(dest).IsReadOnly = false;
+                    MakeFileWritable(dest);
             }
         }
 
@@ -53,6 +53,13 @@ namespace UnityEditor.PackageManager.UI
                 if (parent.GetDirectories().Length == 0 && parent.GetFiles().Length == 0)
                     RemovePathAndMeta(parent.ToString(), removeEmptyParent);
             }
+        }
+
+        public virtual void MakeFileWritable(string filePath)
+        {
+            var fileInfo = new FileInfo(filePath);
+            if (fileInfo.IsReadOnly)
+                fileInfo.IsReadOnly = false;
         }
 
         public virtual bool DirectoryExists(string directoryPath)

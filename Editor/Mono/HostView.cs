@@ -37,6 +37,7 @@ namespace UnityEditor
 
         [SerializeField] private EditorWindow m_ActualView;
         [NonSerialized] protected readonly RectOffset m_BorderSize = new RectOffset();
+        internal bool showGenericMenu { get; set; } = true;
 
         protected delegate void EditorWindowDelegate();
         protected delegate void EditorWindowShowButtonDelegate(Rect rect);
@@ -95,6 +96,8 @@ namespace UnityEditor
             var methodInfo = GetPaneMethod("ShowButton");
             if (methodInfo != null)
                 m_ShowButton = (EditorWindowShowButtonDelegate)Delegate.CreateDelegate(typeof(EditorWindowShowButtonDelegate), m_ActualView, methodInfo);
+            else
+                m_ShowButton = null;
         }
 
         internal void ResetActiveView()
@@ -153,10 +156,14 @@ namespace UnityEditor
             base.OnEnable();
 
             RegisterSelectedPane(sendEvents: true);
+
+            showGenericMenu = ModeService.HasCapability(ModeCapability.HostViewGenericMenu, true);
+            ModeService.modeChanged += OnEditorModeChanged;
         }
 
         protected override void OnDisable()
         {
+            ModeService.modeChanged -= OnEditorModeChanged;
             EditorPrefs.onValueWasUpdated -= PlayModeTintColorChangedCallback;
             base.OnDisable();
             DeregisterSelectedPane(clearActualView: false, sendEvents: true);
@@ -164,6 +171,14 @@ namespace UnityEditor
             // OnGUI on destroyed instances.
             m_OnGUI = null;
             m_Update = null;
+        }
+
+        private void OnEditorModeChanged(ModeService.ModeChangedArgs args)
+        {
+            if (!this)
+                return;
+            showGenericMenu = ModeService.HasCapability(ModeCapability.HostViewGenericMenu, true);
+            Repaint();
         }
 
         private void HandleSplitView()
@@ -322,10 +337,6 @@ namespace UnityEditor
 
         // Messages sent by Unity to editor windows today.
         // The implementation is not very good, but oh well... it gets the message across.
-        internal void OnMainWindowMove()
-        {
-            Invoke("OnMainWindowMove");
-        }
 
         internal void OnProjectChange()
         {
@@ -612,16 +623,19 @@ namespace UnityEditor
         internal const float k_iconMargin = 1f;
         protected void ShowGenericMenu(float leftOffset, float topOffset)
         {
-            Rect paneMenu = new Rect(leftOffset, topOffset, Styles.paneOptions.fixedWidth, Styles.paneOptions.fixedHeight);
-            if (EditorGUI.DropdownButton(paneMenu, GUIContent.none, FocusType.Passive, Styles.paneOptions))
-                PopupGenericMenu(m_ActualView, paneMenu);
+            if (showGenericMenu)
+            {
+                Rect paneMenu = new Rect(leftOffset, topOffset, Styles.paneOptions.fixedWidth, Styles.paneOptions.fixedHeight);
+                if (EditorGUI.DropdownButton(paneMenu, GUIContent.none, FocusType.Passive, Styles.paneOptions))
+                    PopupGenericMenu(m_ActualView, paneMenu);
+
+                if (m_ShowButton != null)
+                    leftOffset -= paneMenu.width + k_iconMargin;
+            }
 
             // Give panes an option of showing a small button next to the generic menu (used for inspector lock icon
             if (m_ShowButton != null)
-            {
-                leftOffset -= ContainerWindow.kButtonWidth + k_iconMargin;
                 m_ShowButton.Invoke(new Rect(leftOffset, topOffset, ContainerWindow.kButtonWidth, ContainerWindow.kButtonHeight));
-            }
 
             foreach (var item in windowActions)
             {
@@ -663,6 +677,8 @@ namespace UnityEditor
 
         public void PopupGenericMenu(EditorWindow view, Rect pos)
         {
+            if (!showGenericMenu)
+                return;
             GenericMenu menu = new GenericMenu();
 
             IHasCustomMenu menuProvider = view as IHasCustomMenu;

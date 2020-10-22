@@ -11,8 +11,12 @@ namespace UnityEditor
         protected SerializedProperty m_Material;
         protected SerializedProperty m_IsTrigger;
 
-        protected GUIContent materialContent = EditorGUIUtility.TrTextContent("Material", "Reference to the Physic Material that determines how this Collider interacts with others.");
-        protected GUIContent triggerContent = EditorGUIUtility.TrTextContent("Is Trigger", "If enabled, this Collider is used for triggering events and is ignored by the physics engine.");
+        protected static class BaseStyles
+        {
+            public static readonly GUIContent materialContent = EditorGUIUtility.TrTextContent("Material", "Reference to the Physics Material that determines how this Collider interacts with others.");
+            public static readonly GUIContent triggerContent = EditorGUIUtility.TrTextContent("Is Trigger", "If enabled, this Collider is used for triggering events and is ignored by the physics engine.");
+            public static readonly GUIContent centerContent = EditorGUIUtility.TrTextContent("Center", "The position of the Collider in the GameObject's local space.");
+        }
 
         public override void OnEnable()
         {
@@ -25,8 +29,8 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            EditorGUILayout.PropertyField(m_IsTrigger, triggerContent);
-            EditorGUILayout.PropertyField(m_Material, materialContent);
+            EditorGUILayout.PropertyField(m_IsTrigger, BaseStyles.triggerContent);
+            EditorGUILayout.PropertyField(m_Material, BaseStyles.materialContent);
 
             serializedObject.ApplyModifiedProperties();
         }

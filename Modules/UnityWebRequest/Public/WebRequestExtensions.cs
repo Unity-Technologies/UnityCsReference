@@ -170,16 +170,14 @@ namespace UnityEngine.Networking
 
         private static void SetupPost(UnityWebRequest request, string postData)
         {
+            request.downloadHandler = new DownloadHandlerBuffer();
+            if (string.IsNullOrEmpty(postData))
+                return;  // no data to send, nothing more to setup
             byte[] payload = null;
-            if (!string.IsNullOrEmpty(postData))
-            {
-                string urlencoded = WWWTranscoder.DataEncode(postData, System.Text.Encoding.UTF8);
-                payload = System.Text.Encoding.UTF8.GetBytes(urlencoded);
-            }
-
+            string urlencoded = WWWTranscoder.DataEncode(postData, System.Text.Encoding.UTF8);
+            payload = System.Text.Encoding.UTF8.GetBytes(urlencoded);
             request.uploadHandler = new UploadHandlerRaw(payload);
             request.uploadHandler.contentType = "application/x-www-form-urlencoded";
-            request.downloadHandler = new DownloadHandlerBuffer();
         }
 
         // Provides a shim for sending a multipart form as declared by the legacy WWWForm class.
@@ -199,24 +197,20 @@ namespace UnityEngine.Networking
 
         private static void SetupPost(UnityWebRequest request, WWWForm formData)
         {
-            byte[] payload = null;
-            if (formData != null)
-            {
-                payload = formData.data;
-                if (payload.Length == 0)
-                    payload = null;
-            }
-
-            request.uploadHandler = new UploadHandlerRaw(payload);
             request.downloadHandler = new DownloadHandlerBuffer();
+            if (formData == null)
+                return;
+            byte[] payload = null;
+            payload = formData.data;
+            if (payload.Length == 0)
+                payload = null;
 
-            // Add in appropriate Content-Type header
-            if (formData != null)
-            {
-                Dictionary<string, string> formHeaders = formData.headers;
-                foreach (KeyValuePair<string, string> header in formHeaders)
-                    request.SetRequestHeader(header.Key, header.Value);
-            }
+            if (payload != null)
+                request.uploadHandler = new UploadHandlerRaw(payload);
+
+            Dictionary<string, string> formHeaders = formData.headers;
+            foreach (KeyValuePair<string, string> header in formHeaders)
+                request.SetRequestHeader(header.Key, header.Value);
         }
 
         // Provides a way to send a multipart form using the modern IMultipartFormSection API.
@@ -248,15 +242,17 @@ namespace UnityEngine.Networking
 
         private static void SetupPost(UnityWebRequest request, List<IMultipartFormSection> multipartFormSections, byte[] boundary)
         {
+            request.downloadHandler = new DownloadHandlerBuffer();
             byte[] payload = null;
             if (multipartFormSections != null && multipartFormSections.Count != 0)
                 payload = SerializeFormSections(multipartFormSections, boundary);
 
+            if (payload == null)
+                return;
             UploadHandler uploadHandler = new UploadHandlerRaw(payload);
             uploadHandler.contentType = "multipart/form-data; boundary=" + System.Text.Encoding.UTF8.GetString(boundary, 0, boundary.Length);
 
             request.uploadHandler = uploadHandler;
-            request.downloadHandler = new DownloadHandlerBuffer();
         }
 
         // Provides a way to send a simple urlencoded form body, for simple forms without file sections.
@@ -276,15 +272,17 @@ namespace UnityEngine.Networking
 
         private static void SetupPost(UnityWebRequest request, Dictionary<string, string> formFields)
         {
+            request.downloadHandler = new DownloadHandlerBuffer();
             byte[] payload = null;
             if (formFields != null && formFields.Count != 0)
                 payload = SerializeSimpleForm(formFields);
 
+            if (payload == null)
+                return;
             UploadHandler formUploadHandler = new UploadHandlerRaw(payload);
             formUploadHandler.contentType = "application/x-www-form-urlencoded";
 
             request.uploadHandler = formUploadHandler;
-            request.downloadHandler = new DownloadHandlerBuffer();
         }
 
 

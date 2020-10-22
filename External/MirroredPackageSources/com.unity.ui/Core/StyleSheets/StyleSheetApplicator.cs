@@ -6,11 +6,11 @@ namespace UnityEngine.UIElements.StyleSheets
 {
     internal static partial class ShorthandApplicator
     {
-        private static bool CompileFlexShorthand(StylePropertyReader reader, out StyleFloat grow, out StyleFloat shrink, out StyleLength basis)
+        private static bool CompileFlexShorthand(StylePropertyReader reader, out float grow, out float shrink, out Length basis)
         {
             grow = 0f;
             shrink = 1f;
-            basis = StyleKeyword.Auto;
+            basis = Length.Auto();
 
             bool valid = false;
             var valueCount = reader.valueCount;
@@ -23,14 +23,14 @@ namespace UnityEngine.UIElements.StyleSheets
                     valid = true;
                     grow = 0f;
                     shrink = 0f;
-                    basis = StyleKeyword.Auto;
+                    basis = Length.Auto();
                 }
                 else if (reader.IsKeyword(0, StyleValueKeyword.Auto))
                 {
                     valid = true;
                     grow = 1f;
                     shrink = 1f;
-                    basis = StyleKeyword.Auto;
+                    basis = Length.Auto();
                 }
             }
             else if (valueCount <= 3)
@@ -60,11 +60,11 @@ namespace UnityEngine.UIElements.StyleSheets
                         if (valueType == StyleValueType.Keyword)
                         {
                             if (reader.IsKeyword(i, StyleValueKeyword.Auto))
-                                basis = StyleKeyword.Auto;
+                                basis = Length.Auto();
                         }
                         else if (valueType == StyleValueType.Dimension)
                         {
-                            basis = reader.ReadStyleLength(i);
+                            basis = reader.ReadLength(i);
                         }
 
                         if (growFound && i != valueCount - 1)
@@ -75,7 +75,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     }
                     else if (valueType == StyleValueType.Float)
                     {
-                        var value = reader.ReadStyleFloat(i);
+                        var value = reader.ReadFloat(i);
                         if (!growFound)
                         {
                             growFound = true;
@@ -96,7 +96,22 @@ namespace UnityEngine.UIElements.StyleSheets
             return valid;
         }
 
-        private static void CompileBoxArea(StylePropertyReader reader, out StyleLength top, out StyleLength right, out StyleLength bottom, out StyleLength left)
+        private static void CompileBorderRadius(StylePropertyReader reader, out Length top, out Length right, out Length bottom, out Length left)
+        {
+            CompileBoxArea(reader, out top, out right, out bottom, out left);
+
+            // Border radius doesn't support any keyword, reset to 0 in this case.
+            if (top.IsAuto() || top.IsNone())
+                top = 0f;
+            if (right.IsAuto() || right.IsNone())
+                right = 0f;
+            if (bottom.IsAuto() || bottom.IsNone())
+                bottom = 0f;
+            if (left.IsAuto() || left.IsNone())
+                left = 0f;
+        }
+
+        private static void CompileBoxArea(StylePropertyReader reader, out Length top, out Length right, out Length bottom, out Length left)
         {
             top = 0f;
             right = 0f;
@@ -111,66 +126,52 @@ namespace UnityEngine.UIElements.StyleSheets
                     break;
                 case 1:
                 {
-                    top = right = bottom = left = reader.ReadStyleLength(0);
+                    top = right = bottom = left = reader.ReadLength(0);
                     break;
                 }
                 // vertical | horizontal
                 case 2:
                 {
-                    top = bottom = reader.ReadStyleLength(0);
-                    left = right = reader.ReadStyleLength(1);
+                    top = bottom = reader.ReadLength(0);
+                    left = right = reader.ReadLength(1);
                     break;
                 }
                 // top | horizontal | bottom
                 case 3:
                 {
-                    top = reader.ReadStyleLength(0);
-                    left = right = reader.ReadStyleLength(1);
-                    bottom = reader.ReadStyleLength(2);
+                    top = reader.ReadLength(0);
+                    left = right = reader.ReadLength(1);
+                    bottom = reader.ReadLength(2);
                     break;
                 }
                 // top | right | bottom | left
                 default:
                 {
-                    top = reader.ReadStyleLength(0);
-                    right = reader.ReadStyleLength(1);
-                    bottom = reader.ReadStyleLength(2);
-                    left = reader.ReadStyleLength(3);
+                    top = reader.ReadLength(0);
+                    right = reader.ReadLength(1);
+                    bottom = reader.ReadLength(2);
+                    left = reader.ReadLength(3);
                     break;
                 }
             }
         }
 
-        private static void CompileBoxAreaNoKeyword(StylePropertyReader reader, out StyleLength top, out StyleLength right, out StyleLength bottom, out StyleLength left)
+        private static void CompileBoxArea(StylePropertyReader reader, out float top, out float right, out float bottom, out float left)
         {
-            CompileBoxArea(reader, out top, out right, out bottom, out left);
+            Length t;
+            Length r;
+            Length b;
+            Length l;
 
-            if (top.keyword != StyleKeyword.Undefined)
-                top.value = 0f;
-            if (right.keyword != StyleKeyword.Undefined)
-                right.value = 0f;
-            if (bottom.keyword != StyleKeyword.Undefined)
-                bottom.value = 0f;
-            if (left.keyword != StyleKeyword.Undefined)
-                left.value = 0f;
+            CompileBoxArea(reader, out t, out r, out b, out l);
+
+            top = t.value;
+            right = r.value;
+            bottom = b.value;
+            left = l.value;
         }
 
-        private static void CompileBoxAreaNoKeyword(StylePropertyReader reader, out StyleFloat top, out StyleFloat right, out StyleFloat bottom, out StyleFloat left)
-        {
-            StyleLength t;
-            StyleLength r;
-            StyleLength b;
-            StyleLength l;
-
-            CompileBoxAreaNoKeyword(reader, out t, out r, out b, out l);
-
-            top = t.ToStyleFloat();
-            right = r.ToStyleFloat();
-            bottom = b.ToStyleFloat();
-            left = l.ToStyleFloat();
-        }
-
-        private static void CompileBoxAreaNoKeyword(StylePropertyReader reader, out StyleColor top, out StyleColor right, out StyleColor bottom, out StyleColor left)
+        private static void CompileBoxArea(StylePropertyReader reader, out Color top, out Color right, out Color bottom, out Color left)
         {
             top = Color.clear;
             right = Color.clear;
@@ -185,43 +186,34 @@ namespace UnityEngine.UIElements.StyleSheets
                     break;
                 case 1:
                 {
-                    top = right = bottom = left = reader.ReadStyleColor(0);
+                    top = right = bottom = left = reader.ReadColor(0);
                     break;
                 }
                 // vertical | horizontal
                 case 2:
                 {
-                    top = bottom = reader.ReadStyleColor(0);
-                    left = right = reader.ReadStyleColor(1);
+                    top = bottom = reader.ReadColor(0);
+                    left = right = reader.ReadColor(1);
                     break;
                 }
                 // top | horizontal | bottom
                 case 3:
                 {
-                    top = reader.ReadStyleColor(0);
-                    left = right = reader.ReadStyleColor(1);
-                    bottom = reader.ReadStyleColor(2);
+                    top = reader.ReadColor(0);
+                    left = right = reader.ReadColor(1);
+                    bottom = reader.ReadColor(2);
                     break;
                 }
                 // top | right | bottom | left
                 default:
                 {
-                    top = reader.ReadStyleColor(0);
-                    right = reader.ReadStyleColor(1);
-                    bottom = reader.ReadStyleColor(2);
-                    left = reader.ReadStyleColor(3);
+                    top = reader.ReadColor(0);
+                    right = reader.ReadColor(1);
+                    bottom = reader.ReadColor(2);
+                    left = reader.ReadColor(3);
                     break;
                 }
             }
-
-            if (top.keyword != StyleKeyword.Undefined)
-                top.value = Color.clear;
-            if (right.keyword != StyleKeyword.Undefined)
-                right.value = Color.clear;
-            if (bottom.keyword != StyleKeyword.Undefined)
-                bottom.value = Color.clear;
-            if (left.keyword != StyleKeyword.Undefined)
-                left.value = Color.clear;
         }
     }
 }

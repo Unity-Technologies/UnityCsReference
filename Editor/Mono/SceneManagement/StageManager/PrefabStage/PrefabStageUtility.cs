@@ -432,18 +432,6 @@ namespace UnityEditor.Experimental.SceneManagement
             return root;
         }
 
-        internal static void HandleReparentingIfNeeded(GameObject prefabInstanceRoot, bool isUIPrefab)
-        {
-            // Skip reparenting if the root is already reparented
-            if (prefabInstanceRoot.transform.parent != null)
-                return;
-
-            if (isUIPrefab)
-                HandleUIReparentingIfNeeded(prefabInstanceRoot);
-            else
-                prefabInstanceRoot.transform.SetAsFirstSibling();
-        }
-
         static string GetEnvironmentScenePathForPrefab(bool isUIPrefab)
         {
             string environmentEditingScenePath = "";
@@ -558,7 +546,7 @@ namespace UnityEditor.Experimental.SceneManagement
             return rectTransformOnRoot && uiSpecificComponentPresent;
         }
 
-        static void HandleUIReparentingIfNeeded(GameObject instanceRoot)
+        internal static void HandleUIReparentingIfNeeded(GameObject instanceRoot, int stagePriority)
         {
             // We need a Canvas in order to render UI so ensure the prefab instance is under a Canvas
             Canvas canvas = instanceRoot.GetComponent<Canvas>();
@@ -591,15 +579,18 @@ namespace UnityEditor.Experimental.SceneManagement
                 }
             }
 
-            GameObject canvasGameObject = GetOrCreateCanvasGameObject(instanceRoot);
+            GameObject canvasGameObject = GetOrCreateCanvasGameObject(instanceRoot, stagePriority);
             instanceRoot.transform.SetParent(canvasGameObject.transform, false);
         }
 
-        static GameObject GetOrCreateCanvasGameObject(GameObject instanceRoot)
+        static GameObject GetOrCreateCanvasGameObject(GameObject instanceRoot, int stagePriority)
         {
             Canvas canvas = GetCanvasInScene(instanceRoot);
             if (canvas != null)
+            {
+                canvas.stagePriority = (byte)stagePriority;
                 return canvas.gameObject;
+            }
 
             const string kUILayerName = "UI";
 
@@ -608,6 +599,7 @@ namespace UnityEditor.Experimental.SceneManagement
             root.layer = LayerMask.NameToLayer(kUILayerName);
             canvas = root.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.stagePriority = (byte)stagePriority;
             SceneManager.MoveGameObjectToScene(root, instanceRoot.scene);
             return root;
         }

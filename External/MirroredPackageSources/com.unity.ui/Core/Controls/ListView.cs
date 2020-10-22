@@ -6,8 +6,12 @@ using System.Linq;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Options for displaying alternating background colors for ListView rows.
+    /// Options to display alternating background colors for ListView rows.
     /// </summary>
+    /// <remarks>
+    /// If there are more rows with content than there are visible rows, you will not see a difference between
+    /// the <c>All</c> option and the <c>ContentOnly</c> option.
+    /// </remarks>
     public enum AlternatingRowBackground
     {
         /// <summary>
@@ -15,18 +19,90 @@ namespace UnityEngine.UIElements
         /// </summary>
         None,
         /// <summary>
-        /// Display alternating background colors only for rows that contain content.
+        /// Alternate background colors only for rows that have content. The background color does not alternate for empty lines.
         /// </summary>
         ContentOnly,
         /// <summary>
-        /// Display alternating background colors for all rows in the ListView, regardless of whether they contain content.
+        /// Alternate background colors for all rows, regardless of whether they have content. The background color continues to alternate for empty lines.
         /// </summary>
         All
     }
 
     /// <summary>
-    /// A vertically scrollable area that only creates visual elements for visible items while allowing the binding of many more items. As the user scrolls, visual elements are recycled and re-bound to new data items.
+    /// A ListView is a vertically scrollable area that links to, and displays, a list of items.
     /// </summary>
+    /// <remarks>
+    /// <p>A <see cref="ListView"/> is a <see cref="ScrollView"/> with additional logic to display a list of vertically-arranged
+    /// VisualElements. Each VisualElement in the list is bound to a corresponding element in a data-source list. The
+    /// data-source list can contain elements of any type.</p>
+    ///
+    /// <p>The logic required to create VisualElements, and to bind them to or unbind them from the data source, varies depending
+    /// on the intended result. It's up to you to implement logic that is appropriate to your use case. For the ListView to function
+    /// correctly, you must supply at least the following:</p>
+    ///
+    /// <list type="bullet">
+    ///   <item>
+    ///     <description><see cref="ListView.itemHeight"/></description>
+    ///   </item>
+    ///   <item>
+    ///     <description><see cref="ListView.makeItem"/></description>
+    ///   </item>
+    ///   <item>
+    ///     <description><see cref="ListView.bindItem"/></description>
+    ///   </item>
+    /// </list>
+    ///
+    /// <p>The ListView creates enough VisualElements for the visible items, and supports binding many more. As the user scrolls, the ListView
+    /// recycles VisualElements and re-binds them to new data items.</p>
+    ///
+    /// <list type="bullet">
+    ///   <item>
+    ///     <description>To set the height of a single item in pixels, set the <c>item-height</c> property in UXML or the
+    ///     <see cref="ListView.itemHeight"/> property in C# to the desired value.</description>
+    ///   </item>
+    ///   <item>
+    ///     <description>To show a border around the scrollable area, set the <c>show-border</c> property in UXML or the
+    ///     <see cref="ListView.showBorder"/> property in C# to <c>true</c>.</description>
+    ///   </item>
+    ///   <item>
+    ///     <description>By default, the user can select one element in the list at a time. To change the default selection
+    ///     use the <c>selection-type</c> property in UXML or the<see cref="ListView.selectionType"/> property in C#.
+    ///        <list type="bullet">
+    ///          <item>
+    ///            <description>To allow the user to select more than one element simultaneously, set the property to
+    ///            <c>Selection.Multiple</c>.</description>
+    ///          </item>
+    ///          <item>
+    ///            <description>To prevent the user from selecting items, set the property to <c>Selection.None</c>.</description>
+    ///          </item>
+    ///        </list>
+    ///      </description>
+    ///   </item>
+    ///   <item>
+    ///     <description>By default, all rows in the ListView have same background color. To make the row background colors
+    ///     alternate, set the <c>show-alternating-row-backgrounds</c> property in UXML or the
+    ///     <see cref="ListView.showAlternatingRowBackgrounds"/> property in C# to
+    ///     <see cref="AlternatingRowBackground.ContentOnly"/> or
+    ///     <see cref="AlternatingRowBackground.All"/>. For details, see <see cref="AlternatingRowBackground"/>.</description>
+    ///   </item>
+    ///   <item>
+    ///     <description>By default, the user can't reorder the list's elements. To allow the user to drag the elements
+    ///     to reorder them, set the <c>reorderable</c> property in UXML or the <see cref="ListView.reorderable"/>
+    ///     property in C# to to true.</description>
+    ///   </item>
+    ///   <item>
+    ///     <description>To make the first item in the ListView display the number of items in the list, set the
+    ///     <c>show-bound-collection-size</c> property in UXML or the <see cref="ListView.showBoundCollectionSize"/>
+    ///     to true. This is useful for debugging.</description>
+    ///   </item>
+    ///   <item>
+    ///     <description>By default, the ListView's scroller element only scrolls vertically.
+    ///     To enable horizontal scrolling when the displayed element is wider than the visible area, set the
+    ///     <c>horizontal-scrolling-enabled</c> property in UXML or the <see cref="ListView.horizontalScrollingEnabled"/>
+    ///     to true.</description>
+    ///   </item>
+    /// </list>
+    /// </remarks>
     /// <example>
     /// <code>
     /// <![CDATA[
@@ -40,20 +116,20 @@ namespace UnityEngine.UIElements
     ///
     ///     public void OnEnable()
     ///     {
-    ///         // Create some list of data, here simply numbers in interval [1, 1000]
+    ///         // Create a list of data. In this case, numbers from 1 to 1000.
     ///         const int itemCount = 1000;
     ///         var items = new List<string>(itemCount);
     ///         for (int i = 1; i <= itemCount; i++)
     ///             items.Add(i.ToString());
     ///
-    ///         // The "makeItem" function will be called as needed
-    ///         // when the ListView needs more items to render
+    ///         // The "makeItem" function is called when the
+    ///         // ListView needs more items to render.
     ///         Func<VisualElement> makeItem = () => new Label();
     ///
     ///         // As the user scrolls through the list, the ListView object
-    ///         // will recycle elements created by the "makeItem"
+    ///         // recycles elements created by the "makeItem" function,
     ///         // and invoke the "bindItem" callback to associate
-    ///         // the element with the matching data item (specified as an index in the list)
+    ///         // the element with the matching data item (specified as an index in the list).
     ///         Action<VisualElement, int> bindItem = (e, i) => (e as Label).text = items[i];
     ///
     ///         // Provide the list view with an explict height for every row
@@ -64,8 +140,8 @@ namespace UnityEngine.UIElements
     ///
     ///         listView.selectionType = SelectionType.Multiple;
     ///
-    ///         listView.onItemChosen += obj => Debug.Log(obj);
-    ///         listView.onSelectionChanged += objects => Debug.Log(objects);
+    ///         listView.onItemsChosen += objects => Debug.Log(objects);
+    ///         listView.onSelectionChange += objects => Debug.Log(objects);
     ///
     ///         listView.style.flexGrow = 1.0f;
     ///
@@ -78,13 +154,19 @@ namespace UnityEngine.UIElements
     public class ListView : BindableElement, ISerializationCallbackReceiver
     {
         /// <summary>
-        /// Instantiates a <see cref="ListView"/> using the data read from a UXML file.
+        /// Instantiates a <see cref="ListView"/> using data from a UXML file.
         /// </summary>
+        /// <remarks>
+        /// This class is added to every <see cref="VisualElement"/> created from UXML.
+        /// </remarks>
         public new class UxmlFactory : UxmlFactory<ListView, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="ListView"/>.
         /// </summary>
+        /// <remarks>
+        /// This class defines the ListView element properties that you can use in a UI document asset (UXML file).
+        /// </remarks>
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
             private readonly UxmlIntAttributeDescription m_ItemHeight = new UxmlIntAttributeDescription { name = "item-height", obsoleteNames = new[] { "itemHeight" }, defaultValue = s_DefaultItemHeight };
@@ -96,15 +178,16 @@ namespace UnityEngine.UIElements
             private readonly UxmlBoolAttributeDescription m_HorizontalScrollingEnabled = new UxmlBoolAttributeDescription { name = "horizontal-scrolling", defaultValue = false };
 
             /// <summary>
-            /// Returns an empty enumerable, as list views generally do not have children.
+            /// Returns an empty enumerable, because list views usually do not have child elements.
             /// </summary>
+            /// <returns>An empty enumerable.</returns>
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
                 get { yield break; }
             }
 
             /// <summary>
-            /// Initialize <see cref="ListView"/> properties using values from the attribute bag.
+            /// Initializes <see cref="ListView"/> properties using values from the attribute bag.
             /// </summary>
             /// <param name="ve">The object to initialize.</param>
             /// <param name="bag">The attribute bag.</param>
@@ -170,13 +253,16 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Callback for when an item is chosen (double-click). This is different from just a selection.
+        /// Callback triggered when a user double-clicks an item to activate it. This is different from selecting the item.
         /// </summary>
         [Obsolete("onItemChosen is obsolete, use onItemsChosen instead")]
         public event Action<object> onItemChosen;
         /// <summary>
-        /// Callback triggered when the user 'acts on' a selection of one or more items, for example by double-clicking or pressing Enter.
+        /// Callback triggered when the user acts on a selection of one or more items, for example by double-clicking or pressing Enter.
         /// </summary>
+        /// <remarks>
+        /// This callback receives an enumerable that contains the item or items chosen.
+        /// </remarks>
         public event Action<IEnumerable<object>> onItemsChosen;
 
         /// <summary>
@@ -187,13 +273,21 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Callback triggered when the selection changes.
         /// </summary>
+        /// <remarks>
+        /// This callback receives an enumerable that contains the item or items selected.
+        /// </remarks>
         public event Action<IEnumerable<object>> onSelectionChange;
 
 
         private IList m_ItemsSource;
         /// <summary>
-        /// The items data source. This property must be set for the list view to function.
+        /// The data source for list items.
         /// </summary>
+        /// <remarks>
+        /// This list contains the items that the <see cref="ListView"/> displays.
+        ///
+        /// This property must be set for the list view to function.
+        /// </remarks>
         public IList itemsSource
         {
             get { return m_ItemsSource; }
@@ -206,8 +300,17 @@ namespace UnityEngine.UIElements
 
         Func<VisualElement> m_MakeItem;
         /// <summary>
-        /// Callback for constructing the VisualElement that will serve as the template for each recycled and re-bound element in the list. This property must be set for the list view to function.
+        /// Callback for constructing the VisualElement that is the template for each recycled and re-bound element in the list.
         /// </summary>
+        /// <remarks>
+        /// This callback needs to call a function that constructs a blank <see cref="VisualElement"/> that is
+        /// bound to an element from the list.
+        ///
+        /// The ListView automatically creates enough elements to fill the visible area, and adds more if the area
+        /// is expanded. As the user scrolls, the ListView cycles elements in and out as they appear or disappear.
+        ///
+        ///  This property must be set for the list view to function.
+        /// </remarks>
         public Func<VisualElement> makeItem
         {
             get { return m_MakeItem; }
@@ -221,14 +324,22 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Callback for unbinding a data item from the visual element.
+        /// Callback for unbinding a data item from the VisualElement.
         /// </summary>
+        /// <remarks>
+        /// The method called by this callback receives the VisualElement to unbind, and the index of the
+        /// element to unbind it from.
+        /// </remarks>
         public Action<VisualElement, int> unbindItem { get; set; }
 
         private Action<VisualElement, int> m_BindItem;
         /// <summary>
         /// Callback for binding a data item to the visual element.
         /// </summary>
+        /// <remarks>
+        /// The method called by this callback receives the VisualElement to bind, and the index of the
+        /// element to bind it to.
+        /// </remarks>
         public Action<VisualElement, int> bindItem
         {
             get { return m_BindItem; }
@@ -251,8 +362,11 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Computed pixel aligned height for the list elements. This value will change depending on the current panel's dpi scaling.
+        /// The computed pixel-aligned height for the list elements.
         /// </summary>
+        /// <remarks>
+        /// This value changes depending on the current panel's DPI scaling.
+        /// </remarks>
         /// <seealso cref="ListView.itemHeight"/>
         public float resolvedItemHeight
         {
@@ -272,8 +386,14 @@ namespace UnityEngine.UIElements
         internal bool m_ItemHeightIsInline;
 
         /// <summary>
-        /// ListView requires all visual elements to have the same height so that it can calculate a sensible scroller size. This property must be set for the list view to function.
+        /// The height of a single item in the list, in pixels.
         /// </summary>
+        /// <remarks>
+        /// ListView requires that all visual elements have the same height so that it can calculate the
+        /// scroller size.
+        ///
+        /// This property must be set for the list view to function.
+        /// </remarks>
         public int itemHeight
         {
             get { return m_ItemHeight; }
@@ -291,6 +411,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Enable this property to display a border around the ListView.
         /// </summary>
+        /// <remarks>
+        /// If set to true, a border appears around the ScrollView.
+        /// </remarks>
         public bool showBorder
         {
             get { return ClassListContains(borderUssClassName); }
@@ -300,6 +423,11 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Gets or sets a value that indicates whether the user can drag list items to reorder them.
         /// </summary>
+        /// <remarks>
+        /// Set this value to true to allow the user to drag and drop the items in the list. The ListView
+        /// provides a default controller to allow standard behavior. It also automatically handles reordering
+        /// the items in the data source.
+        /// </remarks>
         public bool reorderable
         {
             get
@@ -340,11 +468,16 @@ namespace UnityEngine.UIElements
         private readonly List<int> m_SelectedIndices = new List<int>();
         private readonly List<object> m_SelectedItems = new List<object>();
 
+        // Used to store the focused element to enable scrolling without losing it.
+        private int m_LastFocusedElementIndex = -1;
+        private List<int> m_LastFocusedElementTreeChildIndexes = new List<int>();
+
         private int m_RangeSelectionOrigin = -1;
         private ListViewDragger m_Dragger;
 
         /// <summary>
-        /// Returns the selected item's index in the items source. If multiple items are selected, returns the first selected item's index.
+        /// Returns or sets the selected item's index in the data source. If multiple items are selected, returns the
+        /// first selected item's index. If multiple items are provided, sets them all as selected.
         /// </summary>
         public int selectedIndex
         {
@@ -353,25 +486,37 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// The indices of selected items in the items source.
+        /// Returns the indices of selected items in the data source. Always returns an enumerable, even if no item  is selected, or a
+        /// single item is selected.
         /// </summary>
         public IEnumerable<int> selectedIndices => m_SelectedIndices;
 
         /// <summary>
-        /// Returns the selected item from the items source. If multiple items are selected, returns the first selected item.
+        /// Returns the selected item from the data source. If multiple items are selected, returns the first selected item.
         /// </summary>
         public object selectedItem => m_SelectedItems.Count == 0 ? null : m_SelectedItems.First();
+
         /// <summary>
-        /// The selected items from the items source.
+        /// Returns the selected items from the data source. Always returns an enumerable, even if no item is selected, or a single
+        /// item is selected.
         /// </summary>
         public IEnumerable<object> selectedItems => m_SelectedItems;
 
+        /// <summary>
+        /// Returns the content container for the <see cref="ListView"/>. Because the ListView control automatically manages
+        /// its content, this always returns null.
+        /// </summary>
         public override VisualElement contentContainer => null;
 
         private SelectionType m_SelectionType;
         /// <summary>
-        /// Controls the selection state. You can set the state to disable selections, have one selectable item, or have multiple selectable items.
+        /// Controls the selection type.
         /// </summary>
+        /// <remarks>
+        /// You can set the ListView to make one item selectable at a time, make multiple items selectable, or disable selections completely.
+        ///
+        /// When you set the ListView to disable selections, any current selection is cleared.
+        /// </remarks>
         public SelectionType selectionType
         {
             get { return m_SelectionType; }
@@ -388,7 +533,7 @@ namespace UnityEngine.UIElements
         [SerializeField] private AlternatingRowBackground m_ShowAlternatingRowBackgrounds = AlternatingRowBackground.None;
 
         /// <summary>
-        /// Enable this property to display alternating background colors for rows in the ListView.
+        /// This property controls whether the background colors of ListView rows alternate. Takes a value from <see cref="AlternatingRowBackground"/>.
         /// </summary>
         public AlternatingRowBackground showAlternatingRowBackgrounds
         {
@@ -404,16 +549,26 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// When you bind a list view to an array, this property controls whether the list view displays the collection size as the first list item.
+        /// This property controls whether the list view displays the collection size (number of items).
         /// Set to true to display the collection size, false to omit it. Default is true.
         /// </summary>
+        /// <remarks>
+        /// When this property is set to true, Unity displays the collection size as the first item in the list, but does
+        /// not make it an actual list item that is part of the list index. If you query for list index 0,
+        /// Unity returns the first real list item, and not the collection size.
+        ///
+        /// This property is usually used to debug a ListView, because it indicates whether the data source is
+        /// linked correctly. In production, the collection size is rarely displayed as a line item in a ListView.
+        /// </remarks>>
         /// <seealso cref="UnityEditor.UIElements.BindingExtensions.Bind"/>
         public bool showBoundCollectionSize { get; set; } = true;
 
         private bool m_HorizontalScrollingEnabled;
 
         /// <summary>
-        /// This flag indicates whether the ListView should show a horizontal scroll bar when its content does not fit. The default value is False.
+        /// This property controls whether the ListView shows a horizontal scroll bar when its content
+        /// does not fit in the visible area. Set this property to true to display a horizontal scroll bar,
+        /// false to omit the horizontal scroll bar. The default value is False.
         /// </summary>
         public bool horizontalScrollingEnabled
         {
@@ -446,36 +601,78 @@ namespace UnityEngine.UIElements
         private int m_VisibleItemCount;
 
         /// <summary>
-        /// USS class name for elements of this type.
+        /// The USS class name for ListView elements.
         /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to every instance of the ListView element. Any styling applied to
+        /// this class affects every ListView located beside, or below the stylesheet in the visual tree.
+        /// </remarks>
         public static readonly string ussClassName = "unity-list-view";
         /// <summary>
-        /// The USS class name. Enable the showBorder property to apply this class to the ListView.
+        /// The USS class name for ListView elements with a border.
         /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to an instance of the ListView element if the instance's
+        /// <see cref="ListView.showBorder"/> property is set to true. Any styling applied to this class
+        /// affects every such ListView located beside, or below the stylesheet in the visual tree.
+        /// </remarks>
         public static readonly string borderUssClassName = ussClassName + "--with-border";
         /// <summary>
-        /// The USS class name of item elements in elements of this type.
+        /// The USS class name of item elements in ListView elements.
         /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to every item element the ListView contains. Any styling applied to
+        /// this class affects every item element located beside, or below the stylesheet in the visual tree.
+        /// </remarks>
         public static readonly string itemUssClassName = ussClassName + "__item";
         /// <summary>
         /// The USS class name of the drag hover bar.
         /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to the bar that appears when an item element is dragged. The
+        /// <see cref="ListView.reorderable"/> property must be true in order for items to be dragged.
+        /// Any styling applied to this class affects every ListView located beside, or below the stylesheet in the
+        /// visual tree.
+        /// </remarks>
         public static readonly string dragHoverBarUssClassName = ussClassName + "__drag-hover-bar";
         /// <summary>
-        /// The USS class name that is applied to the element on drag hover.
+        /// The USS class name applied to an item element on drag hover.
         /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to the list element that is dragged. The <see cref="ListView.reorderable"/>
+        /// property must be set to true for items to be draggable. Any styling applied to this class affects
+        /// every ListView item located beside, or below the stylesheet in the visual tree.
+        /// </remarks>
         public static readonly string itemDragHoverUssClassName = itemUssClassName + "--drag-hover";
         /// <summary>
-        /// The USS class name of item elements in elements of this type, when they are selected.
+        /// The USS class name of selected item elements in the ListView.
         /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to every selected element in the ListView. The <see cref="ListView.selectionType"/>
+        /// property decides if zero, one, or more elements can be selected. Any styling applied to
+        /// this class affects every ListView item located beside, or below the stylesheet in the visual tree.
+        /// </remarks>
         public static readonly string itemSelectedVariantUssClassName = itemUssClassName + "--selected";
         /// <summary>
         /// The USS class name for odd rows in the ListView.
         /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to every odd-numbered item in the ListView when the
+        /// <see cref="ListView.showAlternatingRowBackground"/> property is set to <c>ContentOnly</c> or <c>All</c>.
+        /// When the <c>showAlternatingRowBackground</c> property is set to either of those values, odd-numbered items
+        /// are displayed with a different background color than even-numbered items. This USS class is used to differentiate
+        /// odd-numbered items from even-numbered items. When the <c>showAlternatingRowBackground</c> property is set to
+        /// <c>None</c>, the USS class is not added, and any styling or behavior that relies on it is invalidated.
+        /// </remarks>
         public static readonly string itemAlternativeBackgroundUssClassName = itemUssClassName + "--alternative-background";
 
         internal static readonly string s_BackgroundFillUssClassName = ussClassName + "__background";
 
+        /// <summary>
+        /// Creates a <see cref="ListView"/> with all default properties. The <see cref="ListView.itemSource"/>,
+        /// <see cref="ListView.itemHeight"/>, <see cref="ListView.makeItem"/> and <see cref="ListView.bindItem"/> properties
+        /// must all be set for the ListView to function properly.
+        /// </summary>
         public ListView()
         {
             AddToClassList(ussClassName);
@@ -507,6 +704,15 @@ namespace UnityEngine.UIElements
             delegatesFocus = true;
         }
 
+        /// <summary>
+        /// Constructs a <see cref="ListView"/>, with all required properties provided.
+        /// </summary>
+        /// <param name="itemsSource">The list of items to use as a data source.</param>
+        /// <param name="itemHeight">The height of each item, in pixels.</param>
+        /// <param name="makeItem">The factory method to call to create a display item. The method should return a
+        /// VisualElement that can be bound to a data item.</param>
+        /// <param name="bindItem">The method to call to bind a data item to a display item. The method
+        /// receives as parameters the display item to bind, and the index of the data item to bind it to.</param>
         public ListView(IList itemsSource, int itemHeight, Func<VisualElement> makeItem, Action<VisualElement, int> bindItem) : this()
         {
             m_ItemsSource = itemsSource;
@@ -525,6 +731,10 @@ namespace UnityEngine.UIElements
             m_ScrollView.contentContainer.RegisterCallback<PointerDownEvent>(OnPointerDown);
             m_ScrollView.contentContainer.RegisterCallback<PointerUpEvent>(OnPointerUp);
             m_ScrollView.contentContainer.RegisterCallback<KeyDownEvent>(OnKeyDown);
+
+            m_ScrollView.contentContainer.RegisterCallback<NavigationMoveEvent>(OnNavigationMove);
+            m_ScrollView.contentContainer.RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
+            m_ScrollView.contentContainer.RegisterCallback<NavigationCancelEvent>(OnNavigationCancel);
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -535,115 +745,187 @@ namespace UnityEngine.UIElements
             m_ScrollView.contentContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown);
             m_ScrollView.contentContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp);
             m_ScrollView.contentContainer.UnregisterCallback<KeyDownEvent>(OnKeyDown);
+
+            m_ScrollView.contentContainer.UnregisterCallback<NavigationMoveEvent>(OnNavigationMove);
+            m_ScrollView.contentContainer.UnregisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
+            m_ScrollView.contentContainer.UnregisterCallback<NavigationCancelEvent>(OnNavigationCancel);
         }
 
-        private bool ProcessNavigationEvent(EventBase evt, out bool shouldScroll)
+        //TODO: make private. This doesn't need to be in the public API. Unit tests can be implemented with SendEvent.
+        public void OnKeyDown(KeyDownEvent evt)
         {
-            shouldScroll = false;
+            if (panel?.contextType == ContextType.Editor)
+                OnEditorKeyDown(evt);
+            else
+                OnRuntimeKeyDown(evt);
+        }
 
-            if (evt == null || !HasValidDataAndBindings())
+        enum ListOperation
+        {
+            None,
+            SelectAll,
+            Cancel, Submit,
+            Previous, Next,
+            PageUp, PageDown,
+            Begin, End,
+        }
+
+        private bool Apply(ListOperation op, bool shiftKey)
+        {
+            if (!HasValidDataAndBindings())
             {
                 return false;
             }
 
-            if (IsSelectAllEvent(evt))
+            void HandleRangeSelection()
             {
-                SelectAll();
-                return true;
-            }
-
-            if (eventInterpreter.IsCancellationEvent(evt))
-            {
-                ClearSelection();
-                return true;
-            }
-
-            if (eventInterpreter.IsActivationEvent(evt))
-            {
-#pragma warning disable 618
-                if (selectedIndex >= 0 && selectedIndex < m_ItemsSource.Count)
-                    onItemChosen?.Invoke(m_ItemsSource[selectedIndex]);
-#pragma warning restore 618
-                onItemsChosen?.Invoke(m_SelectedItems);
-                shouldScroll = true;
-                return true;
-            }
-
-            if (eventInterpreter.IsNavigationEvent(evt, out var direction))
-            {
-                shouldScroll = true;
-                switch (direction)
+                if (selectionType == SelectionType.Multiple && shiftKey && m_RangeSelectionOrigin != -1)
                 {
-                    case NavigationDirection.Up:
-                        if (selectedIndex > 0)
-                        {
-                            selectedIndex--;
-                            return true;
-                        }
-                        break; // Allow focus to move outside the ListView
-                    case NavigationDirection.Down:
-                        if (selectedIndex + 1 < itemsSource.Count)
-                        {
-                            selectedIndex++;
-                            return true;
-                        }
-                        break; // Allow focus to move outside the ListView
-                    case NavigationDirection.Home:
-                        selectedIndex = 0;
-                        return true;
-                    case NavigationDirection.End:
-                        selectedIndex = itemsSource.Count - 1;
-                        return true;
-                    case NavigationDirection.PageDown:
-                        selectedIndex = Math.Min(itemsSource.Count - 1, selectedIndex + (int)(m_LastHeight / resolvedItemHeight));
-                        return true;
-                    case NavigationDirection.PageUp:
-                        selectedIndex = Math.Max(0, selectedIndex - (int)(m_LastHeight / resolvedItemHeight));
-                        return true;
+                    DoRangeSelection(selectedIndex);
+                }
+                else
+                {
+                    m_RangeSelectionOrigin = selectedIndex;
                 }
             }
 
-            return false;
-        }
-
-        static bool IsSelectAllEvent(EventBase evt)
-        {
-            if (evt.eventTypeId == KeyDownEvent.TypeId())
+            switch (op)
             {
-                var keyDownEvent = (KeyDownEvent)evt;
-                if (keyDownEvent.keyCode == KeyCode.A && keyDownEvent.actionKey)
+                case ListOperation.SelectAll:
+                    SelectAll();
+                    return true;
+                case ListOperation.Cancel:
+                    m_RangeSelectionOrigin = -1;
+                    ClearSelection();
+                    return true;
+                case ListOperation.Submit:
+#pragma warning disable 618
+                    if (selectedIndex >= 0 && selectedIndex < m_ItemsSource.Count)
+                        onItemChosen?.Invoke(m_ItemsSource[selectedIndex]);
+#pragma warning restore 618
+                    onItemsChosen?.Invoke(m_SelectedItems);
+                    ScrollToItem(selectedIndex);
+                    return true;
+                case ListOperation.Previous:
+                    if (selectedIndex > 0)
+                    {
+                        selectedIndex--;
+                        HandleRangeSelection();
+                        ScrollToItem(selectedIndex);
+                        return true;
+                    }
+                    break; // Allow focus to move outside the ListView
+                case ListOperation.Next:
+                    if (selectedIndex + 1 < itemsSource.Count)
+                    {
+                        selectedIndex++;
+                        HandleRangeSelection();
+                        ScrollToItem(selectedIndex);
+                        return true;
+                    }
+                    break; // Allow focus to move outside the ListView
+                case ListOperation.Begin:
+                    selectedIndex = 0;
+                    HandleRangeSelection();
+                    ScrollToItem(selectedIndex);
+                    return true;
+                case ListOperation.End:
+                    selectedIndex = itemsSource.Count - 1;
+                    HandleRangeSelection();
+                    ScrollToItem(selectedIndex);
+                    return true;
+                case ListOperation.PageDown:
+                    selectedIndex = Math.Min(itemsSource.Count - 1, selectedIndex + (int)(m_LastHeight / resolvedItemHeight));
+                    HandleRangeSelection();
+                    ScrollToItem(selectedIndex);
+                    return true;
+                case ListOperation.PageUp:
+                    selectedIndex = Math.Max(0, selectedIndex - (int)(m_LastHeight / resolvedItemHeight));
+                    HandleRangeSelection();
+                    ScrollToItem(selectedIndex);
                     return true;
             }
+
             return false;
         }
 
-        private void ProcessAnyEvent(EventBase evt)
+        private void Apply(ListOperation op, EventBase sourceEvent)
         {
-            if (ProcessNavigationEvent(evt, out bool shouldScroll))
+            var shiftKey = (sourceEvent as KeyDownEvent)?.shiftKey ?? false;
+            if (Apply(op, shiftKey))
             {
-                evt.StopPropagation();
-                evt.PreventDefault();
-                if (shouldScroll)
-                {
-                    ScrollToItem(selectedIndex);
-                }
+                sourceEvent.StopPropagation();
+                sourceEvent.PreventDefault();
             }
         }
 
-        public void OnKeyDown(KeyDownEvent evt)
+        private void OnNavigationMove(NavigationMoveEvent evt)
         {
-            ProcessAnyEvent(evt);
+            switch (evt.direction)
+            {
+                case NavigationMoveEvent.Direction.Up:
+                    Apply(ListOperation.Previous, evt);
+                    break;
+                case NavigationMoveEvent.Direction.Down:
+                    Apply(ListOperation.Next, evt);
+                    break;
+            }
         }
 
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        private void OnNavigationSubmit(NavigationSubmitEvent evt)
         {
-            ProcessAnyEvent(evt);
-            if (!evt.isPropagationStopped)
-                base.ExecuteDefaultActionAtTarget(evt);
+            Apply(ListOperation.Submit, evt);
+        }
+
+        private void OnNavigationCancel(NavigationCancelEvent evt)
+        {
+            Apply(ListOperation.Cancel, evt);
+        }
+
+        private void OnRuntimeKeyDown(KeyDownEvent evt)
+        {
+            // At the moment these actions are not mapped dynamically in the InputSystemEventSystem component.
+            // When that becomes the case in the future, remove the following and use corresponding Navigation events.
+            ListOperation GetOperation()
+            {
+                switch (evt.keyCode)
+                {
+                    case KeyCode.A when evt.actionKey: return ListOperation.SelectAll;
+                    case KeyCode.Home: return ListOperation.Begin;
+                    case KeyCode.End: return ListOperation.End;
+                    case KeyCode.PageUp: return ListOperation.PageUp;
+                    case KeyCode.PageDown: return ListOperation.PageDown;
+                }
+                return ListOperation.None;
+            }
+
+            Apply(GetOperation(), evt);
+        }
+
+        private void OnEditorKeyDown(KeyDownEvent evt)
+        {
+            ListOperation GetOperation()
+            {
+                switch (evt.keyCode)
+                {
+                    case KeyCode.A when evt.actionKey: return ListOperation.SelectAll;
+                    case KeyCode.Escape: return ListOperation.Cancel;
+                    case KeyCode.Return: case KeyCode.KeypadEnter: return ListOperation.Submit;
+                    case KeyCode.UpArrow: return ListOperation.Previous;
+                    case KeyCode.DownArrow: return ListOperation.Next;
+                    case KeyCode.Home: return ListOperation.Begin;
+                    case KeyCode.End: return ListOperation.End;
+                    case KeyCode.PageUp: return ListOperation.PageUp;
+                    case KeyCode.PageDown: return ListOperation.PageDown;
+                }
+                return ListOperation.None;
+            }
+
+            Apply(GetOperation(), evt);
         }
 
         /// <summary>
-        /// Scroll to a specific item index and make it visible.
+        /// Scrolls to a specific item index and makes it visible.
         /// </summary>
         /// <param name="index">Item index to scroll to. Specify -1 to make the last item visible.</param>
         public void ScrollToItem(int index)
@@ -772,21 +1054,7 @@ namespace UnityEngine.UIElements
                         }
                         else
                         {
-                            ClearSelectionWithoutValidation();
-
-                            // Add range
-                            var range = new List<int>();
-                            if (clickedIndex < m_RangeSelectionOrigin)
-                            {
-                                for (var i = clickedIndex; i <= m_RangeSelectionOrigin; i++)
-                                    range.Add(i);
-                            }
-                            else
-                            {
-                                for (var i = m_RangeSelectionOrigin; i <= clickedIndex; i++)
-                                    range.Add(i);
-                            }
-                            AddToSelection(range);
+                            DoRangeSelection(clickedIndex);
                         }
                     }
                     else if (selectionType == SelectionType.Multiple && m_SelectedIndices.Contains(clickedIndex))
@@ -809,6 +1077,25 @@ namespace UnityEngine.UIElements
                     onItemsChosen?.Invoke(m_SelectedItems);
                     break;
             }
+        }
+
+        private void DoRangeSelection(int rangeSelectionFinalIndex)
+        {
+            ClearSelectionWithoutValidation();
+
+            // Add range
+            var range = new List<int>();
+            if (rangeSelectionFinalIndex < m_RangeSelectionOrigin)
+            {
+                for (var i = rangeSelectionFinalIndex; i <= m_RangeSelectionOrigin; i++)
+                    range.Add(i);
+            }
+            else
+            {
+                for (var i = rangeSelectionFinalIndex; i >= m_RangeSelectionOrigin; i--)
+                    range.Add(i);
+            }
+            AddToSelection(range);
         }
 
         private void ProcessSingleClick(int clickedIndex)
@@ -899,7 +1186,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Removes an item from the collection of selected items.
         /// </summary>
-        /// <param name="index">Item index.</param>
+        /// <param name="index">The item index.</param>
         public void RemoveFromSelection(int index)
         {
             if (!HasValidDataAndBindings())
@@ -930,7 +1217,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Sets the currently selected item.
         /// </summary>
-        /// <param name="index">Item index.</param>
+        /// <param name="index">The item index.</param>
         public void SetSelection(int index)
         {
             if (index < 0)
@@ -945,7 +1232,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Sets a collection of selected items.
         /// </summary>
-        /// <param name="indices">Collection of items to be selected.</param>
+        /// <param name="indices">The collection of the indices of the items to be selected.</param>
         public void SetSelection(IEnumerable<int> indices)
         {
             SetSelectionInternal(indices, true);
@@ -954,7 +1241,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Sets a collection of selected items without triggering a selection change callback.
         /// </summary>
-        /// <param name="indices">Collection of items to be selected.</param>
+        /// <param name="indices">The collection of items to be selected.</param>
         public void SetSelectionWithoutNotify(IEnumerable<int> indices)
         {
             SetSelectionInternal(indices, false);
@@ -987,7 +1274,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Unselects any selected items.
+        /// Deselects any selected items.
         /// </summary>
         public void ClearSelection()
         {
@@ -1008,9 +1295,9 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Scroll to a specific visual element.
+        /// Scrolls to a specific VisualElement.
         /// </summary>
-        /// <param name="visualElement">Element to scroll to.</param>
+        /// <param name="visualElement">The element to scroll to.</param>
         public void ScrollTo(VisualElement visualElement)
         {
             m_ScrollView.ScrollTo(visualElement);
@@ -1046,7 +1333,35 @@ namespace UnityEngine.UIElements
             // Some controls may capture the mouse, but the ListView is a composite root (isCompositeRoot),
             // and will always receive ExecuteDefaultAction despite what the actual event target is.
             if (evt.eventTypeId == PointerUpEvent.TypeId())
+            {
                 m_Dragger?.OnPointerUp();
+            }
+            // We need to store the focused item in order to be able to scroll out and back to it, without
+            // seeing the focus affected. To do so, we store the path to the tree element that is focused,
+            // and set it back in Setup().
+            else if (evt.eventTypeId == FocusEvent.TypeId())
+            {
+                m_LastFocusedElementTreeChildIndexes.Clear();
+
+                if (m_ScrollView.contentContainer.FindElementInTree(evt.leafTarget as VisualElement, m_LastFocusedElementTreeChildIndexes))
+                {
+                    var recycledElement = m_ScrollView.contentContainer[m_LastFocusedElementTreeChildIndexes[0]];
+                    foreach (var recycledItem in m_Pool)
+                    {
+                        if (recycledItem.element == recycledElement)
+                        {
+                            m_LastFocusedElementIndex = recycledItem.index;
+                            break;
+                        }
+                    }
+
+                    m_LastFocusedElementTreeChildIndexes.RemoveAt(0);
+                }
+                else
+                {
+                    m_LastFocusedElementIndex = -1;
+                }
+            }
         }
 
         private void OnScroll(float offset)
@@ -1131,8 +1446,11 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Clear, recreate all visible visual elements, and rebind all items. This should be called whenever the items source changes.
+        /// Clears the ListView, recreates all visible visual elements, and rebinds all items.
         /// </summary>
+        /// <remarks>
+        /// Call this method whenever the data source changes.
+        /// </remarks>
         public void Refresh()
         {
             foreach (var recycledItem in m_Pool)
@@ -1271,6 +1589,15 @@ namespace UnityEngine.UIElements
 
             bindItem(recycledItem.element, recycledItem.index);
             recycledItem.SetSelected(m_SelectedIds.Contains(newId));
+
+            // Handle focus cycling
+            if (m_LastFocusedElementIndex != -1)
+            {
+                if (m_LastFocusedElementIndex == newIndex)
+                    recycledItem.element.ElementAtTreePath(m_LastFocusedElementTreeChildIndexes)?.Focus();
+                else
+                    recycledItem.element.ElementAtTreePath(m_LastFocusedElementTreeChildIndexes)?.Blur();
+            }
         }
 
         private void UpdateBackground()

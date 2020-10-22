@@ -60,10 +60,10 @@ namespace UnityEngine.UIElements
             if (parentStyle != null)
             {
                 // Calculate pixel font size
-                if (fontSize.value.unit == LengthUnit.Percent)
+                if (fontSize.unit == LengthUnit.Percent)
                 {
-                    float parentSize = parentStyle.fontSize.value.value;
-                    float computedSize = parentSize * fontSize.value.value / 100;
+                    float parentSize = parentStyle.fontSize.value;
+                    float computedSize = parentSize * fontSize.value / 100;
                     inheritedData.fontSize = new Length(computedSize);
                 }
             }
@@ -75,8 +75,8 @@ namespace UnityEngine.UIElements
         {
             targetNode.Flex = float.NaN;
 
-            targetNode.FlexGrow = flexGrow.value;
-            targetNode.FlexShrink = flexShrink.value;
+            targetNode.FlexGrow = flexGrow;
+            targetNode.FlexShrink = flexShrink;
             targetNode.FlexBasis = flexBasis.ToYogaValue();
             targetNode.Left = left.ToYogaValue();
             targetNode.Top = top.ToYogaValue();
@@ -90,27 +90,27 @@ namespace UnityEngine.UIElements
             targetNode.PaddingTop = paddingTop.ToYogaValue();
             targetNode.PaddingRight = paddingRight.ToYogaValue();
             targetNode.PaddingBottom = paddingBottom.ToYogaValue();
-            targetNode.BorderLeftWidth = borderLeftWidth.value;
-            targetNode.BorderTopWidth = borderTopWidth.value;
-            targetNode.BorderRightWidth = borderRightWidth.value;
-            targetNode.BorderBottomWidth = borderBottomWidth.value;
+            targetNode.BorderLeftWidth = borderLeftWidth;
+            targetNode.BorderTopWidth = borderTopWidth;
+            targetNode.BorderRightWidth = borderRightWidth;
+            targetNode.BorderBottomWidth = borderBottomWidth;
             targetNode.Width = width.ToYogaValue();
             targetNode.Height = height.ToYogaValue();
 
-            targetNode.PositionType = (YogaPositionType)position.value;
-            targetNode.Overflow = (YogaOverflow)(overflow.value);
-            targetNode.AlignSelf = (YogaAlign)(alignSelf.value);
+            targetNode.PositionType = (YogaPositionType)position;
+            targetNode.Overflow = (YogaOverflow)overflow;
+            targetNode.AlignSelf = (YogaAlign)alignSelf;
             targetNode.MaxWidth = maxWidth.ToYogaValue();
             targetNode.MaxHeight = maxHeight.ToYogaValue();
             targetNode.MinWidth = minWidth.ToYogaValue();
             targetNode.MinHeight = minHeight.ToYogaValue();
 
-            targetNode.FlexDirection = (YogaFlexDirection)flexDirection.value;
-            targetNode.AlignContent = (YogaAlign)alignContent.value;
-            targetNode.AlignItems = (YogaAlign)alignItems.value;
-            targetNode.JustifyContent = (YogaJustify)justifyContent.value;
-            targetNode.Wrap = (YogaWrap)flexWrap.value;
-            targetNode.Display = (YogaDisplay)display.value;
+            targetNode.FlexDirection = (YogaFlexDirection)flexDirection;
+            targetNode.AlignContent = (YogaAlign)alignContent;
+            targetNode.AlignItems = (YogaAlign)alignItems;
+            targetNode.JustifyContent = (YogaJustify)justifyContent;
+            targetNode.Wrap = (YogaWrap)flexWrap;
+            targetNode.Display = (YogaDisplay)display;
         }
 
         private bool ApplyGlobalKeyword(StylePropertyReader reader, ComputedStyle parentStyle)
@@ -123,9 +123,12 @@ namespace UnityEngine.UIElements
                     ApplyInitialValue(reader);
                     return true;
                 }
-                else if ((StyleValueKeyword)handle.valueIndex == StyleValueKeyword.Unset)
+                if ((StyleValueKeyword)handle.valueIndex == StyleValueKeyword.Unset)
                 {
-                    ApplyUnsetValue(reader, parentStyle);
+                    if (parentStyle == null)
+                        ApplyInitialValue(reader);
+                    else
+                        ApplyUnsetValue(reader, parentStyle);
                     return true;
                 }
             }
@@ -235,6 +238,23 @@ namespace UnityEngine.UIElements
                 if (StylePropertyReader.TryGetImageSourceFromValue(customProp, dpiScaling, out source) && source.texture != null)
                 {
                     value = source.texture;
+                    return true;
+                }
+            }
+
+            value = null;
+            return false;
+        }
+
+        public bool TryGetValue(CustomStyleProperty<Sprite> property, out Sprite value)
+        {
+            StylePropertyValue customProp;
+            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out customProp))
+            {
+                var source = new ImageSource();
+                if (StylePropertyReader.TryGetImageSourceFromValue(customProp, dpiScaling, out source) && source.sprite != null)
+                {
+                    value = source.sprite;
                     return true;
                 }
             }

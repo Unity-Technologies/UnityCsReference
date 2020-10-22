@@ -70,11 +70,33 @@ namespace UnityEditor
             public readonly GUIContent m_RecalculateBounds                  = EditorGUIUtility.TrTextContent("Recalculate Bounds", "Recalculate bounds to encapsulate all child renderers.");
             public readonly GUIContent m_RecalculateBoundsDisabled          = EditorGUIUtility.TrTextContent("Recalculate Bounds", "Bounds are already up-to-date.");
             public readonly GUIContent m_LightmapScale                      = EditorGUIUtility.TrTextContent("Recalculate Lightmap Scale", "Set the lightmap scale to match the LOD percentages.");
-            public readonly GUIContent m_RendersTitle                       = EditorGUIUtility.TrTextContent("Renderers:");
+            public readonly GUIContent m_RendersTitle                       = EditorGUIUtility.TrTextContent("Renderers");
 
             public readonly GUIContent m_AnimatedCrossFadeInvalidText       = EditorGUIUtility.TrTextContent("Animated cross-fading is currently disabled. Please enable \"Animate Between Next LOD\" on either the current or the previous LOD.");
             public readonly GUIContent m_AnimatedCrossFadeInconsistentText  = EditorGUIUtility.TrTextContent("Animated cross-fading is currently disabled. \"Animate Between Next LOD\" is enabled but the next LOD is not in Animated Cross Fade mode.");
             public readonly GUIContent m_AnimateBetweenPreviousLOD          = EditorGUIUtility.TrTextContent("Animate Between Previous LOD", "Cross-fade animation plays when transits between this LOD and the previous (lower) LOD.");
+
+            public readonly GUIContent m_LODObjectSizeLabel = EditorGUIUtility.TrTextContent("Object Size", "The Object size in local space. This is used to calculate the relative screen height for the object.");
+            public readonly GUIContent m_ResetObjectSizeLabel = EditorGUIUtility.TrTextContent("Reset Object Size", "Resets the Object Size in Local Space to 1 and preserves LOD distances.");
+            public readonly GUIContent m_LODDistancesInRelativeSizeLabel = EditorGUIUtility.TrTextContent("LOD Distances in Screen Relative Size");
+            public readonly GUIContent m_LODSetToCameraLabel = EditorGUIUtility.TrTextContent("Set to Camera");
+
+            public readonly GUIContent m_LODTransitionPercentageLabel = EditorGUIUtility.TrTextContent("Transition (% Screen Size)", "This value marks where LOD level transitions into a lower LOD level.");
+            public static GUIContent m_TriangleCountLabel = EditorGUIUtility.TrTextContent("Triangles");
+            public static GUIContent m_VertexCountLabel = EditorGUIUtility.TrTextContent("Vertices");
+
+            public static GUIContent m_DistanceInMetersLabel = EditorGUIUtility.TrTextContent("-", "The displayed distance depends on the current Scene View camera settings and might be different in Game View.");
+
+            public static GUIStyle m_InspectorTitlebarFlat;
+
+            public static GUIContent m_BlueBorderTextureSelected = EditorGUIUtility.TrIconContent("AnimationRowOddSelected");
+            public static GUIContent m_BlueBorderTextureNormal = EditorGUIUtility.TrIconContent("OL title act");
+
+            public GUIStyles()
+            {
+                m_InspectorTitlebarFlat = new GUIStyle(EditorStyles.inspectorTitlebarFlat);
+                m_InspectorTitlebarFlat.focused.textColor = m_InspectorTitlebarFlat.normal.textColor;
+            }
         }
 
         private static GUIStyles s_Styles;
@@ -268,5 +290,118 @@ namespace UnityEditor
             var startPercentageString = UnityString.Format("Culled\n{0:0}%", previousLODPercentage * 100);
             Styles.m_LODSliderText.Draw(r, startPercentageString, false, false, false, false);
         }
+
+        private static readonly int s_FoldoutHeaderHash = "FoldoutHeader".GetHashCode();
+
+        internal static void DrawRoundedBoxAroundLODDFoldout(int lodGroupIndex, int activeLOD)
+        {
+            Texture borderTexture = lodGroupIndex == activeLOD ? GUIStyles.m_BlueBorderTextureSelected.image : GUIStyles.m_BlueBorderTextureNormal.image;
+
+            GUILayoutGroup g = GUILayoutUtility.BeginLayoutGroup(EditorStyles.helpBox, null, typeof(GUILayoutGroup));
+            g.isVertical = true;
+
+            GUIUtility.CheckOnGUI();
+            if (Event.current.type == EventType.Repaint)
+            {
+                GUI.DrawTexture(g.rect, borderTexture, ScaleMode.StretchToFill, true, 1, Color.white, Vector4.one * 1, Vector4.one * 4, true);
+            }
+        }
+
+        internal static bool FoldoutHeaderGroupInternal(Rect position, bool foldout, string label, Texture2D background, Color backgroundColor, string additionalLabel = "")
+        {
+            GUIStyle foldoutStyle = EditorStyles.titlebarFoldout;
+
+            var offset = 18;
+            position.x += offset;
+
+            // add some spaces so that we could draw a colored texture before the label
+            label = $"       {label}";
+            GUIContent content = new GUIContent(label);
+            // Removing the default margin for inspectors
+            if (EditorGUIUtility.hierarchyMode)
+            {
+                position.xMin -= EditorStyles.inspectorDefaultMargins.padding.left - EditorStyles.inspectorDefaultMargins.padding.right;
+                position.xMax += EditorStyles.inspectorDefaultMargins.padding.right;
+            }
+
+            var labelSize = GUI.skin.label.CalcSize(new GUIContent(additionalLabel));
+            Rect menuRect = new Rect
+            {
+                x = position.xMax - foldoutStyle.padding.right - labelSize.x - offset,
+                y = position.y + 2,
+                size = labelSize
+            };
+
+            int id = GUIUtility.GetControlID(s_FoldoutHeaderHash, FocusType.Keyboard, position);
+
+            if (Event.current.type == EventType.KeyDown && GUIUtility.keyboardControl == id)
+            {
+                KeyCode kc = Event.current.keyCode;
+                if (kc == KeyCode.LeftArrow && foldout || (kc == KeyCode.RightArrow && foldout == false))
+                {
+                    foldout = !foldout;
+                    GUI.changed = true;
+                    Event.current.Use();
+                }
+            }
+            else
+            {
+                foldout = EditorGUIInternal.DoToggleForward(position, id, foldout, content, foldoutStyle);
+            }
+
+            if (additionalLabel != null && Event.current.type == EventType.Repaint && labelSize.x < Screen.width * 0.8f)
+            {
+                GUI.Label(menuRect, additionalLabel);
+                menuRect.x = 24 + offset;
+                menuRect.y += 1;
+                menuRect.width = menuRect.height = 16;
+                GUI.DrawTexture(menuRect, background, ScaleMode.ScaleToFit, true, 1, backgroundColor, Vector4.zero, Vector4.one * 2, true);
+            }
+
+            return foldout;
+        }
+    }
+}
+
+internal static class LODGroupExtensions
+{
+    public static float GetWorldSpaceSize(this LODGroup lodGroup)
+    {
+        return GetWorldSpaceScale(lodGroup.transform) * lodGroup.size;
+    }
+
+    static float GetWorldSpaceScale(Transform t)
+    {
+        var scale = t.lossyScale;
+        float largestAxis = Mathf.Abs(scale.x);
+        largestAxis = Mathf.Max(largestAxis, Mathf.Abs(scale.y));
+        largestAxis = Mathf.Max(largestAxis, Mathf.Abs(scale.z));
+        return largestAxis;
+    }
+
+    public static float DistanceToRelativeHeight(Camera camera, float distance, float size)
+    {
+        if (camera.orthographic)
+            return size * 0.5F / camera.orthographicSize;
+
+        var halfAngle = Mathf.Tan(Mathf.Deg2Rad * camera.fieldOfView * 0.5F);
+        var relativeHeight = size * 0.5F / (distance * halfAngle);
+        return relativeHeight;
+    }
+
+    public static float RelativeHeightToDistance(Camera camera, float relativeHeight, float size)
+    {
+        if (camera.orthographic)
+            return -1;
+
+        var halfAngle = Mathf.Tan(Mathf.Deg2Rad * camera.fieldOfView * 0.5F);
+        var distance = size * 0.5F / (relativeHeight * halfAngle);
+        return distance;
+    }
+
+    public static float GetRelativeHeight(this LODGroup lodGroup, Camera camera)
+    {
+        var distance = (lodGroup.transform.TransformPoint(lodGroup.localReferencePoint) - camera.transform.position).magnitude;
+        return DistanceToRelativeHeight(camera, distance, lodGroup.GetWorldSpaceSize()) * QualitySettings.lodBias;
     }
 }

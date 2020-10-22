@@ -19,6 +19,7 @@ using UnityEditor.SceneManagement;
 using Object = UnityEngine.Object;
 using AssetImporterEditor = UnityEditor.AssetImporters.AssetImporterEditor;
 using JetBrains.Annotations;
+using System.Reflection;
 
 namespace UnityEditor
 {
@@ -74,6 +75,7 @@ namespace UnityEditor
         [SerializeField] protected int m_LastInspectedObjectInstanceID = -1;
         [SerializeField] protected float m_LastVerticalScrollValue = 0;
         [SerializeField] protected string m_GlobalObjectId = "";
+        [SerializeField] protected InspectorMode m_InspectorMode = InspectorMode.Normal;
 
         private Object m_InspectedObject;
         private static PropertyEditor s_LastPropertyEditor;
@@ -106,7 +108,7 @@ namespace UnityEditor
         protected bool m_PreviousPreviewExpandedState;
         protected bool m_HasPreview;
         protected HashSet<int> m_DrawnSelection = new HashSet<int>();
-        protected InspectorMode m_InspectorMode = InspectorMode.Normal;
+
 
         public GUIView parent => m_Parent;
         public HashSet<int> editorsWithImportedObjectLabel { get; } = new HashSet<int>();
@@ -211,7 +213,21 @@ namespace UnityEditor
             public bool submit;
             public bool @lock;
             public bool unlock;
-            public Editor editor;
+
+            Editor m_Editor;
+            public Editor Editor
+            {
+                get
+                {
+                    if (m_Editor == null && editors != null) m_Editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(editors);
+                    return m_Editor;
+                }
+                private set
+                {
+                    m_Editor = value;
+                }
+            }
+            public Editor[] editors;
             public AssetList assets = new AssetList();
 
             public int GetButtonCount()
@@ -227,7 +243,7 @@ namespace UnityEditor
                 return c;
             }
 
-            public static VersionControlBarState Calculate(Editor assetEditor, Asset asset, bool connected)
+            public static VersionControlBarState Calculate(Editor[] assetEditors, Asset asset, bool connected)
             {
                 var res = new VersionControlBarState();
                 if (!connected)
@@ -238,14 +254,14 @@ namespace UnityEditor
 
                 var isFolder = asset.isFolder && !Provider.isVersioningFolders;
 
-                res.assets.AddRange(assetEditor.targets.Select(o => Provider.GetAssetByPath(AssetDatabase.GetAssetPath(o))));
+                res.editors = assetEditors;
+                res.assets.AddRange(res.Editor.targets.Select(o => Provider.GetAssetByPath(AssetDatabase.GetAssetPath(o))));
                 res.assets = Provider.ConsolidateAssetList(res.assets, CheckoutMode.Both);
-                res.editor = assetEditor;
 
                 res.revert = Provider.RevertIsValid(res.assets, RevertMode.Normal);
                 res.revertUnchanged = Provider.RevertIsValid(res.assets, RevertMode.Unchanged);
 
-                bool checkoutBoth = assetEditor.target == null || Provider.NeedToCheckOutBoth(assetEditor.target);
+                bool checkoutBoth = res.Editor.target == null || AssetDatabase.CanOpenAssetInEditor(res.Editor.target.GetInstanceID());
                 res.checkout = isFolder || Provider.CheckoutIsValid(res.assets, checkoutBoth ? CheckoutMode.Both : CheckoutMode.Meta);
                 res.add = Provider.AddIsValid(res.assets);
                 res.submit = Provider.SubmitIsValid(null, res.assets);
@@ -363,7 +379,7 @@ namespace UnityEditor
             bool wantsRepaint = false;
             foreach (var myEditor in s_Editors)
             {
-                if (myEditor != null && myEditor.RequiresConstantRepaint() && !myEditor.hideInspector)
+                if (myEditor != null && myEditor.RequiresConstantRepaint() && !EditorUtility.IsHiddenInInspector(myEditor))
                     wantsRepaint = true;
             }
 
@@ -453,8 +469,46 @@ namespace UnityEditor
             RestoreVerticalScrollIfNeeded();
         }
 
+        private void SetUseUIEDefaultInspector()
+        {
+            useUIElementsDefaultInspector = !useUIElementsDefaultInspector;
+            // Clear the editors Element so that a real rebuild is done
+            editorsElement.Clear();
+            RebuildContentsContainers();
+        }
+
+        private void SetDebug()
+        {
+            inspectorMode = InspectorMode.Debug;
+        }
+
+        private void SetNormal()
+        {
+            inspectorMode = InspectorMode.Normal;
+        }
+
+        private void SetDebugInternal()
+        {
+            inspectorMode = InspectorMode.DebugInternal;
+        }
+
+        public virtual void AddDebugItemsToMenu(GenericMenu menu)
+        {
+            menu.AddItem(EditorGUIUtility.TrTextContent("Normal"), m_InspectorMode == InspectorMode.Normal, SetNormal);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Debug"), m_InspectorMode == InspectorMode.Debug, SetDebug);
+
+            if (Unsupported.IsDeveloperMode())
+            {
+                menu.AddItem(EditorGUIUtility.TrTextContent("Debug-Internal"), m_InspectorMode == InspectorMode.DebugInternal, SetDebugInternal);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Use UI Toolkit Default Inspector"), useUIElementsDefaultInspector, SetUseUIEDefaultInspector);
+            }
+        }
+
         public virtual void AddItemsToMenu(GenericMenu menu)
         {
+            AddDebugItemsToMenu(menu);
+            menu.AddSeparator(String.Empty);
+
             if (IsAnyComponentCollapsed())
                 menu.AddItem(EditorGUIUtility.TrTextContent("Expand All Components"), false, ExpandAllComponents);
             else
@@ -660,19 +714,16 @@ namespace UnityEditor
 
         private IEnumerable<IPreviewable> GetPreviewsForType(Editor editor)
         {
-            List<IPreviewable> previews = new List<IPreviewable>();
-
             // Retrieve the type we are looking for.
             if (editor == null || editor.target == null)
-                return previews;
+                return Enumerable.Empty<IPreviewable>();
+
             Type targetType = editor.target.GetType();
-            if (!GetPreviewableTypes().ContainsKey(targetType))
-                return previews;
+            var previewableTypes = GetPreviewableTypes();
+            if (previewableTypes == null || !previewableTypes.TryGetValue(targetType, out var previewerList) || previewerList == null)
+                return Enumerable.Empty<IPreviewable>();
 
-            var previewerList = GetPreviewableTypes()[targetType];
-            if (previewerList == null)
-                return previews;
-
+            List<IPreviewable> previews = new List<IPreviewable>();
             foreach (var previewerType in previewerList)
             {
                 var preview = Activator.CreateInstance(previewerType) as IPreviewable;
@@ -750,7 +801,7 @@ namespace UnityEditor
             if (editors.Any() && versionControlElement != null)
             {
                 versionControlElement.Add(CreateIMGUIContainer(
-                    () => VersionControlBar(InspectorWindowUtils.GetFirstNonImportInspectorEditor(editors))));
+                    () => VersionControlBar(editors)));
             }
 
             DrawEditors(editors);
@@ -1213,7 +1264,9 @@ namespace UnityEditor
             m_SelectedPreview = availablePreviews[selected];
         }
 
-        internal static void VersionControlBar(Editor assetEditor)
+        internal static void VersionControlBar(Editor assetEditor) => VersionControlBar(new[] { assetEditor });
+
+        internal static void VersionControlBar(Editor[] assetEditors)
         {
             if (!Provider.enabled)
                 return;
@@ -1221,6 +1274,7 @@ namespace UnityEditor
             if (vcsMode == ExternalVersionControl.Generic || vcsMode == ExternalVersionControl.Disabled || vcsMode == ExternalVersionControl.AutoDetect)
                 return;
 
+            Editor assetEditor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(assetEditors);
             var assetPath = AssetDatabase.GetAssetPath(assetEditor.target);
             Asset asset = Provider.GetAssetByPath(assetPath);
             if (asset == null)
@@ -1262,7 +1316,7 @@ namespace UnityEditor
             VersionControlBarState state;
             if (!m_VersionControlBarState.TryGetValue(assetEditor, out state))
             {
-                state = VersionControlBarState.Calculate(assetEditor, asset, connected);
+                state = VersionControlBarState.Calculate(assetEditors, asset, connected);
                 m_VersionControlBarState.Add(assetEditor, state);
             }
             // Based on that and the current inspector width, we might want to layout the VCS
@@ -1336,9 +1390,30 @@ namespace UnityEditor
             GUILayout.Space(4);
         }
 
-        internal static void CheckoutForInspector(Object[] assets)
+        internal static void CheckoutForInspector(Object[] targets)
         {
-            var inspectorAssets = Provider.GetInspectorAssets(assets);
+            if (targets == null || targets.Length < 0) return;
+
+            AssetList inspectorAssets = new AssetList();
+
+            // Since we can't edit multiple asset types in one Inspector it is safe to say
+            // that we will have to checkout all assets in the same way as the first one.
+            bool needToCheckoutBoth = AssetDatabase.CanOpenAssetInEditor(targets[0].GetInstanceID());
+
+            foreach (var asset in targets)
+            {
+                string assetPath = AssetDatabase.GetAssetPath(asset);
+
+                if (needToCheckoutBoth)
+                {
+                    Asset actualAsset = Provider.CacheStatus(assetPath);
+                    if (actualAsset != null) inspectorAssets.Add(actualAsset);
+                }
+
+                Asset metaAsset = Provider.CacheStatus(AssetDatabase.GetTextMetaFilePathFromAssetPath(assetPath));
+                if (metaAsset != null) inspectorAssets.Add(metaAsset);
+            }
+
             Provider.Checkout(inspectorAssets, CheckoutMode.Exact);
         }
 
@@ -1392,8 +1467,8 @@ namespace UnityEditor
 
             if (presence.checkout)
             {
-                if (VersionControlActionButton(buttonRect, ref buttonX, Provider.NeedToCheckOutBoth(presence.editor.target) ? Styles.vcsCheckout : Styles.vcsCheckoutMeta))
-                    CheckoutForInspector(presence.editor.targets);
+                if (VersionControlActionButton(buttonRect, ref buttonX, AssetDatabase.CanOpenAssetInEditor(presence.Editor.target.GetInstanceID()) ? Styles.vcsCheckout : Styles.vcsCheckoutMeta))
+                    CheckoutForInspector(presence.Editor.targets);
             }
             if (presence.add)
             {
@@ -1528,20 +1603,29 @@ namespace UnityEditor
                     prefabComponentIndex++;
                 }
 
-                if (ShouldCullEditor(editors, editorIndex))
-                {
-                    editors[editorIndex].isInspectorDirty = false;
-                    continue;
-                }
-
-                var editor = editors[editorIndex];
-                Object editorTarget = editor.targets[0];
-
-                if (editorTarget && (editorTarget?.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
-                    continue;
-
                 try
                 {
+                    var editor = editors[editorIndex];
+                    Object editorTarget = editor.targets[0];
+
+                    if (ShouldCullEditor(editors, editorIndex))
+                    {
+                        editor.isInspectorDirty = false;
+
+                        // Adds an empty IMGUIContainer to prevent infinite repainting (case 1264833).
+                        if (mapping == null || !mapping.TryGetValue(editor.target.GetInstanceID(),
+                            out var culledEditorContainer))
+                        {
+                            string editorTitle = editorTarget == null
+                                ? "Nothing Selected"
+                                : ObjectNames.GetInspectorTitle(editorTarget);
+                            culledEditorContainer = EditorUIService.instance.CreateCulledEditorElement(editorIndex, this, editorTitle);
+                            editorsElement.Add(culledEditorContainer as VisualElement);
+                        }
+
+                        continue;
+                    }
+
                     if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetInstanceID(), out var editorContainer))
                     {
                         string editorTitle = editorTarget == null ?
@@ -1601,6 +1685,9 @@ namespace UnityEditor
 
         void OnPrefabInstanceUnpacked(GameObject unpackedPrefabInstance)
         {
+            if (m_RemovedComponents == null)
+                return;
+
             // We don't use the input 'unpackedPrefabInstance', instead we reuse the ExtractPrefabComponents logic to detect
             // if RebuildContentsContainers if actually needed to clear any "Component Name (Removed)" title headers.
             // This prevents performance issues when unpacking a large multiselection.
@@ -1716,7 +1803,7 @@ namespace UnityEditor
 
         public bool ShouldCullEditor(Editor[] editors, int editorIndex)
         {
-            if (editors[editorIndex].hideInspector)
+            if (EditorUtility.IsHiddenInInspector(editors[editorIndex]))
                 return true;
 
             Object currentTarget = editors[editorIndex].target;
@@ -1870,6 +1957,7 @@ namespace UnityEditor
 
                 if (ShouldCullEditor(editors, newEditorsIndex))
                 {
+                    currentElement.ReinitCulled(newEditorsIndex);
                     ++newEditorsIndex;
                     continue;
                 }

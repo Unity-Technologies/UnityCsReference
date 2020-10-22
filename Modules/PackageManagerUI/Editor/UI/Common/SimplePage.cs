@@ -131,7 +131,7 @@ namespace UnityEditor.PackageManager.UI
             return m_VisualStateList.Contains(packageUniqueId);
         }
 
-        public override void LoadMore(int numberOfPackages)
+        public override void LoadMore(long numberOfPackages)
         {
             // do nothing, as for a single page we have a complete/known list and there's no more to load
         }

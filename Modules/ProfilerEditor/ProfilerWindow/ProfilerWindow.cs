@@ -172,7 +172,10 @@ namespace UnityEditor
 
         internal delegate void SelectionChangedCallback(string selectedPropertyPath);
         public event SelectionChangedCallback selectionChanged = delegate {};
-        internal event Action<int, bool> currentFrameChanged = delegate {};
+
+        internal delegate void FrameChangedCallback(int i, bool b);
+        public event FrameChangedCallback currentFrameChanged = delegate {};
+
         internal event Action<bool> recordingStateChanged = delegate {};
         internal event Action<bool> deepProfileChanged = delegate {};
         internal event Action<ProfilerMemoryRecordMode> memoryRecordingModeChanged = delegate {};
@@ -334,7 +337,7 @@ namespace UnityEditor
 
             // When reinitializing (e.g. because Colorblind mode or PlatformModule changed) we don't need a new state
             if (m_AttachProfilerState == null)
-                m_AttachProfilerState = PlayerConnectionGUIUtility.GetConnectionState(this, OnTargetedEditorConnectionChanged, IsEditorConnectionTargeted, (player) => ClearFramesCallback()) as IConnectionStateInternal;
+                m_AttachProfilerState = PlayerConnectionGUIUtility.GetConnectionState(this, OnTargetedEditorConnectionChanged, IsEditorConnectionTargeted, OnConnectedToPlayer) as IConnectionStateInternal;
 
             if (!HasValidModules())
                 m_Modules = InstantiateAvailableProfilerModules();
@@ -603,7 +606,7 @@ namespace UnityEditor
             m_CurrentFrameEnabled = false;
             if (stateChange == PlayModeStateChange.EnteredPlayMode)
             {
-                ClearFramesCallback();
+                ClearFramesOnPlayOrPlayerConnectionChange();
             }
         }
 
@@ -612,7 +615,7 @@ namespace UnityEditor
             m_CurrentFrameEnabled = false;
         }
 
-        void ClearFramesCallback()
+        internal void ClearFramesOnPlayOrPlayerConnectionChange()
         {
             if (m_ClearOnPlay)
                 Clear();
@@ -620,8 +623,12 @@ namespace UnityEditor
 
         void OnDestroy()
         {
+            // We're being temporary "hidden" on maximize, do nothing
+            if (WindowLayout.GetMaximizedWindow() != null)
+                return;
+
             // When window is destroyed, we disable profiling
-            if (Profiler.supported && !EditorApplication.isPlayingOrWillChangePlaymode)
+            if (Profiler.supported)
                 ProfilerDriver.enabled = false;
         }
 
@@ -684,7 +691,7 @@ namespace UnityEditor
                 "This means that the performance of the Editor does not affect profiling data, and the Profiler does not affect the performance of the Editor. " +
                 "It takes around 3-4 seconds to launch.", "OK", DialogOptOutDecisionType.ForThisMachine, "UseOutOfProcessProfiler"))
             {
-                ProfilerRoleProvider.LaunchProfilerSlave();
+                ProfilerRoleProvider.LaunchProfilerProcess();
             }
         }
 
@@ -806,7 +813,7 @@ namespace UnityEditor
         public HierarchyFrameDataView GetFrameDataView(string threadName, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
         {
             var frameIndex = GetActiveVisibleFrameIndex();
-            var threadIndex = 0;
+            var threadIndex = -1;
             using (var frameIterator = new ProfilerFrameDataIterator())
             {
                 var threadCount = frameIterator.GetThreadCount(frameIndex);
@@ -1478,6 +1485,12 @@ namespace UnityEditor
             }
         }
 
+        void OnConnectedToPlayer(string player, EditorConnectionTarget? editorConnectionTarget)
+        {
+            if (editorConnectionTarget == null || editorConnectionTarget.Value == EditorConnectionTarget.None)
+                ClearFramesOnPlayOrPlayerConnectionChange();
+        }
+
         internal static bool SetEditorDeepProfiling(bool deep)
         {
             var doApply = true;
@@ -1546,6 +1559,11 @@ namespace UnityEditor
             {
                 add { m_ProfilerWindowController.selectionChanged += value; }
                 remove { m_ProfilerWindowController.selectionChanged -= value; }
+            }
+            event FrameChangedCallback IProfilerWindowController.currentFrameChanged
+            {
+                add { m_ProfilerWindowController.currentFrameChanged += value; }
+                remove { m_ProfilerWindowController.currentFrameChanged -= value; }
             }
 
             void IProfilerWindowController.ClearSelectedPropertyPath()

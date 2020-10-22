@@ -117,6 +117,8 @@ namespace UnityEditor
         bool m_DidSelectSearchResult;
         [NonSerialized]
         double m_LastUserInteractionTime;
+        [NonSerialized]
+        bool m_IgnoreNextHierarchyChangedEvent;
 
         public static bool s_Debug
         {
@@ -275,8 +277,23 @@ namespace UnityEditor
             dataSource.sortingState = m_SortingObjects[m_CurrentSortingName];
             dragging.parentForDraggedObjectsOutsideItems = m_CustomParentForNewGameObjects;
             dragging.SetCustomDragHandler(m_CustomDragHandler);
+            gui.renameEnded += ItemRenameEnded;
 
             m_TreeView.ReloadData();
+        }
+
+        void ItemRenameEnded(bool userAcceptedRename, int itemID, string name, string originalName)
+        {
+            if (userAcceptedRename && name != originalName)
+            {
+                // Handle reloading immediately when an internal change happens instead of waiting for
+                // the delayed OnHierarchyChange event (fixes case 981190)
+                ObjectNames.SetNameSmartWithInstanceID(itemID, name);
+                m_IgnoreNextHierarchyChangedEvent = true;
+                ReloadData();
+
+                EditorApplication.RepaintAnimationWindow();
+            }
         }
 
         bool AreCustomScenesValid(Scene[] customScenes)
@@ -730,23 +747,6 @@ namespace UnityEditor
             }
         }
 
-        /* public void SetSearch(string searchString, SearchableEditorWindow.SearchModeHierarchyWindow searchMode)
-         {
-             m_SearchFilter = searchString;
-             m_SearchMode = searchMode;
-
-             if (m_TreeView == null)
-             {
-                 Init();
-             }
-             else
-             {
-                 dataSource.searchString = searchString;
-                 dataSource.searchMode = searchMode;
-                 ReloadData();
-             }
-         }*/
-
         void TreeViewSelectionChanged(int[] ids)
         {
             //Last selected should be the active selected object to reflect the behavior of the scene view selection
@@ -780,6 +780,12 @@ namespace UnityEditor
 
         public void OnHierarchyChange()
         {
+            if (m_IgnoreNextHierarchyChangedEvent)
+            {
+                m_IgnoreNextHierarchyChangedEvent = false;
+                return;
+            }
+
             // Avoid end renaming once if gameObject is newly created and is set to enter rename mode
             if (m_TreeView != null && !isNewGOInRenameMode)
             {
@@ -845,12 +851,12 @@ namespace UnityEditor
 
                 // The first item after the GameObject creation menu items
                 if (path.ToLower() == GameObjectUtility.GetFirstItemPathAfterGameObjectCreationMenuItems().ToLower())
-                    return;
+                    continue;
 
                 string menupath = path;
                 if (!includeGameObjectInPath)
                     menupath = path.Substring(11); // cut away "GameObject/"
-                MenuUtils.ExtractMenuItemWithPath(path, menu, menupath, tempContext, targetSceneHandle, BeforeCreateGameObjectMenuItemWasExecuted, AfterCreateGameObjectMenuItemWasExecuted, origin);
+                MenuUtils.ExtractOnlyEnabledMenuItem(path, menu, menupath, tempContext, targetSceneHandle, BeforeCreateGameObjectMenuItemWasExecuted, AfterCreateGameObjectMenuItemWasExecuted, origin);
             }
         }
 
@@ -886,6 +892,9 @@ namespace UnityEditor
                 var targetSceneHandle = m_CustomParentForNewGameObjects != null ? m_CustomParentForNewGameObjects.gameObject.scene.handle : kInvalidSceneHandle;
                 // The context should be null, just like it is in the main menu. Case 1185434.
                 AddCreateGameObjectItemsToMenu(menu, null, true, true, false, targetSceneHandle, MenuUtils.ContextMenuOrigin.Toolbar);
+
+                SceneHierarchyHooks.AddCustomItemsToCreateMenu(menu);
+
                 menu.DropDown(rect);
 
                 Event.current.Use();
@@ -1626,6 +1635,7 @@ namespace UnityEditor
             else
                 sceneGUID = EditorSceneManager.GetActiveScene().guid;
 
+            string undoText = "Set Default Parent Object";
             int currentlySetID = GetDefaultParentForSession(sceneGUID);
             if (toggle && currentlySetID != 0)
             {
@@ -1633,7 +1643,12 @@ namespace UnityEditor
                     return;
 
                 id = 0;
+                undoText = "Clear Default Parent Object";
             }
+
+            if (toggle && currentlySetID != 0 || lastSelectedObject != null)
+                InternalEditorUtility.RegisterSetDefaultParentObjectUndo(sceneGUID, GetDefaultParentForSession(sceneGUID), undoText);
+
             UpdateSessionStateInfoAndActiveParentObjectValuesForScene(sceneGUID, id);
         }
 
@@ -1652,6 +1667,7 @@ namespace UnityEditor
                     sceneGUID = EditorSceneManager.GetActiveScene().guid;
             }
 
+            InternalEditorUtility.RegisterSetDefaultParentObjectUndo(sceneGUID, GetDefaultParentForSession(sceneGUID), "Clear Default Parent Object");
             UpdateSessionStateInfoAndActiveParentObjectValuesForScene(sceneGUID, 0);
         }
 

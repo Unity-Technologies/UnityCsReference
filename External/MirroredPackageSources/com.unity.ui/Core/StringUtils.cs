@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -137,6 +138,45 @@ namespace UnityEngine.UIElements
             }
 
             return builder.ToString();
+        }
+
+        // https://docs.unity3d.com/Manual/BestPracticeUnderstandingPerformanceInUnity5.html
+        public static bool EndsWithIgnoreCaseFast(this string a, string b)
+        {
+            int ap = a.Length - 1;
+            int bp = b.Length - 1;
+
+            var culture = CultureInfo.InvariantCulture;
+
+            while (ap >= 0 && bp >= 0 &&
+                   (a[ap] == b[bp] ||
+                    char.ToLower(a[ap], culture) == char.ToLower(b[bp], culture)))
+            {
+                ap--;
+                bp--;
+            }
+
+            return (bp < 0);
+        }
+
+        public static bool StartsWithIgnoreCaseFast(this string a, string b)
+        {
+            int aLen = a.Length;
+            int bLen = b.Length;
+
+            int ap = 0; int bp = 0;
+
+            var culture = CultureInfo.InvariantCulture;
+
+            while (ap < aLen && bp < bLen &&
+                   (a[ap] == b[bp] ||
+                    char.ToLower(a[ap], culture) == char.ToLower(b[bp], culture)))
+            {
+                ap++;
+                bp++;
+            }
+
+            return (bp == bLen);
         }
     }
 }

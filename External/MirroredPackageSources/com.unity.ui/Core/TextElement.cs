@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine.TextCore;
 
 namespace UnityEngine.UIElements
 {
@@ -64,14 +63,20 @@ namespace UnityEngine.UIElements
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
-        private TextHandle m_TextHandle = TextHandle.New();
+        private ITextHandle m_TextHandle;
 
         // For automated testing purposes
-        internal TextHandle textHandle { get { return m_TextHandle; } }
+        internal ITextHandle textHandle
+        {
+            get { return m_TextHandle; }
+            private set { m_TextHandle = value; }
+        }
 
         private void OnAttachToPanel(AttachToPanelEvent e)
         {
-            m_TextHandle.useLegacy = e.destinationPanel.contextType == ContextType.Editor;
+            textHandle = e.destinationPanel.contextType == ContextType.Editor
+                ? TextHandleFactory.GetEditorHandle()
+                : TextHandleFactory.GetRuntimeHandle();
         }
 
         private void OnGeometryChanged(GeometryChangedEvent e)
@@ -143,9 +148,14 @@ namespace UnityEngine.UIElements
 
         internal string ElideText(string drawText, string ellipsisText, float width, TextOverflowPosition textOverflowPosition)
         {
+            // The pixelOffset represent the maximum value that could be removed from the measured with by the layout when scaling is not 100%.
+            // the offset is caused by alining the borders+spacing+padding on the grid.
+            // We still want the text to render without being elided even when there is a small gap missing.  https://fogbugz.unity3d.com/f/cases/1268016/
+            float pixelOffset = 1 / scaledPixelsPerPoint;
+
             // Try full size first
             var size = MeasureTextSize(drawText, 0, MeasureMode.Undefined, 0, MeasureMode.Undefined);
-            if (size.x <= width || string.IsNullOrEmpty(ellipsisText))
+            if (size.x - pixelOffset <= width || string.IsNullOrEmpty(ellipsisText))
                 return drawText;
 
             var minText = drawText.Length > 1 ? ellipsisText : drawText;
@@ -245,15 +255,22 @@ namespace UnityEngine.UIElements
             if (m_UpdateTextParams || textParamsHashCode != m_PreviousTextParamsHashCode)
             {
                 m_TextParams = textParams;
-                if (m_TextParams.textOverflowMode == TextOverflowMode.Ellipsis)
+                var shouldElide = ShouldElide();
+                if (shouldElide)
                     m_TextParams.text = ElideText(m_TextParams.text, k_EllipsisText, m_TextParams.rect.width,
                         m_TextParams.textOverflowPosition);
 
-                isElided = m_TextParams.textOverflowMode == TextOverflowMode.Ellipsis && m_TextParams.text != text;
+                isElided = shouldElide && m_TextParams.text != text;
                 m_PreviousTextParamsHashCode = textParamsHashCode;
                 m_UpdateTextParams = false;
                 UpdateTooltip();
             }
+        }
+
+        private bool ShouldElide()
+        {
+            return computedStyle.textOverflow == TextOverflow.Ellipsis && computedStyle.overflow == OverflowInternal.Hidden &&
+                computedStyle.whiteSpace == WhiteSpace.NoWrap;
         }
 
         /// <summary>
@@ -268,91 +285,22 @@ namespace UnityEngine.UIElements
         public Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height,
             MeasureMode heightMode)
         {
-            return MeasureVisualElementTextSize(this, textToMeasure, width, widthMode, height, heightMode, m_TextHandle);
+            return TextUtilities.MeasureVisualElementTextSize(this, textToMeasure, width, widthMode, height, heightMode, m_TextHandle);
         }
 
-        internal static Vector2 MeasureVisualElementTextSize(VisualElement ve, string textToMeasure, float width, MeasureMode widthMode, float height, MeasureMode heightMode, TextHandle textHandle)
+        /// <summary>
+        /// DO NOT USE MeasureVisualElementTextSize, use TextUtilities.MeasureVisualElementTextSize instead. This method is only there for backward compatibility reason and will soon be stripped.
+        /// </summary>
+        internal static Vector2 MeasureVisualElementTextSize(VisualElement ve, string textToMeasure, float width,
+            MeasureMode widthMode, float height, MeasureMode heightMode, TextHandle textHandle)
         {
-            float measuredWidth = float.NaN;
-            float measuredHeight = float.NaN;
-
-            Font usedFont = ve.computedStyle.unityFont.value;
-            if (textToMeasure == null || usedFont == null)
-                return new Vector2(measuredWidth, measuredHeight);
-
-            var elementScaling = ve.ComputeGlobalScale();
-            if (elementScaling.x + elementScaling.y <= 0 || ve.scaledPixelsPerPoint <= 0)
-                return Vector2.zero;
-
-            float pixelsPerPoint = ve.scaledPixelsPerPoint;
-            float pixelOffset = 0.02f;
-            float pointOffset = pixelOffset / pixelsPerPoint;
-
-            if (widthMode == MeasureMode.Exactly)
-            {
-                measuredWidth = width;
-            }
-            else
-            {
-                var textParams = GetTextSettings(ve, textToMeasure);
-                textParams.wordWrap = false;
-                textParams.richText = false;
-
-                // Case 1215962: round up as yoga could decide to round down and text would start wrapping
-                measuredWidth = textHandle.ComputeTextWidth(textParams, pixelsPerPoint);
-                measuredWidth = measuredWidth < pointOffset ? 0 : AlignmentUtils.CeilToPixelGrid(measuredWidth, pixelsPerPoint, pixelOffset);
-
-                if (widthMode == MeasureMode.AtMost)
-                {
-                    measuredWidth = Mathf.Min(measuredWidth, width);
-                }
-            }
-
-            if (heightMode == MeasureMode.Exactly)
-            {
-                measuredHeight = height;
-            }
-            else
-            {
-                var textParams = GetTextSettings(ve, textToMeasure);
-                textParams.wordWrapWidth = measuredWidth;
-                textParams.richText = false;
-
-                measuredHeight = textHandle.ComputeTextHeight(textParams, pixelsPerPoint);
-                measuredHeight = measuredHeight < pointOffset ? 0 : AlignmentUtils.CeilToPixelGrid(measuredHeight, pixelsPerPoint, pixelOffset);
-
-                if (heightMode == MeasureMode.AtMost)
-                {
-                    measuredHeight = Mathf.Min(measuredHeight, height);
-                }
-            }
-
-            return new Vector2(measuredWidth, measuredHeight);
+            return TextUtilities.MeasureVisualElementTextSize(ve, textToMeasure, width, widthMode, height, heightMode,
+                textHandle.textHandle);
         }
 
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
         {
             return MeasureTextSize(text, desiredWidth, widthMode, desiredHeight, heightMode);
-        }
-
-        private static MeshGenerationContextUtils.TextParams GetTextSettings(VisualElement ve, string text)
-        {
-            var style = ve.computedStyle;
-            return new MeshGenerationContextUtils.TextParams
-            {
-                rect = ve.contentRect,
-                text = text,
-                font = style.unityFont.value,
-                fontSize = (int)style.fontSize.value.value,
-                fontStyle = style.unityFontStyleAndWeight.value,
-                fontColor = style.color.value,
-                anchor = style.unityTextAlign.value,
-                wordWrap = style.whiteSpace.value == WhiteSpace.Normal,
-                wordWrapWidth = style.whiteSpace.value == WhiteSpace.Normal ? ve.contentRect.width : 0.0f,
-                richText = true,
-                textOverflowMode = MeshGenerationContextUtils.TextParams.GetTextOverflowMode(style),
-                textOverflowPosition = style.unityTextOverflowPosition.value
-            };
         }
 
         //INotifyValueChange

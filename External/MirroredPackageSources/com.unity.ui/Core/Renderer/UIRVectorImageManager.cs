@@ -36,23 +36,25 @@ namespace UnityEngine.UIElements.UIR
         public int destIndex;
         public RectInt location;
         public GradientRemap next; // To avoid arrays.
-        public bool isAtlassed;
+        public TextureId atlas;
 
         public void Reset()
         {
             origIndex = 0;
             destIndex = 0;
             location = new RectInt();
-            isAtlassed = false;
+            atlas = TextureId.invalid;
         }
     }
 
     class VectorImageManager : IDisposable
     {
+        public static List<VectorImageManager> instances = new List<VectorImageManager>(16);
+
         static ProfilerMarker s_MarkerRegister = new ProfilerMarker("UIR.VectorImageManager.Register");
         static ProfilerMarker s_MarkerUnregister = new ProfilerMarker("UIR.VectorImageManager.Unregister");
 
-        readonly UIRAtlasManager m_AtlasManager;
+        readonly AtlasBase m_Atlas;
 
         Dictionary<VectorImage, VectorImageRenderInfo> m_Registered;
         VectorImageRenderInfoPool m_RenderInfoPool;
@@ -62,9 +64,11 @@ namespace UnityEngine.UIElements.UIR
 
         public Texture2D atlas { get { return m_GradientSettingsAtlas?.atlas; }}
 
-        public VectorImageManager(UIRAtlasManager atlasManager)
+        public VectorImageManager(AtlasBase atlas)
         {
-            m_AtlasManager = atlasManager;
+            instances.Add(this);
+
+            m_Atlas = atlas;
 
             m_Registered = new Dictionary<VectorImage, VectorImageRenderInfo>(32);
             m_RenderInfoPool = new VectorImageRenderInfoPool();
@@ -94,6 +98,7 @@ namespace UnityEngine.UIElements.UIR
                 m_RenderInfoPool.Clear();
                 m_GradientRemapPool.Clear();
                 m_GradientSettingsAtlas.Dispose();
+                instances.Remove(this);
             }
             else
                 UnityEngine.UIElements.DisposeHelper.NotifyMissingDispose(this);
@@ -104,23 +109,6 @@ namespace UnityEngine.UIElements.UIR
         #endregion // Dispose Pattern
 
         #region Reset Pattern
-        static int s_GlobalResetVersion;
-        int m_ResetVersion = s_GlobalResetVersion;
-
-        public static void MarkAllForReset()
-        {
-            ++s_GlobalResetVersion;
-        }
-
-        public void MarkForReset()
-        {
-            m_ResetVersion = s_GlobalResetVersion - 1;
-        }
-
-        public bool RequiresReset()
-        {
-            return m_ResetVersion != s_GlobalResetVersion;
-        }
 
         public void Reset()
         {
@@ -135,8 +123,6 @@ namespace UnityEngine.UIElements.UIR
             m_RenderInfoPool.Clear();
             m_GradientRemapPool.Clear();
             m_GradientSettingsAtlas.Reset();
-
-            m_ResetVersion = s_GlobalResetVersion;
         }
 
         #endregion // Reset Pattern
@@ -152,7 +138,7 @@ namespace UnityEngine.UIElements.UIR
             m_GradientSettingsAtlas.Commit();
         }
 
-        public GradientRemap AddUser(VectorImage vi)
+        public GradientRemap AddUser(VectorImage vi, VisualElement context)
         {
             if (disposed)
             {
@@ -167,7 +153,7 @@ namespace UnityEngine.UIElements.UIR
             if (m_Registered.TryGetValue(vi, out renderInfo))
                 ++renderInfo.useCount;
             else
-                renderInfo = Register(vi);
+                renderInfo = Register(vi, context);
 
             return renderInfo.firstGradientRemap;
         }
@@ -192,7 +178,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        VectorImageRenderInfo Register(VectorImage vi)
+        VectorImageRenderInfo Register(VectorImage vi, VisualElement context)
         {
             s_MarkerRegister.Begin();
 
@@ -208,8 +194,8 @@ namespace UnityEngine.UIElements.UIR
                 if (alloc.size > 0)
                 {
                     // Then attempt to allocate in the texture atlas.
-                    RectInt uvs;
-                    if (m_AtlasManager.TryGetLocation(vi.atlas, out uvs))
+                    // TODO: Once the atlas actually processes returns, we should call it at some point.
+                    if (m_Atlas.TryGetAtlas(context, vi.atlas, out TextureId atlasId, out RectInt uvs))
                     {
                         // Remap.
                         GradientRemap previous = null;
@@ -233,7 +219,7 @@ namespace UnityEngine.UIElements.UIR
                             location.x += uvs.x;
                             location.y += uvs.y;
                             current.location = location;
-                            current.isAtlassed = true;
+                            current.atlas = atlasId;
                         }
 
                         // Write into the previously allocated gradient settings now that we are sure to use it.
@@ -254,7 +240,7 @@ namespace UnityEngine.UIElements.UIR
 
                             current.origIndex = i;
                             current.destIndex = (int)alloc.start + i;
-                            current.isAtlassed = false;
+                            current.atlas = TextureId.invalid;
                         }
 
                         m_GradientSettingsAtlas.Write(alloc, vi.settings, null);

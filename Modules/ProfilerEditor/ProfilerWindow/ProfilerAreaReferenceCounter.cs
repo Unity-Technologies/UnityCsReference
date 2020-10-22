@@ -41,7 +41,7 @@ namespace UnityEditor.Profiling
 
             if (wasZeroBeforeIncrement)
             {
-                ProfilerDriver.SetAreaEnabled(area, true);
+                SetAreaEnabled(area, true);
             }
         }
 
@@ -59,8 +59,17 @@ namespace UnityEditor.Profiling
             bool isZero = areaReferenceCounts[index] == 0;
             if (isZero)
             {
-                ProfilerDriver.SetAreaEnabled(area, false);
+                SetAreaEnabled(area, false);
             }
+        }
+
+        void SetAreaEnabled(ProfilerArea area, bool enabled)
+        {
+            // The CPU area should not be explicitly enabled or disabled as that would set Profiler.enabled.
+            if (area == ProfilerArea.CPU)
+                return;
+
+            ProfilerDriver.SetAreaEnabled(area, enabled);
         }
 
         void DisableAllAreas()
@@ -68,7 +77,7 @@ namespace UnityEditor.Profiling
             for (int i = 0; i < areaReferenceCounts.Length; i++)
             {
                 var area = (ProfilerArea)i;
-                ProfilerDriver.SetAreaEnabled(area, false);
+                SetAreaEnabled(area, false);
             }
         }
 

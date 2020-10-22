@@ -11,6 +11,7 @@ using System.Reflection;
 using JetBrains.Annotations;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.VersionControl;
+using UnityEditor.Toolbars;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -73,7 +74,8 @@ namespace UnityEditor
         [UsedImplicitly, RequiredByNativeCode]
         public static void LoadDefaultWindowPreferences()
         {
-            LoadCurrentModeLayout(keepMainWindow: false);
+            LoadCurrentModeLayout(keepMainWindow: FindMainWindow());
+            ModeService.InitializeCurrentMode();
         }
 
         public static void LoadCurrentModeLayout(bool keepMainWindow)
@@ -110,7 +112,7 @@ namespace UnityEditor
             GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref topViewInfo);
             GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref bottomViewInfo);
 
-            var mainWindow = GenerateLayout(keepMainWindow, availableEditorWindowTypes, centerViewInfo, topViewInfo, bottomViewInfo);
+            var mainWindow = GenerateLayout(keepMainWindow, availableEditorWindowTypes, centerViewInfo, topViewInfo, bottomViewInfo, layoutData);
             if (mainWindow)
                 mainWindow.m_DontSaveToLayout = !Convert.ToBoolean(layoutData["restore_saved_layout"]);
 
@@ -183,19 +185,21 @@ namespace UnityEditor
             return view;
         }
 
-        private static ContainerWindow GenerateLayout(bool keepMainWindow, Type[] availableEditorWindowTypes, LayoutViewInfo center, LayoutViewInfo top, LayoutViewInfo bottom)
+        internal static ContainerWindow FindMainWindow()
         {
-            ContainerWindow mainContainerWindow = null;
             var containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
             foreach (ContainerWindow window in containers)
             {
-                if (window.showMode != ShowMode.MainWindow)
-                    continue;
-
-                mainContainerWindow = window;
-                break;
+                if (window.showMode == ShowMode.MainWindow)
+                    return window;
             }
 
+            return null;
+        }
+
+        private static ContainerWindow GenerateLayout(bool keepMainWindow, Type[] availableEditorWindowTypes, LayoutViewInfo center, LayoutViewInfo top, LayoutViewInfo bottom, JSONObject layoutData)
+        {
+            ContainerWindow mainContainerWindow = FindMainWindow();
             if (keepMainWindow && mainContainerWindow == null)
             {
                 Debug.LogWarning($"No main window to restore layout from while loading dynamic layout for mode {ModeService.currentId}");
@@ -205,9 +209,29 @@ namespace UnityEditor
             try
             {
                 ContainerWindow.SetFreezeDisplay(true);
-
                 if (!mainContainerWindow)
+                {
                     mainContainerWindow = ScriptableObject.CreateInstance<ContainerWindow>();
+                    var mainWindowMinSize = new Vector2(120, 80);
+                    var mainWindowMaxSize = new Vector2(8192, 8192);
+                    if (layoutData.Contains("min_width"))
+                    {
+                        mainWindowMinSize.x = Convert.ToSingle(layoutData["min_width"]);
+                    }
+                    if (layoutData.Contains("min_height"))
+                    {
+                        mainWindowMinSize.y = Convert.ToSingle(layoutData["min_height"]);
+                    }
+                    if (layoutData.Contains("max_width"))
+                    {
+                        mainWindowMaxSize.x = Convert.ToSingle(layoutData["max_width"]);
+                    }
+                    if (layoutData.Contains("max_height"))
+                    {
+                        mainWindowMaxSize.y = Convert.ToSingle(layoutData["max_height"]);
+                    }
+                    mainContainerWindow.SetMinMaxSizes(mainWindowMinSize, mainWindowMaxSize);
+                }
 
                 mainContainerWindow.windowID = $"MainView_{ModeService.currentId}";
                 mainContainerWindow.LoadGeometry(true);
@@ -782,6 +806,10 @@ namespace UnityEditor
 
                 win.Focus();
 
+                var gv = win as GameView;
+                if (gv != null)
+                    gv.m_Parent.EnableVSync(gv.vSyncEnabled);
+
                 parentWindow.DisplayAllViews();
                 win.m_Parent.MakeVistaDWMHappyDance();
             }
@@ -1279,10 +1307,6 @@ namespace UnityEditor
                 foreach (View killme in oldViews)
                     UnityObject.DestroyImmediate(killme, true);
             }
-
-            UnityObject[] toolbars = Resources.FindObjectsOfTypeAll(typeof(EditorToolbar));
-            foreach (var killme in toolbars)
-                UnityObject.DestroyImmediate(killme, true);
         }
 
         public static void SaveWindowLayout(string path)
@@ -1294,7 +1318,6 @@ namespace UnityEditor
             UnityObject[] windows = Resources.FindObjectsOfTypeAll(typeof(EditorWindow));
             UnityObject[] containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
             UnityObject[] views = Resources.FindObjectsOfTypeAll(typeof(View));
-            UnityObject[] toolbars = Resources.FindObjectsOfTypeAll(typeof(EditorToolbar));
 
             foreach (ContainerWindow w in containers)
             {
@@ -1318,13 +1341,6 @@ namespace UnityEditor
                 if (w.m_Parent != null && w.m_Parent.window != null && w.m_Parent.window.m_DontSaveToLayout)
                     continue;
                 all.Add(w);
-            }
-
-            foreach (EditorToolbar toolbar in toolbars)
-            {
-                if (toolbar.m_DontSaveToLayout)
-                    continue;
-                all.Add(toolbar);
             }
 
             var parentLayoutFolder = Path.GetDirectoryName(path);

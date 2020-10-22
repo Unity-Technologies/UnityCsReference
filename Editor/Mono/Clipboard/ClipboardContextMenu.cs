@@ -123,6 +123,12 @@ namespace UnityEditor
                         Clipboard.HasEnumProperty,
                         Clipboard.GetEnumProperty);
                     break;
+                case SerializedPropertyType.Hash128:
+                    SetupAction(property, menu, evt,
+                        p => Clipboard.hash128Value = p.hash128Value,
+                        p => Clipboard.hasHash128,
+                        p => p.hash128Value = Clipboard.hash128Value);
+                    break;
                 case SerializedPropertyType.Generic:
                     SetupAction(property, menu, evt,
                         Clipboard.SetSerializedProperty,
@@ -328,7 +334,7 @@ namespace UnityEditor
         // Clipboard related Transform component context menus
         //
 
-        [MenuItem("CONTEXT/Transform/Copy Position")] // ReSharper disable once UnusedMember.Local
+        [MenuItem("CONTEXT/Transform/Copy/Position", false, 100100)] // ReSharper disable once UnusedMember.Local
         static void CopyTransformPositionMenu(MenuCommand command)
         {
             var tr = command.context as Transform;
@@ -337,14 +343,14 @@ namespace UnityEditor
             Clipboard.vector3Value = tr.localPosition;
         }
 
-        [MenuItem("CONTEXT/Transform/Paste Position", true)] // ReSharper disable once UnusedMember.Local
+        [MenuItem("CONTEXT/Transform/Paste/Position", true)] // ReSharper disable once UnusedMember.Local
         static bool PasteTransformPositionMenuValidate(MenuCommand command)
         {
             var tr = command.context as Transform;
             return tr != null && Clipboard.hasVector3 && IsUserModifiable(tr);
         }
 
-        [MenuItem("CONTEXT/Transform/Paste Position")] // ReSharper disable once UnusedMember.Local
+        [MenuItem("CONTEXT/Transform/Paste/Position", false, 100100)] // ReSharper disable once UnusedMember.Local
         static void PasteTransformPositionMenu(MenuCommand command)
         {
             var tr = command.context as Transform;
@@ -354,7 +360,7 @@ namespace UnityEditor
             tr.localPosition = Clipboard.vector3Value;
         }
 
-        [MenuItem("CONTEXT/Transform/Copy Rotation")] // ReSharper disable once UnusedMember.Local
+        [MenuItem("CONTEXT/Transform/Copy/Rotation", false, 100102)] // ReSharper disable once UnusedMember.Local
         static void CopyTransformRotationMenu(MenuCommand command)
         {
             var tr = command.context as Transform;
@@ -363,14 +369,14 @@ namespace UnityEditor
             Clipboard.vector3Value = tr.localEulerAngles;
         }
 
-        [MenuItem("CONTEXT/Transform/Paste Rotation", true)] // ReSharper disable once UnusedMember.Local
+        [MenuItem("CONTEXT/Transform/Paste/Rotation", true)] // ReSharper disable once UnusedMember.Local
         static bool PasteTransformRotationMenuValidate(MenuCommand command)
         {
             var tr = command.context as Transform;
             return tr != null && (Clipboard.hasVector3 || Clipboard.hasQuaternion) && IsUserModifiable(tr);
         }
 
-        [MenuItem("CONTEXT/Transform/Paste Rotation")] // ReSharper disable once UnusedMember.Local
+        [MenuItem("CONTEXT/Transform/Paste/Rotation", false, 100102)] // ReSharper disable once UnusedMember.Local
         static void PasteTransformRotationMenu(MenuCommand command)
         {
             var tr = command.context as Transform;
@@ -383,7 +389,7 @@ namespace UnityEditor
                 tr.localEulerAngles = Clipboard.vector3Value;
         }
 
-        [MenuItem("CONTEXT/Transform/Copy Scale")] // ReSharper disable once UnusedMember.Local
+        [MenuItem("CONTEXT/Transform/Copy/Scale", false, 100103)] // ReSharper disable once UnusedMember.Local
         static void CopyTransformScaleMenu(MenuCommand command)
         {
             var tr = command.context as Transform;
@@ -392,14 +398,14 @@ namespace UnityEditor
             Clipboard.vector3Value = tr.localScale;
         }
 
-        [MenuItem("CONTEXT/Transform/Paste Scale", true)] // ReSharper disable once UnusedMember.Local
+        [MenuItem("CONTEXT/Transform/Paste/Scale", true)] // ReSharper disable once UnusedMember.Local
         static bool PasteTransformScaleMenuValidate(MenuCommand command)
         {
             var tr = command.context as Transform;
             return tr != null && Clipboard.hasVector3 && IsUserModifiable(tr);
         }
 
-        [MenuItem("CONTEXT/Transform/Paste Scale")] // ReSharper disable once UnusedMember.Local
+        [MenuItem("CONTEXT/Transform/Paste/Scale", false, 100103)] // ReSharper disable once UnusedMember.Local
         static void PasteTransformScaleMenu(MenuCommand command)
         {
             var tr = command.context as Transform;
@@ -409,7 +415,7 @@ namespace UnityEditor
             tr.localScale = Clipboard.vector3Value;
         }
 
-        [MenuItem("CONTEXT/Transform/Copy World Placement")] // ReSharper disable once UnusedMember.Local
+        [MenuItem("CONTEXT/Transform/Copy/Position (World)", false, 100101)] // ReSharper disable once UnusedMember.Local
         static void CopyTransformWorldPlacementMenu(MenuCommand command)
         {
             var tr = command.context as Transform;
@@ -418,14 +424,14 @@ namespace UnityEditor
             Clipboard.SetCustomValue(new TransformWorldPlacement(tr));
         }
 
-        [MenuItem("CONTEXT/Transform/Paste World Placement", true)] // ReSharper disable once UnusedMember.Local
+        [MenuItem("CONTEXT/Transform/Paste/Position (World)", true)] // ReSharper disable once UnusedMember.Local
         static bool PasteTransformWorldPlacementMenuValidate(MenuCommand command)
         {
             var tr = command.context as Transform;
             return tr != null && IsUserModifiable(tr) && Clipboard.HasCustomValue<TransformWorldPlacement>();
         }
 
-        [MenuItem("CONTEXT/Transform/Paste World Placement")] // ReSharper disable once UnusedMember.Local
+        [MenuItem("CONTEXT/Transform/Paste/Position (World)", false, 100101)] // ReSharper disable once UnusedMember.Local
         static void PasteTransformWorldPlacementMenu(MenuCommand command)
         {
             var tr = command.context as Transform;

@@ -663,7 +663,7 @@ namespace UnityEditor
         static readonly List<Vector2> s_PointCloudConvexHull = new List<Vector2>();
         static float DistanceToPointCloudConvexHull(params Vector3[] points)
         {
-            if (points == null || points.Length == 0)
+            if (points == null || points.Length == 0 || Camera.current == null)
                 return float.PositiveInfinity;
 
             var mousePos = Event.current.mousePosition;
@@ -927,12 +927,22 @@ namespace UnityEditor
             return Internal_PickRectObjects(cam, rect, selectPrefabRootsOnly, allowGizmos);
         }
 
-        internal static bool FindNearestVertex(Vector2 guiPoint, Transform[] objectsToSearch, out Vector3 vertex)
+        public static bool FindNearestVertex(Vector2 guiPoint, out Vector3 vertex)
+        {
+            return FindNearestVertex(guiPoint, null, ignoreRaySnapObjects, out vertex);
+        }
+
+        public static bool FindNearestVertex(Vector2 guiPoint, Transform[] objectsToSearch, out Vector3 vertex)
+        {
+            return FindNearestVertex(guiPoint, objectsToSearch, ignoreRaySnapObjects, out vertex);
+        }
+
+        public static bool FindNearestVertex(Vector2 guiPoint, Transform[] objectsToSearch, Transform[] objectsToIgnore, out Vector3 vertex)
         {
             Camera cam = Camera.current;
             var screenPoint = EditorGUIUtility.PointsToPixels(guiPoint);
             screenPoint.y = cam.pixelRect.yMax - screenPoint.y;
-            return Internal_FindNearestVertex(cam, screenPoint, objectsToSearch, ignoreRaySnapObjects, out vertex);
+            return Internal_FindNearestVertex(cam, screenPoint, objectsToSearch, objectsToIgnore, out vertex);
         }
 
 #pragma warning disable 618
@@ -1010,7 +1020,7 @@ namespace UnityEditor
             return PickGameObject(position, selectPrefabRoot, ignore, null);
         }
 
-        internal static GameObject PickGameObject(Vector2 position, bool selectPrefabRoot, GameObject[] ignore, GameObject[] filter)
+        public static GameObject PickGameObject(Vector2 position, bool selectPrefabRoot, GameObject[] ignore, GameObject[] filter)
         {
             int dummyMaterialIndex;
             GameObject picked = PickGameObjectDelegated(position, ignore, filter, out dummyMaterialIndex);
@@ -1027,6 +1037,13 @@ namespace UnityEditor
         }
 
         // Get the selection base object, taking into account user enabled picking filter
+        internal static GameObject FindSelectionBaseForPicking(Transform transform)
+        {
+            if (transform == null)
+                return null;
+            return FindSelectionBaseForPicking(transform.gameObject);
+        }
+
         internal static GameObject FindSelectionBaseForPicking(GameObject go)
         {
             if (go == null)

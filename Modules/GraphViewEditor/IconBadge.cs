@@ -374,7 +374,7 @@ namespace UnityEditor.Experimental.GraphView
             float iconSize = 0f;
             if (m_IconElement != null)
             {
-                iconSize = m_IconElement.computedStyle.width == StyleKeyword.Auto ? contentWidth - arrowLength : m_IconElement.computedStyle.width.value.value;
+                iconSize = m_IconElement.computedStyle.width.IsAuto() ? contentWidth - arrowLength : m_IconElement.computedStyle.width.value;
             }
 
             float arrowOffset = Mathf.Floor((iconSize - arrowWidth) * 0.5f);

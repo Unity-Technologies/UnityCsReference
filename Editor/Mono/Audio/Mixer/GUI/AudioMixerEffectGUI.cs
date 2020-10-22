@@ -25,20 +25,26 @@ namespace UnityEditor
             string origFormat = EditorGUI.kFloatFieldFormatString;
 
             bool exposed = controller.ContainsExposedParameter(path.parameter);
+            float displayValue = value * displayScale;
 
             EditorGUIUtility.fieldWidth = 70f;     // do not go over 70 because then sliders will not be shown when inspector has minimal width
             EditorGUI.kFloatFieldFormatString = kAudioSliderFloatFormat;
             EditorGUI.s_UnitString = unit;
-            GUIContent content = label;
-            if (exposed)
-                content = GUIContent.Temp(label.text + kExposedParameterUnicodeChar, label.tooltip);
 
-            float displayValue = value * displayScale;
-            displayValue = EditorGUILayout.PowerSlider(content, displayValue, leftValue * displayScale, rightValue * displayScale, displayExponent, options);
+            try
+            {
+                GUIContent content = label;
+                if (exposed)
+                    content = GUIContent.Temp(label.text + kExposedParameterUnicodeChar, label.tooltip);
 
-            EditorGUI.s_UnitString = null;
-            EditorGUI.kFloatFieldFormatString = origFormat;
-            EditorGUIUtility.fieldWidth = oldNumberWidth;
+                displayValue = EditorGUILayout.PowerSlider(content, displayValue, leftValue * displayScale, rightValue * displayScale, displayExponent, options);
+            }
+            finally
+            {
+                EditorGUI.s_UnitString = null;
+                EditorGUI.kFloatFieldFormatString = origFormat;
+                EditorGUIUtility.fieldWidth = oldNumberWidth;
+            }
 
             if (Event.current.type == EventType.ContextClick)
             {

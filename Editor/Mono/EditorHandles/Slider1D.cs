@@ -32,7 +32,7 @@ namespace UnityEditorInternal
                 case EventType.Layout:
                 case EventType.MouseMove:
                     if (capFunction != null)
-                        capFunction(id, position + offset, Quaternion.LookRotation(handleDirection), size, eventType);
+                        capFunction(id, position + offset, Quaternion.LookRotation(handleDirection), size, EventType.Layout);
                     else
                         HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(position + offset, size * .2f));
                     break;
@@ -56,6 +56,9 @@ namespace UnityEditorInternal
                     break;
 
                 case EventType.MouseDrag:
+
+                    capFunction?.Invoke(id, position + offset, Quaternion.LookRotation(handleDirection), size, EventType.Layout);
+
                     if (GUIUtility.hotControl == id)
                     {
                         // First try to calculate the translation by casting a mouse ray against a world position plane

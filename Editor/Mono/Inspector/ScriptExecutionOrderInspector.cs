@@ -366,37 +366,38 @@ namespace UnityEditor
             var length = m_DefaultTimeScripts.Count;
             var names = new string[length];
             var enabled = new bool[length];
+            var metaPaths = new string[length];
 
             for (var i = 0; i < length; ++i)
             {
                 names[i] = m_DefaultTimeScripts[i].GetClass().FullName; // todo: Localization with a proper database.
                 enabled[i] = true;
-            }
 
-            var paths = new List<string>(length);
-            var pathsIndices = new Dictionary<string, int>(length);
-
-            for (var i = 0; i < length; ++i)
-            {
                 var assetPath = AssetDatabase.GetAssetPath(m_DefaultTimeScripts[i]);
-                if (string.IsNullOrEmpty(assetPath))
+                if (!string.IsNullOrEmpty(assetPath))
+                {
+                    enabled[i] = true;
+                    metaPaths[i] = AssetDatabase.GetTextMetaFilePathFromAssetPath(assetPath);
+                }
+                else
                 {
                     enabled[i] = false;
-                    continue;
                 }
-
-                var metaPath = AssetDatabase.GetTextMetaFilePathFromAssetPath(assetPath);
-                paths.Add(metaPath);
-                pathsIndices.Add(metaPath, i);
             }
 
             var notEditablePaths = new List<string>();
-            AssetDatabase.CanOpenForEdit(paths.ToArray(), notEditablePaths);
+            var uniqueMetaPaths = metaPaths.Where(p => !string.IsNullOrEmpty(p)).Distinct().ToArray();
+            AssetDatabase.CanOpenForEdit(uniqueMetaPaths, notEditablePaths);
 
             foreach (var notEditablePath in notEditablePaths)
             {
-                if (pathsIndices.TryGetValue(notEditablePath, out var index))
-                    enabled[index] = false;
+                for (var i = 0; i < length; ++i)
+                {
+                    if (notEditablePath == metaPaths[i])
+                    {
+                        enabled[i] = false;
+                    }
+                }
             }
 
             EditorUtility.DisplayCustomMenu(r, names, enabled, null, MenuSelection, null);

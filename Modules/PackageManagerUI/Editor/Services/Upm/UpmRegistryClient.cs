@@ -122,6 +122,10 @@ namespace UnityEditor.PackageManager.UI
 
             if (!registriesListResult.SequenceEqual(m_SettingsProxy.registries, new RegistryInfoComparer()))
             {
+                var name = registriesListResult.FirstOrDefault(r => !m_SettingsProxy.registries.Contains(r, new RegistryInfoComparer()))?.name;
+                if (!string.IsNullOrEmpty(name))
+                    m_SettingsProxy.SelectRegistry(name);
+
                 m_SettingsProxy.SetRegistries(registriesListResult);
                 m_SettingsProxy.Save();
                 onRegistriesModified?.Invoke();

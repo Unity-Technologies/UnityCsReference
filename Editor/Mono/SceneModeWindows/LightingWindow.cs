@@ -32,7 +32,7 @@ namespace UnityEditor
 
             public static readonly GUIStyle labelStyle = EditorStyles.wordWrappedMiniLabel;
             public static readonly GUIStyle buttonStyle = "LargeButton";
-            public static readonly GUIContent continuousBakeLabel = EditorGUIUtility.TrTextContent("Auto Generate", "Automatically generates lighting data in the Scene when any changes are made to the lighting systems.");
+            public static readonly GUIContent continuousBakeLabel = EditorGUIUtility.TrTextContent("Auto Generate", "Generate lighting data in the Scene when there are changes that affect Scene lighting, such as modifications to lights, materials, or geometry. This option is only available when there is a Lighting Settings Asset assigned in the Lighting Window.");
             public static readonly GUIContent buildLabel = EditorGUIUtility.TrTextContent("Generate Lighting", "Generates the lightmap data for the current master scene.  This lightmap data (for realtime and baked global illumination) is stored in the GI Cache. For GI Cache settings see the Preferences panel.");
 
             public static string[] BakeModeStrings =
@@ -197,7 +197,7 @@ namespace UnityEditor
                     break;
             }
 
-            Buttons(selectedMode == Mode.LightingSettings);
+            Buttons();
             Summary();
 
             lightingSettings.ApplyModifiedProperties();
@@ -337,7 +337,7 @@ namespace UnityEditor
             }
         }
 
-        void Buttons(bool showAutoToggle)
+        void Buttons()
         {
             using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
             {
@@ -353,24 +353,21 @@ namespace UnityEditor
                 bool iterative = m_WorkflowMode.intValue == (int)Lightmapping.GIWorkflowMode.Iterative;
                 Rect rect = GUILayoutUtility.GetRect(Styles.continuousBakeLabel, GUIStyle.none);
 
-                if (showAutoToggle)
+                EditorGUI.BeginProperty(rect, Styles.continuousBakeLabel, m_WorkflowMode);
+
+                // Continous mode checkbox
+                EditorGUI.BeginChangeCheck();
+                using (new EditorGUI.DisabledScope(m_LightingSettingsReadOnlyMode))
                 {
-                    EditorGUI.BeginProperty(rect, Styles.continuousBakeLabel, m_WorkflowMode);
-
-                    // Continous mode checkbox
-                    EditorGUI.BeginChangeCheck();
-                    using (new EditorGUI.DisabledScope(m_LightingSettingsReadOnlyMode))
-                    {
-                        iterative = GUILayout.Toggle(iterative, Styles.continuousBakeLabel);
-                    }
-
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        m_WorkflowMode.intValue = (int)(iterative ? Lightmapping.GIWorkflowMode.Iterative : Lightmapping.GIWorkflowMode.OnDemand);
-                    }
-
-                    EditorGUI.EndProperty();
+                    iterative = GUILayout.Toggle(iterative, Styles.continuousBakeLabel);
                 }
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    m_WorkflowMode.intValue = (int)(iterative ? Lightmapping.GIWorkflowMode.Iterative : Lightmapping.GIWorkflowMode.OnDemand);
+                }
+
+                EditorGUI.EndProperty();
 
                 using (new EditorGUI.DisabledScope(iterative))
                 {

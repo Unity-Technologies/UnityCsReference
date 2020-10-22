@@ -179,7 +179,7 @@ namespace UnityEditor.AssetImporters
         // we are applying changes directly to the target and ignore the Apply/Revert mechanism.
         bool m_InstantApply = true;
         // This allow Importers to ignore the Apply/Revert mechanism and save their changes each update like normal Editor.
-        protected virtual bool needsApplyRevert => !m_InstantApply;
+        protected virtual bool needsApplyRevert => !m_InstantApply && !EditorUtility.IsHiddenInInspector(target);
 
         // we need to keep a list of unreleased instances in case the user cancel the de-selection
         // we are using these instances to keep the same apply/revert status with the forced re-selection
@@ -413,6 +413,14 @@ namespace UnityEditor.AssetImporters
                 // See cases 597496 and 601174 for context.
                 return base.preview;
             }
+        }
+
+        public override void DrawPreview(Rect previewArea)
+        {
+            // If the importer is drawing the previews,
+            // respect that when passing through to object preview helper
+            var previewable = useAssetDrawPreview ? preview : this;
+            ObjectPreview.DrawPreview(previewable, previewArea, assetTargets);
         }
 
         //We usually want to redirect the DrawPreview to the assetEditor, but there are few cases we don't want that.

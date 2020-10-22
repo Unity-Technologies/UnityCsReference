@@ -14,7 +14,6 @@ namespace UnityEditor.PackageManager.UI
     internal class PackageList : VisualElement
     {
         private const string k_UnityPackageGroupDisplayName = "Unity Technologies";
-        private const string k_OtherPackageGroupDisplayName = "Other";
 
         internal new class UxmlFactory : UxmlFactory<PackageList> {}
 
@@ -26,6 +25,7 @@ namespace UnityEditor.PackageManager.UI
         private PackageManagerPrefs m_PackageManagerPrefs;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
+        private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
@@ -35,6 +35,7 @@ namespace UnityEditor.PackageManager.UI
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
+            m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
         }
 
         internal IEnumerable<PackageItem> packageItems => packageGroups.SelectMany(group => group.packageItems);
@@ -77,10 +78,22 @@ namespace UnityEditor.PackageManager.UI
 
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
 
+            m_SettingsProxy.onSeeAllVersionsChanged += OnSeeAllPackageVersionsChanged;
+
             m_PackageFiltering.onFilterTabChanged += OnFilterTabChanged;
 
             // manually build the items on initialization to refresh the UI
             OnListRebuild(m_PageManager.GetCurrentPage());
+
+            var isDeveloperBuild = Unsupported.IsDeveloperBuild();
+            if (!isDeveloperBuild)
+            {
+                if (isDeveloperBuild != m_SettingsProxy.seeAllPackageVersions)
+                {
+                    m_SettingsProxy.seeAllPackageVersions = isDeveloperBuild;
+                    m_SettingsProxy.Save();
+                }
+            }
         }
 
         public void OnDisable()
@@ -96,6 +109,7 @@ namespace UnityEditor.PackageManager.UI
 
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
 
+            m_SettingsProxy.onSeeAllVersionsChanged -= OnSeeAllPackageVersionsChanged;
             m_PackageFiltering.onFilterTabChanged -= OnFilterTabChanged;
         }
 
@@ -354,8 +368,8 @@ namespace UnityEditor.PackageManager.UI
             if (groupName == PageManager.k_UnityPackageGroupName)
                 return k_UnityPackageGroupDisplayName;
 
-            if (groupName == PageManager.k_OtherPackageGroupName)
-                return L10n.Tr(k_OtherPackageGroupDisplayName);
+            if (groupName == PageManager.k_OtherPackageGroupName || groupName == PageManager.k_CustomPackageGroupName)
+                return L10n.Tr(groupName);
 
             return groupName;
         }
@@ -368,7 +382,7 @@ namespace UnityEditor.PackageManager.UI
 
             var hidden = string.IsNullOrEmpty(groupName);
             var expanded = m_PageManager.IsGroupExpanded(groupName);
-            group = new PackageGroup(m_ResourceLoader, m_PageManager, groupName, GetGroupDisplayName(groupName), expanded, hidden);
+            group = new PackageGroup(m_ResourceLoader, m_PageManager, m_SettingsProxy, groupName, GetGroupDisplayName(groupName), expanded, hidden);
             if (!hidden)
             {
                 group.onGroupToggle += value =>
@@ -568,6 +582,32 @@ namespace UnityEditor.PackageManager.UI
                         : nextGroup.packageItems.FirstOrDefault(p => UIUtils.IsElementVisible(p));
             }
             return nextVisibleItem;
+        }
+
+        private void OnSeeAllPackageVersionsChanged(bool value)
+        {
+            if (m_PackageFiltering.currentFilterTab == PackageFilterTab.BuiltIn || m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore)
+                return;
+            var page = m_PageManager.GetPage(m_PackageFiltering.currentFilterTab);
+            page.Rebuild();
+
+            var openedItems = packageItems.Where((p => p.visualState.expanded)).ToList();
+            if (!value && openedItems.Count() > 0)
+            {
+                foreach (var packageItem in openedItems)
+                {
+                    packageItem.visualState.expanded = false;
+                    packageItem.UpdateVisualState(null);
+                }
+
+                var packageToSelect = openedItems.FirstOrDefault(p => !string.IsNullOrEmpty(p.visualState.selectedVersionId));
+                if (packageToSelect != null)
+                {
+                    PackageManagerWindow.SelectPackageAndFilterStatic(packageToSelect.package.uniqueId);
+                    packageToSelect.visualState.expanded = false;
+                    packageToSelect.UpdateVisualState(null);
+                }
+            }
         }
 
         private VisualElementCache cache { get; set; }

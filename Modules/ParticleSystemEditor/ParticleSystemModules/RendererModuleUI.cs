@@ -19,6 +19,7 @@ namespace UnityEditor
         SerializedProperty m_CastShadows;
         SerializedProperty m_ReceiveShadows;
         SerializedProperty m_ShadowBias;
+        SerializedProperty m_StaticShadowCaster;
         SerializedProperty m_MotionVectors;
         SerializedProperty m_Material;
         SerializedProperty m_SortingOrder;
@@ -96,6 +97,7 @@ namespace UnityEditor
             public GUIContent castShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Only opaque materials cast shadows");
             public GUIContent receiveShadows = EditorGUIUtility.TrTextContent("Receive Shadows", "Only opaque materials receive shadows. When using deferred rendering, all opaque objects receive shadows.");
             public GUIContent shadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the particle size.");
+            public GUIContent staticShadowCaster = EditorGUIUtility.TrTextContent("Static Shadow Caster", " When enabled, Unity considers this renderer as being static for the sake of shadow rendering. If the SRP implements cached shadow maps, this field indicates to the render pipeline what renderers are considered static and what renderers are considered dynamic.");
             public GUIContent motionVectors = EditorGUIUtility.TrTextContent("Motion Vectors", "Specifies whether the Particle System renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture. Note that there is no built-in support for Per-Particle Motion.");
             public GUIContent normalDirection = EditorGUIUtility.TrTextContent("Normal Direction", "Value between 0.0 and 1.0. If 1.0 is used, normals will point towards camera. If 0.0 is used, normals will point out in the corner direction of the particle.");
             public GUIContent allowRoll = EditorGUIUtility.TrTextContent("Allow Roll", "Allows billboards to roll with the camera. It is often useful to disable this option when using VR.");
@@ -192,6 +194,7 @@ namespace UnityEditor
             m_CastShadows = GetProperty0("m_CastShadows");
             m_ReceiveShadows = GetProperty0("m_ReceiveShadows");
             m_ShadowBias = GetProperty0("m_ShadowBias");
+            m_StaticShadowCaster = GetProperty0("m_StaticShadowCaster");
             m_MotionVectors = GetProperty0("m_MotionVectors");
             m_Material = GetProperty0("m_Materials.Array.data[0]");
             m_SortingOrder = GetProperty0("m_SortingOrder");
@@ -378,6 +381,13 @@ namespace UnityEditor
             EditorGUILayout.Space();
 
             GUIPopup(s_Texts.castShadows, m_CastShadows, EditorGUIUtility.TempContent(m_CastShadows.enumDisplayNames));
+
+            if (m_CastShadows.hasMultipleDifferentValues || m_CastShadows.intValue != 0)
+            {
+                RenderPipelineAsset srpAsset = GraphicsSettings.currentRenderPipeline;
+                if (srpAsset != null)
+                    GUIToggle(s_Texts.staticShadowCaster, m_StaticShadowCaster);
+            }
 
             if (SupportedRenderingFeatures.active.receiveShadows)
             {

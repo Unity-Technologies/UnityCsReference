@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEditor.Compilation;
+using UnityEditor.PackageManager.UnityLifecycle;
 using Assembly = System.Reflection.Assembly;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
@@ -67,6 +68,7 @@ namespace UnityEditor.PackageManager
 
         [SerializeField]
         [NativeName("status")]
+        [Obsolete("PackageInfo.status is deprecated and will be removed in a later version.", false)]
         private PackageStatus m_Status = PackageStatus.Unknown;
 
         [SerializeField]
@@ -141,6 +143,10 @@ namespace UnityEditor.PackageManager
         [NativeName("repository")]
         private RepositoryInfo m_Repository = new RepositoryInfo();
 
+        [SerializeField]
+        [NativeName("unityLifecycle")]
+        private UnityLifecycleInfo m_UnityLifecycle = new UnityLifecycleInfo();
+
         internal PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
@@ -154,6 +160,7 @@ namespace UnityEditor.PackageManager
         public string category { get { return m_Category;  } }
         public string type { get { return m_Type; } }
         public string description { get { return m_Description;  } }
+        [Obsolete("PackageInfo.status is deprecated and will be removed in a later version.", false)]
         public PackageStatus status { get { return m_Status;  } }
         public Error[] errors { get { return m_Errors;  } }
         public VersionsInfo versions { get { return m_Versions; } }
@@ -167,6 +174,7 @@ namespace UnityEditor.PackageManager
         public string documentationUrl { get { return m_DocumentationUrl; } }
         public string changelogUrl { get { return m_ChangelogUrl; } }
         public string licensesUrl { get { return m_LicensesUrl; } }
+        internal UnityLifecycleInfo unityLifecycle { get { return m_UnityLifecycle; } }
 
         public RegistryInfo registry
         {
@@ -227,7 +235,7 @@ namespace UnityEditor.PackageManager
 
             // No asmdef - this is a precompiled DLL.
             // Do a scan through all packages for one that owns the directory in which it is.
-            foreach (var package in GetAll())
+            foreach (var package in GetAllRegisteredPackages())
             {
                 if (fullPath.StartsWith(package.resolvedPath + Path.DirectorySeparatorChar))
                     return package;
@@ -249,7 +257,7 @@ namespace UnityEditor.PackageManager
 
             // We will loop through all the packages and see if they match the relative or absolute paths of asmdefs or assemblies
             List<PackageInfo> matchingPackages = new List<PackageInfo>();
-            foreach (var package in GetAll())
+            foreach (var package in GetAllRegisteredPackages())
             {
                 foreach (var path in pathsToProcess)
                 {

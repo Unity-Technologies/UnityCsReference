@@ -8,6 +8,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngineInternal;
 using UnityEngine.Bindings;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.Networking
 {
@@ -28,7 +30,7 @@ namespace UnityEngine.Networking
             Dispose();
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             if (m_Ptr != IntPtr.Zero)
             {
@@ -84,20 +86,55 @@ namespace UnityEngine.Networking
     [NativeHeader("Modules/UnityWebRequest/Public/UploadHandler/UploadHandlerRaw.h")]
     public sealed class UploadHandlerRaw : UploadHandler
     {
-        private static extern IntPtr Create(UploadHandlerRaw self, byte[] data);
+        NativeArray<byte> m_Payload;
+
+        private static extern unsafe IntPtr Create(UploadHandlerRaw self, byte* data, int dataLength);
 
         public UploadHandlerRaw(byte[] data)
         {
-            if (data != null && data.Length == 0)
+            if (data == null || data.Length == 0)
                 throw new ArgumentException("Cannot create a data handler without payload data");
-            m_Ptr = Create(this, data);
+            m_Payload = new NativeArray<byte>(data, Allocator.Persistent);
+            unsafe
+            {
+                m_Ptr = Create(this, (byte*)m_Payload.GetUnsafeReadOnlyPtr(), m_Payload.Length);
+            }
         }
 
-        private extern byte[] InternalGetData();
+        public UploadHandlerRaw(NativeArray<byte> data, bool transferOwnership)
+        {
+            if (!data.IsCreated || data.Length == 0)
+                throw new ArgumentException("Cannot create a data handler without payload data");
+            if (transferOwnership)
+                m_Payload = data;
+            unsafe
+            {
+                m_Ptr = Create(this, (byte*)data.GetUnsafeReadOnlyPtr(), data.Length);
+            }
+        }
+
+        public UploadHandlerRaw(NativeArray<byte>.ReadOnly data)
+        {
+            if (data.Length == 0)
+                throw new ArgumentException("Cannot create a data handler without payload data");
+            unsafe
+            {
+                m_Ptr = Create(this, (byte*)data.GetUnsafeReadOnlyPtr(), data.Length);
+            }
+        }
 
         internal override byte[] GetData()
         {
-            return InternalGetData();
+            if (m_Payload.IsCreated)
+                return m_Payload.ToArray();
+            return null;
+        }
+
+        public override void Dispose()
+        {
+            if (m_Payload.IsCreated)
+                m_Payload.Dispose();
+            base.Dispose();
         }
 
     }

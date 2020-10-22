@@ -1,7 +1,5 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
@@ -26,9 +24,15 @@ namespace UnityEngine.UIElements
         [Obsolete("VisualElement.cacheAsBitmap is deprecated and has no effect")]
         public bool cacheAsBitmap { get; set; }
 
+        internal bool disableClipping
+        {
+            get => (m_Flags & VisualElementFlags.DisableClipping) == VisualElementFlags.DisableClipping;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.DisableClipping : m_Flags & ~VisualElementFlags.DisableClipping;
+        }
+
         internal bool ShouldClip()
         {
-            return computedStyle.overflow.value != OverflowInternal.Visible;
+            return computedStyle.overflow != OverflowInternal.Visible && !disableClipping;
         }
 
         // parent in visual tree
@@ -210,6 +214,58 @@ namespace UnityEngine.UIElements
                 return hierarchy.IndexOf(element);
             }
             return contentContainer?.IndexOf(element) ?? -1;
+        }
+
+        /// <summary>
+        /// Retrieves a specific child element by following a path of element indexes down through the visual tree.
+        /// Use this method along with <see cref="FindElementInTree"/>.
+        /// </summary>
+        /// <param name="childIndexes">An array of indexes that represents the path of elements that this method follows through the visual tree.</param>
+        /// <returns>The child element, or null if the child is not found.</returns>
+        internal VisualElement ElementAtTreePath(List<int> childIndexes)
+        {
+            VisualElement child = this;
+            foreach (var index in childIndexes)
+            {
+                if (index >= 0 && index < child.hierarchy.childCount)
+                {
+                    child = child.hierarchy[index];
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            return child;
+        }
+
+        /// <summary>
+        /// Fills an array with indexes representing the path to the specified element, down the tree.
+        /// Use this method along with <see cref="ElementAtTreePath"/>.
+        /// </summary>
+        /// <param name="element">The element to look for.</param>
+        /// <param name="outChildIndexes">An empty list that this method fills with the indexes of child elements.</param>
+        internal bool FindElementInTree(VisualElement element, List<int> outChildIndexes)
+        {
+            var child = element;
+            var hierarchyParent = child.hierarchy.parent;
+
+            while (hierarchyParent != null)
+            {
+                outChildIndexes.Insert(0, hierarchyParent.hierarchy.IndexOf(child));
+
+                if (hierarchyParent == this)
+                {
+                    return true;
+                }
+
+                child = hierarchyParent;
+                hierarchyParent = hierarchyParent.hierarchy.parent;
+            }
+
+            outChildIndexes.Clear();
+            return false;
         }
 
         /// <summary>
@@ -932,5 +988,76 @@ namespace UnityEngine.UIElements
             // THIS is not under retargetRoot
             return this;
         }
+
+        internal VisualTreeAsset m_VisualTreeAssetSource = null;
+
+        private ILiveReloadAssetTracker<VisualTreeAsset> m_VisualTreeAssetTracker = null;
+
+        internal ILiveReloadAssetTracker<VisualTreeAsset> visualTreeAssetTracker
+        {
+            set => m_VisualTreeAssetTracker = value;
+            get
+            {
+                if (m_VisualTreeAssetTracker == null && parent != null)
+                {
+                    return parent.visualTreeAssetTracker;
+                }
+
+                return m_VisualTreeAssetTracker;
+            }
+        }
+        private void HandlePanelAttachmentEvents(EventBase evt)
+        {
+            if (evt.eventTypeId == AttachToPanelEvent.TypeId())
+            {
+                var attachingPanel = elementPanel ?? ((AttachToPanelEvent)evt).destinationPanel as BaseVisualElementPanel;
+
+                if (m_VisualTreeAssetSource != null)
+                {
+                    // We can find the tracker either at this level, or some level above - if there is a tracker.
+                    var tracker = visualTreeAssetTracker;
+                    if (tracker != null)
+                    {
+                        attachingPanel.StartVisualTreeAssetTracking(tracker, this);
+                    }
+                }
+
+                if (styleSheetList?.Count > 0)
+                {
+                    var styleSheetTracker = attachingPanel.m_LiveReloadStyleSheetAssetTracker;
+                    if (styleSheetTracker != null)
+                    {
+                        foreach (var styleSheet in styleSheetList)
+                        {
+                            styleSheetTracker.StartTrackingAsset(styleSheet);
+                        }
+                    }
+                }
+            }
+            else if (evt.eventTypeId == DetachFromPanelEvent.TypeId())
+            {
+                var detachingPanel = elementPanel ?? ((DetachFromPanelEvent)evt).originPanel as BaseVisualElementPanel;
+
+                if (m_VisualTreeAssetSource != null)
+                {
+                    // As we're detaching from panel, our parent may not be there anymore and if it held the tracker
+                    // information, we won't find it anymore - so the updater will handle it all, based on the VisualElement.
+                    detachingPanel.StopVisualTreeAssetTracking(this);
+                }
+
+                if (styleSheetList?.Count > 0)
+                {
+                    var styleSheetTracker = detachingPanel.m_LiveReloadStyleSheetAssetTracker;
+                    if (styleSheetTracker != null)
+                    {
+                        foreach (var styleSheet in styleSheetList)
+                        {
+                            styleSheetTracker.StopTrackingAsset(styleSheet);
+                        }
+                    }
+                }
+            }
+        }
+
     }
 }

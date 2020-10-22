@@ -360,7 +360,6 @@ namespace UnityEditor
             DrawDockTitleBarBackground(titleBarRect);
             HandleTabScrolling(m_TabAreaRect);
 
-
             float genericMenuTopOffset = Styles.genericMenuTopOffset;
             if (floatingWindow && isTopRightPane)
             {

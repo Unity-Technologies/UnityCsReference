@@ -79,6 +79,9 @@ namespace UnityEditor
 
         // Managed reference property.
         ManagedReference = 24,
+
+        // Hash128 value
+        Hash128 = 25,
     }
 
     [NativeHeader("Editor/Src/Utility/SerializedProperty.h")]
@@ -1345,6 +1348,27 @@ namespace UnityEditor
 
         [FreeFunction(Name = "SerializedPropertyBindings::SetValueBoundsIntInternal", HasExplicitThis = true)]
         extern private void SetValueBoundsIntInternal(BoundsInt value);
+
+        // Value of a Hash128 property.
+        public Hash128 hash128Value
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return (Hash128)GetHash128ValueInternal();
+            }
+            set
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                SetHash128ValueInternal(value);
+            }
+        }
+
+        [FreeFunction(Name = "SerializedPropertyBindings::GetHash128ValueInternal", HasExplicitThis = true)]
+        private extern Hash128 GetHash128ValueInternal();
+
+        [FreeFunction(Name = "SerializedPropertyBindings::SetHash128ValueInternal", HasExplicitThis = true)]
+        private extern void SetHash128ValueInternal(Hash128 value);
 
 
         // Move to next property.

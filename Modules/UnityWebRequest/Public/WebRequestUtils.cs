@@ -131,21 +131,23 @@ namespace UnityEngine
             }
         }
 
+        private static byte[] dDash = DefaultEncoding.GetBytes("--");
+        private static byte[] crlf = DefaultEncoding.GetBytes("\r\n");
+        private static byte[] contentTypeHeader = DefaultEncoding.GetBytes("Content-Type: ");
+        private static byte[] dispositionHeader = DefaultEncoding.GetBytes("Content-disposition: form-data; name=\"");
+        private static byte[] endQuote = DefaultEncoding.GetBytes("\"");
+        private static byte[] fileNameField = DefaultEncoding.GetBytes("; filename=\"");
+        private static byte[] ampersand = DefaultEncoding.GetBytes("&");
+        private static byte[] equal = DefaultEncoding.GetBytes("=");
+
         // (RO) The raw data to pass as the POST request body when sending the form.
         public byte[] data
         {
             get
             {
-                if (containsFiles)
+                using (MemoryStream memStream = new MemoryStream(1024))
                 {
-                    byte[] dDash = DefaultEncoding.GetBytes("--");
-                    byte[] crlf = DefaultEncoding.GetBytes("\r\n");
-                    byte[] contentTypeHeader = DefaultEncoding.GetBytes("Content-Type: ");
-                    byte[] dispositionHeader = DefaultEncoding.GetBytes("Content-disposition: form-data; name=\"");
-                    byte[] endQuote = DefaultEncoding.GetBytes("\"");
-                    byte[] fileNameField = DefaultEncoding.GetBytes("; filename=\"");
-
-                    using (MemoryStream memStream = new MemoryStream(1024))
+                    if (containsFiles)
                     {
                         for (int i = 0; i < formData.Count; i++)
                         {
@@ -200,16 +202,8 @@ namespace UnityEngine
                         memStream.Write(boundary, 0, (int)boundary.Length);
                         memStream.Write(dDash, 0, (int)dDash.Length);
                         memStream.Write(crlf, 0, (int)crlf.Length);
-
-                        return memStream.ToArray();
                     }
-                }
-                else
-                {
-                    byte[] ampersand = DefaultEncoding.GetBytes("&");
-                    byte[] equal = DefaultEncoding.GetBytes("=");
-
-                    using (MemoryStream memStream = new MemoryStream(1024))
+                    else
                     {
                         for (int i = 0; i < formData.Count; i++)
                         {
@@ -222,8 +216,9 @@ namespace UnityEngine
                             memStream.Write(equal, 0, (int)equal.Length);
                             memStream.Write(value, 0, (int)value.Length);
                         }
-                        return memStream.ToArray();
                     }
+
+                    return memStream.ToArray();
                 }
             }
         }
@@ -269,12 +264,10 @@ namespace UnityEngine
             return result;
         }
 
-        private static byte[] Byte2Hex(byte b, byte[] hexChars)
+        private static void Byte2Hex(byte b, byte[] hexChars, out byte byte0, out byte byte1)
         {
-            byte[] dest = new byte[2];
-            dest[0] = hexChars[b >> 4];
-            dest[1] = hexChars[b & 0xf];
-            return dest;
+            byte0 = hexChars[b >> 4];
+            byte1 = hexChars[b & 0xf];
         }
 
         public static string URLEncode(string toEncode)
@@ -339,7 +332,10 @@ namespace UnityEngine
                     else if (input[i] < 32 || input[i] > 126 || ByteArrayContains(forbidden, input[i]))
                     {
                         memStream.WriteByte(escapeChar);
-                        memStream.Write(Byte2Hex(input[i], uppercase ? ucHexChars : lcHexChars), 0, 2);
+                        byte byte0, byte1;
+                        Byte2Hex(input[i], uppercase ? ucHexChars : lcHexChars, out byte0, out byte1);
+                        memStream.WriteByte(byte0);
+                        memStream.WriteByte(byte1);
                     }
                     else
                     {
@@ -456,12 +452,22 @@ namespace UnityEngine
 
         public static bool SevenBitClean(string s, Encoding e)
         {
-            return SevenBitClean(e.GetBytes(s));
+            unsafe
+            {
+                int capacity = s.Length * 2;
+                byte* bytes = stackalloc byte[capacity];
+                int length;
+                fixed(char* chars = s)
+                {
+                    length = e.GetBytes(chars, s.Length, bytes, capacity);
+                }
+                return SevenBitClean(bytes, length);
+            }
         }
 
-        public static bool SevenBitClean(byte[] input)
+        public static unsafe bool SevenBitClean(byte* input, int inputLength)
         {
-            for (int i = 0; i < input.Length; i++)
+            for (int i = 0; i < inputLength; i++)
             {
                 if (input[i] < 32 || input[i] > 126)
                     return false;

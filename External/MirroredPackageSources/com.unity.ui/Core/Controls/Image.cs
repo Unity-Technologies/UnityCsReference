@@ -30,6 +30,7 @@ namespace UnityEngine.UIElements
 
         private ScaleMode m_ScaleMode;
         private Texture m_Image;
+        private Sprite m_Sprite;
         private VectorImage m_VectorImage;
         private Rect m_UV;
         private Color m_TintColor;
@@ -40,16 +41,18 @@ namespace UnityEngine.UIElements
 
 
         /// <summary>
-        /// The texture to display in this image.  You cannot set this and <see cref="Image.vectorImage"/> at the same time.
+        /// The texture to display in this image.
         /// </summary>
         public Texture image
         {
             get { return m_Image; }
             set
             {
-                if (value != null && vectorImage != null)
+                if (value != null && (m_Sprite != null || m_VectorImage != null))
                 {
-                    Debug.LogError("Both image and vectorImage are set on Image object");
+                    var unsetProp = m_Sprite != null ? "sprite" : "vector image";
+                    Debug.LogWarning($"Image object already has a background, removing {unsetProp}");
+                    m_Sprite = null;
                     m_VectorImage = null;
                 }
                 m_ImageIsInline = value != null;
@@ -66,17 +69,44 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// The <see cref="VectorImage"/> to display in this image.  You cannot set this and <see cref="Image.image"/> at the same time.
+        /// The sprite to display in this image.
+        /// </summary>
+        public Sprite sprite
+        {
+            get { return m_Sprite; }
+            set
+            {
+                if (value != null && (m_Image != null || m_VectorImage != null))
+                {
+                    var unsetProp = m_Image != null ? "texture" : "vector image";
+                    Debug.LogWarning($"Image object already has a background, removing {unsetProp}");
+                    m_Image = null;
+                    m_VectorImage = null;
+                }
+                m_ImageIsInline = value != null;
+                if (m_Sprite != value)
+                {
+                    m_Sprite = value;
+                    IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// The <see cref="VectorImage"/> to display in this image.
         /// </summary>
         public VectorImage vectorImage
         {
             get { return m_VectorImage; }
             set
             {
-                if (value != null && image != null)
+                if (value != null && (m_Image != null || m_Sprite != null))
                 {
-                    Debug.LogError("Both image and vectorImage are set on Image object");
+                    var unsetProp = m_Image != null ? "texture" : "sprite";
+                    Debug.LogWarning($"Image object already has a background, removing {unsetProp}");
                     m_Image = null;
+                    m_Sprite = null;
                 }
                 m_ImageIsInline = value != null;
                 if (m_VectorImage != value)
@@ -99,6 +129,11 @@ namespace UnityEngine.UIElements
             get { return GetSourceRect(); }
             set
             {
+                if (sprite != null)
+                {
+                    Debug.LogError("Cannot set sourceRect on a sprite image");
+                    return;
+                }
                 CalculateUV(value);
             }
         }
@@ -186,18 +221,28 @@ namespace UnityEngine.UIElements
             return result;
         }
 
+        private Vector2 GetTextureDisplaySize(Sprite sprite)
+        {
+            var result = Vector2.zero;
+            if (sprite != null)
+                result = (Vector2)(sprite.bounds.size * sprite.pixelsPerUnit);
+            return result;
+        }
+
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
         {
             float measuredWidth = float.NaN;
             float measuredHeight = float.NaN;
 
-            if (image == null && vectorImage == null)
+            if (image == null && sprite == null && vectorImage == null)
                 return new Vector2(measuredWidth, measuredHeight);
 
             var sourceSize = Vector2.zero;
 
             if (image != null)
                 sourceSize = GetTextureDisplaySize(image);
+            else if (sprite != null)
+                sourceSize = GetTextureDisplaySize(sprite);
             else
                 sourceSize = vectorImage.size;
 
@@ -222,12 +267,17 @@ namespace UnityEngine.UIElements
 
         private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
-            if (image == null && vectorImage == null)
+            if (image == null && sprite == null && vectorImage == null)
                 return;
 
             var rectParams = new MeshGenerationContextUtils.RectangleParams();
             if (image != null)
                 rectParams = MeshGenerationContextUtils.RectangleParams.MakeTextured(contentRect, uv, image, scaleMode, panel.contextType);
+            else if (sprite != null)
+            {
+                var slices = Vector4.zero;
+                rectParams = MeshGenerationContextUtils.RectangleParams.MakeSprite(contentRect, sprite, scaleMode, panel.contextType, false, ref slices);
+            }
             else if (vectorImage != null)
                 rectParams = MeshGenerationContextUtils.RectangleParams.MakeVectorTextured(contentRect, uv, vectorImage, scaleMode, panel.contextType);
             rectParams.color = tintColor;
@@ -235,6 +285,7 @@ namespace UnityEngine.UIElements
         }
 
         static CustomStyleProperty<Texture2D> s_ImageProperty = new CustomStyleProperty<Texture2D>("--unity-image");
+        static CustomStyleProperty<Sprite> s_SpriteProperty = new CustomStyleProperty<Sprite>("--unity-image");
         static CustomStyleProperty<VectorImage> s_VectorImageProperty = new CustomStyleProperty<VectorImage>("--unity-image");
         static CustomStyleProperty<string> s_ScaleModeProperty = new CustomStyleProperty<string>("--unity-image-size");
         static CustomStyleProperty<Color> s_TintColorProperty = new CustomStyleProperty<Color>("--unity-image-tint-color");
@@ -243,6 +294,7 @@ namespace UnityEngine.UIElements
         {
             // We should consider not exposing image as a style at all, since it's intimately tied to uv/sourceRect
             Texture2D textureValue = null;
+            Sprite spriteValue = null;
             VectorImage vectorImageValue = null;
             string scaleModeValue;
             Color tintValue = Color.white;
@@ -250,15 +302,22 @@ namespace UnityEngine.UIElements
             if (!m_ImageIsInline && customStyle.TryGetValue(s_ImageProperty, out textureValue))
             {
                 m_Image = textureValue;
-                if (m_Image != null)
-                    m_VectorImage = null;
+                m_Sprite = null;
+                m_VectorImage = null;
+            }
+
+            if (!m_ImageIsInline && customStyle.TryGetValue(s_SpriteProperty, out spriteValue))
+            {
+                m_Image = null;
+                m_Sprite = spriteValue;
+                m_VectorImage = null;
             }
 
             if (!m_ImageIsInline && customStyle.TryGetValue(s_VectorImageProperty, out vectorImageValue))
             {
+                m_Image = null;
+                m_Sprite = null;
                 m_VectorImage = vectorImageValue;
-                if (m_VectorImage != null)
-                    m_Image = null;
             }
 
             if (!m_ScaleModeIsInline && customStyle.TryGetValue(s_ScaleModeProperty, out scaleModeValue))

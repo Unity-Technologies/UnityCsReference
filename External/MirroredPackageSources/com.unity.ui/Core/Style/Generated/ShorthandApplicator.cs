@@ -11,12 +11,7 @@ namespace UnityEngine.UIElements.StyleSheets
     {
         public static void ApplyBorderColor(StylePropertyReader reader, ComputedStyle computedStyle)
         {
-            StyleColor borderTopColor;
-            StyleColor borderRightColor;
-            StyleColor borderBottomColor;
-            StyleColor borderLeftColor;
-
-            CompileBoxAreaNoKeyword(reader, out borderTopColor, out borderRightColor, out borderBottomColor, out borderLeftColor);
+            CompileBoxArea(reader, out Color borderTopColor, out Color borderRightColor, out Color borderBottomColor, out Color borderLeftColor);
 
             computedStyle.nonInheritedData.borderTopColor = borderTopColor;
             computedStyle.nonInheritedData.borderRightColor = borderRightColor;
@@ -26,12 +21,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public static void ApplyBorderRadius(StylePropertyReader reader, ComputedStyle computedStyle)
         {
-            StyleLength borderTopLeftRadius;
-            StyleLength borderTopRightRadius;
-            StyleLength borderBottomRightRadius;
-            StyleLength borderBottomLeftRadius;
-
-            CompileBoxAreaNoKeyword(reader, out borderTopLeftRadius, out borderTopRightRadius, out borderBottomRightRadius, out borderBottomLeftRadius);
+            CompileBorderRadius(reader, out Length borderTopLeftRadius, out Length borderTopRightRadius, out Length borderBottomRightRadius, out Length borderBottomLeftRadius);
 
             computedStyle.nonInheritedData.borderTopLeftRadius = borderTopLeftRadius;
             computedStyle.nonInheritedData.borderTopRightRadius = borderTopRightRadius;
@@ -41,12 +31,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public static void ApplyBorderWidth(StylePropertyReader reader, ComputedStyle computedStyle)
         {
-            StyleFloat borderTopWidth;
-            StyleFloat borderRightWidth;
-            StyleFloat borderBottomWidth;
-            StyleFloat borderLeftWidth;
-
-            CompileBoxAreaNoKeyword(reader, out borderTopWidth, out borderRightWidth, out borderBottomWidth, out borderLeftWidth);
+            CompileBoxArea(reader, out float borderTopWidth, out float borderRightWidth, out float borderBottomWidth, out float borderLeftWidth);
 
             computedStyle.nonInheritedData.borderTopWidth = borderTopWidth;
             computedStyle.nonInheritedData.borderRightWidth = borderRightWidth;
@@ -56,11 +41,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public static void ApplyFlex(StylePropertyReader reader, ComputedStyle computedStyle)
         {
-            StyleFloat flexGrow;
-            StyleFloat flexShrink;
-            StyleLength flexBasis;
-
-            CompileFlexShorthand(reader, out flexGrow, out flexShrink, out flexBasis);
+            CompileFlexShorthand(reader, out float flexGrow, out float flexShrink, out Length flexBasis);
 
             computedStyle.nonInheritedData.flexGrow = flexGrow;
             computedStyle.nonInheritedData.flexShrink = flexShrink;
@@ -69,12 +50,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public static void ApplyMargin(StylePropertyReader reader, ComputedStyle computedStyle)
         {
-            StyleLength marginTop;
-            StyleLength marginRight;
-            StyleLength marginBottom;
-            StyleLength marginLeft;
-
-            CompileBoxArea(reader, out marginTop, out marginRight, out marginBottom, out marginLeft);
+            CompileBoxArea(reader, out Length marginTop, out Length marginRight, out Length marginBottom, out Length marginLeft);
 
             computedStyle.nonInheritedData.marginTop = marginTop;
             computedStyle.nonInheritedData.marginRight = marginRight;
@@ -84,12 +60,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public static void ApplyPadding(StylePropertyReader reader, ComputedStyle computedStyle)
         {
-            StyleLength paddingTop;
-            StyleLength paddingRight;
-            StyleLength paddingBottom;
-            StyleLength paddingLeft;
-
-            CompileBoxAreaNoKeyword(reader, out paddingTop, out paddingRight, out paddingBottom, out paddingLeft);
+            CompileBoxArea(reader, out Length paddingTop, out Length paddingRight, out Length paddingBottom, out Length paddingLeft);
 
             computedStyle.nonInheritedData.paddingTop = paddingTop;
             computedStyle.nonInheritedData.paddingRight = paddingRight;

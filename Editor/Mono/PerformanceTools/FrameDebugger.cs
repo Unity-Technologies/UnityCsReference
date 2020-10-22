@@ -49,7 +49,8 @@ namespace UnityEditorInternal
         InstancedMesh,
         BeginSubpass,
         SRPBatch,
-        HierarchyLevelBreak
+        HierarchyLevelBreak,
+        HybridBatch
         // ReSharper restore InconsistentNaming
     }
 
@@ -287,7 +288,8 @@ namespace UnityEditor
             "Draw Mesh (instanced)",
             "Begin Subpass",
             "SRP Batch",
-            ""
+            "",                 // on purpose empty string for kFrameEventHierarchyLevelBreak
+            "Hybrid Batch Group"
         };
 
         // Cached strings built from FrameDebuggerEventData.
@@ -295,6 +297,7 @@ namespace UnityEditor
         private struct EventDataStrings
         {
             public string drawCallCount;
+            public string drawInstancedCallCount;
 
             public string shader;
             public string pass;
@@ -344,6 +347,9 @@ namespace UnityEditor
         PreviewRenderUtility m_PreviewUtility;
         private Material m_Material;
         private Material m_WireMaterial;
+
+        // Texture preview
+        GUIContent m_TextureGUIContent = new GUIContent();
 
         // Frame events tree view
         [SerializeField]
@@ -489,6 +495,14 @@ namespace UnityEditor
             DisableFrameDebugger();
         }
 
+        internal override void OnResized()
+        {
+            if (PopupWindowWithoutFocus.IsVisible())
+                PopupWindowWithoutFocus.Hide();
+
+            base.OnResized();
+        }
+
         public void EnableIfNeeded()
         {
             if (FrameDebuggerUtility.IsLocalEnabled() || FrameDebuggerUtility.IsRemoteEnabled())
@@ -541,6 +555,7 @@ namespace UnityEditor
         {
             // we will show that only if drawcall count is bigger than one so update unconditionally
             m_CurEventDataStrings.drawCallCount = string.Format("{0}", m_CurEventData.drawCallCount);
+            m_CurEventDataStrings.drawInstancedCallCount = string.Format("{0}", m_CurEventData.instanceCount);
 
             // shader name & subshader index
             m_CurEventDataStrings.shader = string.Format("{0}, SubShader #{1}", m_CurEventData.shaderName, m_CurEventData.subShaderIndex.ToString());
@@ -649,7 +664,7 @@ namespace UnityEditor
                     tooltip.AppendFormat("\nRT Format: {0}", (texture as RenderTexture).format.ToString());
                 }
 
-                tooltip.Append("\n\nCtrl + Click to show preview");
+                tooltip.Append("\n\nCtrl or Shift + Click to show preview");
 
                 m_CurEventDataStrings.texturePropertyTooltips[i] = tooltip.ToString();
             }
@@ -947,7 +962,12 @@ namespace UnityEditor
 
         private void DrawEventDrawCallInfo()
         {
-            if (m_CurEventData.drawCallCount > 1)
+            if (m_CurEventData.instanceCount > 1)
+            {
+                EditorGUILayout.LabelField("DrawInstanced Calls", m_CurEventDataStrings.drawCallCount);
+                EditorGUILayout.LabelField("Instances", m_CurEventDataStrings.drawInstancedCallCount);
+            }
+            else if (m_CurEventData.drawCallCount > 1)
                 EditorGUILayout.LabelField("Draw Calls", m_CurEventDataStrings.drawCallCount);
 
             // shader, pass & keyword information
@@ -1318,9 +1338,18 @@ namespace UnityEditor
                 if (previewTexture.dimension != TextureDimension.Tex2D)
                     previewTexture = AssetPreview.GetMiniThumbnail(previewTexture);
                 EditorGUI.DrawPreviewTexture(previewRect, previewTexture);
+
+                // Adding the path as a tooltip
+                m_TextureGUIContent.text = t.value.name;
+                m_TextureGUIContent.tooltip = AssetDatabase.GetAssetPath(t.value);
+            }
+            else
+            {
+                m_TextureGUIContent.text = t.textureName;
+                m_TextureGUIContent.tooltip = "";
             }
 
-            GUILayout.Label(t.value != null ? t.value.name : t.textureName, GUILayout.ExpandWidth(true));
+            GUILayout.Label(m_TextureGUIContent, GUILayout.ExpandWidth(true));
 
             if (evt.type == EventType.MouseDown)
             {

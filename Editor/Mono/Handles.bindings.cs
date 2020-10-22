@@ -40,6 +40,9 @@ namespace UnityEditor
         [FreeFunction("Internal_DrawGizmos")]
         internal static extern void Internal_DoDrawGizmos([NotNull] Camera camera);
 
+        [FreeFunction("Internal_IsCameraDrawModeSupported")]
+        internal static extern bool IsCameraDrawModeSupported([NotNull("NullExceptionObject")] Camera camera, DrawCameraMode drawMode);
+
         [FreeFunction("Internal_IsCameraDrawModeEnabled")]
         internal static extern bool IsCameraDrawModeEnabled([NotNull("NullExceptionObject")] Camera camera, DrawCameraMode drawMode);
 

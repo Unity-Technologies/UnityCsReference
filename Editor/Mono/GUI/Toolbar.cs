@@ -3,13 +3,32 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEditor.Toolbars;
+using UnityEditor.UIElements;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
+    abstract class MainToolbarVisual
+    {
+        VisualElement m_Root;
+
+        public VisualElement root
+        {
+            get
+            {
+                if (m_Root == null)
+                    m_Root = CreateRoot();
+
+                return m_Root;
+            }
+        }
+
+        protected abstract VisualElement CreateRoot();
+    }
+
     // The main toolbar
     class Toolbar : GUIView
     {
@@ -29,68 +48,12 @@ namespace UnityEditor
 
         public static bool isLastShowRequestPartial = true;
 
-
-        [SerializeField]
-        List<EditorToolbar> m_LoadedToolbars;
-
-        internal EditorToolbar GetSingleton(Type type)
-        {
-            if (m_LoadedToolbars == null)
-                m_LoadedToolbars = new List<EditorToolbar>();
-            m_LoadedToolbars = m_LoadedToolbars.Where(x => x != null).ToList();
-            var res = m_LoadedToolbars.FirstOrDefault(x => x.GetType() == type);
-            if (res != null)
-                return res;
-            res = (EditorToolbar)CreateInstance(type);
-            m_LoadedToolbars.Add(res);
-            return res;
-        }
-
-        [SerializeField]
-        EditorToolbar m_MainToolbar;
-
-        internal EditorToolbar mainToolbar
-        {
-            get
-            {
-                if (m_MainToolbar == null)
-                    m_MainToolbar = GetSingleton(EditorUIService.instance.GetDefaultToolbarType());
-                return m_MainToolbar;
-            }
-
-            set
-            {
-                if (value == mainToolbar)
-                    return;
-
-                if (m_MainToolbar != null)
-                {
-                    m_MainToolbar.m_Parent = null;
-                    if (m_MainToolbar.rootVisualElement != null)
-                        m_MainToolbar.rootVisualElement.RemoveFromHierarchy();
-                    DestroyImmediate(m_MainToolbar);
-                }
-
-                m_MainToolbar = value == null ? GetSingleton(EditorUIService.instance.GetDefaultToolbarType()) : value;
-                m_MainToolbar.m_Parent = this;
-
-                PositionChanged(this);
-
-                if (m_MainToolbar.rootVisualElement != null)
-                {
-                    ValidateWindowBackendForCurrentView();
-
-                    var visualTree = windowBackend.visualTree as UnityEngine.UIElements.VisualElement;
-
-                    visualTree?.Add(m_MainToolbar.rootVisualElement);
-                }
-
-                RepaintToolbar();
-            }
-        }
+        MainToolbarVisual m_MainToolbarVisual;
 
         [SerializeField]
         string m_LastLoadedLayoutName;
+
+        VisualElement m_Root;
 
         internal static string lastLoadedLayoutName
         {
@@ -116,28 +79,25 @@ namespace UnityEditor
             base.OnEnable();
 
             EditorApplication.modifierKeysChanged += Repaint;
-            positionChanged += PositionChanged;
 
             get = this;
 
-            if (m_MainToolbar == null)
-                m_MainToolbar = (EditorToolbar)CreateInstance(EditorUIService.instance.GetDefaultToolbarType());
+            m_MainToolbarVisual = (MainToolbarVisual)Activator.CreateInstance(EditorUIService.instance.GetDefaultToolbarType());
 
-            if (m_MainToolbar.rootVisualElement != null)
+            m_Root = CreateRoot();
+            if (windowBackend.visualTree is VisualElement visualTree)
             {
-                var visualTree = windowBackend.visualTree as UnityEngine.UIElements.VisualElement;
-                visualTree?.Add(m_MainToolbar.rootVisualElement);
+                visualTree.Add(m_Root);
+                m_Root.Add(m_MainToolbarVisual.root);
             }
 
-            PositionChanged(this);
-
             m_EventInterests.wantsLessLayoutEvents = true;
+            RepaintToolbar();
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
-            positionChanged -= PositionChanged;
             EditorApplication.modifierKeysChanged -= Repaint;
         }
 
@@ -152,9 +112,23 @@ namespace UnityEditor
                 Styles.appToolbar.Draw(new Rect(0, 0, position.width, position.height), false, false, false, false);
 
             BeginOffsetArea(GetToolbarPosition(), GUIContent.none, GUIStyle.none);
-            mainToolbar.OnGUI();
             EndOffsetArea();
+        }
 
+        static VisualElement CreateRoot()
+        {
+            var name = "rootVisualContainer";
+            var root = new VisualElement()
+            {
+                name = VisualElementUtils.GetUniqueName(name),
+                pickingMode = PickingMode.Ignore, // do not eat events so IMGUI gets them
+                viewDataKey = name,
+                renderHints = RenderHints.ClipWithScissors
+            };
+            root.pseudoStates |= PseudoStates.Root;
+            EditorUIService.instance.AddDefaultEditorStyleSheets(root);
+            root.style.overflow = Overflow.Hidden;
+            return root;
         }
 
         internal static void RepaintToolbar()
@@ -166,12 +140,6 @@ namespace UnityEditor
         public float CalcHeight()
         {
             return k_ToolbarHeight;
-        }
-
-        void PositionChanged(GUIView view)
-        {
-            if (m_MainToolbar.rootVisualElement != null)
-                m_MainToolbar.rootVisualElement.SetSize(GetToolbarPosition().size);
         }
 
         public Rect GetToolbarPosition()

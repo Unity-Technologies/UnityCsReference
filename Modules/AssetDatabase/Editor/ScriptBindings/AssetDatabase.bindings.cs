@@ -66,7 +66,6 @@ namespace UnityEditor
         kPreventCustomDependencyChanges = 1 << 2
     }
 
-    [ExcludeFromDocs]
     public struct CacheServerConnectionChangedParameters
     {
     }
@@ -127,7 +126,7 @@ namespace UnityEditor
 
         extern public static bool IsNativeAsset(int instanceID);
 
-        [FreeFunction("AssetDatabase::GetCurrentCacheServerIpAddress")]
+        [FreeFunction()]
         extern public static string GetCurrentCacheServerIp();
 
         extern public static string GenerateUniqueAssetPath(string path);
@@ -242,6 +241,9 @@ namespace UnityEditor
 
         [uei.ExcludeFromDocs] public static void Refresh() { Refresh(ImportAssetOptions.Default); }
         extern public static void Refresh([uei.DefaultValue("ImportAssetOptions.Default")] ImportAssetOptions options);
+
+        [FreeFunction("::CanOpenAssetInEditor")]
+        extern public static bool CanOpenAssetInEditor(int instanceID);
 
         [uei.ExcludeFromDocs] public static bool OpenAsset(int instanceID) { return OpenAsset(instanceID, -1); }
         public static bool OpenAsset(int instanceID, [uei.DefaultValue("-1")] int lineNumber) { return OpenAsset(instanceID, lineNumber, -1); }
@@ -681,7 +683,6 @@ namespace UnityEditor
         [FreeFunction()]
         public extern static void RefreshSettings();
 
-        [ExcludeFromDocs]
         public static event Action<CacheServerConnectionChangedParameters> cacheServerConnectionChanged;
         [RequiredByNativeCode]
         private static void OnCacheServerConnectionChanged()
@@ -693,8 +694,14 @@ namespace UnityEditor
             }
         }
 
-        [FreeFunction("IsConnectedToCacheServerV2")]
+        [FreeFunction("AcceleratorClientIsConnected")]
         public extern static bool IsConnectedToCacheServer();
+
+        [FreeFunction("AcceleratorClientResetReconnectTimer")]
+        public extern static void ResetCacheServerReconnectTimer();
+
+        [FreeFunction("AcceleratorClientCloseConnection")]
+        public extern static void CloseCacheServerConnection();
 
         [FreeFunction()]
         public extern static string GetCacheServerAddress();
@@ -711,7 +718,6 @@ namespace UnityEditor
         [FreeFunction("AssetDatabase::GetCacheServerEnableUpload")]
         public extern static bool GetCacheServerEnableUpload();
 
-        [ExcludeFromDocs]
         [FreeFunction("AssetDatabase::IsDirectoryMonitoringEnabled")]
         public extern static bool IsDirectoryMonitoringEnabled();
 
@@ -723,7 +729,6 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kPreventCustomDependencyChanges, PreventExecutionSeverity.PreventExecution_ManagedException, "Custom dependencies can only be removed when the assetdatabase is not importing.")]
         public extern static UInt32 UnregisterCustomDependencyPrefixFilter(string prefixFilter);
 
-        [ExcludeFromDocs]
         [FreeFunction("AssetDatabase::IsAssetImportProcess")]
         public extern static bool IsAssetImportWorkerProcess();
 

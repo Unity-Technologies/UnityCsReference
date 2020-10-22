@@ -68,6 +68,11 @@ namespace UnityEngine
 
         extern public bool              forceRenderingOff { get; set; }
 
+        [NativeName("GetIsStaticShadowCaster")] extern private bool GetIsStaticShadowCaster();
+        [NativeName("SetIsStaticShadowCaster")] extern private void SetIsStaticShadowCaster(bool value);
+
+        public bool staticShadowCaster { get { return GetIsStaticShadowCaster(); } set { SetIsStaticShadowCaster(value); } }
+
         extern public MotionVectorGenerationMode motionVectorGenerationMode { get; set; }
         extern public LightProbeUsage            lightProbeUsage { get; set; }
         extern public ReflectionProbeUsage       reflectionProbeUsage { get; set; }
@@ -312,7 +317,7 @@ namespace UnityEngine
         extern private int GetPositionsWithNativeContainer(IntPtr positions, int length);
     }
 
-    [NativeHeader("Runtime/Graphics/Mesh/SkinnedMeshRenderer.h")]
+    [NativeHeader("Runtime/Graphics/Mesh/SkinnedMeshRenderer.h"), RequiredByNativeCode /* used by VisualEffect, returns type */]
     public partial class SkinnedMeshRenderer : Renderer
     {
         extern public SkinQuality quality { get; set; }

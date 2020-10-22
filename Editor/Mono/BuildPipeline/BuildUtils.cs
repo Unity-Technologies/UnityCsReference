@@ -3,21 +3,15 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using UnityEditor.Modules;
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.Compilers;
 using UnityEngine;
-using UnityEditor;
-using UnityEditor.Build.Reporting;
 using UnityEditor.Utils;
 using Debug = UnityEngine.Debug;
-using System.Xml.XPath;
 
 namespace UnityEditorInternal
 {
@@ -101,22 +95,6 @@ namespace UnityEditorInternal
             RunProgram(p, exe, args, workingDirectory, parser);
         }
 
-        // Used when debugging il2cpp.exe from Windows, please don't remove it
-        // public static void RunNativeProgram(string exe, string args)
-        // {
-        //     using (var p = new NativeProgram(exe, args))
-        //     {
-        //         p.Start();
-        //         p.WaitForExit();
-        //         if (p.ExitCode != 0)
-        //         {
-        //             Debug.LogError("Failed running " + exe + " " + args + "\n\n" + p.GetAllOutput());
-        //
-        //             throw new Exception(string.Format("{0} did not run properly!", exe));
-        //         }
-        //     }
-        // }
-
         private static void RunProgram(Program p, string exe, string args, string workingDirectory, CompilerOutputParserBase parser)
         {
             var stopwatch = new Stopwatch();
@@ -131,35 +109,49 @@ namespace UnityEditorInternal
                 stopwatch.Stop();
                 Console.WriteLine("{0} exited after {1} ms.", exe, stopwatch.ElapsedMilliseconds);
 
-                IEnumerable<CompilerMessage> messages = null;
+                var messages = new List<CompilerMessage>();
                 if (parser != null)
                 {
                     var errorOutput = p.GetErrorOutput();
                     var standardOutput = p.GetStandardOutput();
-                    messages = parser.Parse(errorOutput, standardOutput, true, "n/a (il2cpp)");
+                    messages.AddRange(parser.Parse(errorOutput, standardOutput, true, "n/a (il2cpp)"));
                 }
 
+                foreach (var message in NonerrorMessages(messages))
+                    Debug.LogWarning(message.message);
+
+                var errorMessages = ErrorMessages(messages).ToArray();
                 if (p.ExitCode != 0)
                 {
-                    if (messages != null)
+                    if (errorMessages.Any())
                     {
-                        foreach (var message in messages)
+                        // Use the last error as the exception message to cause the build to fail. But
+                        // log any other errors that might exist.
+                        var lastError = messages.Last();
+                        foreach (var message in errorMessages.Take(errorMessages.Length - 1))
                             Debug.LogPlayerBuildError(message.message, message.file, message.line, message.column);
+                        throw new Exception(lastError.message);
                     }
 
-                    Debug.LogError("Failed running " + exe + " " + args + "\n\n" + p.GetAllOutput());
+                    // No messages were parsed, so just put all of the output in the error.
+                    throw new Exception("Failed running " + exe + " " + args + "\n\n" + p.GetAllOutput());
+                }
 
-                    throw new Exception(string.Format("{0} did not run properly!", exe));
-                }
-                else
-                {
-                    if (messages != null)
-                    {
-                        foreach (var message in messages)
-                            Console.WriteLine(message.message + " - " + message.file + " - " + message.line + " - " + message.column);
-                    }
-                }
+                // The exit code was zero, but there are error messages. Don't fail the build by throwing an exception,
+                // but log the messages to the editor log.
+                foreach (var message in errorMessages)
+                    Console.WriteLine(message.message + " - " + message.file + " - " + message.line + " - " + message.column);
             }
+        }
+
+        private static IEnumerable<CompilerMessage> ErrorMessages(List<CompilerMessage> messages)
+        {
+            return messages.Where(m => m.type == CompilerMessageType.Error);
+        }
+
+        private static IEnumerable<CompilerMessage> NonerrorMessages(List<CompilerMessage> messages)
+        {
+            return messages.Where(m => m.type != CompilerMessageType.Error);
         }
     }
 }

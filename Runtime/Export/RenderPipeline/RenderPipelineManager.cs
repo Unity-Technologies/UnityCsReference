@@ -5,26 +5,29 @@
 using System;
 using System.Collections.Generic;
 using Unity.Collections.LowLevel.Unsafe;
+using System.Collections;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.Rendering
 {
     public static class RenderPipelineManager
     {
-        static RenderPipelineAsset s_CurrentPipelineAsset;
-        static Camera[] s_Cameras = new Camera[0];
-        static int s_CameraCapacity = 0;
+        internal static RenderPipelineAsset s_CurrentPipelineAsset;
+        static List<Camera> s_Cameras = new List<Camera>();
 
         public static RenderPipeline currentPipeline { get; private set; }
 
+        public static event Action<ScriptableRenderContext, List<Camera>> beginContextRendering;
+        public static event Action<ScriptableRenderContext, List<Camera>> endContextRendering;
         public static event Action<ScriptableRenderContext, Camera[]> beginFrameRendering;
         public static event Action<ScriptableRenderContext, Camera> beginCameraRendering;
         public static event Action<ScriptableRenderContext, Camera[]> endFrameRendering;
         public static event Action<ScriptableRenderContext, Camera> endCameraRendering;
 
-        internal static void BeginFrameRendering(ScriptableRenderContext context, Camera[] cameras)
+        internal static void BeginContextRendering(ScriptableRenderContext context, List<Camera> cameras)
         {
-            beginFrameRendering?.Invoke(context, cameras);
+            beginFrameRendering?.Invoke(context, cameras.ToArray());
+            beginContextRendering?.Invoke(context, cameras);
         }
 
         internal static void BeginCameraRendering(ScriptableRenderContext context, Camera camera)
@@ -32,14 +35,25 @@ namespace UnityEngine.Rendering
             beginCameraRendering?.Invoke(context, camera);
         }
 
-        internal static void EndFrameRendering(ScriptableRenderContext context, Camera[] cameras)
+        internal static void EndContextRendering(ScriptableRenderContext context, List<Camera> cameras)
         {
-            endFrameRendering?.Invoke(context, cameras);
+            endFrameRendering?.Invoke(context, cameras.ToArray());
+            endContextRendering?.Invoke(context, cameras);
         }
 
         internal static void EndCameraRendering(ScriptableRenderContext context, Camera camera)
         {
             endCameraRendering?.Invoke(context, camera);
+        }
+
+        [RequiredByNativeCode]
+        internal static void HandleRenderPipelineChange(RenderPipelineAsset pipelineAsset)
+        {
+            if (!ReferenceEquals(s_CurrentPipelineAsset, pipelineAsset))
+            {
+                CleanupRenderPipeline();
+                s_CurrentPipelineAsset = pipelineAsset;
+            }
         }
 
         [RequiredByNativeCode]
@@ -54,21 +68,6 @@ namespace UnityEngine.Rendering
             }
         }
 
-        private static void GetCameras(ScriptableRenderContext context)
-        {
-            int numCams = context.GetNumberOfCameras();
-            if (numCams != s_CameraCapacity)
-            {
-                Array.Resize(ref s_Cameras, numCams);
-                s_CameraCapacity = numCams;
-            }
-
-            for (int i = 0; i < numCams; ++i)
-            {
-                s_Cameras[i] = context.GetCamera(i);
-            }
-        }
-
         [RequiredByNativeCode]
         static void DoRenderLoop_Internal(RenderPipelineAsset pipe, IntPtr loopPtr, List<Camera.RenderRequest> renderRequests, AtomicSafetyHandle safety)
         {
@@ -78,28 +77,20 @@ namespace UnityEngine.Rendering
 
             var loop =
                 new ScriptableRenderContext(loopPtr, safety);
+            s_Cameras.Clear();
 
-            Array.Clear(s_Cameras, 0, s_Cameras.Length);
-            GetCameras(loop);
-
+            loop.GetCameras(s_Cameras);
             if (renderRequests == null)
                 currentPipeline.InternalRender(loop, s_Cameras);
             else
                 currentPipeline.InternalRenderWithRequests(loop, s_Cameras, renderRequests);
 
-            Array.Clear(s_Cameras, 0, s_Cameras.Length);
+            s_Cameras.Clear();
         }
 
-        static void PrepareRenderPipeline(RenderPipelineAsset pipelineAsset)
+        internal static void PrepareRenderPipeline(RenderPipelineAsset pipelineAsset)
         {
-            if (!ReferenceEquals(s_CurrentPipelineAsset, pipelineAsset))
-            {
-                // Required because when switching to a RenderPipeline asset for the first time
-                // it will call OnValidate on the new asset before cleaning up the old one. Thus we
-                // reset the rebuild in order to cleanup properly.
-                CleanupRenderPipeline();
-                s_CurrentPipelineAsset = pipelineAsset;
-            }
+            HandleRenderPipelineChange(pipelineAsset);
 
             if (s_CurrentPipelineAsset != null
                 && (currentPipeline == null || currentPipeline.disposed))

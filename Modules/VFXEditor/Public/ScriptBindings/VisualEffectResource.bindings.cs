@@ -271,6 +271,8 @@ namespace UnityEditor.VFX
         public uint[] textureValuesExpressions;
         public int[] meshValues;
         public uint[] meshValuesExpressions;
+        public int[] skinnedMeshRendererValues;
+        public uint[] skinnedMeshRendererValuesExpressions;
         public bool[] boolValues;
         public uint[] boolValuesExpressions;
     }
@@ -364,11 +366,14 @@ namespace UnityEditor.VFX
                 else if (group.Key == typeof(VFXExpressionObjectValueContainerDesc<Mesh>))
                 {
                     var v = group.Cast<VFXExpressionObjectValueContainerDesc<Mesh>>().ToArray();
-                    for (int i = 0; i < v.Length; ++i)
-                    {
-                    }
                     internalSheet.meshValues = v.Select(o => o.instanceID).ToArray();
                     internalSheet.meshValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
+                }
+                else if (group.Key == typeof(VFXExpressionObjectValueContainerDesc<SkinnedMeshRenderer>))
+                {
+                    var v = group.Cast<VFXExpressionObjectValueContainerDesc<SkinnedMeshRenderer>>().ToArray();
+                    internalSheet.skinnedMeshRendererValues = v.Select(o => o.instanceID).ToArray();
+                    internalSheet.skinnedMeshRendererValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
                 }
                 else if (group.Key == typeof(VFXExpressionValueContainerDesc<Gradient>))
                 {
@@ -404,7 +409,7 @@ namespace UnityEditor.VFX
                 }
                 else
                 {
-                    throw new Exception("Unknown VFXExpressionValueContainerDesc type : " + group.Key);
+                    throw new InvalidOperationException("Unknown VFXExpressionValueContainerDesc type : " + group.Key);
                 }
             }
             return internalSheet;

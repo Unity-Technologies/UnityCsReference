@@ -13,7 +13,14 @@ namespace UnityEngine.UIElements.StyleSheets
     internal struct ImageSource
     {
         public Texture2D texture;
+        public Sprite sprite;
         public VectorImage vectorImage;
+        public RenderTexture renderTexture;
+
+        public  bool IsNull()
+        {
+            return texture == null && sprite == null && vectorImage == null && renderTexture == null;
+        }
     }
 
     internal class StylePropertyReader
@@ -94,35 +101,41 @@ namespace UnityEngine.UIElements.StyleSheets
             return value.sheet.ReadAsString(value.handle);
         }
 
-        public StyleLength ReadStyleLength(int index)
+        public Length ReadLength(int index)
         {
             var value = m_Values[m_CurrentValueIndex + index];
 
             if (value.handle.valueType == StyleValueType.Keyword)
             {
                 var keyword = (StyleValueKeyword)value.handle.valueIndex;
-                return new StyleLength(keyword.ToStyleKeyword());
+                switch (keyword)
+                {
+                    case StyleValueKeyword.Auto:
+                        return Length.Auto();
+                    case StyleValueKeyword.None:
+                        return Length.None();
+                    default:
+                        return new Length();
+                }
             }
-            else
-            {
-                var dimension = value.sheet.ReadDimension(value.handle);
-                return new StyleLength(dimension.ToLength());
-            }
+
+            var dimension = value.sheet.ReadDimension(value.handle);
+            return dimension.ToLength();
         }
 
-        public StyleFloat ReadStyleFloat(int index)
+        public float ReadFloat(int index)
         {
             var value = m_Values[m_CurrentValueIndex + index];
-            return new StyleFloat(value.sheet.ReadFloat(value.handle));
+            return value.sheet.ReadFloat(value.handle);
         }
 
-        public StyleInt ReadStyleInt(int index)
+        public int ReadInt(int index)
         {
             var value = m_Values[m_CurrentValueIndex + index];
-            return new StyleInt((int)value.sheet.ReadFloat(value.handle));
+            return (int)value.sheet.ReadFloat(value.handle);
         }
 
-        public StyleColor ReadStyleColor(int index)
+        public Color ReadColor(int index)
         {
             var value = m_Values[m_CurrentValueIndex + index];
             Color c = Color.clear;
@@ -135,10 +148,10 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 c = value.sheet.ReadColor(value.handle);
             }
-            return new StyleColor(c);
+            return c;
         }
 
-        public StyleInt ReadStyleEnum(StyleEnumType enumType, int index)
+        public int ReadEnum(StyleEnumType enumType, int index)
         {
             string enumString = null;
             var value = m_Values[m_CurrentValueIndex + index];
@@ -154,11 +167,10 @@ namespace UnityEngine.UIElements.StyleSheets
                 enumString = value.sheet.ReadEnum(handle);
             }
 
-            int intValue = StylePropertyUtil.GetEnumIntValue(enumType, enumString);
-            return new StyleInt(intValue);
+            return StylePropertyUtil.GetEnumIntValue(enumType, enumString);
         }
 
-        public StyleFont ReadStyleFont(int index)
+        public Font ReadFont(int index)
         {
             Font font = null;
             var value = m_Values[m_CurrentValueIndex + index];
@@ -195,10 +207,10 @@ namespace UnityEngine.UIElements.StyleSheets
                     break;
             }
 
-            return new StyleFont(font);
+            return font;
         }
 
-        public StyleBackground ReadStyleBackground(int index)
+        public Background ReadBackground(int index)
         {
             var source = new ImageSource();
             var value = m_Values[m_CurrentValueIndex + index];
@@ -219,17 +231,21 @@ namespace UnityEngine.UIElements.StyleSheets
                 source.texture = Panel.LoadResource("d_console.warnicon", typeof(Texture2D), dpiScaling) as Texture2D;
             }
 
-            StyleBackground sb;
+            Background background;
             if (source.texture != null)
-                sb = new StyleBackground(source.texture);
+                background = Background.FromTexture2D(source.texture);
+            else if (source.sprite != null)
+                background = Background.FromSprite(source.sprite);
             else if (source.vectorImage != null)
-                sb = new StyleBackground(source.vectorImage);
+                background = Background.FromVectorImage(source.vectorImage);
+            else if (source.renderTexture != null)
+                background = Background.FromRenderTexture(source.renderTexture);
             else
-                sb = new StyleBackground();
-            return sb;
+                background = new Background();
+            return background;
         }
 
-        public StyleCursor ReadStyleCursor(int index)
+        public Cursor ReadCursor(int index)
         {
             float hotspotX = 0f;
             float hotspotY = 0f;
@@ -279,8 +295,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 }
             }
 
-            var cursor = new Cursor() { texture = texture, hotspot = new Vector2(hotspotX, hotspotY), defaultCursorId = cursorId };
-            return new StyleCursor(cursor);
+            return new Cursor() { texture = texture, hotspot = new Vector2(hotspotX, hotspotY), defaultCursorId = cursorId };
         }
 
         private void LoadProperties()
@@ -374,12 +389,16 @@ namespace UnityEngine.UIElements.StyleSheets
                     if (!string.IsNullOrEmpty(path))
                     {
                         //TODO: This will use GUIUtility.pixelsPerPoint as targetDpi, this may not be the best value for the current panel
-                        source.texture = Panel.LoadResource(path, typeof(Texture2D), dpiScaling) as Texture2D;
-                        if (source.texture == null)
+                        source.sprite = Panel.LoadResource(path, typeof(Sprite), dpiScaling) as Sprite;
+                        if (source.IsNull())
+                            source.texture = Panel.LoadResource(path, typeof(Texture2D), dpiScaling) as Texture2D;
+                        if (source.IsNull())
                             source.vectorImage = Panel.LoadResource(path, typeof(VectorImage), dpiScaling) as VectorImage;
+                        if (source.IsNull())
+                            source.renderTexture = Panel.LoadResource(path, typeof(RenderTexture), dpiScaling) as RenderTexture;
                     }
 
-                    if (source.texture == null && source.vectorImage == null)
+                    if (source.IsNull())
                     {
                         Debug.LogWarning(string.Format("Image not found for path: {0}", path));
                         return false;
@@ -391,8 +410,10 @@ namespace UnityEngine.UIElements.StyleSheets
                 {
                     var o = propertyValue.sheet.ReadAssetReference(propertyValue.handle);
                     source.texture = o as Texture2D;
+                    source.sprite = o as Sprite;
                     source.vectorImage = o as VectorImage;
-                    if (source.texture == null && source.vectorImage == null)
+                    source.renderTexture = o as RenderTexture;
+                    if (source.IsNull())
                     {
                         Debug.LogWarning("Invalid image specified");
                         return false;

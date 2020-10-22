@@ -26,6 +26,14 @@ namespace UnityEditor
                 m_HasGuid = ClipboardParser.ParseGuid(m_RawContents, out m_ValueGuid);
         }
 
+        internal bool? m_HasHash128;
+        internal Hash128 m_ValueHash128;
+        internal void FetchHash128()
+        {
+            if (!m_HasHash128.HasValue)
+                m_HasHash128 = ClipboardParser.ParseHash128(m_RawContents, out m_ValueHash128);
+        }
+
         internal bool? m_HasBool;
         internal bool m_ValueBool;
         internal void FetchBool()

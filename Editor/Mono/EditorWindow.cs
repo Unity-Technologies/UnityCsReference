@@ -474,6 +474,9 @@ namespace UnityEditor
 
         void MakeModal()
         {
+            // If we already have modal window up we don't need to setup another modal message loop
+            if (ContainerWindow.s_Modal) return;
+
             try
             {
                 ContainerWindow.s_Modal = true;
@@ -955,7 +958,7 @@ namespace UnityEditor
                 m_Parent.window.Close();
             }
             UnityEngine.Object.DestroyImmediate(this, true);
-            EditorWindow.UpdateWindowMenuListing();
+            UpdateWindowMenuListing();
         }
 
         // Make the window repaint.
@@ -1183,6 +1186,9 @@ namespace UnityEditor
 
         internal static void BuildWindowMenuListing()
         {
+            if (!ModeService.HasCapability(ModeCapability.LayoutWindowMenu, true))
+                return;
+
             const string k_RootMenuItemName = "Window/Panels";
 
             Menu.RemoveMenuItem(k_RootMenuItemName);

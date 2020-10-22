@@ -110,6 +110,8 @@ namespace UnityEngine
         public void SetFloat(int nameID, float value)           { SetFloatImpl(nameID, value); }
         public void SetInt(string name, int value)              { SetFloatImpl(Shader.PropertyToID(name), (float)value); }
         public void SetInt(int nameID, int value)               { SetFloatImpl(nameID, (float)value); }
+        public void SetInteger(string name, int value)          { SetIntImpl(Shader.PropertyToID(name), value); }
+        public void SetInteger(int nameID, int value)           { SetIntImpl(nameID, value); }
         public void SetVector(string name, Vector4 value)       { SetVectorImpl(Shader.PropertyToID(name), value); }
         public void SetVector(int nameID, Vector4 value)        { SetVectorImpl(nameID, value); }
         public void SetColor(string name, Color value)          { SetColorImpl(Shader.PropertyToID(name), value); }
@@ -144,10 +146,32 @@ namespace UnityEngine
         public void SetMatrixArray(string name, Matrix4x4[] values)     { SetMatrixArray(Shader.PropertyToID(name), values, values.Length); }
         public void SetMatrixArray(int nameID,  Matrix4x4[] values)     { SetMatrixArray(nameID, values, values.Length); }
 
+        public bool HasProperty(string name) { return HasPropertyImpl(Shader.PropertyToID(name)); }
+        public bool HasProperty(int nameID) { return HasPropertyImpl(nameID); }
+
+        public bool HasFloat(string name) { return HasFloatImpl(Shader.PropertyToID(name)); }
+        public bool HasFloat(int nameID) { return HasFloatImpl(nameID); }
+        public bool HasInt(string name) { return HasFloatImpl(Shader.PropertyToID(name)); }
+        public bool HasInt(int nameID) { return HasFloatImpl(nameID); }
+        public bool HasTexture(string name) { return HasTextureImpl(Shader.PropertyToID(name)); }
+        public bool HasTexture(int nameID) { return HasTextureImpl(nameID); }
+        public bool HasMatrix(string name) { return HasMatrixImpl(Shader.PropertyToID(name)); }
+        public bool HasMatrix(int nameID) { return HasMatrixImpl(nameID); }
+        public bool HasVector(string name) { return HasVectorImpl(Shader.PropertyToID(name)); }
+        public bool HasVector(int nameID) { return HasVectorImpl(nameID); }
+        public bool HasColor(string name) { return HasVectorImpl(Shader.PropertyToID(name)); }
+        public bool HasColor(int nameID) { return HasVectorImpl(nameID); }
+        public bool HasBuffer(string name) { return HasBufferImpl(Shader.PropertyToID(name)); }
+        public bool HasBuffer(int nameID) { return HasBufferImpl(nameID); }
+        public bool HasConstantBuffer(string name) { return HasConstantBufferImpl(Shader.PropertyToID(name)); }
+        public bool HasConstantBuffer(int nameID) { return HasConstantBufferImpl(nameID); }
+
         public float     GetFloat(string name)      { return GetFloatImpl(Shader.PropertyToID(name)); }
         public float     GetFloat(int nameID)       { return GetFloatImpl(nameID); }
         public int       GetInt(string name)        { return (int)GetFloatImpl(Shader.PropertyToID(name)); }
         public int       GetInt(int nameID)         { return (int)GetFloatImpl(nameID); }
+        public int       GetInteger(string name)    { return GetIntImpl(Shader.PropertyToID(name)); }
+        public int       GetInteger(int nameID)     { return GetIntImpl(nameID); }
         public Vector4   GetVector(string name)     { return GetVectorImpl(Shader.PropertyToID(name)); }
         public Vector4   GetVector(int nameID)      { return GetVectorImpl(nameID); }
         public Color     GetColor(string name)      { return GetColorImpl(Shader.PropertyToID(name)); }
@@ -330,6 +354,8 @@ namespace UnityEngine
         public static void SetGlobalFloat(int nameID, float value)              { SetGlobalFloatImpl(nameID, value); }
         public static void SetGlobalInt(string name, int value)                 { SetGlobalFloatImpl(Shader.PropertyToID(name), (float)value); }
         public static void SetGlobalInt(int nameID, int value)                  { SetGlobalFloatImpl(nameID, (float)value); }
+        public static void SetGlobalInteger(string name, int value)             { SetGlobalIntImpl(Shader.PropertyToID(name), value); }
+        public static void SetGlobalInteger(int nameID, int value)              { SetGlobalIntImpl(nameID, value); }
         public static void SetGlobalVector(string name, Vector4 value)          { SetGlobalVectorImpl(Shader.PropertyToID(name), value); }
         public static void SetGlobalVector(int nameID, Vector4 value)           { SetGlobalVectorImpl(nameID, value); }
         public static void SetGlobalColor(string name, Color value)             { SetGlobalVectorImpl(Shader.PropertyToID(name), (Vector4)value); }
@@ -370,6 +396,8 @@ namespace UnityEngine
         public static float       GetGlobalFloat(int nameID)        { return GetGlobalFloatImpl(nameID); }
         public static int         GetGlobalInt(string name)         { return (int)GetGlobalFloatImpl(Shader.PropertyToID(name)); }
         public static int         GetGlobalInt(int nameID)          { return (int)GetGlobalFloatImpl(nameID); }
+        public static int         GetGlobalInteger(string name)     { return GetGlobalIntImpl(Shader.PropertyToID(name)); }
+        public static int         GetGlobalInteger(int nameID)      { return GetGlobalIntImpl(nameID); }
         public static Vector4     GetGlobalVector(string name)      { return GetGlobalVectorImpl(Shader.PropertyToID(name)); }
         public static Vector4     GetGlobalVector(int nameID)       { return GetGlobalVectorImpl(nameID); }
         public static Color       GetGlobalColor(string name)       { return (Color)GetGlobalVectorImpl(Shader.PropertyToID(name)); }
@@ -506,6 +534,8 @@ namespace UnityEngine
         public void SetFloat(int nameID, float value)           { SetFloatImpl(nameID, value); }
         public void SetInt(string name, int value)              { SetFloatImpl(Shader.PropertyToID(name), (float)value); }
         public void SetInt(int nameID, int value)               { SetFloatImpl(nameID, (float)value); }
+        public void SetInteger(string name, int value)          { SetIntImpl(Shader.PropertyToID(name), value); }
+        public void SetInteger(int nameID, int value)           { SetIntImpl(nameID, value); }
         public void SetColor(string name, Color value)          { SetColorImpl(Shader.PropertyToID(name), value); }
         public void SetColor(int nameID, Color value)           { SetColorImpl(nameID, value); }
         public void SetVector(string name, Vector4 value)       { SetColorImpl(Shader.PropertyToID(name), (Color)value); }
@@ -549,6 +579,8 @@ namespace UnityEngine
         public float     GetFloat(int nameID)    { return GetFloatImpl(nameID); }
         public int       GetInt(string name)     { return (int)GetFloatImpl(Shader.PropertyToID(name)); }
         public int       GetInt(int nameID)      { return (int)GetFloatImpl(nameID); }
+        public int       GetInteger(string name) { return GetIntImpl(Shader.PropertyToID(name)); }
+        public int       GetInteger(int nameID)  { return GetIntImpl(nameID); }
         public Color     GetColor(string name)   { return GetColorImpl(Shader.PropertyToID(name)); }
         public Color     GetColor(int nameID)    { return GetColorImpl(nameID); }
         public Vector4   GetVector(string name)  { return (Vector4)GetColorImpl(Shader.PropertyToID(name)); }

@@ -24,6 +24,15 @@ namespace UnityEngine.UIElements
     /// </summary>
     public struct Length : IEquatable<Length>
     {
+        // Extension of the LengthUnit to include keywords that can be used with StyleLength
+        private enum Unit
+        {
+            Pixel = LengthUnit.Pixel,
+            Percent = LengthUnit.Percent,
+            Auto,
+            None
+        }
+
         /// <summary>
         /// Creates a percentage <see cref="Length"/> from a float.
         /// </summary>
@@ -33,13 +42,23 @@ namespace UnityEngine.UIElements
             return new Length(value, LengthUnit.Percent);
         }
 
+        internal static Length Auto()
+        {
+            return new Length(0f, Unit.Auto);
+        }
+
+        internal static Length None()
+        {
+            return new Length(0f, Unit.None);
+        }
+
         /// <summary>
         /// The length value.
         /// </summary>
         public float value
         {
-            get { return m_Value; }
-            set { m_Value = value; }
+            get => m_Value;
+            set => m_Value = value;
         }
 
         /// <summary>
@@ -47,9 +66,12 @@ namespace UnityEngine.UIElements
         /// </summary>
         public LengthUnit unit
         {
-            get { return m_Unit; }
-            set { m_Unit = value; }
+            get => (LengthUnit)m_Unit;
+            set => m_Unit = (Unit)value;
         }
+
+        internal bool IsAuto() => m_Unit == Unit.Auto;
+        internal bool IsNone() => m_Unit == Unit.None;
 
         /// <summary>
         /// Creates from a float and an optionnal <see cref="LengthUnit"/>.
@@ -57,7 +79,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// <see cref="LengthUnit.Pixel"/> is the default unit.
         /// </remarks>
-        public Length(float value) : this(value, LengthUnit.Pixel)
+        public Length(float value) : this(value, Unit.Pixel)
         {}
 
         /// <summary>
@@ -66,14 +88,17 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// <see cref="LengthUnit.Pixel"/> is the default unit.
         /// </remarks>
-        public Length(float value, LengthUnit unit)
+        public Length(float value, LengthUnit unit) : this(value, (Unit)unit)
+        {}
+
+        private Length(float value, Unit unit)
         {
             m_Value = value;
             m_Unit = unit;
         }
 
         private float m_Value;
-        private LengthUnit m_Unit;
+        private Unit m_Unit;
         public static implicit operator Length(float value)
         {
             return new Length(value, LengthUnit.Pixel);
@@ -96,39 +121,38 @@ namespace UnityEngine.UIElements
 
         public override bool Equals(object obj)
         {
-            if (!(obj is Length))
-            {
-                return false;
-            }
-
-            var v = (Length)obj;
-            return v == this;
+            return obj is Length other && Equals(other);
         }
 
         public override int GetHashCode()
         {
-            var hashCode = 851985039;
-            hashCode = hashCode * -1521134295 + m_Value.GetHashCode();
-            hashCode = hashCode * -1521134295 + m_Unit.GetHashCode();
-            return hashCode;
+            unchecked
+            {
+                return (m_Value.GetHashCode() * 397) ^ (int)m_Unit;
+            }
         }
 
         public override string ToString()
         {
-            string unitStr = string.Empty;
-            switch (unit)
+            var valueStr = value.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            var unitStr = string.Empty;
+            switch (m_Unit)
             {
-                case LengthUnit.Pixel:
+                case Unit.Pixel:
                     if (!Mathf.Approximately(0, value))
                         unitStr = "px";
                     break;
-                case LengthUnit.Percent:
+                case Unit.Percent:
                     unitStr = "%";
                     break;
-                default:
+                case Unit.Auto:
+                    valueStr = "auto";
+                    break;
+                case Unit.None:
+                    valueStr = "none";
                     break;
             }
-            return $"{value.ToString(CultureInfo.InvariantCulture.NumberFormat)}{unitStr}";
+            return $"{valueStr}{unitStr}";
         }
     }
 }

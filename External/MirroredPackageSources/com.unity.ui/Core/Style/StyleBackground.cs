@@ -1,6 +1,4 @@
 using System;
-using System.Runtime.InteropServices;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
@@ -48,6 +46,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Creates from either a <see cref="Background"/> or a <see cref="StyleKeyword"/>.
         /// </summary>
+        public StyleBackground(Sprite v)
+            : this(v, StyleKeyword.Undefined)
+        {}
+
+        /// <summary>
+        /// Creates from either a <see cref="Background"/> or a <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleBackground(VectorImage v)
             : this(v, StyleKeyword.Undefined)
         {}
@@ -63,12 +68,12 @@ namespace UnityEngine.UIElements
             : this(Background.FromTexture2D(v), keyword)
         {}
 
-        internal StyleBackground(VectorImage v, StyleKeyword keyword)
-            : this(Background.FromVectorImage(v), keyword)
+        internal StyleBackground(Sprite v, StyleKeyword keyword)
+            : this(Background.FromSprite(v), keyword)
         {}
 
-        internal StyleBackground(GCHandle gcHandle, StyleKeyword keyword)
-            : this(gcHandle.IsAllocated ? Background.FromObject(gcHandle.Target) : new Background(), keyword)
+        internal StyleBackground(VectorImage v, StyleKeyword keyword)
+            : this(Background.FromVectorImage(v), keyword)
         {}
 
         internal StyleBackground(Background v, StyleKeyword keyword)
@@ -77,8 +82,8 @@ namespace UnityEngine.UIElements
             m_Value = v;
         }
 
-        private StyleKeyword m_Keyword;
         private Background m_Value;
+        private StyleKeyword m_Keyword;
 
         public static bool operator==(StyleBackground lhs, StyleBackground rhs)
         {
@@ -112,21 +117,15 @@ namespace UnityEngine.UIElements
 
         public override bool Equals(object obj)
         {
-            if (!(obj is StyleBackground))
-            {
-                return false;
-            }
-
-            var v = (StyleBackground)obj;
-            return v == this;
+            return obj is StyleBackground other && Equals(other);
         }
 
         public override int GetHashCode()
         {
-            var hashCode = 917506989;
-            hashCode = hashCode * -1521134295 + m_Keyword.GetHashCode();
-            hashCode = hashCode * -1521134295 + m_Value.GetHashCode();
-            return hashCode;
+            unchecked
+            {
+                return (m_Value.GetHashCode() * 397) ^ (int)m_Keyword;
+            }
         }
 
         public override string ToString()

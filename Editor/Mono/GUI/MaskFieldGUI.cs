@@ -155,6 +155,36 @@ namespace UnityEditor
             return buffer;
         }
 
+        internal static string GetMaskButtonValue(int mask, string[] flagNames, int[] flagValues)
+        {
+            bool hasNothingName = (flagValues[0] == 0);
+            bool hasEverythingName = (flagValues[flagValues.Length - 1] == ~0);
+
+            var nothingName = (hasNothingName ? flagNames[0] : "Nothing");
+            var everythingName = (hasEverythingName ? flagNames[flagValues.Length - 1] : "Everything");
+
+            var flagCount = flagNames.Length - (hasNothingName ? 1 : 0) - (hasEverythingName ? 1 : 0);
+
+            var flagStartIndex = (hasNothingName ? 1 : 0);
+            var flagEndIndex = flagStartIndex + flagCount;
+
+            string buttonText = "Mixed...";
+            if (mask == 0)
+                buttonText = nothingName;
+            else if (mask == ~0)
+                buttonText = everythingName;
+            else
+            {
+                for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)
+                {
+                    if (mask == flagValues[flagIndex])
+                        buttonText = flagNames[flagIndex];
+                }
+            }
+
+            return buttonText;
+        }
+
         internal static void GetMenuOptions(int mask, string[] flagNames, int[] flagValues,
             out string buttonText, out string[] optionNames, out int[] optionMaskValues, out int[] selectedOptions)
         {
@@ -197,7 +227,7 @@ namespace UnityEditor
             }
 
             var flagMask = 0; // Disjunction of all flags (except 0 and ~0)
-            var intermediateMask = 0; // Mask used to compute new mask value for each option
+            var intermediateMask = 0; // Mask used to compute new mask value for each options
 
             // Selected options
             s_SelectedOptionsSet.Clear();

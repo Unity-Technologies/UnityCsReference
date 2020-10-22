@@ -73,8 +73,15 @@ namespace UnityEditor
 
         protected float GetExposureValueForTexture(Texture t)
         {
-            if (TextureUtil.NeedsExposureControl(t))
+            RenderTexture rt = t as RenderTexture;
+            if (rt != null && TextureUtil.IsHDRGraphicsFormat(rt.graphicsFormat))
+            {
                 return m_ExposureSliderValue;
+            }
+            if (TextureUtil.NeedsExposureControl(t))
+            {
+                return m_ExposureSliderValue;
+            }
             return 0.0f;
         }
 
@@ -127,6 +134,12 @@ namespace UnityEditor
                 {
                     hasAlpha = true;
                     alphaOnly = false;
+                }
+
+                RenderTexture rt = t2 as RenderTexture;
+                if (rt)
+                {
+                    needsExposureControl = TextureUtil.IsHDRGraphicsFormat(rt.graphicsFormat);
                 }
             }
 

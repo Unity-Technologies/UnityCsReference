@@ -23,6 +23,7 @@ namespace UnityEngine.UIElements
             UxmlIntAttributeDescription m_PageSize = new UxmlIntAttributeDescription { name = "page-size", defaultValue = (int)kDefaultPageSize };
             UxmlBoolAttributeDescription m_ShowInputField = new UxmlBoolAttributeDescription { name = "show-input-field", defaultValue = kDefaultShowInputField };
             UxmlEnumAttributeDescription<SliderDirection> m_Direction = new UxmlEnumAttributeDescription<SliderDirection> { name = "direction", defaultValue = SliderDirection.Horizontal };
+            UxmlBoolAttributeDescription m_Inverted = new UxmlBoolAttributeDescription { name = "inverted", defaultValue = kDefaultInverted };
 
             /// <summary>
             /// Initialize <see cref="SliderInt"/> properties using values from the attribute bag.
@@ -39,6 +40,7 @@ namespace UnityEngine.UIElements
                 f.direction = m_Direction.GetValueFromBag(bag, cc);
                 f.pageSize = m_PageSize.GetValueFromBag(bag, cc);
                 f.showInputField = m_ShowInputField.GetValueFromBag(bag, cc);
+                f.inverted = m_Inverted.GetValueFromBag(bag, cc);
 
                 base.Init(ve, bag, cc);
             }
@@ -143,20 +145,25 @@ namespace UnityEngine.UIElements
                     return;
 
                 var adjustedPageDirection = (int)pageSize;
-                if (lowValue > highValue)
+                if ((lowValue > highValue && !inverted) ||
+                    (lowValue < highValue && inverted) ||
+                    (direction == SliderDirection.Vertical && !inverted))
                 {
                     adjustedPageDirection = -adjustedPageDirection;
                 }
 
-                if ((dragElementLastPos < dragElementPos) &&
-                    (clampedDragger.dragDirection != ClampedDragger<int>.DragDirection.LowToHigh))
+                var isPositionDecreasing = dragElementLastPos < dragElementPos;
+                var isPositionIncreasing = dragElementLastPos > (dragElementPos + dragElementLength);
+                var isDraggingHighToLow = inverted ? isPositionIncreasing : isPositionDecreasing;
+                var isDraggingLowToHigh = inverted ? isPositionDecreasing : isPositionIncreasing;
+
+                if (isDraggingHighToLow && (clampedDragger.dragDirection != ClampedDragger<int>.DragDirection.LowToHigh))
                 {
                     clampedDragger.dragDirection = ClampedDragger<int>.DragDirection.HighToLow;
                     // Compute the next value based on the page size.
                     value = value - adjustedPageDirection;
                 }
-                else if ((dragElementLastPos > (dragElementPos + dragElementLength)) &&
-                         (clampedDragger.dragDirection != ClampedDragger<int>.DragDirection.HighToLow))
+                else if (isDraggingLowToHigh && (clampedDragger.dragDirection != ClampedDragger<int>.DragDirection.HighToLow))
                 {
                     clampedDragger.dragDirection = ClampedDragger<int>.DragDirection.LowToHigh;
                     // Compute the next value based on the page size.

@@ -42,13 +42,15 @@ namespace UnityEditor.MPE
         UMP_UNDEFINED = 0,
         Undefined = 0,
 
-        [Obsolete("... (UnityUpgradable) -> Master")]
+        [Obsolete("... (UnityUpgradable) -> Main")]
         UMP_MASTER = 1,
-        Master = 1,
+        Main = 1,
 
-        [Obsolete("... (UnityUpgradable) -> Slave")]
+        [Obsolete("... (UnityUpgradable) -> Secondary")]
         UMP_SLAVE = 2,
-        Slave = 2
+        [Obsolete("... (UnityUpgradable) -> Secondary")]
+        Slave = 2,
+        Secondary = 2
     }
 
     [MovedFrom("Unity.MPE")]
@@ -73,8 +75,8 @@ namespace UnityEditor.MPE
     internal enum RoleCapability
     {
         None = 0,
-        Master = 1,
-        Slave = 2
+        Main = 1,
+        Secondary = 2
     }
 
     [MovedFrom("Unity.MPE")]
@@ -224,9 +226,28 @@ namespace UnityEditor.MPE
         public static extern string roleName { get; }
         public static extern bool IsChannelServiceStarted();
         public static extern string ReadParameter(string paramName);
-        public static extern int LaunchSlave(string roleName, params string[] keyValuePairs);
-        public static extern void TerminateSlave(int pid);
-        public static extern ProcessState GetSlaveProcessState(int pid);
+
+        [Obsolete("Function LaunchSlave was renamed. Use Launch. (UnityUpgradable) -> Launch(*)")]
+        public static int LaunchSlave(string roleName, params string[] keyValuePairs)
+        {
+            return Launch(roleName, keyValuePairs);
+        }
+
+        public static extern int Launch(string roleName, params string[] keyValuePairs);
+        [Obsolete("Function TerminateSlave was renamed. Use Terminate. (UnityUpgradable) -> Terminate(*)")]
+        public static void TerminateSlave(int pid)
+        {
+            Terminate(pid);
+        }
+
+        public static extern void Terminate(int pid);
+        [Obsolete("Function GetSlaveProcessState was renamed. Use GetProcessState. (UnityUpgradable) -> GetProcessState(*)")]
+        public static ProcessState GetSlaveProcessState(int pid)
+        {
+            return GetProcessState(pid);
+        }
+
+        public static extern ProcessState GetProcessState(int pid);
         public static extern bool HasCapability(string capName);
         public static extern void ApplyPropertyModifications(PropertyModification[] modifications);
         public static extern byte[] SerializeObject(int instanceId);
@@ -234,12 +255,17 @@ namespace UnityEditor.MPE
         public static extern int EnableProfileConnection(string dataPath);
         public static extern void DisableProfileConnection();
 
+        #pragma warning disable CS0067
+        [Obsolete("Event SlaveProcessExitedEvent was renamed. Use ProcessExitedEvent. (UnityUpgradable) -> ProcessExitedEvent")]
         public static event Action<int, ProcessState> SlaveProcessExitedEvent;
+        #pragma warning restore CS0067
+
+        public static event Action<int, ProcessState> ProcessExitedEvent;
 
         [RequiredByNativeCode]
-        private static void OnSlaveProcessExited(int pid, ProcessState newState)
+        private static void OnProcessExited(int pid, ProcessState newState)
         {
-            SlaveProcessExitedEvent?.Invoke(pid, newState);
+            ProcessExitedEvent?.Invoke(pid, newState);
         }
     }
 

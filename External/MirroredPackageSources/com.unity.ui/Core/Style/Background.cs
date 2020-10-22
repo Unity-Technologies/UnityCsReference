@@ -8,32 +8,74 @@ namespace UnityEngine.UIElements
     /// </summary>
     public struct Background : IEquatable<Background>
     {
-        private Texture2D m_Texture;
+        Texture2D m_Texture;
         /// <summary>
-        /// The texture to display as a background. You cannot set this and <see cref="Background.vectorImage"/> at the same time.
+        /// The texture to display as a background.
         /// </summary>
         public Texture2D texture
         {
             get { return m_Texture; }
             set
             {
-                if (value != null && vectorImage != null)
-                    throw new InvalidOperationException("Cannot set both texture and vectorImage on Background object");
+                if (m_Texture == value)
+                    return;
                 m_Texture = value;
+                m_Sprite = null;
+                m_RenderTexture = null;
+                m_VectorImage = null;
             }
         }
 
-        private VectorImage m_VectorImage;
+        private Sprite m_Sprite;
         /// <summary>
-        /// The <see cref="VectorImage"/> to display as a background.  You cannot set this and <see cref="Background.texture"/> at the same time.
+        /// The sprite to display as a background.
+        /// </summary>
+        public Sprite sprite
+        {
+            get { return m_Sprite; }
+            set
+            {
+                if (m_Sprite == value)
+                    return;
+                m_Texture = null;
+                m_Sprite = value;
+                m_RenderTexture = null;
+                m_VectorImage = null;
+            }
+        }
+
+        RenderTexture m_RenderTexture;
+        /// <summary>
+        /// The <see cref="RenderTexture"/> to display as a background.
+        /// </summary>
+        public RenderTexture renderTexture
+        {
+            get { return m_RenderTexture; }
+            set
+            {
+                if (m_RenderTexture == value)
+                    return;
+                m_Texture = null;
+                m_Sprite = null;
+                m_RenderTexture = value;
+                m_VectorImage = null;
+            }
+        }
+
+        VectorImage m_VectorImage;
+        /// <summary>
+        /// The <see cref="VectorImage"/> to display as a background.
         /// </summary>
         public VectorImage vectorImage
         {
             get { return m_VectorImage; }
             set
             {
-                if (value != null && texture != null)
-                    throw new InvalidOperationException("Cannot set both texture and vectorImage on Background object");
+                if (vectorImage == value)
+                    return;
+                m_Texture = null;
+                m_Sprite = null;
+                m_RenderTexture = null;
                 m_VectorImage = value;
             }
         }
@@ -45,6 +87,8 @@ namespace UnityEngine.UIElements
         public Background(Texture2D t)
         {
             m_Texture = t;
+            m_Sprite = null;
+            m_RenderTexture = null;
             m_VectorImage = null;
         }
 
@@ -55,7 +99,27 @@ namespace UnityEngine.UIElements
         /// <returns>A new background object.</returns>
         public static Background FromTexture2D(Texture2D t)
         {
-            return new Background() { texture = t };
+            return new Background { texture = t };
+        }
+
+        /// <summary>
+        /// Creates a background from a <see cref="RenderTexture"/>.
+        /// </summary>
+        /// <param name="rt">The render texture to use as a background.</param>
+        /// <returns>A new background object.</returns>
+        public static Background FromRenderTexture(RenderTexture rt)
+        {
+            return new Background { renderTexture = rt };
+        }
+
+        /// <summary>
+        /// Creates a background from a <see cref="Sprite"/>.
+        /// </summary>
+        /// <param name="s">The sprite to use as a background.</param>
+        /// <returns>A new background object.</returns>
+        public static Background FromSprite(Sprite s)
+        {
+            return new Background() { sprite = s };
         }
 
         /// <summary>
@@ -65,25 +129,33 @@ namespace UnityEngine.UIElements
         /// <returns>A new background object.</returns>
         public static Background FromVectorImage(VectorImage vi)
         {
-            return new Background() { vectorImage = vi };
+            return new Background { vectorImage = vi };
         }
 
         internal static Background FromObject(object obj)
         {
             var texture = obj as Texture2D;
             if (texture != null)
-                return Background.FromTexture2D(texture);
+                return FromTexture2D(texture);
+
+            var renderTexture = obj as RenderTexture;
+            if (renderTexture != null)
+                return FromRenderTexture(renderTexture);
+
+            var sprite = obj as Sprite;
+            if (sprite != null)
+                return Background.FromSprite(sprite);
 
             var vectorImage = obj as VectorImage;
             if (vectorImage != null)
-                return Background.FromVectorImage(vectorImage);
+                return FromVectorImage(vectorImage);
 
-            return default(Background);
+            return default;
         }
 
         public static bool operator==(Background lhs, Background rhs)
         {
-            return EqualityComparer<Texture2D>.Default.Equals(lhs.texture, rhs.texture);
+            return lhs.texture == rhs.texture && lhs.sprite == rhs.sprite && lhs.renderTexture == rhs.renderTexture && lhs.vectorImage == rhs.vectorImage;
         }
 
         public static bool operator!=(Background lhs, Background rhs)
@@ -110,16 +182,30 @@ namespace UnityEngine.UIElements
         public override int GetHashCode()
         {
             var hashCode = 851985039;
-            if (texture != null)
-                hashCode = hashCode * -1521134295 + EqualityComparer<Texture2D>.Default.GetHashCode(texture);
-            if (vectorImage != null)
-                hashCode = hashCode * -1521134295 + EqualityComparer<VectorImage>.Default.GetHashCode(vectorImage);
+            // The hash code must remain the same if the underlying object is destroyed and the handle becomes fake-null.
+            // Otherwise it would suddenly become impossible to remove the entry from a dictionary.
+            if (!ReferenceEquals(texture, null))
+                hashCode = hashCode * -1521134295 + texture.GetHashCode();
+            if (!ReferenceEquals(sprite, null))
+                hashCode = hashCode * -1521134295 + sprite.GetHashCode();
+            if (!ReferenceEquals(renderTexture, null))
+                hashCode = hashCode * -1521134295 + renderTexture.GetHashCode();
+            if (!ReferenceEquals(vectorImage, null))
+                hashCode = hashCode * -1521134295 + vectorImage.GetHashCode();
             return hashCode;
         }
 
         public override string ToString()
         {
-            return $"{texture}";
+            if (texture != null)
+                return texture.ToString();
+            if (sprite != null)
+                return sprite.ToString();
+            if (renderTexture != null)
+                return renderTexture.ToString();
+            if (vectorImage != null)
+                return vectorImage.ToString();
+            return "";
         }
     }
 }

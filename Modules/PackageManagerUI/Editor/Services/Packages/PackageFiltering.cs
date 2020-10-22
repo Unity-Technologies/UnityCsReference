@@ -71,7 +71,7 @@ namespace UnityEditor.PackageManager.UI
                 case PackageFilterTab.UnityRegistry:
                     return package.Is(PackageType.Installable) && package.Is(PackageType.Unity) && (package.isDiscoverable || (package.versions.installed?.isDirectDependency ?? false));
                 case PackageFilterTab.MyRegistries:
-                    return package.Is(PackageType.Installable) && package.Is(PackageType.ScopedRegistry) && (package.isDiscoverable || (package.versions.installed?.isDirectDependency ?? false));
+                    return package.Is(PackageType.Installable) && (package.Is(PackageType.ScopedRegistry) || package.Is(PackageType.MainNotUnity)) && (package.isDiscoverable || (package.versions.installed?.isDirectDependency ?? false));
                 case PackageFilterTab.InProject:
                     return !package.Is(PackageType.BuiltIn) && (package.progress == PackageProgress.Installing || (package.versions.installed != null && (showDependencies || package.versions.installed.isDirectDependency)));
                 case PackageFilterTab.AssetStore:
@@ -99,10 +99,17 @@ namespace UnityEditor.PackageManager.UI
             if (version.version != null && ((SemVersion)version.version).Prerelease.IndexOf(prerelease, StringComparison.CurrentCultureIgnoreCase) >= 0)
                 return true;
 
-            if (version.HasTag(PackageTag.Preview) && PackageTag.Preview.ToString().IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
+            // searching for pre-release if search text matches with search term 'pre', case insensitive
+            const string prereleaseSearchText = "Pre";
+            if (version.HasTag(PackageTag.PreRelease) && prereleaseSearchText.IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
                 return true;
 
-            if (version.HasTag(PackageTag.Verified) && PackageTag.Verified.ToString().IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
+            // searching for experimental if search text matches with search term 'experimental', case insensitive
+            const string experimentalSearchText = "Experimental";
+            if (version.HasTag(PackageTag.Experimental) && experimentalSearchText.IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                return true;
+
+            if (version.HasTag(PackageTag.Release) && PackageTag.Release.ToString().IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
                 return true;
 
             if (version.version?.StripTag().StartsWith(text, StringComparison.CurrentCultureIgnoreCase) == true)

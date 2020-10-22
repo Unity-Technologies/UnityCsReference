@@ -30,7 +30,7 @@ namespace UnityEditor.UIElements
             {
                 ownerObject = ScriptableObject.CreateInstance<PanelOwner>();
                 var debuggerOverlayTmpPanel = new Panel(ownerObject, panel.contextType, EventDispatcher.CreateDefault());
-                debuggerOverlayTmpPanel.clearFlags = PanelClearFlags.None;
+                debuggerOverlayTmpPanel.clearSettings = new PanelClearSettings();
                 debuggerOverlayPanel = debuggerOverlayTmpPanel;
                 debuggerOverlayPanel.visualTree.layout = panel.visualTree.layout;
                 debugContainer = new VisualElement()

@@ -6,9 +6,18 @@ using UnityEditorInternal;
 
 namespace UnityEditor.UIElements
 {
+    /// <summary>
+    /// A <see cref="TagField"/> editor.
+    /// </summary>
     public class TagField : PopupField<string>
     {
+        /// <summary>
+        /// Instantiates a <see cref="TagField"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<TagField, UxmlTraits> {}
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="TagField"/>.
+        /// </summary>
         public new class UxmlTraits : PopupField<string>.UxmlTraits
         {
             UxmlStringAttributeDescription m_Value = new UxmlStringAttributeDescription { name = "value" };
@@ -49,6 +58,9 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// Unsupported.
+        /// </summary>
         public override Func<string, string> formatSelectedValueCallback
         {
             get { return null; }
@@ -63,6 +75,9 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// Unsupported.
+        /// </summary>
         public override Func<string, string> formatListItemCallback
         {
             get { return null; }
@@ -82,8 +97,17 @@ namespace UnityEditor.UIElements
             return new List<string>(InternalEditorUtility.tags);
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-tag-field";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
 

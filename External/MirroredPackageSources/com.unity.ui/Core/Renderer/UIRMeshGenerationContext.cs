@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Unity.Collections;
-using UnityEngine.TextCore;
 
 namespace UnityEngine.UIElements
 {
     /// <summary>
     /// Represents a vertex of geometry for drawing content of <see cref="VisualElement"/>.
     /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
     public struct Vertex
     {
         /// <summary>
@@ -39,6 +40,8 @@ namespace UnityEngine.UIElements
         internal Color32 xformClipPages; // Top-left of xform and clip pages: XY,XY
         internal Color32 idsFlags; //XYZ (xform,clip,opacity) (W flags)
         internal Color32 opacityPageSVGSettingIndex; //XY (ZW SVG setting index)
+        internal float textureId;
+
         // Winding order of vertices matters. CCW is for clipped meshes.
     }
 
@@ -246,6 +249,7 @@ namespace UnityEngine.UIElements
             public Rect uv;
             public Color color;
             public Texture texture;
+            public Sprite sprite;
             public VectorImage vectorImage;
             public Material material;
             public ScaleMode scaleMode;
@@ -276,17 +280,15 @@ namespace UnityEngine.UIElements
                 };
             }
 
-            public static RectangleParams MakeTextured(Rect rect, Rect uv, Texture texture, ScaleMode scaleMode, ContextType panelContext)
+            private static void AdjustUVsForScaleMode(Rect rect, Rect uv, Texture texture, ScaleMode scaleMode, out Rect rectOut, out Rect uvOut)
             {
-                var playmodeTintColor = panelContext == ContextType.Editor
-                    ? UIElementsUtility.editorPlayModeTintColor
-                    : Color.white;
-
                 // Fill the UVs according to scale mode
                 // Comparing aspects ratio is error-prone because the screenRect may end up being scaled by the
                 // transform and the corners will end up being pixel aligned, possibly resulting in blurriness.
+
                 float srcAspect = (texture.width * uv.width) / (texture.height * uv.height);
                 float destAspect = rect.width / rect.height;
+
                 switch (scaleMode)
                 {
                     case ScaleMode.StretchToFill:
@@ -323,6 +325,17 @@ namespace UnityEngine.UIElements
                     default:
                         throw new NotImplementedException();
                 }
+                rectOut = rect;
+                uvOut = uv;
+            }
+
+            public static RectangleParams MakeTextured(Rect rect, Rect uv, Texture texture, ScaleMode scaleMode, ContextType panelContext)
+            {
+                var playmodeTintColor = panelContext == ContextType.Editor
+                    ? UIElementsUtility.editorPlayModeTintColor
+                    : Color.white;
+
+                AdjustUVsForScaleMode(rect, uv, texture, scaleMode, out rect, out uv);
 
                 var rp = new RectangleParams
                 {
@@ -333,6 +346,63 @@ namespace UnityEngine.UIElements
                     scaleMode = scaleMode,
                     playmodeTintColor = playmodeTintColor
                 };
+                return rp;
+            }
+
+            private static Rect ComputeUVRect(Sprite sprite)
+            {
+                var uvMin = new Vector2(float.MaxValue, float.MaxValue);
+                var uvMax = new Vector2(float.MinValue, float.MinValue);
+                foreach (var uv in sprite.uv)
+                {
+                    uvMin = Vector2.Min(uvMin, uv);
+                    uvMax = Vector2.Max(uvMax, uv);
+                }
+                return new Rect(uvMin, uvMax - uvMin);
+            }
+
+            public static RectangleParams MakeSprite(Rect rect, Sprite sprite, ScaleMode scaleMode, ContextType panelContext, bool hasRadius, ref Vector4 slices)
+            {
+                if (sprite.texture == null)
+                {
+                    Debug.LogWarning($"Ignoring textureless sprite named \"{sprite.name}\", please import as a VectorImage instead");
+                    return new RectangleParams();
+                }
+
+                var playmodeTintColor = panelContext == ContextType.Editor
+                    ? UIElementsUtility.editorPlayModeTintColor
+                    : Color.white;
+
+                var uv = ComputeUVRect(sprite);
+                AdjustUVsForScaleMode(rect, uv, sprite.texture, scaleMode, out rect, out uv);
+
+                // Use a textured quad (ignoring tight-mesh) if dealing with slicing or with
+                // scale-and-crop scale mode. This avoids expensive CPU-side transformation and
+                // polygon clipping.
+                var border = sprite.border;
+                bool hasSlices = (border != Vector4.zero) || (slices != Vector4.zero);
+                bool useFullTexture = (scaleMode == ScaleMode.ScaleAndCrop) || hasSlices || hasRadius;
+
+                var rp = new RectangleParams
+                {
+                    rect = rect,
+                    uv = uv,
+                    color = Color.white,
+                    texture = useFullTexture ? sprite.texture : (Texture2D)null,
+                    sprite = useFullTexture ? (Sprite)null : sprite,
+                    scaleMode = scaleMode,
+                    playmodeTintColor = playmodeTintColor
+                };
+
+                // Store the slices in VisualElement order (left, top, right, bottom)
+                var spriteBorders = new Vector4(border.x, border.w, border.z, border.y);
+
+                if (slices != Vector4.zero && spriteBorders != Vector4.zero && spriteBorders != slices)
+                    // Both the asset slices and the style slices are defined, warn the user
+                    Debug.LogWarning($"Sprite \"{sprite.name}\" borders {spriteBorders} are overridden by style slices {slices}");
+                else if (slices == Vector4.zero)
+                    slices = spriteBorders;
+
                 return rp;
             }
 
@@ -377,8 +447,9 @@ namespace UnityEngine.UIElements
             public bool richText;
             public Material material;
             public Color playmodeTintColor;
-            public TextOverflowMode textOverflowMode;
+            public TextOverflow textOverflow;
             public TextOverflowPosition textOverflowPosition;
+            public OverflowInternal overflow;
 
             public override int GetHashCode()
             {
@@ -394,8 +465,9 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ richText.GetHashCode();
                 hashCode = (hashCode * 397) ^ (material != null ? material.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ playmodeTintColor.GetHashCode();
-                hashCode = (hashCode * 397) ^ textOverflowMode.GetHashCode();
+                hashCode = (hashCode * 397) ^ textOverflow.GetHashCode();
                 hashCode = (hashCode * 397) ^ textOverflowPosition.GetHashCode();
+                hashCode = (hashCode * 397) ^ overflow.GetHashCode();
                 return hashCode;
             }
 
@@ -406,32 +478,19 @@ namespace UnityEngine.UIElements
                 {
                     rect = ve.contentRect,
                     text = text,
-                    font = style.unityFont.value,
-                    fontSize = (int)style.fontSize.value.value,
-                    fontStyle = style.unityFontStyleAndWeight.value,
-                    fontColor = style.color.value,
-                    anchor = style.unityTextAlign.value,
-                    wordWrap = style.whiteSpace.value == WhiteSpace.Normal,
-                    wordWrapWidth = style.whiteSpace.value == WhiteSpace.Normal ? ve.contentRect.width : 0.0f,
+                    font = style.unityFont,
+                    fontSize = (int)style.fontSize.value,
+                    fontStyle = style.unityFontStyleAndWeight,
+                    fontColor = style.color,
+                    anchor = style.unityTextAlign,
+                    wordWrap = style.whiteSpace == WhiteSpace.Normal,
+                    wordWrapWidth = style.whiteSpace == WhiteSpace.Normal ? ve.contentRect.width : 0.0f,
                     richText = false,
                     playmodeTintColor = ve.panel?.contextType == ContextType.Editor ? UIElementsUtility.editorPlayModeTintColor : Color.white,
-                    textOverflowMode = GetTextOverflowMode(style),
-                    textOverflowPosition = style.unityTextOverflowPosition.value
+                    textOverflow = style.textOverflow,
+                    textOverflowPosition = style.unityTextOverflowPosition,
+                    overflow = style.overflow
                 };
-            }
-
-            public static TextOverflowMode GetTextOverflowMode(ComputedStyle style)
-            {
-                if (style.textOverflow.value == TextOverflow.Clip)
-                    return TextOverflowMode.Masking;
-
-                if (style.textOverflow.value != TextOverflow.Ellipsis)
-                    return TextOverflowMode.Overflow;
-
-                if (style.whiteSpace.value == WhiteSpace.NoWrap && style.overflow == OverflowInternal.Hidden)
-                    return TextOverflowMode.Ellipsis;
-
-                return TextOverflowMode.Overflow;
             }
 
             internal static TextNativeSettings GetTextNativeSettings(TextParams textParams, float scaling)
@@ -466,7 +525,7 @@ namespace UnityEngine.UIElements
             mgc.painter.DrawBorder(borderParams);
         }
 
-        public static void Text(this MeshGenerationContext mgc, TextParams textParams, TextHandle handle, float pixelsPerPoint)
+        public static void Text(this MeshGenerationContext mgc, TextParams textParams, ITextHandle handle, float pixelsPerPoint)
         {
             if (textParams.font != null)
                 mgc.painter.DrawText(textParams, handle, pixelsPerPoint);
@@ -495,10 +554,10 @@ namespace UnityEngine.UIElements
             var borderRectSize = new Vector2(style.width, style.height);
 
             var computedStyle = ve.computedStyle;
-            topLeft = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderTopLeftRadius.value);
-            bottomLeft = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderBottomLeftRadius.value);
-            topRight = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderTopRightRadius.value);
-            bottomRight = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderBottomRightRadius.value);
+            topLeft = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderTopLeftRadius);
+            bottomLeft = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderBottomLeftRadius);
+            topRight = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderTopRightRadius);
+            bottomRight = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderBottomRightRadius);
         }
     }
 
@@ -508,7 +567,12 @@ namespace UnityEngine.UIElements
     public class MeshGenerationContext
     {
         [Flags]
-        internal enum MeshFlags { None, UVisDisplacement, IsSVGGradients, IsCustomSVGGradients }
+        internal enum MeshFlags
+        {
+            None = 0,
+            UVisDisplacement = 1 << 0,
+            SkipDynamicAtlas = 1 << 1
+        }
 
         /// <summary>
         /// The element for which <see cref="VisualElement.generateVisualContent"/> was invoked.

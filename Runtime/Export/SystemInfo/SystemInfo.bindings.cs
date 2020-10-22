@@ -442,6 +442,15 @@ namespace UnityEngine
             return SupportsBlendingOnRenderTextureFormatNative(format);
         }
 
+        // Can we enable enableRandomWrite on this format
+        public static bool SupportsRandomWriteOnRenderTextureFormat(RenderTextureFormat format)
+        {
+            if (!IsValidEnumValue(format))
+                throw new ArgumentException("Failed SupportsRandomWriteOnRenderTextureFormat; format is not a valid RenderTextureFormat");
+
+            return SupportsRandomWriteOnRenderTextureFormatNative(format);
+        }
+
         public static bool SupportsTextureFormat(TextureFormat format)
         {
             if (!IsValidEnumValue(format))
@@ -804,6 +813,9 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::SupportsBlendingOnRenderTextureFormat")]
         static extern bool SupportsBlendingOnRenderTextureFormatNative(RenderTextureFormat format);
 
+        [FreeFunction("ScriptingGraphicsCaps::SupportsRandomWriteOnRenderTextureFormat")]
+        static extern bool SupportsRandomWriteOnRenderTextureFormatNative(RenderTextureFormat format);
+
         [FreeFunction("ScriptingGraphicsCaps::SupportsTextureFormat")]
         static extern bool SupportsTextureFormatNative(TextureFormat format);
 
@@ -868,6 +880,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::GetGraphicsFormat")]
         extern public static GraphicsFormat GetGraphicsFormat(DefaultFormat format);
+
+        [FreeFunction("ScriptingGraphicsCaps::GetRenderTextureSupportedMSAASampleCount")]
+        extern public static int GetRenderTextureSupportedMSAASampleCount(RenderTextureDescriptor desc);
 
         [FreeFunction("ScriptingGraphicsCaps::UsesLoadStoreActions")]
         static extern bool UsesLoadStoreActions();
@@ -1012,6 +1027,11 @@ namespace UnityEngine
             return ShimManager.systemInfoShim.SupportsBlendingOnRenderTextureFormat(format);
         }
 
+        public static bool SupportsRandomWriteOnRenderTextureFormat(RenderTextureFormat format)
+        {
+            return ShimManager.systemInfoShim.SupportsRandomWriteOnRenderTextureFormat(format);
+        }
+
         public static bool SupportsTextureFormat(TextureFormat format)
         {
             return ShimManager.systemInfoShim.SupportsTextureFormat(format);
@@ -1086,6 +1106,11 @@ namespace UnityEngine
         public static GraphicsFormat GetGraphicsFormat(DefaultFormat format)
         {
             return ShimManager.systemInfoShim.GetGraphicsFormat(format);
+        }
+
+        public static int GetRenderTextureSupportedMSAASampleCount(RenderTextureDescriptor desc)
+        {
+            return ShimManager.systemInfoShim.GetRenderTextureSupportedMSAASampleCount(desc);
         }
 
         [Obsolete("supportsRenderTextures always returns true, no need to call it")]

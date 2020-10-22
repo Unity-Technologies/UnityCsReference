@@ -19,15 +19,17 @@ namespace UnityEditor.PackageManager.UI
 
         private ResourceLoader m_ResourceLoader;
         private PageManager m_PageManager;
-        private void ResolveDependencies(ResourceLoader resourceLoader, PageManager pageManager)
+        private PackageManagerProjectSettingsProxy m_SettingsProxy;
+        private void ResolveDependencies(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy)
         {
             m_ResourceLoader = resourceLoader;
             m_PageManager = pageManager;
+            m_SettingsProxy = settingsProxy;
         }
 
-        public PackageGroup(ResourceLoader resourceLoader, PageManager pageManager, string groupName, string displayName, bool expanded = true, bool hidden = false)
+        public PackageGroup(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, string groupName, string displayName, bool expanded = true, bool hidden = false)
         {
-            ResolveDependencies(resourceLoader, pageManager);
+            ResolveDependencies(resourceLoader, pageManager, settingsProxy);
 
             name = groupName;
             var root = m_ResourceLoader.GetTemplate("PackageGroup.uxml");
@@ -62,7 +64,7 @@ namespace UnityEditor.PackageManager.UI
 
         internal PackageItem AddPackageItem(IPackage package, VisualState state)
         {
-            var packageItem = new PackageItem(m_ResourceLoader, m_PageManager, package, state) {packageGroup = this};
+            var packageItem = new PackageItem(m_ResourceLoader, m_PageManager, m_SettingsProxy, package, state) {packageGroup = this};
             groupContainer.Add(packageItem);
             return packageItem;
         }

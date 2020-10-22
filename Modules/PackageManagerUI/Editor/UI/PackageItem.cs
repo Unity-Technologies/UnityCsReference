@@ -39,15 +39,17 @@ namespace UnityEditor.PackageManager.UI
 
         private ResourceLoader m_ResourceLoader;
         private PageManager m_PageManager;
-        private void ResolveDependencies(ResourceLoader resourceLoader, PageManager pageManager)
+        private PackageManagerProjectSettingsProxy m_SettingsProxy;
+        private void ResolveDependencies(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy)
         {
             m_ResourceLoader = resourceLoader;
             m_PageManager = pageManager;
+            m_SettingsProxy = settingsProxy;
         }
 
-        public PackageItem(ResourceLoader resourceLoader, PageManager pageManager, IPackage package, VisualState state)
+        public PackageItem(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, IPackage package, VisualState state)
         {
-            ResolveDependencies(resourceLoader, pageManager);
+            ResolveDependencies(resourceLoader, pageManager, settingsProxy);
 
             var root = m_ResourceLoader.GetTemplate("PackageItem.uxml");
             Add(root);
@@ -164,16 +166,22 @@ namespace UnityEditor.PackageManager.UI
             versionList.Clear();
 
             var seeAllVersions = visualState?.seeAllVersions ?? false;
-
             var keyVersions = package.versions.key.ToList();
             var allVersions = package.versions.ToList();
 
             var versions = seeAllVersions ? allVersions : keyVersions;
 
             for (var i = versions.Count - 1; i >= 0; i--)
-                versionList.Add(new PackageVersionItem(package, versions[i]));
+            {
+                // even if package is not installed, we want to show the recommended label
+                //  if there's more than one version shown
+                var alwaysShowRecommendedLabel = versions.Count > 1;
+                var isLatestVersion = i == versions.Count - 1;
+                versionList.Add(new PackageVersionItem(package, versions[i], alwaysShowRecommendedLabel, isLatestVersion));
+            }
 
-            var seeAllVersionsLabelVisible = !seeAllVersions && allVersions.Count > keyVersions.Count;
+            var seeAllVersionsLabelVisible = !seeAllVersions && allVersions.Count > keyVersions.Count
+                && (package.Is(PackageType.ScopedRegistry) || m_SettingsProxy.seeAllPackageVersions || package.versions.installed?.HasTag(PackageTag.Experimental) == true);
             UIUtils.SetElementDisplay(seeAllVersionsLabel, seeAllVersionsLabelVisible);
 
             // Hack until ScrollList has a better way to do the same -- Vertical scroll bar is not yet visible

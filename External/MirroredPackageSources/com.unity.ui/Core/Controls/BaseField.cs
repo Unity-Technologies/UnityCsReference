@@ -6,7 +6,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Abstract base class for controls.
     /// </summary>
-    public abstract class BaseField<TValueType> : BindableElement, INotifyValueChanged<TValueType>
+    public abstract class BaseField<TValueType> : BindableElement, INotifyValueChanged<TValueType>, IMixedValueSupport
     {
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseField"/>.
@@ -51,6 +51,12 @@ namespace UnityEngine.UIElements
         /// USS class name of labels in elements of this type, when there is a dragger attached on them.
         /// </summary>
         public static readonly string labelDraggerVariantUssClassName = labelUssClassName + "--with-dragger";
+        /// <summary>
+        /// USS class name of elements that show mixed values
+        /// </summary>
+        public static readonly string mixedValueLabelUssClassName = labelUssClassName + "--mixed-value"; 
+
+        protected static readonly string mixedValueString = "\u2014";
 
         private VisualElement m_VisualInput;
 
@@ -163,6 +169,44 @@ namespace UnityEngine.UIElements
             }
         }
 
+        bool m_ShowMixedValue;
+
+        /// <summary>
+        /// When set to true, gives the field the appearance of editing multiple different values.
+        /// </summary>
+        public bool showMixedValue
+        {
+            get => m_ShowMixedValue;
+            set
+            {
+                if (value == m_ShowMixedValue) return;
+
+                m_ShowMixedValue = value;
+                
+                // Once value has been set, update the field's appearance
+                UpdateMixedValueContent();
+            }
+        }
+
+        Label m_MixedValueLabel;
+        /// <summary>
+        /// Read-only label used to give the appearance of editing multiple different values.
+        /// </summary>
+        protected Label mixedValueLabel
+        {
+            get
+            {
+                if (m_MixedValueLabel == null)
+                {
+                    m_MixedValueLabel = new Label(mixedValueString) { focusable = true, tabIndex = -1 };
+                    m_MixedValueLabel.AddToClassList(labelUssClassName);
+                    m_MixedValueLabel.AddToClassList(mixedValueLabelUssClassName);
+                }
+
+                return m_MixedValueLabel;
+            }
+        }
+
         internal BaseField(string label)
         {
             isCompositeRoot = true;
@@ -194,6 +238,14 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Update the field's visual content depending on showMixedValue.
+        /// </summary>
+        protected virtual void UpdateMixedValueContent()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
         /// Allow to set a value without being notified of the change, if any.
         /// </summary>
         /// <param name="newValue">New value to bbe set.</param>
@@ -204,6 +256,10 @@ namespace UnityEngine.UIElements
             if (!string.IsNullOrEmpty(viewDataKey))
                 SaveViewData();
             MarkDirtyRepaint();
+
+            if (showMixedValue)
+                UpdateMixedValueContent();
+            showMixedValue = false;
         }
 
         internal override void OnViewDataReady()

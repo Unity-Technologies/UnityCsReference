@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Presets;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -120,7 +121,7 @@ namespace UnityEditor
             }
 
             var target = serializedProperty.serializedObject.targetObject;
-            bool isPreset = target is Component ? ((int)(target as Component).gameObject.hideFlags == 93) : !AssetDatabase.Contains(target);
+            bool isPreset = PresetEditor.IsPreset(target);
 
             // the preset object is destroyed with the inspector, and nothing new can be created that needs this link. Fix for case 1208437
             if (!isPreset)

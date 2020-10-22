@@ -1,5 +1,4 @@
 using System;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
@@ -55,10 +54,15 @@ namespace UnityEngine.UIElements
         {
             m_Keyword = keyword;
             m_Value = v;
+
+            if (v.IsAuto())
+                m_Keyword = StyleKeyword.Auto;
+            else if (v.IsNone())
+                m_Keyword = StyleKeyword.None;
         }
 
-        private StyleKeyword m_Keyword;
         private Length m_Value;
+        private StyleKeyword m_Keyword;
 
         public static bool operator==(StyleLength lhs, StyleLength rhs)
         {
@@ -92,21 +96,15 @@ namespace UnityEngine.UIElements
 
         public override bool Equals(object obj)
         {
-            if (!(obj is StyleLength))
-            {
-                return false;
-            }
-
-            var v = (StyleLength)obj;
-            return v == this;
+            return obj is StyleLength other && Equals(other);
         }
 
         public override int GetHashCode()
         {
-            var hashCode = -1977396678;
-            hashCode = hashCode * -1521134295 + m_Keyword.GetHashCode();
-            hashCode = hashCode * -1521134295 + m_Value.GetHashCode();
-            return hashCode;
+            unchecked
+            {
+                return (m_Value.GetHashCode() * 397) ^ (int)m_Keyword;
+            }
         }
 
         public override string ToString()

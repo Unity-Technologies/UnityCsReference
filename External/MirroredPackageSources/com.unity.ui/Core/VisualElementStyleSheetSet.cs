@@ -40,6 +40,8 @@ namespace UnityEngine.UIElements
 
             m_Element.styleSheetList.Add(styleSheet);
             m_Element.IncrementVersion(VersionChangeType.StyleSheet);
+
+            m_Element.elementPanel?.m_LiveReloadStyleSheetAssetTracker?.StartTrackingAsset(styleSheet);
         }
 
         /// <summary>
@@ -49,6 +51,18 @@ namespace UnityEngine.UIElements
         {
             if (m_Element.styleSheetList == null)
                 return;
+
+            if (m_Element.elementPanel != null)
+            {
+                var tracker = m_Element.elementPanel.m_LiveReloadStyleSheetAssetTracker;
+                if (tracker != null)
+                {
+                    foreach (var styleSheet in m_Element.styleSheetList)
+                    {
+                        tracker.StopTrackingAsset(styleSheet);
+                    }
+                }
+            }
 
             m_Element.styleSheetList = null;
             m_Element.IncrementVersion(VersionChangeType.StyleSheet);
@@ -69,6 +83,9 @@ namespace UnityEngine.UIElements
                     m_Element.styleSheetList = null;
                 }
                 m_Element.IncrementVersion(VersionChangeType.StyleSheet);
+
+                m_Element.elementPanel?.m_LiveReloadStyleSheetAssetTracker?.StopTrackingAsset(styleSheet);
+
                 return true;
             }
             return false;
@@ -92,6 +109,16 @@ namespace UnityEngine.UIElements
             {
                 m_Element.IncrementVersion(VersionChangeType.StyleSheet);
                 m_Element.styleSheetList[index] = @new;
+
+                if (m_Element.elementPanel != null)
+                {
+                    var tracker = m_Element.elementPanel.m_LiveReloadStyleSheetAssetTracker;
+                    if (tracker != null)
+                    {
+                        tracker.StopTrackingAsset(old);
+                        tracker.StartTrackingAsset(@new);
+                    }
+                }
             }
         }
 

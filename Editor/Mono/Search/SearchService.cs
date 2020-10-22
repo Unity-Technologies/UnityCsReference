@@ -152,6 +152,7 @@ namespace UnityEditor.SearchService
         private static void AddSearchServiceBuildDefines(BuildTarget target, HashSet<string> defines)
         {
             defines.Add("USE_SEARCH_ENGINE_API");
+            defines.Add("USE_QUICK_SEARCH_MODULE");
         }
     }
 
@@ -218,7 +219,7 @@ namespace UnityEditor.SearchService
             if (engines.Count == 0)
                 return null;
 
-            var index = engines.FindIndex(engine => engine is DefaultSearchEngineBase);
+            var index = engines.FindIndex(engine => engine is LegacySearchEngineBase);
             if (index < 0)
                 return null;
             return engines[index];
@@ -244,7 +245,7 @@ namespace UnityEditor.SearchService
 
         public bool HasEngineOverride()
         {
-            return !(activeSearchEngine is DefaultSearchEngineBase);
+            return !(activeSearchEngine is LegacySearchEngineBase);
         }
 
         public void BeginSession(ISearchContext context)
@@ -348,7 +349,7 @@ namespace UnityEditor.SearchService
 
         public void HandleUserException(Exception ex)
         {
-            if (activeSearchEngine is DefaultSearchEngineBase)
+            if (activeSearchEngine is LegacySearchEngineBase)
                 throw ex;
 
             Debug.LogFormat(LogType.Error, LogOption.None, null, $"Exception caught with search engine ({displayName}){activeSearchEngine.name}:\n{ex}");

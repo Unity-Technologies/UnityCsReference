@@ -516,5 +516,9 @@ namespace UnityEngine.UIElements
                 }
             }
         }
+
+        protected override void UpdateMixedValueContent()
+        {
+        }
     }
 }

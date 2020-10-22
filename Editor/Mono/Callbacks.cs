@@ -76,12 +76,26 @@ namespace UnityEditor
             static void Signature() { throw new InvalidOperationException(); }
         }
 
+        // Native version in Editor/Src/EditorHelper.h
+        public enum OnOpenAssetAttributeMode
+        {
+            Execute,
+            Validate
+        }
+
         // Add this attribute to a static method to get a callback for opening an asset inside Unity before trying to open it with an external tool
         [RequiredByNativeCode]
         public sealed partial class OnOpenAssetAttribute : CallbackOrderAttribute
         {
-            public OnOpenAssetAttribute() { m_CallbackOrder = 1; }
-            public OnOpenAssetAttribute(int callbackOrder) { m_CallbackOrder = callbackOrder; }
+            OnOpenAssetAttributeMode m_AttributeMode;
+
+            public OnOpenAssetAttribute() : this(OnOpenAssetAttributeMode.Execute) {}
+            public OnOpenAssetAttribute(OnOpenAssetAttributeMode attributeMode) : this(1, attributeMode) {}
+            public OnOpenAssetAttribute(int callbackOrder) : this(callbackOrder, OnOpenAssetAttributeMode.Execute) {}
+            public OnOpenAssetAttribute(int callbackOrder, OnOpenAssetAttributeMode attributeMode) { m_CallbackOrder = callbackOrder; m_AttributeMode = attributeMode; }
+
+            [RequiredSignature]
+            static bool Signature(int instanceID) { throw new InvalidOperationException(); }
 
             [RequiredSignature]
             static bool SignatureLine(int instanceID, int line) { throw new InvalidOperationException(); }

@@ -44,6 +44,7 @@ namespace UnityEditor
             public static GUIContent targetDisplay = EditorGUIUtility.TrTextContent("Target Display", "Display on which to render the canvas when in overlay mode");
             public static GUIContent m_SortingOrderStyle = EditorGUIUtility.TrTextContent("Order in Layer", "Renderer's order within a sorting layer");
             public static GUIContent m_ShaderChannel = EditorGUIUtility.TrTextContent("Additional Shader Channels");
+            public static GUIContent pixelPerfectContent = EditorGUIUtility.TrTextContent("Pixel Perfect");
         }
 
         private bool m_AllNested = false;
@@ -152,7 +153,8 @@ namespace UnityEditor
             EditorGUI.indentLevel++;
             if (EditorGUILayout.BeginFadeGroup(m_OverlayMode.faded))
             {
-                EditorGUILayout.PropertyField(m_PixelPerfect);
+                DoPixelPerfectGUIForRoot();
+
                 EditorGUILayout.PropertyField(m_SortingOrder, Styles.sortingOrder);
                 GUIContent[] displayNames = DisplayUtility.GetDisplayNames();
                 EditorGUILayout.IntPopup(m_TargetDisplay, displayNames, DisplayUtility.GetDisplayIndices(), Styles.targetDisplay);
@@ -161,7 +163,8 @@ namespace UnityEditor
 
             if (EditorGUILayout.BeginFadeGroup(m_CameraMode.faded))
             {
-                EditorGUILayout.PropertyField(m_PixelPerfect);
+                DoPixelPerfectGUIForRoot();
+
                 EditorGUILayout.PropertyField(m_Camera, Styles.renderCamera);
 
                 if (m_Camera.objectReferenceValue == null)
@@ -195,10 +198,29 @@ namespace UnityEditor
             EditorGUI.indentLevel--;
         }
 
-        private void AllNestedCanvases()
+        private void DoPixelPerfectGUIForRoot()
+        {
+            bool pixelPerfectValue = m_PixelPerfect.boolValue;
+
+            EditorGUI.BeginChangeCheck();
+            pixelPerfectValue = EditorGUILayout.Toggle(Styles.pixelPerfectContent, pixelPerfectValue);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                for (int i = 0; i < targets.Length; i++)
+                {
+                    Canvas canvas = targets[i] as Canvas;
+
+                    Undo.RecordObject(canvas, "Set Pixel Perfect");
+                    canvas.pixelPerfect = pixelPerfectValue;
+                }
+            }
+        }
+
+        private void DoPixelPerfectGUIForNested()
         {
             EditorGUI.BeginChangeCheck();
-            pixelPerfect = (PixelPerfect)EditorGUILayout.EnumPopup("Pixel Perfect", pixelPerfect);
+            pixelPerfect = (PixelPerfect)EditorGUILayout.EnumPopup(Styles.pixelPerfectContent, pixelPerfect);
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -206,17 +228,23 @@ namespace UnityEditor
                 {
                     m_PixelPerfectOverride.boolValue = false;
                 }
-                else if (pixelPerfect == PixelPerfect.Off)
-                {
-                    m_PixelPerfectOverride.boolValue = true;
-                    m_PixelPerfect.boolValue = false;
-                }
                 else
                 {
                     m_PixelPerfectOverride.boolValue = true;
-                    m_PixelPerfect.boolValue = true;
+                    for (int i = 0; i < targets.Length; i++)
+                    {
+                        Canvas canvas = targets[i] as Canvas;
+
+                        Undo.RecordObject(canvas, "Set Pixel Perfect");
+                        canvas.pixelPerfect = pixelPerfect == PixelPerfect.On;
+                    }
                 }
             }
+        }
+
+        private void AllNestedCanvases()
+        {
+            DoPixelPerfectGUIForNested();
 
             EditorGUILayout.PropertyField(m_OverrideSorting);
             m_SortingOverride.target = m_OverrideSorting.boolValue;

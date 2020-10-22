@@ -24,9 +24,12 @@ namespace UnityEditor
         {
             base.UpdateData(firstEmptyFrame, firstFrame, frameCount);
 
+            m_Markers = null;
+            m_MarkerNames = null;
             int count = ProfilerDriver.GetUISystemEventMarkersCount(firstFrame, frameCount);
             if (count == 0)
                 return;
+
             m_Markers = new EventMarker[count];
             m_MarkerNames = new string[count];
             ProfilerDriver.GetUISystemEventMarkersBatch(firstFrame, frameCount, m_Markers, m_MarkerNames);

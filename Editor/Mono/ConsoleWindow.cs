@@ -50,6 +50,7 @@ namespace UnityEditor
             public static readonly GUIContent Clear = EditorGUIUtility.TrTextContent("Clear", "Clear console entries");
             public static readonly GUIContent ClearOnPlay = EditorGUIUtility.TrTextContent("Clear on Play");
             public static readonly GUIContent ClearOnBuild = EditorGUIUtility.TrTextContent("Clear on Build");
+            public static readonly GUIContent ClearOnRecompile = EditorGUIUtility.TrTextContent("Clear on Recompile");
             public static readonly GUIContent Collapse = EditorGUIUtility.TrTextContent("Collapse", "Collapse identical entries");
             public static readonly GUIContent ErrorPause = EditorGUIUtility.TrTextContent("Error Pause", "Pause Play Mode on error");
             public static readonly GUIContent StopForAssert = EditorGUIUtility.TrTextContent("Stop for Assert");
@@ -146,7 +147,7 @@ namespace UnityEditor
                 public static GUIContent FullLog = EditorGUIUtility.TrTextContent("Full Log (Developer Mode Only)");
             }
 
-            public ConsoleAttachToPlayerState(EditorWindow parentWindow, Action<string> connectedCallback = null) : base(parentWindow, connectedCallback)
+            public ConsoleAttachToPlayerState(EditorWindow parentWindow, Action<string, EditorConnectionTarget?> connectedCallback = null) : base(parentWindow, connectedCallback)
             {
                 // This is needed to force initialize the instance and the state so that messages from players are received and printed to the console (if that is the serialized state)
                 // on creation of the ConsoleWindow UI instead of when the uer first clicks on the dropdown, and triggers AddItemsToMenu.
@@ -230,6 +231,7 @@ namespace UnityEditor
             LogLevelError = 1 << 9,
             ShowTimestamp = 1 << 10,
             ClearOnBuild = 1 << 11,
+            ClearOnRecompile = 1 << 12,
         }
 
         static ConsoleWindow ms_ConsoleWindow = null;
@@ -240,7 +242,7 @@ namespace UnityEditor
             if (!ms_ConsoleWindow)
             {
                 ms_ConsoleWindow = ScriptableObject.CreateInstance<ConsoleWindow>();
-                if (UnityEditor.MPE.ProcessService.level == MPE.ProcessLevel.Master)
+                if (UnityEditor.MPE.ProcessService.level == MPE.ProcessLevel.Main)
                     ms_ConsoleWindow.Show(immediate);
                 else
                     ms_ConsoleWindow.ShowModalUtility();
@@ -494,10 +496,12 @@ namespace UnityEditor
             {
                 var clearOnPlay = HasFlag(ConsoleFlags.ClearOnPlay);
                 var clearOnBuild = HasFlag(ConsoleFlags.ClearOnBuild);
+                var clearOnRecompile = HasFlag(ConsoleFlags.ClearOnRecompile);
 
                 GenericMenu menu = new GenericMenu();
                 menu.AddItem(Constants.ClearOnPlay, clearOnPlay, () => { SetFlag(ConsoleFlags.ClearOnPlay, !clearOnPlay); });
                 menu.AddItem(Constants.ClearOnBuild, clearOnBuild, () => { SetFlag(ConsoleFlags.ClearOnBuild, !clearOnBuild); });
+                menu.AddItem(Constants.ClearOnRecompile, clearOnRecompile, () => { SetFlag(ConsoleFlags.ClearOnRecompile, !clearOnRecompile); });
                 var rect = GUILayoutUtility.GetLastRect();
                 rect.y += EditorGUIUtility.singleLineHeight;
                 menu.DropDown(rect);

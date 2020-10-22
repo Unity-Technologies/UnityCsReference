@@ -33,13 +33,13 @@ namespace UnityEditor.PackageManager.UI
             get
             {
                 var isInstalledVersion = displayVersion?.isInstalled ?? false;
-                return isInstalledVersion ? package.versions.recommended : displayVersion;
+                return isInstalledVersion ? package.versions.recommended ?? displayVersion : displayVersion;
             }
         }
 
         private const string k_EmptyDescriptionClass = "empty";
 
-        private string previewInfoReadMoreUrl => $"https://docs.unity3d.com/{m_Application?.shortUnityVersion}/Documentation/Manual/pack-preview.html";
+        private string preReleaseInfoReadMoreUrl => $"https://docs.unity3d.com/{m_Application?.shortUnityVersion}/Documentation/Manual/pack-preview.html";
         private string scopedRegistryInfoReadMoreUrl => $"https://docs.unity3d.com/{m_Application?.shortUnityVersion}/Documentation/Manual/upm-scoped.html";
 
         internal enum PackageAction
@@ -104,13 +104,15 @@ namespace UnityEditor.PackageManager.UI
 
         internal static readonly PackageTag[] k_VisibleTags =
         {
-            PackageTag.Verified,
-            PackageTag.InDevelopment,
+            PackageTag.Release,
+            PackageTag.Custom,
             PackageTag.Local,
             PackageTag.Git,
-            PackageTag.Preview,
             PackageTag.Deprecated,
-            PackageTag.Disabled
+            PackageTag.Disabled,
+            PackageTag.PreRelease,
+            PackageTag.Experimental,
+            PackageTag.ReleaseCandidate
         };
 
         private static Texture2D s_LoadingTexture;
@@ -182,7 +184,7 @@ namespace UnityEditor.PackageManager.UI
             detailDesc.RegisterCallback<GeometryChangedEvent>(DescriptionGeometryChangeEvent);
             detailImages?.RegisterCallback<GeometryChangedEvent>(ImagesGeometryChangeEvent);
 
-            previewInfoBox.Q<Button>().clickable.clicked += () => m_Application.OpenURL(previewInfoReadMoreUrl);
+            preReleaseInfoBox.Q<Button>().clickable.clicked += () => m_Application.OpenURL(preReleaseInfoReadMoreUrl);
             scopedRegistryInfoBox.Q<Button>().clickable.clicked += () => m_Application.OpenURL(scopedRegistryInfoReadMoreUrl);
 
             root.Query<TextField>().ForEach(t =>
@@ -349,11 +351,24 @@ namespace UnityEditor.PackageManager.UI
                     detailVersion.SetValueWithoutNotify(string.Format(L10n.Tr("Version {0} - {1}"), versionString, releaseDateString));
                 UIUtils.SetElementDisplay(detailVersion, !package.Is(PackageType.BuiltIn) && !string.IsNullOrEmpty(versionString));
 
-                UIUtils.SetElementDisplay(previewInfoBox, package.Is(PackageType.Unity) && displayVersion.HasTag(PackageTag.Preview));
+                UIUtils.SetElementDisplay(preReleaseInfoBox, package.Is(PackageType.Unity) && displayVersion.HasTag(PackageTag.PreRelease));
                 UIUtils.SetElementDisplay(disabledInfoBox, displayVersion.HasTag(PackageTag.Disabled));
 
                 foreach (var tag in k_VisibleTags)
                     UIUtils.SetElementDisplay(GetTagLabel(tag.ToString()), displayVersion.HasTag(tag));
+
+                var scopedRegistryTagLabel = GetTagLabel("ScopedRegistry");
+                if ((displayVersion as UpmPackageVersion)?.isUnityPackage == false && !string.IsNullOrEmpty(displayVersion.version?.Prerelease))
+                {
+                    scopedRegistryTagLabel.tooltip = displayVersion.version?.Prerelease;
+                    scopedRegistryTagLabel.text = displayVersion.version?.Prerelease;
+                    UIUtils.SetElementDisplay(scopedRegistryTagLabel, true);
+                }
+                else
+                {
+                    UIUtils.SetElementDisplay(scopedRegistryTagLabel, false);
+                }
+
                 UIUtils.SetElementDisplay(GetTagLabel(PackageType.AssetStore.ToString()), package.Is(PackageType.AssetStore));
 
                 sampleList.SetPackageVersion(displayVersion);
@@ -1056,7 +1071,7 @@ namespace UnityEditor.PackageManager.UI
                 return;
             }
 
-            if (displayVersion.HasTag(PackageTag.InDevelopment))
+            if (displayVersion.HasTag(PackageTag.Custom))
             {
                 if (!EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), L10n.Tr("You will lose all your changes (if any) if you delete a package in development. Are you sure?"), L10n.Tr("Yes"), L10n.Tr("No")))
                     return;
@@ -1223,7 +1238,7 @@ namespace UnityEditor.PackageManager.UI
         private VisualElement detailContainer { get { return cache.Get<VisualElement>("detail"); } }
         private TextField detailTitle { get { return cache.Get<TextField>("detailTitle"); } }
         private TextField detailVersion { get { return cache.Get<TextField>("detailVersion"); } }
-        private HelpBox previewInfoBox { get { return cache.Get<HelpBox>("previewInfoBox"); } }
+        private HelpBox preReleaseInfoBox { get { return cache.Get<HelpBox>("preReleaseInfoBox"); } }
         private HelpBox disabledInfoBox { get { return cache.Get<HelpBox>("disabledInfoBox"); } }
         private VisualElement detailPurchasedDateContainer { get { return cache.Get<VisualElement>("detailPurchasedDateContainer"); } }
         private TextField detailPurchasedDate { get { return cache.Get<TextField>("detailPurchasedDate"); } }

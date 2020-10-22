@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 
 namespace UnityEngine.UIElements
@@ -24,6 +23,7 @@ namespace UnityEngine.UIElements
             UxmlFloatAttributeDescription m_PageSize = new UxmlFloatAttributeDescription { name = "page-size", defaultValue = kDefaultPageSize };
             UxmlBoolAttributeDescription m_ShowInputField = new UxmlBoolAttributeDescription { name = "show-input-field", defaultValue = kDefaultShowInputField };
             UxmlEnumAttributeDescription<SliderDirection> m_Direction = new UxmlEnumAttributeDescription<SliderDirection> { name = "direction", defaultValue = SliderDirection.Horizontal };
+            UxmlBoolAttributeDescription m_Inverted = new UxmlBoolAttributeDescription { name = "inverted", defaultValue = kDefaultInverted };
 
             /// <summary>
             /// Initialize <see cref="Slider"/> properties using values from the attribute bag.
@@ -40,6 +40,7 @@ namespace UnityEngine.UIElements
                 f.direction = m_Direction.GetValueFromBag(bag, cc);
                 f.pageSize = m_PageSize.GetValueFromBag(bag, cc);
                 f.showInputField = m_ShowInputField.GetValueFromBag(bag, cc);
+                f.inverted = m_Inverted.GetValueFromBag(bag, cc);
 
                 base.Init(ve, bag, cc);
             }
@@ -85,7 +86,16 @@ namespace UnityEngine.UIElements
 
         internal override float SliderLerpUnclamped(float a, float b, float interpolant)
         {
-            return Mathf.RoundToInt(Mathf.LerpUnclamped(a, b, interpolant) * 100f) / 100f;
+            var newValue = Mathf.LerpUnclamped(a, b, interpolant);
+
+            // The purpose of this code is to reproduce the same rounding as IMGUI, based on min/max values and container size.
+            // Equivalent of UnityEditor.MathUtils.RoundBasedOnMinimumDifference
+            var minDifference = Mathf.Abs((highValue - lowValue) / (dragContainer.resolvedStyle.width - dragElement.resolvedStyle.width));
+            var numOfDecimalsForMinDifference = minDifference == 0.0f ?
+                Mathf.Clamp((int)(5.0 - Mathf.Log10(Mathf.Abs(minDifference))), 0, 15) :
+                Mathf.Clamp(-Mathf.FloorToInt(Mathf.Log10(Mathf.Abs(minDifference))), 0, 15);
+            var valueRoundedBasedOnMinimumDifference = (float)Math.Round(newValue, numOfDecimalsForMinDifference, MidpointRounding.AwayFromZero);
+            return valueRoundedBasedOnMinimumDifference;
         }
 
         internal override float SliderNormalizeValue(float currentValue, float lowerValue, float higherValue)

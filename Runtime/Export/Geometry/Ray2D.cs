@@ -38,16 +38,20 @@ namespace UnityEngine
 
         public override string ToString()
         {
-            return ToString("F1", CultureInfo.InvariantCulture.NumberFormat);
+            return ToString(null, null);
         }
 
         public string ToString(string format)
         {
-            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+            return ToString(format, null);
         }
 
         public string ToString(string format, IFormatProvider formatProvider)
         {
+            if (string.IsNullOrEmpty(format))
+                format = "F1";
+            if (formatProvider == null)
+                formatProvider = CultureInfo.InvariantCulture.NumberFormat;
             return UnityString.Format("Origin: {0}, Dir: {1}", m_Origin.ToString(format, formatProvider), m_Direction.ToString(format, formatProvider));
         }
     }

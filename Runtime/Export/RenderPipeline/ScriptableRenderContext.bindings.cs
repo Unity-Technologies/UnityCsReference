@@ -6,6 +6,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using System;
 using Unity.Collections;
+using System.Collections.Generic;
 
 namespace UnityEngine.Rendering
 {
@@ -37,9 +38,7 @@ namespace UnityEngine.Rendering
 
         extern private void Submit_Internal();
 
-        extern private int GetNumberOfCameras_Internal();
-
-        extern private Camera GetCamera_Internal(int index);
+        extern private void GetCameras_Internal(Type listType, object resultList);
 
         extern private unsafe void DrawRenderers_Internal(IntPtr cullResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings, ShaderTagId tagName, bool isPassTagName, IntPtr tagValues, IntPtr stateBlocks, int stateCount);
 

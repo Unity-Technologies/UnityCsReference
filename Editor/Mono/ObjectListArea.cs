@@ -248,7 +248,7 @@ namespace UnityEditor
                 m_SearchSessionHandler.BeginSearch(searchQuery);
                 var searchContext = (SearchService.ProjectSearchContext)m_SearchSessionHandler.context;
                 // Asynchronous searches return new results. Accumulate those results when using ShowObjectsInList.
-                var results = SearchService.Project.Search(searchQuery, searchContext, newResults =>
+                var results = SearchService.ProjectSearch.Search(searchQuery, searchContext, newResults =>
                 {
                     if (newResults == null || !searchFilter.IsSearching())
                         return;

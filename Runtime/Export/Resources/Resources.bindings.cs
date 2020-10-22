@@ -37,7 +37,7 @@ namespace UnityEngine
         [FreeFunction("Resources_Bindings::FindObjectsOfTypeAll")]
         public extern static Object[] FindObjectsOfTypeAll(Type type);
 
-        [FreeFunction("GetScriptMapper().FindShader")]
+        [FreeFunction("GetShaderNameRegistry().FindShader")]
         public extern static Shader FindShaderByName(string name);
 
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedBySecondArgument)]

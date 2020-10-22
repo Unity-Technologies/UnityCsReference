@@ -138,10 +138,7 @@ namespace UnityEditor.PackageManager.UI
                 if (m_Request.Status == StatusCode.Success)
                     OnSuccess();
                 else if (m_Request.Status >= StatusCode.Failure)
-                {
-                    Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {m_Request.Error.message}");
                     OnError(new UIError((UIErrorCode)m_Request.Error.errorCode, m_Request.Error.message, UIError.Attribute.IsDetailInConsole));
-                }
                 else
                     Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Unsupported progress state {0}."), m_Request.Status));
                 OnFinalize();

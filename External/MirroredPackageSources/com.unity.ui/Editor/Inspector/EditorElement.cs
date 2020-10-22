@@ -77,23 +77,37 @@ namespace UnityEditor.UIElements
             }
         }
 
-        internal EditorElement(int editorIndex, IPropertyView iw)
+        internal EditorElement(int editorIndex, IPropertyView iw, bool isCulled = false)
         {
             m_EditorIndex = editorIndex;
             inspectorWindow = iw;
             pickingMode = PickingMode.Ignore;
 
-            Init();
-
-            Add(m_Header);
-            // If the editor targets contain many target and the multi editing is not supported, we should not add this inspector.
-            // However, the header and footer are kept since these are showing information regarding this state.
-            if ((editor.targets.Length <= 1) || (iw.IsMultiEditingSupported(editor, editor.target)))
+            if (isCulled)
             {
-                Add(m_InspectorElement);
+                InitCulled();
+                return;
             }
 
-            Add(m_Footer);
+            Init();
+        }
+
+        void InitCulled()
+        {
+            PopulateCache();
+            
+            var container = inspectorWindow.CreateIMGUIContainer(() =>
+            {
+                if (editor != null)
+                {
+                    // Reset dirtiness when repainting, just like in EditorElement.HeaderOnGUI.
+                    if (Event.current.type == EventType.Repaint)
+                    {
+                        editor.isInspectorDirty = false;
+                    }
+                }
+            }, name);
+            Add(container);
         }
 
         void Init()
@@ -124,10 +138,42 @@ namespace UnityEditor.UIElements
             }
 
             UpdateInspectorVisibility();
+
+            Add(m_Header);
+            // If the editor targets contain many target and the multi editing is not supported, we should not add this inspector.
+            // However, the header and footer are kept since these are showing information regarding this state.
+            if ((editor.targets.Length <= 1) || (inspectorWindow.IsMultiEditingSupported(editor, editor.target)))
+            {
+                Add(m_InspectorElement);
+            }
+
+            Add(m_Footer);
+        }
+
+        public void ReinitCulled(int editorIndex)
+        {
+            if (m_Header != null)
+            {
+                m_EditorIndex = editorIndex;
+                m_Header = m_Footer = null;
+                Clear();
+                InitCulled();
+                return;
+            }
+            
+            PopulateCache();
         }
 
         public void Reinit(int editorIndex)
         {
+            if (m_Header == null)
+            {
+                m_EditorIndex = editorIndex;
+                Clear();
+                Init();
+                return;
+            }
+            
             PopulateCache();
             Object editorTarget = editor.targets[0];
             string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);
@@ -206,15 +252,12 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            var target = editor.target;
-            if (target && (target.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
-                return;
-
             // Avoid drawing editor if native target object is not alive, unless it's a MonoBehaviour/ScriptableObject
             // We want to draw the generic editor with a warning about missing/invalid script
             // Case 891450:
             // - ActiveEditorTracker will automatically create editors for materials of components on tracked game objects
             // - UnityEngine.UI.Mask will destroy this material in OnDisable (e.g. disabling it with the checkbox) causing problems when drawing the material editor
+            var target = editor.target;
             if (target == null && !NativeClassExtensionUtilities.ExtendsANativeType(target))
             {
                 SetElementVisible(m_InspectorElement, false);
@@ -434,14 +477,11 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            var target = ed.target;
-            if ((target.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
-                return;
-
             m_ContentRect.y = -m_ContentRect.height;
             inspectorWindow.editorDragging.HandleDraggingToEditor(editors, m_EditorIndex, m_DragRect, m_ContentRect);
             HandleComponentScreenshot(m_ContentRect, ed);
 
+            var target = ed.target;
             var comp = target as Component;
 
             if (EditorGUI.ShouldDrawOverrideBackground(ed.targets, Event.current, comp))

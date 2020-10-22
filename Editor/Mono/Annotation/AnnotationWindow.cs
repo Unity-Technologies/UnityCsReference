@@ -4,7 +4,6 @@
 
 using UnityEngine;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace UnityEditor
 {
@@ -13,7 +12,7 @@ namespace UnityEditor
         class Styles
         {
             public GUIStyle toggle = "Toggle";
-            public GUIStyle toggleMixed = "ToggleMixed";
+            public GUIStyle toggleMixed = EditorStyles.toggleMixed;
             public GUIStyle listEvenBg = "ObjectPickerResultsOdd";//"ObjectPickerResultsEven";//
             public GUIStyle listOddBg = "ObjectPickerResultsEven";//"ObjectPickerResultsEven";//
             public GUIStyle background = "grey_border";
@@ -21,7 +20,6 @@ namespace UnityEditor
             public GUIStyle iconDropDown = "IN dropdown";
             public GUIStyle listTextStyle;
             public GUIStyle listHeaderStyle;
-            public GUIStyle texelWorldSizeStyle;
             public GUIStyle columnHeaderStyle;
             public const float k_ToggleSize = 17f;
 
@@ -33,12 +31,6 @@ namespace UnityEditor
 
                 listHeaderStyle = new GUIStyle(EditorStyles.boldLabel);
                 listHeaderStyle.padding.left = 5;
-
-                texelWorldSizeStyle = new GUIStyle(EditorStyles.label);
-                texelWorldSizeStyle.alignment = TextAnchor.UpperRight;
-                texelWorldSizeStyle.font = EditorStyles.miniLabel.font;
-                texelWorldSizeStyle.fontSize = EditorStyles.miniLabel.fontSize;
-                texelWorldSizeStyle.padding.right = 0;
 
                 columnHeaderStyle = EditorStyles.miniLabel;
             }
@@ -62,7 +54,6 @@ namespace UnityEditor
         float iconTextRightAlign;
         const float frameWidth = 1f;
 
-        static bool s_Debug = false;
         static AnnotationWindow s_AnnotationWindow = null;
         static long s_LastClosedTime;
         static Styles m_Styles;
@@ -81,12 +72,13 @@ namespace UnityEditor
         GUIContent icon3dGizmoContent = EditorGUIUtility.TrTextContent("3D Icons");
         GUIContent showOutlineContent = EditorGUIUtility.TrTextContent("Selection Outline");
         GUIContent showWireframeContent = EditorGUIUtility.TrTextContent("Selection Wire");
+        GUIContent fadeGizmosContent = EditorGUIUtility.TrTextContent("Fade Gizmos", "Fade out and stop rendering gizmos that are small on screen");
         private bool m_IsGameView;
+
+        string m_SearchFilter = string.Empty;
 
         const float exponentStart = -3.0f;
         const float exponentRange = 3.0f;
-        const string kAlwaysFullSizeText = "Always Full Size";
-        const string kHideAllIconsText = "Hide All Icons";
 
         static float ConvertTexelWorldSizeTo01(float texelWorldSize)
         {
@@ -102,22 +94,6 @@ namespace UnityEditor
             if (value01 <= 0.0f)
                 return 0.0f; // always hidden
             return Mathf.Pow(10.0f, exponentStart + exponentRange * value01); // texel size is between 10e-2 (0.01) and 10e2 (100) worldunits. (texel in the icon texture)
-        }
-
-        static string ConvertTexelWorldSizeToString(float texelWorldSize)
-        {
-            if (texelWorldSize == -1.0f)
-            {
-                return kAlwaysFullSizeText;
-            }
-            if (texelWorldSize == 0.0f)
-            {
-                return kHideAllIconsText;
-            }
-
-            float displaySize = texelWorldSize * 32.0f; // The 32 is default icon size, so we show worldsize for 32 pixel icons.
-            int numDecimals = MathUtils.GetNumberOfDecimalsForMinimumDifference(displaySize * 0.1f);
-            return displaySize.ToString("N" + numDecimals, CultureInfo.InvariantCulture.NumberFormat);
         }
 
         public void MonoScriptIconChanged(MonoScript monoScript)
@@ -142,7 +118,7 @@ namespace UnityEditor
 
         float GetTopSectionHeight()
         {
-            const int numberOfControls = 3;
+            const int numberOfControls = 4;
             return EditorGUI.kSingleLineHeight * numberOfControls + EditorGUI.kControlVerticalSpacing * (numberOfControls - 1) + EditorStyles.inspectorBig.padding.bottom;
         }
 
@@ -254,17 +230,10 @@ namespace UnityEditor
             // Sync annotations
             Annotation[] a = AnnotationUtility.GetAnnotations();
 
-            string debuginfo = "";
-            if (s_Debug)
-                debuginfo += "AnnotationWindow: SyncToState\n";
-
             m_BuiltinAnnotations = new List<AInfo>();
             m_ScriptAnnotations = new List<AInfo>();
             for (int i = 0; i < a.Length; ++i)
             {
-                if (s_Debug)
-                    debuginfo += "   same as below: icon " + a[i].iconEnabled + " gizmo " + a[i].gizmoEnabled + "\n";
-
                 bool ge = (a[i].gizmoEnabled == 1);
                 bool ie = (a[i].iconEnabled == 1);
                 AInfo anno = new AInfo(ge, ie, a[i].flags, a[i].classID, a[i].scriptClass);
@@ -272,14 +241,10 @@ namespace UnityEditor
                 if (anno.m_ScriptClass == "")
                 {
                     m_BuiltinAnnotations.Add(anno);
-                    if (s_Debug)
-                        debuginfo += "   " + UnityType.FindTypeByPersistentTypeID(anno.m_ClassID).name + ": icon " + anno.m_IconEnabled + " gizmo " + anno.m_GizmoEnabled + "\n";
                 }
                 else
                 {
                     m_ScriptAnnotations.Add(anno);
-                    if (s_Debug)
-                        debuginfo += "   " + a[i].scriptClass + ": icon " + anno.m_IconEnabled + " gizmo " + anno.m_GizmoEnabled + "\n";
                 }
             }
 
@@ -298,9 +263,6 @@ namespace UnityEditor
             }
 
             m_SyncWithState = false;
-
-            if (s_Debug)
-                Debug.Log(debuginfo);
         }
 
         internal void OnGUI()
@@ -340,21 +302,12 @@ namespace UnityEditor
             float labelWidth = m_Styles.listHeaderStyle.CalcSize(showOutlineContent).x + GUI.skin.toggle.CalcSize(GUIContent.none).x + 1;
             float rowHeight = 18;
 
-            // Toggle 3D gizmos
+            // 3D icons toggle & slider
             Rect toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
             AnnotationUtility.use3dGizmos = GUI.Toggle(toggleRect, AnnotationUtility.use3dGizmos, icon3dGizmoContent);
-
-            // Texel world size
-            float texelWorldSize = AnnotationUtility.iconSize;
-            if (s_Debug)
-            {
-                Rect texelSizeRect = new Rect(0, curY + 10, position.width - margin, rowHeight);
-                GUI.Label(texelSizeRect, ConvertTexelWorldSizeToString(texelWorldSize), m_Styles.texelWorldSizeStyle);
-            }
-
             using (new EditorGUI.DisabledScope(!AnnotationUtility.use3dGizmos))
             {
-                // Slider
+                float texelWorldSize = AnnotationUtility.iconSize;
                 float sliderWidth = position.width - margin - labelWidth;
                 float iconSize01 = ConvertTexelWorldSizeTo01(texelWorldSize);
                 Rect sliderRect = new Rect(labelWidth + margin, curY, sliderWidth - margin, rowHeight);
@@ -365,10 +318,26 @@ namespace UnityEditor
                     SceneView.RepaintAll();
                 }
             }
-
             curY += rowHeight;
 
-            // Show Grid
+            // Gizmo fadeout toggle & slider
+            toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
+            AnnotationUtility.fadeGizmos = GUI.Toggle(toggleRect, AnnotationUtility.fadeGizmos, fadeGizmosContent);
+            using (new EditorGUI.DisabledScope(!AnnotationUtility.fadeGizmos))
+            {
+                float fadeSize = AnnotationUtility.fadeGizmoSize;
+                float sliderWidth = position.width - margin - labelWidth;
+                Rect sliderRect = new Rect(labelWidth + margin, curY, sliderWidth - margin, rowHeight);
+                float newFadeSize = GUI.HorizontalSlider(sliderRect, fadeSize, 2.0f, 10.0f);
+                if (fadeSize != newFadeSize)
+                {
+                    AnnotationUtility.fadeGizmoSize = newFadeSize;
+                    SceneView.RepaintAll();
+                }
+            }
+            curY += rowHeight;
+
+            // Selection outline/wire
             using (new EditorGUI.DisabledScope(m_IsGameView))
             {
                 toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
@@ -417,17 +386,29 @@ namespace UnityEditor
             bool even = true;
             float curY = 0;
             bool headerDrawn = false;
+            bool searchDrawn = false;
 
-            curY = DrawListSection(curY, L10n.Tr("Recently Changed"),    m_RecentAnnotations,    doDraw, listElementWidth, startY, endY, ref even, true, ref headerDrawn);
-            curY = DrawListSection(curY, L10n.Tr("Scripts"),             m_ScriptAnnotations,    doDraw, listElementWidth, startY, endY, ref even, false, ref headerDrawn);
-            curY = DrawListSection(curY, L10n.Tr("Built-in Components"), m_BuiltinAnnotations,   doDraw, listElementWidth, startY, endY, ref even, false, ref headerDrawn);
+            curY = DrawListSection(curY, L10n.Tr("Recently Changed"),    m_RecentAnnotations,    doDraw, listElementWidth, startY, endY, ref even, true,  ref headerDrawn, ref searchDrawn);
+            curY = DrawListSection(curY, L10n.Tr("Scripts"),             m_ScriptAnnotations,    doDraw, listElementWidth, startY, endY, ref even, false, ref headerDrawn, ref searchDrawn);
+            curY = DrawListSection(curY, L10n.Tr("Built-in Components"), m_BuiltinAnnotations,   doDraw, listElementWidth, startY, endY, ref even, false, ref headerDrawn, ref searchDrawn);
 
             return curY;
         }
 
-        float DrawListSection(float y, string sectionHeader, List<AInfo> listElements, bool doDraw, float listElementWidth, float startY, float endY, ref bool even, bool useSeperator, ref bool headerDrawn)
+        bool DoesMatchFilter(AInfo el)
+        {
+            if (string.IsNullOrEmpty(m_SearchFilter))
+                return true;
+            if (el.m_DisplayText.IndexOf(m_SearchFilter, System.StringComparison.OrdinalIgnoreCase) < 0)
+                return false;
+            return true;
+        }
+
+        float DrawListSection(float y, string sectionHeader, List<AInfo> listElements, bool doDraw, float listElementWidth, float startY, float endY, ref bool even, bool useSeperator, ref bool headerDrawn, ref bool searchDrawn)
         {
             float curY = y;
+            const float kSearchPaddingV = 3;
+            const float kSearchHeight = EditorGUI.kSingleSmallLineHeight + kSearchPaddingV;
             const float extraHeader = 15;
             const float headerHeight = 20;
 
@@ -436,11 +417,24 @@ namespace UnityEditor
                 if (doDraw)
                 {
                     // Header background
-                    Rect rect = new Rect(1, curY, listElementWidth - 2, extraHeader + headerHeight);
+                    Rect rect = new Rect(1, curY, listElementWidth - 2, extraHeader + (headerDrawn ? 0 : kSearchHeight) + headerHeight);
                     Flip(ref even);
                     GUIStyle backgroundStyle = even ? m_Styles.listEvenBg : m_Styles.listOddBg; // m_Styles.listSectionHeaderBg;//
                     GUI.Label(rect, GUIContent.Temp(""), backgroundStyle);
                 }
+
+                // Search field
+                if (!searchDrawn)
+                {
+                    searchDrawn = true;
+                    if (doDraw)
+                    {
+                        Rect searchRect = new Rect(11, curY + kSearchPaddingV, listElementWidth - 16, EditorGUI.kSingleSmallLineHeight);
+                        m_SearchFilter = EditorGUI.ToolbarSearchField(searchRect, m_SearchFilter, false);
+                    }
+                    curY += kSearchHeight;
+                }
+
                 curY += extraHeader;
                 if (doDraw)
                 {
@@ -452,6 +446,8 @@ namespace UnityEditor
                 // List elements
                 for (int i = 0; i < listElements.Count; ++i)
                 {
+                    if (!DoesMatchFilter(listElements[i]))
+                        continue;
                     Flip(ref even);
                     if (curY > startY && curY < endY)
                     {
@@ -488,6 +484,8 @@ namespace UnityEditor
             for (int i = 0; i < elements.Count; i++)
             {
                 var element = elements[i];
+                if (!DoesMatchFilter(element))
+                    continue;
 
                 if (element.HasGizmo())
                 {
@@ -503,6 +501,9 @@ namespace UnityEditor
                 }
             }
 
+            if (enabledState == EnabledState.NotSet)
+                return;
+
             var gizmoText = "gizmo";
             var gizmoTextSize = m_Styles.columnHeaderStyle.CalcSize(new GUIContent(gizmoText));
             gizmoTextRightAlign = gizmoTextSize.x;
@@ -514,21 +515,22 @@ namespace UnityEditor
 
 
             GUIStyle style = m_Styles.toggle;
-            bool enabled = enabledState > EnabledState.None;
-
+            bool enabled = enabledState == EnabledState.All;
             bool setMixed = enabledState == EnabledState.Mixed;
             if (setMixed)
                 style = m_Styles.toggleMixed;
 
             Rect toggleRect = new Rect(rect.width - gizmoRightAlign, rect.y + (rect.height - toggleSize) * 0.5f, toggleSize, toggleSize);
 
+            EditorGUI.BeginChangeCheck();
             bool newEnabled = GUI.Toggle(toggleRect, enabled, GUIContent.none, style);
-
-            if (newEnabled != enabled)
+            if (EditorGUI.EndChangeCheck())
             {
                 for (int i = 0; i < elements.Count; i++)
                 {
                     var element = elements[i];
+                    if (!DoesMatchFilter(element))
+                        continue;
 
                     if (element.m_GizmoEnabled != newEnabled)
                     {

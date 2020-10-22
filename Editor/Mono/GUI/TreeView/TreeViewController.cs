@@ -100,7 +100,75 @@ namespace UnityEditor.IMGUI.Controls
         public bool deselectOnUnhandledMouseDown { get; set; }
         public bool enableItemHovering { get; set; }
 
-        List<int> m_DragSelection = new List<int>();                    // Temp id state while dragging (not serialized)
+        IntegerCache m_DragSelection = new IntegerCache();
+        IntegerCache m_CachedSelection = new IntegerCache();
+
+        struct IntegerCache
+        {
+            List<int> m_List;
+            HashSet<int> m_HashSet;
+
+            public bool Contains(int id)
+            {
+                if (m_HashSet == null)
+                    return false;
+
+                return m_HashSet.Contains(id);
+            }
+
+            public void Set(List<int> list)
+            {
+                if (list == null)
+                    throw new ArgumentNullException(nameof(list));
+
+                if (!Equals(list))
+                {
+                    m_List = new List<int>(list);
+                    m_HashSet = new HashSet<int>(list);
+                }
+            }
+
+            public List<int> Get()
+            {
+                return m_List;
+            }
+
+            public void Clear()
+            {
+                if (m_List == null)
+                    return;
+
+                m_List.Clear();
+                m_HashSet.Clear();
+            }
+
+            public bool HasValues()
+            {
+                if (m_List == null)
+                    return false;
+
+                return m_List.Count > 0;
+            }
+
+            bool Equals(List<int> list)
+            {
+                if (m_List == null || list == null)
+                    return false;
+
+                int count = m_List.Count;
+                if (count != list.Count)
+                    return false;
+
+                for (int i = 0; i < count; ++i)
+                {
+                    if (list[i] != m_List[i])
+                        return false;
+                }
+
+                return true;
+            }
+        }
+
         bool m_UseScrollView = true;                                    // Internal scrollview can be omitted when e.g mulitple tree views in one scrollview is wanted
         bool m_ConsumeKeyDownEvents = true;
         bool m_AllowRenameOnMouseUp = true;
@@ -157,7 +225,7 @@ namespace UnityEditor.IMGUI.Controls
 
         public bool isDragging
         {
-            get { return m_DragSelection != null && m_DragSelection.Count > 0; }
+            get { return m_DragSelection.HasValues(); }
         }
 
         public bool showingVerticalScrollBar
@@ -349,7 +417,7 @@ namespace UnityEditor.IMGUI.Controls
                                 if (canStartDrag)
                                 {
                                     // Prepare drag and drop delay (we start the drag after a couple of pixels mouse drag: See the case MouseDrag below)
-                                    m_DragSelection = dragSelection;
+                                    m_DragSelection.Set(dragSelection);
                                     DragAndDropDelay delay = (DragAndDropDelay)GUIUtility.GetStateObject(typeof(DragAndDropDelay), GetItemControlID(item));
                                     delay.mouseDownPosition = Event.current.mousePosition;
                                 }
@@ -358,6 +426,7 @@ namespace UnityEditor.IMGUI.Controls
                                     // If dragging is not supported or not allowed for the drag selection then handle selection on mouse down
                                     // (when dragging is handled we handle selection on mouse up to e.g allow to drag to object fields in the inspector)
                                     m_DragSelection.Clear();
+
                                     if (m_AllowRenameOnMouseUp)
                                         m_AllowRenameOnMouseUp = (state.selectedIDs.Count == 1 && state.selectedIDs[0] == item.id); // If first time selection then prevent starting a rename on the following mouse up after this mouse down
 
@@ -382,12 +451,12 @@ namespace UnityEditor.IMGUI.Controls
                     break;
 
                 case EventType.MouseDrag:
-                    if (GUIUtility.hotControl == itemControlID && dragging != null && m_DragSelection.Count > 0)
+                    if (GUIUtility.hotControl == itemControlID && dragging != null && m_DragSelection.HasValues())
                     {
                         DragAndDropDelay delay = (DragAndDropDelay)GUIUtility.GetStateObject(typeof(DragAndDropDelay), itemControlID);
-                        if (delay.CanStartDrag() && dragging.CanStartDrag(item, m_DragSelection, delay.mouseDownPosition))
+                        if (delay.CanStartDrag() && dragging.CanStartDrag(item, m_DragSelection.Get(), delay.mouseDownPosition))
                         {
-                            dragging.StartDrag(item, m_DragSelection);
+                            dragging.StartDrag(item, m_DragSelection.Get());
                             GUIUtility.hotControl = 0;
                         }
 
@@ -399,7 +468,7 @@ namespace UnityEditor.IMGUI.Controls
                     if (GUIUtility.hotControl == itemControlID)
                     {
                         // When having the temp dragging selection delay the the selection until mouse up
-                        bool useMouseUpSelection = m_DragSelection.Count > 0;
+                        bool useMouseUpSelection = m_DragSelection.HasValues();
 
                         // Clear state before SelectionClick since it can ExitGUI early
                         GUIUtility.hotControl = 0;
@@ -481,7 +550,7 @@ namespace UnityEditor.IMGUI.Controls
 
         public bool IsItemDragSelectedOrSelected(TreeViewItem item)
         {
-            return m_DragSelection.Count > 0 ? m_DragSelection.Contains(item.id) : state.selectedIDs.Contains(item.id);
+            return m_DragSelection.HasValues() ? m_DragSelection.Contains(item.id) : m_CachedSelection.Contains(item.id);
         }
 
         public bool animatingExpansion { get { return m_UseExpansionAnimation && m_ExpansionAnimator.isAnimating; } }
@@ -530,6 +599,8 @@ namespace UnityEditor.IMGUI.Controls
             Event evt = Event.current;
             if (evt.type == EventType.Repaint)
                 m_TotalRect = rect;
+            if (evt.type == EventType.Layout)
+                m_CachedSelection.Set(state.selectedIDs);
 
             m_GUIView = GUIView.current;
 
@@ -1137,7 +1208,7 @@ namespace UnityEditor.IMGUI.Controls
             if (visibleRows.Count == 0)
                 return;
 
-            Event.current.Use();
+            Event.current?.Use();
             int index = GetIndexOfID(visibleRows, state.lastClickedID);
             int newIndex = Mathf.Clamp(index + offset, 0, visibleRows.Count - 1);
             EnsureRowIsVisible(newIndex, false);

@@ -1033,6 +1033,9 @@ namespace UnityEngine.UIElements
         /// <returns>The first element matching all the criteria, or null if none was found.</returns>
         public static VisualElement Q(this VisualElement e, string name = null, string className = null)
         {
+            if (e == null)
+                throw new ArgumentNullException(nameof(e));
+
             UQueryState<VisualElement> query;
 
             if (name == null)
@@ -1101,6 +1104,9 @@ namespace UnityEngine.UIElements
         /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public static UQueryBuilder<T> Query<T>(this VisualElement e, string name = null, params string[] classes) where T : VisualElement
         {
+            if (e == null)
+                throw new ArgumentNullException(nameof(e));
+
             var queryBuilder = new UQueryBuilder<VisualElement>(e).OfType<T>(name, classes);
             return queryBuilder;
         }
@@ -1114,6 +1120,9 @@ namespace UnityEngine.UIElements
         /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public static UQueryBuilder<T> Query<T>(this VisualElement e, string name = null, string className = null) where T : VisualElement
         {
+            if (e == null)
+                throw new ArgumentNullException(nameof(e));
+
             var queryBuilder = new UQueryBuilder<VisualElement>(e).OfType<T>(name, className);
             return queryBuilder;
         }
@@ -1125,6 +1134,9 @@ namespace UnityEngine.UIElements
         /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public static UQueryBuilder<VisualElement> Query(this VisualElement e)
         {
+            if (e == null)
+                throw new ArgumentNullException(nameof(e));
+
             return new UQueryBuilder<VisualElement>(e);
         }
 

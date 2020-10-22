@@ -133,6 +133,11 @@ namespace UnityEngine
             return EditorSystemInfo.SupportsBlendingOnRenderTextureFormat(format);
         }
 
+        public virtual bool SupportsRandomWriteOnRenderTextureFormat(RenderTextureFormat format)
+        {
+            return EditorSystemInfo.SupportsRandomWriteOnRenderTextureFormat(format);
+        }
+
         public virtual bool SupportsTextureFormat(TextureFormat format)
         {
             return EditorSystemInfo.SupportsTextureFormat(format);
@@ -209,6 +214,11 @@ namespace UnityEngine
         public virtual GraphicsFormat GetGraphicsFormat(DefaultFormat format)
         {
             return EditorSystemInfo.GetGraphicsFormat(format);
+        }
+
+        public virtual int GetRenderTextureSupportedMSAASampleCount(RenderTextureDescriptor desc)
+        {
+            return EditorSystemInfo.GetRenderTextureSupportedMSAASampleCount(desc);
         }
     }
 }

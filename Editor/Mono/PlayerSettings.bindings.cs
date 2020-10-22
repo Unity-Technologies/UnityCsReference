@@ -235,6 +235,13 @@ namespace UnityEditor
         High = 2
     }
 
+    // Must be in sync with ShaderPrecisionModel enum in EditorOnlyPlayerSettings.h
+    public enum ShaderPrecisionModel
+    {
+        PlatformDefault = 0,
+        Unified = 1,
+    }
+
     public enum NormalMapEncoding
     {
         XYZ = 0,
@@ -758,22 +765,14 @@ namespace UnityEditor
 
         internal static readonly char[] defineSplits = new[] { ';', ',', ' ' };
 
-        // Set user-specified symbols for script compilation for the given build target group.
-        public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string defines)
+        internal static string[] ConvertScriptingDefineStringToArray(string defines)
         {
-            if (!string.IsNullOrEmpty(defines))
-                defines = string.Join(";", defines.Split(defineSplits, StringSplitOptions.RemoveEmptyEntries));
-            SetScriptingDefineSymbolsForGroupInternal(targetGroup, defines);
+            return defines.Split(defineSplits);
         }
 
-        public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string[] defines)
+        internal static string ConvertScriptingDefineArrayToString(string[] defines)
         {
             List<string> list = new List<string>();
-            var joined = new StringBuilder();
-
-            if (defines == null)
-                throw new ArgumentNullException("Value cannot be null");
-
             foreach (var define in defines)
             {
                 string[] split = define.Split(' ', ';');
@@ -792,6 +791,7 @@ namespace UnityEditor
             defines = list.Distinct().ToArray();
 
             // Join all defines to one string
+            var joined = new StringBuilder();
             foreach (var define in defines)
             {
                 if (joined.Length != 0)
@@ -800,12 +800,44 @@ namespace UnityEditor
                 joined.Append(define);
             }
 
-            SetScriptingDefineSymbolsForGroup(targetGroup, joined.ToString());
+            return joined.ToString();
+        }
+
+        // Set user-specified symbols for script compilation for the given build target group.
+        public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string defines)
+        {
+            if (!string.IsNullOrEmpty(defines))
+                defines = string.Join(";", defines.Split(defineSplits, StringSplitOptions.RemoveEmptyEntries));
+            SetScriptingDefineSymbolsForGroupInternal(targetGroup, defines);
+        }
+
+        public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string[] defines)
+        {
+            if (defines == null)
+                throw new ArgumentNullException(nameof(defines));
+
+            SetScriptingDefineSymbolsForGroup(targetGroup, ConvertScriptingDefineArrayToString(defines));
         }
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
         [NativeMethod("SetUserScriptingDefineSymbolsForGroup")]
         private static extern void SetScriptingDefineSymbolsForGroupInternal(BuildTargetGroup targetGroup, string defines);
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        [NativeMethod("GetAdditionalCompilerArgumentsForGroup")]
+        public static extern string[] GetAdditionalCompilerArgumentsForGroup(BuildTargetGroup targetGroup);
+
+        public static void SetAdditionalCompilerArgumentsForGroup(BuildTargetGroup targetGroup, string[] additionalCompilerArguments)
+        {
+            if (additionalCompilerArguments == null)
+                throw new ArgumentNullException(nameof(additionalCompilerArguments));
+
+            SetAdditionalCompilerArgumentsForGroupInternal(targetGroup, additionalCompilerArguments);
+        }
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        [NativeMethod("SetAdditionalCompilerArgumentsForGroup")]
+        private static extern void SetAdditionalCompilerArgumentsForGroupInternal(BuildTargetGroup targetGroup, string[] additionalCompilerArguments);
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         [NativeMethod("GetPlatformArchitecture")]
@@ -855,6 +887,15 @@ namespace UnityEditor
             SetIl2CppCompilerConfigurationInternal(targetGroup, configuration);
         }
 
+        public static extern bool assemblyVersionValidation
+        {
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+            get;
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+            set;
+        }
+
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
         [NativeMethod("SetIl2CppCompilerConfiguration")]
         private static extern void SetIl2CppCompilerConfigurationInternal(BuildTargetGroup targetGroup, Il2CppCompilerConfiguration configuration);
@@ -883,6 +924,15 @@ namespace UnityEditor
             get { return ScriptingRuntimeVersion.Latest; }
 
             set {}
+        }
+
+        public static extern bool suppressCommonWarnings
+        {
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+            get;
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+            set;
         }
 
         public static extern bool allowUnsafeCode
@@ -1227,6 +1277,12 @@ namespace UnityEditor
         [NativeMethod("SetStackTraceType")]
         public static extern void SetStackTraceLogType(LogType logType, StackTraceLogType stackTraceType);
 
+        [NativeMethod("GetGlobalStackTraceType")]
+        internal static extern StackTraceLogType GetGlobalStackTraceLogType(LogType logType);
+
+        [NativeMethod("SetGlobalStackTraceType")]
+        internal static extern void SetGlobalStackTraceLogType(LogType logType, StackTraceLogType stackTraceType);
+
         [Obsolete("Use UnityEditor.PlayerSettings.SetGraphicsAPIs/GetGraphicsAPIs instead")]
         public static bool useDirect3D11
         {
@@ -1272,7 +1328,8 @@ namespace UnityEditor
         [FreeFunction("GetPlayerSettings().SetLightmapStreamingPriority")]
         internal static extern void SetLightmapStreamingPriorityForPlatformGroup(BuildTargetGroup platformGroup, int lightmapStreamingPriority);
 
-        internal static extern bool disableOldInputManagerSupport { get; }
+        [FreeFunction("GetPlayerSettings().GetDisableOldInputManagerSupport")]
+        internal static extern bool GetDisableOldInputManagerSupport();
 
         [StaticAccessor("GetPlayerSettings()")]
         [NativeMethod("GetVirtualTexturingSupportEnabled")]
@@ -1283,9 +1340,37 @@ namespace UnityEditor
         public static extern void SetVirtualTexturingSupportEnabled(bool enabled);
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        public static extern ShaderPrecisionModel GetShaderPrecisionModel();
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        public static extern void SetShaderPrecisionModel(ShaderPrecisionModel model);
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         public static extern NormalMapEncoding GetNormalMapEncoding(BuildTargetGroup platform);
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
         public static extern void SetNormalMapEncoding(BuildTargetGroup platform, NormalMapEncoding encoding);
+
+        [FreeFunction("GetPlayerSettings().GetEditorOnly().RecompileScripts")]
+        internal static extern void RecompileScripts(string reason, bool refreshProject = true);
+
+        internal static extern bool isHandlingScriptRecompile
+        {
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            get;
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            set;
+        }
+
+        // note that we dont expose it in ui (yet) and keep it hidden on purpose
+        // when the time comes we can totally rename this before making it public
+        [NativeProperty("IOSCopyPluginsCodeInsteadOfSymlink")]
+        internal static extern bool iosCopyPluginsCodeInsteadOfSymlink
+        {
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            get;
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+            set;
+        }
     }
 }

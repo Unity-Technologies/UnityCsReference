@@ -9,22 +9,25 @@ namespace UnityEngine.UIElements.UIR
         // These values are like enum values, they are mutually exclusive. Only one may be specified on a vertex.
         IsSolid = 0,
         IsText = 1,
-        IsAtlasTexturedPoint = 2,
-        IsAtlasTexturedBilinear = 3,
-        IsCustomTextured = 4,
+        IsTextured = 2,
+        IsDynamic = 3,
+        IsSvgGradients = 4, // Gradient/Texture-less SVG do NOT use this flag
         IsEdge = 5, // X and Y can grow/shrink according to displacement
         IsEdgeNoShrinkX = 6,
         IsEdgeNoShrinkY = 7,
-        IsSVGGradients = 8,
-        IsCustomSVGGradients = 9,
-
+        // The only use case outside the package is for GraphView edges. In order to preserve binary compatibility,
+        // the value MUST not change, so calling it "Last" does not make sense if we cannot increase the value.
+        // For this reason, this is being deprecated.
+        [Obsolete("Enum member VertexFlags.LastType has been deprecated. Use VertexFlags.IsGraphViewEdge instead.")]
         LastType = 10,
+        IsGraphViewEdge = 10,
     }
 
     internal struct State
     {
         public Material material;
-        public Texture custom, font;
+        public TextureId texture;
+        public Texture font;
     }
 
     internal enum CommandType

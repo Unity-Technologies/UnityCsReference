@@ -527,8 +527,8 @@ namespace UnityEditor
                 public static GUIContent removedContent = EditorGUIUtility.TrTextContent("Removed");
                 public static GUIContent addedContent = EditorGUIUtility.TrTextContent("Added");
                 public static GUIContent noModificationsContent = EditorGUIUtility.TrTextContent("No Overrides");
-                public static GUIContent applyContent = EditorGUIUtility.TrTextContent("Apply");
-                public static GUIContent revertContent = EditorGUIUtility.TrTextContent("Revert");
+                public static GUIContent applyContent = EditorGUIUtility.TrTextContent("Apply", "Apply overrides on this object.");
+                public static GUIContent revertContent = EditorGUIUtility.TrTextContent("Revert", "Revert overrides on this object.");
 
                 static Styles()
                 {
@@ -620,7 +620,6 @@ namespace UnityEditor
                     // We overdraw border by one pixel to the right, so subtract here to account for that.
                     rect.width -= 1;
 
-                EditorGUIUtility.comparisonViewMode = EditorGUIUtility.ComparisonViewMode.Original;
                 EditorGUIUtility.wideMode = true;
                 EditorGUIUtility.labelWidth = 120;
                 int middleCol = Mathf.RoundToInt((rect.width - 1) * 0.5f);
@@ -656,10 +655,9 @@ namespace UnityEditor
 
                     m_Scroll = GUI.BeginScrollView(scrollRectPosition, m_Scroll, viewPosition);
                     {
-                        var leftColumnHeight = DrawEditor(new Rect(0, 0, middleCol, m_PreviewSize.y), m_SourceEditor, true);
+                        var leftColumnHeight = DrawEditor(new Rect(0, 0, middleCol, m_PreviewSize.y), m_SourceEditor, true, EditorGUIUtility.ComparisonViewMode.Original);
 
-                        EditorGUIUtility.comparisonViewMode = EditorGUIUtility.ComparisonViewMode.Modified;
-                        var rightColumnHeight = DrawEditor(new Rect(middleCol, 0, rect.xMax - middleCol, m_PreviewSize.y), m_InstanceEditor, false);
+                        var rightColumnHeight = DrawEditor(new Rect(middleCol, 0, rect.xMax - middleCol, m_PreviewSize.y), m_InstanceEditor, false, EditorGUIUtility.ComparisonViewMode.Modified);
 
                         UpdatePreviewHeight(Math.Max(leftColumnHeight, rightColumnHeight));
                     }
@@ -690,8 +688,7 @@ namespace UnityEditor
 
                     m_Scroll = GUI.BeginScrollView(scrollRectPosition, m_Scroll, viewPosition);
 
-                    EditorGUIUtility.comparisonViewMode = EditorGUIUtility.ComparisonViewMode.Modified;
-                    float columnHeight = DrawEditor(new Rect(0, 0, rect.width, m_PreviewSize.y), editor, disable);
+                    float columnHeight = DrawEditor(new Rect(0, 0, rect.width, m_PreviewSize.y), editor, disable, EditorGUIUtility.ComparisonViewMode.Modified);
                     UpdatePreviewHeight(columnHeight);
 
                     GUI.EndScrollView();
@@ -754,10 +751,16 @@ namespace UnityEditor
                 }
             }
 
-            float DrawEditor(Rect rect, Editor editor, bool disabled)
+            float DrawEditor(Rect rect, Editor editor, bool disabled, EditorGUIUtility.ComparisonViewMode comparisonViewMode)
             {
                 rect.xMin += 1;
+                EditorGUIUtility.ResetGUIState();
+
+                EditorGUIUtility.wideMode = true;
+                EditorGUIUtility.labelWidth = 120;
+                EditorGUIUtility.comparisonViewMode = comparisonViewMode;
                 EditorGUIUtility.leftMarginCoord = rect.x;
+
                 GUILayout.BeginArea(rect);
                 Rect editorRect = EditorGUILayout.BeginVertical();
                 {

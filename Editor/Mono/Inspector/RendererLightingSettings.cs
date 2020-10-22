@@ -8,6 +8,7 @@ using UnityEditor.AnimatedValues;
 using UnityEngine.Rendering;
 using UnityEngineInternal;
 using System.Globalization;
+using UnityEditor.Presets;
 
 namespace UnityEditor
 {
@@ -69,6 +70,7 @@ namespace UnityEditor
             public static readonly GUIContent lightmapSettings = EditorGUIUtility.TrTextContent("Lightmapping");
             public static readonly GUIContent castShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Specifies whether a geometry creates shadows or not when a shadow-casting Light shines on it.");
             public static readonly GUIContent receiveShadows = EditorGUIUtility.TrTextContent("Receive Shadows", "When enabled, any shadows cast from other objects are drawn on the geometry.");
+            public static readonly GUIContent staticShadowCaster = EditorGUIUtility.TrTextContent("Static Shadow Caster", "When enabled, Unity considers this renderer as being static for the sake of shadow rendering. If the SRP implements cached shadow maps, this field indicates to the render pipeline what renderers are considered static and what renderers are considered dynamic.");
             public static readonly GUIContent shadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the trail width at each segment.");
             public static readonly GUIContent contributeGI = EditorGUIUtility.TrTextContent("Contribute Global Illumination", "When enabled, this GameObject influences lightmaps and Light Probes. If you want this object itself to be lightmapped, you must enable this property.");
             public static readonly GUIContent receiveGITitle = EditorGUIUtility.TrTextContent("Receive Global Illumination", "If enabled, this GameObject receives global illumination from lightmaps or Light Probes. To use lightmaps, Contribute Global Illumination must be enabled.");
@@ -106,6 +108,7 @@ namespace UnityEditor
         SerializedProperty m_ReceiveGI;
         SerializedProperty m_CastShadows;
         SerializedProperty m_ReceiveShadows;
+        SerializedProperty m_StaticShadowCaster;
 
         Renderer[] m_Renderers;
         Terrain[] m_Terrains;
@@ -168,6 +171,7 @@ namespace UnityEditor
             m_LightmapScale = m_SerializedObject.FindProperty("m_ScaleInLightmap");
             m_CastShadows = m_SerializedObject.FindProperty("m_CastShadows");
             m_ReceiveShadows = m_SerializedObject.FindProperty("m_ReceiveShadows");
+            m_StaticShadowCaster = m_SerializedObject.FindProperty("m_StaticShadowCaster");
             m_ReceiveGI = m_SerializedObject.FindProperty("m_ReceiveGI");
 
             m_Renderers = m_SerializedObject.targetObjects.OfType<Renderer>().ToArray();
@@ -178,7 +182,7 @@ namespace UnityEditor
             if (m_SerializedObject == null || m_SerializedObject.targetObject == null)
                 isPreset = false;
             else
-                isPreset = m_SerializedObject.targetObject is Component ? ((int)(m_SerializedObject.targetObject as Component).gameObject.hideFlags == 93) : !AssetDatabase.Contains(m_SerializedObject.targetObject);
+                isPreset = PresetEditor.IsPreset(m_SerializedObject.targetObject);
         }
 
         public void RenderSettings(bool showLightmapSettings)
@@ -195,7 +199,7 @@ namespace UnityEditor
 
             ReceiveGI receiveGI = (ReceiveGI)m_ReceiveGI.intValue;
             bool contributeGI = isPreset ? true : (m_StaticEditorFlags.intValue & (int)StaticEditorFlags.ContributeGI) != 0;
-            bool showEnlightenSettings = isPreset || isPrefabAsset || realtimeGI || (bakedGI && lightmapper == LightingSettings.Lightmapper.Enlighten);
+            bool showEnlightenSettings = (isPreset || isPrefabAsset || realtimeGI || (bakedGI && lightmapper == LightingSettings.Lightmapper.Enlighten)) && SupportedRenderingFeatures.active.enlighten;
 
             // m_ReceiveGI might still be set to Lightmaps, but LightProbes is shown in the inspector since the contributeGI if off.
             // In this case we still have to mark it as "multiple values" even though both have "Lightmaps" as the value, but one is showing a grayed out "Light Probes" in the UI
@@ -208,12 +212,20 @@ namespace UnityEditor
                 EditorGUI.indentLevel += 1;
 
                 EditorGUILayout.PropertyField(m_CastShadows, Styles.castShadows, true);
+
                 bool isDeferredRenderingPath = SceneView.IsUsingDeferredRenderingPath();
 
                 if (SupportedRenderingFeatures.active.receiveShadows)
                 {
                     using (new EditorGUI.DisabledScope(isDeferredRenderingPath))
                         EditorGUILayout.PropertyField(m_ReceiveShadows, Styles.receiveShadows, true);
+                }
+
+                if (m_CastShadows.hasMultipleDifferentValues || m_CastShadows.intValue != 0)
+                {
+                    RenderPipelineAsset srpAsset = GraphicsSettings.currentRenderPipeline;
+                    if (srpAsset != null)
+                        EditorGUILayout.PropertyField(m_StaticShadowCaster, Styles.staticShadowCaster);
                 }
 
                 if (!showLightmapSettings)

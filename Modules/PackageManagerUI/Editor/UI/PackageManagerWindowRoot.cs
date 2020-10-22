@@ -308,7 +308,7 @@ namespace UnityEditor.PackageManager.UI
 
                         // Package is not found in PackageDatabase but we can determine if it's a preview package or not with it's version string.
                         SemVersionParser.TryParse(versionString, out var semVersion);
-                        if (!m_SettingsProxy.enablePreviewPackages && semVersion.HasValue && (semVersion.Value.Major == 0 || semVersion.Value.Prerelease.StartsWith("preview")))
+                        if (!m_SettingsProxy.enablePreReleasePackages && semVersion.HasValue && (semVersion.Value.Major == 0 || semVersion.Value.Prerelease.StartsWith("preview")))
                         {
                             Debug.Log("You must check \"Enable Preview Packages\" in Project Settings > Package Manager in order to see this package.");
                             filterTab = m_PackageFiltering.currentFilterTab;

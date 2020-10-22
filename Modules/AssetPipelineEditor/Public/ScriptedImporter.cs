@@ -43,44 +43,74 @@ namespace UnityEditor.AssetImporters
         internal static void RegisterScriptedImporters()
         {
             var importers = TypeCache.GetTypesWithAttribute<ScriptedImporterAttribute>();
+
+            ScriptedImporterAttribute[] scriptedImporterAttributes = new ScriptedImporterAttribute[importers.Count];
+            SortedDictionary<string, bool>[] handledExtensions = new SortedDictionary<string, bool>[importers.Count];
+
+            Dictionary<string, List<int>> importersByExtension = new Dictionary<string, List<int>>();
+
+            // Build a dictionary of which importers are trying to register each extension that we can use to quickly find conflicts
+            // (i.e. if an entry in the extension-keyed dictionary has a list of importers with more than one entry)
+            for (var importerIndex = 0; importerIndex < importers.Count; importerIndex++)
+            {
+                Type importer = importers[importerIndex];
+                scriptedImporterAttributes[importerIndex] = Attribute.GetCustomAttribute(importer, typeof(ScriptedImporterAttribute)) as ScriptedImporterAttribute;
+                handledExtensions[importerIndex] = GetHandledExtensionsByImporter(scriptedImporterAttributes[importerIndex]);
+
+                if (handledExtensions[importerIndex].Count == 0)
+                    Debug.LogError($"The ScriptedImporter {importer.FullName} does not provide any non-null file extension.");
+
+                foreach (KeyValuePair<string, bool> handledExtension in handledExtensions[importerIndex])
+                {
+                    // Only consider AutoSelected ones
+                    if (handledExtension.Value)
+                    {
+                        // Add this importer to the dictionary entry for this file extension, creating it if not already present
+                        if (!importersByExtension.TryGetValue(handledExtension.Key, out List<int> importerIndicesForThisExtension))
+                        {
+                            importerIndicesForThisExtension = new List<int>();
+                            importersByExtension.Add(handledExtension.Key, importerIndicesForThisExtension);
+                        }
+                        importerIndicesForThisExtension.Add(importerIndex);
+                    }
+                }
+            }
+
+            // Check each AutoSelected extension we found, any of them that have more than one importer associated with them are rejected (i.e. removed from all importers that provided them)
+            foreach (KeyValuePair<string, List<int>> importerExtension in importersByExtension)
+            {
+                if (importerExtension.Value.Count > 1)
+                {
+                    string rejectedImporters = "";
+                    foreach (int importerIndex in importerExtension.Value)
+                    {
+                        handledExtensions[importerIndex].Remove(importerExtension.Key);
+
+                        if (rejectedImporters.Length == 0)
+                            rejectedImporters = importers[importerIndex].FullName;
+                        else
+                            rejectedImporters = rejectedImporters + ", " + importers[importerIndex].FullName;
+                    }
+                    Debug.LogError(String.Format("Multiple scripted importers ({0}) are targeting the extension '{1}' and have all been rejected.", rejectedImporters, importerExtension.Key));
+                }
+            }
+
             for (var index = 0; index < importers.Count; index++)
             {
                 var importer = importers[index];
-                var attribute = Attribute.GetCustomAttribute(importer, typeof(ScriptedImporterAttribute)) as ScriptedImporterAttribute;
-                var handledExts = GetHandledExtensionsByImporter(attribute);
+                var attribute = scriptedImporterAttributes[index];
+                var handledExts = handledExtensions[index];
 
-                if (handledExts.Count == 0)
-                    Debug.LogError($"The ScriptedImporter {importer.FullName} does not provide any none null file extension.");
-
-                // Prevent duplicates between importers! When duplicates found: all are rejected
-                for (var j = index + 1; j < importers.Count; j++)
+                if (handledExts.Count > 0)
                 {
-                    var imp = importers[j];
-                    if (imp == importer)
-                        continue;
+                    var supportsImportDependencyHinting =
+                        (importer.GetMethod("GetHashOfImportedAssetDependencyHintsForTesting", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static) != null) ||
+                        (importer.GetMethod("GatherDependenciesFromSourceFile", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static) != null);
 
-                    var attribute2 = Attribute.GetCustomAttribute(imp, typeof(ScriptedImporterAttribute)) as ScriptedImporterAttribute;
-                    var handledExts2 = GetHandledExtensionsByImporter(attribute2);
-
-                    // Remove intersection?
-                    foreach (var x1 in handledExts2)
-                    {
-                        // reject the scripted importers that handle the same extension *AND* are both AutoSelected
-                        if (handledExts.ContainsKey(x1.Key) && handledExts[x1.Key] && x1.Value)
-                        {
-                            // Log error message and remove from handledExts
-                            Debug.LogError(String.Format("Scripted importers {0} and {1} are targeting the {2} extension, rejecting both.", importer.FullName, (imp as Type).FullName, x1.Key));
-                            handledExts.Remove(x1.Key);
-                        }
-                    }
+                    // Register the importer
+                    foreach (var ext in handledExts)
+                        AssetImporter.RegisterImporter(importer, attribute.version, attribute.importQueuePriority, ext.Key, supportsImportDependencyHinting, ext.Value, attribute.AllowCaching);
                 }
-
-                var supportsImportDependencyHinting = importer.GetMethod("GetHashOfImportedAssetDependencyHintsForTesting", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static) != null
-                    || importer.GetMethod("GatherDependenciesFromSourceFile", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static) != null;
-
-                // Register the importer
-                foreach (var ext in handledExts)
-                    AssetImporter.RegisterImporter(importer, attribute.version, attribute.importQueuePriority, ext.Key, supportsImportDependencyHinting, ext.Value, attribute.AllowCaching);
             }
         }
 

@@ -76,6 +76,9 @@ namespace UnityEditor
 
         // Android 10.0, API level 29
         AndroidApiLevel29 = 29,
+
+        // Android 11.0, API level 30
+        AndroidApiLevel30 = 30,
     }
 
     // Preferred application install location

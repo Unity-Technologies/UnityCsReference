@@ -12,23 +12,25 @@ namespace UnityEditor.PackageManager.UI
     [FilePath("ProjectSettings/PackageManagerSettings.asset", FilePathAttribute.Location.ProjectFolder)]
     internal class PackageManagerProjectSettings : ScriptableSingleton<PackageManagerProjectSettings>
     {
-        public event Action<bool> onEnablePreviewPackagesChanged = delegate {};
+        public event Action<bool> onEnablePreReleasePackagesChanged = delegate {};
         public event Action<bool> onEnablePackageDependenciesChanged = delegate {};
         public event Action<bool> onAdvancedSettingsFoldoutChanged = delegate {};
         public event Action<bool> onScopedRegistriesSettingsFoldoutChanged = delegate {};
+        public event Action<bool> onSeeAllVersionsChanged = delegate {};
+        public event Action<long> onLoadAssetsChanged = delegate {};
 
         [SerializeField]
-        private bool m_EnablePreviewPackages;
+        private bool m_EnablePreReleasePackages;
 
-        public bool enablePreviewPackages
+        public bool enablePreReleasePackages
         {
-            get { return m_EnablePreviewPackages; }
+            get { return m_EnablePreReleasePackages; }
             set
             {
-                if (value != m_EnablePreviewPackages)
+                if (value != m_EnablePreReleasePackages)
                 {
-                    m_EnablePreviewPackages = value;
-                    onEnablePreviewPackagesChanged?.Invoke(m_EnablePreviewPackages);
+                    m_EnablePreReleasePackages = value;
+                    onEnablePreReleasePackagesChanged?.Invoke(m_EnablePreReleasePackages);
                 }
             }
         }
@@ -78,6 +80,22 @@ namespace UnityEditor.PackageManager.UI
                 }
             }
         }
+
+        [SerializeField]
+        private bool m_SeeAllPackageVersions;
+        public virtual bool seeAllPackageVersions
+        {
+            get { return m_SeeAllPackageVersions; }
+            set
+            {
+                if (value != m_SeeAllPackageVersions)
+                {
+                    m_SeeAllPackageVersions = value;
+                    onSeeAllVersionsChanged?.Invoke(m_SeeAllPackageVersions);
+                }
+            }
+        }
+
 
         [SerializeField]
         public bool oneTimeWarningShown;
@@ -223,6 +241,22 @@ namespace UnityEditor.PackageManager.UI
         public void Save()
         {
             Save(true);
+        }
+
+        [SerializeField]
+        private long m_LoadAssets;
+
+        public long loadAssets
+        {
+            get { return m_LoadAssets == 0  ? (long)PackageLoadBar.AssetsToLoad.Min : m_LoadAssets; }
+            set
+            {
+                if (value != m_LoadAssets)
+                {
+                    m_LoadAssets = value;
+                    onLoadAssetsChanged?.Invoke(m_LoadAssets);
+                }
+            }
         }
     }
 }

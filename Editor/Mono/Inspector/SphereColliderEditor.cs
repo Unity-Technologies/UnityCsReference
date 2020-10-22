@@ -64,9 +64,9 @@ namespace UnityEditor
 
             EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), target);
             GUILayout.Space(5);
-            EditorGUILayout.PropertyField(m_IsTrigger);
-            EditorGUILayout.PropertyField(m_Material);
-            EditorGUILayout.PropertyField(m_Center);
+            EditorGUILayout.PropertyField(m_IsTrigger, BaseStyles.triggerContent);
+            EditorGUILayout.PropertyField(m_Material, BaseStyles.materialContent);
+            EditorGUILayout.PropertyField(m_Center, BaseStyles.centerContent);
             EditorGUILayout.PropertyField(m_Radius);
 
             serializedObject.ApplyModifiedProperties();

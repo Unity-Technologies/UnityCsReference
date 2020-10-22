@@ -558,6 +558,14 @@ With this option, this model will not create any avatar but only import animatio
                     EditorGUILayout.IntSlider(m_MaxBonesPerVertex, 1, 255, Styles.MaxBonesPerVertex);
                     EditorGUILayout.Slider(m_MinBoneWeight, 0.001f, 0.5f, Styles.MinBoneWeight);
                 }
+
+                int currentSkinWeights = m_SkinWeightsMode.intValue == (int)ModelImporterSkinWeights.Standard ? 4 : m_MaxBonesPerVertex.intValue;
+                if ((int)QualitySettings.skinWeights < currentSkinWeights)
+                {
+                    var msg =
+                        $"Skin Weights is set to {(int)QualitySettings.skinWeights} bones per vertex in Quality Settings. Some bone influences may not be rendered.";
+                    EditorGUILayout.HelpBox(msg, MessageType.Info);
+                }
             }
 
             ShowUpdateReferenceClip();

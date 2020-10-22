@@ -6,14 +6,29 @@ using UnityEditorInternal;
 
 namespace UnityEditor.UIElements
 {
+    /// <summary>
+    /// A <see cref="LayerField"/> editor.
+    /// </summary>
     public class LayerField : PopupField<int>
     {
+        /// <summary>
+        /// Instantiates a <see cref="LayerField"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<LayerField, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="LayerField"/>.
+        /// </summary>
         public new class UxmlTraits : PopupField<int>.UxmlTraits
         {
             UxmlIntAttributeDescription m_Value = new UxmlIntAttributeDescription { name = "value" };
 
+            /// <summary>
+            /// Initialize the traits.
+            /// </summary>
+            /// <param name="ve">VisualElement that will be created and populated.</param>
+            /// <param name="bag">Bag of attributes where the data comes from.</param>
+            /// <param name="cc">Creation context, unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
@@ -41,6 +56,9 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// Unsupported.
+        /// </summary>
         public override Func<int, string> formatSelectedValueCallback
         {
             get { return null; }
@@ -55,6 +73,9 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// Unsupported.
+        /// </summary>
         public override Func<int, string> formatListItemCallback
         {
             get { return null; }
@@ -90,8 +111,17 @@ namespace UnityEditor.UIElements
             return listOfIndex;
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-layer-field";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
 

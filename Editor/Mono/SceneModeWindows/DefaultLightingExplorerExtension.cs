@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System.Linq;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -134,7 +135,15 @@ namespace UnityEditor
                 }, null, null, new int[] { 2 }),     // 4: Mode
                 new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Color, Styles.Color, "m_Color", 70), // 5: Color
                 new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Float, Styles.Intensity, "m_Intensity", 60), // 6: Intensity
-                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Float, Styles.IndirectMultiplier, "m_BounceIntensity", 110), // 7: Indirect Multiplier
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Float, Styles.IndirectMultiplier, "m_BounceIntensity", 110, (r, prop, dep) =>
+                {
+                    bool realtimeLight = dep.Length > 1 && dep[0].intValue == (int)LightmapBakeType.Realtime;
+
+                    if (!(realtimeLight && !SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime)))
+                    {
+                        EditorGUI.PropertyField(r, prop, GUIContent.none);
+                    }
+                }, null, null, new int[] { 4 }), // 7: Indirect Multiplier
                 new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Enum, Styles.ShadowType, "m_Shadows.m_Type", 100, (r, prop, dep) =>
                 {
                     bool areaLight = dep.Length > 1 && (dep[0].enumValueIndex == (int)LightType.Rectangle || dep[0].enumValueIndex == (int)LightType.Disc);

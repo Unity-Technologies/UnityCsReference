@@ -376,6 +376,16 @@ namespace UnityEditor
                 return SceneVisibilityState.IsGameObjectPickingDisabled(gameObject);
         }
 
+        internal bool IsSelectable(GameObject go)
+        {
+            return IsSelectable(go, false);
+        }
+
+        internal bool IsSelectable(GameObject go, bool includeDescendants)
+        {
+            return !IsPickingDisabled(go, includeDescendants) && !IsHidden(go, includeDescendants);
+        }
+
         public bool IsPickingDisabled(Scene scene)
         {
             scene.GetRootGameObjects(m_RootBuffer);

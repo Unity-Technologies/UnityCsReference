@@ -67,6 +67,8 @@ namespace UnityEngine
 
         internal extern void UpdateCanvasRectTransform(bool alignWithCamera);
 
+        internal extern byte stagePriority { get; set; }
+
         public static void ForceUpdateCanvases()
         {
             SendWillRenderCanvases();

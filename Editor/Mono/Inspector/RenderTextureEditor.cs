@@ -213,7 +213,8 @@ namespace UnityEditor
                 }
             }
 
-            if (TextureUtil.IsHDRGraphicsFormat(rt.graphicsFormat))
+            if (TextureUtil.IsHDRGraphicsFormat(rt.graphicsFormat)
+                && base.IsCubemap() == false) //cubemaps are handled in CubemapPreview and so do not share any TextureInspector paths :|
             {
                 base.OnExposureSlider();
             }

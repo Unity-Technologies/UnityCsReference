@@ -13,6 +13,7 @@ using UnityEditor.StyleSheets;
 using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Internal;
+using UnityEditorInternal;
 
 namespace UnityEditor.Experimental
 {
@@ -257,7 +258,7 @@ namespace UnityEditor.Experimental
 
         static string ComputeCatalogHash(List<string> paths)
         {
-            var hash = $"__StyleCatalog_Hash_{Application.unityVersion}_";
+            var hash = $"__StyleCatalog_Hash_{InternalEditorUtility.GetUnityVersion()}_";
             foreach (var path in paths)
             {
                 hash += path.GetHashCode().ToString("X2");

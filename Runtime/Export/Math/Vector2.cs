@@ -133,19 +133,21 @@ namespace UnityEngine
         /// *listonly*
         public override string ToString()
         {
-            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
+            return ToString(null, null);
         }
 
         // Returns a nicely formatted string for this vector.
         public string ToString(string format)
         {
-            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+            return ToString(format, null);
         }
 
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (string.IsNullOrEmpty(format))
                 format = "F1";
+            if (formatProvider == null)
+                formatProvider = CultureInfo.InvariantCulture.NumberFormat;
             return UnityString.Format("({0}, {1})", x.ToString(format, formatProvider), y.ToString(format, formatProvider));
         }
 

@@ -140,6 +140,7 @@ namespace UnityEngine.UIElements.UIR
         [ThreadSafe] public extern static void SetScissorRect(RectInt scissorRect);
         [ThreadSafe] public extern static void DisableScissor();
         [ThreadSafe] public extern static bool IsScissorEnabled();
+        [ThreadSafe] public extern static bool HasMappedBufferRange();
         [ThreadSafe] public extern static UInt32 InsertCPUFence();
         [ThreadSafe] public extern static bool CPUFencePassed(UInt32 fence);
         [ThreadSafe] public extern static void WaitForCPUFencePassed(UInt32 fence);

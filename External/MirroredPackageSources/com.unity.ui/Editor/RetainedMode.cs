@@ -1,8 +1,7 @@
-using System;
-using UnityEditor.UIElements.Debugger;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.StyleSheets;
-using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.Scripting;
@@ -11,16 +10,8 @@ using UXMLImporterImpl = UnityEditor.UIElements.UXMLImporterImpl;
 namespace UnityEditor
 {
     [InitializeOnLoad]
-    class RetainedMode : AssetPostprocessor
+    class RetainedMode
     {
-        private const string k_UielementsUxmllivereloadPrefsKey = "UIElements_UXMLLiveReload";
-
-        internal static bool UxmlLiveReloadIsEnabled
-        {
-            get { return EditorPrefs.GetBool(k_UielementsUxmllivereloadPrefsKey, false); }
-            set { EditorPrefs.SetBool(k_UielementsUxmllivereloadPrefsKey, value); }
-        }
-
         static RetainedMode()
         {
             UIElementsUtility.s_BeginContainerCallback = OnBeginContainer;
@@ -61,72 +52,87 @@ namespace UnityEditor
             });
         }
 
-        static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+        internal class RetainedModeAssetPostprocessor : AssetPostprocessor
         {
-            bool anyUxmlImported = false;
-            bool anyUssImported = false;
-            foreach (string assetPath in importedAssets)
-            {
-                if (assetPath.EndsWith("uss"))
-                {
-                    if (!anyUssImported)
-                    {
-                        anyUssImported = true;
-                        FlagStyleSheetChange();
-                    }
-                }
-                else if (assetPath.EndsWith("uxml"))
-                {
-                    if (!anyUxmlImported)
-                    {
-                        anyUxmlImported = true;
-                        UXMLImporterImpl.logger.FinishImport();
+            private const string k_UxmlExtension = ".uxml";
+            private const string k_UssExtension = ".uss";
 
-                        // the inline stylesheet cache might get out of date.
-                        // Usually called by the USS importer, which might not get called here
-                        UnityEngine.UIElements.StyleSheets.StyleSheetCache.ClearCaches();
-                        if (UxmlLiveReloadIsEnabled && Unsupported.IsDeveloperMode())
+            static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets,
+                string[] movedFromAssetPaths)
+            {
+                // Early exit: no imported or deleted assets.
+                var uxmlImportedAssets = new HashSet<string>(importedAssets.Where(x => MatchesFileExtension(x, k_UxmlExtension)));
+                var uxmlDeletedAssets = new HashSet<string>(deletedAssets.Where(x => MatchesFileExtension(x, k_UxmlExtension)));
+                var ussImportedAssets = new HashSet<string>(importedAssets.Where(x => MatchesFileExtension(x, k_UssExtension)));
+                var ussDeletedAssets = new HashSet<string>(deletedAssets.Where(x => MatchesFileExtension(x, k_UssExtension)));
+
+                if (uxmlImportedAssets.Count == 0 && uxmlDeletedAssets.Count == 0 &&
+                    ussImportedAssets.Count == 0 && ussDeletedAssets.Count == 0)
+                {
+                    return;
+                }
+
+                HashSet<VisualTreeAsset> uxmlModifiedAssets = null;
+                if (uxmlImportedAssets.Count > 0)
+                {
+                    UXMLImporterImpl.logger.FinishImport();
+
+                    // the inline stylesheet cache might get out of date.
+                    // Usually called by the USS importer, which might not get called here
+                    StyleSheetCache.ClearCaches();
+
+                    uxmlModifiedAssets = new HashSet<VisualTreeAsset>();
+                    foreach (var assetPath in uxmlImportedAssets)
+                    {
+                        VisualTreeAsset asset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(assetPath);
+                        if (asset != null) // Shouldn't be!
                         {
-                            // Delay the view reloading so we do not try to reload the view that
-                            // is currently active in the current callstack (i.e. ProjectView).
-                            EditorApplication.update += OneShotUxmlLiveReload;
+                            uxmlModifiedAssets.Add(asset);
                         }
                     }
                 }
 
-                // no need to continue, as we found both extensions we were looking for
-                if (anyUxmlImported && anyUssImported)
-                    break;
-            }
-        }
+                HashSet<StyleSheet> ussModifiedAssets = null;
 
-        private static void OneShotUxmlLiveReload()
-        {
-            try
-            {
-                var it = UIElementsUtility.GetPanelsIterator();
-                while (it.MoveNext())
+                var iterator = UIElementsUtility.GetPanelsIterator();
+                while (iterator.MoveNext())
                 {
-                    var view = it.Current.Value.ownerObject as HostView;
-                    if (view != null && view.actualView != null && !(view.actualView is UIElementsDebugger))
+                    var panel = iterator.Current.Value;
+                    var trackers = panel.GetVisualTreeAssetTrackersListCopy();
+
+                    if (trackers != null)
                     {
-                        view.Reload(view.actualView);
+                        foreach (var tracker in trackers)
+                        {
+                            tracker.OnAssetsImported(uxmlModifiedAssets, uxmlDeletedAssets);
+                        }
+                    }
+
+                    var styleSheetTracker = (panel as BaseVisualElementPanel)?.m_LiveReloadStyleSheetAssetTracker;
+
+                    if (styleSheetTracker != null)
+                    {
+                        // ussModifiedAssets is null but we don't care for those, only deleted ones (that we'll stop tracking).
+                        styleSheetTracker.OnAssetsImported(ussModifiedAssets, ussDeletedAssets);
                     }
                 }
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
+
+                if (ussImportedAssets.Count > 0 || ussDeletedAssets.Count > 0)
+                {
+                    FlagStyleSheetChange();
+                }
             }
 
-            // Make sure to unregister ourself to prevent any infinit updates.
-            EditorApplication.update -= OneShotUxmlLiveReload;
+            private static bool MatchesFileExtension(string assetPath, string fileExtension)
+            {
+                return assetPath.EndsWithIgnoreCaseFast(fileExtension);
+            }
         }
 
         public static void FlagStyleSheetChange()
         {
             // clear caches that depend on loaded style sheets
-            UnityEngine.UIElements.StyleSheets.StyleSheetCache.ClearCaches();
+            StyleSheetCache.ClearCaches();
 
             // for now we don't bother tracking which panel depends on which style sheet
             var iterator = UIElementsUtility.GetPanelsIterator();

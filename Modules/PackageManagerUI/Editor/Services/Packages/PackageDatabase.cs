@@ -31,10 +31,6 @@ namespace UnityEditor.PackageManager.UI
 
         private readonly Dictionary<string, IEnumerable<Sample>> m_ParsedSamples = new Dictionary<string, IEnumerable<Sample>>();
 
-        // a list of unique ids (could be specialUniqueId or packageId)
-        [SerializeField]
-        private List<string> m_SpecialInstallations = new List<string>();
-
         [SerializeField]
         private List<UpmPackage> m_SerializedUpmPackages = new List<UpmPackage>();
 
@@ -307,7 +303,6 @@ namespace UnityEditor.PackageManager.UI
             m_Packages.Clear();
             m_SerializedUpmPackages = new List<UpmPackage>();
             m_SerializedAssetStorePackages = new List<AssetStorePackage>();
-            m_SpecialInstallations.Clear();
         }
 
         private void OnDownloadProgress(IOperation operation)
@@ -325,12 +320,16 @@ namespace UnityEditor.PackageManager.UI
                 return;
 
             var downloadOperation = operation as AssetStoreDownloadOperation;
-            if (downloadOperation.state == DownloadState.Error)
-                AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, downloadOperation.errorMessage, UIError.Attribute.IsClearable));
-            else if (downloadOperation.state == DownloadState.Aborted)
-                AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, downloadOperation.errorMessage ?? L10n.Tr("Download aborted"), UIError.Attribute.IsWarning | UIError.Attribute.IsClearable));
-            else if (downloadOperation.state == DownloadState.Completed)
-                m_AssetStoreClient.RefreshLocal();
+            if (downloadOperation != null)
+            {
+                if (downloadOperation.state == DownloadState.Error)
+                    AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, downloadOperation.errorMessage, UIError.Attribute.IsClearable));
+                else if (downloadOperation.state == DownloadState.Aborted)
+                    AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, downloadOperation.errorMessage ?? L10n.Tr("Download aborted"), UIError.Attribute.IsWarning | UIError.Attribute.IsClearable));
+                else if (downloadOperation.state == DownloadState.Completed)
+                    m_AssetStoreClient.RefreshLocal();
+            }
+
             SetPackageProgress(package, PackageProgress.None);
         }
 
@@ -376,7 +375,7 @@ namespace UnityEditor.PackageManager.UI
             var packagesPreUpdate = new List<IPackage>();
             var packagesPostUpdate = new List<IPackage>();
 
-            var packagesInstalled = new List<IPackage>();
+            var specialInstallationChecklist = new List<IPackage>();
 
             foreach (var package in packages)
             {
@@ -399,20 +398,22 @@ namespace UnityEditor.PackageManager.UI
                     }
                     else
                         packagesAdded.Add(package);
-                }
 
-                if (m_SpecialInstallations.Any() && package.versions.installed != null && oldPackage?.versions.installed == null)
-                    packagesInstalled.Add(package);
+                    // For special installation like git, we want to check newly installed or updated packages.
+                    // To make sure that placeholders packages are removed properly.
+                    if (m_UpmClient.specialInstallations.Any() && package.versions.installed != null)
+                        specialInstallationChecklist.Add(package);
+                }
             }
 
             if (packagesAdded.Count + packagesRemoved.Count + packagesPostUpdate.Count > 0)
                 onPackagesChanged?.Invoke(packagesAdded, packagesRemoved, packagesPreUpdate, packagesPostUpdate);
 
             // special handling to make sure onInstallSuccess events are called correctly when special unique id is used
-            for (var i = m_SpecialInstallations.Count - 1; i >= 0; i--)
+            for (var i = m_UpmClient.specialInstallations.Count - 1; i >= 0; i--)
             {
-                var specialUniqueId = m_SpecialInstallations[i];
-                var match = packagesInstalled.FirstOrDefault(p => p.versions.installed.uniqueId.ToLower().Contains(specialUniqueId.ToLower()));
+                var specialUniqueId = m_UpmClient.specialInstallations[i];
+                var match = specialInstallationChecklist.FirstOrDefault(p => p.versions.installed.uniqueId.ToLower().Contains(specialUniqueId.ToLower()));
                 if (match != null)
                 {
                     onInstallSuccess(match, match.versions.installed);
@@ -429,7 +430,7 @@ namespace UnityEditor.PackageManager.UI
             var addOperation = operation as UpmAddOperation;
             if (string.IsNullOrEmpty(operation.packageUniqueId) && !string.IsNullOrEmpty(addOperation.specialUniqueId))
             {
-                m_SpecialInstallations.Add(addOperation.specialUniqueId);
+                m_UpmClient.specialInstallations.Add(addOperation.specialUniqueId);
 
                 if ((addOperation.packageTag & PackageTag.Git) != 0)
                 {
@@ -460,7 +461,7 @@ namespace UnityEditor.PackageManager.UI
                 m_Packages.Remove(specialUniqueId);
                 onPackagesChanged?.Invoke(Enumerable.Empty<IPackage>(), new[] { placeHolderPackage }, Enumerable.Empty<IPackage>(), Enumerable.Empty<IPackage>());
             }
-            m_SpecialInstallations.Remove(specialUniqueId);
+            m_UpmClient.specialInstallations.Remove(specialUniqueId);
         }
 
         private void OnUpmEmbedOperation(IOperation operation)
@@ -571,7 +572,7 @@ namespace UnityEditor.PackageManager.UI
                 return;
 
             SetPackageProgress(package, PackageProgress.Downloading);
-            m_AssetStoreDownloadManager.Download(package.uniqueId);
+            m_AssetStoreDownloadManager.Download(package);
             // When we start a new download, we want to clear past operation errors to give it a fresh start.
             // Eventually we want a better design on how to show errors, to be further addressed in https://jira.unity3d.com/browse/PAX-1332
             package.ClearErrors(e => e.errorCode == UIErrorCode.AssetStoreOperationError);

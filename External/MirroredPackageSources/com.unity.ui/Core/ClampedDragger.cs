@@ -9,8 +9,8 @@ namespace UnityEngine.UIElements
         public enum DragDirection
         {
             None = 0,
-            LowToHigh = 1 << 0, // i.e. left-to-right, or top-to-bottom drag
-            HighToLow = 1 << 1, // i.e. right-to-left, or bottom-to-top
+            LowToHigh = 1 << 0, // i.e. left-to-right, or bottom-to-top drag
+            HighToLow = 1 << 1, // i.e. right-to-left, or top-to-bottom
             Free = 1 << 2 // i.e. user is dragging using the drag element, free of any direction constraint
         }
 

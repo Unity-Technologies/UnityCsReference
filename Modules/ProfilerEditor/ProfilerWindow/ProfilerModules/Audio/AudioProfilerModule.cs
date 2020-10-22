@@ -145,12 +145,15 @@ namespace UnityEditorInternal.Profiling
                         m_AudioProfilerDSPView = new AudioProfilerDSPView();
 
                     ProfilerProperty property = m_ProfilerWindow.CreateProperty();
-                    if (CheckFrameData(property))
+                    if (property != null)
+                        return;
+                    if (!property.frameDataReady)
+                        return;
+
+                    using (property)
                     {
                         m_AudioProfilerDSPView.OnGUI(clippingRect, property, m_ShowInactiveDSPChains, m_HighlightAudibleDSPChains, ref m_DSPGraphZoomFactor, ref m_PaneScroll_AudioDSPRight);
                     }
-                    if (property != null)
-                        property.Dispose();
 
                     GUI.EndScrollView();
 
@@ -171,7 +174,12 @@ namespace UnityEditorInternal.Profiling
                         m_AudioProfilerClipViewBackend = new AudioProfilerClipViewBackend(m_AudioProfilerClipTreeViewState);
 
                     ProfilerProperty property = m_ProfilerWindow.CreateProperty();
-                    if (CheckFrameData(property))
+                    if (property == null)
+                        return;
+                    if (!property.frameDataReady)
+                        return;
+
+                    using (property)
                     {
                         var currentFrame = m_ProfilerWindow.GetActiveVisibleFrameIndex();
                         if (currentFrame == -1 || m_LastAudioProfilerFrame != currentFrame)
@@ -196,8 +204,6 @@ namespace UnityEditorInternal.Profiling
                         if (m_AudioProfilerClipView != null)
                             m_AudioProfilerClipView.OnGUI(treeRect);
                     }
-                    if (property != null)
-                        property.Dispose();
                 }
                 else
                 {
@@ -225,7 +231,12 @@ namespace UnityEditorInternal.Profiling
                         m_AudioProfilerGroupViewBackend = new AudioProfilerGroupViewBackend(m_AudioProfilerGroupTreeViewState);
 
                     ProfilerProperty property = m_ProfilerWindow.CreateProperty();
-                    if (CheckFrameData(property))
+                    if (property == null)
+                        return;
+                    if (!property.frameDataReady)
+                        return;
+
+                    using (property)
                     {
                         var currentFrame = m_ProfilerWindow.GetActiveVisibleFrameIndex();
                         if (currentFrame == -1 || m_LastAudioProfilerFrame != currentFrame)
@@ -255,8 +266,6 @@ namespace UnityEditorInternal.Profiling
                         if (m_AudioProfilerGroupView != null)
                             m_AudioProfilerGroupView.OnGUI(treeRect, m_ShowDetailedAudioPane == ProfilerAudioView.Channels);
                     }
-                    if (property != null)
-                        property.Dispose();
                 }
             }
             else
@@ -294,11 +303,6 @@ namespace UnityEditorInternal.Profiling
             EditorGUI.DrawRect(new Rect(statsRect.xMax - 1, statsRect.y, 1, statsRect.height), Color.black);
 
             return rightRect;
-        }
-
-        static bool CheckFrameData(ProfilerProperty property)
-        {
-            return property != null && property.frameDataReady;
         }
     }
 }

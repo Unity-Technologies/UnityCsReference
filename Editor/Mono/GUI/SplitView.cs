@@ -107,7 +107,7 @@ namespace UnityEditor
             SavedGUIState state = SavedGUIState.Create();
 
             for (int i = 0; i < children.Length; i++)
-                cursor += PlaceView(i, cursor, GUIUtility.RoundToPixelGrid(splitState.realSizes[i] * scale));
+                cursor += PlaceView(i, cursor, splitState.realSizes[i] * scale);
 
             state.ApplyAndForget();
         }
@@ -165,7 +165,7 @@ namespace UnityEditor
             float width = position.width;
             float height = position.height;
             float roundPos = GUIUtility.RoundToPixelGrid(pos);
-            float roundSize = GUIUtility.RoundToPixelGrid(size);
+            float roundSize = GUIUtility.RoundToPixelGrid(pos + size) - roundPos;
             Rect newRect;
             if (vertical)
             {

@@ -18,8 +18,8 @@ namespace UnityEditor.PackageManager.UI
         protected VisualTreeAsset m_GeneralTemplate;
 
         private static readonly string k_Message =
-            "Preview packages are in the early stage of development and not yet ready for production.\n" +
-            "We recommend using these only for testing purpose and to give us direct feedback.";
+            "Pre-release packages are in the process of becoming stable and will be available as production-ready by the end of this LTS release. \n" +
+            "We recommend using these only for testing purposes and to give us direct feedback until then.";
 
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private ApplicationProxy m_ApplicationProxy;
@@ -85,17 +85,17 @@ namespace UnityEditor.PackageManager.UI
                         m_SettingsProxy.scopedRegistriesSettingsExpanded = changeEvent.newValue;
                 });
 
-                previewInfoBox.Q<Button>().clickable.clicked += () =>
+                preReleaseInfoBox.Q<Button>().clickable.clicked += () =>
                 {
                     m_ApplicationProxy.OpenURL($"https://docs.unity3d.com/{m_ApplicationProxy.shortUnityVersion}/Documentation/Manual/pack-preview.html");
                 };
 
-                enablePreviewPackages.SetValueWithoutNotify(m_SettingsProxy.enablePreviewPackages);
-                enablePreviewPackages.RegisterValueChangedCallback(changeEvent =>
+                enablePreReleasePackages.SetValueWithoutNotify(m_SettingsProxy.enablePreReleasePackages);
+                enablePreReleasePackages.RegisterValueChangedCallback(changeEvent =>
                 {
                     var newValue = changeEvent.newValue;
 
-                    if (newValue != m_SettingsProxy.enablePreviewPackages)
+                    if (newValue != m_SettingsProxy.enablePreReleasePackages)
                     {
                         var saveIt = true;
                         if (newValue && !m_SettingsProxy.oneTimeWarningShown)
@@ -108,12 +108,12 @@ namespace UnityEditor.PackageManager.UI
 
                         if (saveIt)
                         {
-                            m_SettingsProxy.enablePreviewPackages = newValue;
+                            m_SettingsProxy.enablePreReleasePackages = newValue;
                             m_SettingsProxy.Save();
-                            PackageManagerWindowAnalytics.SendEvent("togglePreviewPackages");
+                            PackageManagerWindowAnalytics.SendEvent("togglePreReleasePackages");
                         }
                     }
-                    enablePreviewPackages.SetValueWithoutNotify(m_SettingsProxy.enablePreviewPackages);
+                    enablePreReleasePackages.SetValueWithoutNotify(m_SettingsProxy.enablePreReleasePackages);
                 });
 
                 enablePackageDependencies.SetValueWithoutNotify(m_SettingsProxy.enablePackageDependencies);
@@ -127,6 +127,21 @@ namespace UnityEditor.PackageManager.UI
                         m_SettingsProxy.enablePackageDependencies = newValue;
                         m_SettingsProxy.Save();
                         PackageManagerWindowAnalytics.SendEvent("toggleDependencies");
+                    }
+                });
+
+                UIUtils.SetElementDisplay(seeAllPackageVersions, Unsupported.IsDeveloperBuild());
+                seeAllPackageVersions.SetValueWithoutNotify(m_SettingsProxy.seeAllPackageVersions);
+
+                seeAllPackageVersions.RegisterValueChangedCallback(changeEvent =>
+                {
+                    seeAllPackageVersions.SetValueWithoutNotify(changeEvent.newValue);
+                    var newValue = changeEvent.newValue;
+
+                    if (newValue != m_SettingsProxy.seeAllPackageVersions)
+                    {
+                        m_SettingsProxy.seeAllPackageVersions = newValue;
+                        m_SettingsProxy.Save();
                     }
                 });
             };
@@ -161,10 +176,11 @@ namespace UnityEditor.PackageManager.UI
 
         private VisualElementCache cache { get; set; }
 
-        private HelpBox previewInfoBox { get { return cache.Get<HelpBox>("previewInfoBox"); } }
-        private Toggle enablePreviewPackages { get { return rootVisualElement.Q<Toggle>("enablePreviewPackages"); } }
+        private HelpBox preReleaseInfoBox { get { return cache.Get<HelpBox>("preReleaseInfoBox"); } }
+        private Toggle enablePreReleasePackages { get { return rootVisualElement.Q<Toggle>("enablePreReleasePackages"); } }
         private Toggle enablePackageDependencies { get { return rootVisualElement.Q<Toggle>("enableDependencies"); } }
         private Foldout advancedSettingsFoldout { get { return rootVisualElement.Q<Foldout>("advancedSettingsFoldout"); } }
         private Foldout scopedRegistriesSettingsFoldout { get { return rootVisualElement.Q<Foldout>("scopedRegistriesSettingsFoldout"); } }
+        private Toggle seeAllPackageVersions { get { return rootVisualElement.Q<Toggle>("seeAllVersions"); } }
     }
 }

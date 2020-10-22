@@ -106,16 +106,10 @@ namespace UnityEngine.Rendering
             Submit_Internal();
         }
 
-        internal int GetNumberOfCameras()
+        internal void GetCameras(List<Camera> results)
         {
             Validate();
-            return GetNumberOfCameras_Internal();
-        }
-
-        internal Camera GetCamera(int index)
-        {
-            Validate();
-            return GetCamera_Internal(index);
+            GetCameras_Internal(typeof(Camera), results);
         }
 
         public void DrawRenderers(CullingResults cullingResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings)

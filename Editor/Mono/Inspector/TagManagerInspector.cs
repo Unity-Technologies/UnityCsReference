@@ -173,9 +173,32 @@ namespace UnityEditor
 
         void NewElement(Rect buttonRect, ReorderableList list)
         {
+            int sizeBeforeupdate = list.count;
+            string[] tagListBeforeUpdate = InternalEditorUtility.tags;
+
             buttonRect.x -= 400;
             buttonRect.y -= 13;
-            PopupWindow.Show(buttonRect, new EnterNamePopup(m_Tags, s => { InternalEditorUtility.AddTag(s); }));
+            PopupWindow.Show(buttonRect, new EnterNamePopup(m_Tags, s => {
+                InternalEditorUtility.AddTag(s);
+                serializedObject.Update();
+
+                string[] tagListAfterUpdate = InternalEditorUtility.tags;
+                int nativeObjCount = tagListAfterUpdate.Length;
+
+                int pos = Array.IndexOf(tagListBeforeUpdate, s);
+                if (pos == -1)
+                {
+                    if (sizeBeforeupdate == list.count)
+                    {
+                        SerializedProperty arraySize = list.serializedProperty.FindPropertyRelative("Array.size");
+                        arraySize.intValue++;
+                        list.index = list.serializedProperty.arraySize - 1;
+                        list.serializedProperty.GetArrayElementAtIndex(list.index).stringValue = tagListAfterUpdate[tagListAfterUpdate.Length - 1];
+                        arraySize.serializedObject.ApplyModifiedProperties();
+                        list.serializedProperty.serializedObject.ApplyModifiedProperties();
+                    }
+                }
+            }));
         }
 
         private void RemoveFromTagsList(ReorderableList list)
@@ -208,10 +231,26 @@ namespace UnityEditor
 
         void AddToSortLayerList(ReorderableList list)
         {
-            serializedObject.ApplyModifiedProperties();
-            InternalEditorUtility.AddSortingLayer();
-            serializedObject.Update();
+            int sizeBeforeupdate = list.count;
+            int nativeObjCount = InternalEditorUtility.GetSortingLayerCount();
+
+            if (nativeObjCount <= list.count)
+            {
+                serializedObject.ApplyModifiedProperties();
+                InternalEditorUtility.AddSortingLayer();
+                serializedObject.Update();
+            }
+
             list.index = list.serializedProperty.arraySize - 1; // select just added one
+
+            if (sizeBeforeupdate == list.count)
+            {
+                SerializedProperty arraySize = list.serializedProperty.FindPropertyRelative("Array.size");
+                arraySize.intValue++;
+                arraySize.serializedObject.ApplyModifiedProperties();
+                list.serializedProperty.GetArrayElementAtIndex(list.index).FindPropertyRelative("name").stringValue = "New Layer";
+                list.serializedProperty.serializedObject.ApplyModifiedProperties();
+            }
         }
 
         public void ReorderSortLayerList(ReorderableList list)
@@ -249,7 +288,7 @@ namespace UnityEditor
             GUI.enabled = m_IsEditable && CanEditSortLayerEntry(index);
 
             string oldName = InternalEditorUtility.GetSortingLayerName(index);
-            string newName = EditorGUI.TextField(rect, " Layer ", oldName);
+            string newName = EditorGUI.TextField(rect, " Layer " + index, oldName);
             if (newName != oldName)
             {
                 serializedObject.ApplyModifiedProperties();

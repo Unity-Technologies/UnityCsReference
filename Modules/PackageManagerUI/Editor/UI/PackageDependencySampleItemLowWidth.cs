@@ -54,7 +54,7 @@ namespace UnityEditor.PackageManager.UI
             itemName.text = name;
             itemName.tooltip = name;
 
-            itemStatusNameContainer.Add(sampleItem.importStatus);
+            sampleStatus.Add(sampleItem.importStatus);
 
             itemSizeOrVersion.value = size;
             itemSizeOrVersion.tooltip = size;
@@ -64,6 +64,7 @@ namespace UnityEditor.PackageManager.UI
         }
 
         private VisualElement itemStatusNameContainer { get { return cache.Get<VisualElement>("itemStatusNameContainer"); } }
+        private VisualElement sampleStatus { get { return cache.Get<VisualElement>("sampleStatus"); } }
         private Label itemName { get { return cache.Get<Label>("itemName"); } }
         private TextField itemSizeOrVersion { get { return cache.Get<TextField>("itemSizeOrVersion"); } }
         private VisualElement item { get { return cache.Get<VisualElement>("dependencySampleItemLowWidth"); } }

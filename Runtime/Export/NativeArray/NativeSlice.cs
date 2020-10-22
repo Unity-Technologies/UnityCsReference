@@ -101,6 +101,8 @@ namespace Unity.Collections
                 throw new ArgumentException($"Slice start + length ({start + length}) range must be <= array.Length ({array.Length})");
             if ((array.m_MinIndex != 0 || array.m_MaxIndex != array.m_Length - 1) && (start < array.m_MinIndex || array.m_MaxIndex < start || array.m_MaxIndex < start + length - 1))
                 throw new ArgumentException("Slice may not be used on a restricted range array", nameof(array));
+            if (start + length < 0)
+                throw new ArgumentException("Slice start + length ({start + length}) causes an integer overflow");
 
             m_MinIndex = 0;
             m_MaxIndex = length - 1;

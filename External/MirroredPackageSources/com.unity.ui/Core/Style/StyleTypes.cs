@@ -43,43 +43,20 @@ namespace UnityEngine.UIElements
 
     internal static class StyleValueExtensions
     {
-        // Convert StyleLength to StyleFloat for IResolvedStyle
-        internal static StyleFloat ToStyleFloat(this StyleLength styleLength)
-        {
-            return new StyleFloat(styleLength.value.value, styleLength.keyword);
-        }
-
-        // Convert StyleInt to StyleEnum for ComputedStyle
-        internal static StyleEnum<T> ToStyleEnum<T>(this StyleInt styleInt, T value) where T : struct, IConvertible
-        {
-            return new StyleEnum<T>(value, styleInt.keyword);
-        }
-
-        internal static StyleLength ToStyleLength(this StyleValue styleValue)
-        {
-            return new StyleLength(new Length(styleValue.number), styleValue.keyword);
-        }
-
-        internal static StyleFloat ToStyleFloat(this StyleValue styleValue)
-        {
-            return new StyleFloat(styleValue.number, styleValue.keyword);
-        }
-
         internal static string DebugString<T>(this IStyleValue<T> styleValue)
         {
             return styleValue.keyword != StyleKeyword.Undefined ? $"{styleValue.keyword}" : $"{styleValue.value}";
         }
 
-        internal static YogaValue ToYogaValue(this StyleLength styleValue)
+        internal static YogaValue ToYogaValue(this Length length)
         {
-            if (styleValue.keyword == StyleKeyword.Auto)
+            if (length.IsAuto())
                 return YogaValue.Auto();
 
             // For max-width and max-height
-            if (styleValue.keyword == StyleKeyword.None)
+            if (length.IsNone())
                 return float.NaN;
 
-            var length = styleValue.value;
             switch (length.unit)
             {
                 case LengthUnit.Pixel:
@@ -92,19 +69,30 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal static StyleKeyword ToStyleKeyword(this StyleValueKeyword styleValueKeyword)
+        internal static Length ToLength(this StyleKeyword keyword)
         {
-            switch (styleValueKeyword)
+            switch (keyword)
             {
-                case StyleValueKeyword.Auto:
-                    return StyleKeyword.Auto;
-                case StyleValueKeyword.None:
-                    return StyleKeyword.None;
-                case StyleValueKeyword.Initial:
-                    return StyleKeyword.Initial;
+                case StyleKeyword.Auto:
+                    return Length.Auto();
+                case StyleKeyword.None:
+                    return Length.None();
+                default:
+                    Debug.LogAssertion($"Unexpected StyleKeyword '{keyword.ToString()}'");
+                    return new Length();
             }
+        }
 
-            return StyleKeyword.Undefined;
+        internal static Length ToLength(this StyleLength styleLength)
+        {
+            switch (styleLength.keyword)
+            {
+                case StyleKeyword.Auto:
+                case StyleKeyword.None:
+                    return styleLength.keyword.ToLength();
+                default:
+                    return styleLength.value;
+            }
         }
     }
 }

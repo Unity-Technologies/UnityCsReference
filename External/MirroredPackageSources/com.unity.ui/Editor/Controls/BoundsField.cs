@@ -4,10 +4,19 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    /// <summary>
+    /// A <see cref="Bounds"/> editor field.
+    /// </summary>
     public class BoundsField : BaseField<Bounds>
     {
+        /// <summary>
+        /// Instantiates a <see cref="BoundsField"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<BoundsField, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="BoundsField"/>.
+        /// </summary>
         public new class UxmlTraits : BaseField<Bounds>.UxmlTraits
         {
             UxmlFloatAttributeDescription m_CenterXValue = new UxmlFloatAttributeDescription { name = "cx" };
@@ -18,6 +27,12 @@ namespace UnityEditor.UIElements
             UxmlFloatAttributeDescription m_ExtentsYValue = new UxmlFloatAttributeDescription { name = "ey" };
             UxmlFloatAttributeDescription m_ExtentsZValue = new UxmlFloatAttributeDescription { name = "ez" };
 
+            /// <summary>
+            /// Initialize <see cref="BoundsField"/> properties using values from the attribute bag.
+            /// </summary>
+            /// <param name="ve">The object to initialize.</param>
+            /// <param name="bag">The attribute bag.</param>
+            /// <param name="cc">The creation context; unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
@@ -29,10 +44,25 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-bounds-field";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        /// <summary>
+        /// USS class name of center fields in elements of this type.
+        /// </summary>
         public static readonly string centerFieldUssClassName = ussClassName + "__center-field";
+        /// <summary>
+        /// USS class name of extents fields in elements of this type.
+        /// </summary>
         public static readonly string extentsFieldUssClassName = ussClassName + "__extents-field";
 
         private Vector3Field m_CenterField;
@@ -82,6 +112,12 @@ namespace UnityEditor.UIElements
             base.SetValueWithoutNotify(newValue);
             m_CenterField.SetValueWithoutNotify(rawValue.center);
             m_ExtentsField.SetValueWithoutNotify(rawValue.extents);
+        }
+
+        protected override void UpdateMixedValueContent()
+        {
+            m_CenterField.showMixedValue = showMixedValue;
+            m_ExtentsField.showMixedValue = showMixedValue;
         }
     }
 }

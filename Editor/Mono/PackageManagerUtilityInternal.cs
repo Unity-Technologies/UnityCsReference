@@ -20,10 +20,8 @@ namespace UnityEditor
         /// <returns>an array of package information ordered by display name.</returns>
         public static PackageManager.PackageInfo[] GetAllVisiblePackages(bool skipHiddenPackages = true)
         {
-            return PackageManager.PackageInfo.GetAll().Where(info => info.type != "module" &&
-                (!skipHiddenPackages || !info.hideInEditor ||
-                    info.source == PackageSource.Embedded ||
-                    info.source == PackageSource.Local)).
+            return PackageManager.PackageInfo.GetAllRegisteredPackages().Where(info => info.type != "module" &&
+                (!skipHiddenPackages || !info.hideInEditor)).
                 OrderBy(info => string.IsNullOrEmpty(info.displayName) ? info.name : info.displayName,
                     StringComparer.InvariantCultureIgnoreCase).ToArray();
         }
@@ -42,9 +40,7 @@ namespace UnityEditor
             if (package == null)
                 return true;
 
-            return package.type != "module" && (!package.hideInEditor ||
-                package.source == PackageSource.Embedded ||
-                package.source == PackageSource.Local);
+            return package.type != "module" && !package.hideInEditor;
         }
 
         /// <summary>
@@ -54,10 +50,7 @@ namespace UnityEditor
         {
             get
             {
-                return PackageManager.PackageInfo.GetAll().Count(info => info.type != "module" &&
-                    info.source != PackageSource.Embedded &&
-                    info.source != PackageSource.Local &&
-                    info.hideInEditor);
+                return PackageManager.PackageInfo.GetAllRegisteredPackages().Count(info => info.type != "module" && info.hideInEditor);
             }
         }
     }

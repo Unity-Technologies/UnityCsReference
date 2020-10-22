@@ -11,6 +11,8 @@ using UnityEditor.VersionControl;
 using System.Collections.Generic;
 using UnityEditor.Experimental;
 using UnityEngine.Assertions;
+using static UnityEditor.AssetsTreeViewDataSource;
+using static UnityEditorInternal.InternalEditorUtility;
 
 namespace UnityEditor
 {
@@ -178,12 +180,36 @@ namespace UnityEditor
             {
                 useBoldFont = true;
             }
-            base.DoItemGUI(rect, row, item, selected, focused, useBoldFont);
+
+            var color = ProjectBrowser.GetAssetItemColor(item.id);
+
+            using (new GUI.ColorScope(color))
+                base.DoItemGUI(rect, row, item, selected, focused, useBoldFont);
         }
 
         private void OnIconOverlayGUI(TreeViewItem item, Rect overlayRect)
         {
-            OnIconOverlayGUI(item.id, overlayRect, false, m_TreeViewRepaintAction);
+            if (!AssetReference.IsAssetImported(item.id))
+            {
+                var assetTreeItem = item as IAssetTreeViewItem;
+                if (assetTreeItem == null)
+                    return;
+
+                OnIconOverlayGUI_ForNonImportAsset(assetTreeItem.Guid, overlayRect, false, m_TreeViewRepaintAction);
+            }
+            else
+                OnIconOverlayGUI(item.id, overlayRect, false, m_TreeViewRepaintAction);
+        }
+
+        internal static void OnIconOverlayGUI_ForNonImportAsset(string guid, Rect overlayRect, bool addPadding, Action repaintAction = null)
+        {
+            if (addPadding)
+            {
+                overlayRect.x -= k_IconOverlayPadding;
+                overlayRect.width += k_IconOverlayPadding * 2;
+            }
+
+            ProjectHooks.OnProjectWindowItem(guid, overlayRect, repaintAction);
         }
 
         internal static void OnIconOverlayGUI(int instanceID, Rect overlayRect, bool addPadding, Action repaintAction = null)

@@ -296,5 +296,9 @@ namespace UnityEditor.UIElements
             get { return GetValueDelegate(); }
             set { SetValueDelegate(value); }
         }
+
+        protected override void UpdateMixedValueContent()
+        {
+        }
     }
 }

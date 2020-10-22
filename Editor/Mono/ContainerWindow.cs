@@ -345,6 +345,9 @@ namespace UnityEditor
 
         internal string GetWindowID()
         {
+            if (!rootView)
+                return string.Empty;
+
             HostView v = rootView as HostView;
 
             if (v == null && rootView is SplitView && rootView.children.Length > 0)
@@ -368,7 +371,7 @@ namespace UnityEditor
 
         public bool IsMainWindow()
         {
-            if (UnityEditor.MPE.ProcessService.level == UnityEditor.MPE.ProcessLevel.Master)
+            if (UnityEditor.MPE.ProcessService.level == UnityEditor.MPE.ProcessLevel.Main)
                 return m_ShowMode == (int)ShowMode.MainWindow && m_DontSaveToLayout == false;
             return false;
         }
@@ -450,18 +453,6 @@ namespace UnityEditor
 
             // save position
             Save();
-        }
-
-        internal void OnMove()
-        {
-            if (IsMainWindow() && this.rootView is MainView)
-            {
-                MainView mv = (MainView)this.rootView;
-                foreach (HostView view in mv.allChildren.OfType<HostView>())
-                {
-                    view.OnMainWindowMove();
-                }
-            }
         }
 
         // The title of the window, including unsaved changes markings, if any.

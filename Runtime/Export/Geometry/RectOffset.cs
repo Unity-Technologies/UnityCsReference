@@ -54,16 +54,18 @@ namespace UnityEngine
 
         public override string ToString()
         {
-            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
+            return ToString(null, null);
         }
 
         public string ToString(string format)
         {
-            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+            return ToString(format, null);
         }
 
         public string ToString(string format, IFormatProvider formatProvider)
         {
+            if (formatProvider == null)
+                formatProvider = CultureInfo.InvariantCulture.NumberFormat;
             return UnityString.Format("RectOffset (l:{0} r:{1} t:{2} b:{3})", left.ToString(format, formatProvider), right.ToString(format, formatProvider), top.ToString(format, formatProvider), bottom.ToString(format, formatProvider));
         }
 

@@ -222,7 +222,7 @@ namespace UnityEditor
                         }
                     }
                     break;
-                case EventType.MouseDown:
+                case EventType.MouseUp:
                     if (position.Contains(Event.current.mousePosition))
                     {
                         if (Event.current.button == 1)
@@ -596,6 +596,7 @@ namespace UnityEditor
                 Rect labelRect = new Rect(toolbarRect.x + kPadding, toolbarRect.y, toolbarRect.width - contentRect.width - 2 * kPadding, toolbarRect.height);
                 Vector2 labelSize = s_Styles.toolbarText.CalcSize(m_ObjectName);
                 labelRect.width = Mathf.Min(labelRect.width, labelSize.x);
+                m_ObjectName.tooltip = m_ObjectName.text;
                 GUI.Label(labelRect, m_ObjectName, s_Styles.toolbarText);
             }
             EditorGUILayout.EndHorizontal();

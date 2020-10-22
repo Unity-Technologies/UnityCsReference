@@ -14,6 +14,7 @@ namespace UnityEditor.PackageManager.UI
     {
         internal const string k_UnityPackageGroupName = "Unity";
         internal const string k_OtherPackageGroupName = "Other";
+        internal const string k_CustomPackageGroupName = "Custom";
 
         internal const int k_DefaultPageSize = 25;
 
@@ -358,10 +359,10 @@ namespace UnityEditor.PackageManager.UI
             if (version?.isInstalled == true || package?.versions?.installed != null)
                 return PackageFilterTab.InProject;
 
-            if (!m_SettingsProxy.enablePreviewPackages && (version?.version?.Major == 0 || (version?.version?.Prerelease.StartsWith("preview") ?? false) ||
-                                                           package?.versions.primary.version?.Major == 0 || (package?.versions.primary.version?.Prerelease.StartsWith("preview") ?? false)))
+            if (!m_SettingsProxy.enablePreReleasePackages && ((version?.version?.Prerelease.StartsWith("pre.") ?? false) ||
+                                                              (package?.versions.primary.version?.Prerelease.StartsWith("-pre.") ?? false)))
             {
-                Debug.Log("You must check \"Enable Preview Packages\" in Project Settings > Package Manager in order to see this package.");
+                Debug.Log("You must check \"Enable Pre-release Packages\" in Project Settings > Package Manager in order to see this package.");
                 return page.tab;
             }
 
@@ -524,7 +525,7 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        public virtual void LoadMore(int numberOfPackages)
+        public virtual void LoadMore(long numberOfPackages)
         {
             GetPageFromTab().LoadMore(numberOfPackages);
         }

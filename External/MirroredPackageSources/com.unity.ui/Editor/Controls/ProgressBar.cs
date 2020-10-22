@@ -5,13 +5,34 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    /// <summary>
+    /// ProgressBar control using UIElements. Supports binding to float and int values.
+    /// </summary>
     public class ProgressBar : BindableElement, INotifyValueChanged<float>
     {
+        /// <summary>
+        /// Uss Class Name used to style the <see cref="ProgressBar"/>.
+        /// </summary>
         public static readonly string ussClassName = "unity-progress-bar";
+        /// <summary>
+        /// Uss Class Name used to style the container of the <see cref="ProgressBar"/>.
+        /// </summary>
         public static readonly string containerUssClassName = ussClassName + "__container";
+        /// <summary>
+        /// Uss Class Name used to style the title of the <see cref="ProgressBar"/>.
+        /// </summary>
         public static readonly string titleUssClassName = ussClassName + "__title";
+        /// <summary>
+        /// Uss Class Name used to style the container of the title of the <see cref="ProgressBar"/>.
+        /// </summary>
         public static readonly string titleContainerUssClassName = ussClassName + "__title-container";
+        /// <summary>
+        /// Uss Class Name used to style the progress bar of the <see cref="ProgressBar"/>.
+        /// </summary>
         public static readonly string progressUssClassName = ussClassName + "__progress";
+        /// <summary>
+        /// Uss Class Name used to style the background of the <see cref="ProgressBar"/>.
+        /// </summary>
         public static readonly string backgroundUssClassName = ussClassName + "__background";
 
         public new class UxmlFactory : UxmlFactory<ProgressBar, UxmlTraits> {}
@@ -39,6 +60,9 @@ namespace UnityEditor.UIElements
         readonly VisualElement m_Background;
         readonly VisualElement m_Progress;
 
+        /// <summary>
+        /// Sets the title of the ProgressBar which will be displayed in the center of the control.
+        /// </summary>
         public string title
         {
             get { return this.Q<Label>(null, titleUssClassName).text; }
@@ -68,6 +92,9 @@ namespace UnityEditor.UIElements
 
         [SerializeField]
         private float m_Value { get; set; }
+        /// <summary>
+        /// Bindable float value that can be bound to int and float properties. Setting this will change the current displayed progress of the ProgressBar.
+        /// </summary>
         public virtual float value
         {
             get

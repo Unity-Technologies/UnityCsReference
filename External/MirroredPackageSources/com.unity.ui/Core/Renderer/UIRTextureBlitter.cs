@@ -16,6 +16,7 @@ namespace UnityEngine.UIElements.UIR
 
         BlitInfo[] m_SingleBlit = new BlitInfo[1];
         Material m_BlitMaterial;
+        MaterialPropertyBlock m_Properties;
         RectInt m_Viewport;
         RenderTexture m_PrevRT;
         List<BlitInfo> m_PendingBlits;
@@ -111,7 +112,7 @@ namespace UnityEngine.UIElements.UIR
 
             s_CommitSampler.Begin();
             BeginBlit(dst);
-            for (int i = 0; i <  m_PendingBlits.Count; i += k_TextureSlotCount)
+            for (int i = 0; i < m_PendingBlits.Count; i += k_TextureSlotCount)
                 DoBlit(m_PendingBlits, i);
             EndBlit();
             s_CommitSampler.End();
@@ -133,27 +134,32 @@ namespace UnityEngine.UIElements.UIR
                 m_BlitMaterial.hideFlags |= HideFlags.DontSaveInEditor;
             }
 
+            if (m_Properties == null)
+                m_Properties = new MaterialPropertyBlock();
+
             // store viewport as we'll have to restore it once the AtlasManager is done rendering
             m_Viewport = Utility.GetActiveViewport();
             m_PrevRT = RenderTexture.active;
             GL.LoadPixelMatrix(0, dst.width, 0, dst.height);
             Graphics.SetRenderTarget(dst);
+            m_BlitMaterial.SetPass(0);
         }
 
         void DoBlit(IList<BlitInfo> blitInfos, int startIndex)
         {
-            int stopIndex = Mathf.Min(startIndex + k_TextureSlotCount, blitInfos.Count);
+            int usedSlots = Mathf.Min(blitInfos.Count - startIndex, k_TextureSlotCount);
+            int stopIndex = startIndex + usedSlots;
 
-            // Bind and update the material.
+            // Update the properties
             for (int blitIndex = startIndex, slotIndex = 0; blitIndex < stopIndex; ++blitIndex, ++slotIndex)
             {
                 var texture = blitInfos[blitIndex].src;
                 if (texture != null)
-                    m_BlitMaterial.SetTexture(k_TextureIds[slotIndex], texture);
+                    m_Properties.SetTexture(k_TextureIds[slotIndex], texture);
             }
+            Utility.SetPropertyBlock(m_Properties);
 
-            // Draw.
-            m_BlitMaterial.SetPass(0);
+            // Draw
             GL.Begin(GL.QUADS);
             for (int blitIndex = startIndex, slotIndex = 0; blitIndex < stopIndex; ++blitIndex, ++slotIndex)
             {

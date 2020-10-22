@@ -53,7 +53,7 @@ namespace UnityEditor.UIElements
                 m_Folder = "Assets/Editor";
         }
 
-        public void OnEnable()
+        public void CreateGUI()
         {
             // After the c# file has been created and the domain.reload executed, we want to close the window
             if (m_CSharpName != "" && ClassExists())
@@ -247,19 +247,28 @@ namespace UnityEditor.UIElements
 
         void OnCSharpValueChanged(ChangeEvent<string> changeEvt)
         {
+            var previousName = m_CSharpName;
             m_CSharpName = changeEvt.newValue;
             HideErrorMessage();
 
             if (m_IsUxmlEnable)
             {
-                m_Root.Q<TextField>("uxmlTextField").value = m_CSharpName;
-                m_UxmlName = m_CSharpName;
+                var uxmlTextField = m_Root.Q<TextField>("uxmlTextField");
+                if (uxmlTextField.value == previousName)
+                {
+                    uxmlTextField.value = m_CSharpName;
+                    m_UxmlName = m_CSharpName;
+                }
             }
 
             if (m_IsUssEnable)
             {
-                m_Root.Q<TextField>("ussTextField").value = m_CSharpName;
-                m_UssName = m_CSharpName;
+                var ussTextField = m_Root.Q<TextField>("ussTextField");
+                if (ussTextField.value == previousName)
+                {
+                    ussTextField.value = m_CSharpName;
+                    m_UssName = m_CSharpName;
+                }
             }
         }
 

@@ -494,8 +494,39 @@ namespace UnityEditor
             return TrTextContentWithIcon(text, null, messageType);
         }
 
+        internal static Texture2D LightenTexture(Texture2D texture)
+        {
+            if (!texture)
+                return texture;
+            Texture2D outTexture = new Texture2D(texture.width, texture.height);
+            var outColorArray = outTexture.GetPixels();
+
+            var colorArray = texture.GetPixels();
+            for (var i = 0; i < colorArray.Length; ++i)
+                outColorArray[i] = LightenColor(colorArray[i]);
+
+            outTexture.hideFlags = HideFlags.HideAndDontSave;
+            outTexture.SetPixels(outColorArray);
+            outTexture.Apply();
+
+            return outTexture;
+        }
+
+        internal static Color LightenColor(Color color)
+        {
+            Color.RGBToHSV(color, out var h, out _, out _);
+            var outColor = Color.HSVToRGB((h + 0.5f) % 1, 0f, 0.8f);
+            outColor.a = color.a;
+            return outColor;
+        }
+
         [ExcludeFromDocs]
         public static GUIContent TrIconContent(string iconName, string tooltip = null)
+        {
+            return TrIconContent(iconName, tooltip, false);
+        }
+
+        internal static GUIContent TrIconContent(string iconName, string tooltip, bool lightenTexture)
         {
             string key = tooltip == null ? string.Format("{0}|{1}", iconName, pixelsPerPoint) :
                 string.Format("{0}|{1}|{2}", iconName, tooltip, pixelsPerPoint);
@@ -511,6 +542,8 @@ namespace UnityEditor
                 gc.tooltip = L10n.Tr(tooltip);
             }
             gc.image = LoadIconRequired(iconName);
+            if (lightenTexture && gc.image is Texture2D tex2D)
+                gc.image = LightenTexture(tex2D);
             s_IconGUIContents[key] = gc;
             return gc;
         }

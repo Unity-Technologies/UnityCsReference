@@ -17,6 +17,142 @@ namespace UnityEngine.UIElements
             switch (id)
             {
                 case StylePropertyId.AlignContent:
+                    return new StyleEnum<Align>((Align)computedStyle.alignContent);
+                case StylePropertyId.AlignItems:
+                    return new StyleEnum<Align>((Align)computedStyle.alignItems);
+                case StylePropertyId.AlignSelf:
+                    return new StyleEnum<Align>((Align)computedStyle.alignSelf);
+                case StylePropertyId.BackgroundColor:
+                    return new StyleColor(computedStyle.backgroundColor);
+                case StylePropertyId.BackgroundImage:
+                    return new StyleBackground(computedStyle.backgroundImage);
+                case StylePropertyId.BorderBottomColor:
+                    return new StyleColor(computedStyle.borderBottomColor);
+                case StylePropertyId.BorderBottomLeftRadius:
+                    return new StyleLength(computedStyle.borderBottomLeftRadius);
+                case StylePropertyId.BorderBottomRightRadius:
+                    return new StyleLength(computedStyle.borderBottomRightRadius);
+                case StylePropertyId.BorderBottomWidth:
+                    return new StyleFloat(computedStyle.borderBottomWidth);
+                case StylePropertyId.BorderLeftColor:
+                    return new StyleColor(computedStyle.borderLeftColor);
+                case StylePropertyId.BorderLeftWidth:
+                    return new StyleFloat(computedStyle.borderLeftWidth);
+                case StylePropertyId.BorderRightColor:
+                    return new StyleColor(computedStyle.borderRightColor);
+                case StylePropertyId.BorderRightWidth:
+                    return new StyleFloat(computedStyle.borderRightWidth);
+                case StylePropertyId.BorderTopColor:
+                    return new StyleColor(computedStyle.borderTopColor);
+                case StylePropertyId.BorderTopLeftRadius:
+                    return new StyleLength(computedStyle.borderTopLeftRadius);
+                case StylePropertyId.BorderTopRightRadius:
+                    return new StyleLength(computedStyle.borderTopRightRadius);
+                case StylePropertyId.BorderTopWidth:
+                    return new StyleFloat(computedStyle.borderTopWidth);
+                case StylePropertyId.Bottom:
+                    return new StyleLength(computedStyle.bottom);
+                case StylePropertyId.Color:
+                    return new StyleColor(computedStyle.color);
+                case StylePropertyId.Cursor:
+                    return new StyleCursor(computedStyle.cursor);
+                case StylePropertyId.Display:
+                    return new StyleEnum<DisplayStyle>((DisplayStyle)computedStyle.display);
+                case StylePropertyId.FlexBasis:
+                    return new StyleLength(computedStyle.flexBasis);
+                case StylePropertyId.FlexDirection:
+                    return new StyleEnum<FlexDirection>((FlexDirection)computedStyle.flexDirection);
+                case StylePropertyId.FlexGrow:
+                    return new StyleFloat(computedStyle.flexGrow);
+                case StylePropertyId.FlexShrink:
+                    return new StyleFloat(computedStyle.flexShrink);
+                case StylePropertyId.FlexWrap:
+                    return new StyleEnum<Wrap>((Wrap)computedStyle.flexWrap);
+                case StylePropertyId.FontSize:
+                    return new StyleLength(computedStyle.fontSize);
+                case StylePropertyId.Height:
+                    return new StyleLength(computedStyle.height);
+                case StylePropertyId.JustifyContent:
+                    return new StyleEnum<Justify>((Justify)computedStyle.justifyContent);
+                case StylePropertyId.Left:
+                    return new StyleLength(computedStyle.left);
+                case StylePropertyId.MarginBottom:
+                    return new StyleLength(computedStyle.marginBottom);
+                case StylePropertyId.MarginLeft:
+                    return new StyleLength(computedStyle.marginLeft);
+                case StylePropertyId.MarginRight:
+                    return new StyleLength(computedStyle.marginRight);
+                case StylePropertyId.MarginTop:
+                    return new StyleLength(computedStyle.marginTop);
+                case StylePropertyId.MaxHeight:
+                    return new StyleLength(computedStyle.maxHeight);
+                case StylePropertyId.MaxWidth:
+                    return new StyleLength(computedStyle.maxWidth);
+                case StylePropertyId.MinHeight:
+                    return new StyleLength(computedStyle.minHeight);
+                case StylePropertyId.MinWidth:
+                    return new StyleLength(computedStyle.minWidth);
+                case StylePropertyId.Opacity:
+                    return new StyleFloat(computedStyle.opacity);
+                case StylePropertyId.Overflow:
+                    return new StyleEnum<Overflow>((Overflow)computedStyle.overflow);
+                case StylePropertyId.PaddingBottom:
+                    return new StyleLength(computedStyle.paddingBottom);
+                case StylePropertyId.PaddingLeft:
+                    return new StyleLength(computedStyle.paddingLeft);
+                case StylePropertyId.PaddingRight:
+                    return new StyleLength(computedStyle.paddingRight);
+                case StylePropertyId.PaddingTop:
+                    return new StyleLength(computedStyle.paddingTop);
+                case StylePropertyId.Position:
+                    return new StyleEnum<Position>((Position)computedStyle.position);
+                case StylePropertyId.Right:
+                    return new StyleLength(computedStyle.right);
+                case StylePropertyId.TextOverflow:
+                    return new StyleEnum<TextOverflow>((TextOverflow)computedStyle.textOverflow);
+                case StylePropertyId.Top:
+                    return new StyleLength(computedStyle.top);
+                case StylePropertyId.UnityBackgroundImageTintColor:
+                    return new StyleColor(computedStyle.unityBackgroundImageTintColor);
+                case StylePropertyId.UnityBackgroundScaleMode:
+                    return new StyleEnum<ScaleMode>((ScaleMode)computedStyle.unityBackgroundScaleMode);
+                case StylePropertyId.UnityFont:
+                    return new StyleFont(computedStyle.unityFont);
+                case StylePropertyId.UnityFontStyleAndWeight:
+                    return new StyleEnum<FontStyle>((FontStyle)computedStyle.unityFontStyleAndWeight);
+                case StylePropertyId.UnityOverflowClipBox:
+                    return new StyleEnum<OverflowClipBox>((OverflowClipBox)computedStyle.unityOverflowClipBox);
+                case StylePropertyId.UnitySliceBottom:
+                    return new StyleInt(computedStyle.unitySliceBottom);
+                case StylePropertyId.UnitySliceLeft:
+                    return new StyleInt(computedStyle.unitySliceLeft);
+                case StylePropertyId.UnitySliceRight:
+                    return new StyleInt(computedStyle.unitySliceRight);
+                case StylePropertyId.UnitySliceTop:
+                    return new StyleInt(computedStyle.unitySliceTop);
+                case StylePropertyId.UnityTextAlign:
+                    return new StyleEnum<TextAnchor>((TextAnchor)computedStyle.unityTextAlign);
+                case StylePropertyId.UnityTextOverflowPosition:
+                    return new StyleEnum<TextOverflowPosition>((TextOverflowPosition)computedStyle.unityTextOverflowPosition);
+                case StylePropertyId.Visibility:
+                    return new StyleEnum<Visibility>((Visibility)computedStyle.visibility);
+                case StylePropertyId.WhiteSpace:
+                    return new StyleEnum<WhiteSpace>((WhiteSpace)computedStyle.whiteSpace);
+                case StylePropertyId.Width:
+                    return new StyleLength(computedStyle.width);
+                default:
+                {
+                    Debug.LogAssertion($"Cannot get computed style value for property id {id}");
+                    return null;
+                }
+            }
+        }
+
+        public static object GetComputedStyleActualValue(ComputedStyle computedStyle, StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.AlignContent:
                     return computedStyle.alignContent;
                 case StylePropertyId.AlignItems:
                     return computedStyle.alignItems;
@@ -480,7 +616,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public static Type GetComputedStyleType(StylePropertyId id)
+        public static Type GetInlineStyleType(StylePropertyId id)
         {
             switch (id)
             {

@@ -204,6 +204,9 @@ namespace UnityEditor.PackageManager.UI
             if (package.Is(PackageType.BuiltIn) || package.Is(PackageType.AssetStore))
                 return string.Empty;
 
+            if (tab == PackageFilterTab.InProject && package.versions.primary.HasTag(PackageTag.Custom | PackageTag.Local))
+                return PageManager.k_CustomPackageGroupName;
+
             if (package.Is(PackageType.Unity))
                 return tab == PackageFilterTab.UnityRegistry ? string.Empty : PageManager.k_UnityPackageGroupName;
 
@@ -214,7 +217,7 @@ namespace UnityEditor.PackageManager.UI
 
         public abstract bool Contains(string packageUniqueId);
 
-        public abstract void LoadMore(int numberOfPackages);
+        public abstract void LoadMore(long numberOfPackages);
 
         public abstract void Load(IPackage package, IPackageVersion version = null);
     }

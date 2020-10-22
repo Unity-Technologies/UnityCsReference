@@ -156,8 +156,8 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static float Angle(Quaternion a, Quaternion b)
         {
-            float dot = Dot(a, b);
-            return IsEqualUsingDot(dot) ? 0.0f : Mathf.Acos(Mathf.Min(Mathf.Abs(dot), 1.0F)) * 2.0F * Mathf.Rad2Deg;
+            float dot = Mathf.Min(Mathf.Abs(Dot(a, b)), 1.0F);
+            return IsEqualUsingDot(dot) ? 0.0f : Mathf.Acos(dot) * 2.0F * Mathf.Rad2Deg;
         }
 
         // Makes euler angles positive 0/360 with 0.0001 hacked to support old behaviour of QuaternionToEuler
@@ -243,18 +243,20 @@ namespace UnityEngine
 
         public override string ToString()
         {
-            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
+            return ToString(null, null);
         }
 
         public string ToString(string format)
         {
-            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+            return ToString(format, null);
         }
 
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (string.IsNullOrEmpty(format))
                 format = "F1";
+            if (formatProvider == null)
+                formatProvider = CultureInfo.InvariantCulture.NumberFormat;
             return UnityString.Format("({0}, {1}, {2}, {3})", x.ToString(format, formatProvider), y.ToString(format, formatProvider), z.ToString(format, formatProvider), w.ToString(format, formatProvider));
         }
 

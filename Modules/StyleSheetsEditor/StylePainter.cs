@@ -297,7 +297,8 @@ namespace UnityEditor.StyleSheets
                     0, 0, contentImageOffsetY, contentImageOffsetX, false, false);
 
                 // Handle tooltip and hovering region
-                if (!String.IsNullOrEmpty(content.tooltip) && contentRect.Contains(Event.current.mousePosition))
+                if (!string.IsNullOrEmpty(content.tooltip) && contentRect.Contains(Event.current.mousePosition) &&
+                    !string.Equals(content.tooltip, content.text, StringComparison.Ordinal))
                     GUIStyle.SetMouseTooltip(content.tooltip, contentRect);
             }
 

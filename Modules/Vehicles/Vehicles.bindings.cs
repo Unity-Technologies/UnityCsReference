@@ -50,7 +50,9 @@ namespace UnityEngine
         public extern float steerAngle {get; set; }
         public extern bool isGrounded {[NativeName("IsGrounded")] get; }
         public extern float rpm { get; }
-        public extern float sprungMass { get; }
+        public extern float sprungMass { get; set; }
+
+        public extern void ResetSprungMasses();
 
         public extern void ConfigureVehicleSubsteps(float speedThreshold, int stepsBelowThreshold, int stepsAboveThreshold);
 

@@ -51,31 +51,43 @@ namespace UnityEngine.TextCore.LowLevel
         Reverse_Chaining_Contextual_Single_Substitution = OTFLayoutTableType.GSUB | 8,
     }
 
+    [Flags]
+    public enum FontFeatureLookupFlags
+    {
+        None                        = 0x000,
+        //RightToLeft               = 0x001,
+        //IgnoreBaseGlyphs          = 0x002,
+        IgnoreLigatures             = 0x004,
+        //IgnoreMarks               = 0x008,
+        //UseMarkFilteringSet       = 0x010,
+        IgnoreSpacingAdjustments    = 0x100,
+    }
+
     /// <summary>
     /// The values used to adjust the position of a glyph or set of glyphs.
     /// </summary>
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    internal struct GlyphValueRecord
+    public struct GlyphValueRecord : IEquatable<GlyphValueRecord>
     {
         /// <summary>
-        /// The positional adjustment affecting the horizontal bearing X of the glyph.
+        /// The positional adjustment that affects the horizontal bearing X of the glyph.
         /// </summary>
         public float xPlacement { get { return m_XPlacement; } set { m_XPlacement = value; } }
 
         /// <summary>
-        /// The positional adjustment affecting the horizontal bearing Y of the glyph.
+        /// The positional adjustment that affects the horizontal bearing Y of the glyph.
         /// </summary>
         public float yPlacement { get { return m_YPlacement; } set { m_YPlacement = value; } }
 
         /// <summary>
-        /// The positional adjustment affecting the horizontal advance of the glyph.
+        /// The positional adjustment that affects the horizontal advance of the glyph.
         /// </summary>
         public float xAdvance   { get { return m_XAdvance; } set { m_XAdvance = value; } }
 
         /// <summary>
-        /// The positional adjustment affecting the vertical advance of the glyph.
+        /// The positional adjustment that affects the vertical advance of the glyph.
         /// </summary>
         public float yAdvance   { get { return m_YAdvance; } set { m_YAdvance = value; } }
 
@@ -103,10 +115,10 @@ namespace UnityEngine.TextCore.LowLevel
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="xPlacement">The positional adjustment affecting the horizontal bearing X of the glyph.</param>
-        /// <param name="yPlacement">The positional adjustment affecting the horizontal bearing Y of the glyph.</param>
-        /// <param name="xAdvance">The positional adjustment affecting the horizontal advance of the glyph.</param>
-        /// <param name="yAdvance">The positional adjustment affecting the vertical advance of the glyph.</param>
+        /// <param name="xPlacement">The positional adjustment that affects the horizontal bearing X of the glyph.</param>
+        /// <param name="yPlacement">The positional adjustment that affects the horizontal bearing Y of the glyph.</param>
+        /// <param name="xAdvance">The positional adjustment that affects the horizontal advance of the glyph.</param>
+        /// <param name="yAdvance">The positional adjustment that affects the vertical advance of the glyph.</param>
         public GlyphValueRecord(float xPlacement, float yPlacement, float xAdvance, float yAdvance)
         {
             m_XPlacement = xPlacement;
@@ -161,7 +173,7 @@ namespace UnityEngine.TextCore.LowLevel
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    internal struct GlyphAdjustmentRecord
+    public struct GlyphAdjustmentRecord
     {
         /// <summary>
         /// The index of the glyph in the source font file.
@@ -204,7 +216,7 @@ namespace UnityEngine.TextCore.LowLevel
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     [DebuggerDisplay("First glyphIndex = {m_FirstAdjustmentRecord.m_GlyphIndex},  Second glyphIndex = {m_SecondAdjustmentRecord.m_GlyphIndex}")]
-    internal struct GlyphPairAdjustmentRecord
+    public struct GlyphPairAdjustmentRecord
     {
         /// <summary>
         /// Contains the positional adjustment values for the first glyph.
@@ -215,6 +227,11 @@ namespace UnityEngine.TextCore.LowLevel
         /// Contains the positional adjustment values for the second glyph.
         /// </summary>
         public GlyphAdjustmentRecord secondAdjustmentRecord { get { return m_SecondAdjustmentRecord; } set { m_SecondAdjustmentRecord = value; } }
+
+        /// <summary>
+        ///
+        /// </summary>
+        public FontFeatureLookupFlags featureLookupFlags { get { return m_FeatureLookupFlags; } set { m_FeatureLookupFlags = value; } }
 
         // =============================================
         // Private backing fields for public properties.
@@ -228,6 +245,9 @@ namespace UnityEngine.TextCore.LowLevel
         [NativeName("secondAdjustmentRecord")]
         private GlyphAdjustmentRecord m_SecondAdjustmentRecord;
 
+        [SerializeField]
+        private FontFeatureLookupFlags m_FeatureLookupFlags;
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -237,6 +257,7 @@ namespace UnityEngine.TextCore.LowLevel
         {
             m_FirstAdjustmentRecord = firstAdjustmentRecord;
             m_SecondAdjustmentRecord = secondAdjustmentRecord;
+            m_FeatureLookupFlags = FontFeatureLookupFlags.None;
         }
     }
 }

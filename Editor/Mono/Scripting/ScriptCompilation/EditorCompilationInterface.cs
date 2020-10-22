@@ -272,13 +272,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static EditorCompilation.TargetAssemblyInfo[] GetAllCompiledAndResolvedCustomTargetAssemblies(EditorScriptCompilationOptions options, BuildTarget buildTarget)
+        public static EditorCompilation.TargetAssemblyInfo[] GetAllCompiledAndResolvedTargetAssemblies(EditorScriptCompilationOptions options, BuildTarget buildTarget)
         {
             EditorCompilation.CustomScriptAssemblyAndReference[] assembliesWithMissingReference = null;
 
-            var result = EmitExceptionAsError(() => Instance.GetAllCompiledAndResolvedCustomTargetAssemblies(options, buildTarget, out assembliesWithMissingReference), new EditorCompilation.TargetAssemblyInfo[0]);
+            var result = EmitExceptionAsError(() => Instance.GetAllCompiledAndResolvedTargetAssemblies(options, buildTarget, out assembliesWithMissingReference), new EditorCompilation.TargetAssemblyInfo[0]);
 
-            if (assembliesWithMissingReference.Length > 0)
+            if (assembliesWithMissingReference != null && assembliesWithMissingReference.Length > 0)
             {
                 foreach (var assemblyAndReference in assembliesWithMissingReference)
                 {
@@ -329,6 +329,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static void DirtyChangedAssemblyDefinition(string assemblyName)
+        {
+            EmitExceptionAsError(() => Instance.DirtyChangedAssemblyDefinition(assemblyName));
+        }
+
+        [RequiredByNativeCode]
         public static void DeleteUnusedAssemblies()
         {
             EmitExceptionAsError(() => Instance.DeleteUnusedAssemblies());
@@ -338,6 +344,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static EditorCompilation.CompileStatus CompileScripts(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines)
         {
             return EmitExceptionAsError(() => Instance.CompileScripts(definesOptions, platformGroup, platform, extraScriptingDefines),
+                EditorCompilation.CompileStatus.CompilationFailed);
+        }
+
+        [RequiredByNativeCode]
+        public static EditorCompilation.CompileStatus CompileScriptsNoStop(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines)
+        {
+            return EmitExceptionAsError(() => Instance.CompileScripts(definesOptions, platformGroup, platform, extraScriptingDefines, CompilationTaskOptions.None),
                 EditorCompilation.CompileStatus.CompilationFailed);
         }
 
@@ -411,9 +424,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static EditorCompilation.TargetAssemblyInfo[] GetTargetAssemblies()
+        public static EditorCompilation.TargetAssemblyInfo[] GetTargetAssemblyInfos()
         {
-            return Instance.GetTargetAssemblies();
+            return Instance.GetTargetAssemblyInfos();
         }
 
         [RequiredByNativeCode]

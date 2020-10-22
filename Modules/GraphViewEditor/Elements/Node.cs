@@ -380,7 +380,7 @@ namespace UnityEditor.Experimental.GraphView
 
             AddToClassList("node");
 
-            capabilities |= Capabilities.Selectable | Capabilities.Movable | Capabilities.Deletable | Capabilities.Ascendable | Capabilities.Copiable | Capabilities.Snappable;
+            capabilities |= Capabilities.Selectable | Capabilities.Movable | Capabilities.Deletable | Capabilities.Ascendable | Capabilities.Copiable | Capabilities.Snappable | Capabilities.Groupable;
             usageHints = UsageHints.DynamicTransform;
 
             m_Expanded = true;

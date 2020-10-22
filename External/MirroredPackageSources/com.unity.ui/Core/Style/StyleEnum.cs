@@ -1,7 +1,5 @@
 using System;
-using System.Globalization;
 using Unity.Collections.LowLevel.Unsafe;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
@@ -52,8 +50,8 @@ namespace UnityEngine.UIElements
             m_Value = v;
         }
 
-        private StyleKeyword m_Keyword;
         private T m_Value;
+        private StyleKeyword m_Keyword;
 
         public static bool operator==(StyleEnum<T> lhs, StyleEnum<T> rhs)
         {
@@ -82,21 +80,15 @@ namespace UnityEngine.UIElements
 
         public override bool Equals(object obj)
         {
-            if (!(obj is StyleEnum<T>))
-            {
-                return false;
-            }
-
-            var v = (StyleEnum<T>)obj;
-            return v == this;
+            return obj is StyleEnum<T> other && Equals(other);
         }
 
         public override int GetHashCode()
         {
-            var hashCode = 917506989;
-            hashCode = hashCode * -1521134295 + m_Keyword.GetHashCode();
-            hashCode = hashCode * -1521134295 + m_Value.GetHashCode();
-            return hashCode;
+            unchecked
+            {
+                return (UnsafeUtility.EnumToInt(m_Value) * 397) ^ (int)m_Keyword;
+            }
         }
 
         public override string ToString()

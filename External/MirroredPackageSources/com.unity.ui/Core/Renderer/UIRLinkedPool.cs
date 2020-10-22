@@ -60,4 +60,42 @@ namespace UnityEngine.UIElements.UIR
             }
         }
     }
+
+    class BasicNode<T> : LinkedPoolItem<BasicNode<T>>
+    {
+        public BasicNode<T> next;
+        public T data;
+
+        public void AppendTo(ref BasicNode<T> first)
+        {
+            if (first == null)
+            {
+                first = this;
+                return;
+            }
+
+            var current = first;
+            while (current.next != null)
+                current = current.next;
+
+            current.next = this;
+        }
+    }
+
+    class BasicNodePool<T> : LinkedPool<BasicNode<T>>
+    {
+        static void Reset(BasicNode<T> node)
+        {
+            node.next = null;
+            node.data = default(T);
+        }
+
+        static BasicNode<T> Create()
+        {
+            return new BasicNode<T>();
+        }
+
+        public BasicNodePool() : base(Create, Reset)
+        {}
+    }
 }

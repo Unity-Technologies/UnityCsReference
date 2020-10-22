@@ -13,9 +13,11 @@ namespace UnityEditor
         SerializedProperty m_TerrainData;
         SerializedProperty m_EnableTreeColliders;
 
-        protected GUIContent terrainContent = EditorGUIUtility.TrTextContent("Terrain Data", "The TerrainData asset that stores heightmaps, terrain textures, detail meshes and trees.");
-        protected GUIContent treeColliderContent = EditorGUIUtility.TrTextContent("Enable Tree Colliders", "When selected, Tree Colliders will be enabled.");
-
+        private static class Styles
+        {
+            public static readonly GUIContent terrainContent = EditorGUIUtility.TrTextContent("Terrain Data", "The TerrainData asset that stores heightmaps, terrain textures, detail meshes and trees.");
+            public static readonly GUIContent treeColliderContent = EditorGUIUtility.TrTextContent("Enable Tree Colliders", "When selected, Tree Colliders will be enabled.");
+        }
         public override void OnEnable()
         {
             base.OnEnable();
@@ -28,9 +30,9 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            EditorGUILayout.PropertyField(m_Material, materialContent);
-            EditorGUILayout.PropertyField(m_TerrainData, terrainContent);
-            EditorGUILayout.PropertyField(m_EnableTreeColliders, treeColliderContent);
+            EditorGUILayout.PropertyField(m_Material, BaseStyles.materialContent);
+            EditorGUILayout.PropertyField(m_TerrainData, Styles.terrainContent);
+            EditorGUILayout.PropertyField(m_EnableTreeColliders, Styles.treeColliderContent);
 
             serializedObject.ApplyModifiedProperties();
         }

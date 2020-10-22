@@ -90,6 +90,11 @@ namespace UnityEngine.UIElements
         /// Gets the value associated with the specified <see cref="CustomStyleProperty"/>.
         /// </summary>
         /// <returns>True if the property is found, false if not.</returns>
+        bool TryGetValue(CustomStyleProperty<Sprite> property, out Sprite value);
+        /// <summary>
+        /// Gets the value associated with the specified <see cref="CustomStyleProperty"/>.
+        /// </summary>
+        /// <returns>True if the property is found, false if not.</returns>
         bool TryGetValue(CustomStyleProperty<VectorImage> property, out VectorImage value);
         /// <summary>
         /// Gets the value associated with the specified <see cref="CustomStyleProperty"/>.

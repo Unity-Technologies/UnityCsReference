@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -24,9 +25,40 @@ namespace UnityEditor.PackageManager.UI
             return version.Major == olderVersion?.Major && version.Minor == olderVersion?.Minor && version > olderVersion;
         }
 
-        public static bool IsRelease(this SemVersion version)
+        public static bool IsMajorMinorPatchEqualTo(this SemVersion version, SemVersion? compareVersion)
         {
-            return string.IsNullOrEmpty(version.Prerelease) && version.Major != 0;
+            return version.Major == compareVersion?.Major && version.Minor == compareVersion?.Minor && version.Patch == compareVersion?.Patch;
+        }
+
+        public static bool IsNotPreReleaseOrExperimental(this SemVersion version)
+        {
+            return string.IsNullOrEmpty(version.Prerelease) && !version.IsExperimental();
+        }
+
+        public static bool HasPreReleaseVersionTag(this SemVersion version)
+        {
+            return version.Prerelease?.StartsWith("pre.") == true;
+        }
+
+        public static bool IsExperimental(this SemVersion version)
+        {
+            return version.Major == 0 || version.Prerelease?.StartsWith("exp.") == true;
+        }
+
+        public static bool IsHigherPreReleaseIterationOf(this SemVersion version, SemVersion? otherVersion)
+        {
+            if (string.IsNullOrEmpty(version.Prerelease) || string.IsNullOrEmpty(otherVersion?.Prerelease)
+                    || otherVersion?.IsMajorMinorPatchEqualTo(version) != true)
+                return false;
+
+            var thisPrereleaseSplit = version.Prerelease.Split('.');
+            var otherPrereleaseSplit = otherVersion?.Prerelease.Split('.');
+
+            if (thisPrereleaseSplit.Length < 2 || otherPrereleaseSplit.Length < 2)
+                return false;
+            return int.TryParse(thisPrereleaseSplit[1], out var thisPrereleaseIteration)
+                && int.TryParse(otherPrereleaseSplit[1], out var otherPrereleaseIteration)
+                && thisPrereleaseIteration > otherPrereleaseIteration;
         }
     }
 }

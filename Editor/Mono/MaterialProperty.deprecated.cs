@@ -23,6 +23,7 @@ namespace UnityEditor
             Float,
             Range,
             Texture,
+            Int,
         }
 
         //[Obsolete("Use UnityEngine.Rendering.ShaderPropertyFlags instead. (UnityUpgradable) -> UnityEngine.Rendering.ShaderPropertyFlags")]

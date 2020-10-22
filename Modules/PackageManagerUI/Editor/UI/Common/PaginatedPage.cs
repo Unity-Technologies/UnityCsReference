@@ -127,12 +127,12 @@ namespace UnityEditor.PackageManager.UI
             };
         }
 
-        public override void LoadMore(int numberOfPackages)
+        public override void LoadMore(long numberOfPackages)
         {
             if (numCurrentItems >= numTotalItems)
                 return;
 
-            var queryArgs = BuildQueryFromFilter((int)numCurrentItems, numberOfPackages);
+            var queryArgs = BuildQueryFromFilter((int)numCurrentItems, (int)numberOfPackages);
             m_AssetStoreClient.ListPurchases(queryArgs, false);
         }
 

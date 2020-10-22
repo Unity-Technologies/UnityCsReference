@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
@@ -46,18 +45,14 @@ namespace UnityEngine.UIElements
             : this(null, keyword)
         {}
 
-        internal StyleFont(GCHandle gcHandle, StyleKeyword keyword)
-            : this(gcHandle.IsAllocated ? gcHandle.Target as Font : null, keyword)
-        {}
-
         internal StyleFont(Font v, StyleKeyword keyword)
         {
             m_Keyword = keyword;
             m_Value = v;
         }
 
-        private StyleKeyword m_Keyword;
         private Font m_Value;
+        private StyleKeyword m_Keyword;
 
         public static bool operator==(StyleFont lhs, StyleFont rhs)
         {
@@ -86,21 +81,15 @@ namespace UnityEngine.UIElements
 
         public override bool Equals(object obj)
         {
-            if (!(obj is StyleFont))
-            {
-                return false;
-            }
-
-            var v = (StyleFont)obj;
-            return v == this;
+            return obj is StyleFont other && Equals(other);
         }
 
         public override int GetHashCode()
         {
-            var hashCode = 917506989;
-            hashCode = hashCode * -1521134295 + m_Keyword.GetHashCode();
-            hashCode = hashCode * -1521134295 + EqualityComparer<Font>.Default.GetHashCode(m_Value);
-            return hashCode;
+            unchecked
+            {
+                return ((m_Value != null ? m_Value.GetHashCode() : 0) * 397) ^ (int)m_Keyword;
+            }
         }
 
         public override string ToString()

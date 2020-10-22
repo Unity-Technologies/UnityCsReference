@@ -102,11 +102,27 @@ namespace UnityEngine.VFX
         // Sampling and baking
         SampleCurve,
         SampleGradient,
+
+        //Deprecated Sample Mesh (kept for 9.x.x compatibility)
         SampleMeshFloat,
         SampleMeshFloat2,
         SampleMeshFloat3,
         SampleMeshFloat4,
         SampleMeshColor,
+
+        //Correct Sample Mesh considering vertex format and channel index
+        SampleMeshVertexFloat,
+        SampleMeshVertexFloat2,
+        SampleMeshVertexFloat3,
+        SampleMeshVertexFloat4,
+        SampleMeshVertexColor,
+
+        SampleMeshIndex,
+        VertexBufferFromMesh,
+        VertexBufferFromSkinnedMeshRenderer,
+        IndexBufferFromMesh,
+        MeshFromSkinnedMeshRenderer,
+
         BakeCurve,
         BakeGradient,
 
@@ -177,7 +193,10 @@ namespace UnityEngine.VFX
         // Mesh
         MeshVertexCount,
         MeshChannelOffset,
+        MeshChannelInfos,
         MeshVertexStride,
+        MeshIndexCount,
+        MeshIndexFormat,
 
         // Buffer
         BufferCount,
@@ -223,6 +242,7 @@ namespace UnityEngine.VFX
         Spline,
         Boolean,
         Buffer,
+        SkinnedMeshRenderer
     }
 
     internal enum VFXTaskType

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace UnityEngine.UIElements
 {
@@ -15,6 +17,7 @@ namespace UnityEngine.UIElements
                 {
                     s_Factories = new Dictionary<string, List<IUxmlFactory>>();
                     RegisterEngineFactories();
+                    RegisterUserFactories();
                 }
 
                 return s_Factories;
@@ -89,6 +92,10 @@ namespace UnityEngine.UIElements
             {
                 RegisterFactory(factory);
             }
+        }
+
+        internal static void RegisterUserFactories()
+        {
         }
     }
 }

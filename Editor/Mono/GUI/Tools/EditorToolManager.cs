@@ -207,7 +207,7 @@ namespace UnityEditor.EditorTools
 
             public bool IsEqual(EditorTool other)
             {
-                if (editorToolType != (other == null ? null : other.GetType()))
+                if (other == null || editorToolType != other.GetType())
                     return false;
 
                 if (ReferenceEquals(targetObjects, other.m_Targets))

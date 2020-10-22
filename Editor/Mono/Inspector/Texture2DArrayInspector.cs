@@ -102,7 +102,7 @@ namespace UnityEditor
             FilterMode oldFilter = t.filterMode;
             TextureUtil.SetFilterModeNoDirty(t, FilterMode.Point);
 
-            EditorGUI.DrawPreviewTexture(wantedRect, t, m_Material, ScaleMode.StretchToFill, 0, effectiveMipLevel);
+            EditorGUI.DrawPreviewTexture(wantedRect, t, m_Material, ScaleMode.StretchToFill, 0, effectiveMipLevel, UnityEngine.Rendering.ColorWriteMask.All, GetExposureValueForTexture(t));
 
             TextureUtil.SetFilterModeNoDirty(t, oldFilter);
 

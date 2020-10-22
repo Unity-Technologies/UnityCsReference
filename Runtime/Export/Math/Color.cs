@@ -46,19 +46,21 @@ namespace UnityEngine
         /// *listonly*
         public override string ToString()
         {
-            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
+            return ToString(null, null);
         }
 
         // Returns a nicely formatted string of this color.
         public string ToString(string format)
         {
-            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+            return ToString(format, null);
         }
 
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (string.IsNullOrEmpty(format))
                 format = "F3";
+            if (formatProvider == null)
+                formatProvider = CultureInfo.InvariantCulture.NumberFormat;
             return UnityString.Format("RGBA({0}, {1}, {2}, {3})", r.ToString(format, formatProvider), g.ToString(format, formatProvider), b.ToString(format, formatProvider), a.ToString(format, formatProvider));
         }
 

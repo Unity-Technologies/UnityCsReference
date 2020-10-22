@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.UIR;
 
@@ -29,21 +28,39 @@ namespace UnityEditor.UIElements
         // TODO: Turn the method into a static constructor.
         public static void StaticInit()
         {
-            RenderChain.OnPreRender += OnPreRender;
+            Panel.beforeAnyRepaint += OnBeforeRepaint;
         }
 
-        public static void OnPreRender()
+        static void OnBeforeRepaint(Panel source)
         {
             bool colorSpaceChanged = CheckForColorSpaceChange();
             bool importedTextureChanged = CheckForImportedTextures();
             bool importedVectorImageChanged = CheckForImportedVectorImages();
-            if (colorSpaceChanged || importedTextureChanged)
+            bool renderTexturesTrashed = CheckForRenderTexturesTrashed();
+
+            bool resetAtlases = colorSpaceChanged || importedTextureChanged || importedVectorImageChanged || renderTexturesTrashed;
+            bool resetRenderChains = renderTexturesTrashed;
+
+            if (resetAtlases || resetRenderChains)
             {
-                UIRAtlasManager.MarkAllForReset();
-                VectorImageManager.MarkAllForReset();
+                if (resetAtlases && !resetRenderChains)
+                {
+                    // If the render chain was to be reset, it would implicitly reset the VectorImageManagers.
+                    for (int i = 0; i < VectorImageManager.instances.Count; ++i)
+                        VectorImageManager.instances[i].Reset();
+                }
+
+                var it = UIElementsUtility.GetPanelsIterator();
+                while (it.MoveNext())
+                {
+                    Panel panel = it.Current.Value;
+                    if (resetRenderChains)
+                        (panel.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater)?.DestroyRenderChain();
+
+                    if (resetAtlases)
+                        panel.atlas?.Reset();
+                }
             }
-            else if (colorSpaceChanged || importedVectorImageChanged)
-                VectorImageManager.MarkAllForReset();
         }
 
         // TODO: Derive from UnityEditor.AssetPostprocessor
@@ -72,27 +89,28 @@ namespace UnityEditor.UIElements
             public static int importedVectorImagesCount;
         }
 
-        private static ColorSpace m_LastColorSpace;
-        private static int m_LastImportedTexturesCount;
-        private static int m_LastImportedVectorImagesCount;
+        private static ColorSpace s_LastColorSpace;
+        private static int s_LastImportedTexturesCount;
+        private static int s_LastImportedVectorImagesCount;
+        private static RenderTexture s_RenderTexture;
 
         private static bool CheckForColorSpaceChange()
         {
             ColorSpace activeColorSpace = QualitySettings.activeColorSpace;
-            if (m_LastColorSpace == activeColorSpace)
+            if (s_LastColorSpace == activeColorSpace)
                 return false;
 
-            m_LastColorSpace = activeColorSpace;
+            s_LastColorSpace = activeColorSpace;
             return true;
         }
 
         private static bool CheckForImportedTextures()
         {
             int importedTexturesCount = TexturePostProcessor.importedTexturesCount;
-            if (m_LastImportedTexturesCount == importedTexturesCount)
+            if (s_LastImportedTexturesCount == importedTexturesCount)
                 return false;
 
-            m_LastImportedTexturesCount = importedTexturesCount;
+            s_LastImportedTexturesCount = importedTexturesCount;
 
             return true;
         }
@@ -100,12 +118,32 @@ namespace UnityEditor.UIElements
         private static bool CheckForImportedVectorImages()
         {
             int importedVectorImagesCount = TexturePostProcessor.importedVectorImagesCount;
-            if (m_LastImportedVectorImagesCount == importedVectorImagesCount)
+            if (s_LastImportedVectorImagesCount == importedVectorImagesCount)
                 return false;
 
-            m_LastImportedVectorImagesCount = importedVectorImagesCount;
+            s_LastImportedVectorImagesCount = importedVectorImagesCount;
 
             return true;
+        }
+
+        // This check isn't required for the "legacy" atlas manager, since it could detect this condition and rebuild
+        // the texture. However, the use done by the shader info allocator would not allow this and requires a rebuild.
+        private static bool CheckForRenderTexturesTrashed()
+        {
+            if (s_RenderTexture == null)
+            {
+                s_RenderTexture = new RenderTexture(1, 1, 0, RenderTextureFormat.ARGB32);
+                s_RenderTexture.Create();
+                return true;
+            }
+
+            if (!s_RenderTexture.IsCreated())
+            {
+                s_RenderTexture.Create();
+                return true;
+            }
+
+            return false;
         }
     }
 }

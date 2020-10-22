@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.Rendering;
 
 namespace UnityEngine.Rendering
 {
@@ -15,7 +14,12 @@ namespace UnityEngine.Rendering
 
         protected static void BeginFrameRendering(ScriptableRenderContext context, Camera[] cameras)
         {
-            RenderPipelineManager.BeginFrameRendering(context, cameras);
+            RenderPipelineManager.BeginContextRendering(context, new List<Camera>(cameras));
+        }
+
+        protected static void BeginContextRendering(ScriptableRenderContext context, List<Camera> cameras)
+        {
+            RenderPipelineManager.BeginContextRendering(context, cameras);
         }
 
         protected static void BeginCameraRendering(ScriptableRenderContext context, Camera camera)
@@ -23,9 +27,14 @@ namespace UnityEngine.Rendering
             RenderPipelineManager.BeginCameraRendering(context, camera);
         }
 
+        protected static void EndContextRendering(ScriptableRenderContext context, List<Camera> cameras)
+        {
+            RenderPipelineManager.EndContextRendering(context, cameras);
+        }
+
         protected static void EndFrameRendering(ScriptableRenderContext context, Camera[] cameras)
         {
-            RenderPipelineManager.EndFrameRendering(context, cameras);
+            RenderPipelineManager.EndContextRendering(context, new List<Camera>(cameras));
         }
 
         protected static void EndCameraRendering(ScriptableRenderContext context, Camera camera)
@@ -33,7 +42,12 @@ namespace UnityEngine.Rendering
             RenderPipelineManager.EndCameraRendering(context, camera);
         }
 
-        internal void InternalRender(ScriptableRenderContext context, Camera[] cameras)
+        protected virtual void Render(ScriptableRenderContext context, List<Camera> cameras)
+        {
+            Render(context, cameras.ToArray());
+        }
+
+        internal void InternalRender(ScriptableRenderContext context, List<Camera> cameras)
         {
             if (disposed)
                 throw new ObjectDisposedException(string.Format("{0} has been disposed. Do not call Render on disposed a RenderPipeline.", this));
@@ -41,12 +55,12 @@ namespace UnityEngine.Rendering
             Render(context, cameras);
         }
 
-        internal void InternalRenderWithRequests(ScriptableRenderContext context, Camera[] cameras, List<Camera.RenderRequest> renderRequests)
+        internal void InternalRenderWithRequests(ScriptableRenderContext context, List<Camera> cameras, List<Camera.RenderRequest> renderRequests)
         {
             if (disposed)
                 throw new ObjectDisposedException(string.Format("{0} has been disposed. Do not call Render on disposed a RenderPipeline.", this));
 
-            ProcessRenderRequests(context, (cameras == null || cameras.Length == 0) ? null : cameras[0], renderRequests);
+            ProcessRenderRequests(context, (cameras == null || cameras.Count == 0) ? null : cameras[0], renderRequests);
         }
 
         public bool disposed { get; private set; }

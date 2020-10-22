@@ -33,10 +33,11 @@ namespace UnityEditor
                     if (string.IsNullOrEmpty(title))
                         continue;
                     var lastPathCharIndex = title.LastIndexOf('/');
-                    if (lastPathCharIndex >= 0 && lastPathCharIndex < title.Length - 1)
-                        title = title.Substring(lastPathCharIndex + 1);
-                    else
-                        continue;
+                    if (lastPathCharIndex >= 0)
+                        if (lastPathCharIndex < title.Length - 1)
+                            title = title.Substring(lastPathCharIndex + 1);
+                        else
+                            continue;
 
                     s_InspectorTitles[type] = title;
                 }

@@ -62,6 +62,11 @@ namespace UnityEditor.PackageManager.UI
 
         internal Dictionary<string, bool> m_RegistriesUrl = new Dictionary<string, bool>();
 
+        // a list of unique ids (could be specialUniqueId or packageId)
+        [SerializeField]
+        private List<string> m_SpecialInstallations = new List<string>();
+        public List<string> specialInstallations => m_SpecialInstallations;
+
         [NonSerialized]
         private UpmCache m_UpmCache;
         [NonSerialized]
@@ -75,6 +80,11 @@ namespace UnityEditor.PackageManager.UI
             m_UpmCache = upmCache;
             m_IOProxy = IOProxy;
             m_SettingsProxy = settingsProxy;
+        }
+
+        public virtual bool IsAnyExperimentalPackagesInUse()
+        {
+            return PackageInfo.GetAll().Any(info => (info.version.Contains("-preview") || info.version.Contains("-exp.") || info.version.StartsWith("0.")) && IsUnityPackage(info));
         }
 
         public void OnBeforeSerialize()
@@ -120,7 +130,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void SetupAddOperation()
         {
-            addOperation.onProcessResult += OnProcessAddResult;
+            addOperation.onProcessResult += (request) => OnProcessAddResult(addOperation, request);
             addOperation.onOperationError += (op, error) =>
             {
                 var packageId = string.IsNullOrEmpty(addOperation.packageId) ? addOperation.specialUniqueId : addOperation.packageId;
@@ -129,10 +139,12 @@ namespace UnityEditor.PackageManager.UI
             onAddOperation(addOperation);
         }
 
-        private void OnProcessAddResult(Request<PackageInfo> request)
+        private void OnProcessAddResult(IOperation operation, Request<PackageInfo> request)
         {
             var packageInfo = request.Result;
-            m_UpmCache.SetInstalledPackageInfo(packageInfo);
+            var specialUniqueId = (operation as UpmAddOperation)?.specialUniqueId;
+
+            m_UpmCache.SetInstalledPackageInfo(packageInfo, !string.IsNullOrEmpty(specialUniqueId));
 
             PackageManagerExtensions.ExtensionCallback(() =>
             {
@@ -203,7 +215,7 @@ namespace UnityEditor.PackageManager.UI
             if (isAddRemoveOrEmbedInProgress)
                 return;
             embedOperation.Embed(packageName, m_UpmCache.GetProductId(packageName));
-            embedOperation.onProcessResult += OnProcessAddResult;
+            embedOperation.onProcessResult += (request) => OnProcessAddResult(embedOperation, request);
             embedOperation.onOperationError += (op, error) => Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Error embedding package: {0}."), embedOperation.packageName));
             onEmbedOperation(embedOperation);
         }
@@ -224,6 +236,9 @@ namespace UnityEditor.PackageManager.UI
             var packageInfo = m_UpmCache.GetInstalledPackageInfo(packageName);
             if (packageInfo != null)
             {
+                // Fix case 1237777, make files writable first
+                foreach (var file in m_IOProxy.DirectoryGetFiles(packageInfo.resolvedPath, "*", SearchOption.AllDirectories))
+                    m_IOProxy.MakeFileWritable(file);
                 m_IOProxy.DirectoryDelete(packageInfo.resolvedPath, true);
                 Resolve();
             }
@@ -350,7 +365,8 @@ namespace UnityEditor.PackageManager.UI
 
             var upmPackages = new List<UpmPackage>();
             var productPackages = new List<UpmPackage>();
-            var showPreview = m_SettingsProxy.enablePreviewPackages;
+            var showPreRelease = m_SettingsProxy.enablePreReleasePackages;
+            var seeAllVersions = m_SettingsProxy.seeAllPackageVersions;
             foreach (var p in packageInfos)
             {
                 var productId = m_UpmCache.GetProductId(p.name);
@@ -363,8 +379,13 @@ namespace UnityEditor.PackageManager.UI
 
             foreach (var package in upmPackages.Concat(productPackages))
             {
-                if (!showPreview && HasHidablePreviewVersions(package))
-                    RemovePreviewVersions(package);
+                // only filter on Lifecycle tags if is a Unity package
+                if (!seeAllVersions &&
+                    HasHidableVersions(package) &&
+                    (package.versions.primary as UpmPackageVersion)?.isUnityPackage == true)
+                {
+                    FilterVersions(package, showPreRelease);
+                }
                 UpdateExtraPackageInfos(package.name, package.versions);
             }
 
@@ -375,23 +396,25 @@ namespace UnityEditor.PackageManager.UI
                 onProductPackageChanged?.Invoke(m_UpmCache.GetProductId(package.name), package);
         }
 
-        private void OnShowPreviewPackagesChanged(bool showPreview)
+        private void OnShowPreReleasePackagesesOrSeeAllVersionsChanged(bool showPreReleaseOrSeeAllVersions)
         {
             var updatedUpmPackages = new List<UpmPackage>();
             var updatedProductPackages = new List<UpmPackage>();
+            var showPreRelease = m_SettingsProxy.enablePreReleasePackages;
+            var seeAllVersions = m_SettingsProxy.seeAllPackageVersions;
             foreach (var installedInfo in m_UpmCache.installedPackageInfos)
             {
                 var productId = m_UpmCache.GetProductId(installedInfo.name);
                 if (string.IsNullOrEmpty(productId))
                 {
                     var package = CreateUpmPackage(m_UpmCache.GetSearchPackageInfo(installedInfo.name), installedInfo);
-                    if (HasHidablePreviewVersions(package))
+                    if (HasHidableVersions(package))
                         updatedUpmPackages.Add(package);
                 }
                 else
                 {
                     var package = CreateUpmPackage(m_UpmCache.GetProductPackageInfo(installedInfo.name), installedInfo);
-                    if (HasHidablePreviewVersions(package))
+                    if (HasHidableVersions(package))
                         updatedProductPackages.Add(package);
                 }
             }
@@ -399,21 +422,24 @@ namespace UnityEditor.PackageManager.UI
             foreach (var searchInfo in m_UpmCache.searchPackageInfos.Where(p => !m_UpmCache.IsPackageInstalled(p.name)))
             {
                 var package = CreateUpmPackage(searchInfo, null);
-                if (HasHidablePreviewVersions(package))
+                if (HasHidableVersions(package))
                     updatedUpmPackages.Add(package);
             }
 
             foreach (var productPackageInfo in m_UpmCache.productPackageInfos.Where(p => !m_UpmCache.IsPackageInstalled(p.name)))
             {
                 var package = CreateUpmPackage(productPackageInfo, null);
-                if (HasHidablePreviewVersions(package))
+                if (HasHidableVersions(package))
                     updatedProductPackages.Add(package);
             }
 
             foreach (var package in updatedUpmPackages.Concat(updatedProductPackages))
             {
-                if (!showPreview)
-                    RemovePreviewVersions(package);
+                // only filter on Lifecycle tags if is a Unity package
+                if (!seeAllVersions && (package.versions.primary as UpmPackageVersion)?.isUnityPackage == true)
+                {
+                    FilterVersions(package, showPreRelease);
+                }
                 UpdateExtraPackageInfos(package.name, package.versions);
             }
 
@@ -467,20 +493,28 @@ namespace UnityEditor.PackageManager.UI
                 ExtraFetch(primaryVersion.uniqueId);
         }
 
-        // check if this package have preview packages that's `hidable` (will be filtered out if `show preview` is not selected).
-        // if the installed version is preview, then we we always show other preview versions
-        // if no installed version or installed version is not preview, we hide the preview versions according to the `show previews` toggle
-        private static bool HasHidablePreviewVersions(IPackage package)
+        // check if this package has any non-release versions in the list; if so, it will need to be
+        //  filtered
+        private static bool HasHidableVersions(IPackage package)
         {
-            var previewInstalled = (!package.versions.installed?.HasTag(PackageTag.Release)) ?? false;
-            if (previewInstalled)
-                return false;
-            return package.versions.Any(v => !v.HasTag(PackageTag.Release));
+            return package.versions.Any(v => !v.HasTag(PackageTag.Release | PackageTag.ReleaseCandidate));
         }
 
-        private static void RemovePreviewVersions(UpmPackage package)
+        private static void FilterVersions(UpmPackage package, bool showPreRelease)
         {
-            package.UpdateVersions(package.versions.Where(v => v.HasTag(PackageTag.Release)).Cast<UpmPackageVersion>());
+            var versions = (UpmVersionList)package.versions;
+            var packageTagsToKeep = PackageTag.Release | PackageTag.ReleaseCandidate;
+
+            if (showPreRelease || package.versions.installed?.HasTag(PackageTag.PreRelease | PackageTag.Experimental) == true)
+                packageTagsToKeep |= PackageTag.PreRelease;
+
+            // should see updates to the installed experimental packages, if they exist
+            if (package.versions.installed?.HasTag(PackageTag.Experimental) == true)
+                packageTagsToKeep |= PackageTag.Experimental;
+
+            var filteredVersions = versions.Where(v => v.isInstalled || v.HasTag(packageTagsToKeep)).ToList();
+
+            package.UpdateVersions(filteredVersions.Cast<UpmPackageVersion>());
         }
 
         // Restore operations that's interrupted by domain reloads
@@ -498,7 +532,8 @@ namespace UnityEditor.PackageManager.UI
 
         public void OnEnable()
         {
-            m_SettingsProxy.onEnablePreviewPackagesChanged += OnShowPreviewPackagesChanged;
+            m_SettingsProxy.onEnablePreReleasePackagesChanged += OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
+            m_SettingsProxy.onSeeAllVersionsChanged += OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
             m_UpmCache.onPackageInfosUpdated += OnPackageInfosUpdated;
 
             RestoreInProgressOperations();
@@ -506,7 +541,8 @@ namespace UnityEditor.PackageManager.UI
 
         public void OnDisable()
         {
-            m_SettingsProxy.onEnablePreviewPackagesChanged -= OnShowPreviewPackagesChanged;
+            m_SettingsProxy.onEnablePreReleasePackagesChanged -= OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
+            m_SettingsProxy.onSeeAllVersionsChanged -= OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
             m_UpmCache.onPackageInfosUpdated -= OnPackageInfosUpdated;
         }
 

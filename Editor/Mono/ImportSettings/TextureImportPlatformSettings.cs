@@ -209,6 +209,12 @@ namespace UnityEditor
                 ps.Sync();
         }
 
+        internal static void InitPlatformSettings(List<BaseTextureImportPlatformSettings> platformSettings)
+        {
+            foreach (BaseTextureImportPlatformSettings ps in platformSettings)
+                ps.Init();
+        }
+
         internal static void ApplyPlatformSettings(List<BaseTextureImportPlatformSettings> platformSettings)
         {
             SyncPlatformSettings(platformSettings);

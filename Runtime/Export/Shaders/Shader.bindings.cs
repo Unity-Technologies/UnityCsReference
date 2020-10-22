@@ -74,6 +74,7 @@ namespace UnityEngine
     {
         // TODO: get buffer is missing
 
+        [FreeFunction("ShaderScripting::SetGlobalInt")]     extern private static void SetGlobalIntImpl(int name, int value);
         [FreeFunction("ShaderScripting::SetGlobalFloat")]   extern private static void SetGlobalFloatImpl(int name, float value);
         [FreeFunction("ShaderScripting::SetGlobalVector")]  extern private static void SetGlobalVectorImpl(int name, Vector4 value);
         [FreeFunction("ShaderScripting::SetGlobalMatrix")]  extern private static void SetGlobalMatrixImpl(int name, Matrix4x4 value);
@@ -84,6 +85,7 @@ namespace UnityEngine
         [FreeFunction("ShaderScripting::SetGlobalConstantBuffer")] extern private static void SetGlobalConstantBufferImpl(int name, ComputeBuffer value, int offset, int size);
         [FreeFunction("ShaderScripting::SetGlobalConstantBuffer")] extern private static void SetGlobalConstantGraphicsBufferImpl(int name, GraphicsBuffer value, int offset, int size);
 
+        [FreeFunction("ShaderScripting::GetGlobalInt")]     extern private static int       GetGlobalIntImpl(int name);
         [FreeFunction("ShaderScripting::GetGlobalFloat")]   extern private static float     GetGlobalFloatImpl(int name);
         [FreeFunction("ShaderScripting::GetGlobalVector")]  extern private static Vector4   GetGlobalVectorImpl(int name);
         [FreeFunction("ShaderScripting::GetGlobalMatrix")]  extern private static Matrix4x4 GetGlobalMatrixImpl(int name);
@@ -221,6 +223,29 @@ namespace UnityEngine
         [NativeName("HasPropertyFromScript")] extern public bool HasProperty(int nameID);
         public bool HasProperty(string name) { return HasProperty(Shader.PropertyToID(name)); }
 
+        [NativeName("HasFloatFromScript")] extern private bool HasFloatImpl(int name);
+        public bool HasFloat(string name) { return HasFloatImpl(Shader.PropertyToID(name)); }
+        public bool HasFloat(int nameID) { return HasFloatImpl(nameID); }
+        public bool HasInt(string name) { return HasFloatImpl(Shader.PropertyToID(name)); }
+        public bool HasInt(int nameID) { return HasFloatImpl(nameID); }
+        [NativeName("HasTextureFromScript")] extern private bool HasTextureImpl(int name);
+        public bool HasTexture(string name) { return HasTextureImpl(Shader.PropertyToID(name)); }
+        public bool HasTexture(int nameID) { return HasTextureImpl(nameID); }
+        [NativeName("HasMatrixFromScript")] extern private bool HasMatrixImpl(int name);
+        public bool HasMatrix(string name) { return HasMatrixImpl(Shader.PropertyToID(name)); }
+        public bool HasMatrix(int nameID) { return HasMatrixImpl(nameID); }
+        [NativeName("HasVectorFromScript")] extern private bool HasVectorImpl(int name);
+        public bool HasVector(string name) { return HasVectorImpl(Shader.PropertyToID(name)); }
+        public bool HasVector(int nameID) { return HasVectorImpl(nameID); }
+        public bool HasColor(string name) { return HasVectorImpl(Shader.PropertyToID(name)); }
+        public bool HasColor(int nameID) { return HasVectorImpl(nameID); }
+        [NativeName("HasBufferFromScript")] extern private bool HasBufferImpl(int name);
+        public bool HasBuffer(string name) { return HasBufferImpl(Shader.PropertyToID(name)); }
+        public bool HasBuffer(int nameID) { return HasBufferImpl(nameID); }
+        [NativeName("HasConstantBufferFromScript")] extern private bool HasConstantBufferImpl(int name);
+        public bool HasConstantBuffer(string name) { return HasConstantBufferImpl(Shader.PropertyToID(name)); }
+        public bool HasConstantBuffer(int nameID) { return HasConstantBufferImpl(nameID); }
+
         extern public int renderQueue {[NativeName("GetActualRenderQueue")] get; [NativeName("SetCustomRenderQueue")] set; }
         extern internal int rawRenderQueue {[NativeName("GetCustomRenderQueue")] get; }
 
@@ -232,7 +257,7 @@ namespace UnityEngine
         extern public bool doubleSidedGI { get; set; }
         [NativeProperty("EnableInstancingVariants")] extern public bool enableInstancing { get; set; }
 
-        extern public int passCount { get; }
+        extern public int passCount { [NativeName("GetShader()->GetPassCount")] get; }
         [FreeFunction("MaterialScripting::SetShaderPassEnabled", HasExplicitThis = true)] extern public void SetShaderPassEnabled(string passName, bool enabled);
         [FreeFunction("MaterialScripting::GetShaderPassEnabled", HasExplicitThis = true)] extern public bool GetShaderPassEnabled(string passName);
         extern public string GetPassName(int pass);
@@ -292,16 +317,18 @@ namespace UnityEngine
     {
         // TODO: get buffer is missing
 
+        [NativeName("SetIntFromScript")]     extern private void SetIntImpl(int name, int value);
         [NativeName("SetFloatFromScript")]   extern private void SetFloatImpl(int name, float value);
         [NativeName("SetColorFromScript")]   extern private void SetColorImpl(int name, Color value);
         [NativeName("SetMatrixFromScript")]  extern private void SetMatrixImpl(int name, Matrix4x4 value);
         [NativeName("SetTextureFromScript")] extern private void SetTextureImpl(int name, Texture value);
         [NativeName("SetRenderTextureFromScript")] extern private void SetRenderTextureImpl(int name, RenderTexture value, Rendering.RenderTextureSubElement element);
         [NativeName("SetBufferFromScript")]  extern private void SetBufferImpl(int name, ComputeBuffer value);
-        [NativeName("SetGraphicsBufferFromScript")]  extern private void SetGraphicsBufferImpl(int name, GraphicsBuffer value);
+        [NativeName("SetGraphicsBufferFromScript")] extern private void SetGraphicsBufferImpl(int name, GraphicsBuffer value);
         [NativeName("SetConstantBufferFromScript")] extern private void SetConstantBufferImpl(int name, ComputeBuffer value, int offset, int size);
         [NativeName("SetConstantGraphicsBufferFromScript")] extern private void SetConstantGraphicsBufferImpl(int name, GraphicsBuffer value, int offset, int size);
 
+        [NativeName("GetIntFromScript")]     extern private int       GetIntImpl(int name);
         [NativeName("GetFloatFromScript")]   extern private float     GetFloatImpl(int name);
         [NativeName("GetColorFromScript")]   extern private Color     GetColorImpl(int name);
         [NativeName("GetMatrixFromScript")]  extern private Matrix4x4 GetMatrixImpl(int name);
@@ -347,12 +374,22 @@ namespace UnityEngine
     {
         // TODO: get buffer is missing
 
+        [NativeName("GetIntFromScript"), ThreadSafe]     extern private int       GetIntImpl(int name);
         [NativeName("GetFloatFromScript"), ThreadSafe]   extern private float     GetFloatImpl(int name);
         [NativeName("GetVectorFromScript"), ThreadSafe]  extern private Vector4   GetVectorImpl(int name);
         [NativeName("GetColorFromScript"), ThreadSafe]   extern private Color     GetColorImpl(int name);
         [NativeName("GetMatrixFromScript"), ThreadSafe]  extern private Matrix4x4 GetMatrixImpl(int name);
         [NativeName("GetTextureFromScript"), ThreadSafe] extern private Texture   GetTextureImpl(int name);
 
+        [NativeName("HasPropertyFromScript")] extern private bool HasPropertyImpl(int name);
+        [NativeName("HasFloatFromScript")] extern private bool HasFloatImpl(int name);
+        [NativeName("HasTextureFromScript")] extern private bool HasTextureImpl(int name);
+        [NativeName("HasMatrixFromScript")] extern private bool HasMatrixImpl(int name);
+        [NativeName("HasVectorFromScript")] extern private bool HasVectorImpl(int name);
+        [NativeName("HasBufferFromScript")] extern private bool HasBufferImpl(int name);
+        [NativeName("HasConstantBufferFromScript")] extern private bool HasConstantBufferImpl(int name);
+
+        [NativeName("SetIntFromScript"), ThreadSafe]     extern private void SetIntImpl(int name, int value);
         [NativeName("SetFloatFromScript"), ThreadSafe]   extern private void SetFloatImpl(int name, float value);
         [NativeName("SetVectorFromScript"), ThreadSafe]  extern private void SetVectorImpl(int name, Vector4 value);
         [NativeName("SetColorFromScript"), ThreadSafe]   extern private void SetColorImpl(int name, Color value);
@@ -517,6 +554,9 @@ namespace UnityEngine
         extern public void DisableKeyword(string keyword);
         [FreeFunction("ComputeShaderScripting::IsKeywordEnabled", HasExplicitThis = true)]
         extern public bool IsKeywordEnabled(string keyword);
+
+        [FreeFunction("ComputeShaderScripting::IsSupported", HasExplicitThis = true)]
+        extern public bool IsSupported(int kernelIndex);
 
         [FreeFunction("ComputeShaderScripting::GetShaderKeywords", HasExplicitThis = true)] extern private string[] GetShaderKeywords();
         [FreeFunction("ComputeShaderScripting::SetShaderKeywords", HasExplicitThis = true)] extern private void SetShaderKeywords(string[] names);

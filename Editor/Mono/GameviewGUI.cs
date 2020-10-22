@@ -86,6 +86,11 @@ namespace UnityEditor
         [RequiredByNativeCode]
         public static void GameViewStatsGUI()
         {
+            var evt = Event.current;
+
+            if (evt.type != EventType.Layout && evt.type != EventType.Repaint)
+                return;
+
             float w = 300, h = 229;
 
             GUILayout.BeginArea(new Rect(GUIView.current.position.width - w - 10, 27, w, h), "Statistics", GUI.skin.window);

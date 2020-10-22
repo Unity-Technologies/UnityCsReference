@@ -28,9 +28,8 @@ namespace UnityEditor.Compilation
         public string[] RoslynAnalyzerDllPaths { get; set; }
         public bool AllowUnsafeCode { get; set; }
         public bool EmitReferenceAssembly { get; set; }
-
+        public string[] AdditionalCompilerArguments { get; set; }
         internal bool UseDeterministicCompilation { get; set; }
-
         public CodeOptimization CodeOptimization { get; set; }
         public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
         public string[] ResponseFiles { get; set; }
@@ -55,6 +54,7 @@ namespace UnityEditor.Compilation
             AllowUnsafeCode = scriptCompilerOptions.AllowUnsafeCode;
             CodeOptimization = scriptCompilerOptions.CodeOptimization;
             ApiCompatibilityLevel = scriptCompilerOptions.ApiCompatibilityLevel;
+            AdditionalCompilerArguments = scriptCompilerOptions.AdditionalCompilerArguments;
             LanguageVersion = scriptCompilerOptions.LanguageVersion;
         }
     }
@@ -382,7 +382,15 @@ namespace UnityEditor.Compilation
             try
             {
                 var assembly = editorCompilation.GetCustomTargetAssemblyFromName(assemblyName);
-                return assembly?.Defines;
+
+                var scriptAssemblySettings = new ScriptAssemblySettings()
+                {
+                    BuildTarget = EditorUserBuildSettings.activeBuildTarget,
+                    BuildTargetGroup = EditorUserBuildSettings.activeBuildTargetGroup,
+                    CompilationOptions = EditorScriptCompilationOptions.BuildingForEditor
+                };
+
+                return EditorCompilation.GetTargetAssemblyDefines(assembly, scriptAssemblySettings);
             }
             catch (ArgumentException)
             {

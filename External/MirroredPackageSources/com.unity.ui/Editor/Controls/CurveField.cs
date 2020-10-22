@@ -7,20 +7,47 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements
 {
+    /// <summary>
+    /// Makes a field for editing an <see cref="AnimationCurve"/>.
+    /// </summary>
     public class CurveField : BaseField<AnimationCurve>
     {
+        /// <summary>
+        /// Instantiates a <see cref="CurveField"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<CurveField, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="CurveField"/>.
+        /// </summary>
         public new class UxmlTraits : BaseField<AnimationCurve>.UxmlTraits {}
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-curve-field";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        /// <summary>
+        /// USS class name of content elements in elements of this type.
+        /// </summary>
         public static readonly string contentUssClassName = ussClassName + "__content";
+        /// <summary>
+        /// USS class name of border elements in elements of this type.
+        /// </summary>
         public static readonly string borderUssClassName = ussClassName + "__border";
 
         private static CustomStyleProperty<Color> s_CurveColorProperty = new CustomStyleProperty<Color>("--unity-curve-color");
+        /// <summary>
+        /// Optional rectangle that the curve is restrained within. If the range width or height is < 0 then CurveField computes an automatic range, which encompasses the whole curve.
+        /// </summary>
         public Rect ranges { get; set; }
 
         Color m_CurveColor = Color.green;
@@ -33,15 +60,30 @@ namespace UnityEditor.UIElements
         private bool m_TextureDirty;
         private Texture2D m_Texture; // The curve rasterized in a texture
 
+        /// <summary>
+        /// Render mode of CurveFields
+        /// </summary>
         public enum RenderMode
         {
+            /// <summary>
+            /// Renders the curve with a generated texture, like with Unity’s Immediate Mode GUI system (IMGUI).
+            /// </summary>
             Texture,
+            /// <summary>
+            /// Renders the curve with an anti-aliased mesh.
+            /// </summary>
             Mesh,
+            /// <summary>
+            /// Renders the curve with the default mode. Currently Texture.
+            /// </summary>
             Default = Texture
         }
 
         RenderMode m_RenderMode = RenderMode.Default;
 
+        /// <summary>
+        /// The RenderMode of CurveField. The default is RenderMode.Default.
+        /// </summary>
         public RenderMode renderMode
         {
             get { return m_RenderMode; }
@@ -482,6 +524,22 @@ namespace UnityEditor.UIElements
                         new Rect(0, 0, m_Texture.width, m_Texture.height), new Rect(0, 0, 1, 1), m_Texture, ScaleMode.StretchToFill, panel.contextType);
                     MeshGenerationContextUtils.Rectangle(mgc, rectParams);
                 }
+            }
+        }
+
+        protected override void UpdateMixedValueContent()
+        {
+            if (showMixedValue)
+            {
+                visualInput.Add(mixedValueLabel);
+                m_ContentParent?.RemoveFromHierarchy();
+                visualInput.generateVisualContent -= OnGenerateVisualContent;
+            }
+            else
+            {
+                visualInput.Add(m_ContentParent);
+                visualInput.generateVisualContent += OnGenerateVisualContent;
+                mixedValueLabel.RemoveFromHierarchy();
             }
         }
 

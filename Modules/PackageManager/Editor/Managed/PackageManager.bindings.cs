@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.Bindings;
+using System;
 using System.Runtime.InteropServices;
 
 namespace UnityEditor.PackageManager
@@ -86,7 +87,12 @@ namespace UnityEditor.PackageManager
     public partial class PackageInfo
     {
         [NativeName("GetAllPackages")]
-        internal static extern PackageInfo[] GetAll();
+        public static extern PackageInfo[] GetAllRegisteredPackages();
+
+        internal static PackageInfo[] GetAll()
+        {
+            return GetAllRegisteredPackages();
+        }
 
         [NativeName("GetPredefinedPackageTypes")]
         internal static extern string[] GetPredefinedPackageTypes();

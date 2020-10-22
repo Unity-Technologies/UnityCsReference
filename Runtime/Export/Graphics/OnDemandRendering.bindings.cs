@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine.Scripting;
+using UnityEngine.Bindings;
 using System;
 
 namespace UnityEngine.Rendering
@@ -31,20 +32,14 @@ namespace UnityEngine.Rendering
         [RequiredByNativeCode]
         internal static void GetRenderFrameInterval(out int frameInterval) { frameInterval = renderFrameInterval; }
 
+        [FreeFunction]
+        internal static extern float GetEffectiveRenderFrameRate();
+
         public static int effectiveRenderFrameRate
         {
             get
             {
-                if (QualitySettings.vSyncCount > 0)
-                {
-                    return Screen.currentResolution.refreshRate / QualitySettings.vSyncCount / renderFrameInterval;
-                }
-                else
-                {
-                    if (Application.targetFrameRate <= 0)
-                        return Application.targetFrameRate;
-                    return Application.targetFrameRate / renderFrameInterval;
-                }
+                return (int)(GetEffectiveRenderFrameRate() + 0.5f);
             }
         }
     }

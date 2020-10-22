@@ -40,16 +40,37 @@ namespace UnityEditorInternal
             public string name;
             public bool alive;
             public int maxDepth;
+            GUIContent m_Content = new GUIContent();
 
             public ThreadInfo(string name, int threadIndex, int maxDepth, int linesToDisplay)
             {
                 this.name = name;
+                m_Content.tooltip = name;
                 this.threadIndex = threadIndex;
                 this.linesToDisplay = linesToDisplay;
                 this.maxDepth = Mathf.Max(1, maxDepth);
             }
 
             public List<FlowEventData> ActiveFlowEvents { get; } = new List<FlowEventData>();
+
+            public GUIContent DisplayName(bool indent)
+            {
+                if (!string.IsNullOrEmpty(m_Content.text)) return m_Content;
+                GUIContent content = GUIContent.Temp(name, name);
+
+                var indentSize = 10;
+                if ((styles.leftPane.CalcSize(content).x + (indent ? indentSize : 0)) > Chart.kSideWidth)
+                {
+                    content.text += "...";
+                    while ((styles.leftPane.CalcSize(content).x + (indent ? indentSize : 0)) > Chart.kSideWidth)
+                    {
+                        content.text = content.text.Remove(content.text.Length - 4, 1);
+                    }
+                }
+
+                m_Content.text = content.text;
+                return m_Content;
+            }
 
             public int CompareTo(ThreadInfo other)
             {
@@ -380,14 +401,13 @@ namespace UnityEditorInternal
             return combinedHeaderHeight + combinedThreadHeight;
         }
 
-        bool DrawBar(Rect r, float y, float height, string name, bool group, bool expanded, bool indent)
+        bool DrawBar(Rect r, float y, float height, GUIContent content, bool group, bool expanded, bool indent)
         {
             Rect leftRect = new Rect(r.x - Chart.kSideWidth, y, Chart.kSideWidth, height);
             Rect rightRect = new Rect(r.x, y, r.width, height);
             if (Event.current.type == EventType.Repaint)
             {
                 styles.rightPane.Draw(rightRect, false, false, false, false);
-                GUIContent content = GUIContent.Temp(name);
                 if (indent)
                     styles.leftPane.padding.left += 10;
                 styles.leftPane.Draw(leftRect, content, false, false, false, false);
@@ -435,7 +455,7 @@ namespace UnityEditorInternal
                 {
                     var height = groupInfo.height;
                     var expandedState = groupInfo.expanded.target;
-                    var newExpandedState = DrawBar(r, y, height, groupInfo.name, true, expandedState, false);
+                    var newExpandedState = DrawBar(r, y, height, GUIContent.Temp(groupInfo.name), true, expandedState, false);
 
                     if (newExpandedState != expandedState)
                     {
@@ -450,7 +470,7 @@ namespace UnityEditorInternal
                 {
                     var height = threadInfo.height * scaleForThreadHeight;
                     if (height != 0)
-                        DrawBar(r, y, height, threadInfo.name, false, true, !mainGroup);
+                        DrawBar(r, y, height, threadInfo.DisplayName(!mainGroup), false, true, !mainGroup);
                     y += height;
                 }
             }
@@ -1577,14 +1597,23 @@ namespace UnityEditorInternal
                     // frame the selection if needed and before drawing the time area
                     if (initializing)
                         PerformFrameSelected(iter.frameTimeMS);
-                    DoTimeRulerGUI(timeRulerRect, sideWidth, iter.frameTimeMS);
+                    // DoTimeArea needs to happen before DoTimeRulerGUI due to excess control ids being generated in repaint that breaks repeatbuttons
                     DoTimeArea();
+                    DoTimeRulerGUI(timeRulerRect, sideWidth, iter.frameTimeMS);
+
 
                     Rect fullThreadsRect = new Rect(fullRect.x, fullRect.y + timeRulerRect.height, fullRect.width - m_TimeArea.vSliderWidth, fullRect.height - timeRulerRect.height - m_TimeArea.hSliderHeight);
 
                     Rect fullThreadsRectWithoutSidebar = fullThreadsRect;
                     fullThreadsRectWithoutSidebar.x += sideWidth;
                     fullThreadsRectWithoutSidebar.width -= sideWidth;
+
+                    Rect sideRect = new Rect(fullThreadsRect.x, fullThreadsRect.y, sideWidth, fullThreadsRect.height);
+                    if (sideRect.Contains(Event.current.mousePosition) && Event.current.isScrollWheel)
+                    {
+                        m_TimeArea.SetTransform(new Vector2(m_TimeArea.m_Translation.x, m_TimeArea.m_Translation.y - (Event.current.delta.y * 4)), m_TimeArea.m_Scale);
+                        m_ProfilerWindow.Repaint();
+                    }
 
                     // The splitters need to be handled after the time area so that they don't interfere with the input for panning/scrolling the ZoomableArea
                     DoThreadSplitters(fullThreadsRect, fullThreadsRectWithoutSidebar, frameIndex, ThreadSplitterCommand.HandleThreadSplitter);
@@ -1876,6 +1905,12 @@ namespace UnityEditorInternal
 
                     using (var frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, threadInfo.threadIndex))
                     {
+                        // In case we're crossing a boundary between data (f.e. captured and loaded, or captured from different devices)
+                        // Some threads present in the first part might not be present in the second part
+                        // As we use m_Groups from the first part, GetRawFrameDataView returns invalid object for the second
+                        if ((frameData == null) || !frameData.valid)
+                            continue;
+
                         frameData.GetFlowEvents(m_CachedThreadFlowEvents);
                         foreach (var threadFlowEvent in m_CachedThreadFlowEvents)
                         {

@@ -60,7 +60,7 @@ namespace UnityEngine.UIElements.UIR
             m_Pages.Add(new Page() { x = firstPageX, y = firstPageY, freeSlots = kPageWidth * m_PageHeight - 1 });
         }
 
-        public BMPAlloc Allocate(UIRAtlasManager atlasManager)
+        public BMPAlloc Allocate(DynamicAtlasCore atlasManager)
         {
             int pageCount = m_Pages.Count;
             for (int pageIndex = 0; pageIndex < pageCount; pageIndex++)
@@ -149,7 +149,7 @@ namespace UnityEngine.UIElements.UIR
 
     internal struct UIRVEShaderInfoAllocator
     {
-        UIRAtlasManager m_Atlas;
+        DynamicAtlasCore m_Atlas;
         BitmapAllocator32 m_TransformAllocator, m_ClipRectAllocator, m_OpacityAllocator; // All allocators take pages from the same atlas
         bool m_AtlasReallyCreated;
 
@@ -245,7 +245,7 @@ namespace UnityEngine.UIElements.UIR
 
         void ReallyCreateAtlas()
         {
-            m_Atlas = new UIRAtlasManager(
+            m_Atlas = new DynamicAtlasCore(
                 m_VertexTexturingEnabled ? RenderTextureFormat.ARGBFloat : RenderTextureFormat.ARGB32, // If no vertex texturing, only store opacity in ARGB32
                 FilterMode.Point, // Filtering is never needed for this texture
                 Math.Max(pageWidth, pageHeight * 3), // Each transform row is stored vertically

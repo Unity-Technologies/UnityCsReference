@@ -149,6 +149,7 @@ namespace UnityEditor
         protected float m_ExposureSliderMax = 16f; // this value can be altered by the user
 
         CubemapPreview m_CubemapPreview = new CubemapPreview();
+        Texture3DPreview m_Texture3DPreview;
 
         List<TextureMipLevels> m_TextureMipLevels = new List<TextureMipLevels>();
 
@@ -169,6 +170,10 @@ namespace UnityEditor
             RecordTextureMipLevels();
 
             SetMipLevelDefaultForVT();
+
+            if (m_Texture3DPreview == null) m_Texture3DPreview = CreateInstance<Texture3DPreview>();
+            m_Texture3DPreview.Texture = target as Texture;
+            m_Texture3DPreview.OnEnable();
         }
 
         //VT textures can be very large and aren't in GPU memory yet. To avoid unnecessary streaming and cache use, we limit the default shown mip resolution.
@@ -225,6 +230,7 @@ namespace UnityEditor
             RestoreLastTextureMipLevels();
 
             m_CubemapPreview.OnDisable();
+            m_Texture3DPreview.OnDisable();
         }
 
         public override bool RequiresConstantRepaint()
@@ -510,7 +516,7 @@ namespace UnityEditor
             }
         }
 
-        bool IsCubemap()
+        protected bool IsCubemap()
         {
             var t = target as Texture;
             return t != null && t.dimension == UnityEngine.Rendering.TextureDimension.Cube;
@@ -546,6 +552,12 @@ namespace UnityEditor
             if (IsCubemap())
             {
                 m_CubemapPreview.OnPreviewSettings(targets);
+                return;
+            }
+
+            if (IsVolume())
+            {
+                m_Texture3DPreview.OnPreviewSettings(targets);
                 return;
             }
 
@@ -593,10 +605,10 @@ namespace UnityEditor
                         if (mode == TextureUsageMode.Default) // all other texture usage modes don't displayable alpha
                             hasAlpha = true;
                     }
-
-                    if (TextureUtil.NeedsExposureControl(t))
-                        needsExposureControl = true;
                 }
+
+                if (TextureUtil.NeedsExposureControl(t))
+                    needsExposureControl = true;
             }
 
             List<PreviewMode> previewCandidates = new List<PreviewMode>(5);
@@ -717,6 +729,13 @@ namespace UnityEditor
                 return;
             }
 
+            if (IsVolume())
+            {
+                m_Texture3DPreview.Texture = t;
+                m_Texture3DPreview.OnPreviewGUI(r, background);
+                return;
+            }
+
             // target can report zero sizes in some cases just after a parameter change;
             // guard against that.
             int texWidth = Mathf.Max(t.width, 1);
@@ -827,6 +846,11 @@ namespace UnityEditor
                 return m_CubemapPreview.RenderStaticPreview(texture, width, height);
             }
 
+            if (IsVolume())
+            {
+                return m_Texture3DPreview.RenderStaticPreview(texture, width, height);
+            }
+
             TextureImporter textureImporter = AssetImporter.GetAtPath(assetPath) as TextureImporter;
             if (textureImporter != null && textureImporter.textureType == TextureImporterType.Sprite && textureImporter.spriteImportMode == SpriteImportMode.Polygon)
             {
@@ -889,7 +913,7 @@ namespace UnityEditor
             bool showSize = true;
             bool isPackedSprite = textureImporter && textureImporter.qualifiesForSpritePacking;
             bool isNormalmap = IsNormalMap(t);
-            bool stillNeedsCompression = TextureUtil.DoesTextureStillNeedToBeCompressed(AssetDatabase.GetAssetPath(t));
+            bool stillNeedsCompression = textureImporter && textureImporter.textureStillNeedsToBeCompressed;
             bool isNPOT = t2 != null && TextureUtil.IsNonPowerOfTwo(t2);
             GraphicsFormat format = t.graphicsFormat;
 

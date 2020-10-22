@@ -48,6 +48,8 @@ namespace UnityEditor
 
         public const string ObjectSelectorClosedCommand = "ObjectSelectorClosed";
         public const string ObjectSelectorUpdatedCommand = "ObjectSelectorUpdated";
+        public const string ObjectSelectorCanceledCommand = "ObjectSelectorCanceled";
+        public const string ObjectSelectorSelectionDoneCommand = "ObjectSelectorSelectionDone";
 
         // Filters
         string m_RequiredType;
@@ -239,9 +241,9 @@ namespace UnityEditor
             get { return m_SearchFilter; }
             set
             {
-                if (SearchService.ObjectSelector.HasEngineOverride())
+                if (ObjectSelectorSearch.HasEngineOverride())
                 {
-                    SearchService.ObjectSelector.SetSearchFilter(value, (SearchService.ObjectSelectorSearchContext)m_SearchSessionHandler.context);
+                    ObjectSelectorSearch.SetSearchFilter(value, (SearchService.ObjectSelectorSearchContext)m_SearchSessionHandler.context);
                     return;
                 }
                 m_SearchFilter = value;
@@ -407,7 +409,7 @@ namespace UnityEditor
             m_ModalUndoGroup = Undo.GetCurrentGroup();
 
             // Show custom selector if available
-            if (SearchService.ObjectSelector.HasEngineOverride())
+            if (ObjectSelectorSearch.HasEngineOverride())
             {
                 m_SearchSessionHandler.BeginSession(() =>
                 {
@@ -453,7 +455,7 @@ namespace UnityEditor
                     NotifySelectorClosed(false);
                 };
 
-                if (SearchService.ObjectSelector.SelectObject(searchContext, onSelectorClosed, onSelectionChanged))
+                if (ObjectSelectorSearch.SelectObject(searchContext, onSelectorClosed, onSelectionChanged))
                     return;
             }
 
@@ -510,6 +512,8 @@ namespace UnityEditor
 
         void ItemWasDoubleClicked()
         {
+            SendEvent(ObjectSelectorSelectionDoneCommand, false);
+
             Close();
             GUIUtility.ExitGUI();
         }
@@ -881,6 +885,8 @@ namespace UnityEditor
             m_ObjectTreeWithSearch.Clear();
             m_LastSelectedInstanceId = 0;
             m_EditedProperty = null;
+
+            SendEvent(ObjectSelectorCanceledCommand, false);
 
             Close();
             GUI.changed = true;

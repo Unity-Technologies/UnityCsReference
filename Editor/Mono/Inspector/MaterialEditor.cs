@@ -9,6 +9,7 @@ using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
+using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
 using UnityEngine.Scripting;
 using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
@@ -24,7 +25,8 @@ namespace UnityEditor
         {
             public static readonly GUIStyle inspectorBigInner = "IN BigTitle inner";
             public static readonly GUIContent reflectionProbePickerIcon = EditorGUIUtility.TrIconContent("ReflectionProbeSelector");
-            public static readonly GUIContent lightmapEmissiveLabel = EditorGUIUtility.TrTextContent("Global Illumination", "Controls if the emission is baked or realtime.\n\nBaked only has effect in scenes where baked global illumination is enabled.\n\nRealtime uses realtime global illumination if enabled in the scene. Otherwise the emission won't light up other objects.");
+            public static readonly GUIContent lightmapEmissiveLabelRealtimeGISupport = EditorGUIUtility.TrTextContent("Global Illumination", "Controls if the emission is Baked or Realtime.\n\nBaked only has effect in scenes where Baked Global Illumination is enabled.\n\nRealtime uses Realtime Global Illumination if enabled in the scene. Otherwise the emission won't light up other objects.");
+            public static readonly GUIContent lightmapEmissiveLabel = EditorGUIUtility.TrTextContent("Global Illumination", "Controls if the emission is Baked or Realtime.\n\nBaked only has effect in scenes where Baked Global Illumination is enabled.\n\nRealtime won't light up other objects since Realtime Global Illumination is not supported.");
             public static GUIContent[] lightmapEmissiveStrings = { EditorGUIUtility.TextContent("Realtime"), EditorGUIUtility.TrTextContent("Baked"), EditorGUIUtility.TrTextContent("None") };
             public static int[]  lightmapEmissiveValues = { (int)MaterialGlobalIlluminationFlags.RealtimeEmissive, (int)MaterialGlobalIlluminationFlags.BakedEmissive, (int)MaterialGlobalIlluminationFlags.None };
             public static string propBlockInfo = EditorGUIUtility.TrTextContent("MaterialPropertyBlock is used to modify these values").text;
@@ -1319,9 +1321,11 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
 
+            bool realtimeGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime);
+
             // Show popup
             EditorGUI.showMixedValue = isMixed;
-            giFlags = (MaterialGlobalIlluminationFlags)EditorGUI.IntPopup(position, Styles.lightmapEmissiveLabel, (int)giFlags, Styles.lightmapEmissiveStrings, Styles.lightmapEmissiveValues);
+            giFlags = (MaterialGlobalIlluminationFlags)EditorGUI.IntPopup(position, realtimeGISupported ? Styles.lightmapEmissiveLabelRealtimeGISupport : Styles.lightmapEmissiveLabel, (int)giFlags, Styles.lightmapEmissiveStrings, Styles.lightmapEmissiveValues);
             EditorGUI.showMixedValue = false;
 
             // Apply flags. But only the part that this tool modifies (RealtimeEmissive, BakedEmissive, None)
@@ -1725,13 +1729,15 @@ namespace UnityEditor
             // thus we draw the VC status bar
             if (!firstInspectedEditor)
             {
-                InspectorWindow.VersionControlBar(this);
+                PropertyEditor.VersionControlBar(this);
             }
 
             GUI.enabled = wasGUIEnabled;
             EditorGUILayout.BeginVertical(style);
 
-            if (m_InsidePropertiesGUI)
+            var eventType = Event.current.type;
+            bool isRunningCommand = eventType == EventType.ExecuteCommand || eventType == EventType.ValidateCommand;
+            if (m_InsidePropertiesGUI && !isRunningCommand)
             {
                 Debug.LogWarning("PropertiesGUI() is being called recursively. If you want to render the default gui for shader properties then call PropertiesDefaultGUI() instead");
                 return false;
@@ -1748,7 +1754,8 @@ namespace UnityEditor
             if (m_RenderersForAnimationMode != null)
                 GUI.enabled = true;
 
-            m_InsidePropertiesGUI = true;
+            if (!isRunningCommand)
+                m_InsidePropertiesGUI = true;
 
             // Since ExitGUI is called when showing the Object Picker we wrap
             // properties gui in try/catch to catch the ExitGUIException thrown by ExitGUI()
@@ -1763,7 +1770,7 @@ namespace UnityEditor
                 Renderer[] renderers = GetAssociatedRenderersFromInspector();
                 if (renderers != null && renderers.Length > 0)
                 {
-                    if (Event.current.type == EventType.Layout)
+                    if (eventType == EventType.Layout)
                     {
                         renderers[0].GetPropertyBlock(m_PropertyBlock);
                     }
@@ -1774,15 +1781,15 @@ namespace UnityEditor
             }
             catch (Exception)
             {
-                GUI.enabled = wasEnabled;
-                m_InsidePropertiesGUI = false;
-                m_RenderersForAnimationMode = null;
                 throw;
             }
-
-            GUI.enabled = wasEnabled;
-            m_InsidePropertiesGUI = false;
-            m_RenderersForAnimationMode = null;
+            finally
+            {
+                GUI.enabled = wasEnabled;
+                if (!isRunningCommand)
+                    m_InsidePropertiesGUI = false;
+                m_RenderersForAnimationMode = null;
+            }
 
             return EditorGUI.EndChangeCheck();
         }

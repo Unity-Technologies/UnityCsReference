@@ -66,6 +66,7 @@ namespace UnityEditor.Experimental.GraphView
 
             AddToClassList("group");
 
+            // Groups are not groupable and so do not have the groupable flag.
             capabilities |= Capabilities.Selectable | Capabilities.Movable | Capabilities.Deletable | Capabilities.Copiable;
 
             RegisterCallback<MouseDownEvent>(OnMouseDownEvent);

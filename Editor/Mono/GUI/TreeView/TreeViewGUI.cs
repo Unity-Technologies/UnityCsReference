@@ -154,12 +154,11 @@ namespace UnityEditor.IMGUI.Controls
         {
         }
 
-        internal Texture GetEffectiveIcon(TreeViewItem item)
+        internal Texture GetEffectiveIcon(TreeViewItem item, bool selected, bool focused)
         {
-            bool selected = m_TreeView.IsItemDragSelectedOrSelected(item);
             var icon = GetIconForItem(item);
 
-            if (selected && m_TreeView.HasFocus())
+            if (selected && focused)
             {
                 var selIcon = GetIconForSelectedItem(item);
 
@@ -459,7 +458,7 @@ namespace UnityEditor.IMGUI.Controls
             iconRect.width = k_IconWidth;
             iconRect.x += iconLeftPadding;
 
-            Texture icon = GetEffectiveIcon(item);
+            Texture icon = GetEffectiveIcon(item, selected, focused);
             if (icon != null)
                 GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
 

@@ -39,11 +39,11 @@ namespace UnityEngine.UIElements
             return StylePropertyId.Unknown;
         }
 
-        public static object GetComputedStyleValue(ComputedStyle computedStyle, string name)
+        public static object GetComputedStyleActualValue(ComputedStyle computedStyle, string name)
         {
             StylePropertyId id;
             if (StylePropertyUtil.s_NameToId.TryGetValue(name, out id))
-                return GetComputedStyleValue(computedStyle, id);
+                return GetComputedStyleActualValue(computedStyle, id);
 
             return null;
         }
@@ -68,13 +68,26 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public static Type GetInlineStyleType(string name)
+        {
+            StylePropertyId id;
+            if (StylePropertyUtil.s_NameToId.TryGetValue(name, out id))
+            {
+                if (!IsShorthandProperty(id))
+                    return GetInlineStyleType(id);
+            }
+
+            return null;
+        }
+
+        // For backwards compatibility with debugger in 2020.1
         public static Type GetComputedStyleType(string name)
         {
             StylePropertyId id;
             if (StylePropertyUtil.s_NameToId.TryGetValue(name, out id))
             {
                 if (!IsShorthandProperty(id))
-                    return GetComputedStyleType(id);
+                    return GetInlineStyleType(id);
             }
 
             return null;
@@ -124,10 +137,10 @@ namespace UnityEngine.UIElements
                 if (result.ContainsKey(id))
                     continue;
 
-                var value = StyleDebug.GetComputedStyleValue(computedStyle, id);
-                var initialValue = StyleDebug.GetComputedStyleValue(InitialStyle.Get(), id);
+                var value = StyleDebug.GetComputedStyleActualValue(computedStyle, id);
+                var initialValue = StyleDebug.GetComputedStyleActualValue(InitialStyle.Get(), id);
 
-                if (!value.Equals(initialValue))
+                if (value != null && !value.Equals(initialValue))
                 {
                     result[id] = InheritedSpecificity;
                 }

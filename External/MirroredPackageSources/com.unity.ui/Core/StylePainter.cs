@@ -5,7 +5,7 @@ namespace UnityEngine.UIElements
     internal interface IStylePainter
     {
         MeshWriteData DrawMesh(int vertexCount, int indexCount, Texture texture, Material material, MeshGenerationContext.MeshFlags flags);
-        void DrawText(MeshGenerationContextUtils.TextParams textParams, TextHandle handle, float pixelsPerPoint);
+        void DrawText(MeshGenerationContextUtils.TextParams textParams, ITextHandle handle, float pixelsPerPoint);
         void DrawRectangle(MeshGenerationContextUtils.RectangleParams rectParams);
         void DrawBorder(MeshGenerationContextUtils.BorderParams borderParams);
         void DrawImmediate(Action callback, bool cullingEnabled);
@@ -30,11 +30,11 @@ namespace UnityEngine.UIElements
             var painterParams = new CursorPositionStylePainterParameters() {
                 rect = ve.contentRect,
                 text = text,
-                font = style.unityFont.value,
-                fontSize = (int)style.fontSize.value.value,
-                fontStyle = style.unityFontStyleAndWeight.value,
-                anchor = style.unityTextAlign.value,
-                wordWrapWidth = style.whiteSpace.value == WhiteSpace.Normal ? ve.contentRect.width : 0.0f,
+                font = style.unityFont,
+                fontSize = (int)style.fontSize.value,
+                fontStyle = style.unityFontStyleAndWeight,
+                anchor = style.unityTextAlign,
+                wordWrapWidth = style.whiteSpace == WhiteSpace.Normal ? ve.contentRect.width : 0.0f,
                 richText = false,
                 cursorIndex = 0
             };

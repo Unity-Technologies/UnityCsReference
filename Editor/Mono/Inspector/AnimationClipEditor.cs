@@ -394,6 +394,7 @@ namespace UnityEditor
                 m_TimeArea.hRangeMax = m_Clip.stopTime;
                 m_TimeArea.margin = 10;
                 m_TimeArea.scaleWithWindow = true;
+                m_TimeArea.minWidth = 1.0f / m_Clip.frameRate;
                 m_TimeArea.SetShownHRangeInsideMargins(m_Clip.startTime, m_Clip.stopTime);
                 m_TimeArea.hTicks.SetTickModulosForFrameRate(m_Clip.frameRate);
                 m_TimeArea.ignoreScrollWheelUntilClicked = true;

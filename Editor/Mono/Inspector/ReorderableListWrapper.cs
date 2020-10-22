@@ -52,6 +52,7 @@ namespace UnityEditorInternal
                         m_ReorderableList.ClearCacheRecursive();
                         m_lastArraySize = m_ArraySize.intValue;
                         m_lastTargetHash = targetHash;
+                        ReorderableList.InvalidateParentCaches(m_ReorderableList.serializedProperty.propertyPath);
                     }
                 }
             }
@@ -92,6 +93,7 @@ namespace UnityEditorInternal
             m_ReorderableList = new ReorderableList(Property.serializedObject, Property.Copy(), m_Reorderable, false, true, true);
             m_ReorderableList.headerHeight = ReorderableList.Defaults.minHeaderHeight;
             m_ReorderableList.m_IsEditable = true;
+            m_ReorderableList.multiSelect = true;
             // Check to see if the list has any elements, and use one to find out if serialized property type has children
             m_ReorderableList.m_HasPropertyDrawer = (childProperty != null) ? childProperty.hasChildren : false;
 
@@ -123,14 +125,15 @@ namespace UnityEditorInternal
 
         public void Draw(Rect r, Rect visibleArea)
         {
+            r.xMin += EditorGUI.indent * (EditorGUI.indentLevel - 1);
             var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
             m_IsNotInPrefabContextModeWithOverrides = prefabStage == null || prefabStage.mode != PrefabStage.Mode.InContext || !PrefabStage.s_PatchAllOverriddenProperties
                 || Selection.objects.All(obj => PrefabUtility.IsPartOfAnyPrefab(obj) && !AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(obj)).Equals(AssetDatabase.AssetPathToGUID(prefabStage.assetPath)));
             m_ReorderableList.draggable = m_Reorderable && m_IsNotInPrefabContextModeWithOverrides;
 
             Rect headerRect = new Rect(r.x, r.y, r.width, m_HeaderHeight);
-            Rect sizeRect = new Rect(headerRect.xMax - Constants.kArraySizeWidth, headerRect.y,
-                Constants.kArraySizeWidth, m_HeaderHeight);
+            Rect sizeRect = new Rect(headerRect.xMax - Constants.kArraySizeWidth - EditorGUI.indent * EditorGUI.indentLevel, headerRect.y,
+                Constants.kArraySizeWidth + EditorGUI.indent * EditorGUI.indentLevel, m_HeaderHeight);
 
             EventType prevType = Event.current.type;
             if (Event.current.type == EventType.MouseUp && sizeRect.Contains(Event.current.mousePosition))
@@ -138,10 +141,21 @@ namespace UnityEditorInternal
                 Event.current.type = EventType.Used;
             }
 
+            bool prevEnabled = GUI.enabled;
+            GUI.enabled = true;
             EditorGUI.BeginChangeCheck();
             Property.isExpanded = EditorGUI.BeginFoldoutHeaderGroup(headerRect, Property.isExpanded, m_Header);
             EditorGUI.EndFoldoutHeaderGroup();
-            if (EditorGUI.EndChangeCheck()) m_ReorderableList.ClearCacheRecursive();
+            if (EditorGUI.EndChangeCheck())
+            {
+                if (Event.current.alt)
+                {
+                    EditorGUI.SetExpandedRecurse(Property, Property.isExpanded);
+                }
+
+                m_ReorderableList.ClearCacheRecursive();
+            }
+            GUI.enabled = prevEnabled;
 
             if (Event.current.type == EventType.Used && sizeRect.Contains(Event.current.mousePosition)) Event.current.type = prevType;
 

@@ -5,6 +5,9 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    /// <summary>
+    /// A SerializedProperty wrapper VisualElement that, on Bind(), will generate the correct field elements with the correct bindingPaths.
+    /// </summary>
     public class PropertyField : VisualElement, IBindable
     {
         internal static readonly string foldoutTitleBoundLabelProperty = "unity-foldout-bound-title";
@@ -12,13 +15,22 @@ namespace UnityEditor.UIElements
         static CustomStyleProperty<float> s_LabelWidthRatioProperty = new CustomStyleProperty<float>("--unity-property-field-label-width-ratio");
         static CustomStyleProperty<float> s_LabelExtraPaddingProperty = new CustomStyleProperty<float>("--unity-property-field-label-extra-padding");
 
+        /// <summary>
+        /// Instantiates a <see cref="PropertyField"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<PropertyField, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="PropertyField"/>.
+        /// </summary>
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             UxmlStringAttributeDescription m_PropertyPath;
             UxmlStringAttributeDescription m_Label;
 
+            /// <summary>
+            /// Constructor.
+            /// </summary>
             public UxmlTraits()
             {
                 m_PropertyPath = new UxmlStringAttributeDescription { name = "binding-path" };
@@ -44,22 +56,55 @@ namespace UnityEditor.UIElements
         public IBinding binding { get; set; }
         public string bindingPath { get; set; }
 
+        /// <summary>
+        /// Optionally overwrite the label of the generate property field. If no label is provided the string will be taken from the SerializedProperty.
+        /// </summary>
         public string label { get; set; }
 
         private SerializedProperty m_SerializedProperty;
         private PropertyField m_ParentPropertyField;
-
+        
         private float m_LabelWidthRatio;
         private float m_LabelExtraPadding;
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public static readonly string ussClassName = "unity-property-field";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public static readonly string inputUssClassName = ussClassName + "__input";
 
+        /// <summary>
+        /// PropertyField constructor.
+        /// </summary>
+        /// <remarks>
+        /// You will still have to call Bind() on the PropertyField afterwards.
+        /// </remarks>
         public PropertyField() : this(null, string.Empty) {}
 
+        /// <summary>
+        /// PropertyField constructor.
+        /// </summary>
+        /// <param name="property">Providing a SerializedProperty in the construct just sets the bindingPath. You will still have to call Bind() on the PropertyField afterwards.</param>
+        /// <remarks>
+        /// You will still have to call Bind() on the PropertyField afterwards.
+        /// </remarks>
         public PropertyField(SerializedProperty property) : this(property, string.Empty) {}
 
+        /// <summary>
+        /// PropertyField constructor.
+        /// </summary>
+        /// <param name="property">Providing a SerializedProperty in the construct just sets the bindingPath. You will still have to call Bind() on the PropertyField afterwards.</param>
+        /// <param name="label">Optionally overwrite the property label.</param>
+        /// <remarks>
+        /// You will still have to call Bind() on the PropertyField afterwards.
+        /// </remarks>
         public PropertyField(SerializedProperty property, string label)
         {
             AddToClassList(ussClassName);
@@ -194,7 +239,8 @@ namespace UnityEditor.UIElements
         {
             property = property.Copy();
             var foldout = new Foldout();
-            foldout.text = property.localizedDisplayName;
+            bool hasCustomLabel = !string.IsNullOrEmpty(label);
+            foldout.text = hasCustomLabel ? label : property.localizedDisplayName;
             foldout.value = property.isExpanded;
             foldout.bindingPath = property.propertyPath;
             foldout.name = "unity-foldout-" + property.propertyPath;
@@ -202,8 +248,15 @@ namespace UnityEditor.UIElements
             // Get Foldout label.
             var foldoutToggle = foldout.Q<Toggle>(className: Foldout.toggleUssClassName);
             var foldoutLabel = foldoutToggle.Q<Label>(className: Toggle.textUssClassName);
-            foldoutLabel.bindingPath = property.propertyPath;
-            foldoutLabel.SetProperty(foldoutTitleBoundLabelProperty, true);
+            if (hasCustomLabel)
+            {
+                foldoutLabel.text = foldout.text;
+            }
+            else
+            {
+                foldoutLabel.bindingPath = property.propertyPath;
+                foldoutLabel.SetProperty(foldoutTitleBoundLabelProperty, true);
+            }
 
             var endProperty = property.GetEndProperty();
             property.NextVisible(true); // Expand the first child.
@@ -215,9 +268,8 @@ namespace UnityEditor.UIElements
                 var field = new PropertyField(property);
                 field.m_ParentPropertyField = this;
                 field.name = "unity-property-field-" + property.propertyPath;
-                if (field == null)
-                    continue;
-
+                // Not yet knowing what type of field we are dealing with, we defer the showMixedValue value setting
+                // to be automatically done via the next Reset call
                 foldout.Add(field);
             }
             while (property.NextVisible(false)); // Never expand children.
@@ -251,15 +303,17 @@ namespace UnityEditor.UIElements
         private VisualElement ConfigureField<TField, TValue>(TField field, SerializedProperty property)
             where TField : BaseField<TValue>
         {
+            var propertyCopy = property.Copy();
             var fieldLabel = string.IsNullOrEmpty(label) ? property.localizedDisplayName : label;
             field.bindingPath = property.propertyPath;
+            field.userData = propertyCopy;
             field.name = "unity-input-" + property.propertyPath;
             field.label = fieldLabel;
 
             var fieldLabelElement = field.Q<Label>(className: BaseField<TValue>.labelUssClassName);
             if (fieldLabelElement != null)
             {
-                fieldLabelElement.userData = property.Copy();
+                fieldLabelElement.userData = propertyCopy;
                 fieldLabelElement.RegisterCallback<MouseUpEvent>(RightClickMenuEvent);
             }
 
@@ -280,6 +334,9 @@ namespace UnityEditor.UIElements
                 }
             });
 
+            if (!(parent is InspectorElement inspectorElement))
+                return field;
+
             field.RegisterCallback<GeometryChangedEvent>(evt =>
             {
                 var baseField = field as BaseField<TValue>;
@@ -288,15 +345,11 @@ namespace UnityEditor.UIElements
                 var totalPadding = resolvedStyle.paddingLeft + resolvedStyle.paddingRight +
                                    resolvedStyle.marginLeft + resolvedStyle.marginRight;
 
-                // Get inspector element padding if present next
-                var inspectorElement = baseField.GetFirstAncestorOfType<InspectorElement>();
-                if (inspectorElement != null)
-                {
-                    totalPadding += inspectorElement.resolvedStyle.paddingLeft +
-                                    inspectorElement.resolvedStyle.paddingRight +
-                                    inspectorElement.resolvedStyle.marginLeft +
-                                    inspectorElement.resolvedStyle.marginRight;
-                }
+                // Get inspector element padding next
+                totalPadding += inspectorElement.resolvedStyle.paddingLeft +
+                                inspectorElement.resolvedStyle.paddingRight +
+                                inspectorElement.resolvedStyle.marginLeft +
+                                inspectorElement.resolvedStyle.marginRight;
 
                 var labelElement = baseField.labelElement;
 
@@ -312,9 +365,11 @@ namespace UnityEditor.UIElements
                 // that information.  Instead we add a flat value to totalPadding to best match the hard coded
                 // calculation in IMGUI
                 totalPadding += m_LabelExtraPadding;
-                    
+
                 // Formula to follow IMGUI label width settings
-                labelElement.style.width = resolvedStyle.width * m_LabelWidthRatio - totalPadding;
+                var newWidth = resolvedStyle.width * m_LabelWidthRatio - totalPadding;
+                if (Mathf.Abs(labelElement.resolvedStyle.width - newWidth) > Mathf.Epsilon)
+                    labelElement.style.width = newWidth;
             });
 
             return field;
@@ -383,7 +438,7 @@ namespace UnityEditor.UIElements
                 {
                     Type enumType;
                     ScriptAttributeUtility.GetFieldInfoFromProperty(property, out enumType);
-                    if (enumType != null && enumType.IsDefined(typeof(FlagsAttribute), false))
+                    if (enumType.IsDefined(typeof(FlagsAttribute), false))
                     {
                         var field = new EnumFlagsField();
                         field.choices = property.enumDisplayNames.ToList();
@@ -452,12 +507,15 @@ namespace UnityEditor.UIElements
 
                 case SerializedPropertyType.BoundsInt:
                     return ConfigureField<BoundsIntField, BoundsInt>(new BoundsIntField(), property);
+                
+                case SerializedPropertyType.Hash128:
+                    return ConfigureField<Hash128Field, Hash128>(new Hash128Field(), property);
 
                 case SerializedPropertyType.Generic:
                 default:
                     return null;
             }
-        }
+       }
 
         private void RegisterPropertyChangesOnCustomDrawerElement(VisualElement customPropertyDrawer)
         {
@@ -491,6 +549,7 @@ namespace UnityEditor.UIElements
             customPropertyDrawer.RegisterCallback<ChangeEvent<Vector3Int>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
             customPropertyDrawer.RegisterCallback<ChangeEvent<RectInt>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
             customPropertyDrawer.RegisterCallback<ChangeEvent<BoundsInt>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<Hash128>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
         }
 
         private int m_PropertyChangedCounter = 0;
@@ -521,6 +580,9 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// Registers this callback to receive SerializedPropertyChangeEvent when a value is changed.
+        /// </summary>
         public void RegisterValueChangeCallback(EventCallback<SerializedPropertyChangeEvent> callback)
         {
             if (callback != null)

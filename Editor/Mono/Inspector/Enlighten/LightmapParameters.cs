@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -58,30 +59,38 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            GUILayout.Label(Styles.precomputedRealtimeGIContent, EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(m_Resolution, Styles.resolutionContent);
-            EditorGUILayout.Slider(m_ClusterResolution, 0.1F, 1.0F, Styles.clusterResolutionContent);
-            EditorGUILayout.IntSlider(m_IrradianceBudget, 32, 2048, Styles.irradianceBudgetContent);
-            EditorGUILayout.IntSlider(m_IrradianceQuality, 512, 131072, Styles.irradianceQualityContent);
-            EditorGUILayout.Slider(m_ModellingTolerance, 0.0f, 1.0f, Styles.modellingToleranceContent);
-            EditorGUILayout.PropertyField(m_EdgeStitching, Styles.edgeStitchingContent);
-            EditorGUILayout.PropertyField(m_IsTransparent, Styles.isTransparent);
-            EditorGUILayout.PropertyField(m_SystemTag, Styles.systemTagContent);
-            EditorGUILayout.Space();
+            // realtime settings
+            if (SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime))
+            {
+                GUILayout.Label(Styles.precomputedRealtimeGIContent, EditorStyles.boldLabel);
+                EditorGUILayout.PropertyField(m_Resolution, Styles.resolutionContent);
+                EditorGUILayout.Slider(m_ClusterResolution, 0.1F, 1.0F, Styles.clusterResolutionContent);
+                EditorGUILayout.IntSlider(m_IrradianceBudget, 32, 2048, Styles.irradianceBudgetContent);
+                EditorGUILayout.IntSlider(m_IrradianceQuality, 512, 131072, Styles.irradianceQualityContent);
+                EditorGUILayout.Slider(m_ModellingTolerance, 0.0f, 1.0f, Styles.modellingToleranceContent);
+                EditorGUILayout.PropertyField(m_EdgeStitching, Styles.edgeStitchingContent);
+                EditorGUILayout.PropertyField(m_IsTransparent, Styles.isTransparent);
+                EditorGUILayout.PropertyField(m_SystemTag, Styles.systemTagContent);
+                EditorGUILayout.Space();
+            }
 
+            // baked settings
             bool usesPathTracerBakeBackend = Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper != LightingSettings.Lightmapper.Enlighten;
             bool usesEnlightenBackend = Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.Enlighten;
+            bool bakedEnlightenSupported = SupportedRenderingFeatures.IsLightmapperSupported((int)LightingSettings.Lightmapper.Enlighten);
 
             GUILayout.Label(Styles.bakedGIContent, EditorStyles.boldLabel);
-            using (new EditorGUI.DisabledScope(usesPathTracerBakeBackend))
+
+            if (bakedEnlightenSupported)
             {
-                EditorGUILayout.PropertyField(m_BlurRadius, Styles.blurRadiusContent);
+                using (new EditorGUI.DisabledScope(usesPathTracerBakeBackend))
+                {
+                    EditorGUILayout.PropertyField(m_BlurRadius, Styles.blurRadiusContent);
+                    EditorGUILayout.PropertyField(m_DirectLightQuality, Styles.directLightQualityContent);
+                }
             }
+
             EditorGUILayout.PropertyField(m_AntiAliasingSamples, Styles.antiAliasingSamplesContent);
-            using (new EditorGUI.DisabledScope(usesPathTracerBakeBackend))
-            {
-                EditorGUILayout.PropertyField(m_DirectLightQuality, Styles.directLightQualityContent);
-            }
             EditorGUILayout.Slider(m_Pushoff, 0.0f, 1.0f, Styles.pushoffContent);
             EditorGUILayout.PropertyField(m_BakedLightmapTag, Styles.bakedLightmapTagContent);
             using (new EditorGUI.DisabledScope(usesEnlightenBackend))
@@ -96,11 +105,14 @@ namespace UnityEditor
             }
             EditorGUILayout.Space();
 
-            using (new EditorGUI.DisabledScope(usesPathTracerBakeBackend))
+            if (bakedEnlightenSupported)
             {
-                GUILayout.Label(Styles.bakedAOContent, EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(m_AOQuality, Styles.aoQualityContent);
-                EditorGUILayout.PropertyField(m_AOAntiAliasingSamples, Styles.aoAntiAliasingSamplesContent);
+                using (new EditorGUI.DisabledScope(usesPathTracerBakeBackend))
+                {
+                    GUILayout.Label(Styles.bakedAOContent, EditorStyles.boldLabel);
+                    EditorGUILayout.PropertyField(m_AOQuality, Styles.aoQualityContent);
+                    EditorGUILayout.PropertyField(m_AOAntiAliasingSamples, Styles.aoAntiAliasingSamplesContent);
+                }
             }
 
             GUILayout.Label(Styles.generalGIContent, EditorStyles.boldLabel);

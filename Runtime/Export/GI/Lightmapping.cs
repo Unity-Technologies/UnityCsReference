@@ -106,7 +106,10 @@ namespace UnityEngine
                 var lc        = GraphicsSettings.lightsUseLinearIntensity ? color.linear.RGBMultiplied(intensity) : color.RGBMultiplied(intensity).linear;
                 float mcc     = lc.maxColorComponent;
 
-                if (mcc <= 0.0f)
+                if (lc.r < 0.0f || lc.g < 0.0f || lc.b < 0.0f)
+                    throw new System.ArgumentOutOfRangeException("The input color to be converted must not contain negative values (red: " + lc.r + ", green: " + lc.g + ", blue: " + lc.b + ").");
+
+                if (mcc <= 1e-20f)
                     return LinearColor.Black();
 
                 float mcc_rcp = 1.0f / lc.maxColorComponent;

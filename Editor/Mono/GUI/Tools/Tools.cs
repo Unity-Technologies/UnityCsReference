@@ -67,6 +67,10 @@ namespace UnityEditor
         internal static OnToolChangedFunc onToolChanged;
 #pragma warning restore 618
 
+        public static event Action pivotModeChanged;
+        public static event Action pivotRotationChanged;
+        public static event Action viewToolChanged;
+
         public static Tool current
         {
             get { return EditorToolUtility.GetEnumWithEditorTool(EditorToolManager.GetActiveTool()); }
@@ -80,62 +84,19 @@ namespace UnityEditor
 
         public static ViewTool viewTool
         {
-            get
+            get { return get.m_ViewTool; }
+            set
             {
-                Event evt = Event.current;
-                if (evt != null && viewToolActive)
-                {
-                    if (s_LockedViewTool == ViewTool.None)
-                    {
-                        bool controlKeyOnMac = (evt.control && Application.platform == RuntimePlatform.OSXEditor);
-                        bool actionKey = EditorGUI.actionKey;
-                        bool noModifiers = (!actionKey && !controlKeyOnMac && !evt.alt);
+                if (viewTool == value)
+                    return;
 
-                        if ((s_ButtonDown <= 0 && noModifiers)
-                            || (s_ButtonDown <= 0 && actionKey)
-                            || s_ButtonDown == 2
-                            || SceneView.lastActiveSceneView != null && (SceneView.lastActiveSceneView.in2DMode || SceneView.lastActiveSceneView.isRotationLocked) && !(s_ButtonDown == 1 && evt.alt || s_ButtonDown <= 0 && controlKeyOnMac)
-                        )
-                        {
-                            get.m_ViewTool = ViewTool.Pan;
-                        }
-                        else if ((s_ButtonDown <= 0 && controlKeyOnMac)
-                                 || (s_ButtonDown == 1 && evt.alt))
-                        {
-                            get.m_ViewTool = ViewTool.Zoom;
-                        }
-                        else if (s_ButtonDown <= 0 && evt.alt)
-                        {
-                            get.m_ViewTool = ViewTool.Orbit;
-                        }
-                        else if (s_ButtonDown == 1 && !evt.alt)
-                        {
-                            get.m_ViewTool = ViewTool.FPS;
-                        }
-                    }
-                }
-                else
-                {
-                    get.m_ViewTool = ViewTool.Pan;
-                }
-                return get.m_ViewTool;
+                get.m_ViewTool = value;
+                viewToolChanged?.Invoke();
             }
-            set { get.m_ViewTool = value; }
         }
         internal static ViewTool s_LockedViewTool = ViewTool.None;
         internal static int s_ButtonDown = -1;
-        public static bool viewToolActive
-        {
-            get
-            {
-                if (GUIUtility.hotControl != 0 && s_LockedViewTool == ViewTool.None)
-                    return false;
-
-                Event evt = Event.current;
-                bool viewShortcut = evt.type != EventType.Used && (evt.alt || evt.button == 1 || evt.button == 2);
-                return s_LockedViewTool != ViewTool.None || current == Tool.View || viewShortcut;
-            }
-        }
+        public static bool viewToolActive => SceneViewMotion.viewToolActive;
 
         static Vector3 s_HandlePosition;
         static bool s_HandlePositionComputed;
@@ -303,6 +264,7 @@ namespace UnityEditor
                     get.m_PivotMode = value;
                     EditorPrefs.SetInt("PivotMode", (int)pivotMode);
                     InvalidateHandlePosition();
+                    pivotModeChanged?.Invoke();
                 }
             }
         }
@@ -356,6 +318,7 @@ namespace UnityEditor
                 {
                     get.m_PivotRotation = value;
                     EditorPrefs.SetInt("PivotRotation", (int)pivotRotation);
+                    pivotRotationChanged?.Invoke();
                 }
             }
         }

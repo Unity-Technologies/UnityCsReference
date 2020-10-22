@@ -152,7 +152,7 @@ namespace UnityEditorInternal.VersionControl
                 {
                     GUI.DrawTexture(topLeft, s_DisconnectedIcon);
                 }
-                else if (Asset.IsState(assetState, Asset.States.AddedLocal) && !isHierarchy)
+                else if (Asset.IsState(assetState, Asset.States.AddedLocal))
                 {
                     DrawOverlay(Asset.States.AddedLocal, topLeft);
 
@@ -169,7 +169,7 @@ namespace UnityEditorInternal.VersionControl
                         Asset.IsState(metaState, Asset.States.Local | Asset.States.Missing))
                         DrawMetaOverlay(topLeft, false);
                 }
-                else if (Asset.IsState(assetState, Asset.States.LockedLocal) && !isHierarchy)
+                else if (Asset.IsState(assetState, Asset.States.LockedLocal))
                 {
                     DrawOverlay(Asset.States.LockedLocal, topLeft);
 
@@ -177,7 +177,7 @@ namespace UnityEditorInternal.VersionControl
                     if (metaAsset != null && (localMetaState & Asset.States.LockedLocal) == 0 && !isMetaUnmodifiedState)
                         DrawMetaOverlay(topLeft, false);
                 }
-                else if (Asset.IsState(assetState, Asset.States.CheckedOutLocal) && !isHierarchy)
+                else if (Asset.IsState(assetState, Asset.States.CheckedOutLocal))
                 {
                     DrawOverlay(Asset.States.CheckedOutLocal, topLeft);
 

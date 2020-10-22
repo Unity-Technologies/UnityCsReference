@@ -12,18 +12,19 @@ namespace UnityEditor.PackageManager.UI
     internal sealed class ServicesContainer : ScriptableSingleton<ServicesContainer>, ISerializationCallbackReceiver
     {
         // Some services are stateless, hence no serialization needed
-        private HttpClientFactory m_HttpClientFactory;
+        private readonly HttpClientFactory m_HttpClientFactory;
 
-        private UnityOAuthProxy m_UnityOAuthProxy;
+        private readonly UnityOAuthProxy m_UnityOAuthProxy;
 
-        private SelectionProxy m_SelectionProxy;
+        private readonly SelectionProxy m_SelectionProxy;
 
-        private AssetDatabaseProxy m_AssetDatabaseProxy;
+        private readonly AssetDatabaseProxy m_AssetDatabaseProxy;
 
-        private IOProxy m_IOProxy;
+        private readonly IOProxy m_IOProxy;
 
-        private PackageManagerProjectSettingsProxy m_SettingsProxy;
+        private readonly PackageManagerProjectSettingsProxy m_SettingsProxy;
 
+        [SerializeField]
         private ResourceLoader m_ResourceLoader;
 
         [SerializeField]
@@ -41,8 +42,8 @@ namespace UnityEditor.PackageManager.UI
         [SerializeField]
         private AssetStoreOAuth m_AssetStoreOAuth;
 
-        private AssetStoreUtils m_AssetStoreUtils;
-        private AssetStoreRestAPI m_AssetStoreRestAPI;
+        private readonly AssetStoreUtils m_AssetStoreUtils;
+        private readonly AssetStoreRestAPI m_AssetStoreRestAPI;
 
         [SerializeField]
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
@@ -69,7 +70,7 @@ namespace UnityEditor.PackageManager.UI
         private PackageDatabase m_PackageDatabase;
 
 
-        private Dictionary<Type, object> m_RegisteredObjects;
+        private readonly Dictionary<Type, object> m_RegisteredObjects;
 
         [NonSerialized]
         private bool m_DependenciesResolved;
@@ -124,7 +125,7 @@ namespace UnityEditor.PackageManager.UI
             m_AssetStoreOAuth.ResolveDependencies(m_UnityConnectProxy, m_UnityOAuthProxy, m_AssetStoreUtils, m_HttpClientFactory);
             m_AssetStoreUtils.ResolveDependencies(m_UnityConnectProxy);
             m_AssetStoreRestAPI.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreOAuth, m_AssetStoreCache, m_HttpClientFactory);
-            m_AssetStoreDownloadManager.ResolveDependencies(m_ApplicationProxy, m_HttpClientFactory, m_UnityConnectProxy, m_AssetStoreCache, m_AssetStoreUtils, m_AssetStoreRestAPI);
+            m_AssetStoreDownloadManager.ResolveDependencies(m_ApplicationProxy, m_HttpClientFactory, m_UnityConnectProxy, m_IOProxy, m_AssetStoreCache, m_AssetStoreUtils, m_AssetStoreRestAPI);
 
             m_UpmCache.ResolveDependencies(m_PackageManagerPrefs);
             m_UpmClient.ResolveDependencies(m_UpmCache, m_IOProxy, m_SettingsProxy);
