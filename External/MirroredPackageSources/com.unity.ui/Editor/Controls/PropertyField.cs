@@ -194,7 +194,8 @@ namespace UnityEditor.UIElements
         {
             property = property.Copy();
             var foldout = new Foldout();
-            foldout.text = property.localizedDisplayName;
+            bool hasCustomLabel = !string.IsNullOrEmpty(label);
+            foldout.text = hasCustomLabel ? label : property.localizedDisplayName;
             foldout.value = property.isExpanded;
             foldout.bindingPath = property.propertyPath;
             foldout.name = "unity-foldout-" + property.propertyPath;
@@ -202,8 +203,15 @@ namespace UnityEditor.UIElements
             // Get Foldout label.
             var foldoutToggle = foldout.Q<Toggle>(className: Foldout.toggleUssClassName);
             var foldoutLabel = foldoutToggle.Q<Label>(className: Toggle.textUssClassName);
-            foldoutLabel.bindingPath = property.propertyPath;
-            foldoutLabel.SetProperty(foldoutTitleBoundLabelProperty, true);
+            if (hasCustomLabel)
+            {
+                foldoutLabel.text = foldout.text;
+            }
+            else
+            {
+                foldoutLabel.bindingPath = property.propertyPath;
+                foldoutLabel.SetProperty(foldoutTitleBoundLabelProperty, true);
+            }
 
             var endProperty = property.GetEndProperty();
             property.NextVisible(true); // Expand the first child.

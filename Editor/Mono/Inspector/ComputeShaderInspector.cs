@@ -23,7 +23,7 @@ namespace UnityEditor
         class KernelInfo
         {
             internal string name;
-            internal string platforms;
+            internal List<string> platforms;
         }
 
         internal class Styles
@@ -50,8 +50,7 @@ namespace UnityEditor
                     {
                         if (ki.name == kernelName)
                         {
-                            ki.platforms += ' ';
-                            ki.platforms += platform.ToString();
+                            ki.platforms.Add(platform.ToString());
                             found = true;
                         }
                     }
@@ -59,7 +58,8 @@ namespace UnityEditor
                     {
                         var ki = new KernelInfo();
                         ki.name = kernelName;
-                        ki.platforms = platform.ToString();
+                        ki.platforms = new List<string>();
+                        ki.platforms.Add(platform.ToString());
                         kernelInfo.Add(ki);
                     }
                 }
@@ -88,7 +88,9 @@ namespace UnityEditor
             var kernelInfo = GetKernelDisplayInfo(cs);
             foreach (var ki in kernelInfo)
             {
-                EditorGUILayout.LabelField(ki.name, ki.platforms);
+                ki.platforms.Sort();
+                var sorted = System.String.Join(" ", ki.platforms.ToArray());
+                EditorGUILayout.LabelField(ki.name, sorted);
             }
         }
 

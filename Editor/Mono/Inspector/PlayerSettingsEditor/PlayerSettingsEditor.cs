@@ -160,9 +160,11 @@ namespace UnityEditor
             public static readonly GUIContent require32 = EditorGUIUtility.TrTextContent("Require ES3.2");
             public static readonly GUIContent skinOnGPU = EditorGUIUtility.TrTextContent("GPU Skinning*", "Use DX11/ES3 GPU Skinning");
             public static readonly GUIContent skinOnGPUCompute = EditorGUIUtility.TrTextContent("Compute Skinning*", "Use Compute pipeline for Skinning");
-            public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols", "Preprocessor defines passed to the C# script compiler");
-            public static readonly GUIContent scriptingDefineSymbolsApply = EditorGUIUtility.TrTextContent("Apply");
-            public static readonly GUIContent scriptingDefineSymbolsApplyRevert = EditorGUIUtility.TrTextContent("Revert");
+            public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols", "Preprocessor defines passed to the C# script compiler.");
+            public static readonly GUIContent additionalCompilerArguments = EditorGUIUtility.TrTextContent("Additional Compiler Arguments", "Additional arguments passed to the C# script compiler.");
+            public static readonly GUIContent applyButtonText = EditorGUIUtility.TrTextContent("Apply");
+            public static readonly GUIContent revertButtonText = EditorGUIUtility.TrTextContent("Revert");
+            public static readonly GUIContent suppressCommonWarnings = EditorGUIUtility.TrTextContent("Suppress Common Warnings", "Suppresses C# warnings CS0169 and CS0649.");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
@@ -214,10 +216,12 @@ namespace UnityEditor
         class RecompileReason
         {
             public static readonly string scriptingDefineSymbolsModified = "Scripting define symbols setting modified";
+            public static readonly string suppressCommonWarningsModified = "Suppress common warnings setting modified";
             public static readonly string allowUnsafeCodeModified = "Allow 'unsafe' code setting modified";
             public static readonly string apiCompatibilityLevelModified = "API Compatibility level modified";
             public static readonly string useDeterministicCompilationModified = "Use deterministic compilation modified";
             public static readonly string playerSettingsModified = "Player settings modified";
+            public static readonly string additionalCompilerArgumentsModified = "Additional compiler arguments modified";
         }
 
         PlayerSettingsSplashScreenEditor m_SplashScreenEditor;
@@ -310,6 +314,7 @@ namespace UnityEditor
         SerializedProperty m_LogObjCUncaughtExceptions;
         SerializedProperty m_EnableCrashReportAPI;
 
+        SerializedProperty m_SuppressCommonWarnings;
         SerializedProperty m_AllowUnsafeCode;
         SerializedProperty m_GCIncremental;
 
@@ -387,6 +392,7 @@ namespace UnityEditor
         SerializedProperty m_DefaultAPICompatibilityLevel;
         SerializedProperty m_Il2CppCompilerConfiguration;
         SerializedProperty m_ScriptingDefines;
+        SerializedProperty m_AdditionalCompilerArguments;
         SerializedProperty m_StackTraceTypes;
         SerializedProperty m_ManagedStrippingLevel;
         SerializedProperty m_ActiveInputHandler;
@@ -404,7 +410,6 @@ namespace UnityEditor
             s_GraphicsDeviceLists[target].list = PlayerSettings.GetGraphicsAPIs(target).ToList();
         }
 
-        static ReorderableList s_ScriptingDefineSymbolsList;
         static ReorderableList s_ColorGamutList;
 
         public static void SyncColorGamuts()
@@ -416,6 +421,8 @@ namespace UnityEditor
         int scriptingDefinesControlID = 0;
 
         int serializedActiveInputHandler = 0;
+        string[] serializedAdditionalCompilerArguments;
+        bool serializedSuppressCommonWarnings = true;
         bool serializedAllowUnsafeCode = false;
         string serializedScriptingDefines;
         ApiCompatibilityLevel serializedAPICompatibilityLevel;
@@ -424,6 +431,10 @@ namespace UnityEditor
         List<string>  scriptingDefinesList;
         bool hasScriptingDefinesBeenModified;
         ReorderableList scriptingDefineSymbolsList;
+
+        List<string> additionalCompilerArgumentsList;
+        bool hasAdditionalCompilerArgumentsBeenModified;
+        ReorderableList additionalCompilerArgumentsReorderableList;
 
         ISettingEditorExtension[] m_SettingsExtensions;
 
@@ -490,7 +501,7 @@ namespace UnityEditor
 
             m_MuteOtherAudioSources         = FindPropertyAssert("muteOtherAudioSources");
             m_PrepareIOSForRecording        = FindPropertyAssert("Prepare IOS For Recording");
-            m_ForceIOSSpeakersWhenRecording     = FindPropertyAssert("Force IOS Speakers When Recording");
+            m_ForceIOSSpeakersWhenRecording = FindPropertyAssert("Force IOS Speakers When Recording");
             m_UIRequiresPersistentWiFi      = FindPropertyAssert("uIRequiresPersistentWiFi");
             m_IOSAllowHTTPDownload          = FindPropertyAssert("iosAllowHTTPDownload");
             m_SubmitAnalytics               = FindPropertyAssert("submitAnalytics");
@@ -508,12 +519,13 @@ namespace UnityEditor
             m_LogObjCUncaughtExceptions     = FindPropertyAssert("logObjCUncaughtExceptions");
             m_EnableCrashReportAPI          = FindPropertyAssert("enableCrashReportAPI");
 
+            m_SuppressCommonWarnings        = FindPropertyAssert("suppressCommonWarnings");
             m_AllowUnsafeCode               = FindPropertyAssert("allowUnsafeCode");
             m_GCIncremental                 = FindPropertyAssert("gcIncremental");
             m_UseDeterministicCompilation   = FindPropertyAssert("useDeterministicCompilation");
             m_UseReferenceAssemblies        = FindPropertyAssert("useReferenceAssemblies");
             m_ScriptingBackend              = FindPropertyAssert("scriptingBackend");
-            m_EnableRoslynAnalyzers = FindPropertyAssert("enableRoslynAnalyzers");
+            m_EnableRoslynAnalyzers         = FindPropertyAssert("enableRoslynAnalyzers");
             m_APICompatibilityLevel         = FindPropertyAssert("apiCompatibilityLevelPerPlatform");
             m_DefaultAPICompatibilityLevel  = FindPropertyAssert("apiCompatibilityLevel");
             m_Il2CppCompilerConfiguration   = FindPropertyAssert("il2cppCompilerConfiguration");
@@ -521,6 +533,7 @@ namespace UnityEditor
             m_StackTraceTypes               = FindPropertyAssert("m_StackTraceTypes");
             m_ManagedStrippingLevel         = FindPropertyAssert("managedStrippingLevel");
             m_ActiveInputHandler            = FindPropertyAssert("activeInputHandler");
+            m_AdditionalCompilerArguments   = FindPropertyAssert("additionalCompilerArguments");
 
             m_DefaultScreenWidth            = FindPropertyAssert("defaultScreenWidth");
             m_DefaultScreenHeight           = FindPropertyAssert("defaultScreenHeight");
@@ -596,7 +609,9 @@ namespace UnityEditor
             // Setup initial values to prevent immediate script recompile (or editor restart)
             BuildTargetGroup targetGroup = validPlatforms[selectedPlatform].targetGroup;
             serializedActiveInputHandler = m_ActiveInputHandler.intValue;
+            serializedSuppressCommonWarnings = m_SuppressCommonWarnings.boolValue;
             serializedAllowUnsafeCode = m_AllowUnsafeCode.boolValue;
+            serializedAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(targetGroup);
             serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(targetGroup);
             serializedAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(targetGroup);
             serializedUseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
@@ -606,13 +621,24 @@ namespace UnityEditor
         {
             if (hasScriptingDefinesBeenModified)
             {
-                if (EditorUtility.DisplayDialog("Scripting Define Symbols Have Been Modified", "Do you want to save changes?", "Apply", "Revert"))
+                if (EditorUtility.DisplayDialog("Scripting Define Symbols Have Been Modified", "Do you want to apply changes?", "Apply", "Revert"))
                 {
                     SetScriptingDefineSymbolsForGroup(lastTargetGroup, scriptingDefinesList.ToArray());
                     RecompileScripts(RecompileReason.scriptingDefineSymbolsModified);
                 }
 
                 hasScriptingDefinesBeenModified = false;
+            }
+
+            if (hasAdditionalCompilerArgumentsBeenModified)
+            {
+                if (EditorUtility.DisplayDialog("Additional Compiler Arguments Have Been Modified", "Do you want to apply changes?", "Apply", "Revert"))
+                {
+                    SetAdditionalCompilerArgumentsForGroup(lastTargetGroup, additionalCompilerArgumentsList.ToArray());
+                    RecompileScripts(RecompileReason.additionalCompilerArgumentsModified);
+                }
+
+                hasAdditionalCompilerArgumentsBeenModified = false;
             }
 
             // Ensure script compilation handling is returned to to EditorOnlyPlayerSettings
@@ -677,6 +703,20 @@ namespace UnityEditor
                 {
                     serializedScriptingDefines = currentDefines;
                     UpdateScriptingDefineSymbolsLists();
+                }
+
+                if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
+                    scriptRecompileRequired = true;
+            }
+
+            // Additional compiler arguments
+            var currentAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(targetGroup);
+            if (!serializedAdditionalCompilerArguments.SequenceEqual(currentAdditionalCompilerArguments))
+            {
+                if (!hasAdditionalCompilerArgumentsBeenModified)
+                {
+                    serializedAdditionalCompilerArguments = currentAdditionalCompilerArguments;
+                    UpdateAdditionalCompilerArgumentsLists();
                 }
 
                 if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
@@ -2444,6 +2484,29 @@ namespace UnityEditor
             m_ScriptingDefines.SetMapValue((int)targetGroup, PlayerSettings.ConvertScriptingDefineArrayToString(defines));
         }
 
+        string[] GetAdditionalCompilerArgumentsForGroup(BuildTargetGroup targetGroup)
+        {
+            if (m_AdditionalCompilerArguments.TryGetMapEntry((int)targetGroup, out var entry))
+            {
+                var serializedArguments = entry.FindPropertyRelative("second");
+                var arguments = new string[serializedArguments.arraySize];
+
+                for (int i = 0; i < serializedArguments.arraySize; ++i)
+                {
+                    arguments[i] = serializedArguments.GetArrayElementAtIndex(i).stringValue;
+                }
+
+                return arguments;
+            }
+
+            return new string[0];
+        }
+
+        void SetAdditionalCompilerArgumentsForGroup(BuildTargetGroup targetGroup, string[] arguments)
+        {
+            m_AdditionalCompilerArguments.SetMapValue((int)targetGroup, arguments);
+        }
+
         private void OtherSectionScriptCompilationGUI(BuildTargetGroup targetGroup)
         {
             // Configuration
@@ -2471,12 +2534,12 @@ namespace UnityEditor
 
                             GUI.enabled = hasScriptingDefinesBeenModified;
 
-                            if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApplyRevert, EditorStyles.miniButton))
+                            if (GUILayout.Button(SettingsContent.revertButtonText, EditorStyles.miniButton))
                             {
                                 UpdateScriptingDefineSymbolsLists();
                             }
 
-                            if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApply, EditorStyles.miniButton))
+                            if (GUILayout.Button(SettingsContent.applyButtonText, EditorStyles.miniButton))
                             {
                                 SetScriptingDefineSymbolsForGroup(targetGroup, scriptingDefinesList.ToArray());
 
@@ -2495,6 +2558,54 @@ namespace UnityEditor
 
                     scriptingDefinesControlID = EditorGUIUtility.s_LastControlID;
                 }
+
+                using (var vertical = new EditorGUILayout.VerticalScope())
+                {
+                    if (serializedAdditionalCompilerArguments == null || additionalCompilerArgumentsReorderableList == null)
+                    {
+                        InitReorderableAdditionalCompilerArgumentsList(targetGroup);
+                    }
+
+                    using (new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_AdditionalCompilerArguments))
+                    {
+                        additionalCompilerArgumentsReorderableList.DoLayoutList();
+
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            GUILayout.FlexibleSpace();
+
+                            using (new EditorGUI.DisabledScope(!hasAdditionalCompilerArgumentsBeenModified))
+                            {
+                                if (GUILayout.Button(SettingsContent.revertButtonText, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                                {
+                                    UpdateAdditionalCompilerArgumentsLists();
+                                }
+
+                                if (GUILayout.Button(SettingsContent.applyButtonText, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                                {
+                                    SetAdditionalCompilerArgumentsForGroup(targetGroup, additionalCompilerArgumentsList.ToArray());
+
+                                    // Get Additional Compiler Arguments without duplicates
+                                    serializedAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(targetGroup);
+                                    UpdateAdditionalCompilerArgumentsLists();
+
+                                    if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
+                                    {
+                                        RecompileScripts(RecompileReason.additionalCompilerArgumentsModified);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Suppress common warnings
+            EditorGUILayout.PropertyField(m_SuppressCommonWarnings, SettingsContent.suppressCommonWarnings);
+            if (serializedSuppressCommonWarnings != m_SuppressCommonWarnings.boolValue)
+            {
+                serializedSuppressCommonWarnings = m_SuppressCommonWarnings.boolValue;
+                RecompileScripts(RecompileReason.suppressCommonWarningsModified);
             }
 
             // Allow unsafe code
@@ -2536,6 +2647,25 @@ namespace UnityEditor
                 SetScriptingDefinesListDirty();
         }
 
+        void DrawTextFieldAdditionalCompilerArguments(Rect rect, int index)
+        {
+            // Handle list selection before the TextField grabs input
+            Event evt = Event.current;
+            if (evt.type == EventType.MouseDown && rect.Contains(evt.mousePosition))
+            {
+                if (additionalCompilerArgumentsReorderableList.index != index)
+                {
+                    additionalCompilerArgumentsReorderableList.index = index;
+                    additionalCompilerArgumentsReorderableList.onSelectCallback?.Invoke(additionalCompilerArgumentsReorderableList);
+                }
+            }
+
+            string additionalCompilerArgument = additionalCompilerArgumentsList[index];
+            additionalCompilerArgumentsList[index] = GUI.TextField(rect, additionalCompilerArgumentsList[index]);
+            if (!additionalCompilerArgumentsList[index].Equals(additionalCompilerArgument))
+                SetAdditionalCompilerArgumentListDirty();
+        }
+
         void AddScriptingDefineCallback(ReorderableList list)
         {
             scriptingDefinesList.Add("");
@@ -2551,6 +2681,23 @@ namespace UnityEditor
         void SetScriptingDefinesListDirty(ReorderableList list = null)
         {
             hasScriptingDefinesBeenModified = true;
+        }
+
+        void AddAdditionalCompilerArgumentCallback(ReorderableList list)
+        {
+            additionalCompilerArgumentsList.Add("");
+            SetAdditionalCompilerArgumentListDirty();
+        }
+
+        void RemoveAdditionalCompilerArgumentCallback(ReorderableList list)
+        {
+            additionalCompilerArgumentsList.RemoveAt(list.index);
+            SetAdditionalCompilerArgumentListDirty();
+        }
+
+        void SetAdditionalCompilerArgumentListDirty(ReorderableList list = null)
+        {
+            hasAdditionalCompilerArgumentsBeenModified = true;
         }
 
         private void OtherSectionOptimizationGUI(BuildPlatform platform, BuildTargetGroup targetGroup)
@@ -2986,17 +3133,14 @@ namespace UnityEditor
 
         void InitReorderableScriptingDefineSymbolsList(BuildTargetGroup targetGroup)
         {
-            // Get Scripting Define Symbols data
-            string defines = GetScriptingDefineSymbolsForGroup(targetGroup);
             scriptingDefinesList = new List<string>(PlayerSettings.ConvertScriptingDefineStringToArray(serializedScriptingDefines));
 
-            // Initialize Reorderable List
             scriptingDefineSymbolsList = new ReorderableList(scriptingDefinesList, typeof(string), true, true, true, true);
             scriptingDefineSymbolsList.drawElementCallback = (rect, index, isActive, isFocused) => DrawTextField(rect, index);
             scriptingDefineSymbolsList.drawHeaderCallback = (rect) => GUI.Label(rect, SettingsContent.scriptingDefineSymbols, EditorStyles.label);
             scriptingDefineSymbolsList.onAddCallback = AddScriptingDefineCallback;
             scriptingDefineSymbolsList.onRemoveCallback = RemoveScriptingDefineCallback;
-            scriptingDefineSymbolsList.onChangedCallback += SetScriptingDefinesListDirty;
+            scriptingDefineSymbolsList.onChangedCallback = SetScriptingDefinesListDirty;
         }
 
         void UpdateScriptingDefineSymbolsLists()
@@ -3005,6 +3149,26 @@ namespace UnityEditor
             scriptingDefineSymbolsList.list = scriptingDefinesList;
             scriptingDefineSymbolsList.DoLayoutList();
             hasScriptingDefinesBeenModified = false;
+        }
+
+        void InitReorderableAdditionalCompilerArgumentsList(BuildTargetGroup targetGroup)
+        {
+            additionalCompilerArgumentsList = new List<string>(serializedAdditionalCompilerArguments);
+
+            additionalCompilerArgumentsReorderableList = new ReorderableList(additionalCompilerArgumentsList, typeof(string), true, true, true, true);
+            additionalCompilerArgumentsReorderableList.drawElementCallback = (rect, index, isActive, isFocused) => DrawTextFieldAdditionalCompilerArguments(rect, index);
+            additionalCompilerArgumentsReorderableList.drawHeaderCallback = (rect) => GUI.Label(rect, SettingsContent.additionalCompilerArguments, EditorStyles.label);
+            additionalCompilerArgumentsReorderableList.onAddCallback = AddAdditionalCompilerArgumentCallback;
+            additionalCompilerArgumentsReorderableList.onRemoveCallback = RemoveAdditionalCompilerArgumentCallback;
+            additionalCompilerArgumentsReorderableList.onChangedCallback = SetAdditionalCompilerArgumentListDirty;
+        }
+
+        void UpdateAdditionalCompilerArgumentsLists()
+        {
+            additionalCompilerArgumentsList = new List<string>(serializedAdditionalCompilerArguments);
+            additionalCompilerArgumentsReorderableList.list = additionalCompilerArgumentsList;
+            additionalCompilerArgumentsReorderableList.DoLayoutList();
+            hasAdditionalCompilerArgumentsBeenModified = false;
         }
     }
 }

@@ -453,6 +453,7 @@ namespace UnityEngine.UIElements
                 requireMeasureFunction = true;
 
                 editorEngine = new TextEditorEngine(OnDetectFocusChange, OnCursorIndexChange);
+                editorEngine.style.richText = false;
 
                 if (touchScreenTextField)
                 {

@@ -143,9 +143,14 @@ namespace UnityEngine.UIElements
 
         internal string ElideText(string drawText, string ellipsisText, float width, TextOverflowPosition textOverflowPosition)
         {
+            // The pixelOffset represent the maximum value that could be removed from the measured with by the layout when scaling is not 100%.
+            // the offset is caused by alining the borders+spacing+padding on the grid.
+            // We still want the text to render without being elided even when there is a small gap missing.  https://fogbugz.unity3d.com/f/cases/1268016/
+            float pixelOffset = 1 / scaledPixelsPerPoint;
+
             // Try full size first
             var size = MeasureTextSize(drawText, 0, MeasureMode.Undefined, 0, MeasureMode.Undefined);
-            if (size.x <= width || string.IsNullOrEmpty(ellipsisText))
+            if (size.x - pixelOffset <= width || string.IsNullOrEmpty(ellipsisText))
                 return drawText;
 
             var minText = drawText.Length > 1 ? ellipsisText : drawText;

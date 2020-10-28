@@ -28,9 +28,8 @@ namespace UnityEditor.Compilation
         public string[] RoslynAnalyzerDllPaths { get; set; }
         public bool AllowUnsafeCode { get; set; }
         public bool EmitReferenceAssembly { get; set; }
-
+        public string[] AdditionalCompilerArguments { get; set; }
         internal bool UseDeterministicCompilation { get; set; }
-
         public CodeOptimization CodeOptimization { get; set; }
         public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
         public string[] ResponseFiles { get; set; }
@@ -56,6 +55,7 @@ namespace UnityEditor.Compilation
             CodeOptimization = scriptCompilerOptions.CodeOptimization;
             ApiCompatibilityLevel = scriptCompilerOptions.ApiCompatibilityLevel;
             LanguageVersion = scriptCompilerOptions.LanguageVersion;
+            AdditionalCompilerArguments = scriptCompilerOptions.AdditionalCompilerArguments;
         }
     }
 

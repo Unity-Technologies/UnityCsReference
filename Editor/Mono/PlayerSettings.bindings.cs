@@ -814,7 +814,7 @@ namespace UnityEditor
         public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string[] defines)
         {
             if (defines == null)
-                throw new ArgumentNullException("Value cannot be null");
+                throw new ArgumentNullException(nameof(defines));
 
             SetScriptingDefineSymbolsForGroup(targetGroup, ConvertScriptingDefineArrayToString(defines));
         }
@@ -822,6 +822,22 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
         [NativeMethod("SetUserScriptingDefineSymbolsForGroup")]
         private static extern void SetScriptingDefineSymbolsForGroupInternal(BuildTargetGroup targetGroup, string defines);
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        [NativeMethod("GetAdditionalCompilerArgumentsForGroup")]
+        public static extern string[] GetAdditionalCompilerArgumentsForGroup(BuildTargetGroup targetGroup);
+
+        public static void SetAdditionalCompilerArgumentsForGroup(BuildTargetGroup targetGroup, string[] additionalCompilerArguments)
+        {
+            if (additionalCompilerArguments == null)
+                throw new ArgumentNullException(nameof(additionalCompilerArguments));
+
+            SetAdditionalCompilerArgumentsForGroupInternal(targetGroup, additionalCompilerArguments);
+        }
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        [NativeMethod("SetAdditionalCompilerArgumentsForGroup")]
+        private static extern void SetAdditionalCompilerArgumentsForGroupInternal(BuildTargetGroup targetGroup, string[] additionalCompilerArguments);
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         [NativeMethod("GetPlatformArchitecture")]
@@ -899,6 +915,15 @@ namespace UnityEditor
             get { return ScriptingRuntimeVersion.Latest; }
 
             set {}
+        }
+
+        public static extern bool suppressCommonWarnings
+        {
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+            get;
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+            set;
         }
 
         public static extern bool allowUnsafeCode

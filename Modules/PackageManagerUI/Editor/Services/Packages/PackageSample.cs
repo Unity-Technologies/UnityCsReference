@@ -98,6 +98,7 @@ namespace UnityEditor.PackageManager.UI
                 {
                     var packageJson = Json.Deserialize(ioProxy.FileReadAllText(jsonPath)) as Dictionary<string, object>;
                     var samples = packageJson.GetList<IDictionary<string, object>>("samples");
+
                     return samples?.Select(sample =>
                     {
                         var displayName = sample.GetString("displayName");
@@ -106,12 +107,13 @@ namespace UnityEditor.PackageManager.UI
                         var interactiveImport = sample.Get("interactiveImport", false);
 
                         var resolvedSamplePath = Path.Combine(package.resolvedPath, path);
+
                         var importPath = IOUtils.CombinePaths(
                             Application.dataPath,
                             "Samples",
                             IOUtils.SanitizeFileName(package.displayName),
                             package.version,
-                            IOUtils.SanitizeFileName(displayName)
+                            string.IsNullOrEmpty(displayName) ? string.Empty : IOUtils.SanitizeFileName(displayName)
                         );
                         return new Sample(ioProxy, assetDatabaseProxy, displayName, description, resolvedSamplePath, importPath, interactiveImport);
                     });

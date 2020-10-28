@@ -50,24 +50,10 @@ namespace UnityEngine.UIElements
             // If root IMGUI doesn't use event, send it to other IMGUIs down the line.
             if (evt.propagateToIMGUI ||
                 evt.eventTypeId == MouseEnterWindowEvent.TypeId() ||
-                evt.eventTypeId == MouseLeaveWindowEvent.TypeId() ||
-                evt.target == rootIMGUI
-            )
+                evt.eventTypeId == MouseLeaveWindowEvent.TypeId())
             {
                 evt.skipElements.Add(evt.target);
                 EventDispatchUtilities.PropagateToIMGUIContainer(panel.visualTree, evt);
-            }
-            // If non-root element doesn't use event, send it to root IMGUI.
-            // This is necessary for some behaviors like dropdown menus in IMGUI.
-            // See case : https://fogbugz.unity3d.com/f/cases/1223087/
-            else
-            {
-                evt.skipElements.Add(evt.target);
-                if (!evt.Skip(rootIMGUI))
-                {
-                    bool canAffectFocus = evt.target is Focusable f && !f.focusable && f.isIMGUIContainer;
-                    rootIMGUI.SendEventToIMGUI(evt, canAffectFocus);
-                }
             }
 
             return IsDone(evt);

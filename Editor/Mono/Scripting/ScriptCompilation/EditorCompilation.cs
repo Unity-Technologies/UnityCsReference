@@ -377,6 +377,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
+        private void AddChangedAssembly(string name, EditorScriptCompilationOptions compilationOptions)
+        {
+            if ((compilationOptions & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor)
+            {
+                changedAssemblies.Add(name);
+            }
+        }
+
         public string[] GetChangedAssemblies()
         {
             return changedAssemblies.ToArray();
@@ -449,7 +457,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 CheckIfCodeGenAssemblyIsDirty(targetAssembly.Filename);
 
                 // Add to changedAssemblies in case we delete the last script of an assembly and then do not get OnCompilationFinished callback
-                changedAssemblies.Add(targetAssembly.Filename);
+
+                AddChangedAssembly(targetAssembly.Filename, EditorScriptCompilationOptions.BuildingForEditor);
             }
         }
 
@@ -497,7 +506,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             var filename = AssetPath.GetFileName(path);
 
-            changedAssemblies.Add(filename);
+            AddChangedAssembly(filename, EditorScriptCompilationOptions.BuildingForEditor);
 
             var precompiledAssemblies = PrecompiledAssemblyProvider.GetPrecompiledAssemblies(true, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
 
@@ -1871,7 +1880,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     dirtyState.RemoveCompiledTargetAssembly(assembly.Filename);
                 }
 
-                changedAssemblies.Add(assembly.Filename);
+                AddChangedAssembly(assembly.Filename, scriptAssemblySettings.CompilationOptions);
 
                 if (assembly.HasCompileErrors)
                 {
@@ -2044,6 +2053,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 compilationExtension = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(buildTarget))?.CreateCompilationExtension();
             }
 
+
+            List<string> additionalCompilationArguments = new List<string>(PlayerSettings.GetAdditionalCompilerArgumentsForGroup(buildTargetGroup));
+
+            if (PlayerSettings.suppressCommonWarnings)
+            {
+                additionalCompilationArguments.Add("/nowarn:0169");
+                additionalCompilationArguments.Add("/nowarn:0649");
+            }
+
+            var additionalCompilationArgumentsArray = additionalCompilationArguments.Where(s => !string.IsNullOrEmpty(s)).Distinct().ToArray();
+
             var settings = new ScriptAssemblySettings
             {
                 BuildTarget = buildTarget,
@@ -2054,7 +2074,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 CompilationExtension = compilationExtension,
                 EditorCodeOptimization = CompilationPipeline.codeOptimization,
                 ExtraGeneralDefines = extraScriptingDefines,
-                ProjectRootNamespace = EditorSettings.projectGenerationRootNamespace
+                ProjectRootNamespace = EditorSettings.projectGenerationRootNamespace,
+                AdditionalCompilerArguments = additionalCompilationArgumentsArray,
             };
 
             return settings;
@@ -2684,7 +2705,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (unityReferencesOptions == EditorBuildRules.UnityReferencesOptions.ExcludeModules)
                 references.Add(monolithicEngineAssemblyPath);
 
-            references.AddRange(unityReferences.Concat(customReferences).Concat(precompiledReferences).Concat(editorReferences).Concat(additionalReferences));
+            references.AddRange(unityReferences.Values); // unity references paths
+            references.AddRange(customReferences.Concat(precompiledReferences).Concat(editorReferences).Concat(additionalReferences));
 
             return references.ToArray();
         }

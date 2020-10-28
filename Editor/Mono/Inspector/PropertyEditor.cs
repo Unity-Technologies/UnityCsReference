@@ -1922,6 +1922,7 @@ namespace UnityEditor
 
                 if (ShouldCullEditor(editors, newEditorsIndex))
                 {
+                    currentElement.ReinitCulled(newEditorsIndex);
                     ++newEditorsIndex;
                     continue;
                 }

@@ -79,7 +79,9 @@ namespace UnityEditor.PackageManager.UI
                 return;
             }
             UIUtils.SetElementDisplay(this, true);
-            foreach (var sample in samples)
+            UIUtils.SetElementDisplay(samplesErrorInfoBox, version.HasTag(PackageTag.InDevelopment) && samples.Any(sample => string.IsNullOrEmpty(sample.displayName)));
+
+            foreach (var sample in samples.Where(s => !string.IsNullOrEmpty(s.displayName)))
             {
                 var sampleItem = new PackageSampleItem(version, sample);
                 importStatusContainer.Add(sampleItem.importStatus);
@@ -101,5 +103,6 @@ namespace UnityEditor.PackageManager.UI
         internal VisualElement importStatusContainer { get { return cache.Get<VisualElement>("importStatusContainer"); } }
         internal VisualElement nameAndSizeLabelContainer { get { return cache.Get<VisualElement>("nameAndSizeLabelContainer"); } }
         internal VisualElement importButtonContainer { get { return cache.Get<VisualElement>("importButtonContainer"); } }
+        internal HelpBox samplesErrorInfoBox => cache.Get<HelpBox>("samplesErrorInfoBox");
     }
 }
