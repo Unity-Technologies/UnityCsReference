@@ -1978,6 +1978,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 compilationExtension = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(buildTarget))?.CreateCompilationExtension();
             }
 
+            List<string> additionalCompilationArguments = new List<string>();
+            if (PlayerSettings.suppressCommonWarnings)
+            {
+                additionalCompilationArguments.Add("/nowarn:0169");
+                additionalCompilationArguments.Add("/nowarn:0649");
+            }
+
             var settings = new ScriptAssemblySettings
             {
                 BuildTarget = buildTarget,
@@ -1987,7 +1994,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 PredefinedAssembliesCompilerOptions = predefinedAssembliesCompilerOptions,
                 CompilationExtension = compilationExtension,
                 EditorCodeOptimization = CompilationPipeline.codeOptimization,
-                ExtraGeneralDefines = extraScriptingDefines
+                ExtraGeneralDefines = extraScriptingDefines,
+                AdditionalCompilerArguments = additionalCompilationArguments.ToArray(),
             };
 
             return settings;

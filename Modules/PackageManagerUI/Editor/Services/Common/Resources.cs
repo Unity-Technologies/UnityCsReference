@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -9,7 +10,8 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
 {
-    internal static class Resources
+    [Serializable]
+    internal class Resources : ScriptableSingleton<Resources>
     {
         private const string k_TemplateRoot = "UXML/PackageManager/";
 
@@ -20,12 +22,22 @@ namespace UnityEditor.PackageManager.UI
         private const string k_ExtensionDarkVariablesSheetPath = "StyleSheets/Extensions/base/dark.uss";
         private const string k_ExtensionLightVariablesSheetPath = "StyleSheets/Extensions/base/light.uss";
 
-        private static readonly string[] k_PackageManagerStyleSheetPaths = new string[] {"StyleSheets/PackageManager/PackageDependencies.uss", "StyleSheets/PackageManager/PackageDetails.uss", "StyleSheets/PackageManager/PackageItem.uss",
-                                                                                         "StyleSheets/PackageManager/PackageList.uss", "StyleSheets/PackageManager/PackageLoadBar.uss", "StyleSheets/PackageManager/PackageSampleList.uss", "StyleSheets/PackageManager/PackageStatusBar.uss",
-                                                                                         "StyleSheets/PackageManager/PackageToolbar.uss", "StyleSheets/PackageManager/ProgressBar.uss"};
+        private static readonly string[] k_PackageManagerStyleSheetPaths =
+        {
+            "StyleSheets/PackageManager/PackageDependencies.uss",
+            "StyleSheets/PackageManager/PackageDetails.uss",
+            "StyleSheets/PackageManager/PackageItem.uss",
+            "StyleSheets/PackageManager/PackageList.uss",
+            "StyleSheets/PackageManager/PackageLoadBar.uss",
+            "StyleSheets/PackageManager/PackageSampleList.uss",
+            "StyleSheets/PackageManager/PackageStatusBar.uss",
+            "StyleSheets/PackageManager/PackageToolbar.uss",
+            "StyleSheets/PackageManager/ProgressBar.uss"
+        };
 
-        private static StyleSheet m_DarkStyleSheet;
-        private static StyleSheet darkStyleSheet
+        [SerializeField]
+        private StyleSheet m_DarkStyleSheet;
+        private StyleSheet darkStyleSheet
         {
             get
             {
@@ -35,8 +47,9 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        private static StyleSheet m_LightStyleSheet;
-        private static StyleSheet lightStyleSheet
+        [SerializeField]
+        private StyleSheet m_LightStyleSheet;
+        private StyleSheet lightStyleSheet
         {
             get
             {
@@ -46,24 +59,26 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        private static StyleSheet m_DarkFilterStyleSheet;
-        private static StyleSheet darkFilterStyleSheet
+        [SerializeField]
+        private StyleSheet m_DarkFilterStyleSheet;
+        private StyleSheet darkFilterStyleSheet
         {
             get
             {
                 if (m_DarkFilterStyleSheet == null)
-                    m_DarkFilterStyleSheet = LoadAndResolveFilterStyleSheet(true);
+                    m_DarkFilterStyleSheet = LoadAndResolveFilterStyleSheet();
                 return m_DarkFilterStyleSheet;
             }
         }
 
-        private static StyleSheet m_LightFilterStyleSheet;
-        private static StyleSheet lightFilterStyleSheet
+        [SerializeField]
+        private StyleSheet m_LightFilterStyleSheet;
+        private StyleSheet lightFilterStyleSheet
         {
             get
             {
                 if (m_LightFilterStyleSheet == null)
-                    m_LightFilterStyleSheet = LoadAndResolveFilterStyleSheet(false);
+                    m_LightFilterStyleSheet = LoadAndResolveFilterStyleSheet();
                 return m_LightFilterStyleSheet;
             }
         }
@@ -94,9 +109,9 @@ namespace UnityEditor.PackageManager.UI
             return styleSheet;
         }
 
-        private static StyleSheet LoadAndResolveFilterStyleSheet(bool isDarkTheme)
+        private static StyleSheet LoadAndResolveFilterStyleSheet()
         {
-            var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
+            var styleSheet = CreateInstance<StyleSheet>();
             styleSheet.hideFlags = HideFlags.HideAndDontSave;
             styleSheet.isUnityStyleSheet = true;
 
@@ -126,12 +141,12 @@ namespace UnityEditor.PackageManager.UI
             return GetVisualTreeAsset(templateFilename)?.Instantiate();
         }
 
-        public static StyleSheet GetMainWindowStyleSheet()
+        public StyleSheet GetMainWindowStyleSheet()
         {
             return EditorGUIUtility.isProSkin ? darkStyleSheet : lightStyleSheet;
         }
 
-        public static StyleSheet GetFiltersWindowStyleSheet()
+        public StyleSheet GetFiltersWindowStyleSheet()
         {
             return EditorGUIUtility.isProSkin ? darkFilterStyleSheet : lightFilterStyleSheet;
         }

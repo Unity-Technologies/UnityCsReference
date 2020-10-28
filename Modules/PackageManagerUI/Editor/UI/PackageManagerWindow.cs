@@ -61,7 +61,7 @@ namespace UnityEditor.PackageManager.UI
             if (windowResource != null)
             {
                 var root = windowResource.Instantiate();
-                root.styleSheets.Add(Resources.GetMainWindowStyleSheet());
+                root.styleSheets.Add(Resources.instance.GetMainWindowStyleSheet());
                 cache = new VisualElementCache(root);
 
                 rootVisualElement.Add(root);

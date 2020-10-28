@@ -460,6 +460,14 @@ namespace UnityEditor
             DisableFrameDebugger();
         }
 
+        internal override void OnResized()
+        {
+            if (PopupWindowWithoutFocus.IsVisible())
+                PopupWindowWithoutFocus.Hide();
+
+            base.OnResized();
+        }
+
         public void EnableIfNeeded()
         {
             if (FrameDebuggerUtility.IsLocalEnabled() || FrameDebuggerUtility.IsRemoteEnabled())

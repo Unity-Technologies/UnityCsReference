@@ -21,6 +21,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public EditorScriptCompilationOptions CompilationOptions { get; set; }
         public ScriptCompilerOptions PredefinedAssembliesCompilerOptions { get; set; }
         public string[] ExtraGeneralDefines { get; set; }
+        public string[] AdditionalCompilerArguments { get; set; }
         public ICompilationExtension CompilationExtension { get; set; }
 
         public CodeOptimization EditorCodeOptimization { get; set; }
@@ -31,6 +32,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             BuildTargetGroup = BuildTargetGroup.Unknown;
             PredefinedAssembliesCompilerOptions = new ScriptCompilerOptions();
             ExtraGeneralDefines = new string[0];
+            AdditionalCompilerArguments = new string[0];
         }
 
         public bool BuildingForEditor

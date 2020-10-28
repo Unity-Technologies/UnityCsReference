@@ -19,6 +19,7 @@ namespace UnityEditorInternal
     internal interface IProfilerWindowController
     {
         event ProfilerWindow.SelectionChangedCallback selectionChanged;
+        event ProfilerWindow.FrameChangedCallback currentFrameChanged;
 
         void SetSelectedPropertyPath(string path);
         void ClearSelectedPropertyPath();

@@ -19,6 +19,7 @@ using UnityEngine.SceneManagement;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using UnityEngine.Rendering;
+using UnityEditor.Compilation;
 
 // ************************************* READ BEFORE EDITING **************************************
 //
@@ -166,7 +167,8 @@ namespace UnityEditor
             public static readonly GUIContent require32 = EditorGUIUtility.TrTextContent("Require ES3.2");
             public static readonly GUIContent skinOnGPU = EditorGUIUtility.TrTextContent("GPU Skinning*", "Use DX11/ES3 GPU Skinning");
             public static readonly GUIContent skinOnGPUCompute = EditorGUIUtility.TrTextContent("Compute Skinning*", "Use Compute pipeline for Skinning");
-            public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols");
+            public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols", "Preprocessor defines passed to the C# script compiler.");
+            public static readonly GUIContent suppressCommonWarnings = EditorGUIUtility.TrTextContent("Suppress Common Warnings", "Suppresses C# warnings CS0169 and CS0649.");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
@@ -360,6 +362,7 @@ namespace UnityEditor
         SerializedProperty m_VirtualTexturingSupportEnabled;
 
         // Scripting
+        SerializedProperty m_SuppressCommonWarnings;
         SerializedProperty m_UseDeterministicCompilation;
 
         // Localization Cache
@@ -461,6 +464,7 @@ namespace UnityEditor
             m_EnableInputSystem             = FindPropertyAssert("enableNativePlatformBackendsForNewInputSystem");
             m_DisableInputManager           = FindPropertyAssert("disableOldInputManagerSupport");
 
+            m_SuppressCommonWarnings        = FindPropertyAssert("suppressCommonWarnings");
             m_AllowUnsafeCode               = FindPropertyAssert("allowUnsafeCode");
             m_GCIncremental                 = FindPropertyAssert("gcIncremental");
             m_UseDeterministicCompilation = FindPropertyAssert("useDeterministicCompilation");
@@ -2297,6 +2301,18 @@ namespace UnityEditor
                 {
                     Undo.RecordObject(this.target, SettingsContent.undoChangedScriptingDefineString);
                     PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, scriptDefines);
+                }
+            }
+
+            // Suppress common warnings
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(m_SuppressCommonWarnings, SettingsContent.suppressCommonWarnings);
+            if (EditorGUI.EndChangeCheck())
+            {
+                if (PlayerSettings.suppressCommonWarnings != m_SuppressCommonWarnings.boolValue)
+                {
+                    PlayerSettings.suppressCommonWarnings = m_SuppressCommonWarnings.boolValue;
+                    CompilationPipeline.RequestScriptCompilation();
                 }
             }
 

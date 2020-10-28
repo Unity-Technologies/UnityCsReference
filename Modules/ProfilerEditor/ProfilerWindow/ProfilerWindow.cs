@@ -199,7 +199,8 @@ namespace UnityEditor
 
         internal delegate void SelectionChangedCallback(string selectedPropertyPath);
         public event SelectionChangedCallback selectionChanged = delegate {};
-        internal event Action<int, bool> currentFrameChanged = delegate {};
+        internal delegate void FrameChangedCallback(int i, bool b);
+        public event FrameChangedCallback currentFrameChanged = delegate {};
         internal event Action<bool> recordingStateChanged = delegate {};
         internal event Action<bool> deepProfileChanged = delegate {};
         internal event Action<ProfilerMemoryRecordMode> memoryRecordingModeChanged = delegate {};

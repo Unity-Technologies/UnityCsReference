@@ -113,6 +113,12 @@ namespace UnityEditor
             return false;
         }
 
+        internal override void OnResized()
+        {
+            m_Tree?.OnWindowResized();
+            base.OnResized();
+        }
+
         public void OnGUI()
         {
             if (ms_Constants == null)
@@ -207,7 +213,6 @@ namespace UnityEditor
             {
                 PackageUtility.ImportPackageAssetsCancelledFromGUI(m_PackageName, m_ImportPackageItems);
 
-                PopupWindowWithoutFocus.Hide();
                 Close();
                 GUIUtility.ExitGUI();
             }
@@ -216,7 +221,6 @@ namespace UnityEditor
                 if (m_ImportPackageItems != null)
                     PackageUtility.ImportPackageAssets(m_PackageName, m_ImportPackageItems);
 
-                PopupWindowWithoutFocus.Hide();
                 Close();
                 GUIUtility.ExitGUI();
             }

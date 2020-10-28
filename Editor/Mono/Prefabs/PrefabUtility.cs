@@ -496,7 +496,10 @@ namespace UnityEditor
                     // hasHiddenChildren, not hasChildren, to determine which properties to call the method on.
                     // Applying all visible leaf properties applies all data only once and ensures that when an
                     // object reference is applied, it's via its own property and not a parent property.
-                    if (property.prefabOverride && !property.hasVisibleChildren)
+
+                    // NOTE: all property modifications are leafs except in the context of managed references.
+                    // Managed references can be overriden (and have visible children).
+                    if (property.prefabOverride && (property.propertyType == SerializedPropertyType.ManagedReference || !property.hasVisibleChildren))
                         ApplySingleProperty(property, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, false, allowApplyDefaultOverride, serializedObjects, action);
                 }
             }
