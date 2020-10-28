@@ -188,6 +188,12 @@ namespace UnityEditor
             }
         }
 
+        public void OnWindowResized()
+        {
+            if (PopupWindowWithoutFocus.IsVisible())
+                PopupWindowWithoutFocus.Hide();
+        }
+
         public void OnGUI(Rect rect)
         {
             // Remove preview popup on mouse scroll wheel events

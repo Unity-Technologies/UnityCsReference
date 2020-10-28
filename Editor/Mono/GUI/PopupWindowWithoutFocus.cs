@@ -13,6 +13,7 @@ namespace UnityEditor
     class PopupWindowWithoutFocus : PopupWindow
     {
         static PopupWindowWithoutFocus s_PopupWindowWithoutFocus;
+        bool hasBeenFocused = false;
 
         public new static void Show(Rect activatorRect, PopupWindowContent windowContent)
         {
@@ -67,24 +68,35 @@ namespace UnityEditor
         }
 
         // Invoked from C++
+        // If we want to use this paradigm long term, we should consider reducing the overhead of a manged call.
+        // Returns true if we suppress event propagation.
         static bool OnGlobalMouseOrKeyEvent(EventType type, KeyCode keyCode, Vector2 mousePosition)
         {
+            bool suppress = false;
+
             if (s_PopupWindowWithoutFocus == null)
-                return false;
-
-            if (type == EventType.MouseDown && !s_PopupWindowWithoutFocus.position.Contains(mousePosition))
+                return suppress;
+            else if (type == EventType.KeyDown)
             {
-                s_PopupWindowWithoutFocus.Close();
-                return false;
+                if (keyCode == KeyCode.Escape)
+                {
+                    // Always close this window type when escape is pressed, even if never got focus.
+                    // We don't want the esc key propogated to the window with keyboard focus.
+                    s_PopupWindowWithoutFocus.Close();
+                    suppress = true;
+                }
+            }
+            else if (type == EventType.MouseDown && !s_PopupWindowWithoutFocus.hasBeenFocused)
+            {
+                // If the window has been clicked, it becomes a normal popup window that can spawn other windows and be trated as another AuxWindow.
+                // If the click was somewhere else, we assume that the user did not want to see this window anymore, so it should be closed.
+                if (s_PopupWindowWithoutFocus.position.Contains(mousePosition))
+                    s_PopupWindowWithoutFocus.hasBeenFocused = true;
+                else
+                    s_PopupWindowWithoutFocus.Close();
             }
 
-            if (type == EventType.KeyDown && keyCode == KeyCode.Escape)
-            {
-                s_PopupWindowWithoutFocus.Close();
-                return true;
-            }
-
-            return false;
+            return suppress;
         }
     }
 }

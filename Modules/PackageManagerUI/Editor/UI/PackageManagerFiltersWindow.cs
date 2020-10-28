@@ -35,7 +35,7 @@ namespace UnityEditor.PackageManager.UI
             if (windowResource != null)
             {
                 var root = windowResource.Instantiate();
-                root.styleSheets.Add(Resources.GetFiltersWindowStyleSheet());
+                root.styleSheets.Add(Resources.instance.GetFiltersWindowStyleSheet());
                 cache = new VisualElementCache(root);
 
                 rootVisualElement.Add(root);

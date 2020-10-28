@@ -101,19 +101,6 @@ namespace UnityEditor
             ResizeWindow_Native(m_NativeContextPtr.m_IntPtr, m_Parent.nativeHandle, GetTabRect());
         }
 
-        /*
-         * We will receive this callback when we're docked inside the main editor window
-         * and the editor is moved via the native title bar. Managed normally doesn't care
-         * about these movements, but on Linux, we need to sync the externally hosted process
-         * window with the main window's location. This is not done automatically because we need to keep
-         * the external process window as a top-level window in the hierarchy so that the socket doesn't get
-         * unrealized and our external player is destroyed when we move tabs or destroy it's container window.
-         */
-        private void OnMainWindowMove()
-        {
-            ResizeWindow_Native(m_NativeContextPtr.m_IntPtr, m_Parent.nativeHandle, GetTabRect());
-        }
-
         private void OnDestroy()
         {
             DestroyWindow_Native(m_NativeContextPtr.m_IntPtr, m_Parent.nativeHandle);
