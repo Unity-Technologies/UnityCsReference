@@ -45,6 +45,12 @@ namespace UnityEditorInternal
             {
                 get { return Time.realtimeSinceStartup >= m_DelayTarget; }
             }
+
+            public void Clear()
+            {
+                m_OnSearchChanged = null;
+                EditorApplication.update -= Trigger;
+            }
         }
 
         public static readonly GUIContent kFrameTooltip = EditorGUIUtility.TrTextContent("", "Press 'F' to frame selection");
@@ -88,6 +94,7 @@ namespace UnityEditorInternal
         string m_prevSearchPattern = null;
         [NonSerialized]
         bool m_ShouldExecuteDelayedSearch = false;
+        int m_PrevFrameIndex;
 
         public delegate void SelectionChangedCallback(int id);
         public event SelectionChangedCallback selectionChanged;
@@ -154,7 +161,7 @@ namespace UnityEditorInternal
 
             public void Init(ProfilerFrameDataMultiColumnHeader.Column[] columns, IProfilerSampleNameProvider profilerSampleNameProvider)
             {
-                if (m_Initialized)
+                if (m_Initialized || (m_FrameDataView != null && !m_FrameDataView.valid))
                     return;
 
                 m_StringProperties = new string[columns.Length];
@@ -178,7 +185,7 @@ namespace UnityEditorInternal
             }
         }
 
-        public ProfilerFrameDataTreeView(TreeViewState state, ProfilerFrameDataMultiColumnHeader multicolumnHeader, IProfilerSampleNameProvider profilerSampleNameProvider)
+        public ProfilerFrameDataTreeView(TreeViewState state, ProfilerFrameDataMultiColumnHeader multicolumnHeader, IProfilerSampleNameProvider profilerSampleNameProvider, IProfilerWindowController profilerWindowController)
             : base(state, multicolumnHeader)
         {
             Assert.IsNotNull(multicolumnHeader);
@@ -186,6 +193,7 @@ namespace UnityEditorInternal
             m_ProfilerSampleNameProvider = profilerSampleNameProvider;
             m_MultiColumnHeader = multicolumnHeader;
             m_MultiColumnHeader.sortingChanged += OnSortingChanged;
+            profilerWindowController.currentFrameChanged += FrameChanged;
         }
 
         public void SetFrameDataView(HierarchyFrameDataView frameDataView)
@@ -410,15 +418,22 @@ namespace UnityEditorInternal
 
         protected override TreeViewItem BuildRoot()
         {
-            var rootID = m_FrameDataView != null ? m_FrameDataView.GetRootItemID() : 0;
+            var rootID = (m_FrameDataView != null && m_FrameDataView.valid) ? m_FrameDataView.GetRootItemID() : 0;
             return new FrameDataTreeViewItem(m_FrameDataView, rootID, -1, null);
+        }
+
+        void FrameChanged(int i, bool b)
+        {
+            m_DelayedSearch.Clear();
+            m_ShouldExecuteDelayedSearch = true;
+            if (m_FrameDataView != null && m_FrameDataView.valid)
+                Reload();
         }
 
         protected override IList<TreeViewItem> BuildRows(TreeViewItem root)
         {
             if (m_RowsPool.Count < kMaxPooledRowsCount)
                 m_RowsPool.AddRange(m_Rows);
-            m_Rows.Clear();
 
             if (m_FrameDataView == null || !m_FrameDataView.valid)
                 return m_Rows;
@@ -451,11 +466,20 @@ namespace UnityEditorInternal
                 else if (m_ShouldExecuteDelayedSearch)
                 {
                     m_ShouldExecuteDelayedSearch = false;
+                    m_Rows.Clear();
+                    Search(root, searchString, m_Rows);
+                }
+
+                if (ProfilerDriver.lastFrameIndex != m_PrevFrameIndex)
+                {
+                    m_Rows.Clear();
                     Search(root, searchString, m_Rows);
                 }
             }
             else
             {
+                m_prevSearchPattern = searchString;
+                m_Rows.Clear();
                 AddAllChildren((FrameDataTreeViewItem)root, m_ExpandedMarkersHierarchy, m_Rows, newExpandedIds);
             }
 
@@ -465,6 +489,7 @@ namespace UnityEditorInternal
                 MigrateSelectedState(false);
             }
 
+            m_PrevFrameIndex = ProfilerDriver.lastFrameIndex;
             return m_Rows;
         }
 
@@ -713,7 +738,8 @@ namespace UnityEditorInternal
             if (m_LegacySelectedItemMarkerNamePath != null)
                 MigrateSelectedState(true);
 
-            base.OnGUI(rect);
+            if (m_FrameDataView != null && m_FrameDataView.valid)
+                base.OnGUI(rect);
         }
 
         protected override void RowGUI(RowGUIArgs args)

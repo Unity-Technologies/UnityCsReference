@@ -90,16 +90,6 @@ namespace UnityEditor.UIElements
             }
 
             Init();
-
-            Add(m_Header);
-            // If the editor targets contain many target and the multi editing is not supported, we should not add this inspector.
-            // However, the header and footer are kept since these are showing information regarding this state.
-            if ((editor.targets.Length <= 1) || (iw.IsMultiEditingSupported(editor, editor.target)))
-            {
-                Add(m_InspectorElement);
-            }
-
-            Add(m_Footer);
         }
 
         void InitCulled()
@@ -147,10 +137,44 @@ namespace UnityEditor.UIElements
             }
 
             UpdateInspectorVisibility();
+
+            Add(m_Header);
+            // If the editor targets contain many target and the multi editing is not supported, we should not add this inspector.
+            // However, the header and footer are kept since these are showing information regarding this state.
+            if ((editor.targets.Length <= 1) || (inspectorWindow.IsMultiEditingSupported(editor, editor.target)))
+            {
+                Add(m_InspectorElement);
+            }
+
+            Add(m_Footer);
+        }
+        
+        public void ReinitCulled(int editorIndex)
+        {
+            if (m_Header != null)
+            {
+                m_EditorIndex = editorIndex;
+                m_Header = m_Footer = null;
+                Clear();
+                InitCulled();
+                return;
+ 
+            }
+           
+            PopulateCache();
         }
 
         public void Reinit(int editorIndex)
         {
+            if (m_Header == null)
+            {
+                m_EditorIndex = editorIndex;
+                Clear();
+                Init();
+ 
+                return;
+            }
+            
             PopulateCache();
             Object editorTarget = editor.targets[0];
             string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);

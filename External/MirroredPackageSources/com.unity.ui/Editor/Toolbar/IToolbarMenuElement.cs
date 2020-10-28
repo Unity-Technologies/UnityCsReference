@@ -20,7 +20,15 @@ namespace UnityEditor.UIElements
             if (ve == null)
                 return;
 
-            tbe.menu.DoDisplayEditorMenu(ve.worldBound);
+            var worldBound = ve.worldBound;
+            if (worldBound.x <= 0f)
+            {
+                // If the toolbar menu element is going over its allowed left edge, the menu won't be drawn.
+                // (IMGUI seems to to the same as toolbar menus appear less attached to the left edge when the
+                // windows are stuck to the left side of the screen as well as our menus)
+                worldBound.x = 1f;
+            }
+            tbe.menu.DoDisplayEditorMenu(worldBound);
         }
     }
 }

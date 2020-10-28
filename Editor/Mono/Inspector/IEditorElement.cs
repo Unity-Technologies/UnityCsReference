@@ -14,6 +14,7 @@ namespace UnityEditor
         IEnumerable<Editor> Editors { get; }
 
         void Reinit(int editorIndex);
+        void ReinitCulled(int editorIndex);
 
         void AddPrefabComponent(VisualElement comp);
 

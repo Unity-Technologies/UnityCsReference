@@ -71,7 +71,6 @@ namespace UnityEditor
             public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alphanumeric Sorting");
             public static readonly GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation");
             public static readonly GUIContent codeCoverageEnabled = EditorGUIUtility.TrTextContent("Enable Code Coverage", "Check this to enable Code Coverage. Code Coverage lets you see how much of your code is executed when it is run. Note that Code Coverage lowers Editor performance.");
-            public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("Create Objects at Origin", "Enable this preference to instantiate new 3D objects at World coordinates 0,0,0. Disable it to instantiate them at the Scene pivot (in front of the Scene view Camera).");
             public static readonly GUIContent applicationFrameThrottling = EditorGUIUtility.TrTextContent("Frame Throttling (milliseconds)", "The number of milliseconds the Editor can idle between frames.");
             public static readonly GUIContent inputMaxProcessTime = EditorGUIUtility.TrTextContent("Input Throttling (milliseconds)", "The maximum number of milliseconds the Editor will take to process user inputs.");
             public static readonly GUIContent interactionMode = EditorGUIUtility.TrTextContent("Interaction Mode", "Specifies how long the Editor can idle before it updates.");
@@ -144,6 +143,7 @@ namespace UnityEditor
             public static readonly GUIContent enableFilteringWhileSearching = EditorGUIUtility.TrTextContent("Enable filtering while searching", "If enabled, searching will cause non-matching items in the scene view to be greyed out");
             public static readonly GUIContent enableFilteringWhileLodGroupEditing = EditorGUIUtility.TrTextContent("Enable filtering while editing LOD groups", "If enabled, editing LOD groups will cause other objects in the scene view to be greyed out");
             public static readonly GUIContent handlesLineThickness = EditorGUIUtility.TrTextContent("Line Thickness", "Thickness of manipulator tool handle lines in UI points (0 = single pixel)");
+            public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("Create Objects at Origin", "Enable this preference to instantiate new 3D objects at World coordinates 0,0,0. Disable it to instantiate them at the Scene pivot (in front of the Scene view Camera).");
         }
 
         internal class LanguageProperties
@@ -880,7 +880,7 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             GUILayout.Label("General", EditorStyles.boldLabel);
-            m_Create3DObjectsAtOrigin = EditorGUILayout.Toggle(GeneralProperties.createObjectsAtWorldOrigin, m_Create3DObjectsAtOrigin);
+            m_Create3DObjectsAtOrigin = EditorGUILayout.Toggle(SceneViewProperties.createObjectsAtWorldOrigin, m_Create3DObjectsAtOrigin);
 
             GUILayout.Label("Handles", EditorStyles.boldLabel);
             Handles.s_LineThickness.value = EditorGUILayout.IntSlider(SceneViewProperties.handlesLineThickness, (int)Handles.s_LineThickness.value, 0, 5);

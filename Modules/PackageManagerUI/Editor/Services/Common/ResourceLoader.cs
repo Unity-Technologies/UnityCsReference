@@ -10,6 +10,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
 {
+    [Serializable]
     internal class ResourceLoader
     {
         private const string k_TemplateRoot = "UXML/PackageManager/";
@@ -20,14 +21,24 @@ namespace UnityEditor.PackageManager.UI
         private const string k_PackageManagerLightVariablesSheetPath = "StyleSheets/PackageManager/Light.uss";
         private const string k_ExtensionDarkVariablesSheetPath = "StyleSheets/Extensions/base/dark.uss";
         private const string k_ExtensionLightVariablesSheetPath = "StyleSheets/Extensions/base/light.uss";
-        private const string s_PublicNorthstarCommonVariableStyleSheetPath = "UIPackageResources/StyleSheets/Default/Variables/Public/common.uss";
-        private const string k_PublicNorthstarDarkVariablesSheetPath = "UIPackageResources/StyleSheets/Default/Northstar/Palette/dark.uss";
-        private const string k_PublicNorthstarLightVariablesSheetPath = "UIPackageResources/StyleSheets/Default/Northstar/Palette/light.uss";
+        private const string s_PublicNorthStarCommonVariableStyleSheetPath = "UIPackageResources/StyleSheets/Default/Variables/Public/common.uss";
+        private const string k_PublicNorthStarDarkVariablesSheetPath = "UIPackageResources/StyleSheets/Default/Northstar/Palette/dark.uss";
+        private const string k_PublicNorthStarLightVariablesSheetPath = "UIPackageResources/StyleSheets/Default/Northstar/Palette/light.uss";
 
-        private static readonly string[] k_PackageManagerStyleSheetPaths = new string[] {"StyleSheets/PackageManager/PackageDependencies.uss", "StyleSheets/PackageManager/PackageDetails.uss", "StyleSheets/PackageManager/PackageItem.uss",
-                                                                                         "StyleSheets/PackageManager/PackageList.uss", "StyleSheets/PackageManager/PackageLoadBar.uss", "StyleSheets/PackageManager/PackageSampleList.uss", "StyleSheets/PackageManager/PackageStatusBar.uss",
-                                                                                         "StyleSheets/PackageManager/PackageToolbar.uss", "StyleSheets/PackageManager/ProgressBar.uss"};
+        private static readonly string[] k_PackageManagerStyleSheetPaths =
+        {
+            "StyleSheets/PackageManager/PackageDependencies.uss",
+            "StyleSheets/PackageManager/PackageDetails.uss",
+            "StyleSheets/PackageManager/PackageItem.uss",
+            "StyleSheets/PackageManager/PackageList.uss",
+            "StyleSheets/PackageManager/PackageLoadBar.uss",
+            "StyleSheets/PackageManager/PackageSampleList.uss",
+            "StyleSheets/PackageManager/PackageStatusBar.uss",
+            "StyleSheets/PackageManager/PackageToolbar.uss",
+            "StyleSheets/PackageManager/ProgressBar.uss"
+        };
 
+        [SerializeField]
         private StyleSheet m_DarkStyleSheet;
         private StyleSheet darkStyleSheet
         {
@@ -39,6 +50,7 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
+        [SerializeField]
         private StyleSheet m_LightStyleSheet;
         private StyleSheet lightStyleSheet
         {
@@ -50,29 +62,31 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
+        [SerializeField]
         private StyleSheet m_DarkFilterStyleSheet;
         private StyleSheet darkFilterStyleSheet
         {
             get
             {
                 if (m_DarkFilterStyleSheet == null)
-                    m_DarkFilterStyleSheet = LoadAndResolveFilterStyleSheet(true);
+                    m_DarkFilterStyleSheet = LoadAndResolveFilterStyleSheet();
                 return m_DarkFilterStyleSheet;
             }
         }
 
+        [SerializeField]
         private StyleSheet m_LightFilterStyleSheet;
         private StyleSheet lightFilterStyleSheet
         {
             get
             {
                 if (m_LightFilterStyleSheet == null)
-                    m_LightFilterStyleSheet = LoadAndResolveFilterStyleSheet(false);
+                    m_LightFilterStyleSheet = LoadAndResolveFilterStyleSheet();
                 return m_LightFilterStyleSheet;
             }
         }
 
-        private StyleSheet LoadAndResolveStyleSheet(bool isDarkTheme)
+        private static StyleSheet LoadAndResolveStyleSheet(bool isDarkTheme)
         {
             var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
             styleSheet.hideFlags = HideFlags.HideAndDontSave;
@@ -81,7 +95,7 @@ namespace UnityEditor.PackageManager.UI
             var packageManagerThemeVariablesSheetPath = isDarkTheme ? k_PackageManagerDarkVariablesSheetPath : k_PackageManagerLightVariablesSheetPath;
             var variablesThemeStyleSheetPath = isDarkTheme ? UIElementsEditorUtility.s_DefaultCommonDarkStyleSheetPath : UIElementsEditorUtility.s_DefaultCommonLightStyleSheetPath;
             var extensionThemeStyleSheetPath = isDarkTheme ? k_ExtensionDarkVariablesSheetPath : k_ExtensionLightVariablesSheetPath;
-            var northstarThemeStyleSheetPath = isDarkTheme ? k_PublicNorthstarDarkVariablesSheetPath : k_PublicNorthstarLightVariablesSheetPath;
+            var NorthStarThemeStyleSheetPath = isDarkTheme ? k_PublicNorthStarDarkVariablesSheetPath : k_PublicNorthStarLightVariablesSheetPath;
 
             var packageManagerCommon = EditorGUIUtility.Load(k_PackageManagerCommonStyleSheetPath) as StyleSheet;
             var packageManagerTheme = EditorGUIUtility.Load(packageManagerThemeVariablesSheetPath) as StyleSheet;
@@ -90,18 +104,18 @@ namespace UnityEditor.PackageManager.UI
 
             var variableThemeSheet = EditorGUIUtility.Load(UIElementsEditorUtility.GetStyleSheetPathForCurrentFont(variablesThemeStyleSheetPath)) as StyleSheet;
             var extensionThemeStyleSheet = EditorGUIUtility.Load(extensionThemeStyleSheetPath) as StyleSheet;
-            var northstarCommonVariablesStyleSheet = EditorGUIUtility.Load(s_PublicNorthstarCommonVariableStyleSheetPath) as StyleSheet;
-            var northstarVariablesStyleSheet = EditorGUIUtility.Load(northstarThemeStyleSheetPath) as StyleSheet;
+            var NorthStarCommonVariablesStyleSheet = EditorGUIUtility.Load(s_PublicNorthStarCommonVariableStyleSheetPath) as StyleSheet;
+            var NorthStarVariablesStyleSheet = EditorGUIUtility.Load(NorthStarThemeStyleSheetPath) as StyleSheet;
 
             var resolver = new StyleSheets.StyleSheetResolver();
-            resolver.AddStyleSheets(variableThemeSheet, extensionThemeStyleSheet, northstarCommonVariablesStyleSheet, northstarVariablesStyleSheet, packageManagerCommon, packageManagerTheme);
+            resolver.AddStyleSheets(variableThemeSheet, extensionThemeStyleSheet, NorthStarCommonVariablesStyleSheet, NorthStarVariablesStyleSheet, packageManagerCommon, packageManagerTheme);
             resolver.AddStyleSheets(packageManagerStyles);
             resolver.ResolveTo(styleSheet);
 
             return styleSheet;
         }
 
-        private StyleSheet LoadAndResolveFilterStyleSheet(bool isDarkTheme)
+        private static StyleSheet LoadAndResolveFilterStyleSheet()
         {
             var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
             styleSheet.hideFlags = HideFlags.HideAndDontSave;
@@ -118,7 +132,7 @@ namespace UnityEditor.PackageManager.UI
             return styleSheet;
         }
 
-        private int m_NestedGetTemplateDepth = 0;
+        private int m_NestedGetTemplateDepth;
         public virtual VisualElement GetTemplate(string templateFilename)
         {
             m_NestedGetTemplateDepth++;
@@ -136,10 +150,7 @@ namespace UnityEditor.PackageManager.UI
 
         public virtual void LocalizeVisualElement(VisualElement visualElement, Func<string, string> l10nFunc)
         {
-            if (visualElement == null)
-                return;
-
-            visualElement.Query().Descendents<VisualElement>().ForEach((element) =>
+            visualElement?.Query().Descendents<VisualElement>().ForEach((element) =>
             {
                 if (!string.IsNullOrEmpty(element.tooltip))
                     element.tooltip = l10nFunc(element.tooltip);

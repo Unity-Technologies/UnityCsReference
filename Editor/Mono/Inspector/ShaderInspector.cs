@@ -196,7 +196,7 @@ namespace UnityEditor
             for (int i = 0; i < n; ++i)
             {
                 string pname = s.GetPropertyName(i);
-                string pdesc = s.GetPropertyType(i) + s.GetPropertyDescription(i);
+                string pdesc = s.GetPropertyDescription(i) + " (" + s.GetPropertyType(i) + ")";
                 EditorGUILayout.LabelField(pname, pdesc);
             }
         }
@@ -486,7 +486,7 @@ namespace UnityEditor
 
         public override Vector2 GetWindowSize()
         {
-            var numValues = m_GlobalKeywords.Length + m_LocalKeywords.Length + 2;
+            var numValues = m_GlobalKeywords.Length + m_LocalKeywords.Length + 4;
             var lineHeight = m_Style.lineHeight + m_Style.padding.vertical + m_Style.margin.top;
             return new Vector2(m_WindowWidth, Math.Min(lineHeight * numValues, 250.0f));
         }

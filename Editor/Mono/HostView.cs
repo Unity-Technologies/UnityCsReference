@@ -322,10 +322,6 @@ namespace UnityEditor
 
         // Messages sent by Unity to editor windows today.
         // The implementation is not very good, but oh well... it gets the message across.
-        internal void OnMainWindowMove()
-        {
-            Invoke("OnMainWindowMove");
-        }
 
         internal void OnProjectChange()
         {

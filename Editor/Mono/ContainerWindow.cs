@@ -455,18 +455,6 @@ namespace UnityEditor
             Save();
         }
 
-        internal void OnMove()
-        {
-            if (IsMainWindow() && this.rootView is MainView)
-            {
-                MainView mv = (MainView)this.rootView;
-                foreach (HostView view in mv.allChildren.OfType<HostView>())
-                {
-                    view.OnMainWindowMove();
-                }
-            }
-        }
-
         // The title of the window, including unsaved changes markings, if any.
         public string displayedTitle { get; private set; }
 

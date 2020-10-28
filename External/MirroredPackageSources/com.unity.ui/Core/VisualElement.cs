@@ -44,6 +44,8 @@ namespace UnityEngine.UIElements
         RequireMeasureFunction = 1 << 7,
         // Element has view data persistence
         EnableViewDataPersistence = 1 << 8,
+        // Element needs to receive an AttachToPanel event
+        NeedsAttachToPanelEvent = 1 << 10,
         // Element initial flags
         Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty
     }
@@ -996,7 +998,9 @@ namespace UnityEngine.UIElements
             }
             else if (evt.eventTypeId == MouseEnterEvent.TypeId())
             {
-                pseudoStates |= PseudoStates.Hover;
+                var capturingElement = panel?.GetCapturingElement(PointerId.mousePointerId);
+                if (capturingElement == null || capturingElement == this)
+                    pseudoStates |= PseudoStates.Hover;
             }
             else if (evt.eventTypeId == MouseLeaveEvent.TypeId())
             {
@@ -1048,12 +1052,39 @@ namespace UnityEngine.UIElements
                     panelDispatcherGate = new EventDispatcherGate(panel.dispatcher);
                 }
 
+                BaseVisualElementPanel previousPanel = elementPanel;
+
                 using (pDispatcherGate)
                 using (panelDispatcherGate)
                 {
                     foreach (var e in elements)
                     {
-                        e.ChangePanel(p);
+                        e.WillChangePanel(p);
+                    }
+
+                    VisualElementFlags flagToAdd = p != null ? VisualElementFlags.NeedsAttachToPanelEvent : 0;
+
+                    foreach (var e in elements)
+                    {
+                        // this can happen if the elements gets re-parented during a user callback
+                        // in this case another SetPanel() call should already have notified the element
+                        // so we simply ignore it
+                        if (previousPanel != e.elementPanel)
+                            continue;
+
+                        e.elementPanel = p;
+                        e.m_Flags |= flagToAdd;
+                    }
+
+                    foreach (var e in elements)
+                    {
+                        // this can happen if the elements gets re-parented during a user callback
+                        // in this case another SetPanel() call should already have notified the element
+                        // so we simply ignore it
+                        if (p != e.elementPanel)
+                            continue;
+
+                        e.HasChangedPanel(previousPanel);
                     }
                 }
             }
@@ -1063,34 +1094,40 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void ChangePanel(BaseVisualElementPanel p)
+        void WillChangePanel(BaseVisualElementPanel destinationPanel)
         {
-            if (panel == p)
-            {
-                return;
-            }
-
             if (panel != null)
             {
-                using (var e = DetachFromPanelEvent.GetPooled(panel, p))
+                // Only send this event if the element isn't waiting for an attach event already
+                if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == 0)
                 {
-                    e.target = this;
-                    elementPanel.SendEvent(e, DispatchMode.Immediate);
+                    using (var e = DetachFromPanelEvent.GetPooled(panel, destinationPanel))
+                    {
+                        e.target = this;
+                        elementPanel.SendEvent(e, DispatchMode.Immediate);
+                    }
                 }
+
                 UnregisterRunningAnimations();
             }
+        }
 
-            IPanel prevPanel = panel;
-            elementPanel = p;
-
+        void HasChangedPanel(BaseVisualElementPanel prevPanel)
+        {
             if (panel != null)
             {
                 yogaNode.Config = elementPanel.yogaConfig;
                 RegisterRunningAnimations();
-                using (var e = AttachToPanelEvent.GetPooled(prevPanel, p))
+
+                // Only send this event if the element hasn't received it yet
+                if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == VisualElementFlags.NeedsAttachToPanelEvent)
                 {
-                    e.target = this;
-                    elementPanel.SendEvent(e, DispatchMode.Default);
+                    using (var e = AttachToPanelEvent.GetPooled(prevPanel, panel))
+                    {
+                        e.target = this;
+                        elementPanel.SendEvent(e, DispatchMode.Immediate);
+                    }
+                    m_Flags &= ~VisualElementFlags.NeedsAttachToPanelEvent;
                 }
             }
             else
