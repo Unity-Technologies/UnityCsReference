@@ -140,6 +140,9 @@ namespace UnityEditor.PackageManager.UI
         [UsedByNativeCode]
         internal static void OnPackageManagerResolve()
         {
+            var packageDatabase = ServicesContainer.instance.Resolve<PackageDatabase>();
+            packageDatabase?.ClearSamplesCache();
+
             var applicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
             if (!applicationProxy.isBatchMode)
             {

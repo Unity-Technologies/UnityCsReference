@@ -41,11 +41,11 @@ namespace UnityEditor
 
             Rect aggregatedInfoBox = rect;
             aggregatedInfoBox.height *= 0.6f;
-            aggregatedInfoBox.width *= 0.4f;
+            aggregatedInfoBox.width = Mathf.Min(700, rect.width);
 
             if (ProfilerDriver.GetStatisticsAvailabilityState(ProfilerArea.VirtualTexturing, win.GetActiveVisibleFrameIndex()) == 0)
             {
-                GUI.Label(aggregatedInfoBox, "No Virtual Texturing data was collected.\n Virtual Texturing can be enabled in the player settings.");
+                GUI.Label(aggregatedInfoBox, "No Virtual Texturing data was collected.");
                 EditorGUILayout.EndVertical();
                 return;
             }
@@ -109,11 +109,11 @@ namespace UnityEditor
 
                     var stringBuilder = new StringBuilder(1024);
                     stringBuilder.AppendLine($"Tiles required this frame: {GetCounterValue(frameDataView, "Required Tiles")}");
+                    stringBuilder.AppendLine($"Max Cache Mip Bias: {GetCounterValueAsFloat(frameDataView, "Max Cache Mip Bias")}");
+                    stringBuilder.AppendLine($"Max Cache Demand: {GetCounterValue(frameDataView, "Max Cache Demand")}%");
+                    stringBuilder.AppendLine($"Total CPU Cache Size: {EditorUtility.FormatBytes(GetCounterValue(frameDataView, "Total CPU Cache Size"))}");
+                    stringBuilder.AppendLine($"Total GPU Cache Size: {EditorUtility.FormatBytes(GetCounterValue(frameDataView, "Total GPU Cache Size"))}");
                     stringBuilder.AppendLine($"Atlases: {GetCounterValue(frameDataView, "Atlases")}");
-                    stringBuilder.AppendLine($"Max GPU mip bias: {GetCounterValue(frameDataView, "Max Cache Mip Bias")}");
-                    stringBuilder.AppendLine($"Max GPU cache demand: {GetCounterValue(frameDataView, "Max Cache Demand")}%");
-                    stringBuilder.AppendLine($"Total CPU Cache Size: {EditorUtility.FormatBytes(GetCounterValue(frameDataView, "Total Cpu Cache Size"))}");
-                    stringBuilder.AppendLine($"Total GPU Cache Size: {EditorUtility.FormatBytes(GetCounterValue(frameDataView, "Total Gpu Cache size"))}");
                     stringBuilder.AppendLine("\nFOLLOWING STATISTICS ARE ONLY AVAILABLE IN A PLAYER BUILD");
                     stringBuilder.AppendLine($"Missing Disk Data: {EditorUtility.FormatBytes(GetCounterValue(frameDataView, "Missing Disk Data"))}");
                     stringBuilder.AppendLine($"Missing Streaming tiles: {GetCounterValue(frameDataView, "Missing Streaming Tiles")}");
@@ -153,10 +153,10 @@ namespace UnityEditor
                     for (int i = 0; i < biasData.Length; i += 2)
                     {
                         formats.AppendLine(((GraphicsFormat)biasData[i]).ToString());
-                        demands.AppendLine(biasData[i + 1].ToString());
+                        demands.AppendLine((biasData[i + 1] / 100.0f).ToString());
                     }
 
-                    GUI.Label(cacheBiasTitle, "Mipmap bias per format");
+                    GUI.Label(cacheBiasTitle, "Mipmap Bias Per Cache");
                     m_ScrollBias = GUI.BeginScrollView(cacheBiasScollBox, m_ScrollBias, new Rect(0, 0, 200, demandHeight));
                     GUI.Label(cacheFormatBox, formats.ToString());
                     GUI.Label(cacheValueBox, demands.ToString());
@@ -182,6 +182,15 @@ namespace UnityEditor
                 return -1;
 
             return frameData.GetCounterValueAsInt(id);
+        }
+
+        static float GetCounterValueAsFloat(FrameDataView frameData, string name)
+        {
+            var id = frameData.GetMarkerId(name);
+            if (id == FrameDataView.invalidMarkerId)
+                return -1;
+
+            return frameData.GetCounterValueAsFloat(id);
         }
     }
 }

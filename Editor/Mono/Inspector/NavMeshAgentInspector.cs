@@ -97,17 +97,23 @@ namespace UnityEditor
             var currentMask = m_WalkableMask.longValue;
             var compressedMask = 0;
 
-            //Need to find the index as the list of names will compress out empty areas
-            for (var i = 0; i < areaNames.Length; i++)
+            if (currentMask == 0xffffffff)
             {
-                var areaIndex = GameObjectUtility.GetNavMeshAreaFromName(areaNames[i]);
-                if (((1 << areaIndex) & currentMask) != 0)
-                    compressedMask = compressedMask | (1 << i);
+                compressedMask = ~0;
+            }
+            else
+            {
+                //Need to find the index as the list of names will compress out empty areas
+                for (var i = 0; i < areaNames.Length; i++)
+                {
+                    var areaIndex = GameObjectUtility.GetNavMeshAreaFromName(areaNames[i]);
+                    if (((1 << areaIndex) & currentMask) != 0)
+                        compressedMask = compressedMask | (1 << i);
+                }
             }
 
-            //TODO: Refactor this to use the mask field that takes a label.
-            float kH = EditorGUI.kSingleLineHeight;
-            var position = GUILayoutUtility.GetRect(EditorGUILayout.kLabelFloatMinW, EditorGUILayout.kLabelFloatMaxW, kH, kH, EditorStyles.layerMaskField);
+            var position = EditorGUILayout.GetControlRect();
+            EditorGUI.BeginProperty(position, GUIContent.none, m_WalkableMask);
 
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = m_WalkableMask.hasMultipleDifferentValues;
@@ -135,6 +141,7 @@ namespace UnityEditor
                     m_WalkableMask.longValue = newMask;
                 }
             }
+            EditorGUI.EndProperty();
 
             serializedObject.ApplyModifiedProperties();
         }

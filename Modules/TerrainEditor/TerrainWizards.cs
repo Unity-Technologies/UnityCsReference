@@ -28,6 +28,9 @@ namespace UnityEditor
             }
         }
 
+        internal bool TerrainDataIsPersistent
+            => EditorUtility.IsPersistent(terrainData);
+
         internal virtual void  OnWizardUpdate()
         {
             isValid = true;
@@ -502,14 +505,51 @@ namespace UnityEditor
         Grass
     }
 
+    class TerrainDataReference : PropertyAttribute
+    {}
+
+    [CustomPropertyDrawer(typeof(TerrainDataReference))]
+    class TerrainDataReferenceDrawer : PropertyDrawer
+    {
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            var allowSceneObjects = !(property.serializedObject.targetObject as TerrainWizard).TerrainDataIsPersistent;
+            EditorGUI.BeginChangeCheck();
+            var obj = EditorGUI.ObjectField(position, label, property.objectReferenceValue, fieldInfo.FieldType, allowSceneObjects);
+            if (EditorGUI.EndChangeCheck())
+                property.objectReferenceValue = obj;
+        }
+    }
+
+    class HoleEdgePaddingAttribute : PropertyAttribute
+    {}
+
+    [CustomPropertyDrawer(typeof(HoleEdgePaddingAttribute))]
+    class HoleEdgePaddingDrawer : PropertyDrawer
+    {
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            var tmpContent = EditorGUIUtility.TrTempContent("Hole Edge Padding (%)");
+            tmpContent.tooltip = "Controls how far away detail objects are from the edge of the hole area.\n\nSpecify this value as a percentage of the detail width, which determines the radius of the circular area around the detail object used for hole testing.";
+            EditorGUI.BeginChangeCheck();
+            var floatValue = EditorGUI.Slider(position, tmpContent, property.floatValue, 0, 100);
+            if (EditorGUI.EndChangeCheck())
+                property.floatValue = floatValue;
+        }
+    }
+
     class DetailMeshWizard : TerrainWizard
     {
+        [TerrainDataReference]
         public GameObject   m_Detail;
-        public float        m_NoiseSpread;
         public float        m_MinWidth;
         public float        m_MaxWidth;
         public float        m_MinHeight;
         public float        m_MaxHeight;
+        [Tooltip("Specify how drastically details vary in a noise pattern over the world space.")]
+        public float        m_NoiseSpread;
+        [HoleEdgePadding]
+        public float        m_HoleEdgePadding;
         public Color        m_HealthyColor;
         public Color        m_DryColor;
         public DetailMeshRenderMode m_RenderMode;
@@ -533,11 +573,12 @@ namespace UnityEditor
 
             m_Detail = prototype.prototype;
 
-            m_NoiseSpread = prototype.noiseSpread;
             m_MinWidth = prototype.minWidth;
             m_MaxWidth = prototype.maxWidth;
             m_MinHeight = prototype.minHeight;
             m_MaxHeight = prototype.maxHeight;
+            m_NoiseSpread = prototype.noiseSpread;
+            m_HoleEdgePadding = Mathf.Clamp01(prototype.holeEdgePadding) * 100.0f;
             m_HealthyColor = prototype.healthyColor;
             m_DryColor = prototype.dryColor;
             switch (prototype.renderMode)
@@ -577,11 +618,12 @@ namespace UnityEditor
             prototypes[m_PrototypeIndex].usePrototypeMesh = true;
             prototypes[m_PrototypeIndex].prototype = m_Detail;
             prototypes[m_PrototypeIndex].prototypeTexture = null;
-            prototypes[m_PrototypeIndex].noiseSpread = m_NoiseSpread;
             prototypes[m_PrototypeIndex].minWidth = m_MinWidth;
             prototypes[m_PrototypeIndex].maxWidth = m_MaxWidth;
             prototypes[m_PrototypeIndex].minHeight = m_MinHeight;
             prototypes[m_PrototypeIndex].maxHeight = m_MaxHeight;
+            prototypes[m_PrototypeIndex].noiseSpread = m_NoiseSpread;
+            prototypes[m_PrototypeIndex].holeEdgePadding = m_HoleEdgePadding / 100.0f;
             prototypes[m_PrototypeIndex].healthyColor = m_HealthyColor;
             prototypes[m_PrototypeIndex].dryColor = m_DryColor;
 
@@ -623,12 +665,16 @@ namespace UnityEditor
 
     class DetailTextureWizard : TerrainWizard
     {
+        [TerrainDataReference]
         public Texture2D    m_DetailTexture;
         public float        m_MinWidth;
         public float        m_MaxWidth;
         public float        m_MinHeight;
         public float        m_MaxHeight;
+        [Tooltip("Specify how drastically details vary in a noise pattern over the world space.")]
         public float        m_NoiseSpread;
+        [HoleEdgePadding]
+        public float        m_HoleEdgePadding;
         public Color        m_HealthyColor;
         public Color        m_DryColor;
         public bool         m_Billboard;
@@ -658,8 +704,8 @@ namespace UnityEditor
             m_MaxWidth = prototype.maxWidth;
             m_MinHeight = prototype.minHeight;
             m_MaxHeight = prototype.maxHeight;
-
             m_NoiseSpread = prototype.noiseSpread;
+            m_HoleEdgePadding = Mathf.Clamp01(prototype.holeEdgePadding) * 100.0f;
             m_HealthyColor = prototype.healthyColor;
             m_DryColor = prototype.dryColor;
             m_Billboard = prototype.renderMode == DetailRenderMode.GrassBillboard;
@@ -690,6 +736,7 @@ namespace UnityEditor
             prototypes[m_PrototypeIndex].minHeight = m_MinHeight;
             prototypes[m_PrototypeIndex].maxHeight = m_MaxHeight;
             prototypes[m_PrototypeIndex].noiseSpread = m_NoiseSpread;
+            prototypes[m_PrototypeIndex].holeEdgePadding = m_HoleEdgePadding / 100.0f;
             prototypes[m_PrototypeIndex].healthyColor = m_HealthyColor;
             prototypes[m_PrototypeIndex].dryColor = m_DryColor;
             prototypes[m_PrototypeIndex].renderMode = m_Billboard ? DetailRenderMode.GrassBillboard : DetailRenderMode.Grass;

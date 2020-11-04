@@ -81,7 +81,7 @@ namespace UnityEngine
         internal float m_MinHeight = 1F;
         internal float m_MaxHeight = 2F;
         internal float m_NoiseSpread = 0.1F;
-        internal float m_BendFactor = 0.1F;
+        internal float m_HoleEdgePadding = 0.0F;
         internal int m_RenderMode = 2;
         internal int m_UsePrototypeMesh = 0;
 
@@ -99,7 +99,10 @@ namespace UnityEngine
 
         public float noiseSpread { get { return m_NoiseSpread; } set { m_NoiseSpread = value; } }
 
-        public float bendFactor { get { return m_BendFactor; } set { m_BendFactor = value; } }
+        [Obsolete("bendFactor has no effect and is deprecated.", false)]
+        public float bendFactor { get { return 0.0f; } set {} }
+
+        public float holeEdgePadding { get { return m_HoleEdgePadding; } set { m_HoleEdgePadding = value; } }
 
         public Color healthyColor { get { return m_HealthyColor; } set { m_HealthyColor = value; } }
 
@@ -122,7 +125,7 @@ namespace UnityEngine
             m_MinHeight = other.m_MinHeight;
             m_MaxHeight = other.m_MaxHeight;
             m_NoiseSpread = other.m_NoiseSpread;
-            m_BendFactor = other.m_BendFactor;
+            m_HoleEdgePadding = other.m_HoleEdgePadding;
             m_RenderMode = other.m_RenderMode;
             m_UsePrototypeMesh = other.m_UsePrototypeMesh;
         }
@@ -157,7 +160,7 @@ namespace UnityEngine
                 m_MinHeight == other.m_MinHeight &&
                 m_MaxHeight == other.m_MaxHeight &&
                 m_NoiseSpread == other.m_NoiseSpread &&
-                m_BendFactor == other.m_BendFactor &&
+                m_HoleEdgePadding == other.m_HoleEdgePadding &&
                 m_RenderMode == other.m_RenderMode &&
                 m_UsePrototypeMesh == other.m_UsePrototypeMesh;
 

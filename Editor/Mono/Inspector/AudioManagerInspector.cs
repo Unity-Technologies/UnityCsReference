@@ -134,6 +134,12 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             EditorGUILayout.PropertyField(m_DisableAudio, Styles.DisableAudio);
+
+            if (EditorGUI.EndChangeCheck() && m_DisableAudio.boolValue.Equals(true))
+            {
+                AudioUtil.StopAllPreviewClips();
+            }
+
             EditorGUILayout.PropertyField(m_VirtualizeEffects, Styles.VirtualizeEffects);
 
             serializedObject.ApplyModifiedProperties();
