@@ -66,7 +66,11 @@ namespace UnityEngine.Rendering
 
         protected virtual void OnValidate()
         {
-            RenderPipelineManager.CleanupRenderPipeline();
+            if (RenderPipelineManager.s_CurrentPipelineAsset == this)
+            {
+                RenderPipelineManager.CleanupRenderPipeline();
+                RenderPipelineManager.PrepareRenderPipeline(this);
+            }
         }
 
         protected virtual void OnDisable()
