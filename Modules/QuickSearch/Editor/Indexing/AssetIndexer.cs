@@ -96,9 +96,12 @@ namespace UnityEditor.Search
                 if (settings.options.types && at != null)
                 {
                     IndexWord(documentIndex, at.Name);
-                    while (at != null && at != typeof(Object) && at != typeof(GameObject))
+                    while (at != null && at != typeof(Object))
                     {
-                        IndexProperty(documentIndex, "t", at.Name, saveKeyword: true);
+                        if (at == typeof(GameObject))
+                            IndexProperty(documentIndex, "t", "prefab", saveKeyword: true);
+                        else
+                            IndexProperty(documentIndex, "t", at.Name, saveKeyword: true);
                         at = at.BaseType;
                     }
                 }
@@ -107,18 +110,19 @@ namespace UnityEditor.Search
                     IndexProperty(documentIndex, "t", at.Name, saveKeyword: true);
                 }
 
-                if (settings.options.properties || hasCustomIndexers)
+                var guid = AssetDatabase.GUIDFromAssetPath(path);
+                var labels = AssetDatabase.GetLabels(guid);
+                foreach (var label in labels)
+                    IndexProperty(documentIndex, "l", label, saveKeyword: true);
+
+                if (settings.options.properties || settings.options.extended)
                 {
                     bool wasLoaded = AssetDatabase.IsMainAssetAtPathLoaded(path);
+                    bool isPrefab = path.EndsWith(".prefab");
 
-                    var mainAsset = path.EndsWith(".prefab") ? PrefabUtility.LoadPrefabContents(path) : AssetDatabase.LoadMainAssetAtPath(path);
+                    var mainAsset = isPrefab ? PrefabUtility.LoadPrefabContents(path) : AssetDatabase.LoadMainAssetAtPath(path);
                     if (!mainAsset)
                         return;
-
-                    var guid = AssetDatabase.GUIDFromAssetPath(path);
-                    var labels = AssetDatabase.GetLabels(guid);
-                    foreach (var label in labels)
-                        IndexProperty(documentIndex, "l", label, saveKeyword: true);
 
                     if (hasCustomIndexers)
                         IndexCustomProperties(path, documentIndex, mainAsset);
@@ -140,7 +144,6 @@ namespace UnityEditor.Search
                     {
                         if (mainAsset is GameObject go)
                         {
-                            IndexProperty(documentIndex, "t", "prefab", saveKeyword: true);
                             foreach (var v in go.GetComponents(typeof(Component)))
                             {
                                 if (!v || v.GetType() == typeof(Transform))
@@ -155,10 +158,12 @@ namespace UnityEditor.Search
 
                     if (!wasLoaded)
                     {
-                        if (mainAsset && !mainAsset.hideFlags.HasFlag(HideFlags.DontUnloadUnusedAsset) &&
-                            !(mainAsset is GameObject) &&
-                            !(mainAsset is Component) &&
-                            !(mainAsset is AssetBundle))
+                        if (isPrefab && mainAsset is GameObject prefabObject)
+                            PrefabUtility.UnloadPrefabContents(prefabObject);
+                        else if (mainAsset && !mainAsset.hideFlags.HasFlag(HideFlags.DontUnloadUnusedAsset) &&
+                                 !(mainAsset is GameObject) &&
+                                 !(mainAsset is Component) &&
+                                 !(mainAsset is AssetBundle))
                         {
                             Resources.UnloadAsset(mainAsset);
                         }

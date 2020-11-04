@@ -22,6 +22,9 @@ namespace UnityEditor.PackageManager.UI
         // the mapping between package name (key) to asset store product id (value)
         private Dictionary<string, string> m_ProductIdMap = new Dictionary<string, string>();
 
+        [SerializeField]
+        private long m_SearchPackageInfosTimestamp = 0;
+
         // arrays created to help serialize dictionaries
         [SerializeField]
         private PackageInfo[] m_SerializedInstalledPackageInfos;
@@ -149,7 +152,7 @@ namespace UnityEditor.PackageManager.UI
                 onPackageInfosUpdated?.Invoke(new PackageInfo[] { info });
         }
 
-        public virtual void SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos)
+        public virtual void SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0)
         {
             var newPackageInfos = packageInfos.ToDictionary(p => p.name, p => p);
 
@@ -158,13 +161,22 @@ namespace UnityEditor.PackageManager.UI
 
             var updatedInfos = FindUpdatedPackageInfos(oldPackageInfos, newPackageInfos);
 
+            // This is to fix the issue where refresh in `In Project` doesn't show new versions from the registry
+            // The cause of that issue is that when we create a UpmPackage, we take the versions from searchInfo
+            // and augment with the installed version but the versions in searchInfo could be outdated sometimes
+            // Since we have no easy way to compare two package info and know which one is newer with the current implementation,
+            // we want to keep what's stored in the searchPackageInfos as up to date as possible,
+            if (timestamp > m_SearchPackageInfosTimestamp)
+                foreach (var newInfo in updatedInfos.Where(info => m_SearchPackageInfos.ContainsKey(info.name)))
+                    m_SearchPackageInfos[newInfo.name] = newInfo;
+
             if (updatedInfos.Any())
                 onPackageInfosUpdated?.Invoke(updatedInfos);
         }
 
         public virtual PackageInfo GetSearchPackageInfo(string packageName) => m_SearchPackageInfos.Get(packageName);
 
-        public virtual void SetSearchPackageInfos(IEnumerable<PackageInfo> packageInfos)
+        public virtual void SetSearchPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp)
         {
             var newPackageInfos = packageInfos.ToDictionary(p => p.name, p => p);
 
@@ -174,6 +186,8 @@ namespace UnityEditor.PackageManager.UI
             var updatedInfos = FindUpdatedPackageInfos(oldPackageInfos, newPackageInfos);
             if (updatedInfos.Any())
                 onPackageInfosUpdated?.Invoke(updatedInfos);
+
+            m_SearchPackageInfosTimestamp = timestamp;
         }
 
         public virtual PackageInfo GetProductPackageInfo(string packageName) => m_ProductPackageInfos.Get(packageName);

@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.IO;
 using JetBrains.Annotations;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -34,12 +35,12 @@ namespace UnityEditor.SceneTemplate
         private const string k_DependenciesLabelName = "scene-template-asset-inspector-dependency-label";
         private const string k_ThumbnailAreaName = "scene-template-asset-inspector-thumbnail-area";
         private const string k_DependencyListView = "scene-template-asset-inspector-list-view";
-        private const string k_SnapshotRowName = "scene-template-asset-inspector-snapshot-row";
+        private const string k_NoLabelRowName = "scene-template-asset-inspector-no-label-row";
         private const string k_SceneTemplatePipelineName = "scene-template-pipeline-field";
 
         private const string k_DependencyInfo = @"This section lists dependencies of the Template Scene assigned above. Enable the Clone option for any dependency that you want to clone when you create a new scene from this template. Unity duplicates cloned assets into a folder with the same name as the new scene. The new scene references any dependencies that are not cloned.";
 
-        const string k_SceneTemplateInfo = @"Scene Template Pipeline must be a Monoscript whose main class derives from ISceneTemplatePipeline or SceneTemplatePipelineAdapter. The main class and the script must have the same name.";
+        const string k_SceneTemplateInfo = @"Scene Template Pipeline must be a Mono Script whose main class derives from ISceneTemplatePipeline or SceneTemplatePipelineAdapter. The main class and the script must have the same name.";
 
         private const int k_ItemSize = 16;
 
@@ -47,7 +48,12 @@ namespace UnityEditor.SceneTemplate
 
         private const string k_SnapshotTooltip = "Take a snapshot based on the selected target then assign it as thumbnail.";
         private const string k_SnapshotButtonLabel = "Take Snapshot";
+        private const string k_CreatePipelineTooltip = "Create a new Scene Template Pipeline.";
+        private const string k_CreatePipelineButtonLabel = "Create New Scene Template Pipeline";
+        private const string k_PipelineHelpUrl = "https://docs.unity3d.com/2020.2/Documentation/Manual/scene-templates.html";
         private List<SerializedProperty> m_DependenciesProperty = new List<SerializedProperty>();
+
+        private Texture2D m_HelpIcon;
 
         private VisualElement m_DependencyHelpBox;
         private ZebraList m_ZebraList;
@@ -157,8 +163,6 @@ namespace UnityEditor.SceneTemplate
 
             // SceneTemplatePipeline
             var sceneTemplatePipeline = new VisualElement();
-            sceneTemplatePipeline.Add(new HelpBox(k_SceneTemplateInfo, HelpBoxMessageType.Info));
-
             var pipelineProperty = serializedObject.FindProperty(k_TemplatePipelineName);
             var pipelineField = new PropertyField(pipelineProperty, "Scene Template Pipeline") { name = k_SceneTemplatePipelineName };
             pipelineField.RegisterCallback<ChangeEvent<Object>>(e =>
@@ -171,16 +175,35 @@ namespace UnityEditor.SceneTemplate
                 }
             });
             sceneTemplatePipeline.Add(pipelineField);
-            root.Add(CreateFoldoutInspector(sceneTemplatePipeline, "Scene Template Pipeline", "SceneTemplatePipelineFoldout"));
+            var buttonRow = CreateEmptyLabelRow("Scene Template Pipeline", Styles.classUnityPropertyFieldLabel); // Use a hidden label instead of an empty element for proper alignment
+            var createPipelineButton = new Button(OnCreateSceneTemplatePipeline) { text = k_CreatePipelineButtonLabel, tooltip = k_CreatePipelineTooltip };
+            createPipelineButton.AddToClassList(Styles.classUnityBaseFieldInput);
+            buttonRow.Add(createPipelineButton);
+            sceneTemplatePipeline.Add(buttonRow);
+            root.Add(CreateFoldoutInspectorWithHelp(sceneTemplatePipeline, "Scene Template Pipeline", "SceneTemplatePipelineFoldout", k_PipelineHelpUrl));
 
             // Dependencies
             root.Add(CreateFoldoutInspector(BuildDependencyRows(), "Dependencies", "SceneTemplateDependenciesFoldout"));
             return root;
         }
 
+        void OnCreateSceneTemplatePipeline()
+        {
+            var assetPath = AssetDatabase.GetAssetPath(serializedObject.targetObject.GetInstanceID());
+            var fileInfo = new FileInfo(assetPath);
+            var folder = fileInfo.DirectoryName;
+            var scriptAsset = SceneTemplateService.CreateNewSceneTemplatePipeline(folder) as MonoScript;
+            if (scriptAsset == null)
+                return;
+            var pipelineProperty = serializedObject.FindProperty(k_TemplatePipelineName);
+            pipelineProperty.objectReferenceValue = scriptAsset;
+            serializedObject.ApplyModifiedProperties();
+        }
+
         [UsedImplicitly]
         private void OnEnable()
         {
+            m_HelpIcon = EditorGUIUtility.LoadIcon("Icons/_Help.png");
             UpdateSceneTemplateAsset();
         }
 
@@ -199,6 +222,27 @@ namespace UnityEditor.SceneTemplate
             {
                 EditorPrefs.SetBool(foldoutEditorPref, e.newValue);
             });
+
+            return foldout;
+        }
+
+        private Foldout CreateFoldoutInspectorWithHelp(VisualElement element, string title, string foldoutEditorPref, string helpUrl)
+        {
+            var foldout = CreateFoldoutInspector(element, title, foldoutEditorPref);
+
+            var toggleInput = foldout.Q(className: "unity-toggle__input");
+
+            var label = toggleInput.Q<Label>();
+            label.style.flexGrow = 1;
+
+            var helpButton = new Button(() =>
+            {
+                Help.BrowseURL(helpUrl);
+            });
+            helpButton.style.backgroundImage = new StyleBackground(m_HelpIcon);
+            helpButton.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
+            helpButton.AddToClassList(Styles.classFoldoutHelpButton);
+            toggleInput.Add(helpButton);
 
             return foldout;
         }
@@ -480,12 +524,8 @@ namespace UnityEditor.SceneTemplate
             snapshotTargetPopup.formatSelectedValueCallback = info => info.Name;
             propertyElement.Add(snapshotTargetPopup);
 
-            var snapshotSecondRowElement = new VisualElement() { name = k_SnapshotRowName };
-            snapshotSecondRowElement.AddToClassList(Styles.classUnityBaseField);
+            var snapshotSecondRowElement = CreateEmptyLabelRow();
             propertyElement.Add(snapshotSecondRowElement);
-            var emptyLabel = new VisualElement();
-            emptyLabel.AddToClassList(Styles.classUnityBaseFieldLabel);
-            snapshotSecondRowElement.Add(emptyLabel);
             var snapshotButton = new Button(() =>
             {
                 var targetInfo = snapshotTargetPopup.value;
@@ -621,6 +661,20 @@ namespace UnityEditor.SceneTemplate
         private void TriggerSceneTemplateModified()
         {
             sceneTemplateAssetModified?.Invoke(serializedObject.targetObject as SceneTemplateAsset);
+        }
+
+        private static VisualElement CreateEmptyLabelRow(string hiddenLabel = null, params string[] hiddenLabelClasses)
+        {
+            var emptyLabelRow = new VisualElement { name = k_NoLabelRowName };
+            emptyLabelRow.AddToClassList(Styles.classUnityBaseField);
+            var emptyLabel = hiddenLabel == null ? new VisualElement() : new Label(hiddenLabel) { visible = false };
+            foreach (var hiddenLabelClass in hiddenLabelClasses)
+            {
+                emptyLabel.AddToClassList(hiddenLabelClass);
+            }
+            emptyLabel.AddToClassList(Styles.classUnityBaseFieldLabel);
+            emptyLabelRow.Add(emptyLabel);
+            return emptyLabelRow;
         }
     }
 }

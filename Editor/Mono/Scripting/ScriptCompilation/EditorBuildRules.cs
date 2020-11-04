@@ -425,6 +425,26 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return scriptAssemblies;
         }
 
+        static bool ShouldUseAnalyzerForScriptAssembly(ScriptAssembly sa, TargetAssembly targetAssemblyOwningAnalyzer)
+        {
+            if ((sa.Flags & AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers) == 0)
+                return false;
+
+            if (targetAssemblyOwningAnalyzer == null)
+                return true;
+
+            if (sa.Filename == targetAssemblyOwningAnalyzer.Filename)
+                return true;
+
+            foreach (var sar in sa.ScriptAssemblyReferences)
+            {
+                if (ShouldUseAnalyzerForScriptAssembly(sar, targetAssemblyOwningAnalyzer))
+                    return true;
+            }
+
+            return false;
+        }
+
         internal static ScriptAssembly[] ToScriptAssemblies(
             IDictionary<TargetAssembly, DirtyTargetAssembly> targetAssemblies,
             ScriptAssemblySettings settings,
@@ -474,26 +494,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 scriptAssembly.CompilerOptions.AdditionalCompilerArguments = settings.AdditionalCompilerArguments;
 
-                if ((settings.CompilationOptions & EditorScriptCompilationOptions.BuildingWithRoslynAnalysis) != 0
-                    && PlayerSettings.EnableRoslynAnalyzers
-                    && (scriptAssembly.Flags & AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers) != 0)
-                {
-                    scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths = assemblies.RoslynAnalyzerDllPaths;
-                    scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath =
-                        scriptAssembly.TargetAssemblyType == TargetAssemblyType.Predefined
-                        ? RuleSetFileCache.GetRuleSetFilePathInRootFolder(Path.ChangeExtension(scriptAssembly.Filename, null))
-                        : RuleSetFileCache.GetPathForAssembly(scriptAssembly.OriginPath);
-                    scriptAssembly.CompilerOptions.EmitReferenceAssembly = false;
-                }
-                else
-                {
-                    scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths = new string[0];
-                    scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath = string.Empty;
-                }
-
                 var editorOnlyTargetAssembly = (targetAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
 
-                if (editorOnlyTargetAssembly || buildingForEditor && settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6)
+                if (editorOnlyTargetAssembly)
                     scriptAssembly.CompilerOptions.ApiCompatibilityLevel = ApiCompatibilityLevel.NET_4_6;
                 else
                     scriptAssembly.CompilerOptions.ApiCompatibilityLevel = settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel;
@@ -537,6 +540,29 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (!buildingForEditor)
                 {
                     PlatformSupportModuleHelpers.AddAdditionalPlatformSupportData(settings.CompilationExtension, ref scriptAssembly);
+                }
+            }
+
+            if ((settings.CompilationOptions & EditorScriptCompilationOptions.BuildingWithRoslynAnalysis) != 0
+                && PlayerSettings.EnableRoslynAnalyzers)
+            {
+                var analyzers = assemblies.RoslynAnalyzerDllPaths;
+                foreach (var a in analyzers)
+                {
+                    var targetAssemblyOwningAnalyzer = assemblies.CustomTargetAssemblies.Values
+                        .OrderBy(c => c.PathFilter(a)).LastOrDefault();
+                    foreach (var scriptAssembly in scriptAssemblies)
+                    {
+                        if (ShouldUseAnalyzerForScriptAssembly(scriptAssembly, targetAssemblyOwningAnalyzer))
+                        {
+                            scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths = scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths.Concat(new[] {a}).ToArray();
+                            scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath =
+                                scriptAssembly.TargetAssemblyType == TargetAssemblyType.Predefined
+                                ? RuleSetFileCache.GetRuleSetFilePathInRootFolder(Path.ChangeExtension(scriptAssembly.Filename, null))
+                                : RuleSetFileCache.GetPathForAssembly(scriptAssembly.OriginPath);
+                            scriptAssembly.CompilerOptions.EmitReferenceAssembly = false;
+                        }
+                    }
                 }
             }
 

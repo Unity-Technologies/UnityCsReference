@@ -293,15 +293,12 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledScope(anyWithoutParent))
             {
-                Color oldColor = GUI.color;
-                GUI.color = new Color(1, 1, 1, 0.6f) * oldColor;
-                if (EditorGUI.DropdownButton(dropdownPosition, GUIContent.none, FocusType.Passive, "box"))
+                if (EditorGUI.DropdownButton(dropdownPosition, GUIContent.none, FocusType.Passive, "label"))
                 {
                     GUIUtility.keyboardControl = 0;
                     m_DropdownWindow = new LayoutDropdownWindow(serializedObject);
                     PopupWindow.Show(dropdownPosition, m_DropdownWindow);
                 }
-                GUI.color = oldColor;
             }
 
             if (!anyWithoutParent)

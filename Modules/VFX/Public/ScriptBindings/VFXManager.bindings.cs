@@ -29,6 +29,7 @@ namespace UnityEngine.VFX
 
         extern internal static string renderPipeSettingsPath { get; }
 
+        extern internal static void RequestRepaint();
         extern internal static bool renderInSceneView { get; set; }
         internal static bool activateVFX { get; set; }
 

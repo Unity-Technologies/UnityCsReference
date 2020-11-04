@@ -8,7 +8,8 @@ namespace UnityEditor
 {
     internal enum ScriptTemplate
     {
-        CSharp_NewBehaviourScript = 0,
+        CSharp_NewSceneTemplatePipelineScript = 0,
+        CSharp_NewBehaviourScript,
         CSharp_NewTestScript,
         Shader_NewSurfaceShader,
         Shader_NewUnlitShader,

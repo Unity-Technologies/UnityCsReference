@@ -822,9 +822,7 @@ namespace UnityEditor
                     }
                 }
 
-
-                var previewTexture = GetPreviewTextureWithSize((int)cameraRect.width, (int)cameraRect.height);
-                previewTexture.antiAliasing = Mathf.Max(1, QualitySettings.antiAliasing);
+                var previewTexture = GetPreviewTextureWithSizeAndAA((int)cameraRect.width, (int)cameraRect.height);
                 previewCamera.targetTexture = previewTexture;
                 previewCamera.pixelRect = new Rect(0, 0, cameraRect.width, cameraRect.height);
 
@@ -844,12 +842,14 @@ namespace UnityEditor
             }
         }
 
-        private RenderTexture GetPreviewTextureWithSize(int width, int height)
+        private RenderTexture GetPreviewTextureWithSizeAndAA(int width, int height)
         {
-            if (m_PreviewTexture == null || m_PreviewTexture.width != width || m_PreviewTexture.height != height || m_QualitySettingsAntiAliasing != QualitySettings.antiAliasing)
+            int antiAliasing = Mathf.Max(1, QualitySettings.antiAliasing);
+            if (m_PreviewTexture == null || m_PreviewTexture.width != width || m_PreviewTexture.height != height || m_PreviewTexture.antiAliasing != antiAliasing)
             {
                 m_PreviewTexture = new RenderTexture(width, height, 24, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
                 m_QualitySettingsAntiAliasing = QualitySettings.antiAliasing;
+                m_PreviewTexture.antiAliasing = antiAliasing;
             }
             return m_PreviewTexture;
         }

@@ -2665,6 +2665,21 @@
     <Compile Include="..\..\Runtime\Export\Scripting\RangeInt.cs">
       <Link>Runtime\Export\Scripting\RangeInt.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\RequireAttributeUsagesAttribute.cs">
+      <Link>Runtime\Export\Scripting\RequireAttributeUsagesAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\RequireDerivedAttribute.cs">
+      <Link>Runtime\Export\Scripting\RequireDerivedAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\RequireImplementorsAttribute.cs">
+      <Link>Runtime\Export\Scripting\RequireImplementorsAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\RequiredInterfaceAttribute.cs">
+      <Link>Runtime\Export\Scripting\RequiredInterfaceAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\RequiredMemberAttribute.cs">
+      <Link>Runtime\Export\Scripting\RequiredMemberAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\RuntimeInitializeOnLoadAttribute.cs">
       <Link>Runtime\Export\Scripting\RuntimeInitializeOnLoadAttribute.cs</Link>
     </Compile>

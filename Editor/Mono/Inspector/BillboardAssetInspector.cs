@@ -30,9 +30,8 @@ namespace UnityEditor
         private Mesh m_GeometryMesh;
         private MaterialPropertyBlock m_ShadedMaterialProperties;
         private Material m_GeometryMaterial;
-        private Material m_WireframeMaterial;
 
-        ModelInspector.PreviewSettings m_Settings;
+        MeshPreview.Settings m_Settings;
 
         private class GUIStyles
         {
@@ -62,15 +61,14 @@ namespace UnityEditor
             m_Indices = serializedObject.FindProperty("indices");
             m_Material = serializedObject.FindProperty("material");
 
-            if (m_Settings == null)
-            {
-                m_Settings = new ModelInspector.PreviewSettings();
-                m_Settings.previewDir = new Vector2(-120, 20);
-            }
+            m_Settings = new MeshPreview.Settings();
+            m_Settings.previewDir = new Vector2(-120, 20);
         }
 
         private void OnDisable()
         {
+            m_Settings?.Dispose();
+
             if (m_PreviewUtility != null)
             {
                 m_PreviewUtility.Cleanup();
@@ -78,10 +76,6 @@ namespace UnityEditor
                 DestroyImmediate(m_ShadedMesh, true);
                 DestroyImmediate(m_GeometryMesh, true);
                 m_GeometryMaterial = null;
-                if (m_WireframeMaterial != null)
-                {
-                    DestroyImmediate(m_WireframeMaterial, true);
-                }
             }
         }
 
@@ -98,7 +92,6 @@ namespace UnityEditor
                 m_GeometryMesh.MarkDynamic();
                 m_ShadedMaterialProperties = new MaterialPropertyBlock();
                 m_GeometryMaterial = Material.GetDefaultMaterial();
-                m_WireframeMaterial = ModelInspector.CreateWireframeMaterial();
                 EditorUtility.SetCameraAnimateMaterials(m_PreviewUtility.camera, true);
             }
         }
@@ -264,13 +257,13 @@ namespace UnityEditor
                 MakeRenderMesh(m_ShadedMesh, billboard);
                 billboard.MakeMaterialProperties(m_ShadedMaterialProperties, m_PreviewUtility.camera);
                 m_Settings.activeMaterial = billboard.material;
-                ModelInspector.RenderMeshPreviewSkipCameraAndLighting(m_ShadedMesh, bounds, m_PreviewUtility, m_Settings, m_ShadedMaterialProperties, -1);
+                MeshPreview.RenderMeshPreviewSkipCameraAndLighting(m_ShadedMesh, bounds, m_PreviewUtility, m_Settings, m_ShadedMaterialProperties, -1);
             }
             else
             {
                 MakePreviewMesh(m_GeometryMesh, billboard);
                 m_Settings.activeMaterial = m_GeometryMaterial;
-                ModelInspector.RenderMeshPreviewSkipCameraAndLighting(m_GeometryMesh, bounds, m_PreviewUtility, m_Settings, null, -1);
+                MeshPreview.RenderMeshPreviewSkipCameraAndLighting(m_GeometryMesh, bounds, m_PreviewUtility, m_Settings, null, -1);
             }
             m_Settings.previewDir = tempPreviewDir;
         }

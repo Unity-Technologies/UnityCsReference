@@ -106,8 +106,7 @@ namespace UnityEditor
 
         void UndoRedoPerformed()
         {
-            if (m_ParticleEffectUI != null)
-                m_ParticleEffectUI.UndoRedoPerformed();
+            InitEffectUI();
             Repaint();
         }
 

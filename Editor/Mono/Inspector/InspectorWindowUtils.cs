@@ -44,6 +44,7 @@ namespace UnityEditor
                 }
             }
         }
+
         public static void GetPreviewableTypes(out Dictionary<Type, List<Type>> previewableTypes)
         {
             // We initialize this list once per InspectorWindow, instead of globally.
@@ -59,6 +60,13 @@ namespace UnityEditor
                     continue;
                 }
 
+                if (type.GetConstructor(Type.EmptyTypes) == null)
+                {
+                    Debug.LogError($"{type} does not contain a default constructor, it will not be registered as a " +
+                        $"preview handler. Use the Initialize function to set up your object instead.");
+                    continue;
+                }
+
                 // Record only the types with a CustomPreviewAttribute.
                 var attrs = type.GetCustomAttributes(typeof(CustomPreviewAttribute), false) as CustomPreviewAttribute[];
                 foreach (CustomPreviewAttribute previewAttr in attrs)
@@ -69,6 +77,7 @@ namespace UnityEditor
                     }
 
                     List<Type> types;
+
                     if (!previewableTypes.TryGetValue(previewAttr.m_Type, out types))
                     {
                         types = new List<Type>();

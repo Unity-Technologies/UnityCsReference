@@ -41,7 +41,7 @@ namespace UnityEditor.Search
         // 7- Update how keywords are encoded
         public const int version = (7 << 8) ^ SearchIndexEntryImporter.version;
         private const string k_QuickSearchLibraryPath = "Library/QuickSearch";
-        public const string defaultSearchDatabaseIndexPath = "UserSettings/QuickSearch.index";
+        public const string defaultSearchDatabaseIndexPath = "UserSettings/Search.index";
 
         public enum IndexType
         {
@@ -789,8 +789,9 @@ namespace UnityEditor.Search
         {
             if (File.Exists(defaultSearchDatabaseIndexPath))
                 File.Delete(defaultSearchDatabaseIndexPath);
-            var searchUserIndexLibraryFolder = Path.GetDirectoryName(defaultSearchDatabaseIndexPath);
-            var defaultDbIndexPath = SearchDatabaseImporter.CreateTemplateIndex("_Default", searchUserIndexLibraryFolder, "QuickSearch");
+            var defaultIndexFilename = Path.GetFileNameWithoutExtension(defaultSearchDatabaseIndexPath);
+            var defaultIndexFolder = Path.GetDirectoryName(defaultSearchDatabaseIndexPath);
+            var defaultDbIndexPath = SearchDatabaseImporter.CreateTemplateIndex("_Default", defaultIndexFolder, defaultIndexFilename);
             ImportAsset(defaultDbIndexPath);
             return s_DefaultDB;
         }

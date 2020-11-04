@@ -283,7 +283,7 @@ namespace TreeEditor
             materialCutoutAsset.hideFlags = HideFlags.NotEditable | HideFlags.HideInInspector;
 
             // Create optimized tree mesh prefab the user can instantiate in the scene
-            GameObject prefabInstance = new GameObject("OptimizedTree", typeof(Tree), typeof(MeshFilter), typeof(MeshRenderer));
+            GameObject prefabInstance = new GameObject("Tree", typeof(Tree), typeof(MeshFilter), typeof(MeshRenderer));
 
             // Create a tree prefab
             string path = "Assets/Tree.prefab";

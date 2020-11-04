@@ -207,7 +207,7 @@ namespace UnityEditor.PackageManager.UI
             if (offlineMode && listOfflineOperation.timestamp < listOperation.lastSuccessTimestamp)
                 return;
 
-            m_UpmCache.SetInstalledPackageInfos(request.Result);
+            m_UpmCache.SetInstalledPackageInfos(request.Result, listOperation.lastSuccessTimestamp);
         }
 
         public virtual void EmbedByName(string packageName)
@@ -289,7 +289,7 @@ namespace UnityEditor.PackageManager.UI
             if (offlineMode && searchOfflineOperation.timestamp < searchOperation.lastSuccessTimestamp)
                 return;
 
-            m_UpmCache.SetSearchPackageInfos(request.Result);
+            m_UpmCache.SetSearchPackageInfos(request.Result, searchOperation.lastSuccessTimestamp);
         }
 
         public virtual void ExtraFetch(string packageId)

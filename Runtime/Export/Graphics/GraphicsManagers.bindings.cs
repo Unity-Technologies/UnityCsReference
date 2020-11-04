@@ -86,6 +86,9 @@ namespace UnityEngine
         extern public static int   asyncUploadBufferSize { get; set; }
         extern public static bool  asyncUploadPersistentBuffer { get; set; }
 
+        [NativeName("SetLODSettings")]
+        extern public static void SetLODSettings(float lodBias, int maximumLODLevel, bool setDirty = true);
+
 
         extern public static bool  realtimeReflectionProbes         { get; set; }
         extern public static bool  billboardsFaceCameraPosition     { get; set; }

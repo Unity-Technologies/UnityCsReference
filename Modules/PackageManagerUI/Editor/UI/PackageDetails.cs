@@ -39,8 +39,31 @@ namespace UnityEditor.PackageManager.UI
 
         private const string k_EmptyDescriptionClass = "empty";
 
-        private string preReleaseInfoReadMoreUrl => $"https://docs.unity3d.com/{m_Application?.shortUnityVersion}/Documentation/Manual/pack-preview.html";
-        private string scopedRegistryInfoReadMoreUrl => $"https://docs.unity3d.com/{m_Application?.shortUnityVersion}/Documentation/Manual/upm-scoped.html";
+        internal enum InfoBoxState
+        {
+            preRelease,
+            experimental,
+            releaseCandidate,
+            scopedRegistry
+        }
+
+        private string InfoBoxUrl => $"https://docs.unity3d.com/{m_Application?.shortUnityVersion}";
+
+        private static readonly string[] k_InfoBoxReadMoreUrl =
+        {
+            "/Documentation/Manual/pack-prerelease.html",
+            "/Documentation/Manual/pack-experimental.html",
+            "/Documentation/Manual/pack-releasecandidate.html",
+            "/Documentation/Manual/upm-scoped.html"
+        };
+
+        private static readonly string[] k_InfoBoxReadMoreText =
+        {
+            L10n.Tr("Pre-release packages are in the process of becoming stable and will be available as production-ready by the end of this LTS release. We recommend using these only for testing purposes and to give us direct feedback until then."),
+            L10n.Tr("Experimental packages are new packages or experiments on mature packages in the early stages of development. Experimental packages are not supported by Unity."),
+            L10n.Tr("Release Candidate (RC) versions of a package will transition to Released with the current editor release. RCs are supported by Unity"),
+            L10n.Tr("This package is hosted on a Scoped Registry.")
+        };
 
         internal enum PackageAction
         {
@@ -184,8 +207,7 @@ namespace UnityEditor.PackageManager.UI
             detailDesc.RegisterCallback<GeometryChangedEvent>(DescriptionGeometryChangeEvent);
             detailImages?.RegisterCallback<GeometryChangedEvent>(ImagesGeometryChangeEvent);
 
-            preReleaseInfoBox.Q<Button>().clickable.clicked += () => m_Application.OpenURL(preReleaseInfoReadMoreUrl);
-            scopedRegistryInfoBox.Q<Button>().clickable.clicked += () => m_Application.OpenURL(scopedRegistryInfoReadMoreUrl);
+            scopedRegistryInfoBox.Q<Button>().clickable.clicked += OnInfoBoxClickMore;
 
             root.Query<TextField>().ForEach(t =>
             {
@@ -252,6 +274,18 @@ namespace UnityEditor.PackageManager.UI
 
             if (value)
                 RefreshErrorDisplay();
+        }
+
+        private void OnInfoBoxClickMore()
+        {
+            if (displayVersion.HasTag(PackageTag.PreRelease))
+                m_Application.OpenURL($"{InfoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.preRelease]}");
+            else if (displayVersion.HasTag(PackageTag.Experimental))
+                m_Application.OpenURL($"{InfoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.experimental]}");
+            else if (displayVersion.HasTag(PackageTag.ReleaseCandidate))
+                m_Application.OpenURL($"{InfoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.releaseCandidate]}");
+            else if (package.Is(PackageType.ScopedRegistry))
+                m_Application.OpenURL($"{InfoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.scopedRegistry]}");
         }
 
         private void UpdateDownloadProgressBar(IOperation operation)
@@ -351,7 +385,6 @@ namespace UnityEditor.PackageManager.UI
                     detailVersion.SetValueWithoutNotify(string.Format(L10n.Tr("Version {0} - {1}"), versionString, releaseDateString));
                 UIUtils.SetElementDisplay(detailVersion, !package.Is(PackageType.BuiltIn) && !string.IsNullOrEmpty(versionString));
 
-                UIUtils.SetElementDisplay(preReleaseInfoBox, package.Is(PackageType.Unity) && displayVersion.HasTag(PackageTag.PreRelease));
                 UIUtils.SetElementDisplay(disabledInfoBox, displayVersion.HasTag(PackageTag.Disabled));
 
                 foreach (var tag in k_VisibleTags)
@@ -488,9 +521,25 @@ namespace UnityEditor.PackageManager.UI
             UIUtils.SetElementDisplay(detailRegistryContainer, showRegistry);
             if (showRegistry)
             {
+                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.scopedRegistry];
                 UIUtils.SetElementDisplay(scopedRegistryInfoBox, !registry.isDefault);
                 detailRegistryName.text = registry.isDefault ? "Unity" : registry.name;
                 detailRegistryName.tooltip = registry.url;
+            }
+            if (displayVersion.HasTag(PackageTag.Experimental))
+            {
+                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.experimental];
+                UIUtils.SetElementDisplay(scopedRegistryInfoBox, true);
+            }
+            else if (displayVersion.HasTag(PackageTag.PreRelease))
+            {
+                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.preRelease];
+                UIUtils.SetElementDisplay(scopedRegistryInfoBox, true);
+            }
+            else if (displayVersion.HasTag(PackageTag.ReleaseCandidate))
+            {
+                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.releaseCandidate];
+                UIUtils.SetElementDisplay(scopedRegistryInfoBox, true);
             }
         }
 
@@ -1238,7 +1287,6 @@ namespace UnityEditor.PackageManager.UI
         private VisualElement detailContainer { get { return cache.Get<VisualElement>("detail"); } }
         private TextField detailTitle { get { return cache.Get<TextField>("detailTitle"); } }
         private TextField detailVersion { get { return cache.Get<TextField>("detailVersion"); } }
-        private HelpBox preReleaseInfoBox { get { return cache.Get<HelpBox>("preReleaseInfoBox"); } }
         private HelpBox disabledInfoBox { get { return cache.Get<HelpBox>("disabledInfoBox"); } }
         private VisualElement detailPurchasedDateContainer { get { return cache.Get<VisualElement>("detailPurchasedDateContainer"); } }
         private TextField detailPurchasedDate { get { return cache.Get<TextField>("detailPurchasedDate"); } }

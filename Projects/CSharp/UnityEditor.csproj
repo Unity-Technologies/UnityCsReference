@@ -2101,6 +2101,9 @@
     <Compile Include="..\..\Editor\Mono\Inspector\MeshColliderEditor.cs">
       <Link>Editor\Mono\Inspector\MeshColliderEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\MeshPreview.cs">
+      <Link>Editor\Mono\Inspector\MeshPreview.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\MeshRendererEditor.cs">
       <Link>Editor\Mono\Inspector\MeshRendererEditor.cs</Link>
     </Compile>
@@ -4153,8 +4156,32 @@
     <Compile Include="..\..\Modules\DeviceSimulatorEditor\DeviceInfo\DeviceInfoImporterEditor.cs">
       <Link>Modules\DeviceSimulatorEditor\DeviceInfo\DeviceInfoImporterEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\DeviceSimulatorEditor\DeviceInfo\DeviceLoader.cs">
+      <Link>Modules\DeviceSimulatorEditor\DeviceInfo\DeviceLoader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DeviceSimulatorEditor\DeviceListPopup.cs">
+      <Link>Modules\DeviceSimulatorEditor\DeviceListPopup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DeviceSimulatorEditor\DeviceSimulatorMain.cs">
+      <Link>Modules\DeviceSimulatorEditor\DeviceSimulatorMain.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DeviceSimulatorEditor\Shims\ScreenSimulation.cs">
+      <Link>Modules\DeviceSimulatorEditor\Shims\ScreenSimulation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DeviceSimulatorEditor\SimulatorPlayerSettings.cs">
+      <Link>Modules\DeviceSimulatorEditor\SimulatorPlayerSettings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\DeviceSimulatorEditor\SimulatorUtilities.cs">
       <Link>Modules\DeviceSimulatorEditor\SimulatorUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DeviceSimulatorEditor\SimulatorWindow.cs">
+      <Link>Modules\DeviceSimulatorEditor\SimulatorWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DeviceSimulatorEditor\UserInterfaceController.cs">
+      <Link>Modules\DeviceSimulatorEditor\UserInterfaceController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DeviceSimulatorEditor\VisualElements\DeviceView.cs">
+      <Link>Modules\DeviceSimulatorEditor\VisualElements\DeviceView.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphViewEditor\AssemblyInfo.cs">
       <Link>Modules\GraphViewEditor\AssemblyInfo.cs</Link>

@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 
 using UnityEngine;
-using UnityEditor;
 
 namespace UnityEditor
 {
@@ -26,6 +25,9 @@ namespace UnityEditor
 
             base.OnInspectorGUI();
         }
+
+        // The modelimporterclipeditor is drawing its own preview for clips to be editable.
+        protected override bool useAssetDrawPreview => !(activeTab is ModelImporterClipEditor);
 
         public override void OnEnable()
         {

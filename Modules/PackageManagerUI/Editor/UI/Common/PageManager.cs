@@ -156,7 +156,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 packageSelectionObject = ScriptableObject.CreateInstance<PackageSelectionObject>();
                 packageSelectionObject.hideFlags = HideFlags.DontSave;
-                packageSelectionObject.name = version.uniqueId;
+                packageSelectionObject.name = version.displayName;
                 packageSelectionObject.displayName = version.displayName;
                 packageSelectionObject.packageUniqueId = package.uniqueId;
                 packageSelectionObject.versionUniqueId = version.uniqueId;
@@ -638,7 +638,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 var packageSelectionObject = UnityEngine.Object.FindObjectFromInstanceID(id) as PackageSelectionObject;
                 if (packageSelectionObject != null)
-                    m_PackageSelectionObjects[packageSelectionObject.name] = packageSelectionObject;
+                    m_PackageSelectionObjects[packageSelectionObject.versionUniqueId] = packageSelectionObject;
             }
         }
 

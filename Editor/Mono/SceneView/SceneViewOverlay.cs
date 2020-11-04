@@ -75,11 +75,7 @@ namespace UnityEditor
             s_Windows.Sort();
 
             if (s_Windows.Count > 0)
-            {
-                var sceneViewGUIRect = m_SceneView.cameraRect;
-                var windowOverlayRect = new Rect(sceneViewGUIRect.x, 0f, sceneViewGUIRect.width, m_SceneView.position.height);
-                GUILayout.Window("SceneViewOverlay".GetHashCode(), windowOverlayRect, WindowTrampoline, "", Styles.sceneViewOverlayTransparentBackground);
-            }
+                WindowTrampoline("SceneViewOverlay".GetHashCode());
 
             m_SceneView.EndWindows();
         }
@@ -88,7 +84,7 @@ namespace UnityEditor
 
         void WindowTrampoline(int id)
         {
-            GUILayout.BeginHorizontal();
+            GUILayout.BeginHorizontal(Styles.sceneViewOverlayTransparentBackground);
             GUILayout.FlexibleSpace();
             GUILayout.BeginVertical();
             GUILayout.FlexibleSpace();

@@ -23,10 +23,12 @@ namespace UnityEditor.SceneTemplate
         public const string classUnityLabel = "unity-label";
         public const string classUnityBaseFieldLabel = "unity-base-field__label";
         public const string classUnityBaseFieldInput = "unity-base-field__input";
+        public const string classUnityPropertyFieldLabel = "unity-property-field__label";
         public const string classTextLink = "scene-template-text-link";
         public const string classElementSelected = "scene-template-element-selected";
         public const string classInspectorFoldoutHeader = "Inspector-Title";
         public const string classInspectorFoldoutHeaderText = "Inspector-TitleText";
+        public const string classFoldoutHelpButton = "scene-template-asset-inspector-foldout-help-button";
         public const string unityThemeVariables = "unity-theme-env-variables";
         public const string sceneTemplateThemeVariables = "scene-template-variables";
         public const string sceneTemplateNoTemplateHelpBox = "scene-template-no-template-help-box";

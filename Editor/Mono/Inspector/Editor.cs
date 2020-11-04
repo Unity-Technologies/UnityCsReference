@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using UnityEditor.AssetImporters;
@@ -11,13 +12,15 @@ using UnityEngine;
 using UnityEngine.Internal;
 using UnityEngine.Rendering;
 using UnityEngine.UIElements;
+using Component = UnityEngine.Component;
 using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    internal interface IPreviewable
+    interface IPreviewable
     {
         void Initialize(UnityObject[] targets);
+        void Cleanup();
 
         UnityObject target { get; }
         bool MoveNextTarget();
@@ -52,6 +55,19 @@ namespace UnityEditor
 
         protected UnityObject[] m_Targets;
         protected int m_ReferenceTargetIndex;
+
+        ~ObjectPreview()
+        {
+            // Watch out for Editor classes implementing OnDisableINTERNAL and not calling cleanup (GenericInspector).
+            Debug.LogError($"{this} was not disposed properly. Make sure that base.Cleanup is called if overriding " +
+                $"the Cleanup method. If you are implementing this in an Editor or EditorWindow, don't " +
+                $"forget to call ObjectPreview.Cleanup in OnDisable.");
+        }
+
+        public virtual void Cleanup()
+        {
+            GC.SuppressFinalize(this);
+        }
 
         public virtual void Initialize(UnityObject[] targets)
         {
@@ -495,7 +511,7 @@ namespace UnityEditor
             set { m_IsDirty = value ? 1 : 0; }
         }
 
-        public static Editor CreateEditorWithContext(UnityObject[] targetObjects, UnityObject context, [DefaultValue("null")] Type editorType)
+        public static Editor CreateEditorWithContext(UnityObject[] targetObjects, UnityObject context, [UnityEngine.Internal.DefaultValue("null")] Type editorType)
         {
             if (editorType != null && !editorType.IsSubclassOf(typeof(Editor)))
                 throw new ArgumentException($"Editor type '{editorType}' does not derive from UnityEditor.Editor", "editorType");
@@ -542,7 +558,7 @@ namespace UnityEditor
             return CreateEditor(targetObject, editorType);
         }
 
-        public static Editor CreateEditor(UnityObject targetObject, [DefaultValue("null")]  Type editorType)
+        public static Editor CreateEditor(UnityObject targetObject, [UnityEngine.Internal.DefaultValue("null")]  Type editorType)
         {
             return CreateEditorWithContext(new[] {targetObject}, null, editorType);
         }
@@ -554,7 +570,7 @@ namespace UnityEditor
             return CreateEditor(targetObjects, editorType);
         }
 
-        public static Editor CreateEditor(UnityObject[] targetObjects, [DefaultValue("null")]  Type editorType)
+        public static Editor CreateEditor(UnityObject[] targetObjects, [UnityEngine.Internal.DefaultValue("null")]  Type editorType)
         {
             return CreateEditorWithContext(targetObjects, null, editorType);
         }
@@ -571,6 +587,8 @@ namespace UnityEditor
         private void OnDisableINTERNAL()
         {
             CleanupPropertyEditor();
+            if (!(preview is Editor))
+                preview.Cleanup();
         }
 
         internal virtual SerializedObject GetSerializedObjectInternal()
@@ -1263,9 +1281,17 @@ namespace UnityEditor
             return true;
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void Initialize(UnityObject[] targets)
         {
             throw new InvalidOperationException("You shouldn't call Initialize for Editors");
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Cleanup()
+        {
+            throw new InvalidOperationException("You shouldn't call Cleanup for Editors. Dispose resources in " +
+                "Editor.OnDisable");
         }
 
         public bool MoveNextTarget()

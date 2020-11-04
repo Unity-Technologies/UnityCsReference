@@ -648,6 +648,22 @@ namespace UnityEditor
                 m_AccelerationEnabled = true;
             }
 
+            internal CameraSettings(CameraSettings other)
+            {
+                m_Speed = other.m_Speed;
+                m_SpeedNormalized = other.m_SpeedNormalized;
+                m_SpeedMin = other.m_SpeedMin;
+                m_SpeedMax = other.m_SpeedMax;
+                m_EasingEnabled = other.m_EasingEnabled;
+                m_EasingDuration = other.m_EasingDuration;
+                fieldOfView = other.fieldOfView;
+                m_DynamicClip = other.m_DynamicClip;
+                m_OcclusionCulling = other.m_OcclusionCulling;
+                m_NearClip = other.m_NearClip;
+                m_FarClip = other.m_FarClip;
+                m_AccelerationEnabled = other.m_AccelerationEnabled;
+            }
+
             public float speed
             {
                 get
@@ -1242,11 +1258,24 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(m_WindowGUID))
                 m_WindowGUID = GUID.Generate().ToString();
 
-            if (sceneViewState == null)
-                m_SceneViewState = new SceneViewState();
+            // Try copy last active scene view window settings if creating a new window
+            if (sceneViewState == null && m_CameraSettings == null && lastActiveSceneView != null)
+            {
+                CopyLastActiveSceneViewSettings();
+            }
+            else
+            {
+                if (sceneViewState == null)
+                {
+                    m_SceneViewState = new SceneViewState();
+                }
 
-            if (m_CameraSettings == null)
-                m_CameraSettings = new CameraSettings();
+                if (m_CameraSettings == null)
+                {
+                    m_CameraSettings = new CameraSettings();
+                }
+            }
+
 
             if (m_2DMode || EditorSettings.defaultBehaviorMode == EditorBehaviorMode.Mode2D)
             {
@@ -2986,7 +3015,16 @@ namespace UnityEditor
 
         void UpdateAnimatedMaterials()
         {
-            if (sceneViewState.alwaysRefreshEnabled && m_lastRenderedTime + 0.033f < EditorApplication.timeSinceStartup)
+            var repaint = false;
+            if (m_lastRenderedTime + 0.033f < EditorApplication.timeSinceStartup)
+            {
+                if (sceneViewState.visualEffectGraphsEnabled)
+                    UnityEngine.VFX.VFXManager.RequestRepaint();
+                repaint = sceneViewState.alwaysRefreshEnabled;
+            }
+            repaint |= LODUtility.IsLODAnimating(m_Camera);
+
+            if (repaint)
             {
                 m_lastRenderedTime = EditorApplication.timeSinceStartup;
                 Repaint();
@@ -3817,6 +3855,23 @@ namespace UnityEditor
         internal void ResetGridPivot()
         {
             sceneViewGrids.SetAllGridsPivot(Vector3.zero);
+        }
+
+        void CopyLastActiveSceneViewSettings()
+        {
+            SceneView view = lastActiveSceneView;
+            m_CameraMode = view.m_CameraMode;
+            sceneLighting = view.sceneLighting;
+            m_SceneViewState = new SceneViewState(lastActiveSceneView.m_SceneViewState);
+            m_CameraSettings = new CameraSettings(lastActiveSceneView.m_CameraSettings);
+            m_2DMode = view.m_2DMode;
+            pivot = view.pivot;
+            rotation = view.rotation;
+            m_Size = view.m_Size;
+            m_Ortho.value = view.orthographic;
+            if (m_Grid == null)
+                m_Grid = new SceneViewGrid();
+            m_Grid.showGrid = view.showGrid;
         }
     }
 } // namespace

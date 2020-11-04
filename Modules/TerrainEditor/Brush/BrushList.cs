@@ -145,7 +145,28 @@ namespace UnityEditor
                 }
             }
 
+            EditorGUILayout.BeginHorizontal();
+
             GUILayout.Label(Styles.brushes, EditorStyles.boldLabel);
+
+            GUILayout.FlexibleSpace();
+
+            var b = m_BrushList != null ? GetActiveBrush() : null;
+            if (b != null && !b.readOnly)
+            {
+                if (GUILayout.Button("Delete Brush...")
+                    && EditorUtility.DisplayDialog(L10n.Tr("Delete Brush"), L10n.Tr("Deleting this brush will delete the brush asset from disk. You cannot undo this operation. Do you wish to continue?"), L10n.Tr("Yes"), L10n.Tr("No")))
+                {
+                    AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(b));
+                    LoadBrushes();
+                    UpdateSelection(m_BrushList != null && m_SelectedBrush < m_BrushList.Length ? m_SelectedBrush : 0);
+                }
+            }
+
+            if (GUILayout.Button("New Brush..."))
+                CreateBrush();
+
+            EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
             {
@@ -164,16 +185,6 @@ namespace UnityEditor
                         repaint = true;
                     }
                     EditorGUILayout.EndScrollView();
-                }
-            }
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.BeginHorizontal();
-            {
-                GUILayout.FlexibleSpace();
-                if (GUILayout.Button("New Brush..."))
-                {
-                    CreateBrush();
                 }
             }
             EditorGUILayout.EndHorizontal();
@@ -199,10 +210,9 @@ namespace UnityEditor
 
             if (b.readOnly)
             {
-                EditorGUILayout.HelpBox(EditorGUIUtility.TrTextContent("Built-in brush"));
+                EditorGUILayout.HelpBox("The brush is read-only.", MessageType.Info);
             }
-
-            if (m_BrushEditor)
+            else if (m_BrushEditor)
             {
                 Rect titleRect = Editor.DrawHeaderGUI(m_BrushEditor, b.name, 10f);
                 int id = GUIUtility.GetControlID(78901, FocusType.Passive);
@@ -267,6 +277,9 @@ namespace UnityEditor
                     var newBrush = Brush.CreateInstance((Texture2D)selection, AnimationCurve.Linear(0, 0, 1, 1), Brush.kMaxRadiusScale, false);
                     AssetDatabase.CreateAsset(newBrush, brushName);
                     LoadBrushes();
+                    int newIndex = m_BrushList != null ? System.Array.IndexOf(m_BrushList, newBrush) : -1;
+                    if (newIndex >= 0)
+                        UpdateSelection(newIndex);
                 }, null);
         }
 

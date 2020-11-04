@@ -4,4 +4,7 @@
 
 using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("UnityEditor.DeviceSimulation.Tests")]
+[assembly: InternalsVisibleTo("UnityEditor.DeviceSimulation.InputSystem.Extension")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
+[assembly: InternalsVisibleTo("UnityEditor.DeviceSimulation.Tests.Common")]

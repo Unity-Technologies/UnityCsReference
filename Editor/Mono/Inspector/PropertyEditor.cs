@@ -311,6 +311,8 @@ namespace UnityEditor
         [UsedImplicitly]
         protected virtual void OnDisable()
         {
+            ClearPreviewables();
+
             // save vertical scroll position
             m_LastInspectedObjectInstanceID = GetInspectedObject()?.GetInstanceID() ?? -1;
             m_LastVerticalScrollValue = m_ScrollView?.verticalScroller.value ?? 0;
@@ -541,11 +543,17 @@ namespace UnityEditor
             menu.AddItem(EditorGUIUtility.TrTextContent("Ping"), false, () => EditorGUIUtility.PingObject(GetInspectedObject()));
         }
 
+        private void SetTrackerExpandedState(ActiveEditorTracker tracker, int editorIndex, bool expanded)
+        {
+            tracker.SetVisible(editorIndex, expanded ? 1 : 0);
+            InternalEditorUtility.SetIsInspectorExpanded(tracker.activeEditors[editorIndex].target, expanded);
+        }
+
         protected void ExpandAllComponents()
         {
             var editors = tracker.activeEditors;
             for (int i = 1; i < editors.Length; i++)
-                tracker.SetVisible(i, 1);
+                SetTrackerExpandedState(tracker, i, expanded: true);
         }
 
         protected bool IsAnyComponentCollapsed()
@@ -566,7 +574,7 @@ namespace UnityEditor
         {
             var editors = tracker.activeEditors;
             for (int i = 1; i < editors.Length; i++)
-                tracker.SetVisible(i, 0);
+                SetTrackerExpandedState(tracker, i, expanded: false);
         }
 
         protected bool IsAnyComponentExpanded()
@@ -698,6 +706,15 @@ namespace UnityEditor
             }
         }
 
+        protected void ClearPreviewables()
+        {
+            if (m_Previews == null)
+                return;
+            for (int i = 0, c = m_Previews.Count; i < c; i++)
+                m_Previews[i]?.Cleanup();
+            m_Previews = null;
+        }
+
         private Dictionary<Type, List<Type>> GetPreviewableTypes()
         {
             // We initialize this list once per PropertyEditor, instead of globally.
@@ -726,9 +743,13 @@ namespace UnityEditor
             List<IPreviewable> previews = new List<IPreviewable>();
             foreach (var previewerType in previewerList)
             {
-                var preview = Activator.CreateInstance(previewerType) as IPreviewable;
-                preview.Initialize(editor.targets);
-                previews.Add(preview);
+                var instance = Activator.CreateInstance(previewerType);
+
+                if (instance is IPreviewable preview)
+                {
+                    preview.Initialize(editor.targets);
+                    previews.Add(preview);
+                }
             }
 
             return previews;
@@ -771,7 +792,7 @@ namespace UnityEditor
         protected virtual void EndRebuildContentContainers() {}
         internal virtual void RebuildContentsContainers()
         {
-            m_Previews = null;
+            ClearPreviewables();
             m_SelectedPreview = null;
             m_TypeSelectionList = null;
             m_FirstInitialize = false;

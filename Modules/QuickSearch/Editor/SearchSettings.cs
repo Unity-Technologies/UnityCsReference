@@ -75,7 +75,7 @@ namespace UnityEditor.Search
 
     static class SearchSettings
     {
-        const string k_ProjectUserSettingsPath = "UserSettings/QuickSearch.settings";
+        const string k_ProjectUserSettingsPath = "UserSettings/Search.settings";
         public const string settingsPreferencesKey = "Preferences/Search";
 
         // Per project settings

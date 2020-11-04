@@ -156,7 +156,7 @@ namespace UnityEngine
             }
         }
 
-        extern internal Object drivenByObject { get; set; }
+        extern public Object drivenByObject { get; internal set; }
         extern internal DrivenTransformProperties drivenProperties { get; set; }
 
         [NativeMethod("UpdateIfTransformDispatchIsDirty")] public extern void ForceUpdateRectTransforms();

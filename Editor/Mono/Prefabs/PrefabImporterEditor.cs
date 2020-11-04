@@ -223,6 +223,16 @@ namespace UnityEditor
             {
                 if (EditorUtility.IsDirty(component))
                     return true;
+
+                if (component is Renderer)
+                {
+                    Renderer r = component as Renderer;
+                    foreach (Material mat in r.sharedMaterials)
+                    {
+                        if (EditorUtility.IsDirty(mat) && AssetDatabase.IsSubAsset(mat))
+                            return AssetDatabase.GetAssetPath(mat) == AssetDatabase.GetAssetPath(prefabAssetRoot);
+                    }
+                }
             }
 
             return false;

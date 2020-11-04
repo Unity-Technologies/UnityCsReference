@@ -15,6 +15,8 @@ namespace UnityEditor.DeviceSimulation
     {
         public override void OnImportAsset(AssetImportContext ctx)
         {
+            SimulatorWindow.MarkAllDeviceListsDirty();
+
             var asset = ScriptableObject.CreateInstance<DeviceInfoAsset>();
 
             var deviceJson = File.ReadAllText(ctx.assetPath);
@@ -26,7 +28,7 @@ namespace UnityEditor.DeviceSimulation
             }
             else
             {
-                asset.deviceInfo.AddOptionalFields();
+                AddOptionalFields(asset.deviceInfo);
 
                 // Saving asset path in order to find overlay relatively to it
                 asset.deviceInfo.directory = Path.GetDirectoryName(ctx.assetPath);
@@ -37,7 +39,7 @@ namespace UnityEditor.DeviceSimulation
             ctx.SetMainObject(asset);
         }
 
-        public static DeviceInfo ParseDeviceInfo(string deviceJson, out string[] errors)
+        internal static DeviceInfo ParseDeviceInfo(string deviceJson, out string[] errors)
         {
             var errorList = new List<string>();
 
@@ -91,6 +93,28 @@ namespace UnityEditor.DeviceSimulation
 
             errors = errorList.ToArray();
             return errors.Length == 0 ? deviceInfo : null;
+        }
+
+        internal static void AddOptionalFields(DeviceInfo deviceInfo)
+        {
+            foreach (var screen in deviceInfo.screens)
+            {
+                if (screen.orientations == null || screen.orientations.Length == 0)
+                {
+                    screen.orientations = new[]
+                    {
+                        new OrientationData {orientation = ScreenOrientation.Portrait},
+                        new OrientationData {orientation = ScreenOrientation.PortraitUpsideDown},
+                        new OrientationData {orientation = ScreenOrientation.LandscapeLeft},
+                        new OrientationData {orientation = ScreenOrientation.LandscapeRight}
+                    };
+                }
+                foreach (var orientation in screen.orientations)
+                {
+                    if (orientation.safeArea == Rect.zero)
+                        orientation.safeArea = SimulatorUtilities.IsLandscape(orientation.orientation) ? new Rect(0, 0, screen.height, screen.width) : new Rect(0, 0, screen.width, screen.height);
+                }
+            }
         }
     }
 }

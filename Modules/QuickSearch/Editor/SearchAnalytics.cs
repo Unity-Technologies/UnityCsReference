@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Analytics;
 
@@ -45,6 +46,8 @@ namespace UnityEditor.Search
             public SearchEvent()
             {
                 startTime = DateTime.Now;
+                package = Package;
+                package_ver = PackageVersion;
             }
 
             public void Success(SearchItem item, SearchAction action = null)
@@ -96,6 +99,9 @@ namespace UnityEditor.Search
             public bool isDeveloperMode;
             public PreferenceData preferences;
 
+            public string package;
+            public string package_ver;
+
             // Future:
             // useFilterId
             // useActionQuery
@@ -116,9 +122,14 @@ namespace UnityEditor.Search
                     windowId = windowId,
                     category = type.ToString(),
                     categoryId = (int)type,
-                    name = name
+                    name = name,
+                    package = Package,
+                    package_ver = PackageVersion
                 };
             }
+
+            public string package;
+            public string package_ver;
 
             // Message category
             public string category;
@@ -217,13 +228,17 @@ namespace UnityEditor.Search
             QuickSearchOpenToggleToggleSidePanel
         }
 
-        public static readonly string Version = "2.2";
+        public static readonly string Package = "com.unity.quicksearch";
+        public static string PackageVersion;
         private static bool s_Registered;
         private static readonly HashSet<int> s_OnceHashCodes = new HashSet<int>();
         private static Delayer m_Debouncer;
 
         static SearchAnalytics()
         {
+            var v = InternalEditorUtility.GetUnityVersion();
+            PackageVersion = $"{v.Major}.{v.Minor}";
+
             EditorApplication.delayCall += () =>
             {
                 Application.logMessageReceived += (condition, trace, type) =>

@@ -177,6 +177,27 @@ namespace UnityEditor.SceneTemplate
             return sceneTemplate;
         }
 
+        internal static MonoScript CreateNewSceneTemplatePipeline(string folder)
+        {
+            var path = EditorUtility.SaveFilePanelInProject("Create new Scene Template Pipeline",
+                "NewSceneTemplatePipeline", "cs",
+                "Please enter a file name for the new Scene Template Pipeline.",
+                folder);
+            return CreateNewSceneTemplatePipelineAtPath(path);
+        }
+
+        internal static MonoScript CreateNewSceneTemplatePipelineAtPath(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath))
+                return null;
+
+            var templatePath = AssetsMenuUtility.GetScriptTemplatePath(ScriptTemplate.CSharp_NewSceneTemplatePipelineScript);
+            var scriptAsset = ProjectWindowUtil.CreateScriptAssetFromTemplate(filePath, templatePath) as MonoScript;
+            scriptAsset?.SetScriptTypeWasJustCreatedFromComponentMenu();
+            AssetDatabase.Refresh();
+            return scriptAsset;
+        }
+
         private static bool InstantiateScene(SceneTemplateAsset sceneTemplate, string sourceScenePath, ref string newSceneOutputPath)
         {
             if (String.IsNullOrEmpty(newSceneOutputPath))

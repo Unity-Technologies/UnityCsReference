@@ -17,8 +17,8 @@ namespace UnityEditor
     {
         static void ShowAboutWindow()
         {
-            AboutWindow w = EditorWindow.GetWindowWithRect<AboutWindow>(new Rect(100, 100, 570, 360), true, "About Unity");
-            w.position = new Rect(100, 100, 570, 360);
+            AboutWindow w = EditorWindow.GetWindowWithRect<AboutWindow>(new Rect(100, 100, 600, 360), true, "About Unity");
+            w.position = new Rect(100, 100, 600, 360);
             w.m_Parent.window.m_DontSaveToLayout = true;
         }
 
@@ -151,9 +151,9 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal();
             GUILayout.Label(s_MonoLogo);
-            GUILayout.Label("Scripting powered by The Mono Project.\n\n(c) 2011 Novell, Inc.", "MiniLabel", GUILayout.Width(210));
+            GUILayout.Label("Scripting powered by The Mono Project.\n\n(c) 2011 Novell, Inc.", "MiniLabel", GUILayout.Width(220));
             GUILayout.Label(s_AgeiaLogo);
-            GUILayout.Label("Physics powered by PhysX.\n\n(c) 2019 NVIDIA Corporation.", "MiniLabel", GUILayout.Width(200));
+            GUILayout.Label("Physics powered by PhysX.\n\n(c) 2019 NVIDIA Corporation.", "MiniLabel", GUILayout.Width(205));
             GUILayout.EndHorizontal();
             GUILayout.FlexibleSpace();
             GUILayout.BeginHorizontal();

@@ -9,6 +9,14 @@ namespace UnityEditor
 {
     internal class AnnotationWindow : EditorWindow
     {
+        private static SavedBool s_ShowTerrainDebugWarnings = new SavedBool("Terrain.ShowDebugWarnings", true);
+
+        public static bool ShowTerrainDebugWarnings
+        {
+            get => s_ShowTerrainDebugWarnings.value;
+            set => s_ShowTerrainDebugWarnings.value = value;
+        }
+
         class Styles
         {
             public GUIStyle toggle = "Toggle";
@@ -45,6 +53,7 @@ namespace UnityEditor
         }
 
         const float kWindowWidth = 270;
+        const float kLabelWidth = 150;
         const float scrollBarWidth = 14;
         const float listElementHeight = 18;
         float iconSize = 16;
@@ -70,6 +79,7 @@ namespace UnityEditor
         GUIContent iconToggleContent = EditorGUIUtility.TrTextContent("", "Show/Hide Icon");
         GUIContent iconSelectContent = EditorGUIUtility.TrTextContent("", "Select Icon");
         GUIContent icon3dGizmoContent = EditorGUIUtility.TrTextContent("3D Icons");
+        GUIContent terrainDebugWarnings = EditorGUIUtility.TrTextContent("Terrain Debug Warnings");
         GUIContent showOutlineContent = EditorGUIUtility.TrTextContent("Selection Outline");
         GUIContent showWireframeContent = EditorGUIUtility.TrTextContent("Selection Wire");
         GUIContent fadeGizmosContent = EditorGUIUtility.TrTextContent("Fade Gizmos", "Fade out and stop rendering gizmos that are small on screen");
@@ -118,7 +128,7 @@ namespace UnityEditor
 
         float GetTopSectionHeight()
         {
-            const int numberOfControls = 4;
+            const int numberOfControls = 5;
             return EditorGUI.kSingleLineHeight * numberOfControls + EditorGUI.kControlVerticalSpacing * (numberOfControls - 1) + EditorStyles.inspectorBig.padding.bottom;
         }
 
@@ -298,8 +308,7 @@ namespace UnityEditor
             float margin = 11;
             float curY = topmargin;
 
-
-            float labelWidth = m_Styles.listHeaderStyle.CalcSize(showOutlineContent).x + GUI.skin.toggle.CalcSize(GUIContent.none).x + 1;
+            float labelWidth = m_Styles.listHeaderStyle.CalcSize(terrainDebugWarnings).x + GUI.skin.toggle.CalcSize(GUIContent.none).x + 1;
             float rowHeight = 18;
 
             // 3D icons toggle & slider
@@ -337,14 +346,21 @@ namespace UnityEditor
             }
             curY += rowHeight;
 
-            // Selection outline/wire
             using (new EditorGUI.DisabledScope(m_IsGameView))
             {
+                // Selection outline/wire
                 toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
                 AnnotationUtility.showSelectionOutline = GUI.Toggle(toggleRect, AnnotationUtility.showSelectionOutline, showOutlineContent);
 
                 toggleRect.y += rowHeight;
                 AnnotationUtility.showSelectionWire = GUI.Toggle(toggleRect, AnnotationUtility.showSelectionWire, showWireframeContent);
+
+                // TODO: Change to Debug Errors & Debug Warnings
+                toggleRect.y += rowHeight;
+                EditorGUI.BeginChangeCheck();
+                s_ShowTerrainDebugWarnings.value = GUI.Toggle(toggleRect, s_ShowTerrainDebugWarnings.value, terrainDebugWarnings);
+                if (EditorGUI.EndChangeCheck())
+                    SceneView.RepaintAll();
             }
         }
 

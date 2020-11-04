@@ -23,6 +23,7 @@ namespace UnityEditor.DeviceSimulation
             return friendlyName;
         }
 
+        [NonSerialized] internal bool editorResource;
         public string directory;
 
         public bool IsAndroidDevice()
@@ -48,46 +49,6 @@ namespace UnityEditor.DeviceSimulation
         private bool IsGivenDevice(string os)
         {
             return systemInfo?.operatingSystem.ToLower().Contains(os) ?? false;
-        }
-
-        internal void AddOptionalFields()
-        {
-            foreach (var screen in screens)
-            {
-                if (screen.orientations == null || screen.orientations.Length == 0)
-                {
-                    screen.orientations = new[]
-                    {
-                        new OrientationData {orientation = ScreenOrientation.Portrait},
-                        new OrientationData {orientation = ScreenOrientation.PortraitUpsideDown},
-                        new OrientationData {orientation = ScreenOrientation.LandscapeLeft},
-                        new OrientationData {orientation = ScreenOrientation.LandscapeRight}
-                    };
-                }
-                foreach (var orientation in screen.orientations)
-                {
-                    if (orientation.safeArea == Rect.zero)
-                        orientation.safeArea = SimulatorUtilities.IsLandscape(orientation.orientation) ? new Rect(0, 0, screen.height, screen.width) : new Rect(0, 0, screen.width, screen.height);
-                }
-            }
-        }
-
-        public bool LoadOverlayImage(int screenIndex)
-        {
-            var screen = screens[screenIndex];
-            var path = screen.presentation.overlayPath;
-
-            if (string.IsNullOrEmpty(path))
-                return false;
-
-            // If overlay path starts with Assets or Packages we assume that it is the full path,
-            // that way overlays can be stored independently from the device asset. If the path
-            // starts with some other symbol we assume that it is relative to the device asset itself.
-            if (!path.StartsWith("Assets/") && !path.StartsWith("Packages/"))
-                path = Path.Combine(directory, path);
-
-            screen.presentation.overlay = AssetDatabase.LoadAssetAtPath<Texture>(path);
-            return screen.presentation.overlay != null;
         }
     }
 

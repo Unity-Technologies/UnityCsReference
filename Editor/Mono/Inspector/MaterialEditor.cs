@@ -2295,9 +2295,10 @@ namespace UnityEditor
                     var materialRendererSerializedObject = new SerializedObject(s_previousDraggedUponRenderer).FindProperty("m_Materials");
                     PrefabUtility.RevertPropertyOverride(materialRendererSerializedObject, InteractionMode.AutomatedAction);
                     hasRevert = true;
+
+                    if (!hasRevert)
+                        s_previousDraggedUponRenderer.sharedMaterials = s_previousMaterialValue;
                 }
-                if (!hasRevert)
-                    s_previousDraggedUponRenderer.sharedMaterials = s_previousMaterialValue;
             }
         }
 
@@ -2391,7 +2392,7 @@ namespace UnityEditor
                     }
                 }
 
-                Undo.RegisterCompleteObjectUndo(r, Styles.undoAssignMaterial);
+                Undo.RecordObject(r, Styles.undoAssignMaterial);
                 var materials = r.sharedMaterials;
 
                 bool isValidMaterialIndex = (materialIndex >= 0 && materialIndex < r.sharedMaterials.Length);

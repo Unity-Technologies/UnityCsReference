@@ -857,6 +857,7 @@ namespace UnityEditor
                 {
                     m_State.linkedWithSequencer = false;
                     m_State.selection = null;
+                    m_State.overrideControlInterface = null;
 
                     // Layout has changed, bail out now.
                     EditorGUIUtility.ExitGUI();

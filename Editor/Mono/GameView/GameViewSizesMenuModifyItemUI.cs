@@ -67,27 +67,23 @@ namespace UnityEditor
                 : new Color(0.6f, 0.6f, 0.6f, 1.333f));                      // dark : light
             GUILayout.Space(4);
 
+            EditorGUIUtility.labelWidth = kSpacing + kColumnWidth;
+
             // Optional text
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(Styles.optionalText, GUILayout.Width(kColumnWidth));
-            GUILayout.Space(kSpacing);
-            m_GameViewSize.baseText = EditorGUILayout.TextField(m_GameViewSize.baseText);
-            GUILayout.EndHorizontal();
+            m_GameViewSize.baseText = EditorGUILayout.TextField(Styles.optionalText, m_GameViewSize.baseText);
 
             // Drop list (aspect / fixed res)
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(Styles.typeName, GUILayout.Width(kColumnWidth));
-            GUILayout.Space(kSpacing);
-            m_GameViewSize.sizeType = (GameViewSizeType)EditorGUILayout.Popup((int)m_GameViewSize.sizeType, Styles.typeNames);
-            GUILayout.EndHorizontal();
+            m_GameViewSize.sizeType = (GameViewSizeType)EditorGUILayout.Popup(Styles.typeName, (int)m_GameViewSize.sizeType, Styles.typeNames);
 
-            // Width Height
+            var wideMode = EditorGUIUtility.wideMode;
+            EditorGUIUtility.wideMode = true;
             GUILayout.BeginHorizontal();
-            GUILayout.Label(Styles.widthHeightText, GUILayout.Width(kColumnWidth));
-            GUILayout.Space(kSpacing);
-            m_GameViewSize.width = EditorGUILayout.IntField(m_GameViewSize.width);
-            GUILayout.Space(5);
-            m_GameViewSize.height = EditorGUILayout.IntField(m_GameViewSize.height);
+            EditorGUILayout.PrefixLabel(Styles.widthHeightText);
+            var widthAndHeight = new Vector2Int(m_GameViewSize.width, m_GameViewSize.height);
+            widthAndHeight = EditorGUILayout.Vector2IntField(GUIContent.none, widthAndHeight, GUILayout.MaxWidth(Styles.windowWidth - EditorGUIUtility.labelWidth - EditorStyles.textField.padding.horizontal));
+            m_GameViewSize.width = widthAndHeight.x;
+            m_GameViewSize.height = widthAndHeight.y;
+            EditorGUIUtility.wideMode = wideMode;
             GUILayout.EndHorizontal();
 
             GUILayout.Space(Styles.spaceBetweenOkCancelButtons);
@@ -110,6 +106,8 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
             GUILayout.Space(margin);
             GUILayout.EndHorizontal();
+
+            EditorGUIUtility.labelWidth = 0;
 
             GUILayout.Space(5f);
 

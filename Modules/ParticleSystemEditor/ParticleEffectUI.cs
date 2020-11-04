@@ -87,6 +87,9 @@ namespace UnityEditor
         static Event s_PlayEvent = CreateCommandEvent("Play");
         static Event s_StopEvent = CreateCommandEvent("Stop");
         static Event s_RestartEvent = CreateCommandEvent("Restart");
+        static Event s_ResimulationEvent = CreateCommandEvent("Resimulation");
+        static Event s_ShowBoundsEvent = CreateCommandEvent("ShowBounds");
+        static Event s_ShowOnlySelectedEvent = CreateCommandEvent("ShowOnlySelected");
         static Event s_ForwardBeginEvent = CreateCommandEvent("ForwardBegin");
         static Event s_ForwardEndEvent = CreateCommandEvent("ForwardEnd");
         static Event s_ReverseBeginEvent = CreateCommandEvent("ReverseBegin");
@@ -119,6 +122,24 @@ namespace UnityEditor
         static void RestartShortcut(ShortcutArguments args)
         {
             DispatchShortcutEvent(s_RestartEvent);
+        }
+
+        [Shortcut("ParticleSystem/Resimulation", typeof(ParticleSystemInspector.ShortcutContext))]
+        static void ResimulationShortcut(ShortcutArguments args)
+        {
+            DispatchShortcutEvent(s_ResimulationEvent);
+        }
+
+        [Shortcut("ParticleSystem/ShowBounds", typeof(ParticleSystemInspector.ShortcutContext))]
+        static void ShowBoundsShortcut(ShortcutArguments args)
+        {
+            DispatchShortcutEvent(s_ShowBoundsEvent);
+        }
+
+        [Shortcut("ParticleSystem/ShowOnlySelected", typeof(ParticleSystemInspector.ShortcutContext))]
+        static void ShowOnlySelectedShortcut(ShortcutArguments args)
+        {
+            DispatchShortcutEvent(s_ShowOnlySelectedEvent);
         }
 
         [FormerlyPrefKeyAs("ParticleSystem/Forward", "m")]
@@ -213,8 +234,8 @@ namespace UnityEditor
                                 m_SelectedParticleSystems = new List<ParticleSystem>();
                                 m_SelectedParticleSystems.Add(shuriken);
 
-                                if (ParticleEffectUI.m_ShowOnlySelected)
-                                    SetShowOnlySelectedMode(ParticleEffectUI.m_ShowOnlySelected); // always refresh
+                                if (m_ShowOnlySelected)
+                                    SetShowOnlySelectedMode(m_ShowOnlySelected); // always refresh
 
                                 continue;
                             }
@@ -296,7 +317,7 @@ namespace UnityEditor
                 m_EmitterAreaWidth = EditorPrefs.GetFloat("ParticleSystemEmitterAreaWidth", k_MinEmitterAreaSize.x);
                 m_CurveEditorAreaHeight = EditorPrefs.GetFloat("ParticleSystemCurveEditorAreaHeight", k_MinCurveAreaSize.y);
 
-                SetShowOnlySelectedMode(ParticleEffectUI.m_ShowOnlySelected);
+                SetShowOnlySelectedMode(m_ShowOnlySelected);
 
                 m_EmitterAreaScrollPos.x = SessionState.GetFloat("CurrentEmitterAreaScroll", 0.0f);
 
@@ -605,12 +626,12 @@ namespace UnityEditor
                 ParticleSystemEditorUtils.resimulation = GUILayout.Toggle(ParticleSystemEditorUtils.resimulation, s_Texts.resimulation, EditorStyles.toggle);
             }
 
-            ParticleEffectUI.m_ShowBounds = GUILayout.Toggle(ParticleEffectUI.m_ShowBounds, ParticleEffectUI.texts.showBounds, EditorStyles.toggle);
+            m_ShowBounds = GUILayout.Toggle(m_ShowBounds, texts.showBounds, EditorStyles.toggle);
 
             EditorGUI.BeginChangeCheck();
-            ParticleEffectUI.m_ShowOnlySelected = GUILayout.Toggle(ParticleEffectUI.m_ShowOnlySelected, ParticleEffectUI.texts.showOnlySelected, EditorStyles.toggle);
+            m_ShowOnlySelected = GUILayout.Toggle(m_ShowOnlySelected, texts.showOnlySelected, EditorStyles.toggle);
             if (EditorGUI.EndChangeCheck())
-                SetShowOnlySelectedMode(ParticleEffectUI.m_ShowOnlySelected);
+                SetShowOnlySelectedMode(m_ShowOnlySelected);
 
             EditorGUIUtility.labelWidth = 0.0f;
         }
@@ -687,6 +708,21 @@ namespace UnityEditor
                 {
                     Stop();
                     Play();
+                    evt.Use();
+                }
+                else if (evt.commandName == s_ResimulationEvent.commandName)
+                {
+                    ParticleSystemEditorUtils.resimulation = !ParticleSystemEditorUtils.resimulation;
+                    evt.Use();
+                }
+                else if (evt.commandName == s_ShowBoundsEvent.commandName)
+                {
+                    m_ShowBounds = !m_ShowBounds;
+                    evt.Use();
+                }
+                else if (evt.commandName == s_ShowOnlySelectedEvent.commandName)
+                {
+                    m_ShowOnlySelected = !m_ShowOnlySelected;
                     evt.Use();
                 }
                 else if (evt.commandName == s_ForwardBeginEvent.commandName)
@@ -913,7 +949,7 @@ namespace UnityEditor
                     // Draw Emitters
                     Color orgColor = GUI.color;
                     bool isRepaintEvent = Event.current.type == EventType.Repaint;
-                    bool isShowOnlySelected = ParticleEffectUI.m_ShowOnlySelected;
+                    bool isShowOnlySelected = m_ShowOnlySelected;
                     List<ParticleSystemUI> selectedSystems = GetSelectedParticleSystemUIs();
 
                     for (int i = 0; i < m_Emitters.Length; ++i)

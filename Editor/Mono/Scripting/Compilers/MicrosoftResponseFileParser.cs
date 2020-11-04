@@ -169,7 +169,7 @@ namespace UnityEditor.Scripting.Compilers
                 }
                 else
                 {
-                    var valueWithColon = value.Length == 0 ? "" : ":" + value;
+                    var valueWithColon = value.Length == 0 ? "" : ":" + SafeArgString(value);
                     responseArguments.Add(arg + valueWithColon);
                 }
             }
@@ -184,6 +184,20 @@ namespace UnityEditor.Scripting.Compilers
             };
 
             return responseFileData;
+        }
+
+        private static string SafeArgString(string text)
+        {
+            return ContainsWhiteSpace(text) ? $"\"{text}\"" : text;
+        }
+
+        private static bool ContainsWhiteSpace(string text)
+        {
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (char.IsWhiteSpace(text[i])) return true;
+            }
+            return false;
         }
 
         private static bool IsDefine(ScriptCompilerBase.CompilerOption compilerOption)
@@ -346,6 +360,11 @@ namespace UnityEditor.Scripting.Compilers
                             args.Add(sb.ToString());
                             sb.Length = 0;
                         }
+                    }
+                    else if (c == '#')
+                    {
+                        // skip the rest of the line if it is the start of a comment
+                        break;
                     }
                     else
                         sb.Append(c);

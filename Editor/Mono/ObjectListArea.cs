@@ -553,31 +553,41 @@ namespace UnityEditor
             string name = string.IsNullOrEmpty(GetRenameOverlay().name) ? GetRenameOverlay().originalName : GetRenameOverlay().name;
             int instanceID = GetRenameOverlay().userData; // we passed in an instanceID as userData
 
-            // Are we creating new asset?
-            if (GetCreateAssetUtility().IsCreatingNewAsset())
+            try
             {
-                if (GetRenameOverlay().userAcceptedRename)
-                    GetCreateAssetUtility().EndNewAssetCreation(name);
-                else
-                    GetCreateAssetUtility().EndNewAssetCreationCanceled(name);
-            }
-            else // renaming existing asset
-            {
+                // Are we creating new asset?
+                if (GetCreateAssetUtility().IsCreatingNewAsset())
+                {
+                    if (GetRenameOverlay().userAcceptedRename)
+                        GetCreateAssetUtility().EndNewAssetCreation(name);
+                    else
+                        GetCreateAssetUtility().EndNewAssetCreationCanceled(name);
+                }
+                else // renaming existing asset
+                {
+                    if (GetRenameOverlay().userAcceptedRename)
+                    {
+                        ObjectNames.SetNameSmartWithInstanceID(instanceID, name);
+                    }
+                }
+
+                if (GetRenameOverlay().HasKeyboardFocus())
+                    GUIUtility.keyboardControl = m_KeyboardControlID;
+
                 if (GetRenameOverlay().userAcceptedRename)
                 {
-                    ObjectNames.SetNameSmartWithInstanceID(instanceID, name);
+                    Frame(instanceID, true, false); // frames existing assets (new ones could have instanceID 0)
                 }
             }
-
-            if (GetRenameOverlay().HasKeyboardFocus())
-                GUIUtility.keyboardControl = m_KeyboardControlID;
-
-            if (GetRenameOverlay().userAcceptedRename)
+            catch (UnityException)
             {
-                Frame(instanceID, true, false); // frames existing assets (new ones could have instanceID 0)
+                // Any UnityException reported by the asset database is already printed in the console.
+                GUIUtility.keyboardControl = m_KeyboardControlID;
             }
-
-            ClearRenameState();
+            finally
+            {
+                ClearRenameState();
+            }
         }
 
         void ClearRenameState()

@@ -398,27 +398,55 @@ namespace UnityEditorInternal
 
                     // adding the entire selectedInstanceIDs would result
                     // in the last entry being duplicated later on
-                    // thus we add everything except for the last item
-                    // so we wouldn't have to search for duplicates in the entire list
+                    // thus when selecting upwards we add the existing selection - 1;
+                    // when selecting downwards don't add the last index from the new selection
                     if (addExisting)
-                        allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count - 1));
+                    {
+                        if (dir > 0)
+                        {
+                            allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count - 1));
+                            allSelectedInstanceIDs.AddRange(allEntryInstanceIDs.GetRange(from, to - from + 1));
+                        }
+                        else
+                        {
+                            allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count));
+                            allSelectedInstanceIDs.Capacity = allSelectedInstanceIDs.Count + (to - from);
+                            // this is necessary so that indices would be sorted in an ascending order
+                            for (int i = to - 1; i >= from; i--)
+                                allSelectedInstanceIDs.Add(allEntryInstanceIDs[i]);
+                        }
+                    }
+                    else
+                    {
+                        allSelectedInstanceIDs.AddRange(allEntryInstanceIDs.GetRange(from, to - from + 1));
+                    }
 
-                    allSelectedInstanceIDs.AddRange(allEntryInstanceIDs.GetRange(from, to - from + 1));
                     return allSelectedInstanceIDs;
                 }
 
                 var foundInstanceIDs = TryGetInstanceIds(allEntryInstanceIDs, allEntryGuids, from, to);
                 if (foundInstanceIDs != null)
                 {
+                    // adding the entire selectedInstanceIDs would result
+                    // in the last entry being duplicated later on
+                    // thus when selecting upwards we add the existing selection - 1;
+                    // when selecting downwards don't add the last index from the new selection
                     if (addExisting)
                     {
                         List<int> allSelectedInstanceIDs = new List<int>();
-                        // adding the entire selectedInstanceIDs would result
-                        // in the last entry being duplicated later on
-                        // thus we add everything except for the last item
-                        // so we wouldn't have to search for duplicates in the entire list
-                        allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count - 1));
-                        allSelectedInstanceIDs.AddRange(foundInstanceIDs);
+                        if (dir > 0)
+                        {
+                            allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count - 1));
+                            allSelectedInstanceIDs.AddRange(foundInstanceIDs);
+                        }
+                        else
+                        {
+                            allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count));
+                            // this is necessary so that indices would be sorted in an ascending order
+                            for (int i = to - 1; i >= from; i--)
+                                allSelectedInstanceIDs.Add(allEntryInstanceIDs[i]);
+                        }
+
                         return allSelectedInstanceIDs;
                     }
 

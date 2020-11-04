@@ -127,6 +127,11 @@ namespace UnityEditor.SceneTemplate
             if (script == null)
                 return false;
 
+            // If we just created this script from the button, it won't have any class
+            // until a domain reload.
+            if (script.GetScriptTypeWasJustCreatedFromComponentMenu())
+                return true;
+
             var scriptType = script.GetClass();
             if (!typeof(ISceneTemplatePipeline).IsAssignableFrom(scriptType))
                 return false;

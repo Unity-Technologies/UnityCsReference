@@ -515,6 +515,7 @@ namespace UnityEditor
             const float k_ScrollbarWidth = 13;
             Vector2 m_PreviewSize = new Vector2(600f, 0);
             Vector2 m_Scroll;
+            bool m_RenderOverlayAfterResizeChange;
 
             static class Styles
             {
@@ -605,10 +606,14 @@ namespace UnityEditor
                 UpdateAndClose();
             }
 
-            void UpdatePreviewHeight(float height)
+            bool UpdatePreviewHeight(float height)
             {
-                if (height > 0)
+                if (height > 0 && m_PreviewSize.y != height)
+                {
                     m_PreviewSize.y = height;
+                    return true;
+                }
+                return false;
             }
 
             public override void OnGUI(Rect rect)
@@ -659,7 +664,8 @@ namespace UnityEditor
 
                         var rightColumnHeight = DrawEditor(new Rect(middleCol, 0, rect.xMax - middleCol, m_PreviewSize.y), m_InstanceEditor, false, EditorGUIUtility.ComparisonViewMode.Modified);
 
-                        UpdatePreviewHeight(Math.Max(leftColumnHeight, rightColumnHeight));
+                        if (UpdatePreviewHeight(Math.Max(leftColumnHeight, rightColumnHeight)))
+                            m_RenderOverlayAfterResizeChange = true;
                     }
                     GUI.EndScrollView();
                 }
@@ -689,9 +695,22 @@ namespace UnityEditor
                     m_Scroll = GUI.BeginScrollView(scrollRectPosition, m_Scroll, viewPosition);
 
                     float columnHeight = DrawEditor(new Rect(0, 0, rect.width, m_PreviewSize.y), editor, disable, EditorGUIUtility.ComparisonViewMode.Modified);
-                    UpdatePreviewHeight(columnHeight);
+                    if (UpdatePreviewHeight(columnHeight))
+                        m_RenderOverlayAfterResizeChange = true;
 
                     GUI.EndScrollView();
+                }
+
+                if (m_RenderOverlayAfterResizeChange && Event.current.type == EventType.Repaint)
+                {
+                    m_RenderOverlayAfterResizeChange = false;
+                    // The comparison view resizes a frame delayed due to having to wait for the first render to
+                    // layout the contents. This creates a distorted rendering because the last frame rendered is rendered
+                    // to the new window size. We therefore 'clear' the comparison view after a resize change by rendering
+                    // a quad on top with the background color so the distorted rendering is not shown to the user.
+                    // Fixes case 1069062.
+                    GUI.Label(rect, GUIContent.none, EditorStyles.viewBackground);
+                    editorWindow.Repaint();
                 }
             }
 

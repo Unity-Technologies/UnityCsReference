@@ -214,6 +214,8 @@ namespace UnityEditor
         {
             ResetOptimizedBlock();
             CleanupPropertyEditor();
+            if (!(preview is Editor))
+                preview.Cleanup();
         }
 
         internal static bool ObjectIsMonoBehaviourOrScriptableObject(Object obj)

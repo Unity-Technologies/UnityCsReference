@@ -346,7 +346,6 @@ namespace UnityEditor
         // Mesh preview
         PreviewRenderUtility m_PreviewUtility;
         private Material m_Material;
-        private Material m_WireMaterial;
 
         // Texture preview
         GUIContent m_TextureGUIContent = new GUIContent();
@@ -383,7 +382,7 @@ namespace UnityEditor
 
         private IConnectionState m_AttachToPlayerState;
 
-        ModelInspector.PreviewSettings m_Settings;
+        MeshPreview.Settings m_Settings;
 
         [MenuItem("Window/Analysis/Frame Debugger", false, 10)]
         public static FrameDebuggerWindow ShowFrameDebuggerWindow()
@@ -466,24 +465,16 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             m_RepaintFrames = kNeedToRepaintFrames;
 
-            if (m_Settings == null)
-            {
-                m_Settings = new ModelInspector.PreviewSettings();
-                m_Settings.previewDir = new Vector2(120, -20);
-            }
+            m_PreviewUtility = new PreviewRenderUtility();
+            m_PreviewUtility.camera.fieldOfView = 30.0f;
+            m_Settings = new MeshPreview.Settings();
+            m_Settings.previewDir = new Vector2(120, -20);
         }
 
         internal void OnDisable()
         {
-            if (m_WireMaterial != null)
-            {
-                DestroyImmediate(m_WireMaterial, true);
-            }
-            if (m_PreviewUtility != null)
-            {
-                m_PreviewUtility.Cleanup();
-                m_PreviewUtility = null;
-            }
+            m_PreviewUtility?.Cleanup();
+            m_Settings?.Dispose();
 
             m_AttachToPlayerState?.Dispose();
             m_AttachToPlayerState = null;
@@ -760,23 +751,13 @@ namespace UnityEditor
 
         private void DrawMeshPreview(Rect previewRect, Rect meshInfoRect, Mesh mesh, int meshSubset)
         {
-            if (m_PreviewUtility == null)
-            {
-                m_PreviewUtility = new PreviewRenderUtility();
-                m_PreviewUtility.camera.fieldOfView = 30.0f;
-            }
             if (m_Material == null)
                 m_Material = Material.GetDefaultMaterial();
-            if (m_WireMaterial == null)
-            {
-                m_WireMaterial = ModelInspector.CreateWireframeMaterial();
-            }
 
             m_Settings.activeMaterial = m_Material;
-            m_Settings.wireMaterial = m_WireMaterial;
             m_PreviewUtility.BeginPreview(previewRect, "preBackground");
 
-            ModelInspector.RenderMeshPreview(mesh, m_PreviewUtility, m_Settings, meshSubset);
+            MeshPreview.RenderMeshPreview(mesh, m_PreviewUtility, m_Settings, meshSubset);
 
             m_PreviewUtility.EndAndDrawPreview(previewRect);
 

@@ -857,12 +857,18 @@ namespace UnityEditor.Search
 
                     int frame = (int)Mathf.Repeat(Time.realtimeSinceStartup * 5, 11.99f);
                     if (GUI.Button(searchInProgressRect, Styles.statusWheel[frame], Styles.searchInProgressButton))
+                    {
                         OpenPreferences();
+                        GUIUtility.ExitGUI();
+                    }
                 }
                 else
                 {
                     if (GUILayout.Button(Styles.prefButtonContent, Styles.prefButton))
+                    {
                         OpenPreferences();
+                        GUIUtility.ExitGUI();
+                    }
                 }
             }
         }
