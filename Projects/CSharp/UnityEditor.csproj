@@ -5974,9 +5974,6 @@
     <Reference Include="Unity.Cecil">
       <HintPath>..\..\External\Unity.Cecil\builds\lib\net35\Unity.Cecil.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.Legacy.NRefactory">
-      <HintPath>..\..\External\NRefactory\builds\3.2.1\net35\Unity.Legacy.NRefactory.dll</HintPath>
-    </Reference>
     <Reference Include="ExCSS.Unity">
       <HintPath>..\..\External\ExCSS\builds\builds\lib\net35\ExCSS.Unity.dll</HintPath>
     </Reference>

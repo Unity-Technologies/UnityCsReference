@@ -4,7 +4,6 @@
 
 using UnityEngine;
 using UnityEngine.Bindings;
-using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -62,15 +61,9 @@ namespace UnityEditor
 
         public bool ContainsSampleSettingsOverride(string platform)
         {
-            BuildTargetGroup platformGroup = BuildPipeline.GetBuildTargetGroupByName(platform);
-            if (platformGroup == BuildTargetGroup.Unknown)
-            {
-                Debug.LogError("Unknown platform passed to AudioImporter.ContainsSampleSettingsOverride (" + platform + "), please use one of " +
-                    "'Web', 'Standalone', 'iOS', 'Android', 'WebGL', 'PS4', 'XboxOne' or 'WSA'");
-                return false;
-            }
-
-            return Internal_ContainsSampleSettingsOverride(platformGroup);
+            return ValidatePlatform(platform, "AudioImporter.ContainsSampleSettingsOverride", out BuildTargetGroup platformGroup) ?
+                Internal_ContainsSampleSettingsOverride(platformGroup) :
+                false;
         }
 
         [NativeName("ContainsSampleSettingsOverride")]
@@ -78,15 +71,9 @@ namespace UnityEditor
 
         public AudioImporterSampleSettings GetOverrideSampleSettings(string platform)
         {
-            BuildTargetGroup platformGroup = BuildPipeline.GetBuildTargetGroupByName(platform);
-            if (platformGroup == BuildTargetGroup.Unknown)
-            {
-                Debug.LogError("Unknown platform passed to AudioImporter.GetOverrideSampleSettings (" + platform + "), please use one of " +
-                    "'Web', 'Standalone', 'iOS', 'Android', 'WebGL', 'PS4', 'XboxOne' or 'WSA'");
-                return defaultSampleSettings;
-            }
-
-            return Internal_GetOverrideSampleSettings(platformGroup);
+            return ValidatePlatform(platform, "AudioImporter.GetOverrideSampleSettings", out BuildTargetGroup platformGroup) ?
+                Internal_GetOverrideSampleSettings(platformGroup) :
+                defaultSampleSettings;
         }
 
         [NativeName("GetTranslatedSettingsForPlatform")]
@@ -94,15 +81,9 @@ namespace UnityEditor
 
         public bool SetOverrideSampleSettings(string platform, AudioImporterSampleSettings settings)
         {
-            BuildTargetGroup platformGroup = BuildPipeline.GetBuildTargetGroupByName(platform);
-            if (platformGroup == BuildTargetGroup.Unknown)
-            {
-                Debug.LogError("Unknown platform passed to AudioImporter.SetOverrideSampleSettings (" + platform + "), please use one of " +
-                    "'Web', 'Standalone', 'iOS', 'Android', 'WebGL', 'PS4', 'XboxOne' or 'WSA'");
-                return false;
-            }
-
-            return Internal_SetOverrideSampleSettings(platformGroup, settings);
+            return ValidatePlatform(platform, "AudioImporter.SetOverrideSampleSettings", out BuildTargetGroup platformGroup) ?
+                Internal_SetOverrideSampleSettings(platformGroup, settings) :
+                false;
         }
 
         [NativeName("SetSampleSettingsForPlatform")]
@@ -110,15 +91,19 @@ namespace UnityEditor
 
         public bool ClearSampleSettingOverride(string platform)
         {
-            BuildTargetGroup platformGroup = BuildPipeline.GetBuildTargetGroupByName(platform);
-            if (platformGroup == BuildTargetGroup.Unknown)
-            {
-                Debug.LogError("Unknown platform passed to AudioImporter.ClearSampleSettingOverride (" + platform + "), please use one of " +
-                    "'Web', 'Standalone', 'iOS', 'Android', 'WebGL', 'PS4', 'XboxOne' or 'WSA'");
-                return false;
-            }
+            return ValidatePlatform(platform, "AudioImporter.ClearSampleSettingOverride", out BuildTargetGroup platformGroup) ?
+                Internal_ClearSampleSettingOverride(platformGroup) :
+                false;
+        }
 
-            return Internal_ClearSampleSettingOverride(platformGroup);
+        private static bool ValidatePlatform(string platform, string methodName, out BuildTargetGroup group)
+        {
+            group = BuildPipeline.GetBuildTargetGroupByName(platform);
+            if (group != BuildTargetGroup.Unknown)
+                return true;
+
+            Debug.LogErrorFormat("Unknown platform passed to {0} ({1})", methodName, platform);
+            return false;
         }
 
         [NativeName("ClearSampleSettingOverride")]

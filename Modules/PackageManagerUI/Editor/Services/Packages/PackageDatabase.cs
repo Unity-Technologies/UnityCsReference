@@ -504,6 +504,11 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
+        public void ClearSamplesCache()
+        {
+            m_ParsedSamples.Clear();
+        }
+
         public virtual void Install(IPackageVersion version)
         {
             if (version == null || version.isInstalled)

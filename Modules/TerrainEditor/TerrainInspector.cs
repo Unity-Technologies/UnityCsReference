@@ -1583,7 +1583,7 @@ namespace UnityEditor
                 ITerrainPaintTool activeTool = GetActiveTool();
 
                 GUILayout.BeginVertical(EditorStyles.helpBox);
-                GUILayout.Label(activeTool.GetDesc());
+                GUILayout.Label(activeTool.GetDesc(), EditorStyles.wordWrappedMiniLabel);
                 GUILayout.EndVertical();
                 EditorGUILayout.Space();
 

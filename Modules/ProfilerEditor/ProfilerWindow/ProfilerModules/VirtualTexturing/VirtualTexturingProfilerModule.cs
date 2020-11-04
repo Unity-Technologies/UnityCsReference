@@ -18,7 +18,7 @@ namespace UnityEditorInternal.Profiling
 
         const string k_IconName = "Profiler.VirtualTexturing";
         const int k_DefaultOrderIndex = 13;
-        static readonly string k_Name = "Virtual Texturing Profiler";
+        static readonly string k_Name = "Virtual Texturing";
         static readonly string k_VTCountersCategoryName = ProfilerCategory.VirtualTexturing.Name;
 
         static readonly string[] k_VirtualTexturingCounterNames =
@@ -66,6 +66,13 @@ namespace UnityEditorInternal.Profiling
             }
 
             return chartCounters;
+        }
+
+        protected override List<ProfilerCounterData> CollectDefaultDetailCounters()
+        {
+            var detailCounter = new List<ProfilerCounterData>(1);
+            detailCounter.Add(new ProfilerCounterData() { m_Name = "Max Cache Mip Bias", m_Category = k_VTCountersCategoryName });
+            return detailCounter;
         }
     }
 }

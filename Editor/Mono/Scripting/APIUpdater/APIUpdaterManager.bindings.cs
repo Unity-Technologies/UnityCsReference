@@ -45,6 +45,12 @@ namespace UnityEditorInternal.APIUpdating
     [StaticAccessor("APIUpdaterManager::GetInstance()", StaticAccessorType.Dot)]
     internal static class APIUpdaterManager
     {
+        [RequiredByNativeCode]
+        public static string[] GetDefinedSymbolsFor(string assemblyName)
+        {
+            return UnityEditor.Compilation.CompilationPipeline.GetDefinesFromAssemblyName(Path.GetFileNameWithoutExtension(assemblyName));
+        }
+
         private const string k_AssemblyDependencyGraphFilePath = "Library/APIUpdater/project-dependencies.graph";
 
         private static HashSet<AssemblyUpdateCandidate> s_AssembliesToUpdate;
