@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI
                 case PackageFilterTab.UnityRegistry:
                     return package.Is(PackageType.Installable) && package.Is(PackageType.Unity) && (package.isDiscoverable || (package.versions.installed?.isDirectDependency ?? false));
                 case PackageFilterTab.MyRegistries:
-                    return package.Is(PackageType.Installable) && package.Is(PackageType.ScopedRegistry) && (package.isDiscoverable || (package.versions.installed?.isDirectDependency ?? false));
+                    return package.Is(PackageType.Installable) && (package.Is(PackageType.ScopedRegistry) || package.Is(PackageType.MainNotUnity)) && (package.isDiscoverable || (package.versions.installed?.isDirectDependency ?? false));
                 case PackageFilterTab.InProject:
                     return !package.Is(PackageType.BuiltIn) && package.versions.installed != null
                         && (PackageManagerProjectSettings.instance.enablePackageDependencies || package.versions.installed.isDirectDependency);

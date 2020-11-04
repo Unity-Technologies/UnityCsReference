@@ -10,7 +10,7 @@ namespace UnityEngine.Rendering
 {
     public static class RenderPipelineManager
     {
-        static RenderPipelineAsset s_CurrentPipelineAsset;
+        internal static RenderPipelineAsset s_CurrentPipelineAsset;
         static Camera[] s_Cameras = new Camera[0];
         static int s_CameraCapacity = 0;
 
@@ -85,7 +85,7 @@ namespace UnityEngine.Rendering
             Array.Clear(s_Cameras, 0, s_Cameras.Length);
         }
 
-        static void PrepareRenderPipeline(RenderPipelineAsset pipelineAsset)
+        internal static void PrepareRenderPipeline(RenderPipelineAsset pipelineAsset)
         {
             if (!ReferenceEquals(s_CurrentPipelineAsset, pipelineAsset))
             {
