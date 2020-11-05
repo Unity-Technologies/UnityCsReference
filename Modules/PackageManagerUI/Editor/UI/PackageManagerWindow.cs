@@ -59,7 +59,7 @@ namespace UnityEditor.PackageManager.UI
             if (windowResource != null)
             {
                 var root = windowResource.CloneTree();
-                root.styleSheets.Add(Resources.GetStyleSheet());
+                root.styleSheets.Add(Resources.instance.GetStyleSheet());
                 cache = new VisualElementCache(root);
 
                 PageManager.instance.Setup();

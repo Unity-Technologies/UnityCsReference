@@ -2,13 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
 {
-    internal static class Resources
+    [Serializable]
+    internal class Resources : ScriptableSingleton<Resources>
     {
         private const string k_TemplateRoot = "UXML/PackageManager/";
 
@@ -16,8 +18,9 @@ namespace UnityEditor.PackageManager.UI
         private const string k_PackageManagerDarkVariablesSheetPath = "StyleSheets/PackageManager/Dark.uss";
         private const string k_PackageManagerLightVariablesSheetPath = "StyleSheets/PackageManager/Light.uss";
 
-        private static StyleSheet m_DarkStyleSheet;
-        private static StyleSheet darkStyleSheet
+        [SerializeField]
+        private StyleSheet m_DarkStyleSheet;
+        private StyleSheet darkStyleSheet
         {
             get
             {
@@ -27,8 +30,9 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        private static StyleSheet m_LightStyleSheet;
-        private static StyleSheet lightStyleSheet
+        [SerializeField]
+        private StyleSheet m_LightStyleSheet;
+        private StyleSheet lightStyleSheet
         {
             get
             {
@@ -79,7 +83,7 @@ namespace UnityEditor.PackageManager.UI
             return $"Icons/PackageManager/{(EditorGUIUtility.isProSkin ? "Dark" : "Light")}/{iconName}.png";
         }
 
-        public static StyleSheet GetStyleSheet()
+        public StyleSheet GetStyleSheet()
         {
             return EditorGUIUtility.isProSkin ? darkStyleSheet : lightStyleSheet;
         }

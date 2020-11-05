@@ -55,19 +55,29 @@ namespace UnityEditor.SceneManagement
         [NativeMethod("OpenScene")]
         public extern static Scene OpenScene(string scenePath, [uei.DefaultValue("OpenSceneMode.Single")] OpenSceneMode mode);
 
+        internal static Scene OpenPreviewScene(string scenePath)
+        {
+            return OpenPreviewScene(scenePath, true);
+        }
+
         [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("OpenPreviewScene")]
-        internal extern static Scene OpenPreviewScene(string scenePath);
+        internal extern static Scene OpenPreviewScene(string scenePath, bool allocateSceneCullingMask);
 
         [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("NewScene")]
         public extern static Scene NewScene(NewSceneSetup setup, [uei.DefaultValue("NewSceneMode.Single")] NewSceneMode mode);
 
+        public static Scene NewPreviewScene()
+        {
+            return NewPreviewScene(true);
+        }
+
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("NewPreviewScene")]
-        public extern static Scene NewPreviewScene();
+        internal extern static Scene NewPreviewScene(bool allocateSceneCullingMask);
 
         [StaticAccessor("GetSceneManager()", StaticAccessorType.Dot)]
         [NativeMethod("CreateSceneAsset")]

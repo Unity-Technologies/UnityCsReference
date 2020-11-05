@@ -90,7 +90,6 @@ namespace UnityEngine.UIElements.UIR
         private NativeArray<DrawBufferRange> m_DrawRanges; // Size is powers of 2 strictly
         private int m_DrawRangeStart;
         private uint m_FrameIndex;
-        private bool m_FrameIndexIncremented;
         private uint m_NextUpdateID = 1; // For the current frame only, 0 is not an accepted value here
         private DrawStatistics m_DrawStats;
         private bool m_APIUsesStraightYCoordinateSystem;
@@ -268,9 +267,6 @@ namespace UnityEngine.UIElements.UIR
 
             m_DrawRanges = new NativeArray<DrawBufferRange>(m_LazyCreationDrawRangeRingSize, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             m_Fences = m_MockDevice ? null : new uint[(int)k_MaxQueuedFrameCount];
-
-            if (!m_MockDevice)
-                UIR.Utility.EngineUpdate += OnEngineUpdate;
         }
 
         #region Dispose Pattern
@@ -302,9 +298,6 @@ namespace UnityEngine.UIElements.UIR
 
             if (disposing)
             {
-                if (m_DrawRanges.IsCreated && !m_MockDevice)
-                    UIR.Utility.EngineUpdate -= OnEngineUpdate;
-
                 if (m_DefaultMaterial != null)
                 {
                     if (Application.isPlaying)
@@ -699,9 +692,7 @@ namespace UnityEngine.UIElements.UIR
 
         void BeforeDraw()
         {
-            if (!m_FrameIndexIncremented)
-                AdvanceFrame();
-            m_FrameIndexIncremented = false;
+            AdvanceFrame();
             m_DrawStats = new DrawStatistics();
             m_DrawStats.currentFrameIndex = (int)m_FrameIndex;
             m_DrawStats.currentDrawRangeStart = m_DrawRangeStart;
@@ -967,7 +958,6 @@ namespace UnityEngine.UIElements.UIR
             s_MarkerAdvanceFrame.Begin();
 
             m_FrameIndex++;
-            m_FrameIndexIncremented = true;
 
             m_DrawStats.currentFrameIndex = (int)m_FrameIndex;
 
@@ -1160,10 +1150,6 @@ namespace UnityEngine.UIElements.UIR
 
 
         #region Internals
-        private void OnEngineUpdate()
-        {
-            AdvanceFrame();
-        }
 
         private static void ProcessDeviceFreeQueue()
         {

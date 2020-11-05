@@ -42,12 +42,32 @@ namespace UnityEditorInternal
             public string name;
             public bool alive;
             public int maxDepth;
+            GUIContent m_Content = new GUIContent();
             public ThreadInfo(string name, int threadIndex, int maxDepth, int linesToDisplay)
             {
                 this.name = name;
+                m_Content.tooltip = name;
                 this.threadIndex = threadIndex;
                 this.linesToDisplay = linesToDisplay;
                 this.maxDepth = Mathf.Max(1, maxDepth);
+            }
+
+            public GUIContent DisplayName(bool indent)
+            {
+                if (!string.IsNullOrEmpty(m_Content.text)) return m_Content;
+                GUIContent content = GUIContent.Temp(name, name);
+
+                var indentSize = 10;
+                if ((styles.leftPane.CalcSize(content).x + (indent ? indentSize : 0)) > Chart.kSideWidth)
+                {
+                    content.text += "...";
+                    while ((styles.leftPane.CalcSize(content).x + (indent ? indentSize : 0)) > Chart.kSideWidth)
+                    {
+                        content.text = content.text.Remove(content.text.Length - 4, 1);
+                    }
+                }
+                m_Content.text = content.text;
+                return m_Content;
             }
 
             public int CompareTo(ThreadInfo other)
@@ -350,14 +370,13 @@ namespace UnityEditorInternal
             return combinedHeaderHeight + combinedThreadHeight;
         }
 
-        private bool DrawBar(Rect r, float y, float height, string name, bool group, bool expanded, bool indent)
+        private bool DrawBar(Rect r, float y, float height, GUIContent content, bool group, bool expanded, bool indent)
         {
             Rect leftRect = new Rect(r.x - Chart.kSideWidth, y, Chart.kSideWidth, height);
             Rect rightRect = new Rect(r.x, y, r.width, height);
             if (Event.current.type == EventType.Repaint)
             {
                 styles.rightPane.Draw(rightRect, false, false, false, false);
-                GUIContent content = GUIContent.Temp(name);
                 if (indent)
                     styles.leftPane.padding.left += 10;
                 styles.leftPane.Draw(leftRect, content, false, false, false, false);
@@ -401,7 +420,7 @@ namespace UnityEditorInternal
                 {
                     var height = groupInfo.height;
                     var expandedState = groupInfo.expanded.target;
-                    var newExpandedState = DrawBar(r, y, height, groupInfo.name, true, expandedState, false);
+                    var newExpandedState = DrawBar(r, y, height, GUIContent.Temp(groupInfo.name), true, expandedState, false);
 
                     if (newExpandedState != expandedState)
                     {
@@ -415,7 +434,7 @@ namespace UnityEditorInternal
                 {
                     var height = threadInfo.height * scaleForThreadHeight;
                     if (height != 0)
-                        DrawBar(r, y, height, threadInfo.name, false, true, !mainGroup);
+                        DrawBar(r, y, height, threadInfo.DisplayName(!mainGroup), false, true, !mainGroup);
                     y += height;
                 }
             }

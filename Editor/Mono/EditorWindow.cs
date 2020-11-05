@@ -790,6 +790,7 @@ namespace UnityEditor
                 }
             }
             win.Show();
+
             return win;
         }
 
@@ -920,6 +921,7 @@ namespace UnityEditor
                 m_Parent.window.Close();
             }
             UnityEngine.Object.DestroyImmediate(this, true);
+            EditorWindow.UpdateWindowMenuListing();
         }
 
         // Make the window repaint.
@@ -1101,6 +1103,8 @@ namespace UnityEditor
             m_EnableViewDataPersistence = true;
             m_RequestedViewDataSave = false;
             titleContent.text = GetType().ToString();
+
+            UpdateWindowMenuListing();
         }
 
         private void __internalAwake()
@@ -1151,6 +1155,39 @@ namespace UnityEditor
         public virtual IEnumerable<Type> GetExtraPaneTypes()
         {
             return Enumerable.Empty<Type>();
+        }
+
+        internal static void UpdateWindowMenuListing()
+        {
+            EditorApplication.update -= EditorWindow.BuildWindowMenuListing;
+            EditorApplication.update += EditorWindow.BuildWindowMenuListing;
+        }
+
+        internal static void BuildWindowMenuListing()
+        {
+            EditorApplication.update -= EditorWindow.BuildWindowMenuListing;
+
+            Menu.RemoveMenuItem("Window/Windows");
+            var editorWindows = Resources.FindObjectsOfTypeAll<EditorWindow>();
+            int menuIdx = -10;
+
+            Menu.AddMenuItem($"Window/Windows/Close All...", "", false, menuIdx++, () =>
+            {
+                var windows = Resources.FindObjectsOfTypeAll<ContainerWindow>();
+                foreach (var win in windows.Where(w => !!w && w.showMode != ShowMode.MainWindow))
+                    win.Close();
+            }, null);
+            Menu.AddSeparator($"Window/Windows/", menuIdx++);
+
+            foreach (var win in editorWindows.Where(e => !!e).OrderBy(e => e.titleContent.text))
+            {
+                var title = win.titleContent.text;
+                if (!String.IsNullOrEmpty(win.titleContent.tooltip) && win.titleContent.tooltip != title)
+                    title += " (" + win.titleContent.tooltip + ")";
+                title = title.Replace("/", "\\");
+                Menu.AddMenuItem($"Window/Windows/{title}", "", false, menuIdx++, () => win.Focus(), null);
+            }
+            EditorUtility.Internal_UpdateAllMenus();
         }
     }
 
