@@ -146,6 +146,7 @@ namespace UnityEditor
                     continue;
 
                 UnityEngine.Object.DestroyImmediate(w, true);
+                EditorWindow.UpdateWindowMenuListing();
             }
 
             m_Panes.Clear();

@@ -156,7 +156,7 @@ namespace UnityEditor
                         }
                     }
                     break;
-                case EventType.MouseUp:
+                case EventType.MouseDown:
                     // Ignore right clicks
                     if (Event.current.button != 0)
                         break;

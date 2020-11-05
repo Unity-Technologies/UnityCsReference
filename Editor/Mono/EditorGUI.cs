@@ -4421,14 +4421,26 @@ namespace UnityEditor
             var wasEnabled = GUI.enabled;
             var eventType = GetEventTypeForControlAllowDisabledContextMenuPaste(evt, id);
 
+            if (showEyedropper)
+                hovered ^= hoveredEyedropper;
+
             switch (eventType)
             {
-                case EventType.MouseUp:
+                case EventType.MouseDown:
                     if (showEyedropper)
                     {
-                        hovered ^= hoveredEyedropper;
+                        if (hoveredEyedropper && wasEnabled)
+                        {
+                            GUIUtility.keyboardControl = id;
+                            EyeDropper.Start(GUIView.current);
+                            s_ColorPickID = id;
+                            evt.Use();
+                            GUIUtility.ExitGUI();
+                        }
                     }
+                    break;
 
+                case EventType.MouseUp:
                     if (hovered)
                     {
                         var currentView = GUIView.current;
@@ -4471,17 +4483,6 @@ namespace UnityEditor
                                     null);
                                 evt.Use();
                                 return origColor;
-                        }
-                    }
-
-                    if (showEyedropper)
-                    {
-                        if (hoveredEyedropper && wasEnabled)
-                        {
-                            GUIUtility.keyboardControl = id;
-                            EyeDropper.Start(GUIView.current);
-                            s_ColorPickID = id;
-                            GUIUtility.ExitGUI();
                         }
                     }
                     break;
