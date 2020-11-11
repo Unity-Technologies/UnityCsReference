@@ -721,6 +721,9 @@
     <Compile Include="..\..\Editor\Mono\CodeEditor\CodeEditor.cs">
       <Link>Editor\Mono\CodeEditor\CodeEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\CodeEditor\CodeEditorAnalytics.cs">
+      <Link>Editor\Mono\CodeEditor\CodeEditorAnalytics.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\CodeEditor\CodeEditorProjectSync.cs">
       <Link>Editor\Mono\CodeEditor\CodeEditorProjectSync.cs</Link>
     </Compile>

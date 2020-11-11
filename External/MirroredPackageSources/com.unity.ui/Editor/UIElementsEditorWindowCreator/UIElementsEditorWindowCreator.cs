@@ -53,7 +53,7 @@ namespace UnityEditor.UIElements
                 m_Folder = "Assets/Editor";
         }
 
-        public void OnEnable()
+        public void CreateGUI()
         {
             // After the c# file has been created and the domain.reload executed, we want to close the window
             if (m_CSharpName != "" && ClassExists())

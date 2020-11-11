@@ -1624,10 +1624,16 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(EditorApplication.isPlaying)) // switching color spaces in play mode is not supported
             {
                 EditorGUI.BeginChangeCheck();
+                int selectedValue = m_ActiveColorSpace.enumValueIndex;
                 EditorGUILayout.PropertyField(m_ActiveColorSpace, SettingsContent.activeColorSpace);
+
                 if (EditorGUI.EndChangeCheck())
                 {
-                    serializedObject.ApplyModifiedProperties();
+                    if (m_ActiveColorSpace.enumValueIndex != selectedValue && EditorUtility.DisplayDialog("Changing Color Space", "Warning: Changing the color space can take some time.", $"Change to {(ColorSpace)m_ActiveColorSpace.enumValueIndex}", "Cancel"))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                    }
+                    else m_ActiveColorSpace.enumValueIndex = selectedValue;
                     GUIUtility.ExitGUI(); // Fixes case 690421
                 }
             }
