@@ -235,6 +235,7 @@ namespace UnityEditorInternal
                 linkXmlFiles.Add(WriteMethodsToPreserveBlackList(rcr, runInformation.target));
                 linkXmlFiles.Add(MonoAssemblyStripping.GenerateLinkXmlToPreserveDerivedTypes(managedAssemblyFolderPath, rcr));
                 linkXmlFiles.Add(WriteTypesInScenesBlacklist(managedAssemblyFolderPath, rcr));
+                linkXmlFiles.Add(WriteSerializedTypesBlacklist(managedAssemblyFolderPath, rcr));
             }
 
             linkXmlFiles.AddRange(ProcessBuildPipelineGenerateAdditionalLinkXmlFiles(runInformation));
@@ -331,6 +332,39 @@ namespace UnityEditorInternal
             sb.AppendLine("</linker>");
 
             var path = Path.Combine(managedAssemblyDirectory, "TypesInScenes.xml");
+            File.WriteAllText(path, sb.ToString());
+            return path;
+        }
+
+        private static string WriteSerializedTypesBlacklist(string managedAssemblyDirectory, RuntimeClassRegistry rcr)
+        {
+            var items = rcr.GetAllSerializedClassesAsString();
+
+            var oneOrMoreItemsWritten = false;
+            var sb = new StringBuilder();
+            sb.AppendLine("<linker>");
+            foreach (var assemblyTypePair in items)
+            {
+                // Filter anything out where the assembly doesn't exist so that UnityLinker can be strict about preservations in link xml files
+                var assemblyPathWithoutExtension = Path.Combine(managedAssemblyDirectory, assemblyTypePair.Key);
+                if (!File.Exists($"{assemblyPathWithoutExtension}.dll") && !File.Exists($"{assemblyPathWithoutExtension}.exe") && !File.Exists($"{assemblyPathWithoutExtension}.winmd"))
+                    continue;
+
+                sb.AppendLine($"\t<assembly fullname=\"{assemblyTypePair.Key}\">");
+                foreach (var type in assemblyTypePair.Value)
+                {
+                    oneOrMoreItemsWritten = true;
+                    sb.AppendLine($"\t\t<type fullname=\"{type}\" preserve=\"nothing\" serialized=\"true\"/>");
+                }
+                sb.AppendLine("\t</assembly>");
+            }
+            sb.AppendLine("</linker>");
+
+            // Avoid writing empty files
+            if (!oneOrMoreItemsWritten)
+                return null;
+
+            var path = Path.Combine(managedAssemblyDirectory, "SerializedTypes.xml");
             File.WriteAllText(path, sb.ToString());
             return path;
         }

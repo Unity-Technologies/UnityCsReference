@@ -799,8 +799,12 @@ namespace UnityEngine
 
         public Cubemap(int width, GraphicsFormat format, TextureCreationFlags flags, int mipCount)
         {
-            if (ValidateFormat(format, FormatUsage.Sample))
-                Internal_Create(this, width, mipCount, format, flags, IntPtr.Zero);
+            if (!ValidateFormat(format, FormatUsage.Sample))
+                return;
+
+            ValidateIsNotCrunched(flags); // Script created Crunched Cubemaps not supported
+
+            Internal_Create(this, width, mipCount, format, flags, IntPtr.Zero);
         }
 
         internal Cubemap(int width, TextureFormat textureFormat, int mipCount, IntPtr nativeTex)
@@ -812,7 +816,7 @@ namespace UnityEngine
             TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
             if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
                 flags |= TextureCreationFlags.Crunch;
-
+            ValidateIsNotCrunched(flags); // Script created Crunched Cubemaps not supported
             Internal_Create(this, width, mipCount, format, flags, nativeTex);
         }
 
@@ -887,6 +891,12 @@ namespace UnityEngine
 
         public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
         public void Apply() { Apply(true, false); }
+
+        private static void ValidateIsNotCrunched(TextureCreationFlags flags)
+        {
+            if ((flags &= TextureCreationFlags.Crunch) != 0)
+                throw new ArgumentException("Crunched Cubemap is not supported for textures created from script.");
+        }
     }
 
     public sealed partial class Texture3D : Texture
@@ -904,8 +914,11 @@ namespace UnityEngine
 
         public Texture3D(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags, int mipCount)
         {
-            if (ValidateFormat(format, FormatUsage.Sample))
-                Internal_Create(this, width, height, depth, mipCount, format, flags, IntPtr.Zero);
+            if (!ValidateFormat(format, FormatUsage.Sample))
+                return;
+
+            ValidateIsNotCrunched(flags);
+            Internal_Create(this, width, height, depth, mipCount, format, flags, IntPtr.Zero);
         }
 
         public Texture3D(int width, int height, int depth, TextureFormat textureFormat, int mipCount)
@@ -917,6 +930,7 @@ namespace UnityEngine
             TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
             if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
                 flags |= TextureCreationFlags.Crunch;
+            ValidateIsNotCrunched(flags);
             Internal_Create(this, width, height, depth, mipCount, format, flags, IntPtr.Zero);
         }
 
@@ -929,6 +943,7 @@ namespace UnityEngine
             TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
             if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
                 flags |= TextureCreationFlags.Crunch;
+            ValidateIsNotCrunched(flags);
             Internal_Create(this, width, height, depth, mipCount, format, flags, nativeTex);
         }
 
@@ -1028,6 +1043,12 @@ namespace UnityEngine
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, this.GetSafetyHandleForSlice(mipLevel));
             return array;
         }
+
+        private static void ValidateIsNotCrunched(TextureCreationFlags flags)
+        {
+            if ((flags &= TextureCreationFlags.Crunch) != 0)
+                throw new ArgumentException("Crunched Texture3D is not supported.");
+        }
     }
 
     public sealed partial class Texture2DArray : Texture
@@ -1045,8 +1066,10 @@ namespace UnityEngine
 
         public Texture2DArray(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags, int mipCount)
         {
-            if (ValidateFormat(format, FormatUsage.Sample))
-                Internal_Create(this, width, height, depth, mipCount, format, flags);
+            if (!ValidateFormat(format, FormatUsage.Sample))
+                return;
+            ValidateIsNotCrunched(flags);
+            Internal_Create(this, width, height, depth, mipCount, format, flags);
         }
 
         public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, int mipCount, [uei.DefaultValue("true")] bool linear)
@@ -1058,6 +1081,7 @@ namespace UnityEngine
             TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
             if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
                 flags |= TextureCreationFlags.Crunch;
+            ValidateIsNotCrunched(flags);
             Internal_Create(this, width, height, depth, mipCount, format, flags);
         }
 
@@ -1114,6 +1138,12 @@ namespace UnityEngine
 
         public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
         public void Apply() { Apply(true, false); }
+
+        private static void ValidateIsNotCrunched(TextureCreationFlags flags)
+        {
+            if ((flags &= TextureCreationFlags.Crunch) != 0)
+                throw new ArgumentException("Crunched Texture2DArray is not supported.");
+        }
     }
 
     public sealed partial class CubemapArray : Texture
@@ -1131,8 +1161,11 @@ namespace UnityEngine
 
         public CubemapArray(int width, int cubemapCount, GraphicsFormat format, TextureCreationFlags flags, int mipCount)
         {
-            if (ValidateFormat(format, FormatUsage.Sample))
-                Internal_Create(this, width, cubemapCount, mipCount, format, flags);
+            if (!ValidateFormat(format, FormatUsage.Sample))
+                return;
+
+            ValidateIsNotCrunched(flags);
+            Internal_Create(this, width, cubemapCount, mipCount, format, flags);
         }
 
         public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, int mipCount, [uei.DefaultValue("true")] bool linear)
@@ -1144,6 +1177,7 @@ namespace UnityEngine
             TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
             if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
                 flags |= TextureCreationFlags.Crunch;
+            ValidateIsNotCrunched(flags);
             Internal_Create(this, width, cubemapCount, mipCount, format, flags);
         }
 
@@ -1202,6 +1236,12 @@ namespace UnityEngine
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, this.GetSafetyHandleForSlice(mipLevel, (int)face, element));
             return array;
         }
+
+        private static void ValidateIsNotCrunched(TextureCreationFlags flags)
+        {
+            if ((flags &= TextureCreationFlags.Crunch) != 0)
+                throw new ArgumentException("Crunched TextureCubeArray is not supported.");
+        }
     }
 
     public sealed partial class SparseTexture : Texture
@@ -1214,6 +1254,12 @@ namespace UnityEngine
                 return false;
             }
             return true;
+        }
+
+        private static void ValidateIsNotCrunched(TextureFormat textureFormat)
+        {
+            if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
+                throw new ArgumentException("Crunched SparseTexture is not supported.");
         }
 
         public SparseTexture(int width, int height, DefaultFormat format, int mipCount)
@@ -1241,6 +1287,8 @@ namespace UnityEngine
         {
             if (!ValidateFormat(textureFormat))
                 return;
+
+            ValidateIsNotCrunched(textureFormat);
 
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
             if (!ValidateSize(width, height, format))

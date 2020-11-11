@@ -20,7 +20,7 @@ public class {0} : EditorWindow
         wnd.titleContent = new GUIContent(""{0}"");
     }}
 
-    public void OnEnable()
+    public void CreateGUI()
     {{
         // Each editor window contains a root VisualElement object
         VisualElement root = rootVisualElement;

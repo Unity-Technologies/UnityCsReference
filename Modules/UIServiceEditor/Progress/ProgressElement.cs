@@ -10,6 +10,8 @@ using UnityEngine.Assertions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEditorInternal;
+using Button = UnityEngine.UIElements.Button;
 
 namespace UnityEditor
 {
@@ -27,6 +29,7 @@ namespace UnityEditor
         public bool isIndefinite;
         public bool isResponding;
         public float lastElapsedTime;
+        public Progress.Status lastStatus;
 
         public DisplayedTask(Label name, Label progress, VisualElement descriptionIcon, Label description, Label elapsedTime, ProgressBar progressBar, Button pauseButton, Button cancelButton)
         {
@@ -41,6 +44,7 @@ namespace UnityEditor
             this.progress = this.progressBar.Q(null, "unity-progress-bar__progress");
             isIndefinite = false;
             isResponding = true;
+            lastStatus = Progress.Status.Running;
         }
 
         public void SetIndefinite(bool indefinite)
@@ -103,7 +107,6 @@ namespace UnityEditor
         private VisualElement m_Details;
         private ScrollView m_DetailsScrollView;
         private Toggle m_DetailsFoldoutToggle;
-        private bool isPaused;
 
         private TaskReorderingHelper m_TaskReorderingHelper;
         public VisualElement rootVisualElement { get; }
@@ -380,6 +383,14 @@ namespace UnityEditor
                 }
             }
 
+            task.cancelButton.visible = dataSource.cancellable && !dataSource.finished;
+            task.pauseButton.visible = dataSource.pausable && !dataSource.finished;
+
+            if (dataSource.status == task.lastStatus)
+                return;
+
+            task.lastStatus = dataSource.status;
+
             if (dataSource.status == Progress.Status.Canceled)
             {
                 task.descriptionLabel.text = "Cancelled";
@@ -388,15 +399,13 @@ namespace UnityEditor
             }
             else if (dataSource.status == Progress.Status.Paused)
             {
-                this.isPaused = true;
                 task.progress.AddToClassList("unity-progress-bar__progress__inactive");
                 task.pauseButton.RemoveFromClassList("pause-button");
                 task.pauseButton.AddToClassList("resume-button");
             }
-            else if (isPaused && dataSource.status == Progress.Status.Running) // that case is needed when resuming a paused task
+            else if (dataSource.status == Progress.Status.Running) // that case is needed when resuming a paused task
             {
                 // we need to update it during the UpdateDisplay (we need to update it from the update callback and UpdateDisplay is called at that time)
-                this.isPaused = false;
                 UpdateStatusIcon(task, null);
                 task.progress.RemoveFromClassList("unity-progress-bar__progress__inactive");
                 task.pauseButton.RemoveFromClassList("resume-button");
@@ -426,9 +435,6 @@ namespace UnityEditor
                     m_DetailsFoldoutToggle.value = false;
                 }
             }
-
-            task.cancelButton.visible = dataSource.cancellable && !dataSource.finished;
-            task.pauseButton.visible = dataSource.pausable && !dataSource.finished;
         }
 
         private static void UpdateStatusIcon(DisplayedTask task, string iconName)

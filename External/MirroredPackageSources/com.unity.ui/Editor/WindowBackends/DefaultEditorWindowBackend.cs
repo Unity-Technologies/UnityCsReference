@@ -1,4 +1,6 @@
+using System;
 using System.Linq;
+using System.Reflection;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements.Debugger;
 using UnityEngine;
@@ -17,24 +19,34 @@ namespace UnityEditor.UIElements
 
         public override void OnCreate(IWindowModel model)
         {
-            base.OnCreate(model);
-
-            m_PlayModeDarkenColor = UIElementsUtility.editorPlayModeTintColor = EditorApplication.isPlayingOrWillChangePlaymode ? editorWindowModel.playModeTintColor : Color.white;
-
-            EditorApplication.playModeStateChanged += PlayModeStateChangedCallback;
-            AnimationMode.onAnimationRecordingStart += RefreshStylesAfterExternalEvent;
-            AnimationMode.onAnimationRecordingStop += RefreshStylesAfterExternalEvent;
-
-            m_NotificationContainer = new IMGUIContainer();
-            m_NotificationContainer.StretchToParentSize();
-            m_NotificationContainer.pickingMode = PickingMode.Ignore;
-
-            RegisterImguiContainerGUICallbacks();
-
-            // Window is non-null when set by deserialization; it's usually null when OnCreate is called.
-            if (editorWindowModel.window != null)
+            try
             {
-                RegisterWindow();
+                base.OnCreate(model);
+
+                m_PlayModeDarkenColor = UIElementsUtility.editorPlayModeTintColor =
+                    EditorApplication.isPlayingOrWillChangePlaymode ? editorWindowModel.playModeTintColor : Color.white;
+
+                EditorApplication.playModeStateChanged += PlayModeStateChangedCallback;
+                AnimationMode.onAnimationRecordingStart += RefreshStylesAfterExternalEvent;
+                AnimationMode.onAnimationRecordingStop += RefreshStylesAfterExternalEvent;
+
+                m_NotificationContainer = new IMGUIContainer();
+                m_NotificationContainer.StretchToParentSize();
+                m_NotificationContainer.pickingMode = PickingMode.Ignore;
+
+                RegisterImguiContainerGUICallbacks();
+
+                // Window is non-null when set by deserialization; it's usually null when OnCreate is called.
+                if (editorWindowModel.window != null)
+                {
+                    RegisterWindow();
+                }
+            }
+            catch (Exception e)
+            {
+                // Log error to easily diagnose issues with panel initialization and then rethrow it.
+                Debug.LogException(e);
+                throw;
             }
         }
 
@@ -85,6 +97,8 @@ namespace UnityEditor.UIElements
 
             UpdateStyleMargins();
             m_WindowRegistered = true;
+            
+            SendInitializeIfNecessary();
         }
 
         void UnregisterWindow()
@@ -231,6 +245,55 @@ namespace UnityEditor.UIElements
                 var child = ve.hierarchy[i];
                 PropagateDirtyRepaint(child);
             }
+        }
+
+        void SendInitializeIfNecessary()
+        {
+            if (editorWindowModel == null)
+                return;
+            
+            var window = editorWindowModel.window;
+
+
+            if (window != null)
+            {
+                if (window.rootVisualElement.GetProperty("Initialized") != null)
+                    return;
+
+                if (EditorApplication.isUpdating)
+                {
+                    EditorApplication.delayCall += SendInitializeIfNecessary;
+                    return;
+                }
+
+                window.rootVisualElement.SetProperty("Initialized", true);
+
+                Invoke("CreateGUI");
+            }
+        }
+
+        protected void Invoke(string methodName)
+        {
+            MethodInfo mi = GetPaneMethod(methodName, editorWindowModel.window);
+            mi?.Invoke(editorWindowModel.window, null);
+        }
+
+        protected MethodInfo GetPaneMethod(string methodName, object obj)
+        {
+            if (obj == null)
+                return null;
+
+            Type t = obj.GetType();
+
+            while (t != null)
+            {
+                var method = t.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                if (method != null)
+                    return method;
+
+                t = t.BaseType;
+            }
+            return null;
         }
 
         void IEditorWindowBackend.Focused()

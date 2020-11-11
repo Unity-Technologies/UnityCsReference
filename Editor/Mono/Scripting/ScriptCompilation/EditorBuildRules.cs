@@ -551,6 +551,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     var targetAssemblyOwningAnalyzer = assemblies.CustomTargetAssemblies.Values
                         .OrderBy(c => c.PathFilter(a)).LastOrDefault();
+                    if (targetAssemblyOwningAnalyzer?.PathFilter(a) <= 0)
+                        targetAssemblyOwningAnalyzer = null;
                     foreach (var scriptAssembly in scriptAssemblies)
                     {
                         if (ShouldUseAnalyzerForScriptAssembly(scriptAssembly, targetAssemblyOwningAnalyzer))

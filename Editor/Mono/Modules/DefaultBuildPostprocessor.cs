@@ -16,6 +16,8 @@ namespace UnityEditor.Modules
     internal abstract class DefaultBuildPostprocessor
         : IBuildPostprocessor
     {
+        static readonly string kXrBootSettingsKey = "xr-boot-settings";
+
         public virtual void LaunchPlayer(BuildLaunchPlayerArgs args)
         {
             throw new NotSupportedException();
@@ -83,6 +85,21 @@ namespace UnityEditor.Modules
                 if (PlayerSettings.gcIncremental)
                     config.Set("gc-max-time-slice", "3");
             }
+
+            string xrBootSettings = UnityEditor.EditorUserBuildSettings.GetPlatformSettings(BuildPipeline.GetBuildTargetName(target), kXrBootSettingsKey);
+            if (!String.IsNullOrEmpty(xrBootSettings))
+            {
+                var bootSettings = xrBootSettings.Split(';');
+                foreach (var bootSetting in bootSettings)
+                {
+                    var setting = bootSetting.Split(':');
+                    if (setting.Length == 2 && !String.IsNullOrEmpty(setting[0]) && !String.IsNullOrEmpty(setting[1]))
+                    {
+                        config.Set(setting[0], setting[1]);
+                    }
+                }
+            }
+
 
             if ((options & BuildOptions.Development) != 0)
             {
