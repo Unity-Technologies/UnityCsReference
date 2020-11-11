@@ -17,6 +17,28 @@ namespace UnityEditor.SceneManagement
 
     public sealed partial class EditorSceneManager : SceneManager
     {
+        private static void PlayModeStateChangedCallback(PlayModeStateChange state)
+        {
+            switch (state)
+            {
+                case PlayModeStateChange.ExitingPlayMode:
+                    SceneManager.s_AllowLoadScene = false;
+                    break;
+                case PlayModeStateChange.EnteredEditMode:   // When in edit mode calling LoadScene will fail with an exception so it is "ok" to call from edit mode
+                case PlayModeStateChange.ExitingEditMode:
+                case PlayModeStateChange.EnteredPlayMode:
+                default:
+                    SceneManager.s_AllowLoadScene = true;
+                    break;
+            }
+        }
+
+        static EditorSceneManager()
+        {
+            SceneManager.s_AllowLoadScene = true;
+            EditorApplication.playModeStateChanged += PlayModeStateChangedCallback;
+        }
+
         internal static bool CreateSceneAsset(string scenePath, bool createDefaultGameObjects)
         {
             if (!Utils.Paths.CheckValidAssetPathAndThatDirectoryExists(scenePath, ".unity"))
