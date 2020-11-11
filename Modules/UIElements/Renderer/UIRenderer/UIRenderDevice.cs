@@ -82,7 +82,6 @@ namespace UnityEngine.UIElements.UIR
         private UInt32[] m_Fences;
         private MaterialPropertyBlock m_StandardMatProps, m_CommonMatProps;
         private uint m_FrameIndex;
-        private bool m_FrameIndexIncremented;
         private uint m_NextUpdateID = 1; // For the current frame only, 0 is not an accepted value here
         private DrawStatistics m_DrawStats;
 
@@ -271,7 +270,6 @@ namespace UnityEngine.UIElements.UIR
             m_Fences = new uint[(int)k_MaxQueuedFrameCount];
             m_StandardMatProps = new MaterialPropertyBlock();
             m_CommonMatProps = new MaterialPropertyBlock();
-            UIR.Utility.EngineUpdate += OnEngineUpdate;
         }
 
         bool fullyCreated { get { return m_Fences != null; } }
@@ -305,9 +303,6 @@ namespace UnityEngine.UIElements.UIR
 
             if (disposing)
             {
-                if (fullyCreated)
-                    UIR.Utility.EngineUpdate -= OnEngineUpdate;
-
                 DeviceToFree free = new DeviceToFree()
                 { handle = m_MockDevice ? 0 : Utility.InsertCPUFence(), page = m_FirstPage };
                 if (free.handle == 0)
@@ -619,9 +614,7 @@ namespace UnityEngine.UIElements.UIR
 
         public void OnFrameRenderingBegin()
         {
-            if (!m_FrameIndexIncremented)
-                AdvanceFrame();
-            m_FrameIndexIncremented = false;
+            AdvanceFrame();
             m_DrawStats = new DrawStatistics();
             m_DrawStats.currentFrameIndex = (int)m_FrameIndex;
 
@@ -903,7 +896,6 @@ namespace UnityEngine.UIElements.UIR
             s_MarkerAdvanceFrame.Begin();
 
             m_FrameIndex++;
-            m_FrameIndexIncremented = true;
 
             m_DrawStats.currentFrameIndex = (int)m_FrameIndex;
 
@@ -1095,10 +1087,6 @@ namespace UnityEngine.UIElements.UIR
 
 
         #region Internals
-        private void OnEngineUpdate()
-        {
-            AdvanceFrame();
-        }
 
         private static void ProcessDeviceFreeQueue()
         {

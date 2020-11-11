@@ -1530,7 +1530,7 @@ namespace UnityEditor.ShortcutManagement
             target.style.left = m_TargetPosition;
             UpdateElement(target.parent, handlePosition, 0);
 
-            foreach (var el in m_Elements.Children())
+            foreach (var el in m_Elements.Q<ScrollView>().Children())
             {
                 UpdateElement(el, handlePosition, m_VerticalScrollbarWidth);
             }
@@ -1538,8 +1538,8 @@ namespace UnityEditor.ShortcutManagement
 
         void UpdateElement(VisualElement el, float handlePosition, float offset)
         {
-            var totalPadding = el.ElementAt(0).computedStyle.paddingLeft.value.value + el.ElementAt(0).computedStyle.paddingRight.value.value + el.ElementAt(1).computedStyle.paddingLeft.value.value + el.ElementAt(1).computedStyle.paddingRight.value.value;
-            var percentage = (handlePosition + (target.computedStyle.width.value.value) / 2 - totalPadding / 2) / (target.parent.layout.width - (totalPadding + offset));
+            var totalPadding = el.ElementAt(0).resolvedStyle.paddingLeft + el.ElementAt(0).resolvedStyle.paddingRight + el.ElementAt(1).resolvedStyle.paddingLeft + el.ElementAt(1).resolvedStyle.paddingRight;
+            var percentage = (handlePosition + (target.resolvedStyle.width) / 2 - totalPadding / 2) / (target.parent.layout.width - (totalPadding + offset));
 
             el.ElementAt(0).style.flexGrow = percentage;
             el.ElementAt(1).style.flexGrow = 1 - percentage;
