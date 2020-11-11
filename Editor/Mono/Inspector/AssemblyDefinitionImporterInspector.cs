@@ -42,6 +42,9 @@ namespace UnityEditor
             public static readonly GUIContent expressionOutcome = EditorGUIUtility.TrTextContent("Expression outcome", "Shows the mathematical equation that your Expression represents.");
             public static readonly GUIContent noEngineReferences = EditorGUIUtility.TrTextContent("No Engine References", "When enabled, references to UnityEngine/UnityEditor will not be added when compiling this assembly.");
 
+            // This is used to make everything in reorderable list elements centered vertically.
+            public const int kCenterHeightOffset = 1;
+
             public const int kValidityIconHeight = 16;
             public const int kValidityIconWidth = 16;
             static readonly Texture2D kValidDefineConstraint = EditorGUIUtility.FindTexture("Valid");
@@ -69,11 +72,11 @@ namespace UnityEditor
                 switch (status)
                 {
                     case DefineConstraintsHelper.DefineConstraintStatus.Compatible:
-                        return Styles.kCompatibleTextIndividual;
+                        return kCompatibleTextIndividual;
                     case DefineConstraintsHelper.DefineConstraintStatus.Incompatible:
-                        return Styles.kIncompatibleTextIndividual;
+                        return kIncompatibleTextIndividual;
                     default:
-                        return Styles.kInvalidTextIndividual;
+                        return kInvalidTextIndividual;
                 }
             }
         }
@@ -249,7 +252,7 @@ namespace UnityEditor
                         }
 
                         var constraintValidityRect = new Rect(GUILayoutUtility.GetLastRect());
-                        constraintValidityRect.x += constraintValidityRect.width - 23;
+                        constraintValidityRect.x = constraintValidityRect.width - Styles.kValidityIconWidth / 4;
                         var image = defineConstraintsCompatible ? Styles.validDefineConstraint : Styles.invalidDefineConstraint;
                         var tooltip = Styles.GetTitleTooltipFromDefineConstraintCompatibility(defineConstraintsCompatible);
                         var content = new GUIContent(image, tooltip);
@@ -453,7 +456,7 @@ namespace UnityEditor
 
             rect.height -= EditorGUIUtility.standardVerticalSpacing;
 
-            var textFieldRect = new Rect(rect.x, rect.y + 1, rect.width - ReorderableList.Defaults.dragHandleWidth + 1, rect.height);
+            var textFieldRect = new Rect(rect.x, rect.y + Styles.kCenterHeightOffset, rect.width - ReorderableList.Defaults.dragHandleWidth, rect.height);
 
             string noValue = L10n.Tr("(Missing)");
 
@@ -472,7 +475,7 @@ namespace UnityEditor
 
                 var content = new GUIContent(image, Styles.GetIndividualTooltipFromDefineConstraintStatus(status));
 
-                var constraintValidityRect = new Rect(rect.width + ReorderableList.Defaults.dragHandleWidth + ReorderableList.Defaults.dragHandleWidth / 2f - Styles.kValidityIconWidth / 2f + 1, rect.y, Styles.kValidityIconWidth, Styles.kValidityIconHeight);
+                var constraintValidityRect = new Rect(rect.width + ReorderableList.Defaults.dragHandleWidth + Styles.kValidityIconWidth / 4, rect.y + Styles.kCenterHeightOffset, Styles.kValidityIconWidth, Styles.kValidityIconHeight);
                 EditorGUI.LabelField(constraintValidityRect, content);
             }
 
