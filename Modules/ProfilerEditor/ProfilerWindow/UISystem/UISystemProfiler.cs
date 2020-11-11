@@ -427,6 +427,11 @@ namespace UnityEditor
     {
         public UISystemProfiler profiler;
 
+        public void OnEnable()
+        {
+            titleContent = new GUIContent("UI System Preview");
+        }
+
         public void OnGUI()
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);

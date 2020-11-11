@@ -9,7 +9,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using ShaderPlatform = UnityEngine.Rendering.GraphicsDeviceType;
 using TextureDimension = UnityEngine.Rendering.TextureDimension;
-
+using UnityEditor.Experimental.AssetImporters;
 
 namespace UnityEditor
 {
@@ -180,10 +180,19 @@ namespace UnityEditor
         extern internal static void RecreateSkinnedMeshResources();
         extern internal static void ReloadAllShaders();
 
-        extern public static Shader CreateShaderAsset(string source);
-        extern public static void   UpdateShaderAsset([NotNull] Shader shader, [NotNull] string source);
-        [FreeFunction("GetScriptMapper().AddShader")] extern public static void RegisterShader(Shader shader);
+        extern public static Shader CreateShaderAsset(AssetImportContext context, string source, bool compileInitialShaderVariants);
+        public static Shader CreateShaderAsset(string source)
+        {
+            return CreateShaderAsset(null, source, true);
+        }
 
+        extern public static void   UpdateShaderAsset(AssetImportContext context, [NotNull] Shader shader, [NotNull] string source, bool compileInitialShaderVariants);
+        public static void          UpdateShaderAsset(Shader shader, string source)
+        {
+            UpdateShaderAsset(null, shader, source, true);
+        }
+
+        [FreeFunction("GetScriptMapper().AddShader")] extern public static void RegisterShader(Shader shader);
 
         extern internal static void OpenCompiledShader(Shader shader, int mode, int externPlatformsMask, bool includeAllVariants);
         extern internal static void OpenCompiledComputeShader(ComputeShader shader, bool allVariantsAndPlatforms);

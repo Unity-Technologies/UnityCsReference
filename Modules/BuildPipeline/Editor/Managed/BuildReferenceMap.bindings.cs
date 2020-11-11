@@ -51,7 +51,9 @@ namespace UnityEditor.Build.Content
 
         public extern Hash128 GetHash128();
 
+        [NativeMethod(IsThreadSafe = true)]
         internal extern string SerializeToJson();
+        [NativeMethod(IsThreadSafe = true)]
         internal extern void DeserializeFromJson(string data);
 
         internal extern byte[] SerializeToBinary();
@@ -62,7 +64,7 @@ namespace UnityEditor.Build.Content
             Internal_AddMapping(internalFileName, serializationIndex, objectID, overwrite);
         }
 
-        [NativeMethod("AddMapping")]
+        [NativeMethod("AddMapping", IsThreadSafe = true)]
         private extern void Internal_AddMapping(string internalFileName, long serializationIndex, ObjectIdentifier objectID, bool overwrite);
 
         public void AddMappings(string internalFileName, SerializationInfo[] objectIDs, bool overwrite = false)
@@ -70,8 +72,11 @@ namespace UnityEditor.Build.Content
             Internal_AddMappings(internalFileName, objectIDs, overwrite);
         }
 
-        [NativeMethod("AddMappings")]
+        [NativeMethod("AddMappings", IsThreadSafe = true)]
         private extern void Internal_AddMappings(string internalFileName, SerializationInfo[] objectIDs, bool overwrite);
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern void FilterToSubset(ObjectIdentifier[] objectIds);
 
         public override bool Equals(object obj)
         {

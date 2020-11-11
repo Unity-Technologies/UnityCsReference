@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor;
 using UnityEngine;
 
 namespace UnityEditor
@@ -13,6 +12,12 @@ namespace UnityEditor
     {
         SerializedProperty m_LowpassResonanceQ;
         SerializedProperty m_LowpassLevelCustomCurve;
+
+        private static class Styles
+        {
+            public static readonly GUIContent LowpassResonanceQTooltip = EditorGUIUtility.TrTextContent("Lowpass Resonance Q", "Determines how much the filter's self-resonance is dampened");
+            public static readonly GUIContent LowpassLevelCustomCurveTooltip = EditorGUIUtility.TrTextContent("Cutoff Frequency", "Lowpass cutoff frequency in Hz");
+        }
 
         void OnEnable()
         {
@@ -25,11 +30,11 @@ namespace UnityEditor
             serializedObject.Update();
 
             AudioSourceInspector.AnimProp(
-                EditorGUIUtility.TrTextContent("Cutoff Frequency"),
+                Styles.LowpassLevelCustomCurveTooltip,
                 m_LowpassLevelCustomCurve,
                 0.0f, AudioSourceInspector.kMaxCutoffFrequency, true);
 
-            EditorGUILayout.PropertyField(m_LowpassResonanceQ);
+            EditorGUILayout.PropertyField(m_LowpassResonanceQ, Styles.LowpassResonanceQTooltip);
 
             serializedObject.ApplyModifiedProperties();
         }

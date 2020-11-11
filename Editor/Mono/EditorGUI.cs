@@ -9185,12 +9185,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         public static bool PropertyField(SerializedProperty property, params GUILayoutOption[] options)
         {
-            return PropertyField(property, null, false, options);
+            return PropertyField(property, null, IsChildrenIncluded(property), options);
         }
 
         public static bool PropertyField(SerializedProperty property, GUIContent label, params GUILayoutOption[] options)
         {
-            return PropertyField(property, label, false, options);
+            return PropertyField(property, label, IsChildrenIncluded(property), options);
         }
 
         public static bool PropertyField(SerializedProperty property, bool includeChildren, params GUILayoutOption[] options)
@@ -9202,6 +9202,18 @@ This warning only shows up in development builds.", helpTopic, pageName);
         public static bool PropertyField(SerializedProperty property, GUIContent label, bool includeChildren, params GUILayoutOption[] options)
         {
             return ScriptAttributeUtility.GetHandler(property).OnGUILayout(property, label, includeChildren, options);
+        }
+
+        private static bool IsChildrenIncluded(SerializedProperty prop)
+        {
+            switch (prop.propertyType)
+            {
+                case SerializedPropertyType.Generic:
+                case SerializedPropertyType.Vector4:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         public static Rect GetControlRect(params GUILayoutOption[] options)
