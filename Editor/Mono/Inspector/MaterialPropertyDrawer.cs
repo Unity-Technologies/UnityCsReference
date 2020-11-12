@@ -271,7 +271,7 @@ namespace UnityEditor
 
         static bool IsPropertyTypeSuitable(MaterialProperty prop)
         {
-            return prop.type == MaterialProperty.PropType.Float || prop.type == MaterialProperty.PropType.Range;
+            return prop.type == MaterialProperty.PropType.Float || prop.type == MaterialProperty.PropType.Range || prop.type == MaterialProperty.PropType.Int;
         }
 
         public override float GetPropertyHeight(MaterialProperty prop, string label, MaterialEditor editor)
@@ -293,16 +293,33 @@ namespace UnityEditor
                 return;
             }
 
-            EditorGUI.BeginChangeCheck();
-
-            bool value = (Math.Abs(prop.floatValue) > 0.001f);
-            EditorGUI.showMixedValue = prop.hasMixedValue;
-            value = EditorGUI.Toggle(position, label, value);
-            EditorGUI.showMixedValue = false;
-            if (EditorGUI.EndChangeCheck())
+            if (prop.type != MaterialProperty.PropType.Int)
             {
-                prop.floatValue = value ? 1.0f : 0.0f;
-                SetKeyword(prop, value);
+                EditorGUI.BeginChangeCheck();
+
+                bool value = (Math.Abs(prop.floatValue) > 0.001f);
+                EditorGUI.showMixedValue = prop.hasMixedValue;
+                value = EditorGUI.Toggle(position, label, value);
+                EditorGUI.showMixedValue = false;
+                if (EditorGUI.EndChangeCheck())
+                {
+                    prop.floatValue = value ? 1.0f : 0.0f;
+                    SetKeyword(prop, value);
+                }
+            }
+            else
+            {
+                EditorGUI.BeginChangeCheck();
+
+                bool value = prop.intValue != 0;
+                EditorGUI.showMixedValue = prop.hasMixedValue;
+                value = EditorGUI.Toggle(position, label, value);
+                EditorGUI.showMixedValue = false;
+                if (EditorGUI.EndChangeCheck())
+                {
+                    prop.intValue = value ? 1 : 0;
+                    SetKeyword(prop, value);
+                }
             }
         }
 
@@ -315,7 +332,10 @@ namespace UnityEditor
             if (prop.hasMixedValue)
                 return;
 
-            SetKeyword(prop, (Math.Abs(prop.floatValue) > 0.001f));
+            if (prop.type != MaterialProperty.PropType.Int)
+                SetKeyword(prop, (Math.Abs(prop.floatValue) > 0.001f));
+            else
+                SetKeyword(prop, prop.intValue != 0);
         }
     }
 
@@ -440,7 +460,7 @@ namespace UnityEditor
 
         static bool IsPropertyTypeSuitable(MaterialProperty prop)
         {
-            return prop.type == MaterialProperty.PropType.Float || prop.type == MaterialProperty.PropType.Range;
+            return prop.type == MaterialProperty.PropType.Float || prop.type == MaterialProperty.PropType.Range || prop.type == MaterialProperty.PropType.Int;
         }
 
         void SetKeyword(MaterialProperty prop, int index)
@@ -477,16 +497,33 @@ namespace UnityEditor
                 return;
             }
 
-            EditorGUI.BeginChangeCheck();
-
-            EditorGUI.showMixedValue = prop.hasMixedValue;
-            var value = (int)prop.floatValue;
-            value = EditorGUI.Popup(position, label, value, keywords);
-            EditorGUI.showMixedValue = false;
-            if (EditorGUI.EndChangeCheck())
+            if (prop.type != MaterialProperty.PropType.Int)
             {
-                prop.floatValue = value;
-                SetKeyword(prop, value);
+                EditorGUI.BeginChangeCheck();
+
+                EditorGUI.showMixedValue = prop.hasMixedValue;
+                var value = (int)prop.floatValue;
+                value = EditorGUI.Popup(position, label, value, keywords);
+                EditorGUI.showMixedValue = false;
+                if (EditorGUI.EndChangeCheck())
+                {
+                    prop.floatValue = value;
+                    SetKeyword(prop, value);
+                }
+            }
+            else
+            {
+                EditorGUI.BeginChangeCheck();
+
+                EditorGUI.showMixedValue = prop.hasMixedValue;
+                var value = prop.intValue;
+                value = EditorGUI.Popup(position, label, value, keywords);
+                EditorGUI.showMixedValue = false;
+                if (EditorGUI.EndChangeCheck())
+                {
+                    prop.intValue = value;
+                    SetKeyword(prop, value);
+                }
             }
         }
 
@@ -499,7 +536,10 @@ namespace UnityEditor
             if (prop.hasMixedValue)
                 return;
 
-            SetKeyword(prop, (int)prop.floatValue);
+            if (prop.type != MaterialProperty.PropType.Int)
+                SetKeyword(prop, (int)prop.floatValue);
+            else
+                SetKeyword(prop, prop.intValue);
         }
 
         // Final keyword name: property name + "_" + display name. Uppercased,
@@ -515,7 +555,7 @@ namespace UnityEditor
     internal class MaterialEnumDrawer : MaterialPropertyDrawer
     {
         private readonly GUIContent[] names;
-        private readonly float[] values;
+        private readonly int[] values;
 
         // Single argument: enum type name; entry names & values fetched via reflection
         public MaterialEnumDrawer(string enumName)
@@ -530,7 +570,7 @@ namespace UnityEditor
                     this.names[i] = new GUIContent(enumNames[i]);
 
                 var enumVals = Enum.GetValues(enumType);
-                values = new float[enumVals.Length];
+                values = new int[enumVals.Length];
                 for (var i = 0; i < enumVals.Length; ++i)
                     values[i] = (int)enumVals.GetValue(i);
             }
@@ -555,9 +595,9 @@ namespace UnityEditor
             for (int i = 0; i < enumNames.Length; ++i)
                 this.names[i] = new GUIContent(enumNames[i]);
 
-            values = new float[vals.Length];
+            values = new int[vals.Length];
             for (int i = 0; i < vals.Length; ++i)
-                values[i] = vals[i];
+                values[i] = (int)vals[i];
         }
 
         public override float GetPropertyHeight(MaterialProperty prop, string label, MaterialEditor editor)
@@ -571,34 +611,59 @@ namespace UnityEditor
 
         public override void OnGUI(Rect position, MaterialProperty prop, GUIContent label, MaterialEditor editor)
         {
-            if (prop.type != MaterialProperty.PropType.Float && prop.type != MaterialProperty.PropType.Range)
+            if (prop.type == MaterialProperty.PropType.Float || prop.type == MaterialProperty.PropType.Range)
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUI.showMixedValue = prop.hasMixedValue;
+
+                var value = (int)prop.floatValue;
+                int selectedIndex = -1;
+                for (var index = 0; index < values.Length; index++)
+                {
+                    var i = values[index];
+                    if (i == value)
+                    {
+                        selectedIndex = index;
+                        break;
+                    }
+                }
+
+                var selIndex = EditorGUI.Popup(position, label, selectedIndex, names);
+                EditorGUI.showMixedValue = false;
+                if (EditorGUI.EndChangeCheck())
+                {
+                    prop.floatValue = (float)values[selIndex];
+                }
+            }
+            else if (prop.type == MaterialProperty.PropType.Int)
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUI.showMixedValue = prop.hasMixedValue;
+
+                var value = prop.intValue;
+                int selectedIndex = -1;
+                for (var index = 0; index < values.Length; index++)
+                {
+                    var i = values[index];
+                    if (i == value)
+                    {
+                        selectedIndex = index;
+                        break;
+                    }
+                }
+
+                var selIndex = EditorGUI.Popup(position, label, selectedIndex, names);
+                EditorGUI.showMixedValue = false;
+                if (EditorGUI.EndChangeCheck())
+                {
+                    prop.intValue = values[selIndex];
+                }
+            }
+            else
             {
                 GUIContent c = EditorGUIUtility.TempContent("Enum used on a non-float property: " + prop.name,
                     EditorGUIUtility.GetHelpIcon(MessageType.Warning));
                 EditorGUI.LabelField(position, c, EditorStyles.helpBox);
-                return;
-            }
-
-            EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = prop.hasMixedValue;
-
-            var value = prop.floatValue;
-            int selectedIndex = -1;
-            for (var index = 0; index < values.Length; index++)
-            {
-                var i = values[index];
-                if (i == value)
-                {
-                    selectedIndex = index;
-                    break;
-                }
-            }
-
-            var selIndex = EditorGUI.Popup(position, label, selectedIndex, names);
-            EditorGUI.showMixedValue = false;
-            if (EditorGUI.EndChangeCheck())
-            {
-                prop.floatValue = values[selIndex];
             }
         }
     }

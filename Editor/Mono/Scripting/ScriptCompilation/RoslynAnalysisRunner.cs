@@ -5,8 +5,9 @@
 using System;
 using System.IO;
 using System.Linq;
+using Bee.BeeDriver;
+using ScriptCompilationBuildProgram.Data;
 using UnityEditor.Scripting.Compilers;
-using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.Profiling;
 
@@ -26,10 +27,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         private static string RoslynAnalysisRunnerId => nameof(RunRoslynAnalyzers);
         private static bool RunRoslynAnalyzers =>
             !EditorCompilationInstance.IsRunningRoslynAnalysisSynchronously
+            && !AssetDatabase.IsAssetImportWorkerProcess()
             && EditorCompilationInstance.PrecompiledAssemblyProvider.GetRoslynAnalyzerPaths().Any()
             && PlayerSettings.EnableRoslynAnalyzers;
 
-        private static CompilationTask CompilationTask { get; set; }
+        private static BeeDriver ActiveBeeBuild { get; set; }
 
         // This field is set during testing to ensure that we do not invoke CompiledAssemblyCache.GetAllPaths(), which in turn invokes native code
         private static Func<string[]> GetCandidateAssembliesForRoslynAnalysis { get; set; }
@@ -47,7 +49,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         private static void SubscribeToEvents()
         {
-            EditorCompilationInstance.assemblyCompilationStarted += assembly =>
+            EditorCompilationInstance.compilationStarted += _ =>
             {
                 // When the first round of compilation starts, we check whether we should run Roslyn analyzers in the project.
                 if (RunRoslynAnalyzers)
@@ -66,13 +68,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     CompiledAssemblyCache.RemovePath(RoslynAnalysisRunnerId);
                 }
-                string assemblyName = assembly.ConvertSeparatorsToUnity().Split('/').Last();
-
-                // Since there are code changes in this assembly, we want to exclude it from the current round of compilation with Roslyn analyzers.
-                CompilationTask?.TryRemovePendingAssembly(assemblyName);
             };
 
-            EditorCompilationInstance.assemblyCompilationFinished += (assembly, m, o) =>
+            EditorCompilationInstance.assemblyCompilationFinished += (assembly, _) =>
             {
                 if (RunRoslynAnalyzers && !assembly.HasCompileErrors && (assembly.Flags & AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers) != 0)
                 {
@@ -86,25 +84,33 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static bool IsTerminated { get; private set; }
 
         public static event Action OnTermination;
+
         public static event Action<CompilerMessage[]> OnCurrentCompilationTaskFinished;
         public static event Action<string[]> OnNewCompilationTaskStarted;
 
-        public static bool IsRunning => CompilationTask != null;
+        public static bool IsRunning => ActiveBeeBuild != null;
 
         public const string KickOffCompilationProfilingName = "RoslynAnalysisRunner.KickOffCompilation";
         public const string PollProfilingName = "RoslynAnalysisRunner.Poll";
 
         static RoslynAnalysisRunner()
         {
-            Console.WriteLine($"Invoked {nameof(RoslynAnalysisRunner)} static constructor.");
+            // We never want to run this on Asset Import worker processes. For one, doing so
+            // would be a waste of resources, but it will also interfere with analyzers running
+            // on the main process, as it can delete the temp directory while the other process
+            // is still using it.
+            if (AssetDatabase.IsAssetImportWorkerProcess())
+                return;
 
             EditorApplication.update += Poll;
             EditorApplication.playModeStateChanged += _ =>
             {
-                CompilationTask?.Stop();
-                CompilationTask?.Dispose();
+                ActiveBeeBuild?.Dispose();
             };
-
+            AssemblyReloadEvents.beforeAssemblyReload += () =>
+            {
+                ActiveBeeBuild?.Dispose();
+            };
             EditorCompilationInstance = EditorCompilationInterface.Instance;
             CheckShouldRun();
         }
@@ -122,15 +128,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        internal static CompilationTask TryCreateCompilationTask()
+        internal static bool TryCreateCompilationTask()
         {
             Profiler.BeginSample(KickOffCompilationProfilingName);
             ScriptAssembly[] assembliesToAnalyze = GetScriptAssembliesToAnalyze();
 
             if (!assembliesToAnalyze.Any())
             {
+                ActiveBeeBuild = null;
                 Profiler.EndSample();
-                return null;
+                return false;
             }
 
             Directory.CreateDirectory(BuildOutputDirectory);
@@ -140,8 +147,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 Console.WriteLine($"{BuildOutputDirectoryInfo.FullName} has been created.");
             }
 
-            var compilationTask = CreateCompilationTask(assembliesToAnalyze);
-            Console.WriteLine($"A new compilation task is started by {nameof(RoslynAnalysisRunner)} to compile these assemblies:");
+            ActiveBeeBuild = CreateCompilationTask(assembliesToAnalyze);
+            Console.WriteLine($"A new compilation task is started by {nameof(RoslynAnalysisRunner)} to compiled these assemblies:");
 
             foreach (ScriptAssembly assembly in assembliesToAnalyze)
             {
@@ -150,7 +157,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             Console.WriteLine();
 
             Profiler.EndSample();
-            return compilationTask;
+            return true;
         }
 
         internal static ScriptAssembly[] GetScriptAssembliesToAnalyze()
@@ -166,30 +173,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 : EditorCompilationInstance.GetScriptAssembliesForRoslynAnalysis(candidateAssemblies);
         }
 
-        private static CompilationTask CreateCompilationTask(ScriptAssembly[] assemblies)
+        private static BeeDriver CreateCompilationTask(ScriptAssembly[] scriptAssemblies)
         {
-            OnNewCompilationTaskStarted?.Invoke(assemblies.Select(a => a.Filename).ToArray());
+            var config = "A";
+            BuildTarget buildTarget = EditorUserBuildSettings.activeBuildTarget;
+            var activeBeeBuild = UnityBeeDriver.Make(EditorCompilation.ScriptCompilationBuildProgram, EditorCompilationInstance, $"{(int)buildTarget}{config}", useScriptUpdater: false);
 
-            CompilationTask compilationTask = CompilationTask.RoslynAnalysis(assemblies, BuildOutputDirectory);
-            compilationTask.OnCompilationTaskFinished += _ =>
-            {
-                Console.WriteLine($"A compilation task started by {nameof(RoslynAnalysisRunner)} has completed. These assemblies were compiled:");
+            BeeScriptCompilation.AddScriptCompilationData(activeBeeBuild, EditorCompilationInstance, scriptAssemblies, true, BuildOutputDirectory, buildTarget, true);
 
-                foreach (ScriptAssembly scriptAssembly in compilationTask.CompilerMessages.Keys)
-                {
-                    CompiledAssemblyCache.RemovePath(scriptAssembly.Filename);
-                    Console.WriteLine(scriptAssembly.Filename);
-                }
+            activeBeeBuild.BuildAsync(Constants.ScriptAssembliesTarget);
 
-                CompilerMessage[] compilerMessages = compilationTask.CompilerMessages.Values.SelectMany(m => m).ToArray();
-                PrintCompilerMessagesToConsole(compilerMessages);
+            OnNewCompilationTaskStarted?.Invoke(scriptAssemblies.Select(a => a.Filename).ToArray());
 
-                OnCurrentCompilationTaskFinished?.Invoke(compilerMessages);
-
-                Directory.Delete(BuildOutputDirectory, recursive: true);
-                Console.WriteLine($"{BuildOutputDirectoryInfo.FullName} has been deleted.");
-            };
-            return compilationTask;
+            return activeBeeBuild;
         }
 
         private static void PrintCompilerMessagesToConsole(CompilerMessage[] compilerMessages)
@@ -222,10 +218,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             try
             {
-                CompilationTask?.Stop();
-                CompilationTask?.Dispose();
+                ActiveBeeBuild?.Dispose();
 
-                CompilationTask = null;
+                if (Directory.Exists(BuildOutputDirectory))
+                {
+                    Directory.Delete(BuildOutputDirectory, recursive: true);
+                    Console.WriteLine($"{BuildOutputDirectory} has been deleted.");
+                }
             }
             finally
             {
@@ -246,20 +245,40 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             // If there is no ongoing compilation task
-            if (CompilationTask == null)
+            if (ActiveBeeBuild == null)
             {
                 // Check whether there are assemblies that require compilation
-                CompilationTask = TryCreateCompilationTask();
-            }
-            else
-            {
-                bool compilationFinished = CompilationTask.Poll();
+                bool compile = TryCreateCompilationTask();
 
-                if (compilationFinished)
+                // There are no outstanding assemblies to compile
+                if (!compile)
                 {
                     Terminate();
                 }
             }
+            else
+            {
+                var res = ActiveBeeBuild.Tick();
+                if (res != null)
+                {
+                    var compilerMessages = BeeScriptCompilation.ParseAllNodeResultsIntoCompilerMessages(res.NodeResults, EditorCompilationInterface.Instance).SelectMany(m => m).ToArray();
+
+                    PrintCompilerMessagesToConsole(compilerMessages);
+
+                    try
+                    {
+                        OnCurrentCompilationTaskFinished?.Invoke(compilerMessages);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogException(e);
+                    }
+
+                    Terminate();
+                    ActiveBeeBuild = null;
+                }
+            }
+
             Profiler.EndSample();
         }
     }

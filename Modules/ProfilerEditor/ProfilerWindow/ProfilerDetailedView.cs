@@ -40,6 +40,10 @@ namespace UnityEditorInternal.Profiling
 
         protected HierarchyFrameDataView m_FrameDataView;
 
+        protected CPUOrGPUProfilerModule m_CPUOrGPUProfilerModule;
+        [NonSerialized]
+        protected ProfilerFrameDataHierarchyView m_ProfilerFrameDataHierarchyView;
+
         [SerializeField]
         protected int m_SelectedID = -1;
 
@@ -59,7 +63,12 @@ namespace UnityEditorInternal.Profiling
         }
 
         public abstract void SaveViewSettings();
-        public abstract void OnEnable(CPUorGPUProfilerModule cpuModule);
+        public virtual void OnEnable(CPUOrGPUProfilerModule cpuOrGpuProfilerModule, ProfilerFrameDataHierarchyView profilerFrameDataHierarchyView)
+        {
+            m_CPUOrGPUProfilerModule = cpuOrGpuProfilerModule;
+            m_ProfilerFrameDataHierarchyView = profilerFrameDataHierarchyView;
+        }
+
         public abstract void OnDisable();
     }
 }

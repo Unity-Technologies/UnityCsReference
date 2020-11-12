@@ -12,16 +12,14 @@ namespace UnityEditor.Scripting.Compilers
     {
         static protected CompilerMessage CreateInternalCompilerErrorMessage(string[] compileroutput)
         {
-            CompilerMessage message;
-            message.file = "";
-            message.message = String.Join("\n", compileroutput);
-            message.type = CompilerMessageType.Error;
-            message.line = 0;
-            message.column = 0;
-            message.normalizedStatus = default(NormalizedCompilerStatus);
-            message.assemblyName = "n/a";
-
-            return message;
+            return new CompilerMessage
+            {
+                file = "",
+                message = String.Join(Environment.NewLine, compileroutput),
+                type = CompilerMessageType.Error,
+                line = 0,
+                column = 0,
+            };
         }
 
         internal static protected CompilerMessage CreateCompilerMessageFromMatchedRegex(string line, Match m, string errorId, string informationId = null)
@@ -59,18 +57,16 @@ namespace UnityEditor.Scripting.Compilers
                 message.type = CompilerMessageType.Warning;
             }
 
-            message.normalizedStatus = default(NormalizedCompilerStatus);
-            message.assemblyName = "n/a";
-
             return message;
         }
 
-        public virtual IEnumerable<CompilerMessage> Parse(string[] errorOutput, bool compilationHadFailure, string assemblyName)
+        public virtual IEnumerable<CompilerMessage> Parse(string[] errorOutput, bool compilationHadFailure)
         {
-            return Parse(errorOutput, new string[0], compilationHadFailure, assemblyName);
+            return Parse(errorOutput, new string[0], compilationHadFailure);
         }
 
-        public virtual IEnumerable<CompilerMessage> Parse(string[] errorOutput, string[] standardOutput, bool compilationHadFailure, string assemblyName)
+        /* we want to remove the assemblyName_unused argument, but today burst uses internalsvisibleto and inherits from this class :( so we cannot change this signature*/
+        public virtual IEnumerable<CompilerMessage> Parse(string[] errorOutput, string[] standardOutput, bool compilationHadFailure, string assemblyName_unused = null)
         {
             var hasErrors = false;
             var msgs = new List<CompilerMessage>();
@@ -92,8 +88,6 @@ namespace UnityEditor.Scripting.Compilers
                         continue;
                 }
                 CompilerMessage message = CreateCompilerMessageFromMatchedRegex(line, m, GetErrorIdentifier(), GetInformationIdentifier());
-                message.normalizedStatus = NormalizedStatusFor(m);
-                message.assemblyName = assemblyName;
 
                 if (message.type == CompilerMessageType.Error)
                     hasErrors = true;
@@ -107,11 +101,6 @@ namespace UnityEditor.Scripting.Compilers
             return msgs;
         }
 
-        protected virtual NormalizedCompilerStatus NormalizedStatusFor(Match match)
-        {
-            return default(NormalizedCompilerStatus);
-        }
-
         protected abstract string GetErrorIdentifier();
 
         protected virtual string GetInformationIdentifier()
@@ -121,54 +110,5 @@ namespace UnityEditor.Scripting.Compilers
 
         protected abstract Regex GetOutputRegex();
         protected virtual Regex GetInternalErrorOutputRegex() { return null; }
-
-        protected static NormalizedCompilerStatus TryNormalizeCompilerStatus(Match match, string idToCheck, Regex messageParser, Func<Match, Regex, NormalizedCompilerStatus> normalizer)
-        {
-            var id = match.Groups["id"].Value;
-            var ret = default(NormalizedCompilerStatus);
-            if (id != idToCheck)
-                return ret;
-
-            return normalizer(match, messageParser);
-        }
-
-        protected static NormalizedCompilerStatus NormalizeMemberNotFoundError(Match outputMatch, Regex messageParser)
-        {
-            NormalizedCompilerStatus ret;
-            ret.code = NormalizedCompilerStatusCode.MemberNotFound;
-
-            var dm = messageParser.Match(outputMatch.Groups["message"].Value);
-            ret.details = dm.Groups["type_name"].Value + "%" + dm.Groups["member_name"].Value;
-
-            return ret;
-        }
-
-        protected static NormalizedCompilerStatus NormalizeSimpleUnknownTypeOfNamespaceError(Match outputMatch, Regex messageParser)
-        {
-            NormalizedCompilerStatus ret;
-            ret.code = NormalizedCompilerStatusCode.UnknownTypeOrNamespace;
-
-            var dm = messageParser.Match(outputMatch.Groups["message"].Value);
-            ret.details = "EntityName=" + dm.Groups["type_name"].Value + "\n"
-                + "Script=" + outputMatch.Groups["filename"].Value + "\n"
-                + "Line=" + outputMatch.Groups["line"].Value + "\n"
-                + "Column=" + outputMatch.Groups["column"].Value;
-
-            return ret;
-        }
-
-        protected static NormalizedCompilerStatus NormalizeUnknownTypeMemberOfNamespaceError(Match outputMatch, Regex messageParser)
-        {
-            NormalizedCompilerStatus ret;
-            ret.code = NormalizedCompilerStatusCode.UnknownTypeOrNamespace;
-
-            var dm = messageParser.Match(outputMatch.Groups["message"].Value);
-            ret.details = "EntityName=" + dm.Groups["namespace"].Value + "." + dm.Groups["type_name"].Value + "\n"
-                + "Script=" + outputMatch.Groups["filename"].Value + "\n"
-                + "Line=" + outputMatch.Groups["line"].Value + "\n"
-                + "Column=" + outputMatch.Groups["column"].Value;
-
-            return ret;
-        }
     }
 }

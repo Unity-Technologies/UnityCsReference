@@ -82,7 +82,9 @@ namespace UnityEngine
                 SetLayerCullDistances(value);
             }
         }
-        extern internal static int PreviewCullingLayer {[FreeFunction("CameraScripting::GetPreviewCullingLayer")] get; }
+
+        [Obsolete("PreviewCullingLayer is obsolete. Use scene culling masks instead.", false)]
+        internal static int PreviewCullingLayer { get { return 31; } } // Return 31 because this used to be the PreviewCullingLayer stored in kPreviewLayer in Camera.h
 
         extern public bool useOcclusionCulling { get; set; }
         extern public Matrix4x4 cullingMatrix { get; set; }

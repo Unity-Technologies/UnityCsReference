@@ -52,6 +52,7 @@ namespace UnityEditor.U2D
             public readonly GUIContent bindAsDefaultLabel = EditorGUIUtility.TrTextContent("Include in Build", "Packed textures will be included in the build by default.");
             public readonly GUIContent enableRotationLabel = EditorGUIUtility.TrTextContent("Allow Rotation", "Try rotating the sprite to fit better during packing.");
             public readonly GUIContent enableTightPackingLabel = EditorGUIUtility.TrTextContent("Tight Packing", "Use the mesh outline to fit instead of the whole texture rect during packing.");
+            public readonly GUIContent enableAlphaDilationLabel = EditorGUIUtility.TrTextContent("Alpha Dilation", "Enable Alpha Dilation for SpriteAtlas padding pixels.");
             public readonly GUIContent paddingLabel = EditorGUIUtility.TrTextContent("Padding", "The amount of extra padding between packed sprites.");
 
             public readonly GUIContent generateMipMapLabel = EditorGUIUtility.TrTextContent("Generate Mip Maps");
@@ -121,6 +122,7 @@ namespace UnityEditor.U2D
         private SerializedProperty m_Readable;
         private SerializedProperty m_UseSRGB;
         private SerializedProperty m_EnableTightPacking;
+        private SerializedProperty m_EnableAlphaDilation;
         private SerializedProperty m_EnableRotation;
         private SerializedProperty m_Padding;
         private SerializedProperty m_BindAsDefault;
@@ -234,6 +236,7 @@ namespace UnityEditor.U2D
 
             m_EnableTightPacking = serializedAssetObject.FindProperty("m_ImporterData.packingSettings.enableTightPacking");
             m_EnableRotation = serializedAssetObject.FindProperty("m_ImporterData.packingSettings.enableRotation");
+            m_EnableAlphaDilation = serializedObject.FindProperty("m_EditorData.packingSettings.enableAlphaDilation");
             m_Padding = serializedAssetObject.FindProperty("m_ImporterData.packingSettings.padding");
 
             m_MasterAtlas = serializedAssetObject.FindProperty("m_MasterAtlas");
@@ -541,6 +544,7 @@ namespace UnityEditor.U2D
 
             HandleBoolToIntPropertyField(m_EnableRotation, styles.enableRotationLabel);
             HandleBoolToIntPropertyField(m_EnableTightPacking, styles.enableTightPackingLabel);
+            HandleBoolToIntPropertyField(m_EnableAlphaDilation, styles.enableAlphaDilationLabel);
             EditorGUILayout.IntPopup(m_Padding, styles.paddingOptions, styles.paddingValues, styles.paddingLabel);
 
             GUILayout.Space(EditorGUI.kSpacing);

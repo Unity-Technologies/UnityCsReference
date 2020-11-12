@@ -5,7 +5,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Internal;
@@ -963,6 +962,11 @@ namespace UnityEditor
             return PickGameObjectDelegated(position, ignore, null, out materialIndex);
         }
 
+        public static GameObject PickGameObject(Vector2 position, GameObject[] ignore, GameObject[] selection, out int materialIndex)
+        {
+            return PickGameObjectDelegated(position, ignore, selection, out materialIndex);
+        }
+
         public delegate GameObject PickGameObjectCallback(Camera cam, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, out int materialIndex);
         public static event PickGameObjectCallback pickGameObjectCustomPasses;
 
@@ -975,12 +979,6 @@ namespace UnityEditor
             position.y = Screen.height - position.y - cam.pixelRect.yMin;
 
             materialIndex = -1; // default
-
-            if (ignore != null && ignore.Any(go => go == null))
-                throw new ArgumentException("ignore may not contain null elements");
-            if (filter != null && filter.Any(go => go == null))
-                throw new ArgumentException("filter may not contain null elements");
-
             GameObject picked = null;
 
             // deprecated version
@@ -1001,7 +999,9 @@ namespace UnityEditor
                     picked = ((PickGameObjectCallback)method)(cam, layers, position, ignore, filter, out materialIndex);
                     // don't trust this method to respect the ignore or filter argument, because in the event that it
                     // does not it will break pick cycling in SceneViewPicking.GetAllOverlapping.
-                    if (picked != null && (ignore == null || !ignore.Contains(picked)) && (filter == null || filter.Contains(picked)))
+                    if (picked != null
+                        && (ignore == null || !Array.Exists(ignore, go => go.Equals(picked)))
+                        && (filter == null || Array.Exists(filter, go => go.Equals(picked))))
                         break;
                     picked = null;
                 }
@@ -1017,13 +1017,19 @@ namespace UnityEditor
 
         public static GameObject PickGameObject(Vector2 position, bool selectPrefabRoot, GameObject[] ignore)
         {
-            return PickGameObject(position, selectPrefabRoot, ignore, null);
+            int dummyMaterialIndex;
+            return PickGameObject(position, selectPrefabRoot, ignore, null, out dummyMaterialIndex);
         }
 
         public static GameObject PickGameObject(Vector2 position, bool selectPrefabRoot, GameObject[] ignore, GameObject[] filter)
         {
             int dummyMaterialIndex;
-            GameObject picked = PickGameObjectDelegated(position, ignore, filter, out dummyMaterialIndex);
+            return PickGameObject(position, selectPrefabRoot, ignore, filter, out dummyMaterialIndex);
+        }
+
+        public static GameObject PickGameObject(Vector2 position, bool selectPrefabRoot, GameObject[] ignore, GameObject[] filter, out int materialIndex)
+        {
+            GameObject picked = PickGameObjectDelegated(position, ignore, filter, out materialIndex);
             if (picked && selectPrefabRoot)
             {
                 GameObject pickedRoot = FindSelectionBaseForPicking(picked) ?? picked;
@@ -1228,7 +1234,7 @@ namespace UnityEditor
             Material mat = handleWireMaterial;
             // Note: important to call this from C# side, so that it tracks "scripting channels"
             // for any later GL.Begin calls.
-            mat.SetInt("_HandleZTest", (int)zTest);
+            mat.SetFloat("_HandleZTest", (float)zTest);
             mat.SetPass(0);
             int textureIndex = Camera.current ? s_HandleWireTextureIndex : s_HandleWireTextureIndex2D;
             int samplerIndex = Camera.current ? s_HandleWireTextureSamplerIndex : s_HandleWireTextureSamplerIndex2D;
@@ -1247,7 +1253,7 @@ namespace UnityEditor
             Material mat = handleDottedWireMaterial;
             // Note: important to call this from C# side, so that it tracks "scripting channels"
             // for any later GL.Begin calls.
-            mat.SetInt("_HandleZTest", (int)zTest);
+            mat.SetFloat("_HandleZTest", (float)zTest);
             mat.SetPass(0);
             int textureIndex = Camera.current ? s_HandleDottedWireTextureIndex : s_HandleDottedWireTextureIndex2D;
             int samplerIndex = Camera.current ? s_HandleDottedWireTextureSamplerIndex : s_HandleDottedWireTextureSamplerIndex2D;

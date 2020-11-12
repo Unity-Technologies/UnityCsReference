@@ -11,6 +11,15 @@ using UnityEngine;
 
 namespace UnityEditor.Scripting.Compilers
 {
+    internal static class ScriptCompilerBase
+    {
+        public class CompilerOption
+        {
+            public string Arg;
+            public string Value;
+        }
+    }
+
     internal static class MicrosoftResponseFileParser
     {
         static readonly char[] CompilerOptionArgumentSeperators = {';', ','};

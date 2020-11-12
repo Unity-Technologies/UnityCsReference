@@ -35,7 +35,10 @@ namespace UnityEditor.SceneManagement
             get
             {
                 if (m_CurrentIndex < 0 || m_CurrentIndex >= m_History.Count)
-                    return null;
+                    throw new InvalidOperationException("StageNavigationHistory has not been initialized yet.");
+
+                if (m_History[m_CurrentIndex] == null)
+                    throw new InvalidOperationException("StageNavigationHistory is missing a stage at index: " + m_CurrentIndex);
 
                 return m_History[m_CurrentIndex];
             }

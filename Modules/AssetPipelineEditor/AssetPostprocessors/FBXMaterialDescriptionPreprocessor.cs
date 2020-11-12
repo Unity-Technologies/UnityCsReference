@@ -84,6 +84,32 @@ namespace UnityEditor.AssetImporters
             return description.TryGetProperty("renderAPI", out stringValue) && stringValue == "SFX_PBS_SHADER";
         }
 
+        static void SetupMaterialTransparency(Material material, bool transparent)
+        {
+            if (transparent)
+            {
+                material.SetFloat("_Mode", (float)StandardShaderGUI.BlendMode.Transparent);
+                material.SetOverrideTag("RenderType", "Transparent");
+                material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+                material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                material.SetFloat("_ZWrite", 0.0f);
+                material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
+                material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            }
+            else
+            {
+                material.SetFloat("_Mode", (float)StandardShaderGUI.BlendMode.Opaque);
+                material.SetOverrideTag("RenderType", "");
+                material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+                material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.Zero);
+                material.SetFloat("_ZWrite", 1.0f);
+                material.DisableKeyword("_ALPHATEST_ON");
+                material.DisableKeyword("_ALPHABLEND_ON");
+                material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                material.renderQueue = -1;
+            }
+        }
+
         void CreateFrom3DsMaxArnoldStandardSurfaceMaterial(MaterialDescription description, Material material, AnimationClip[] clips)
         {
             // 3DsMax does not export material animations for Arnold materials.
@@ -99,28 +125,8 @@ namespace UnityEditor.AssetImporters
             Vector4 vectorProperty;
             TexturePropertyDescription textureProperty;
 
-            if (description.TryGetProperty("transmission", out floatProperty) && floatProperty > 0.0f)
-            {
-                material.SetInt("_Mode", (int)StandardShaderGUI.BlendMode.Transparent);
-                material.SetOverrideTag("RenderType", "Transparent");
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                material.SetInt("_ZWrite", 0);
-                material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
-                material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-            }
-            else
-            {
-                material.SetInt("_Mode", (int)StandardShaderGUI.BlendMode.Opaque);
-                material.SetOverrideTag("RenderType", "");
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-                material.SetInt("_ZWrite", 1);
-                material.DisableKeyword("_ALPHATEST_ON");
-                material.DisableKeyword("_ALPHABLEND_ON");
-                material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                material.renderQueue = -1;
-            }
+            bool success = description.TryGetProperty("transmission", out floatProperty);
+            SetupMaterialTransparency(material, success && floatProperty > 0.0f);
             if (description.TryGetProperty("base_color.shader", out textureProperty))
             {
                 SetMaterialTextureProperty("_MainTex", material, textureProperty);
@@ -194,29 +200,9 @@ namespace UnityEditor.AssetImporters
             float floatProperty;
             Vector4 vectorProperty;
             TexturePropertyDescription textureProperty;
+            bool success = description.TryGetProperty("transmission", out floatProperty);
+            SetupMaterialTransparency(material, success && floatProperty > 0.0f);
 
-            if (description.TryGetProperty("transmission", out floatProperty) && floatProperty > 0.0f)
-            {
-                material.SetInt("_Mode", (int)StandardShaderGUI.BlendMode.Transparent);
-                material.SetOverrideTag("RenderType", "Transparent");
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                material.SetInt("_ZWrite", 0);
-                material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
-                material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-            }
-            else
-            {
-                material.SetInt("_Mode", (int)StandardShaderGUI.BlendMode.Opaque);
-                material.SetOverrideTag("RenderType", "");
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-                material.SetInt("_ZWrite", 1);
-                material.DisableKeyword("_ALPHATEST_ON");
-                material.DisableKeyword("_ALPHABLEND_ON");
-                material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                material.renderQueue = -1;
-            }
             if (description.TryGetProperty("baseColor", out textureProperty))
             {
                 SetMaterialTextureProperty("_MainTex", material, textureProperty);
@@ -365,30 +351,8 @@ namespace UnityEditor.AssetImporters
             Vector4 vectorProperty;
             TexturePropertyDescription textureProperty;
             float transparency = 0.0f;
-            description.TryGetProperty("transparency", out transparency);
-
-            if (transparency > 0.0f)
-            {
-                material.SetInt("_Mode", (int)StandardShaderGUI.BlendMode.Transparent);
-                material.SetOverrideTag("RenderType", "Transparent");
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                material.SetInt("_ZWrite", 0);
-                material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
-                material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-            }
-            else
-            {
-                material.SetInt("_Mode", (int)StandardShaderGUI.BlendMode.Opaque);
-                material.SetOverrideTag("RenderType", "");
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-                material.SetInt("_ZWrite", 1);
-                material.DisableKeyword("_ALPHATEST_ON");
-                material.DisableKeyword("_ALPHABLEND_ON");
-                material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                material.renderQueue = -1;
-            }
+            bool success = description.TryGetProperty("transparency", out transparency);
+            SetupMaterialTransparency(material, success && transparency > 0.0f);
 
             if (description.TryGetProperty("base_color_map", out textureProperty))
             {
@@ -446,30 +410,8 @@ namespace UnityEditor.AssetImporters
             Vector4 vectorProperty;
             TexturePropertyDescription textureProperty;
 
-            description.TryGetProperty("base_color", out vectorProperty);
-
-            if (vectorProperty.w > 0.0f)
-            {
-                material.SetInt("_Mode", (int)StandardShaderGUI.BlendMode.Transparent);
-                material.SetOverrideTag("RenderType", "Transparent");
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                material.SetInt("_ZWrite", 0);
-                material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
-                material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-            }
-            else
-            {
-                material.SetInt("_Mode", (int)StandardShaderGUI.BlendMode.Opaque);
-                material.SetOverrideTag("RenderType", "");
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-                material.SetInt("_ZWrite", 1);
-                material.DisableKeyword("_ALPHATEST_ON");
-                material.DisableKeyword("_ALPHABLEND_ON");
-                material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                material.renderQueue = -1;
-            }
+            bool success = description.TryGetProperty("base_color", out vectorProperty);
+            SetupMaterialTransparency(material, success && vectorProperty.w > 0.0f);
 
             if (description.TryGetProperty("base_color_map", out textureProperty))
             {
@@ -606,11 +548,11 @@ namespace UnityEditor.AssetImporters
             description.TryGetProperty("mask_threshold", out alphaThreshold);
             if (alphaThreshold > 0.0f || description.HasAnimationCurve("mask_threshold"))
             {
-                material.SetInt("_Mode", (int)StandardShaderGUI.BlendMode.Cutout);
+                material.SetFloat("_Mode", (float)StandardShaderGUI.BlendMode.Cutout);
                 material.SetOverrideTag("RenderType", "TransparentCutout");
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                material.SetInt("_ZWrite", 1);
+                material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+                material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                material.SetFloat("_ZWrite", 1.0f);
                 material.EnableKeyword("_ALPHATEST_ON");
                 material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
             }
@@ -618,21 +560,21 @@ namespace UnityEditor.AssetImporters
                      description.HasAnimationCurve("opacity") ||
                      (description.TryGetProperty("use_opacity_map", out floatProperty) && floatProperty == 1.0f))
             {
-                material.SetInt("_Mode", (int)StandardShaderGUI.BlendMode.Transparent);
+                material.SetFloat("_Mode", (float)StandardShaderGUI.BlendMode.Transparent);
                 material.SetOverrideTag("RenderType", "Transparent");
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                material.SetInt("_ZWrite", 0);
+                material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+                material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                material.SetFloat("_ZWrite", 0.0f);
                 material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
                 material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
             }
             else
             {
-                material.SetInt("_Mode", (int)StandardShaderGUI.BlendMode.Opaque);
+                material.SetFloat("_Mode", (float)StandardShaderGUI.BlendMode.Opaque);
                 material.SetOverrideTag("RenderType", "");
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-                material.SetInt("_ZWrite", 1);
+                material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+                material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.Zero);
+                material.SetFloat("_ZWrite", 1.0f);
                 material.DisableKeyword("_ALPHATEST_ON");
                 material.DisableKeyword("_ALPHABLEND_ON");
                 material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
@@ -881,28 +823,8 @@ namespace UnityEditor.AssetImporters
                 isTransparent = true;
             }
 
-            if (isTransparent)
-            {
-                material.SetInt("_Mode", (int)StandardShaderGUI.BlendMode.Transparent);
-                material.SetOverrideTag("RenderType", "Transparent");
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                material.SetInt("_ZWrite", 0);
-                material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
-                material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-            }
-            else
-            {
-                material.SetInt("_Mode", (int)StandardShaderGUI.BlendMode.Opaque);
-                material.SetOverrideTag("RenderType", "");
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-                material.SetInt("_ZWrite", 1);
-                material.DisableKeyword("_ALPHATEST_ON");
-                material.DisableKeyword("_ALPHABLEND_ON");
-                material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                material.renderQueue = -1;
-            }
+            SetupMaterialTransparency(material, isTransparent);
+
 
             if (description.TryGetProperty("DiffuseColor", out textureProperty))
             {

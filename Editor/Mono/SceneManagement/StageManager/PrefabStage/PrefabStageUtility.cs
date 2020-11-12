@@ -283,6 +283,15 @@ namespace UnityEditor.Experimental.SceneManagement
             return (prefabStage != null && prefabStage.scene == gameObject.scene && !prefabStage.isValid);
         }
 
+        [UsedByNativeCode]
+        internal static bool IsPrefabStageScene(Scene scene)
+        {
+            foreach (var prefabStage in PrefabStage.allPrefabStages)
+                if (prefabStage.scene == scene)
+                    return true;
+            return false;
+        }
+
         static bool IsDynamicallyCreatedDuringLoad(GameObject gameObject)
         {
             return Unsupported.GetFileIDHint(gameObject) == 0;

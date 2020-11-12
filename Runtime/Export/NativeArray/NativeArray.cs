@@ -87,17 +87,11 @@ namespace Unity.Collections
                 throw new ArgumentOutOfRangeException(nameof(length), "Length must be >= 0");
 
             IsUnmanagedAndThrow();
-
-            // Make sure we cannot allocate more than int.MaxValue (2,147,483,647 bytes)
-            // because the underlying UnsafeUtility.Malloc is expecting a int.
-            // TODO: change UnsafeUtility.Malloc to accept a UIntPtr length instead to match C++ API
-            if (totalSize > int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(length), $"Length * sizeof(T) cannot exceed {int.MaxValue} bytes");
         }
 
         static void Allocate(int length, Allocator allocator, out NativeArray<T> array)
         {
-            var totalSize = UnsafeUtility.SizeOf<T>() * (long)length;
+            long totalSize = UnsafeUtility.SizeOf<T>() * (long)length;
             CheckAllocateArguments(length, allocator, totalSize);
 
             array = default(NativeArray<T>);
@@ -806,13 +800,6 @@ namespace Unity.Collections.LowLevel.Unsafe
                 throw new ArgumentOutOfRangeException(nameof(length), "Length must be >= 0");
 
             NativeArray<T>.IsUnmanagedAndThrow();
-
-            var totalSize = UnsafeUtility.SizeOf<T>() * (long)length;
-            // Make sure we cannot allocate more than int.MaxValue (2,147,483,647 bytes)
-            // because the underlying UnsafeUtility.Malloc is expecting a int.
-            // TODO: change UnsafeUtility.Malloc to accept a UIntPtr length instead to match C++ API
-            if (totalSize > int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(length), $"Length * sizeof(T) cannot exceed {int.MaxValue} bytes");
         }
 
         /// Internal method used typically by other systems to provide a view on them.

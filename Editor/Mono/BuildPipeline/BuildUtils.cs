@@ -114,7 +114,7 @@ namespace UnityEditorInternal
                 {
                     var errorOutput = p.GetErrorOutput();
                     var standardOutput = p.GetStandardOutput();
-                    messages.AddRange(parser.Parse(errorOutput, standardOutput, true, "n/a (il2cpp)"));
+                    messages.AddRange(parser.Parse(errorOutput, standardOutput, true));
                 }
 
                 foreach (var message in NonerrorMessages(messages))

@@ -953,13 +953,11 @@ namespace UnityEditor
             set;
         }
 
-        public static extern bool useReferenceAssemblies
+        [Obsolete("Use of reference assemblies is always enabled")]
+        public static bool useReferenceAssemblies
         {
-            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-            get;
-
-            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-            set;
+            get { return true; }
+            set {}
         }
 
         internal static extern bool EnableRoslynAnalyzers
@@ -1338,6 +1336,10 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings()")]
         [NativeMethod("SetVirtualTexturingSupportEnabled")]
         public static extern void SetVirtualTexturingSupportEnabled(bool enabled);
+
+        [StaticAccessor("GetPlayerSettings()")]
+        [NativeMethod("OnVirtualTexturingChanged")]
+        internal static extern bool OnVirtualTexturingChanged();
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         public static extern ShaderPrecisionModel GetShaderPrecisionModel();

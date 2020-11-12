@@ -2,25 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEditor.Utils;
 using UnityEditor.Scripting.Compilers;
-using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 
 namespace UnityEditor.Scripting
 {
-    internal struct SupportedLanguageStruct
-    {
-        public string extension;
-        public string languageName;
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     internal struct MonoIsland
     {
@@ -68,72 +58,10 @@ namespace UnityEditor.Scripting
         {
             _responseFiles = responseFiles;
         }
-
-        public string GetExtensionOfSourceFiles()
-        {
-            return _files.Length > 0 ? ScriptCompilers.GetExtensionOfSourceFile(_files[0]) : "NA";
-        }
     }
 
     internal static class ScriptCompilers
     {
-        internal static readonly List<SupportedLanguage> SupportedLanguages;
-        internal static readonly SupportedLanguage CSharpSupportedLanguage;
-        static ScriptCompilers()
-        {
-            SupportedLanguages = new List<SupportedLanguage>();
-
-            var types = new List<Type>();
-            types.Add(typeof(CSharpLanguage));
-
-            foreach (var t in types)
-            {
-                SupportedLanguages.Add((SupportedLanguage)Activator.CreateInstance(t));
-            }
-
-            CSharpSupportedLanguage = SupportedLanguages.Single(l => l.GetType() == typeof(CSharpLanguage));
-        }
-
-        internal static SupportedLanguageStruct[] GetSupportedLanguageStructs()
-        {
-            //we communicate with the runtime by xforming our SupportedLaanguage class to a struct, because that's
-            //just a lot easier to marshall between native and managed code.
-            return SupportedLanguages.Select(lang => new SupportedLanguageStruct
-            {
-                extension = lang.GetExtensionICanCompile(),
-                languageName = lang.GetLanguageName()
-            }).ToArray();
-        }
-
-        internal static SupportedLanguage GetLanguageFromName(string name)
-        {
-            foreach (var lang in SupportedLanguages)
-            {
-                if (String.Equals(name, lang.GetLanguageName(), StringComparison.OrdinalIgnoreCase))
-                    return lang;
-            }
-
-            throw new ApplicationException(string.Format("Script language '{0}' is not supported", name));
-        }
-
-        internal static SupportedLanguage GetLanguageFromExtension(string extension)
-        {
-            foreach (var lang in SupportedLanguages)
-            {
-                if (String.Equals(extension, lang.GetExtensionICanCompile(), StringComparison.OrdinalIgnoreCase))
-                    return lang;
-            }
-
-            throw new ApplicationException(string.Format("Script file extension '{0}' is not supported", extension));
-        }
-
-        public static string GetExtensionOfSourceFile(string file)
-        {
-            var ext = Path.GetExtension(file).ToLower();
-            ext = ext.Substring(1); //strip dot
-            return ext;
-        }
-
         internal static void Cleanup()
         {
             if (Application.platform == RuntimePlatform.WindowsEditor)

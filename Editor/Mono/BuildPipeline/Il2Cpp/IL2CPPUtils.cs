@@ -451,6 +451,11 @@ namespace UnityEditorInternal
             return $"{GetIl2CppFolder()}/external/bee/tundra";
         }
 
+        internal static string GetReapiCacheClientFolder()
+        {
+            return $"{GetIl2CppFolder()}/external/bee/reapi-cache-client";
+        }
+
         internal static string GetAdditionalArguments()
         {
             var arguments = new List<string>();
@@ -740,14 +745,13 @@ namespace UnityEditorInternal
         {
             var args = arguments.Aggregate(String.Empty, (current, arg) => current + arg + " ");
 
-            BeeSettingsIl2Cpp il2cppSettings = new BeeSettingsIl2Cpp();
+            BeeSettingsIl2Cpp beeSettings = new BeeSettingsIl2Cpp();
             var il2cppOutputParser = new Il2CppOutputParser(Path.Combine(generatedCppOutputDirectory, "Il2CppToEditorData.json"));
 
-            il2cppSettings.ToolPath = $"{EscapeSpacesInPath(GetIl2CppExe())}";
-            il2cppSettings.Arguments.AddRange(arguments);
-            il2cppSettings.Serialize(m_PlatformProvider.il2cppBuildCacheDirectory);
+            beeSettings.ToolPath = $"{EscapeSpacesInPath(GetIl2CppExe())}";
+            beeSettings.Arguments.AddRange(arguments);
+            beeSettings.Serialize(m_PlatformProvider.il2cppBuildCacheDirectory);
 
-            FileUtil.CopyDirectoryRecursive(GetIl2CppBeeArtifactsDirectory(), $"{m_PlatformProvider.il2cppBuildCacheDirectory}/artifacts", true);
             void SetupTundraAndStartInfo(ProcessStartInfo startInfo)
             {
                 if (setupStartInfo != null)
@@ -756,11 +760,13 @@ namespace UnityEditorInternal
                 // For some reason, TUNDRA_EXECUTABLE needs to be unescaped in order to be found on OSX,
                 // but MONO_EXECUTABLE needs to be escaped in order to be found on OSX
                 startInfo.EnvironmentVariables.Add("TUNDRA_EXECUTABLE", GetIl2CppTundraExe());
+                startInfo.EnvironmentVariables.Add("REAPI_CACHE_CLIENT", GetIl2CppReapiCacheClientExe());
                 startInfo.EnvironmentVariables.Add("MONO_EXECUTABLE", EscapeSpacesInPath(GetMonoBleedingEdgeExe()));
             }
 
+            var beeArgs = $"--no-colors --prebuiltbuildprogram={EscapeSpacesInPath(GetIl2CppBeeBuildProgramExe())}";
             Console.WriteLine("Invoking il2cpp (via bee.exe) with arguments: " + args);
-            Runner.RunManagedProgram(GetIl2CppBeeExe(), "--useprebuiltbuildprogram --no-colors", m_PlatformProvider.il2cppBuildCacheDirectory, il2cppOutputParser, SetupTundraAndStartInfo);
+            Runner.RunManagedProgram(GetIl2CppBeeExe(), beeArgs, m_PlatformProvider.il2cppBuildCacheDirectory, il2cppOutputParser, SetupTundraAndStartInfo);
 
             // Copy IL2CPP outputs to StagingArea
             var nativeOutputDirectoryInBuildCache = GetNativeOutputDirectory(m_PlatformProvider.il2cppBuildCacheDirectory);
@@ -803,6 +809,11 @@ namespace UnityEditorInternal
             return $"{IL2CPPUtils.GetIl2CppBeeSettingsFolder()}/artifacts";
         }
 
+        private string GetIl2CppBeeBuildProgramExe()
+        {
+            return $"{GetIl2CppBeeArtifactsDirectory()}/buildprogram/buildprogram.exe";
+        }
+
         private string GetIl2CppTundraExe()
         {
             if (Application.platform == RuntimePlatform.OSXEditor)
@@ -811,6 +822,16 @@ namespace UnityEditorInternal
                 return $"{IL2CPPUtils.GetTundraFolder()}/tundra-linux-x64/tundra2";
 
             return $"{IL2CPPUtils.GetTundraFolder()}/tundra-win-x64/tundra2.exe";
+        }
+
+        private string GetIl2CppReapiCacheClientExe()
+        {
+            if (Application.platform == RuntimePlatform.OSXEditor)
+                return $"{IL2CPPUtils.GetReapiCacheClientFolder()}/tundra-mac-x64/tundra2";
+            if (Application.platform == RuntimePlatform.LinuxEditor)
+                return $"{IL2CPPUtils.GetReapiCacheClientFolder()}/tundra-linux-x64/tundra2";
+
+            return $"{IL2CPPUtils.GetReapiCacheClientFolder()}/tundra-win-x64/tundra2.exe";
         }
 
         private string GetMonoBleedingEdgeExe()

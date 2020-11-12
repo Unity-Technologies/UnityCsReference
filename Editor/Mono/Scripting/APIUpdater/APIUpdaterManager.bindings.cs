@@ -12,7 +12,6 @@ using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Utils;
 using UnityEditor.VersionControl;
-using UnityEditorInternal.APIUpdaterExtensions;
 
 using System;
 using System.Collections.Generic;
@@ -32,14 +31,6 @@ namespace UnityEditorInternal.APIUpdating
     //    Ex: PA (1.0) -> PB (1.0); Add PB, PA; Update PB (to 1.1) and introduce update config; if an error happen when processing PB (1.1)
     //    we may not apply updates to PA.
 
-    // Keep in sync with APIUpdaterManager.h
-    internal enum APIUpdaterStatus
-    {
-        None,
-        Offered,
-        Accepted
-    }
-
     //*undocumented*
     [NativeHeader("Editor/Src/Scripting/APIUpdater/APIUpdaterManager.h")]
     [StaticAccessor("APIUpdaterManager::GetInstance()", StaticAccessorType.Dot)]
@@ -55,27 +46,33 @@ namespace UnityEditorInternal.APIUpdating
 
         private static HashSet<AssemblyUpdateCandidate> s_AssembliesToUpdate;
 
-        public static extern bool WaitForVCSServerConnection(bool reportTimeout);
-        public static extern void ReportExpectedUpdateFailure();
-        public static extern void ReportGroupedAPIUpdaterFailure(string msg);
+        internal static extern bool WaitForVCSServerConnection(bool reportTimeout);
         public static extern int numberOfTimesAsked
         {
             [NativeName("NumberOfTimesAsked")] get;
         }
 
-        public static extern void Reset();
-        public static extern void ResetNumberOfTimesAsked();
-        public static extern void ResetConsentStatus();
-        public static extern void ReportUpdatedFiles(string[] filePaths);
 
-        public static extern void SetAnswerToUpdateOffer(APIUpdaterStatus status);
+        public static extern bool DoesCommandLineIndicateAPIUpdatingShouldHappenWithoutConsent();
+        public static extern bool DoesCommandLineIndicateAPIUpdatingShouldBeDeclined();
+
+        public static extern void ResetNumberOfTimesAsked();
+
+        internal static extern bool isInProjectCreation
+        {
+            [NativeName("IsInProjectCreation")]
+            get;
+        }
+
+        // Used by tests only
+        public static extern void MakeNextAPIUpdateOfferReturn(bool value);
+        public static extern void ResetNextAPIUpdateOfferReturn();
 
         // Sets/gets a regular expression used to filter configuration sources assemblies
         // by name.
         public static extern string ConfigurationSourcesFilter { get; set; }
 
-        [RequiredByNativeCode]
-        internal static extern APIUpdaterStatus AskForConsent(bool askAgain);
+        internal static extern bool AskForConsent(string[] assemblyPaths);
 
         // These methods are used to persist the list of assemblies to be updated in the native side in order to preserve this list across domain reloads.
         static extern void ResetListOfAssembliesToBeUpdateInNativeSide();
@@ -114,10 +111,7 @@ namespace UnityEditorInternal.APIUpdating
             var assembliesToCheckCount = assembliesToUpdate.Count;
             var tasks = assembliesToUpdate.Select(a => new AssemblyUpdaterUpdateTask(a)).ToArray();
             foreach (var task in tasks)
-            {
-                CollectAssemblyObsoleteAPIUsage(task.Candidate.Path);
                 ThreadPool.QueueUserWorkItem(RunAssemblyUpdaterTask, task);
-            }
 
             var finishOk = false;
             var waitEvents = tasks.Select(t => t.Event).ToArray();
@@ -137,11 +131,6 @@ namespace UnityEditorInternal.APIUpdating
 
             sw.Stop();
             APIUpdaterLogger.WriteToFile(L10n.Tr("Update finished with {0} in {1} ms ({2}/{3} assembly(ies) updated)."), finishOk ? L10n.Tr("success") : L10n.Tr("error"), sw.ElapsedMilliseconds, updatedCount, assembliesToCheckCount);
-
-            if (updatedCount > 0 && !EditorCompilationInterface.Instance.DoesProjectFolderHaveAnyScripts())
-            {
-                ReportPossibleUpdateFinished(false);
-            }
 
             PersistListOfAssembliesToUpdate();
         }
@@ -287,7 +276,7 @@ namespace UnityEditorInternal.APIUpdating
                 return 0;
             }
 
-            if (AskForConsent(false) != APIUpdaterStatus.Accepted)
+            if (!AskForConsent(assembliesToUpdate.Select(a => a.Path).ToArray()))
             {
                 APIUpdaterLogger.WriteToFile(L10n.Tr("User declined to run APIUpdater"));
                 return 0;
@@ -332,39 +321,9 @@ namespace UnityEditorInternal.APIUpdating
             }
         }
 
-        [RequiredByNativeCode]
         internal static bool HasPrecompiledAssembliesToUpdate()
         {
             return GetAssembliesToBeUpdated().Count > 0;
-        }
-
-        private static T Profile<T>(bool enable, string msg, Func<T> f)
-        {
-            var sw = Stopwatch.StartNew();
-            try
-            {
-                return f();
-            }
-            finally
-            {
-                sw.Stop();
-                if (enable)
-                    UnityEngine.Debug.LogFormat("{0} took {1} ms", msg, sw.ElapsedMilliseconds);
-            }
-        }
-
-        private static void Profile(string msg, Action f)
-        {
-            var sw = Stopwatch.StartNew();
-            try
-            {
-                f();
-            }
-            finally
-            {
-                sw.Stop();
-                UnityEngine.Debug.LogFormat("{0} took {1} ms", msg, sw.ElapsedMilliseconds);
-            }
         }
 
         [RequiredByNativeCode]
@@ -468,10 +427,6 @@ namespace UnityEditorInternal.APIUpdating
             foreach (var candidate in candidatesToUpdate.Where(c => c != null))
                 assembliesToUpdate.Add(candidate);
         }
-
-        private extern static void CollectAssemblyObsoleteAPIUsage(string assemblyPath);
-        private extern static void ReportPossibleUpdateFinished(bool hasCompilerErrors);
-
 
         private static bool IsAssemblyInPackageFolder(AssemblyUpdateCandidate candidate)
         {

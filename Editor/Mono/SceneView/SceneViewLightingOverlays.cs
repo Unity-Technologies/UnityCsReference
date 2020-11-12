@@ -265,8 +265,8 @@ namespace UnityEditor
                 Shader.SetGlobalFloat("_AlbedoSaturationTolerance", m_AlbedoSwatchSaturationTolerance);
             }
             Shader.SetGlobalColor("_AlbedoCompareColor", color.linear);
-            Shader.SetGlobalInt("_CheckAlbedo", (m_SelectedAlbedoSwatchIndex != 0) ? 1 : 0);
-            Shader.SetGlobalInt("_CheckPureMetal", m_SceneView.validateTrueMetals ? 1 : 0);
+            Shader.SetGlobalFloat("_CheckAlbedo", (m_SelectedAlbedoSwatchIndex != 0) ? 1.0f : 0.0f);
+            Shader.SetGlobalFloat("_CheckPureMetal", m_SceneView.validateTrueMetals ? 1.0f : 0.0f);
         }
 
         internal void DrawTrueMetalCheckbox()

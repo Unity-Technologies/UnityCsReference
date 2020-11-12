@@ -10,215 +10,215 @@ namespace UnityEngine
 {
     internal class SystemInfoShimBase
     {
-        public virtual string unsupportedIdentifier => EditorSystemInfo.unsupportedIdentifier;
+        public virtual string unsupportedIdentifier => UnityEngine.SystemInfo.unsupportedIdentifier;
 
-        public virtual float batteryLevel => EditorSystemInfo.batteryLevel;
+        public virtual float batteryLevel => UnityEngine.SystemInfo.batteryLevel;
 
-        public virtual BatteryStatus batteryStatus => EditorSystemInfo.batteryStatus;
+        public virtual BatteryStatus batteryStatus => UnityEngine.SystemInfo.batteryStatus;
 
-        public virtual string operatingSystem => EditorSystemInfo.operatingSystem;
+        public virtual string operatingSystem => UnityEngine.SystemInfo.operatingSystem;
 
-        public virtual OperatingSystemFamily operatingSystemFamily => EditorSystemInfo.operatingSystemFamily;
+        public virtual OperatingSystemFamily operatingSystemFamily => UnityEngine.SystemInfo.operatingSystemFamily;
 
-        public virtual string processorType => EditorSystemInfo.processorType;
+        public virtual string processorType => UnityEngine.SystemInfo.processorType;
 
-        public virtual int processorFrequency => EditorSystemInfo.processorFrequency;
+        public virtual int processorFrequency => UnityEngine.SystemInfo.processorFrequency;
 
-        public virtual int processorCount => EditorSystemInfo.processorCount;
+        public virtual int processorCount => UnityEngine.SystemInfo.processorCount;
 
-        public virtual int systemMemorySize => EditorSystemInfo.systemMemorySize;
+        public virtual int systemMemorySize => UnityEngine.SystemInfo.systemMemorySize;
 
-        public virtual string deviceUniqueIdentifier => EditorSystemInfo.deviceUniqueIdentifier;
+        public virtual string deviceUniqueIdentifier => UnityEngine.SystemInfo.deviceUniqueIdentifier;
 
-        public virtual string deviceName => EditorSystemInfo.deviceName;
+        public virtual string deviceName => UnityEngine.SystemInfo.deviceName;
 
-        public virtual string deviceModel => EditorSystemInfo.deviceModel;
+        public virtual string deviceModel => UnityEngine.SystemInfo.deviceModel;
 
-        public virtual bool supportsAccelerometer => EditorSystemInfo.supportsAccelerometer;
+        public virtual bool supportsAccelerometer => UnityEngine.SystemInfo.supportsAccelerometer;
 
-        public virtual bool supportsGyroscope => EditorSystemInfo.supportsGyroscope;
+        public virtual bool supportsGyroscope => UnityEngine.SystemInfo.supportsGyroscope;
 
-        public virtual bool supportsLocationService => EditorSystemInfo.supportsLocationService;
+        public virtual bool supportsLocationService => UnityEngine.SystemInfo.supportsLocationService;
 
-        public virtual bool supportsVibration => EditorSystemInfo.supportsVibration;
+        public virtual bool supportsVibration => UnityEngine.SystemInfo.supportsVibration;
 
-        public virtual bool supportsAudio => EditorSystemInfo.supportsAudio;
+        public virtual bool supportsAudio => UnityEngine.SystemInfo.supportsAudio;
 
-        public virtual DeviceType deviceType => EditorSystemInfo.deviceType;
+        public virtual DeviceType deviceType => UnityEngine.SystemInfo.deviceType;
 
-        public virtual int graphicsMemorySize => EditorSystemInfo.graphicsMemorySize;
+        public virtual int graphicsMemorySize => UnityEngine.SystemInfo.graphicsMemorySize;
 
-        public virtual string graphicsDeviceName => EditorSystemInfo.graphicsDeviceName;
+        public virtual string graphicsDeviceName => UnityEngine.SystemInfo.graphicsDeviceName;
 
-        public virtual string graphicsDeviceVendor => EditorSystemInfo.graphicsDeviceVendor;
+        public virtual string graphicsDeviceVendor => UnityEngine.SystemInfo.graphicsDeviceVendor;
 
-        public virtual int graphicsDeviceID => EditorSystemInfo.graphicsDeviceID;
+        public virtual int graphicsDeviceID => UnityEngine.SystemInfo.graphicsDeviceID;
 
-        public virtual int graphicsDeviceVendorID => EditorSystemInfo.graphicsDeviceVendorID;
+        public virtual int graphicsDeviceVendorID => UnityEngine.SystemInfo.graphicsDeviceVendorID;
 
-        public virtual GraphicsDeviceType graphicsDeviceType => EditorSystemInfo.graphicsDeviceType;
+        public virtual GraphicsDeviceType graphicsDeviceType => UnityEngine.SystemInfo.graphicsDeviceType;
 
-        public virtual bool graphicsUVStartsAtTop => EditorSystemInfo.graphicsUVStartsAtTop;
+        public virtual bool graphicsUVStartsAtTop => UnityEngine.SystemInfo.graphicsUVStartsAtTop;
 
-        public virtual string graphicsDeviceVersion => EditorSystemInfo.graphicsDeviceVersion;
+        public virtual string graphicsDeviceVersion => UnityEngine.SystemInfo.graphicsDeviceVersion;
 
-        public virtual int graphicsShaderLevel => EditorSystemInfo.graphicsShaderLevel;
+        public virtual int graphicsShaderLevel => UnityEngine.SystemInfo.graphicsShaderLevel;
 
-        public virtual bool graphicsMultiThreaded => EditorSystemInfo.graphicsMultiThreaded;
+        public virtual bool graphicsMultiThreaded => UnityEngine.SystemInfo.graphicsMultiThreaded;
 
-        public virtual Rendering.RenderingThreadingMode renderingThreadingMode => EditorSystemInfo.renderingThreadingMode;
+        public virtual Rendering.RenderingThreadingMode renderingThreadingMode => UnityEngine.SystemInfo.renderingThreadingMode;
 
-        public virtual bool hasHiddenSurfaceRemovalOnGPU => EditorSystemInfo.hasHiddenSurfaceRemovalOnGPU;
+        public virtual bool hasHiddenSurfaceRemovalOnGPU => UnityEngine.SystemInfo.hasHiddenSurfaceRemovalOnGPU;
 
         public virtual bool hasDynamicUniformArrayIndexingInFragmentShaders =>
-            EditorSystemInfo.hasDynamicUniformArrayIndexingInFragmentShaders;
+            UnityEngine.SystemInfo.hasDynamicUniformArrayIndexingInFragmentShaders;
 
-        public virtual bool supportsShadows => EditorSystemInfo.supportsShadows;
+        public virtual bool supportsShadows => UnityEngine.SystemInfo.supportsShadows;
 
-        public virtual bool supportsRawShadowDepthSampling => EditorSystemInfo.supportsRawShadowDepthSampling;
+        public virtual bool supportsRawShadowDepthSampling => UnityEngine.SystemInfo.supportsRawShadowDepthSampling;
 
-        public virtual bool supportsMotionVectors => EditorSystemInfo.supportsMotionVectors;
+        public virtual bool supportsMotionVectors => UnityEngine.SystemInfo.supportsMotionVectors;
 
-        public virtual bool supports3DTextures => EditorSystemInfo.supports3DTextures;
+        public virtual bool supports3DTextures => UnityEngine.SystemInfo.supports3DTextures;
 
-        public virtual bool supportsCompressed3DTextures => EditorSystemInfo.supportsCompressed3DTextures;
+        public virtual bool supportsCompressed3DTextures => UnityEngine.SystemInfo.supportsCompressed3DTextures;
 
-        public virtual bool supports2DArrayTextures => EditorSystemInfo.supports2DArrayTextures;
+        public virtual bool supports2DArrayTextures => UnityEngine.SystemInfo.supports2DArrayTextures;
 
-        public virtual bool supports3DRenderTextures => EditorSystemInfo.supports3DRenderTextures;
+        public virtual bool supports3DRenderTextures => UnityEngine.SystemInfo.supports3DRenderTextures;
 
-        public virtual bool supportsCubemapArrayTextures => EditorSystemInfo.supportsCubemapArrayTextures;
+        public virtual bool supportsCubemapArrayTextures => UnityEngine.SystemInfo.supportsCubemapArrayTextures;
 
-        public virtual Rendering.CopyTextureSupport copyTextureSupport => EditorSystemInfo.copyTextureSupport;
+        public virtual Rendering.CopyTextureSupport copyTextureSupport => UnityEngine.SystemInfo.copyTextureSupport;
 
-        public virtual bool supportsComputeShaders => EditorSystemInfo.supportsComputeShaders;
+        public virtual bool supportsComputeShaders => UnityEngine.SystemInfo.supportsComputeShaders;
 
-        public virtual bool supportsGeometryShaders => EditorSystemInfo.supportsGeometryShaders;
+        public virtual bool supportsGeometryShaders => UnityEngine.SystemInfo.supportsGeometryShaders;
 
-        public virtual bool supportsTessellationShaders => EditorSystemInfo.supportsTessellationShaders;
+        public virtual bool supportsTessellationShaders => UnityEngine.SystemInfo.supportsTessellationShaders;
 
-        public virtual bool supportsRenderTargetArrayIndexFromVertexShader => EditorSystemInfo.supportsRenderTargetArrayIndexFromVertexShader;
+        public virtual bool supportsRenderTargetArrayIndexFromVertexShader => UnityEngine.SystemInfo.supportsRenderTargetArrayIndexFromVertexShader;
 
-        public virtual bool supportsInstancing => EditorSystemInfo.supportsInstancing;
+        public virtual bool supportsInstancing => UnityEngine.SystemInfo.supportsInstancing;
 
-        public virtual bool supportsHardwareQuadTopology => EditorSystemInfo.supportsHardwareQuadTopology;
+        public virtual bool supportsHardwareQuadTopology => UnityEngine.SystemInfo.supportsHardwareQuadTopology;
 
-        public virtual bool supports32bitsIndexBuffer => EditorSystemInfo.supports32bitsIndexBuffer;
+        public virtual bool supports32bitsIndexBuffer => UnityEngine.SystemInfo.supports32bitsIndexBuffer;
 
-        public virtual bool supportsSparseTextures => EditorSystemInfo.supportsSparseTextures;
+        public virtual bool supportsSparseTextures => UnityEngine.SystemInfo.supportsSparseTextures;
 
-        public virtual int supportedRenderTargetCount => EditorSystemInfo.supportedRenderTargetCount;
+        public virtual int supportedRenderTargetCount => UnityEngine.SystemInfo.supportedRenderTargetCount;
 
-        public virtual bool supportsSeparatedRenderTargetsBlend => EditorSystemInfo.supportsSeparatedRenderTargetsBlend;
+        public virtual bool supportsSeparatedRenderTargetsBlend => UnityEngine.SystemInfo.supportsSeparatedRenderTargetsBlend;
 
-        public virtual int supportedRandomWriteTargetCount => EditorSystemInfo.supportedRandomWriteTargetCount;
+        public virtual int supportedRandomWriteTargetCount => UnityEngine.SystemInfo.supportedRandomWriteTargetCount;
 
-        public virtual int supportsMultisampledTextures => EditorSystemInfo.supportsMultisampledTextures;
+        public virtual int supportsMultisampledTextures => UnityEngine.SystemInfo.supportsMultisampledTextures;
 
-        public virtual bool supportsMultisampled2DArrayTextures => EditorSystemInfo.supportsMultisampled2DArrayTextures;
+        public virtual bool supportsMultisampled2DArrayTextures => UnityEngine.SystemInfo.supportsMultisampled2DArrayTextures;
 
-        public virtual bool supportsMultisampleAutoResolve => EditorSystemInfo.supportsMultisampleAutoResolve;
+        public virtual bool supportsMultisampleAutoResolve => UnityEngine.SystemInfo.supportsMultisampleAutoResolve;
 
-        public virtual int supportsTextureWrapMirrorOnce => EditorSystemInfo.supportsTextureWrapMirrorOnce;
+        public virtual int supportsTextureWrapMirrorOnce => UnityEngine.SystemInfo.supportsTextureWrapMirrorOnce;
 
-        public virtual bool usesReversedZBuffer => EditorSystemInfo.usesReversedZBuffer;
+        public virtual bool usesReversedZBuffer => UnityEngine.SystemInfo.usesReversedZBuffer;
 
         public virtual bool SupportsRenderTextureFormat(RenderTextureFormat format)
         {
-            return EditorSystemInfo.SupportsRenderTextureFormat(format);
+            return UnityEngine.SystemInfo.SupportsRenderTextureFormat(format);
         }
 
         public virtual bool SupportsBlendingOnRenderTextureFormat(RenderTextureFormat format)
         {
-            return EditorSystemInfo.SupportsBlendingOnRenderTextureFormat(format);
+            return UnityEngine.SystemInfo.SupportsBlendingOnRenderTextureFormat(format);
         }
 
         public virtual bool SupportsRandomWriteOnRenderTextureFormat(RenderTextureFormat format)
         {
-            return EditorSystemInfo.SupportsRandomWriteOnRenderTextureFormat(format);
+            return UnityEngine.SystemInfo.SupportsRandomWriteOnRenderTextureFormat(format);
         }
 
         public virtual bool SupportsTextureFormat(TextureFormat format)
         {
-            return EditorSystemInfo.SupportsTextureFormat(format);
+            return UnityEngine.SystemInfo.SupportsTextureFormat(format);
         }
 
         public virtual bool SupportsVertexAttributeFormat(VertexAttributeFormat format, int dimension)
         {
-            return EditorSystemInfo.SupportsVertexAttributeFormat(format, dimension);
+            return UnityEngine.SystemInfo.SupportsVertexAttributeFormat(format, dimension);
         }
 
-        public virtual NPOTSupport npotSupport => EditorSystemInfo.npotSupport;
+        public virtual NPOTSupport npotSupport => UnityEngine.SystemInfo.npotSupport;
 
-        public virtual int maxTextureSize => EditorSystemInfo.maxTextureSize;
+        public virtual int maxTextureSize => UnityEngine.SystemInfo.maxTextureSize;
 
-        public virtual int maxCubemapSize => EditorSystemInfo.maxCubemapSize;
+        public virtual int maxCubemapSize => UnityEngine.SystemInfo.maxCubemapSize;
 
-        public virtual int maxComputeBufferInputsVertex => EditorSystemInfo.maxComputeBufferInputsVertex;
+        public virtual int maxComputeBufferInputsVertex => UnityEngine.SystemInfo.maxComputeBufferInputsVertex;
 
-        public virtual int maxComputeBufferInputsFragment => EditorSystemInfo.maxComputeBufferInputsFragment;
+        public virtual int maxComputeBufferInputsFragment => UnityEngine.SystemInfo.maxComputeBufferInputsFragment;
 
-        public virtual int maxComputeBufferInputsGeometry => EditorSystemInfo.maxComputeBufferInputsGeometry;
+        public virtual int maxComputeBufferInputsGeometry => UnityEngine.SystemInfo.maxComputeBufferInputsGeometry;
 
-        public virtual int maxComputeBufferInputsDomain => EditorSystemInfo.maxComputeBufferInputsDomain;
+        public virtual int maxComputeBufferInputsDomain => UnityEngine.SystemInfo.maxComputeBufferInputsDomain;
 
-        public virtual int maxComputeBufferInputsHull => EditorSystemInfo.maxComputeBufferInputsHull;
+        public virtual int maxComputeBufferInputsHull => UnityEngine.SystemInfo.maxComputeBufferInputsHull;
 
-        public virtual int maxComputeBufferInputsCompute => EditorSystemInfo.maxComputeBufferInputsCompute;
+        public virtual int maxComputeBufferInputsCompute => UnityEngine.SystemInfo.maxComputeBufferInputsCompute;
 
-        public virtual int maxComputeWorkGroupSize => EditorSystemInfo.maxComputeWorkGroupSize;
+        public virtual int maxComputeWorkGroupSize => UnityEngine.SystemInfo.maxComputeWorkGroupSize;
 
-        public virtual int maxComputeWorkGroupSizeX => EditorSystemInfo.maxComputeWorkGroupSizeX;
+        public virtual int maxComputeWorkGroupSizeX => UnityEngine.SystemInfo.maxComputeWorkGroupSizeX;
 
-        public virtual int maxComputeWorkGroupSizeY => EditorSystemInfo.maxComputeWorkGroupSizeY;
+        public virtual int maxComputeWorkGroupSizeY => UnityEngine.SystemInfo.maxComputeWorkGroupSizeY;
 
-        public virtual int maxComputeWorkGroupSizeZ => EditorSystemInfo.maxComputeWorkGroupSizeZ;
+        public virtual int maxComputeWorkGroupSizeZ => UnityEngine.SystemInfo.maxComputeWorkGroupSizeZ;
 
-        public virtual bool supportsAsyncCompute => EditorSystemInfo.supportsAsyncCompute;
-        public virtual bool supportsGpuRecorder => EditorSystemInfo.supportsGpuRecorder;
+        public virtual bool supportsAsyncCompute => UnityEngine.SystemInfo.supportsAsyncCompute;
+        public virtual bool supportsGpuRecorder => UnityEngine.SystemInfo.supportsGpuRecorder;
 
-        public virtual bool supportsGraphicsFence => EditorSystemInfo.supportsGraphicsFence;
+        public virtual bool supportsGraphicsFence => UnityEngine.SystemInfo.supportsGraphicsFence;
 
-        public virtual bool supportsAsyncGPUReadback => EditorSystemInfo.supportsAsyncGPUReadback;
-        public virtual bool supportsRayTracing => EditorSystemInfo.supportsRayTracing;
+        public virtual bool supportsAsyncGPUReadback => UnityEngine.SystemInfo.supportsAsyncGPUReadback;
+        public virtual bool supportsRayTracing => UnityEngine.SystemInfo.supportsRayTracing;
 
-        public virtual bool supportsSetConstantBuffer => EditorSystemInfo.supportsSetConstantBuffer;
+        public virtual bool supportsSetConstantBuffer => UnityEngine.SystemInfo.supportsSetConstantBuffer;
 
-        public virtual int constantBufferOffsetAlignment => EditorSystemInfo.constantBufferOffsetAlignment;
+        public virtual int constantBufferOffsetAlignment => UnityEngine.SystemInfo.constantBufferOffsetAlignment;
 
         [Obsolete("Use SystemInfo.constantBufferOffsetAlignment instead.")]
-        public virtual bool minConstantBufferOffsetAlignment => EditorSystemInfo.minConstantBufferOffsetAlignment;
+        public virtual bool minConstantBufferOffsetAlignment => UnityEngine.SystemInfo.minConstantBufferOffsetAlignment;
 
-        public virtual bool hasMipMaxLevel => EditorSystemInfo.hasMipMaxLevel;
+        public virtual bool hasMipMaxLevel => UnityEngine.SystemInfo.hasMipMaxLevel;
 
-        public virtual bool supportsMipStreaming => EditorSystemInfo.supportsMipStreaming;
+        public virtual bool supportsMipStreaming => UnityEngine.SystemInfo.supportsMipStreaming;
 
-        public virtual bool usesLoadStoreActions => EditorSystemInfo.usesLoadStoreActions;
+        public virtual bool usesLoadStoreActions => UnityEngine.SystemInfo.usesLoadStoreActions;
 
-        public virtual HDRDisplaySupportFlags hdrDisplaySupportFlags => EditorSystemInfo.hdrDisplaySupportFlags;
+        public virtual HDRDisplaySupportFlags hdrDisplaySupportFlags => UnityEngine.SystemInfo.hdrDisplaySupportFlags;
 
-        public virtual bool supportsConservativeRaster => EditorSystemInfo.supportsConservativeRaster;
+        public virtual bool supportsConservativeRaster => UnityEngine.SystemInfo.supportsConservativeRaster;
 
-        public virtual bool supportsMultiview => EditorSystemInfo.supportsMultiview;
+        public virtual bool supportsMultiview => UnityEngine.SystemInfo.supportsMultiview;
 
         public virtual bool IsFormatSupported(GraphicsFormat format, FormatUsage usage)
         {
-            return EditorSystemInfo.IsFormatSupported(format, usage);
+            return UnityEngine.SystemInfo.IsFormatSupported(format, usage);
         }
 
         public virtual GraphicsFormat GetCompatibleFormat(GraphicsFormat format, FormatUsage usage)
         {
-            return EditorSystemInfo.GetCompatibleFormat(format, usage);
+            return UnityEngine.SystemInfo.GetCompatibleFormat(format, usage);
         }
 
         public virtual GraphicsFormat GetGraphicsFormat(DefaultFormat format)
         {
-            return EditorSystemInfo.GetGraphicsFormat(format);
+            return UnityEngine.SystemInfo.GetGraphicsFormat(format);
         }
 
         public virtual int GetRenderTextureSupportedMSAASampleCount(RenderTextureDescriptor desc)
         {
-            return EditorSystemInfo.GetRenderTextureSupportedMSAASampleCount(desc);
+            return UnityEngine.SystemInfo.GetRenderTextureSupportedMSAASampleCount(desc);
         }
     }
 }

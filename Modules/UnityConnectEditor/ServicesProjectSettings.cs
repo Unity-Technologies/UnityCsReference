@@ -277,19 +277,14 @@ namespace UnityEditor.Connect
 
             // Before reinitializing, we check that the actual state of the project info is valid and
             //     that it has changed since the ActivateHandler.
-            if (state.valid && (IsProjectInfoChanged() || m_UnityConnectStateChanged))
+            if ((state.valid || !UnityConnect.instance.loggedIn) && (IsProjectInfoChanged() || m_UnityConnectStateChanged))
             {
                 DismissWarningNotifications();
                 ReinitializeSettings();
+                m_UnityConnectStateChanged = false;
             }
             m_CachedOnlineState = UnityConnect.instance.online;
             m_CachedLoggedInState = UnityConnect.instance.loggedIn;
-
-            // Must make sure the state changed indicator comes back to false after any valid state...
-            if (state.valid)
-            {
-                m_UnityConnectStateChanged = false;
-            }
         }
 
         void ConfigureNotificationSubscriberForNonStandardStates()

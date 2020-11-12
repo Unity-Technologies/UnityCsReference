@@ -137,12 +137,18 @@ namespace UnityEditorInternal.Profiling
         }
 
         public abstract void DrawToolbar(Rect position);
+
         public abstract void DrawDetailsView(Rect position);
 
         public int DrawChartView(int currentFrame, bool isSelected)
         {
-            return m_Chart.DoChartGUI(currentFrame, isSelected);
+            currentFrame = m_Chart.DoChartGUI(currentFrame, isSelected);
+            if (isSelected)
+                DrawChartOverlay(m_Chart.lastChartRect);
+            return currentFrame;
         }
+
+        public virtual void DrawChartOverlay(Rect chartRect) {}
 
         public void SetActive(bool active)
         {

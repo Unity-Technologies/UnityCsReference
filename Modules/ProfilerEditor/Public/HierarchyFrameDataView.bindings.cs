@@ -141,6 +141,12 @@ namespace UnityEditor.Profiling
         [ThreadSafe]
         public extern int GetItemMergedSamplesCount(int id);
 
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern void GetItemRawFrameDataViewIndices(int id, List<int> outSampleIndices);
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern bool ItemContainsRawFrameDataViewIndex(int id, int sampleIndex);
+
         public void GetItemMergedSamplesColumnData(int id, int column, List<string> outStrings)
         {
             if (outStrings == null)

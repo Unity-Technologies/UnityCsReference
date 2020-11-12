@@ -6,9 +6,9 @@ using System.Text.RegularExpressions;
 
 namespace UnityEditor.Scripting.Compilers
 {
-    internal class MicrosoftCSharpCompilerOutputParser : CSharpCompilerOutputParserBase
+    internal class MicrosoftCSharpCompilerOutputParser : CompilerOutputParserBase
     {
-        private static Regex sCompilerOutput = new Regex(@"\s*(?<filename>[^\(]*)(\((?<line>\d+),(?<column>\d+)\))*:\s*(?<type>warning|error|info)\s*(?<id>[^:]*):\s*(?<message>.*)", RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+        public static Regex sCompilerOutput = new Regex(@"\s*(?<filename>[^\(]*)(\((?<line>\d+),(?<column>\d+)\))*:\s*(?<type>warning|error|info)\s*(?<id>[^:]*):\s*(?<message>.*)", RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 
         protected override string GetInformationIdentifier()
         {

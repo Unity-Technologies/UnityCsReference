@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Profiling;
-using UnityEngine.UIElements;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEditor.UIElements
+namespace UnityEngine.UIElements
 {
     /// <summary>
     /// ProgressBar control using UIElements. Supports binding to float and int values.
     /// </summary>
+    [MovedFrom(true, "UnityEditor.UIElements", "UnityEditor.UIElementsModule")]
     public class ProgressBar : BindableElement, INotifyValueChanged<float>
     {
         /// <summary>
@@ -35,7 +35,7 @@ namespace UnityEditor.UIElements
         /// </summary>
         public static readonly string backgroundUssClassName = ussClassName + "__background";
 
-        public new class UxmlFactory : UxmlFactory<ProgressBar, UxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<ProgressBar, UxmlTraits> { }
 
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
@@ -59,14 +59,15 @@ namespace UnityEditor.UIElements
 
         readonly VisualElement m_Background;
         readonly VisualElement m_Progress;
+        readonly Label m_Title;
 
         /// <summary>
         /// Sets the title of the ProgressBar which will be displayed in the center of the control.
         /// </summary>
         public string title
         {
-            get { return this.Q<Label>(null, titleUssClassName).text; }
-            set { this.Q<Label>(null, titleUssClassName).text = value; }
+            get => m_Title.text;
+            set => m_Title.text = value;
         }
 
         internal float lowValue { get; private set; }
@@ -74,14 +75,29 @@ namespace UnityEditor.UIElements
 
         public ProgressBar()
         {
-            var tpl = EditorGUIUtility.Load("UIPackageResources/UXML/ProgressBar.uxml") as VisualTreeAsset;
             AddToClassList(ussClassName);
-            var container = tpl.Instantiate();
+
+            var container = new VisualElement() { name = ussClassName };
+
+            m_Background = new VisualElement();
+            m_Background.AddToClassList(backgroundUssClassName);
+            container.Add(m_Background);
+
+            m_Progress = new VisualElement();
+            m_Progress.AddToClassList(progressUssClassName);
+            m_Background.Add(m_Progress);
+
+            var titleContainer = new VisualElement();
+            titleContainer.AddToClassList(titleContainerUssClassName);
+            m_Background.Add(titleContainer);
+
+            m_Title = new Label();
+            m_Title.AddToClassList(titleUssClassName);
+            titleContainer.Add(m_Title);
+
             container.AddToClassList(containerUssClassName);
             hierarchy.Add(container);
 
-            m_Background = container.Q(null, backgroundUssClassName);
-            m_Progress = container.Q(null, progressUssClassName);
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
@@ -90,17 +106,14 @@ namespace UnityEditor.UIElements
             SetProgress(value);
         }
 
-        [SerializeField]
-        private float m_Value { get; set; }
+        float m_Value;
+
         /// <summary>
         /// Bindable float value that can be bound to int and float properties. Setting this will change the current displayed progress of the ProgressBar.
         /// </summary>
         public virtual float value
         {
-            get
-            {
-                return m_Value;
-            }
+            get { return m_Value; }
             set
             {
                 if (!EqualityComparer<float>.Default.Equals(m_Value, value))
@@ -151,7 +164,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        const float minVisibleProgress = 1.0f;
+        const float k_MinVisibleProgress = 1.0f;
 
         float CalculateProgressWidth(float width)
         {
@@ -166,7 +179,7 @@ namespace UnityEditor.UIElements
             }
 
             var maxWidth = m_Background.layout.width - 2;
-            return maxWidth - Mathf.Max((maxWidth) * width / highValue, minVisibleProgress);
+            return maxWidth - Mathf.Max((maxWidth) * width / highValue, k_MinVisibleProgress);
         }
     }
 }

@@ -338,9 +338,9 @@ namespace UnityEditor
             {
                 case BlendMode.Opaque:
                     material.SetOverrideTag("RenderType", "");
-                    material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                    material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-                    material.SetInt("_ZWrite", 1);
+                    material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+                    material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.Zero);
+                    material.SetFloat("_ZWrite", 1.0f);
                     material.DisableKeyword("_ALPHATEST_ON");
                     material.DisableKeyword("_ALPHABLEND_ON");
                     material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
@@ -348,9 +348,9 @@ namespace UnityEditor
                     break;
                 case BlendMode.Cutout:
                     material.SetOverrideTag("RenderType", "TransparentCutout");
-                    material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                    material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-                    material.SetInt("_ZWrite", 1);
+                    material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+                    material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.Zero);
+                    material.SetFloat("_ZWrite", 1.0f);
                     material.EnableKeyword("_ALPHATEST_ON");
                     material.DisableKeyword("_ALPHABLEND_ON");
                     material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
@@ -358,9 +358,9 @@ namespace UnityEditor
                     break;
                 case BlendMode.Fade:
                     material.SetOverrideTag("RenderType", "Transparent");
-                    material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                    material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                    material.SetInt("_ZWrite", 0);
+                    material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                    material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                    material.SetFloat("_ZWrite", 0.0f);
                     material.DisableKeyword("_ALPHATEST_ON");
                     material.EnableKeyword("_ALPHABLEND_ON");
                     material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
@@ -368,9 +368,9 @@ namespace UnityEditor
                     break;
                 case BlendMode.Transparent:
                     material.SetOverrideTag("RenderType", "Transparent");
-                    material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                    material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                    material.SetInt("_ZWrite", 0);
+                    material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+                    material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                    material.SetFloat("_ZWrite", 0.0f);
                     material.DisableKeyword("_ALPHATEST_ON");
                     material.DisableKeyword("_ALPHABLEND_ON");
                     material.EnableKeyword("_ALPHAPREMULTIPLY_ON");

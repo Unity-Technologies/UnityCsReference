@@ -39,7 +39,7 @@ namespace UnityEditor
                 case PreviewMode.B: mask = 4; break;
                 case PreviewMode.A: mask = 8; break;
             }
-            m_Material.SetInt(s_ShaderColorMask, mask);
+            m_Material.SetFloat(s_ShaderColorMask, (float)mask);
         }
 
         protected override void OnEnable()
@@ -59,7 +59,7 @@ namespace UnityEditor
             if (t.depth > 1)
             {
                 m_Slice = (int)PreviewSettingsSlider(GUIContent.none, m_Slice, 0, t.depth - 1, 60, 30, isInteger: true);
-                m_Material.SetInt(s_ShaderSliceIndex, m_Slice);
+                m_Material.SetFloat(s_ShaderSliceIndex, (float)m_Slice);
             }
 
             var prevColorMode = m_PreviewMode;
@@ -87,9 +87,9 @@ namespace UnityEditor
             // If multiple objects are selected, we might be using a slice level before the maximum
             int effectiveSlice = Mathf.Clamp(m_Slice, 0, t.depth - 1);
 
-            m_Material.SetInt(s_ShaderSliceIndex, effectiveSlice);
-            m_Material.SetInt(s_ShaderToSrgb, QualitySettings.activeColorSpace == ColorSpace.Linear ? 1 : 0);
-            m_Material.SetInt(s_ShaderIsNormalMap, IsNormalMap(t) ? 1 : 0);
+            m_Material.SetFloat(s_ShaderSliceIndex, (float)effectiveSlice);
+            m_Material.SetFloat(s_ShaderToSrgb, QualitySettings.activeColorSpace == ColorSpace.Linear ? 1.0f : 0.0f);
+            m_Material.SetFloat(s_ShaderIsNormalMap, IsNormalMap(t) ? 1.0f : 0.0f);
 
             int texWidth = Mathf.Max(t.width, 1);
             int texHeight = Mathf.Max(t.height, 1);
@@ -136,10 +136,10 @@ namespace UnityEditor
 
             InitPreview();
             m_Material.mainTexture = texture;
-            m_Material.SetInt(s_ShaderColorMask, 15);
+            m_Material.SetFloat(s_ShaderColorMask, 15.0f);
             m_Material.SetFloat(s_ShaderMip, 0);
-            m_Material.SetInt(s_ShaderToSrgb, 0);
-            m_Material.SetInt(s_ShaderIsNormalMap, IsNormalMap(texture) ? 1 : 0);
+            m_Material.SetFloat(s_ShaderToSrgb, 0.0f);
+            m_Material.SetFloat(s_ShaderIsNormalMap, IsNormalMap(texture) ? 1.0f : 0.0f);
 
             int sliceDistance = previewUtility.renderTexture.width / 12;
             var elementCount = Mathf.Min(texture.depth, 6);
@@ -147,7 +147,7 @@ namespace UnityEditor
             var subRect = new Rect(0, 0, previewUtility.renderTexture.width - sliceDistance * (elementCount - 1), previewUtility.renderTexture.height - sliceDistance * (elementCount - 1));
             for (var el = elementCount - 1; el >= 0; --el)
             {
-                m_Material.SetInt(s_ShaderSliceIndex, el);
+                m_Material.SetFloat(s_ShaderSliceIndex, (float)el);
 
                 subRect.x = sliceDistance * el;
                 subRect.y = previewUtility.renderTexture.height - subRect.height - sliceDistance * el;

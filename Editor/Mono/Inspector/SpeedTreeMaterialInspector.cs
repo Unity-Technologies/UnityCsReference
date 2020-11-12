@@ -80,7 +80,7 @@ namespace UnityEditor
                         m.DisableKeyword(speedTreeGeometryTypeString[i]);
                     m.EnableKeyword(speedTreeGeometryTypeString[(int)setGeomType]);
                     m.renderQueue = shouldEnableAlphaTest ? (int)UnityEngine.Rendering.RenderQueue.AlphaTest : (int)UnityEngine.Rendering.RenderQueue.Geometry;
-                    m.SetInt("_Cull", (int)cullMode);
+                    m.SetFloat("_Cull", (float)cullMode);
                 }
             }
             EditorGUI.showMixedValue = false;

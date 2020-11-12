@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Globalization;
-using System;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Rendering;
@@ -177,6 +176,8 @@ namespace UnityEditor
         private const float kFloorTextureScale = 4;
         private const float kFloorAlpha = 0.5f;
         private const float kFloorShadowAlpha = 0.3f;
+
+        private const int kDefaultLayer = 0; // Must match kDefaultLayer in TagTypes.h
 
         private float m_PrevFloorHeight = 0;
         private float m_NextFloorHeight = 0;
@@ -736,7 +737,7 @@ namespace UnityEditor
                 mat.SetVector("_Alphas", new Vector4(kFloorAlpha * mainFloorAlpha, kFloorShadowAlpha * mainFloorAlpha, 0, 0));
                 mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Background;
 
-                Graphics.DrawMesh(m_FloorPlane, matrix, mat, Camera.PreviewCullingLayer, previewUtility.camera, 0);
+                Graphics.DrawMesh(m_FloorPlane, matrix, mat, kDefaultLayer, previewUtility.camera, 0);
             }
 
             // Render small floor
@@ -754,7 +755,7 @@ namespace UnityEditor
                 mat.SetMatrix("_ShadowTextureMatrix", shadowMatrix);
                 mat.SetVector("_Alphas", new Vector4(kFloorAlpha * floorAlpha, 0, 0, 0));
                 Matrix4x4 matrix = Matrix4x4.TRS(floorPos, floorRot, Vector3.one * kFloorScaleSmall * m_AvatarScale);
-                Graphics.DrawMesh(m_FloorPlane, matrix, mat, Camera.PreviewCullingLayer, previewUtility.camera, 0);
+                Graphics.DrawMesh(m_FloorPlane, matrix, mat, kDefaultLayer, previewUtility.camera, 0);
             }
 
             var clearMode = previewUtility.camera.clearFlags;

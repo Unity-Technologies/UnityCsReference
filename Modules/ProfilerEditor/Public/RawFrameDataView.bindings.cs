@@ -16,6 +16,8 @@ namespace UnityEditor.Profiling
     [StructLayout(LayoutKind.Sequential)]
     public class RawFrameDataView : FrameDataView
     {
+        internal const int invalidSampleIndex = -1;
+
         internal RawFrameDataView(int frameIndex, int threadIndex)
         {
             m_Ptr = Internal_Create(frameIndex, threadIndex);

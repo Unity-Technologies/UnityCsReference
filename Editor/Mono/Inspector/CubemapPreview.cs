@@ -240,7 +240,7 @@ namespace UnityEditor
             mat.SetFloat(s_ShaderMip, mipLevel);
             mat.SetFloat(s_ShaderAlpha, (m_PreviewType == PreviewType.Alpha) ? 1.0f : 0.0f);
             mat.SetFloat(s_ShaderIntensity, m_Intensity);
-            mat.SetInt(s_ShaderIsNormalMap, TextureInspector.IsNormalMap(t) ? 1 : 0);
+            mat.SetFloat(s_ShaderIsNormalMap, TextureInspector.IsNormalMap(t) ? 1.0f : 0.0f);
             mat.SetFloat(s_ShaderExposure, GetExposureValueForTexture(t));
 
             m_PreviewUtility.DrawMesh(m_Mesh, Vector3.zero, rot, mat, 0);

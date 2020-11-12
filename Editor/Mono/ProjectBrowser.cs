@@ -1165,7 +1165,7 @@ namespace UnityEditor
             EndRenaming();
         }
 
-        bool ShouldFrameAsset(int instanceID)
+        bool CanFrameAsset(int instanceID)
         {
             var path = AssetDatabase.GetAssetPath(instanceID);
             if (string.IsNullOrEmpty(path))
@@ -1202,14 +1202,14 @@ namespace UnityEditor
             {
                 // If searching we are not showing the asset tree but we set selection anyways to ensure its
                 // setup when clearing search
-                bool revealSelectionAndFrameLast = !m_LockTracker.isLocked && ShouldFrameAsset(instanceID) && Selection.instanceIDs.Length <= 1;
+                bool revealSelectionAndFrameLast = !m_LockTracker.isLocked && CanFrameAsset(instanceID) && Selection.instanceIDs.Length <= 1;
                 m_AssetTree.SetSelection(Selection.instanceIDs, revealSelectionAndFrameLast);
             }
             else if (m_ViewMode == ViewMode.TwoColumns)
             {
                 if (!m_InternalSelectionChange)
                 {
-                    bool frame = !m_LockTracker.isLocked && Selection.instanceIDs.Length > 0 && ShouldFrameAsset(instanceID);
+                    bool frame = !m_LockTracker.isLocked && Selection.instanceIDs.Length > 0 && CanFrameAsset(instanceID);
                     if (frame)
                     {
                         // If searching we keep the search when framing. If folder browsing we change folder
@@ -2672,7 +2672,26 @@ namespace UnityEditor
 
         public void FrameObject(int instanceID, bool ping)
         {
-            bool frame = !m_LockTracker.isLocked && (ping || ShouldFrameAsset(instanceID));
+            bool canFrame = CanFrameAsset(instanceID);
+            if (!canFrame)
+            {
+                // Check if we can frame the main asset from the same asset path instead.
+                // This ensures that Components or child GameObject of Prefabs or hidden sub assets will
+                // still be located and pinged in the Project Browser (case 1262196).
+                var path = AssetDatabase.GetAssetPath(instanceID);
+                if (!string.IsNullOrEmpty(path))
+                {
+                    var mainObject = AssetDatabase.LoadMainAssetAtPath(path);
+                    if (mainObject != null)
+                    {
+                        canFrame = CanFrameAsset(mainObject.GetInstanceID());
+                        if (canFrame)
+                            instanceID = mainObject.GetInstanceID();
+                    }
+                }
+            }
+
+            bool frame = !m_LockTracker.isLocked && (ping || canFrame);
             FrameObjectPrivate(instanceID, frame, ping);
             if (s_LastInteractedProjectBrowser == this)
             {

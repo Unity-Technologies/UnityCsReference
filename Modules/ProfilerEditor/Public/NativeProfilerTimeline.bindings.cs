@@ -104,6 +104,7 @@ namespace UnityEditorInternal
 
         public int out_Id;
         public string out_Path;
+        public int[] out_PathMarkerIds;
         public string out_CallstackInfo;
         public string out_MetaData;
 
@@ -155,6 +156,8 @@ namespace UnityEditorInternal
         public Rect threadRect;
         public Rect shownAreaRect;
 
+        // WARNING: the position and depth info may be clamped by threadRect.yMax (if the frame from which you are trying to get this position is not cached up to the required depth)
+        // If you know the depth and want the real position and depth, scale the threadRect up before calling GetEntryPositionInfo
         public Vector2 out_Position;
         public Vector2 out_Size;
         public int out_Depth;
@@ -192,6 +195,9 @@ namespace UnityEditorInternal
         [FreeFunction]
         public static extern bool GetEntryTimingInfo(ref NativeProfilerTimeline_GetEntryTimingInfoArgs args);
 
+        // WARNING: the position and depth info may be clamped by NativeProfilerTimeline_GetEntryPositionInfoArgs.threadRect.yMax
+        // (if the frame from which you are trying to get this position is not cached up to the required depth)
+        // If you know the depth and want the real position and depth, scale the threadRect up before calling GetEntryPositionInfo
         [FreeFunction]
         public static extern bool GetEntryPositionInfo(ref NativeProfilerTimeline_GetEntryPositionInfoArgs args);
     }

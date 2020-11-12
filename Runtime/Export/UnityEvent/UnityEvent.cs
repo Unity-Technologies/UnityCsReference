@@ -113,6 +113,9 @@ namespace UnityEngine.Events
 
         protected BaseInvokableCall(object target, MethodInfo function)
         {
+            if (function == null)
+                throw new ArgumentNullException(nameof(function));
+
             if (function.IsStatic)
             {
                 if (target != null)
@@ -123,9 +126,6 @@ namespace UnityEngine.Events
                 if (target == null)
                     throw new ArgumentNullException("target");
             }
-
-            if (function == null)
-                throw new ArgumentNullException("function");
         }
 
         public abstract void Invoke(object[] args);

@@ -161,6 +161,7 @@ namespace UnityEngine
             LogInformation(message, fileName, lineNumber, columnNumber);
         }
 
+        internal static extern void LogCompilerMessage(string message, string fileName, int lineNumber, int columnNumber, bool forEditor, bool isError, int identifier);
         private static extern void LogCompilerWarning(string message, string fileName, int lineNumber, int columnNumber);
         private static extern void LogCompilerError(string message, string fileName, int lineNumber, int columnNumber);
         private static extern void LogInformation(string message, string fileName, int lineNumber, int columnNumber);

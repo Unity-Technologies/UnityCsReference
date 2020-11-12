@@ -24,6 +24,7 @@ namespace UnityEditor
         SerializedProperty m_Tag;
         SerializedProperty m_StaticEditorFlags;
         SerializedProperty m_Icon;
+        string m_GOPreviousName;
 
         static class Styles
         {
@@ -219,6 +220,13 @@ namespace UnityEditor
             ClearPreviewCache();
             m_PreviewCache = null;
 
+            if (m_Name.stringValue == string.Empty)
+            {
+                Debug.LogWarning("A GameObject name cannot be set to an empty string.");
+                m_Name.stringValue = m_GOPreviousName;
+                serializedObject.ApplyModifiedProperties();
+            }
+
             AssetEvents.assetsChangedOnHDD -= OnAssetsChangedOnHDD;
         }
 
@@ -238,6 +246,11 @@ namespace UnityEditor
 
         void ClearPreviewCache()
         {
+            if (m_PreviewCache == null)
+            {
+                return;
+            }
+
             foreach (var texture in m_PreviewCache.Values)
             {
                 DestroyImmediate(texture);
@@ -335,6 +348,15 @@ namespace UnityEditor
                         using (new EditorGUI.DisabledScope(m_IsAsset && m_IsAssetRoot))
                         {
                             // Name
+                            // Resets the game object name when attempted to set it to an empty string
+                            if (m_Name.stringValue == string.Empty)
+                            {
+                                Debug.LogWarning("A GameObject name cannot be set to an empty string.");
+                                m_Name.stringValue = m_GOPreviousName;
+                            }
+                            else
+                                m_GOPreviousName = m_Name.stringValue;
+
                             EditorGUILayout.DelayedTextField(m_Name, GUIContent.none, EditorStyles.boldTextField);
                         }
 

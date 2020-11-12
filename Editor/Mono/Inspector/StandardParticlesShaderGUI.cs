@@ -332,7 +332,7 @@ namespace UnityEditor
         void FadingPopup(Material material)
         {
             // Z write doesn't work with fading
-            bool hasZWrite = (material.GetInt("_ZWrite") != 0);
+            bool hasZWrite = (material.GetFloat("_ZWrite") > 0.0f);
             if (!hasZWrite)
             {
                 // Soft Particles
@@ -384,7 +384,7 @@ namespace UnityEditor
         void DistortionPopup(Material material)
         {
             // Z write doesn't work with distortion
-            bool hasZWrite = (material.GetInt("_ZWrite") != 0);
+            bool hasZWrite = (material.GetFloat("_ZWrite") > 0.0f);
             if (!hasZWrite)
             {
                 EditorGUI.showMixedValue = distortionEnabled.hasMixedValue;
@@ -465,7 +465,7 @@ namespace UnityEditor
 
         void DoNormalMapArea(Material material)
         {
-            bool hasZWrite = (material.GetInt("_ZWrite") != 0);
+            bool hasZWrite = (material.GetFloat("_ZWrite") > 0.0f);
             bool useLighting = (material.GetFloat("_LightingEnabled") > 0.0f);
             bool useDistortion = (material.GetFloat("_DistortionEnabled") > 0.0f) && !hasZWrite;
             if (useLighting || useDistortion)
@@ -603,10 +603,10 @@ namespace UnityEditor
             {
                 case BlendMode.Opaque:
                     material.SetOverrideTag("RenderType", "");
-                    material.SetInt("_BlendOp", (int)UnityEngine.Rendering.BlendOp.Add);
-                    material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                    material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-                    material.SetInt("_ZWrite", 1);
+                    material.SetFloat("_BlendOp", (float)UnityEngine.Rendering.BlendOp.Add);
+                    material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+                    material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.Zero);
+                    material.SetFloat("_ZWrite", 1.0f);
                     material.DisableKeyword("_ALPHATEST_ON");
                     material.DisableKeyword("_ALPHABLEND_ON");
                     material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
@@ -615,10 +615,10 @@ namespace UnityEditor
                     break;
                 case BlendMode.Cutout:
                     material.SetOverrideTag("RenderType", "TransparentCutout");
-                    material.SetInt("_BlendOp", (int)UnityEngine.Rendering.BlendOp.Add);
-                    material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                    material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-                    material.SetInt("_ZWrite", 1);
+                    material.SetFloat("_BlendOp", (float)UnityEngine.Rendering.BlendOp.Add);
+                    material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+                    material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.Zero);
+                    material.SetFloat("_ZWrite", 1.0f);
                     material.EnableKeyword("_ALPHATEST_ON");
                     material.DisableKeyword("_ALPHABLEND_ON");
                     material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
@@ -627,10 +627,10 @@ namespace UnityEditor
                     break;
                 case BlendMode.Fade:
                     material.SetOverrideTag("RenderType", "Transparent");
-                    material.SetInt("_BlendOp", (int)UnityEngine.Rendering.BlendOp.Add);
-                    material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                    material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                    material.SetInt("_ZWrite", 0);
+                    material.SetFloat("_BlendOp", (float)UnityEngine.Rendering.BlendOp.Add);
+                    material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                    material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                    material.SetFloat("_ZWrite", 0.0f);
                     material.DisableKeyword("_ALPHATEST_ON");
                     material.EnableKeyword("_ALPHABLEND_ON");
                     material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
@@ -639,10 +639,10 @@ namespace UnityEditor
                     break;
                 case BlendMode.Transparent:
                     material.SetOverrideTag("RenderType", "Transparent");
-                    material.SetInt("_BlendOp", (int)UnityEngine.Rendering.BlendOp.Add);
-                    material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                    material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                    material.SetInt("_ZWrite", 0);
+                    material.SetFloat("_BlendOp", (float)UnityEngine.Rendering.BlendOp.Add);
+                    material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+                    material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                    material.SetFloat("_ZWrite", 0.0f);
                     material.DisableKeyword("_ALPHATEST_ON");
                     material.DisableKeyword("_ALPHABLEND_ON");
                     material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
@@ -651,10 +651,10 @@ namespace UnityEditor
                     break;
                 case BlendMode.Additive:
                     material.SetOverrideTag("RenderType", "Transparent");
-                    material.SetInt("_BlendOp", (int)UnityEngine.Rendering.BlendOp.Add);
-                    material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                    material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                    material.SetInt("_ZWrite", 0);
+                    material.SetFloat("_BlendOp", (float)UnityEngine.Rendering.BlendOp.Add);
+                    material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                    material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.One);
+                    material.SetFloat("_ZWrite", 0.0f);
                     material.DisableKeyword("_ALPHATEST_ON");
                     material.EnableKeyword("_ALPHABLEND_ON");
                     material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
@@ -663,10 +663,10 @@ namespace UnityEditor
                     break;
                 case BlendMode.Subtractive:
                     material.SetOverrideTag("RenderType", "Transparent");
-                    material.SetInt("_BlendOp", (int)UnityEngine.Rendering.BlendOp.ReverseSubtract);
-                    material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                    material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                    material.SetInt("_ZWrite", 0);
+                    material.SetFloat("_BlendOp", (float)UnityEngine.Rendering.BlendOp.ReverseSubtract);
+                    material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                    material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.One);
+                    material.SetFloat("_ZWrite", 0.0f);
                     material.DisableKeyword("_ALPHATEST_ON");
                     material.EnableKeyword("_ALPHABLEND_ON");
                     material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
@@ -675,10 +675,10 @@ namespace UnityEditor
                     break;
                 case BlendMode.Modulate:
                     material.SetOverrideTag("RenderType", "Transparent");
-                    material.SetInt("_BlendOp", (int)UnityEngine.Rendering.BlendOp.Add);
-                    material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.DstColor);
-                    material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                    material.SetInt("_ZWrite", 0);
+                    material.SetFloat("_BlendOp", (float)UnityEngine.Rendering.BlendOp.Add);
+                    material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.DstColor);
+                    material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                    material.SetFloat("_ZWrite", 0.0f);
                     material.DisableKeyword("_ALPHATEST_ON");
                     material.DisableKeyword("_ALPHABLEND_ON");
                     material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
@@ -731,7 +731,7 @@ namespace UnityEditor
         void SetMaterialKeywords(Material material)
         {
             // Z write doesn't work with distortion/fading
-            bool hasZWrite = (material.GetInt("_ZWrite") != 0);
+            bool hasZWrite = (material.GetFloat("_ZWrite") > 0.0f);
 
             // Lit shader?
             bool useLighting = (material.GetFloat("_LightingEnabled") > 0.0f);

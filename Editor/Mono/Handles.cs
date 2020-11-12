@@ -959,7 +959,7 @@ namespace UnityEditor
             Shader.SetGlobalFloat("_HandleSize", size);
             Matrix4x4 mat = matrix * Matrix4x4.TRS(position, rotation, Vector3.one);
             Shader.SetGlobalMatrix("_ObjectToWorld", mat);
-            HandleUtility.handleMaterial.SetInt("_HandleZTest", (int)zTest);
+            HandleUtility.handleMaterial.SetFloat("_HandleZTest", (float)zTest);
             HandleUtility.handleMaterial.SetPass(0);
             return mat;
         }
@@ -1087,8 +1087,8 @@ namespace UnityEditor
         {
             var col = color * lineTransparency;
             var mat = HandleUtility.handleArcMaterial;
-            mat.SetInt(kPropUseGuiClip, Camera.current ? 0 : 1);
-            mat.SetInt(kPropHandleZTest, (int)zTest);
+            mat.SetFloat(kPropUseGuiClip, Camera.current ? 0.0f : 1.0f);
+            mat.SetFloat(kPropHandleZTest, (float)zTest);
             mat.SetColor(kPropColor, col);
             mat.SetMatrix(kPropHandlesMatrix, matrix);
             return mat;
@@ -1320,8 +1320,15 @@ namespace UnityEditor
                 Internal_SetCurrentCamera(camera);
         }
 
-        internal static void DrawCameraImpl(Rect position, Camera camera,
-            DrawCameraMode drawMode, bool drawGrid, DrawGridParameters gridParam, bool finish, bool renderGizmos = true
+        internal static void DrawCameraImpl(Rect position,
+            Camera camera,
+            DrawCameraMode drawMode,
+            bool drawGrid,
+            DrawGridParameters gridParam,
+            bool finish,
+            bool renderGizmos = true,
+            bool renderSelection = true,
+            GameObject[] filter = null
         )
         {
             Event evt = Event.current;
@@ -1348,9 +1355,9 @@ namespace UnityEditor
                 else
                 {
                     if (drawGrid)
-                        Internal_DrawCameraWithGrid(camera, drawMode, ref gridParam, renderGizmos);
+                        Internal_DrawCameraWithGrid(camera, drawMode, ref gridParam, renderGizmos, renderSelection);
                     else
-                        Internal_DrawCamera(camera, drawMode, renderGizmos);
+                        Internal_DrawCameraWithFilter(camera, drawMode, renderGizmos, renderSelection, filter);
 
                     // VR scene cameras finish drawing with each eye render
                     if (finish && camera.cameraType != CameraType.VR)
@@ -1369,9 +1376,9 @@ namespace UnityEditor
             DrawCameraImpl(position, camera, drawMode, true, gridParam, true);
         }
 
-        internal static void DrawCameraStep1(Rect position, Camera camera, DrawCameraMode drawMode, DrawGridParameters gridParam, bool drawGizmos)
+        internal static void DrawCameraStep1(Rect position, Camera camera, DrawCameraMode drawMode, DrawGridParameters gridParam, bool drawGizmos, bool drawSelection)
         {
-            DrawCameraImpl(position, camera, drawMode, true, gridParam, false, drawGizmos);
+            DrawCameraImpl(position, camera, drawMode, true, gridParam, false, drawGizmos, drawSelection);
         }
 
         internal static void DrawCameraStep2(Camera camera, DrawCameraMode drawMode, bool drawGizmos)

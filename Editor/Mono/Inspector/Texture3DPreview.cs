@@ -183,6 +183,8 @@ namespace UnityEditor
 
         public override string GetInfoString()
         {
+            if (Texture == null) return "";
+
             Vector3 resolution = GetTextureResolution(Texture);
             var format = GraphicsFormatUtility.GetFormatString(Texture.graphicsFormat);
             var size = EditorUtility.FormatBytes(TextureUtil.GetRuntimeMemorySizeLong(Texture));
@@ -275,7 +277,7 @@ namespace UnityEditor
             foreach (var texture in textures)
             {
                 Texture t = texture as Texture;
-                if (t.dimension != UnityEngine.Rendering.TextureDimension.Tex3D)
+                if (t == null || t.dimension != UnityEngine.Rendering.TextureDimension.Tex3D)
                 {
                     continue;
                 }
@@ -321,7 +323,7 @@ namespace UnityEditor
             material.mainTexture = texture;
             material.SetVector(MaterialProps.voxelSize, voxelSize);
             material.SetVector(MaterialProps.invScale, inverseScale);
-            material.SetInt(MaterialProps.isNormalMap, TextureInspector.IsNormalMap(texture) ? 1 : 0);
+            material.SetFloat(MaterialProps.isNormalMap, TextureInspector.IsNormalMap(texture) ? 1.0f : 0.0f);
 
             if (customColorRamp != null)
             {

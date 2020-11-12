@@ -12,6 +12,8 @@ using Object = UnityEngine.Object;
 using UnityEditor.AnimatedValues;
 using Unity.Profiling;
 using System.Globalization;
+using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
 
 namespace UnityEditorInternal
 {
@@ -21,6 +23,7 @@ namespace UnityEditorInternal
         const float k_TextFadeStartWidth = 50.0f;
         const float k_TextFadeOutWidth = 20.0f;
         const float k_LineHeight = 16.0f;
+        const float k_DefaultEmptySpaceBelowBars = k_LineHeight * 3f;
         const float k_ExtraHeightPerThread = 4f;
         const float k_FullThreadLineHeight = k_LineHeight + 0.55f;
         const float k_GroupHeight = k_LineHeight + 4f;
@@ -174,9 +177,9 @@ namespace UnityEditorInternal
 
         class EntryInfo
         {
-            public int frameId = -1;
-            public int threadId = -1;
-            public int nativeIndex = -1; // Uniquely identifies the sample for the thread and frame.
+            public int frameId = FrameDataView.invalidOrCurrentFrameIndex;
+            public int threadIndex = FrameDataView.invalidThreadIndex;
+            public int nativeIndex = TimelineIndexHelper.invalidNativeTimelineEntryIndex; // Uniquely identifies the sample for the thread and frame.
             public float relativeYPos = 0.0f;
             public float time = 0.0f;
             public float duration = 0.0f;
@@ -187,16 +190,16 @@ namespace UnityEditorInternal
                 return this.name.Length > 0;
             }
 
-            public bool Equals(int frameId, int threadId, int nativeIndex)
+            public bool Equals(int frameId, int threadIndex, int nativeIndex)
             {
-                return frameId == this.frameId && threadId == this.threadId && nativeIndex == this.nativeIndex;
+                return frameId == this.frameId && threadIndex == this.threadIndex && nativeIndex == this.nativeIndex;
             }
 
             public virtual void Reset()
             {
-                this.frameId = -1;
-                this.threadId = -1;
-                this.nativeIndex = -1;
+                this.frameId = FrameDataView.invalidOrCurrentFrameIndex;
+                this.threadIndex = FrameDataView.invalidThreadIndex;
+                this.nativeIndex = TimelineIndexHelper.invalidNativeTimelineEntryIndex;
                 this.relativeYPos = 0.0f;
                 this.time = 0.0f;
                 this.duration = 0.0f;
@@ -206,13 +209,23 @@ namespace UnityEditorInternal
 
         class SelectedEntryInfo : EntryInfo
         {
+            public const int invalidInstancIdCount = -1;
+            public const float invalidDuration = -1.0f;
             // The associated GameObjects instance ID. Negative means Native Object, Positive means Managed Object, 0 means not set (as in, no object associated)
             public int instanceId = 0;
             public string metaData = string.Empty;
 
-            public float totalDuration = -1.0f;
-            public int instanceCount = -1;
-            public string callstackInfo = string.Empty;
+            public float totalDuration = invalidDuration;
+            public int instanceCount = invalidInstancIdCount;
+            public bool hasCallstack = false;
+
+            public string nonProxyName = null;
+            public ReadOnlyCollection<string> sampleStack = null;
+            public int nonProxyDepthDifference = 0;
+
+            public GUIContent cachedSelectionTooltipContent = null;
+
+            public float downwardsZoomableAreaSpaceNeeded = 0;
 
             public List<RawFrameDataView.FlowEvent> FlowEvents { get; } = new List<RawFrameDataView.FlowEvent>();
 
@@ -223,13 +236,77 @@ namespace UnityEditorInternal
                 this.instanceId = 0;
                 this.metaData = string.Empty;
 
-                this.totalDuration = -1.0f;
-                this.instanceCount = -1;
-                this.callstackInfo = string.Empty;
+                this.totalDuration = invalidDuration;
+                this.instanceCount = invalidInstancIdCount;
+                this.hasCallstack = false;
+                this.nonProxyName = null;
+                this.sampleStack = null;
+                this.cachedSelectionTooltipContent = null;
+                this.nonProxyDepthDifference = 0;
+                this.downwardsZoomableAreaSpaceNeeded = 0;
 
                 FlowEvents.Clear();
             }
         }
+
+        struct TimelineIndexHelper
+        {
+            int m_SampleIndex;
+            // m_NativeTimelineEntryIndex is m_SampleIndex -1 because the root sample is not considered as an entry in the Native timeline code
+            int m_NativeTimelineEntryIndex;
+            public const int invalidNativeTimelineEntryIndex = -1;
+
+            public static TimelineIndexHelper invalidIndex => new TimelineIndexHelper() { m_NativeTimelineEntryIndex = invalidNativeTimelineEntryIndex, m_SampleIndex = RawFrameDataView.invalidSampleIndex };
+
+            public int sampleIndex
+            {
+                get { return m_SampleIndex; }
+                set
+                {
+                    m_SampleIndex = value;
+                    m_NativeTimelineEntryIndex = value > 0 ? value - 1 : RawFrameDataView.invalidSampleIndex;
+                }
+            }
+            public int nativeTimelineEntryIndex
+            {
+                get { return m_NativeTimelineEntryIndex; }
+                set
+                {
+                    m_NativeTimelineEntryIndex = value;
+                    m_SampleIndex = value >= 0 ? value + 1 : invalidNativeTimelineEntryIndex;
+                }
+            }
+            public bool valid => m_NativeTimelineEntryIndex >= 0 && m_SampleIndex >= 0;
+        }
+
+        // a local cache of the marker Id path, which is modified in frames other than the one originally selected, in case the marker ids changed
+        // changing m_SelectionPendingTransfer.markerIdPath instead of this local one would potentially corrupt the markerIdPath in the original frame
+        // that would lead to confusion where it is assumed to be valid.
+        List<int> m_LocalSelectedItemMarkerIdPath = new List<int>();
+        SampleSelection m_SelectionPendingTransfer = SampleSelection.InvalidSampleSelection;
+        int m_ThreadIndexOfSelectionPendingTransfer = FrameDataView.invalidThreadIndex;
+        bool m_FrameSelectionVerticallyAfterTransfer = false;
+        bool m_Scheduled_FrameSelectionVertically = false;
+
+        public event Action<SampleSelection> selectionChanged;
+
+        struct RawSampleIterationInfo { public int partOfThePath; public int lastSampleIndexInScope; }
+
+        static RawSampleIterationInfo[] s_SkippedScopesCache = new RawSampleIterationInfo[1024];
+        static int[] s_LastSampleInScopeOfThePathCache = new int[1024];
+
+        static List<int> s_SampleIndexPathCache = new List<int>(1024);
+        [MethodImpl(256 /*MethodImplOptions.AggressiveInlining*/)]
+        static List<int> GetCachedSampleIndexPath(int requiredCapacity)
+        {
+            if (s_SampleIndexPathCache.Capacity < requiredCapacity)
+                s_SampleIndexPathCache.Capacity = requiredCapacity;
+            s_SampleIndexPathCache.Clear();
+            return s_SampleIndexPathCache;
+        }
+
+        [NonSerialized]
+        protected IProfilerSampleNameProvider m_ProfilerSampleNameProvider;
 
         float scrollOffsetY
         {
@@ -243,7 +320,7 @@ namespace UnityEditorInternal
         float m_SelectedThreadY = 0.0f;
         float m_SelectedThreadYRange = 0.0f;
         ThreadInfo m_SelectedThread = null;
-        int m_LastSelectedFrameID = -1;
+        int m_LastSelectedFrameIndex = FrameDataView.invalidThreadIndex;
         float m_LastHeightForAllBars = -1;
         float m_LastFullRectHeight = -1;
         float m_MaxLinesToDisplayForTheCurrentlyModifiedSplitter = -1;
@@ -309,9 +386,10 @@ namespace UnityEditorInternal
             m_HTicks.SetTickModulos(k_TickModulos);
         }
 
-        public override void OnEnable(CPUorGPUProfilerModule cpuOrGpuModule, IProfilerWindowController profilerWindow, bool isGpuView)
+        public override void OnEnable(CPUOrGPUProfilerModule cpuOrGpuModule, IProfilerWindowController profilerWindow, bool isGpuView)
         {
             base.OnEnable(cpuOrGpuModule, profilerWindow, isGpuView);
+            m_ProfilerSampleNameProvider = cpuOrGpuModule;
             if (m_Groups != null)
             {
                 for (int i = 0; i < m_Groups.Count; i++)
@@ -355,7 +433,7 @@ namespace UnityEditorInternal
 
                     group.threads.Add(thread);
                 }
-                else if (m_LastSelectedFrameID != frameIndex)
+                else if (m_LastSelectedFrameIndex != frameIndex)
                 {
                     thread.maxDepth = iter.maxDepth;
                 }
@@ -368,7 +446,7 @@ namespace UnityEditorInternal
                 group.threads.Sort();
             }
 
-            m_LastSelectedFrameID = frameIndex;
+            m_LastSelectedFrameIndex = frameIndex;
         }
 
         float CalculateHeightForAllBars(Rect fullRect, out float combinedHeaderHeight, out float combinedThreadHeight)
@@ -497,9 +575,15 @@ namespace UnityEditorInternal
                 {
                     DrawNativeProfilerTimeline(localRect, frameIndex, threadIndex, timeOffset, ghost);
                 }
-                else if (Event.current.type == EventType.MouseDown && !ghost) // Ghosts are not clickable
+                else
                 {
-                    HandleNativeProfilerTimelineInput(localRect, frameIndex, maxContextFramesToShow, threadIndex, timeOffset, topMargin, scaleForThreadHeight);
+                    var controlId = GUIUtility.GetControlID(BaseStyles.timelineTimeAreaControlId, FocusType.Passive, localRect);
+                    if (!ghost && (Event.current.GetTypeForControl(controlId) == EventType.MouseDown ||  // Ghosts are not clickable (or can contain an active selection)
+                                                                                                         // Selection of samples is handled in HandleNativeProfilerTimelineInput so it needs to get called if there is a selection to transfer
+                                   (m_SelectionPendingTransfer.valid && threadIndex == m_ThreadIndexOfSelectionPendingTransfer)))
+                    {
+                        HandleNativeProfilerTimelineInput(localRect, frameIndex, maxContextFramesToShow, threadIndex, timeOffset, topMargin, scaleForThreadHeight, controlId);
+                    }
                 }
             }
             GUI.EndGroup();
@@ -507,7 +591,7 @@ namespace UnityEditorInternal
 
         void DrawNativeProfilerTimeline(Rect threadRect, int frameIndex, int threadIndex, float timeOffset, bool ghost)
         {
-            bool hasSelection = m_SelectedEntry.threadId == threadIndex && m_SelectedEntry.frameId == frameIndex;
+            bool hasSelection = m_SelectedEntry.threadIndex == threadIndex && m_SelectedEntry.frameId == frameIndex;
 
             NativeProfilerTimeline_DrawArgs drawArgs = new NativeProfilerTimeline_DrawArgs();
             drawArgs.Reset();
@@ -519,106 +603,491 @@ namespace UnityEditorInternal
             // cull text that would otherwise draw over the bottom scrollbar
             drawArgs.threadRect.yMax = Mathf.Min(drawArgs.threadRect.yMax, m_TimeArea.shownArea.height - m_TimeArea.hSliderHeight);
             drawArgs.shownAreaRect = m_TimeArea.shownArea;
-            drawArgs.selectedEntryIndex = hasSelection ? m_SelectedEntry.nativeIndex : -1;
-            drawArgs.mousedOverEntryIndex = -1;
+            drawArgs.selectedEntryIndex = hasSelection ? m_SelectedEntry.nativeIndex : TimelineIndexHelper.invalidNativeTimelineEntryIndex;
+            drawArgs.mousedOverEntryIndex = TimelineIndexHelper.invalidNativeTimelineEntryIndex;
 
             NativeProfilerTimeline.Draw(ref drawArgs);
         }
 
-        void HandleNativeProfilerTimelineInput(Rect threadRect, int frameIndex, int maxContextFramesToShow, int threadIndex, float timeOffset, float topMargin, float scaleForThreadHeight)
+        static readonly ProfilerMarker k_TransferSelectionMarker = new ProfilerMarker($"{nameof(ProfilerTimelineGUI)} Transfer Selection");
+        static readonly ProfilerMarker k_TransferSelectionAcrossFramesMarker = new ProfilerMarker($"{nameof(ProfilerTimelineGUI)} Transfer Selection Between Frames");
+
+        void HandleNativeProfilerTimelineInput(Rect threadRect, int frameIndex, int maxContextFramesToShow, int threadIndex, float timeOffset, float topMargin, float scaleForThreadHeight, int controlId)
         {
             // Only let this thread view change mouse state if it contained the mouse pos
             Rect clippedRect = threadRect;
             clippedRect.y = 0;
+
+            var eventType = Event.current.GetTypeForControl(controlId);
             bool inThreadRect = clippedRect.Contains(Event.current.mousePosition);
-            if (!inThreadRect)
+            if (!inThreadRect && !(m_SelectionPendingTransfer.valid && threadIndex == m_ThreadIndexOfSelectionPendingTransfer))
                 return;
 
-            bool singleClick = Event.current.clickCount == 1 && Event.current.type == EventType.MouseDown;
-            bool doubleClick = Event.current.clickCount == 2 && Event.current.type == EventType.MouseDown;
+            bool singleClick = Event.current.clickCount == 1 && eventType == EventType.MouseDown;
+            bool doubleClick = Event.current.clickCount == 2 && eventType == EventType.MouseDown;
 
-            bool doSelect = (singleClick || doubleClick) && Event.current.button == 0;
+            bool doSelect = (singleClick || doubleClick) && Event.current.button == 0 || (m_SelectionPendingTransfer.valid && threadIndex == m_ThreadIndexOfSelectionPendingTransfer);
             if (!doSelect)
                 return;
 
-            NativeProfilerTimeline_GetEntryAtPositionArgs posArgs = new NativeProfilerTimeline_GetEntryAtPositionArgs();
-            posArgs.Reset();
-            posArgs.frameIndex = frameIndex;
-            posArgs.threadIndex = threadIndex;
-            posArgs.timeOffset = timeOffset;
-            posArgs.threadRect = threadRect;
-            posArgs.threadRect.height *= scaleForThreadHeight;
-            posArgs.shownAreaRect = m_TimeArea.shownArea;
-            posArgs.position = Event.current.mousePosition;
-
-            NativeProfilerTimeline.GetEntryAtPosition(ref posArgs);
-
-            int mouseOverIndex = posArgs.out_EntryIndex;
-            if (mouseOverIndex != -1)
+            using (var frameData = new RawFrameDataView(frameIndex, threadIndex))
             {
-                bool selectedChanged = !m_SelectedEntry.Equals(frameIndex, threadIndex, mouseOverIndex);
-                if (selectedChanged)
+                TimelineIndexHelper indexHelper = TimelineIndexHelper.invalidIndex;
+                float relativeYPosition = 0;
+                string name = null;
+                bool fireSelectionChanged = false;
+                string nonProxySampleName = null;
+                ReadOnlyCollection<string> markerNamePath = null;
+                var nonProxySampleDepthDifference = 0;
+                if (m_SelectionPendingTransfer.valid)
                 {
-                    // Read out timing info
-                    NativeProfilerTimeline_GetEntryTimingInfoArgs timingInfoArgs = new NativeProfilerTimeline_GetEntryTimingInfoArgs();
-                    timingInfoArgs.Reset();
-                    timingInfoArgs.frameIndex = frameIndex;
-                    timingInfoArgs.threadIndex = threadIndex;
-                    timingInfoArgs.entryIndex = mouseOverIndex;
-                    timingInfoArgs.calculateFrameData = true;
-                    NativeProfilerTimeline.GetEntryTimingInfo(ref timingInfoArgs);
-
-                    // Read out instance info for selection
-                    NativeProfilerTimeline_GetEntryInstanceInfoArgs instanceInfoArgs = new NativeProfilerTimeline_GetEntryInstanceInfoArgs();
-                    instanceInfoArgs.Reset();
-                    instanceInfoArgs.frameIndex = frameIndex;
-                    instanceInfoArgs.threadIndex = threadIndex;
-                    instanceInfoArgs.entryIndex = mouseOverIndex;
-                    NativeProfilerTimeline.GetEntryInstanceInfo(ref instanceInfoArgs);
-
-                    m_ProfilerWindow.SetSelectedPropertyPath(instanceInfoArgs.out_Path);
-
-                    // Set selected entry info
-                    m_SelectedEntry.Reset();
-                    m_SelectedEntry.frameId = frameIndex;
-                    m_SelectedEntry.threadId = threadIndex;
-                    m_SelectedEntry.nativeIndex = mouseOverIndex;
-                    m_SelectedEntry.instanceId = instanceInfoArgs.out_Id;
-                    m_SelectedEntry.time = timingInfoArgs.out_LocalStartTime;
-                    m_SelectedEntry.duration = timingInfoArgs.out_Duration;
-                    m_SelectedEntry.totalDuration = timingInfoArgs.out_TotalDurationForFrame;
-                    m_SelectedEntry.instanceCount = timingInfoArgs.out_InstanceCountForFrame;
-                    m_SelectedEntry.relativeYPos = posArgs.out_EntryYMaxPos + topMargin;
-                    m_SelectedEntry.name = posArgs.out_EntryName;
-                    m_SelectedEntry.callstackInfo = instanceInfoArgs.out_CallstackInfo;
-                    m_SelectedEntry.metaData = instanceInfoArgs.out_MetaData;
-
-                    if ((cpuModule.ViewOptions & CPUorGPUProfilerModule.ProfilerViewFilteringOptions.ShowExecutionFlow) != 0)
+                    using (k_TransferSelectionMarker.Auto())
                     {
-                        using (var frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, threadIndex))
+                        if (m_SelectionPendingTransfer.markerPathDepth <= 0)
+                            return;
+
+                        markerNamePath = m_SelectionPendingTransfer.markerNamePath;
+                        var markerIdPath = m_SelectionPendingTransfer.markerIdPath;
+
+                        indexHelper.sampleIndex = m_SelectionPendingTransfer.rawSampleIndex;
+                        fireSelectionChanged = false;
+                        name = m_SelectionPendingTransfer.sampleName;
+
+                        var markerPathLength = markerIdPath.Count;
+                        // initial assumption is that the depth is the full marker path. The depth will be revised if it is a Proxy Selection
+                        var depth = markerPathLength;
+
+                        // A quick sanity check on the validity of going with the raw index
+                        var rawSampleIndexIsValid = m_SelectionPendingTransfer.frameIndexIsSafe &&
+                            frameData.frameIndex == m_SelectionPendingTransfer.frameIndex &&
+                            m_SelectionPendingTransfer.rawSampleIndex < frameData.sampleCount &&
+                            frameData.GetSampleMarkerId(m_SelectionPendingTransfer.rawSampleIndex) == markerIdPath[markerPathLength - 1];
+
+                        if (!rawSampleIndexIsValid)
                         {
-                            // posArgs.out_EntryIndex is a MeshCache index which differs from sample index by 1 as root is not included into MeshCache.
-                            frameData.GetSampleFlowEvents(mouseOverIndex + 1, m_SelectedEntry.FlowEvents);
-                            UpdateActiveFlowEventsForAllThreadsInAllVisibleFrames(frameIndex, maxContextFramesToShow, m_SelectedEntry.FlowEvents);
+                            using (k_TransferSelectionAcrossFramesMarker.Auto())
+                            {
+                                if (m_LocalSelectedItemMarkerIdPath == null)
+                                    m_LocalSelectedItemMarkerIdPath = new List<int>(markerPathLength);
+                                else if (m_LocalSelectedItemMarkerIdPath.Capacity < markerPathLength)
+                                    m_LocalSelectedItemMarkerIdPath.Capacity = markerPathLength;
+
+                                m_LocalSelectedItemMarkerIdPath.Clear();
+                                for (int i = 0; i < markerPathLength; i++)
+                                {
+                                    // update the marker Ids, they can't be trusted since they originated on another frame
+                                    m_LocalSelectedItemMarkerIdPath.Add(frameData.GetMarkerId(markerNamePath[i]));
+                                }
+                                var longestMatchingPath = new List<int>(markerPathLength);
+
+                                // The selection was made in a different frame so the raw sample ID is worthless here
+                                // instead the selection needs to be transfered by finding the first sample with the same marker path.
+                                if (markerPathLength > 0)
+                                {
+                                    indexHelper.sampleIndex = FindFirstSampleThroughMarkerPath(
+                                        frameData, m_ProfilerSampleNameProvider,
+                                        m_LocalSelectedItemMarkerIdPath, markerPathLength, ref name,
+                                        longestMatchingPath: longestMatchingPath);
+                                }
+                                if (!indexHelper.valid && longestMatchingPath.Count > 0)
+                                {
+                                    // use the longest matching path for a "proxy" selection, i.e. select the sample that is closest to what was selected in the other frame
+                                    indexHelper.sampleIndex = longestMatchingPath[longestMatchingPath.Count - 1];
+                                    if (indexHelper.valid)
+                                    {
+                                        // it's likely not named the same
+                                        nonProxySampleName = name;
+                                        depth = longestMatchingPath.Count;
+                                        nonProxySampleDepthDifference = depth - markerPathLength;
+                                        name = null;
+                                    }
+                                }
+                                if (!indexHelper.valid)
+                                {
+                                    m_SelectionPendingTransfer = SampleSelection.InvalidSampleSelection;
+                                    m_LocalSelectedItemMarkerIdPath.Clear();
+                                    m_ThreadIndexOfSelectionPendingTransfer = FrameDataView.invalidThreadIndex;
+                                    m_FrameSelectionVerticallyAfterTransfer = false;
+                                    m_Scheduled_FrameSelectionVertically = false;
+                                    m_SelectedEntry.Reset();
+                                    return;
+                                }
+                            }
                         }
+                        else if (m_SelectionPendingTransfer.markerIdPath != null)
+                            depth = m_SelectionPendingTransfer.markerPathDepth;
+
+                        if (string.IsNullOrEmpty(name))
+                        {
+                            name = frameData.GetSampleName(indexHelper.sampleIndex);
+                        }
+                        var requiredThreadHeight = CalculateThreadHeight(depth);
+                        var requiredThreadRect = threadRect;
+                        if (requiredThreadRect.height < requiredThreadHeight)
+                            requiredThreadRect.height = requiredThreadHeight;
+                        var entryPosArgs = new NativeProfilerTimeline_GetEntryPositionInfoArgs();
+                        entryPosArgs.frameIndex = frameData.frameIndex;
+                        entryPosArgs.threadIndex = m_ThreadIndexOfSelectionPendingTransfer;
+                        entryPosArgs.sampleIndex = indexHelper.sampleIndex;
+                        entryPosArgs.threadRect = requiredThreadRect;
+                        entryPosArgs.timeOffset = timeOffset;
+                        entryPosArgs.shownAreaRect = m_TimeArea.shownArea;
+                        NativeProfilerTimeline.GetEntryPositionInfo(ref entryPosArgs);
+                        relativeYPosition = entryPosArgs.out_Position.y + entryPosArgs.out_Size.y + topMargin;
+                        m_SelectionPendingTransfer = SampleSelection.InvalidSampleSelection;
+                        m_LocalSelectedItemMarkerIdPath.Clear();
+                        m_ThreadIndexOfSelectionPendingTransfer = FrameDataView.invalidThreadIndex;
+                        m_Scheduled_FrameSelectionVertically = m_FrameSelectionVerticallyAfterTransfer;
+                        m_FrameSelectionVerticallyAfterTransfer = false;
                     }
                 }
-
-                Event.current.Use();
-                UpdateSelectedObject(singleClick, doubleClick);
-
-                m_CurrentlyProcessedInputs |= ProcessedInputs.MouseDown | ProcessedInputs.FrameSelection;
-            }
-            else
-            {
-                // click on empty space de-selects
-                if (doSelect)
+                else
                 {
-                    ClearSelection();
-                    Event.current.Use();
+                    NativeProfilerTimeline_GetEntryAtPositionArgs posArgs = new NativeProfilerTimeline_GetEntryAtPositionArgs();
+                    posArgs.Reset();
+                    posArgs.frameIndex = frameData.frameIndex;
+                    posArgs.threadIndex = frameData.threadIndex;
+                    posArgs.timeOffset = timeOffset;
+                    posArgs.threadRect = threadRect;
+                    posArgs.threadRect.height *= scaleForThreadHeight;
+                    posArgs.shownAreaRect = m_TimeArea.shownArea;
+                    posArgs.position = Event.current.mousePosition;
+                    NativeProfilerTimeline.GetEntryAtPosition(ref posArgs);
 
-                    m_CurrentlyProcessedInputs |= ProcessedInputs.MouseDown | ProcessedInputs.FrameSelection;
+                    indexHelper.nativeTimelineEntryIndex = posArgs.out_EntryIndex;
+                    relativeYPosition = posArgs.out_EntryYMaxPos + topMargin;
+                    name = posArgs.out_EntryName;
+                    fireSelectionChanged = true;
                 }
+
+
+                if (indexHelper.valid)
+                {
+                    bool selectedChanged = !m_SelectedEntry.Equals(frameData.frameIndex, frameData.threadIndex, indexHelper.nativeTimelineEntryIndex);
+                    if (selectedChanged)
+                    {
+                        // Read out timing info
+                        NativeProfilerTimeline_GetEntryTimingInfoArgs timingInfoArgs = new NativeProfilerTimeline_GetEntryTimingInfoArgs();
+                        timingInfoArgs.Reset();
+                        timingInfoArgs.frameIndex = frameData.frameIndex;
+                        timingInfoArgs.threadIndex = frameData.threadIndex;
+                        timingInfoArgs.entryIndex = indexHelper.nativeTimelineEntryIndex;
+                        timingInfoArgs.calculateFrameData = true;
+                        NativeProfilerTimeline.GetEntryTimingInfo(ref timingInfoArgs);
+
+                        // Read out instance info for selection
+                        NativeProfilerTimeline_GetEntryInstanceInfoArgs instanceInfoArgs = new NativeProfilerTimeline_GetEntryInstanceInfoArgs();
+                        instanceInfoArgs.Reset();
+                        instanceInfoArgs.frameIndex = frameData.frameIndex;
+                        instanceInfoArgs.threadIndex = frameData.threadIndex;
+                        instanceInfoArgs.entryIndex = indexHelper.nativeTimelineEntryIndex;
+                        NativeProfilerTimeline.GetEntryInstanceInfo(ref instanceInfoArgs);
+
+                        if (fireSelectionChanged)
+                        {
+                            var selection = new SampleSelection(frameData.frameIndex, frameData.threadGroupName, frameData.threadName, frameData.threadId, indexHelper.sampleIndex, name);
+                            selection.GenerateMarkerNamePath(frameData, new List<int>(instanceInfoArgs.out_PathMarkerIds), instanceInfoArgs.out_Path);
+                            selectionChanged(selection);
+                            markerNamePath = selection.markerNamePath;
+                        }
+                        // Set selected entry info
+                        m_SelectedEntry.Reset();
+                        m_SelectedEntry.frameId = frameData.frameIndex;
+                        m_SelectedEntry.threadIndex = frameData.threadIndex;
+                        m_SelectedEntry.nativeIndex = indexHelper.nativeTimelineEntryIndex;
+                        m_SelectedEntry.instanceId = instanceInfoArgs.out_Id;
+                        m_SelectedEntry.time = timingInfoArgs.out_LocalStartTime;
+                        m_SelectedEntry.duration = timingInfoArgs.out_Duration;
+                        m_SelectedEntry.totalDuration = timingInfoArgs.out_TotalDurationForFrame;
+                        m_SelectedEntry.instanceCount = timingInfoArgs.out_InstanceCountForFrame;
+                        m_SelectedEntry.relativeYPos = relativeYPosition;
+                        m_SelectedEntry.name = name;
+                        m_SelectedEntry.hasCallstack = instanceInfoArgs.out_CallstackInfo != null && instanceInfoArgs.out_CallstackInfo.Length > 0;
+                        m_SelectedEntry.metaData = instanceInfoArgs.out_MetaData;
+                        m_SelectedEntry.sampleStack = markerNamePath;
+
+                        if (nonProxySampleName != null)
+                        {
+                            m_SelectedEntry.nonProxyName = nonProxySampleName;
+                            m_SelectedEntry.nonProxyDepthDifference = nonProxySampleDepthDifference;
+                        }
+
+                        if ((cpuModule.ViewOptions & CPUOrGPUProfilerModule.ProfilerViewFilteringOptions.ShowExecutionFlow) != 0)
+                        {
+                            // posArgs.out_EntryIndex is a MeshCache index which differs from sample index by 1 as root is not included into MeshCache.
+                            frameData.GetSampleFlowEvents(indexHelper.sampleIndex, m_SelectedEntry.FlowEvents);
+                            UpdateActiveFlowEventsForAllThreadsInAllVisibleFrames(frameData.frameIndex, maxContextFramesToShow, m_SelectedEntry.FlowEvents);
+                        }
+                    }
+                    if (eventType == EventType.MouseDown)
+                    {
+                        Event.current.Use();
+                        UpdateSelectedObject(singleClick, doubleClick);
+
+                        m_CurrentlyProcessedInputs |= ProcessedInputs.MouseDown | ProcessedInputs.FrameSelection;
+                    }
+                }
+                else
+                {
+                    // click on empty space de-selects
+                    if (doSelect)
+                    {
+                        ClearSelection();
+                        Event.current.Use();
+
+                        m_CurrentlyProcessedInputs |= ProcessedInputs.MouseDown | ProcessedInputs.FrameSelection;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Use this method to find the first matching Raw Sample Index (returned value).
+        /// If <paramref name="longestMatchingPath"/> is not null, the search will also look for an approximate fit to the search criteria
+        /// and fill this list with the path of Raw Sample Indices leading up to and including the searched sample or its approximation.
+        /// </summary>
+        /// <param name="iterator">
+        /// A <see cref="RawFrameDataView"/> to use for searching, already pointing at the right frame and thread.</param>
+        /// <param name="profilerSampleNameProvider">
+        /// This sample name provider will be used to fill <paramref name="outName"/> with the name of the found sample.</param>
+        /// <param name="markerIdPathToMatch">
+        /// If provided, this method search for a sample that fits this marker Id path.
+        /// If null, all paths will be explored in the search for a sample at a depth that fits the provided <paramref name="pathLength"/> or the <paramref name="specificRawSampleIndexToFind"/>.</param>
+        /// <param name="pathLength">
+        /// How deep should the search go?
+        /// Any depth layers above the <paramref name="pathLength"/> - 1 threshold will be skipped.
+        /// Provide iterator.maxDepth + 1 if you want to search through all samples regardless of depth.
+        /// This value can be lower than the length of <paramref name="markerIdPathToMatch"/>, which means only a part of the path will be searched for.
+        /// <param name="outName">
+        /// If null or empty and if the searched sample was found, this name will be filled by the name of that sample as formatted by <paramref name="profilerSampleNameProvider"/>.</param>
+        /// <param name="longestMatchingPath">
+        /// If not null, aproximated fits to the search parameters will be explored.
+        /// If there is a direct match found for the searched sample, this will contain the raw sample indices path leading up to and including the found sample.
+        /// If there is then no direct match found for the searched sample, i.e. -1 was returned,
+        /// this raw sample index path will lead to the sample that has the longest contiguous match to the provided <paramref name="markerIdPathToMatch"/>
+        /// and within the scope of that contiguously matching path, the deepest sample that could be found while skipping some scopes in the <paramref name="markerIdPathToMatch"/>.</param>
+        /// <returns>The raw sample index of the found sample or -1 if no direct fit was found.</returns>
+        public static int FindFirstSampleThroughMarkerPath(
+            RawFrameDataView iterator, IProfilerSampleNameProvider profilerSampleNameProvider,
+            IList<int> markerIdPathToMatch, int pathLength, ref string outName,
+            List<int> longestMatchingPath = null)
+        {
+            var sampleIndexPath = GetCachedSampleIndexPath(pathLength);
+
+            return FindNextSampleThroughMarkerPath(
+                iterator, profilerSampleNameProvider,
+                markerIdPathToMatch, pathLength, ref outName, ref sampleIndexPath,
+                longestMatchingPath: longestMatchingPath);
+        }
+
+        /// <summary>
+        /// This searches for the MarkerId path leading up to a specific rawSampleIndex.
+        /// </summary>
+        /// <param name="iterator">
+        /// A <see cref="RawFrameDataView"/> to use for searching, already pointing at the right frame and thread.</param>
+        /// <param name="profilerSampleNameProvider">
+        /// This sample name provider will be used to fill <paramref name="outName"/> with the name of the found sample.</param>
+        /// <param name="rawSampleIndex">The sample to find the path to.</param>
+        /// <param name="outName">
+        /// If null or empty and if the searched sample was found, this name will be filled by the name of that sample as formatted by <paramref name="profilerSampleNameProvider"/>.</param>
+        /// <param name="markerIdPath">Expected to be empty, will be filled with the marker id path for the sample, if that sample was found.</param>
+        /// <returns>The <paramref name="rawSampleIndex"/> if found, otherwise -1.</returns>
+        public static int GetItemMarkerIdPath(
+            RawFrameDataView iterator,  IProfilerSampleNameProvider profilerSampleNameProvider,
+            int rawSampleIndex, ref string outName, ref List<int> markerIdPath)
+        {
+            var unreachableDepth = iterator.maxDepth + 1;
+            var sampleIndexPath = GetCachedSampleIndexPath(unreachableDepth);
+
+            var sampleIdx = FindNextSampleThroughMarkerPath(
+                iterator, profilerSampleNameProvider,
+                markerIdPathToMatch: null, unreachableDepth, ref outName, ref sampleIndexPath,
+                specificRawSampleIndexToFind: rawSampleIndex);
+
+            if (sampleIdx != RawFrameDataView.invalidSampleIndex)
+            {
+                for (int i = 0; i < sampleIndexPath.Count; i++)
+                {
+                    markerIdPath.Add(iterator.GetSampleMarkerId(sampleIndexPath[i]));
+                }
+            }
+            return sampleIdx;
+        }
+
+        /// <summary>
+        /// Use this method to find the Raw Sample Index (returned value) and the path of Raw Sample Indices (<paramref name="sampleIndexPath"/>) leading up to a sample fitting the search criteria.
+        /// If <paramref name="longestMatchingPath"/>, the search will also look for approximate fits to the search criteria and fill the path for that approximation, or the found sample, into that list.
+        /// </summary>
+        /// <param name="iterator">
+        /// A <see cref="RawFrameDataView"/> to use for searching, already pointing at the right frame and thread.</param>
+        /// <param name="profilerSampleNameProvider">
+        /// This sample name provider will be used to fill <paramref name="outName"/> with the name of the found sample.</param>
+        /// <param name="markerIdPathToMatch">
+        /// If provided, this method search for a sample that fits this marker Id path.
+        /// If null, all paths will be explored in the search for a sample at a depth that fits the provided <paramref name="pathLength"/> or the <paramref name="specificRawSampleIndexToFind"/>.</param>
+        /// <param name="pathLength">
+        /// How deep should the search go?
+        /// Any depth layers above the <paramref name="pathLength"/> - 1 threshold will be skipped.
+        /// Provide iterator.maxDepth + 1 if you want to search through all samples regardless of depth.
+        /// This value can be lower than the length of <paramref name="markerIdPathToMatch"/>, which means only a part of the path will be searched for.
+        /// <param name="outName">
+        /// If null or empty and if the searched sample was found, this name will be filled by the name of that sample as formatted by <paramref name="profilerSampleNameProvider"/>.</param>
+        /// <param name="sampleIndexPath">
+        /// If a sample was found, i.e. the returned value wasn't -1, this list will contain the raw sample index path leading up to the found sample, but won't be including it.
+        /// If this list isn't provided in empty form, the search will continue after the sample stack scope of the last sample in this path.</param>
+        /// <param name="longestMatchingPath">
+        /// If not null, aproximated fits to the search parameters will be explored.
+        /// If there is a direct match found for the searched sample, this will contain the raw sample indices path leading up to and including the found sample, i.e. essentially a copy of <paramref name="sampleIndexPath"/>.
+        /// If there is then no direct match found for the searched sample, i.e. -1 was returned,
+        /// this raw sample index path will lead to the sample that has the longest contiguous match to the provided <paramref name="markerIdPathToMatch"/>
+        /// and within the scope of that contiguously matching path, the deepest sample that could be found while skipping some scopes in the <paramref name="markerIdPathToMatch"/>.</param>
+        /// <param name="specificRawSampleIndexToFind">
+        /// When not provided as -1, the search will try to find the path to this specific sample, or return -1 if it failed to find it.</param>
+        /// <param name="sampleIdFitsMarkerPathIndex">
+        /// If provided additionally to <paramref name="markerIdPathToMatch"/>, this delegate will be queried for samples
+        /// that do not fit <paramref name="markerIdPathToMatch"/> but might otherwise still fit, indicated by this Func returning true.</param>
+        /// <returns>The raw sample index of the found sample or -1 if no direct fit was found. </returns>
+        public static int FindNextSampleThroughMarkerPath(
+            RawFrameDataView iterator, IProfilerSampleNameProvider profilerSampleNameProvider,
+            IList<int> markerIdPathToMatch, int pathLength, ref string outName, ref List<int> sampleIndexPath,
+            List<int> longestMatchingPath = null, int specificRawSampleIndexToFind = RawFrameDataView.invalidSampleIndex, Func<int, int, RawFrameDataView, bool> sampleIdFitsMarkerPathIndex = null)
+        {
+            var partOfThePath = sampleIndexPath.Count > 0 ? sampleIndexPath.Count - 1 : 0;
+            var sampleIndex = partOfThePath == 0 ?
+                /*skip the root sample*/ 1 :
+                /*skip the last scope*/ sampleIndexPath[partOfThePath] + iterator.GetSampleChildrenCountRecursive(sampleIndexPath[partOfThePath]) + 1;
+            bool foundSample = false;
+            if (sampleIndexPath.Capacity < pathLength + 1)
+                sampleIndexPath.Capacity = pathLength + 1;
+            if (s_LastSampleInScopeOfThePathCache.Length < sampleIndexPath.Capacity)
+                s_LastSampleInScopeOfThePathCache = new int[sampleIndexPath.Capacity];
+            var lastSampleInScopeOfThePath = s_LastSampleInScopeOfThePathCache;
+            var lastSampleInScopeOfThePathCount = 0;
+            var lastSampleInScope = partOfThePath == 0 ? iterator.sampleCount - 1 : sampleIndex + iterator.GetSampleChildrenCountRecursive(sampleIndex);
+            var allowProxySelection = longestMatchingPath != null;
+            Debug.Assert(!allowProxySelection || longestMatchingPath.Count <= 0, $"{nameof(longestMatchingPath)} should be empty");
+            int longestContiguousMarkerPathMatch = 0;
+            int currentlyLongestContiguousMarkerPathMatch = 0;
+
+            if (allowProxySelection && s_SkippedScopesCache.Length < sampleIndexPath.Capacity)
+            {
+                s_SkippedScopesCache = new RawSampleIterationInfo[sampleIndexPath.Capacity];
+            }
+
+            var skippedScopes = s_SkippedScopesCache;
+            var skippedScopesCount = 0;
+            while (sampleIndex <= lastSampleInScope && partOfThePath < pathLength)
+            {
+                if (markerIdPathToMatch == null ||
+                    markerIdPathToMatch[partOfThePath + skippedScopesCount] == iterator.GetSampleMarkerId(sampleIndex) ||
+                    (sampleIdFitsMarkerPathIndex != null && sampleIdFitsMarkerPathIndex(sampleIndex, partOfThePath + skippedScopesCount, iterator)))
+                {
+                    if ((specificRawSampleIndexToFind >= 0 && sampleIndex == specificRawSampleIndexToFind) ||
+                        (specificRawSampleIndexToFind < 0 && partOfThePath == pathLength - 1))
+                    {
+                        foundSample = true;
+                        break;
+                    }
+                    sampleIndexPath.Add(sampleIndex);
+                    lastSampleInScopeOfThePath[lastSampleInScopeOfThePathCount++] = sampleIndex + iterator.GetSampleChildrenCountRecursive(sampleIndex);
+                    ++sampleIndex;
+                    ++partOfThePath;
+                    if (skippedScopesCount <= 0)
+                        currentlyLongestContiguousMarkerPathMatch = partOfThePath;
+
+                    if (partOfThePath + skippedScopesCount >= pathLength)
+                    {
+                        if (longestMatchingPath != null && longestContiguousMarkerPathMatch <= currentlyLongestContiguousMarkerPathMatch && longestMatchingPath.Count < sampleIndexPath.Count)
+                        {
+                            // store the longest matching path. this will be used as a proxy selection fallback.
+                            longestMatchingPath.Clear();
+                            longestMatchingPath.AddRange(sampleIndexPath);
+                            longestContiguousMarkerPathMatch = currentlyLongestContiguousMarkerPathMatch;
+                        }
+                        if (skippedScopesCount > 0)
+                        {
+                            //skip the current scope
+                            sampleIndex = lastSampleInScopeOfThePath[--lastSampleInScopeOfThePathCount] + 1;
+                            sampleIndexPath.RemoveAt(--partOfThePath); // same as sampleIndexPath.Count - 1;
+                        }
+                        else
+                            break;
+                    }
+                }
+                else if (allowProxySelection && partOfThePath + skippedScopesCount < pathLength - 1 && longestContiguousMarkerPathMatch <= currentlyLongestContiguousMarkerPathMatch)
+                {
+                    //skip this part of the path and continue checking the current sample against the next marker in the path
+                    skippedScopes[skippedScopesCount++] = new RawSampleIterationInfo { partOfThePath = partOfThePath, lastSampleIndexInScope = sampleIndex + iterator.GetSampleChildrenCountRecursive(sampleIndex) };
+                }
+                else
+                {
+                    // move past this sample and skip all children.
+                    sampleIndex += 1 + iterator.GetSampleChildrenCountRecursive(sampleIndex);
+                }
+
+                // if part of the path has already been "Stepped into", check if iterating means we've stepped out of current scope
+                // No need to check partOfThePath == 0 because that scope is checked in the encompassing while
+                while (lastSampleInScopeOfThePathCount > 0 && sampleIndex > lastSampleInScopeOfThePath[lastSampleInScopeOfThePathCount - 1] ||
+                       allowProxySelection && skippedScopesCount > 0 && sampleIndex > skippedScopes[skippedScopesCount - 1].lastSampleIndexInScope)
+                {
+                    // we've stepped out of the current scope, unwind.
+
+                    if (skippedScopesCount > 0 && skippedScopes[skippedScopesCount - 1].partOfThePath >= partOfThePath)
+                    {
+                        // if there are skippedScopes belonging to the current part of the path, unskip these first
+                        sampleIndex = skippedScopes[--skippedScopesCount].lastSampleIndexInScope + 1;
+                    }
+                    else
+                    {
+                        if (longestMatchingPath != null && longestContiguousMarkerPathMatch <= currentlyLongestContiguousMarkerPathMatch && longestMatchingPath.Count < sampleIndexPath.Count)
+                        {
+                            // store the longest matching path. this will be used as a proxy selection fallback
+                            longestMatchingPath.Clear();
+                            longestMatchingPath.AddRange(sampleIndexPath);
+                            longestContiguousMarkerPathMatch = currentlyLongestContiguousMarkerPathMatch;
+                        }
+                        sampleIndexPath.RemoveAt(--partOfThePath); // same as sampleIndexPath.Count - 1;
+                        if (skippedScopesCount <= 0)
+                            currentlyLongestContiguousMarkerPathMatch = partOfThePath;
+                        sampleIndex = lastSampleInScopeOfThePath[--lastSampleInScopeOfThePathCount] + 1;
+                    }
+                }
+            }
+            if (foundSample)
+            {
+                if (string.IsNullOrEmpty(outName))
+                {
+                    outName = profilerSampleNameProvider.GetItemName(iterator, sampleIndex);
+                }
+                sampleIndexPath.Add(sampleIndex);
+                if (longestMatchingPath != null)
+                {
+                    // The longest matching path is the full one
+                    longestMatchingPath.Clear();
+                    longestMatchingPath.AddRange(sampleIndexPath);
+                }
+                return sampleIndex;
+            }
+            return RawFrameDataView.invalidSampleIndex;
+        }
+
+        public void SetSelection(SampleSelection selection, int threadIndexInCurrentFrame, bool frameVertically)
+        {
+            m_SelectionPendingTransfer = selection;
+            m_LocalSelectedItemMarkerIdPath.Clear();
+            m_LocalSelectedItemMarkerIdPath.AddRange(selection.markerIdPath);
+            m_ThreadIndexOfSelectionPendingTransfer = threadIndexInCurrentFrame;
+            m_FrameSelectionVerticallyAfterTransfer = frameVertically;
+            m_Scheduled_FrameSelectionVertically = false;
+        }
+
+        // Used for testing
+        internal void GetSelectedSampleIdsForCurrentFrameAndView(ref List<int> ids)
+        {
+            if (m_SelectedEntry.IsValid())
+            {
+                // the native index is one lower than the raw index, because the thread root sample is not counted
+                ids.Add(m_SelectedEntry.nativeIndex + 1);
             }
         }
 
@@ -648,11 +1117,19 @@ namespace UnityEditorInternal
             InitializeNativeTimeline();
         }
 
-        void ClearSelection()
+        public void ClearSelection()
         {
-            m_ProfilerWindow.ClearSelectedPropertyPath();
-
-            m_SelectedEntry.Reset();
+            // in case the Selection is cleared in the same frame it was set in, drop the pending transfer
+            m_SelectionPendingTransfer = SampleSelection.InvalidSampleSelection;
+            m_LocalSelectedItemMarkerIdPath.Clear();
+            m_ThreadIndexOfSelectionPendingTransfer = FrameDataView.invalidThreadIndex;
+            m_FrameSelectionVerticallyAfterTransfer = false;
+            m_Scheduled_FrameSelectionVertically = false;
+            if (m_SelectedEntry.IsValid())
+            {
+                m_SelectedEntry.Reset();
+                cpuModule.ClearSelection();
+            }
             m_RangeSelection.active = false;
         }
 
@@ -661,7 +1138,7 @@ namespace UnityEditorInternal
             PerformFrameSelected(frameMS, false, true);
         }
 
-        void PerformFrameSelected(float frameMS, bool verticallyFrameSelected = true, bool hFrameAll = false)
+        void PerformFrameSelected(float frameMS, bool verticallyFrameSelected = true, bool hFrameAll = false, bool keepHorizontalZoomLevel = false)
         {
             float t;
             float dt;
@@ -680,14 +1157,24 @@ namespace UnityEditorInternal
             {
                 t = m_SelectedEntry.time;
                 dt = m_SelectedEntry.duration;
-                if (m_SelectedEntry.instanceCount <= 0 || dt <= 0.0f)
+                if (m_SelectedEntry.instanceCount <= 0)
                 {
                     t = 0.0f;
                     dt = frameMS;
                 }
             }
-
-            m_TimeArea.SetShownHRangeInsideMargins(t - dt * 0.2f, t + dt * 1.2f);
+            if (keepHorizontalZoomLevel)
+            {
+                // center the selected time
+                t += dt * 0.5f;
+                // take current zoom width in both directions
+                dt = m_TimeArea.shownAreaInsideMargins.width * 0.5f;
+                m_TimeArea.SetShownHRangeInsideMargins(t - dt, t + dt);
+            }
+            else
+            {
+                m_TimeArea.SetShownHRangeInsideMargins(t - dt * 0.2f, t + dt * 1.2f);
+            }
 
             // [Case 1248631] The Analyzer may set m_SelectedEntry via reflection whilst m_SelectedThread is not assigned until later in DoProfilerFrame. Therefore it's possible we get here with a null m_SelectedThread.
             if (m_SelectedEntry.instanceCount >= 0 && verticallyFrameSelected && m_SelectedThread != null)
@@ -699,7 +1186,7 @@ namespace UnityEditorInternal
                     {
                         foreach (var thread in group.threads)
                         {
-                            if (thread.threadIndex == m_SelectedEntry.threadId)
+                            if (thread.threadIndex == m_SelectedEntry.threadIndex)
                             {
                                 selectedThread = thread;
                                 break;
@@ -712,7 +1199,7 @@ namespace UnityEditorInternal
 
                     if (selectedThread != null)
                     {
-                        selectedThread.linesToDisplay = CalculateLineCount(m_SelectedEntry.relativeYPos + k_LineHeight);
+                        selectedThread.linesToDisplay = CalculateLineCount(m_SelectedEntry.relativeYPos + k_LineHeight * 2);
                         RepaintProfilerWindow();
                     }
                 }
@@ -798,14 +1285,16 @@ namespace UnityEditorInternal
 
                         var tr = r;
                         tr.y -= fullRect.y;
-                        if (tr.yMin < m_TimeArea.shownArea.yMax && tr.yMax > m_TimeArea.shownArea.yMin)
+                        if ((tr.yMin < m_TimeArea.shownArea.yMax && tr.yMax > m_TimeArea.shownArea.yMin)
+                            // if there is a pending selection to be transfered to this thread, do process it.
+                            || (m_SelectionPendingTransfer.valid && m_ThreadIndexOfSelectionPendingTransfer == threadInfo.threadIndex))
                         {
                             iter.SetRoot(frameIndex, threadInfo.threadIndex);
                             DoNativeProfilerTimeline(r, frameIndex, maxContextFramesToShow, threadInfo.threadIndex, offset, ghost, scaleForThreadHeight);
                         }
 
                         // Save the y pos and height of the selected thread each time we draw, since it can change
-                        bool containsSelected = m_SelectedEntry.IsValid() && (m_SelectedEntry.frameId == frameIndex) && (m_SelectedEntry.threadId == threadInfo.threadIndex);
+                        bool containsSelected = m_SelectedEntry.IsValid() && (m_SelectedEntry.frameId == frameIndex) && (m_SelectedEntry.threadIndex == threadInfo.threadIndex);
                         if (containsSelected)
                         {
                             m_SelectedThreadY = y;
@@ -830,7 +1319,7 @@ namespace UnityEditorInternal
 
         void DoFlowEvents(int currentFrameIndex, int firstDrawnFrameIndex, int lastDrawnFrameIndex, Rect fullRect, float scaleForThreadHeight)
         {
-            if ((cpuModule.ViewOptions & CPUorGPUProfilerModule.ProfilerViewFilteringOptions.ShowExecutionFlow) == 0)
+            if ((cpuModule.ViewOptions & CPUOrGPUProfilerModule.ProfilerViewFilteringOptions.ShowExecutionFlow) == 0)
             {
                 return;
             }
@@ -903,7 +1392,7 @@ namespace UnityEditorInternal
                     bool isSelectedSample = false;
                     if (!flowLinesDrawer.hasSelectedEvent)
                     {
-                        isSelectedSample = (m_SelectedEntry.threadId == threadInfo.threadIndex) && (m_SelectedEntry.frameId == flowEventFrameIndex) && m_SelectedEntry.FlowEvents.Contains(flowEvent);
+                        isSelectedSample = (m_SelectedEntry.threadIndex == threadInfo.threadIndex) && (m_SelectedEntry.frameId == flowEventFrameIndex) && m_SelectedEntry.FlowEvents.Contains(flowEvent);
                     }
                     flowLinesDrawer.AddFlowEvent(flowEventData, threadInfo.threadIndex, sampleRect, isSelectedSample);
 
@@ -1030,31 +1519,51 @@ namespace UnityEditorInternal
             if (!m_SelectedEntry.IsValid() || m_SelectedEntry.frameId != frameIndex)
                 return;
 
-            string durationString = UnityString.Format(m_SelectedEntry.duration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.duration);
+            bool hasCallStack = m_SelectedEntry.hasCallstack;
 
-            System.Text.StringBuilder text = new System.Text.StringBuilder();
-            text.Append(UnityString.Format("{0}\n{1}", m_SelectedEntry.name, durationString));
-
-            // Show total duration if more than one instance
-            if (m_SelectedEntry.instanceCount > 1)
+            if (callStackNeedsRegeneration || m_SelectedEntry.cachedSelectionTooltipContent == null)
             {
-                string totalDurationString = UnityString.Format(m_SelectedEntry.totalDuration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.totalDuration);
-                text.Append(string.Format("\n{0}: {1} ({2} {3})", styles.localizedStringTotal, totalDurationString, m_SelectedEntry.instanceCount, styles.localizedStringInstances));
-            }
+                string durationString = UnityString.Format(m_SelectedEntry.duration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.duration);
 
-            if (m_SelectedEntry.metaData.Length > 0)
-            {
-                text.Append(string.Format("\n{0}", m_SelectedEntry.metaData));
-            }
+                System.Text.StringBuilder text = new System.Text.StringBuilder();
+                if (m_SelectedEntry.nonProxyName != null)
+                {
+                    var diff = Math.Abs(m_SelectedEntry.nonProxyDepthDifference);
+                    text.AppendFormat(
+                        BaseStyles.proxySampleMessage,
+                        m_SelectedEntry.nonProxyName, diff,
+                        diff == 1 ? BaseStyles.proxySampleMessageScopeSingular : BaseStyles.proxySampleMessageScopePlural);
+                    text.Append(BaseStyles.proxySampleMessagePart2TimelineView);
+                }
+                text.Append(UnityString.Format("{0}\n{1}", m_SelectedEntry.name, durationString));
 
-            if (m_SelectedEntry.callstackInfo.Length > 0)
-            {
-                text.Append(string.Format("\n{0}", m_SelectedEntry.callstackInfo));
+                // Show total duration if more than one instance
+                if (m_SelectedEntry.instanceCount > 1)
+                {
+                    string totalDurationString = UnityString.Format(m_SelectedEntry.totalDuration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.totalDuration);
+                    text.Append(string.Format("\n{0}: {1} ({2} {3})", styles.localizedStringTotal, totalDurationString, m_SelectedEntry.instanceCount, styles.localizedStringInstances));
+                }
+
+                if (m_SelectedEntry.metaData.Length > 0)
+                {
+                    text.Append(string.Format("\n{0}", m_SelectedEntry.metaData));
+                }
+
+                if (hasCallStack)
+                {
+                    using (var frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, m_SelectedEntry.threadIndex))
+                    {
+                        var callStack = new List<ulong>();
+                        frameData.GetSampleCallstack(m_SelectedEntry.nativeIndex + 1, callStack);
+                        CompileCallStack(text, callStack, frameData);
+                    }
+                }
+                m_SelectedEntry.cachedSelectionTooltipContent = new GUIContent(text.ToString());
             }
 
             float selectedThreadYOffset = fullRect.y + m_SelectedThreadY;
             float selectedY = selectedThreadYOffset + m_SelectedEntry.relativeYPos;
-            float maxYPosition = Mathf.Min(fullRect.yMax, selectedThreadYOffset + m_SelectedThread.height);
+            float maxYPosition = Mathf.Max(Mathf.Min(fullRect.yMax, selectedThreadYOffset + m_SelectedThread.height), fullRect.y);
 
             // calculate how much of the line height is visible (needed for calculating the offset of the tooltip when flipping)
             float selectedLineHeightVisible = Mathf.Clamp(maxYPosition - (selectedY - k_LineHeight), 0, k_LineHeight);
@@ -1063,7 +1572,8 @@ namespace UnityEditorInternal
             selectedY = Mathf.Clamp(selectedY, fullRect.y, maxYPosition);
 
             float x = m_TimeArea.TimeToPixel(m_SelectedEntry.time + m_SelectedEntry.duration * 0.5f, fullRect);
-            ShowLargeTooltip(new Vector2(x, selectedY), fullRect, text.ToString(), selectedLineHeightVisible);
+            ShowLargeTooltip(new Vector2(x, selectedY), fullRect, m_SelectedEntry.cachedSelectionTooltipContent, m_SelectedEntry.sampleStack, selectedLineHeightVisible,
+                frameIndex, m_SelectedEntry.threadIndex, hasCallStack, ref m_SelectedEntry.downwardsZoomableAreaSpaceNeeded, m_SelectedEntry.nonProxyDepthDifference != 0 ? m_SelectedEntry.nativeIndex + 1 : RawFrameDataView.invalidSampleIndex);
         }
 
         public void MarkDeadOrClearThread()
@@ -1578,10 +2088,11 @@ namespace UnityEditorInternal
                     // update time area to new bounds
                     float combinedHeaderHeight, combinedThreadHeight;
                     float heightForAllBars = CalculateHeightForAllBars(fullRect, out combinedHeaderHeight, out combinedThreadHeight);
-                    float emptySpaceBelowBars = k_LineHeight * 3f;
 
                     // if needed, take up more empty space below, to fill up the ZoomableArea
-                    emptySpaceBelowBars = Mathf.Max(emptySpaceBelowBars, timeAreaRect.height - m_TimeArea.hSliderHeight - heightForAllBars);
+                    float emptySpaceBelowBars = Mathf.Max(k_DefaultEmptySpaceBelowBars, timeAreaRect.height - m_TimeArea.hSliderHeight - heightForAllBars);
+                    if (m_SelectedEntry.downwardsZoomableAreaSpaceNeeded > 0)
+                        emptySpaceBelowBars = Mathf.Max(m_SelectedThreadYRange + m_SelectedEntry.relativeYPos + m_SelectedEntry.downwardsZoomableAreaSpaceNeeded - heightForAllBars, emptySpaceBelowBars);
 
                     heightForAllBars += emptySpaceBelowBars;
 
@@ -1598,7 +2109,14 @@ namespace UnityEditorInternal
                     }
 
                     // frame the selection if needed and before drawing the time area
-                    if (initializing)
+                    if (m_Scheduled_FrameSelectionVertically)
+                    {
+                        // keep current zoom level but frame vertically
+                        PerformFrameSelected(iter.frameTimeMS, verticallyFrameSelected: true, keepHorizontalZoomLevel: true);
+                        m_Scheduled_FrameSelectionVertically = false;
+                        //RepaintProfilerWindow();
+                    }
+                    else if (initializing)
                         PerformFrameSelected(iter.frameTimeMS);
                     // DoTimeArea needs to happen before DoTimeRulerGUI due to excess control ids being generated in repaint that breaks repeatbuttons
                     DoTimeArea();
@@ -1617,6 +2135,10 @@ namespace UnityEditorInternal
                         m_TimeArea.SetTransform(new Vector2(m_TimeArea.m_Translation.x, m_TimeArea.m_Translation.y - (Event.current.delta.y * 4)), m_TimeArea.m_Scale);
                         m_ProfilerWindow.Repaint();
                     }
+
+                    // Layout and handle input for tooltips here so it can grab input before threadspillters and selection, draw it at the end of DoGUI to paint on top
+                    if (Event.current.type != EventType.Repaint)
+                        DoSelectionTooltip(frameIndex, m_TimeArea.drawRect);
 
                     // The splitters need to be handled after the time area so that they don't interfere with the input for panning/scrolling the ZoomableArea
                     DoThreadSplitters(fullThreadsRect, fullThreadsRectWithoutSidebar, frameIndex, ThreadSplitterCommand.HandleThreadSplitter);
@@ -1666,7 +2188,7 @@ namespace UnityEditorInternal
                     do
                     {
                         int prevFrame = ProfilerDriver.GetPreviousFrameIndex(currentFrame);
-                        if (prevFrame == -1)
+                        if (prevFrame == FrameDataView.invalidOrCurrentFrameIndex)
                             break;
                         iter.SetRoot(prevFrame, 0);
                         currentTime -= iter.frameTimeMS;
@@ -1677,7 +2199,7 @@ namespace UnityEditorInternal
 
                     // Draw previous frames
                     int firstDrawnFrame = currentFrame;
-                    while (currentFrame != -1 && currentFrame != frameIndex)
+                    while (currentFrame != FrameDataView.invalidOrCurrentFrameIndex && currentFrame != frameIndex)
                     {
                         iter.SetRoot(currentFrame, 0);
                         DoProfilerFrame(currentFrame, maxContextFramesToShow, shownBarsUIRect, true, threadCount, currentTime, scaleForThreadHeight);
@@ -1699,7 +2221,7 @@ namespace UnityEditorInternal
                         }
                         iter.SetRoot(currentFrame, 0);
                         currentFrame = ProfilerDriver.GetNextFrameIndex(currentFrame);
-                        if (currentFrame == -1)
+                        if (currentFrame == FrameDataView.invalidOrCurrentFrameIndex)
                             break;
                         currentTime += iter.frameTimeMS;
                         --numContextFramesToShow;
@@ -1719,7 +2241,8 @@ namespace UnityEditorInternal
                     DoThreadSplitters(fullThreadsRect, fullThreadsRectWithoutSidebar, frameIndex, ThreadSplitterCommand.HandleThreadSplitterFoldoutButtons);
 
                     // Draw tooltips on top of clip to be able to extend outside of timeline area
-                    DoSelectionTooltip(frameIndex, m_TimeArea.drawRect);
+                    if (Event.current.type == EventType.Repaint)
+                        DoSelectionTooltip(frameIndex, m_TimeArea.drawRect);
 
                     if (Event.current.type == EventType.Repaint)
                     {
@@ -1755,7 +2278,7 @@ namespace UnityEditorInternal
                 args.profilerColorDescriptors[i] = new ProfilerColorDescriptor(timelineColors[i]);
             }
 
-            args.showFullScriptingMethodNames = ((cpuModule.ViewOptions & CPUorGPUProfilerModule.ProfilerViewFilteringOptions.ShowFullScriptingMethodNames) != 0) ? 1 : 0;
+            args.showFullScriptingMethodNames = ((cpuModule.ViewOptions & CPUOrGPUProfilerModule.ProfilerViewFilteringOptions.ShowFullScriptingMethodNames) != 0) ? 1 : 0;
 
             NativeProfilerTimeline.Initialize(ref args);
         }
@@ -1867,7 +2390,7 @@ namespace UnityEditorInternal
             int firstContextFrame = IndexOfFirstContextFrame(frameIndex, maximumNumberOfContextFramesToShow);
             int lastContextFrame = frameIndex + maximumNumberOfContextFramesToShow;
             int currentFrame = firstContextFrame;
-            while ((currentFrame != -1) && (currentFrame <= lastContextFrame))
+            while ((currentFrame != FrameDataView.invalidOrCurrentFrameIndex) && (currentFrame <= lastContextFrame))
             {
                 bool clearActiveFlowEvents = (currentFrame == firstContextFrame);
                 UpdateActiveFlowEventsForAllThreadsAtFrame(currentFrame, clearActiveFlowEvents, activeFlowEvents);
@@ -1882,7 +2405,7 @@ namespace UnityEditorInternal
             do
             {
                 int previousFrame = ProfilerDriver.GetPreviousFrameIndex(currentFrame);
-                if (previousFrame == -1)
+                if (previousFrame == FrameDataView.invalidOrCurrentFrameIndex)
                 {
                     break;
                 }

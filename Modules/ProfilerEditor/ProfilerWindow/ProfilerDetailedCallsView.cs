@@ -166,7 +166,7 @@ namespace UnityEditorInternal.Profiling
         [NonSerialized]
         bool m_Initialized = false;
 
-        internal IProfilerSampleNameProvider profilerSampleNameProvider { get; set; }
+        internal IProfilerSampleNameProvider profilerSampleNameProvider => m_CPUOrGPUProfilerModule;
 
         [NonSerialized]
         GUIContent m_TotalSelectedPropertyTimeLabel;
@@ -654,9 +654,9 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        override public void OnEnable(CPUorGPUProfilerModule cpuModule)
+        public override void OnEnable(CPUOrGPUProfilerModule cpuOrGpuProfilerModule, ProfilerFrameDataHierarchyView profilerFrameDataHierarchyView)
         {
-            profilerSampleNameProvider = cpuModule;
+            base.OnEnable(cpuOrGpuProfilerModule, profilerFrameDataHierarchyView);
         }
 
         override public void OnDisable()

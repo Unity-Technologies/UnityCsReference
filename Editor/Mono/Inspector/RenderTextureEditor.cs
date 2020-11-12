@@ -209,7 +209,7 @@ namespace UnityEditor
                 if (rt.volumeDepth > 1)
                 {
                     m_Slice = EditorGUILayout.IntSlider(m_Slice, 0, rt.volumeDepth - 1, GUILayout.Width(150));
-                    m_Material.SetInt(s_ShaderSliceIndex, m_Slice);
+                    m_Material.SetFloat(s_ShaderSliceIndex, (float)m_Slice);
                 }
             }
 
@@ -247,7 +247,7 @@ namespace UnityEditor
                 case PreviewMode.B: mask = 4; break;
                 case PreviewMode.A: mask = 8; break;
             }
-            m_Material.SetInt(s_ShaderColorMask, mask);
+            m_Material.SetFloat(s_ShaderColorMask, (float)mask);
         }
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)
@@ -271,8 +271,8 @@ namespace UnityEditor
                     // If multiple objects are selected, we might be using a slice level before the maximum
                     int effectiveSlice = Mathf.Clamp(m_Slice, 0, rt.volumeDepth - 1);
 
-                    m_Material.SetInt(s_ShaderSliceIndex, effectiveSlice);
-                    m_Material.SetInt(s_ShaderToSrgb, QualitySettings.activeColorSpace == ColorSpace.Linear ? 1 : 0);
+                    m_Material.SetFloat(s_ShaderSliceIndex, (float)effectiveSlice);
+                    m_Material.SetFloat(s_ShaderToSrgb, QualitySettings.activeColorSpace == ColorSpace.Linear ? 1.0f : 0.0f);
 
                     int texWidth = Mathf.Max(rt.width, 1);
                     int texHeight = Mathf.Max(rt.height, 1);

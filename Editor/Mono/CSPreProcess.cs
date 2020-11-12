@@ -10,18 +10,24 @@ using System.Text;
 using UnityEditor.Scripting.Compilers;
 using UnityEngine;
 using UnityEditor.Modules;
+using UnityEngine.Scripting;
 
-namespace UnityEditor
+namespace UnityEditor.Scripting.ScriptCompilation
 {
     internal class ManagedEditorCodeRebuilder
     {
         private static readonly char[] kNewlineChars = new[] { '\r', '\n' };
 
-        //called from native code.
-        static bool Run(out CompilerMessage[] messages, bool includeModules)
+        [RequiredByNativeCode]
+        static bool Run(bool includeModules)
         {
             int exitcode;
-            messages = ParseResults(GetOutputStream(GetJamStartInfo(includeModules), out exitcode));
+            var messages = ParseResults(GetOutputStream(GetJamStartInfo(includeModules), out exitcode));
+            const int logIdentifierForUnityEditorCompilationMessages = 2345;
+            UnityEngine.Debug.RemoveLogEntriesByIdentifier(logIdentifierForUnityEditorCompilationMessages);
+            foreach (var message in messages)
+                UnityEngine.Debug.LogCompilerMessage(message.message, message.file, message.line, message.column, true, message.type == CompilerMessageType.Error, logIdentifierForUnityEditorCompilationMessages);
+
             return exitcode == 0;
         }
 
@@ -64,7 +70,7 @@ namespace UnityEditor
             var lines = text.Split(kNewlineChars, StringSplitOptions.RemoveEmptyEntries);
             var prefix = Unsupported.GetBaseUnityDeveloperFolder();
 
-            var msgs = new MicrosoftCSharpCompilerOutputParser().Parse(lines, false, "n/a").ToList();
+            var msgs = new MicrosoftCSharpCompilerOutputParser().Parse(lines, false).ToList();
             for (var index = 0; index < msgs.Count; index++)
             {
                 var msg = msgs[index];

@@ -24,7 +24,7 @@ namespace UnityEditor.Scripting.Compilers
             _jsonFileName = jsonFileName;
         }
 
-        public override IEnumerable<CompilerMessage> Parse(string[] errorOutput, string[] standardOutput, bool compilationHadFailure, string assemblyName)
+        public override IEnumerable<CompilerMessage> Parse(string[] errorOutput, string[] standardOutput, bool compilationHadFailure, string assemblyName_unused = null)
         {
             var messages = new List<CompilerMessage>();
             if (File.Exists(_jsonFileName))
@@ -37,13 +37,13 @@ namespace UnityEditor.Scripting.Compilers
             }
             else
             {
-                ParseMessageFromStandardOutput(standardOutput, assemblyName, messages);
+                ParseMessageFromStandardOutput(standardOutput, messages);
             }
 
             return messages;
         }
 
-        private static void ParseMessageFromStandardOutput(string[] standardOutput, string assemblyName, List<CompilerMessage> messages)
+        private static void ParseMessageFromStandardOutput(string[] standardOutput, List<CompilerMessage> messages)
         {
             for (int i = 0; i < standardOutput.Length; ++i)
             {
@@ -77,7 +77,6 @@ namespace UnityEditor.Scripting.Compilers
                         line = sourceLine,
                         message = errorMessage.ToString(),
                         type = CompilerMessageType.Error,
-                        assemblyName = assemblyName
                     });
                 }
             }

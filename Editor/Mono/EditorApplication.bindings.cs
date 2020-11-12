@@ -247,7 +247,7 @@ namespace UnityEditor
         internal static void RestartEditorAndRecompileScripts()
         {
             // Clear the script assemblies so we compile after the restart.
-            EditorCompilationInterface.Instance.CleanScriptAssemblies();
+            EditorCompilationInterface.Instance.DeleteScriptAssemblies();
 
             RequestCloseAndRelaunchWithCurrentArguments();
         }

@@ -17,8 +17,8 @@ namespace UnityEditorInternal.Profiling
     internal class ProfilerDetailedObjectsView : ProfilerDetailedView
     {
         static readonly string kMetadataText = LocalizationDatabase.GetLocalizedString("Metadata:");
-        static readonly string kCallstackText = LocalizationDatabase.GetLocalizedString("Callstack:");
-        static readonly string kNoMetadataOrCallstackText = LocalizationDatabase.GetLocalizedString("No metadata or callstack is available for the selected sample.");
+        static readonly string kCallstackText = LocalizationDatabase.GetLocalizedString("Call Stack:");
+        static readonly string kNoMetadataOrCallstackText = LocalizationDatabase.GetLocalizedString("No metadata or call stack is available for the selected sample.");
 
         [NonSerialized]
         bool m_Initialized;
@@ -327,8 +327,15 @@ namespace UnityEditorInternal.Profiling
 
             EditorGUILayout.EndVertical();
 
-            // Callstack area
+            // Metadata area
             EditorGUILayout.BeginVertical(Styles.expandedArea);
+
+            if (showCallstack)
+            {
+                EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+                ProfilerFrameDataViewBase.showFullDetailsForCallStacks = GUILayout.Toggle(ProfilerFrameDataViewBase.showFullDetailsForCallStacks, ProfilerFrameDataViewBase.showFullDetailsForCallStacksContent, EditorStyles.toolbarButton);
+                EditorGUILayout.EndHorizontal();
+            }
 
             // Display active text (We want word wrapped text with a vertical scrollbar)
             m_CallstackScrollViewPos = EditorGUILayout.BeginScrollView(m_CallstackScrollViewPos, Styles.callstackScroll);
@@ -358,28 +365,7 @@ namespace UnityEditorInternal.Profiling
 
                 if (showCallstack)
                 {
-                    sb.Append(kCallstackText);
-                    sb.Append('\n');
-                    foreach (var addr in m_CachedCallstack)
-                    {
-                        var methodInfo = frameDataView.ResolveMethodInfo(addr);
-                        if (string.IsNullOrEmpty(methodInfo.methodName))
-                        {
-                            sb.AppendFormat("0x{0:X}\n", addr);
-                        }
-                        else if (string.IsNullOrEmpty(methodInfo.sourceFileName))
-                        {
-                            sb.AppendFormat("0x{0:X}\t\t{1}\n", addr, methodInfo.methodName);
-                        }
-                        else
-                        {
-                            var normalizedPath = methodInfo.sourceFileName.Replace('\\', '/');
-                            if (methodInfo.sourceFileLine == 0)
-                                sb.AppendFormat("0x{0:X}\t\t{1}\t<a href=\"{2}\" line=\"1\">{2}</a>\n", addr, methodInfo.methodName, normalizedPath);
-                            else
-                                sb.AppendFormat("0x{0:X}\t\t{1}\t<a href=\"{2}\" line=\"{3}\">{2}:{3}</a>\n", addr, methodInfo.methodName, normalizedPath, methodInfo.sourceFileLine);
-                        }
-                    }
+                    m_ProfilerFrameDataHierarchyView.CompileCallStack(sb, m_CachedCallstack, frameDataView);
                 }
             }
             else
@@ -396,19 +382,6 @@ namespace UnityEditorInternal.Profiling
             EditorGUILayout.EndVertical();
 
             SplitterGUILayout.EndVerticalSplit();
-        }
-
-        private void EditorGUI_HyperLinkClicked(object sender, EventArgs e)
-        {
-            EditorGUILayout.HyperLinkClickedEventArgs args = (EditorGUILayout.HyperLinkClickedEventArgs)e;
-
-            if (!args.hyperlinkInfos.TryGetValue("href", out string filePath) ||
-                !args.hyperlinkInfos.TryGetValue("line", out string lineString))
-                return;
-
-            int line = int.Parse(lineString);
-            if (!string.IsNullOrEmpty(filePath))
-                LogEntries.OpenFileOnSpecificLineAndColumn(filePath, line, -1);
         }
 
         void UpdateIfNeeded(HierarchyFrameDataView frameDataView, int selectedId)
@@ -483,14 +456,13 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        override public void OnEnable(CPUorGPUProfilerModule cpuModule)
+        public override void OnEnable(CPUOrGPUProfilerModule cpuOrGpuProfilerModule, ProfilerFrameDataHierarchyView profilerFrameDataHierarchyView)
         {
-            EditorGUI.hyperLinkClicked += EditorGUI_HyperLinkClicked;
+            base.OnEnable(cpuOrGpuProfilerModule, profilerFrameDataHierarchyView);
         }
 
         override public void OnDisable()
         {
-            EditorGUI.hyperLinkClicked -= EditorGUI_HyperLinkClicked;
             SaveViewSettings();
         }
     }

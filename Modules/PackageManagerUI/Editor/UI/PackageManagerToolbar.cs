@@ -263,7 +263,7 @@ namespace UnityEditor.PackageManager.UI
 
                     if (!m_PackageDatabase.isInstallOrUninstallInProgress)
                     {
-                        m_PackageDatabase.InstallFromPath(m_IOProxy.GetDirectoryName(path));
+                        m_PackageDatabase.InstallFromPath(m_IOProxy.GetParentDirectory(path));
                         PackageManagerWindowAnalytics.SendEvent("addFromDisk");
                     }
                 }
@@ -271,7 +271,7 @@ namespace UnityEditor.PackageManager.UI
                 {
                     Debug.Log($"[Package Manager] Cannot add package from disk {path}: {e.Message}");
                 }
-            }, a => DropdownMenuAction.Status.Normal);
+            }, a => DropdownMenuAction.Status.Normal, "AddFromDisk");
 
             addMenu.menu.AppendAction(L10n.Tr("Add package from tarball..."), a =>
             {
@@ -281,7 +281,7 @@ namespace UnityEditor.PackageManager.UI
                     m_PackageDatabase.InstallFromPath(path);
                     PackageManagerWindowAnalytics.SendEvent("addFromTarball");
                 }
-            }, a => DropdownMenuAction.Status.Normal);
+            }, a => DropdownMenuAction.Status.Normal, "AddFromTarball");
 
             addMenu.menu.AppendAction(L10n.Tr("Add package from git URL..."), a =>
             {
@@ -312,7 +312,7 @@ namespace UnityEditor.PackageManager.UI
                 var rect = GUIUtility.GUIToScreenRect(worldBound);
                 var dropdown = new GenericInputDropdown(m_ResourceLoader, PackageManagerWindow.instance, configs) { position = rect };
                 DropdownContainer.ShowDropdown(dropdown);
-            }, a => DropdownMenuAction.Status.Normal);
+            }, a => DropdownMenuAction.Status.Normal, "AddFromGit");
 
             addMenu.menu.AppendAction(L10n.Tr("Add package by name..."), a =>
             {
@@ -320,7 +320,7 @@ namespace UnityEditor.PackageManager.UI
                 var rect = GUIUtility.GUIToScreenRect(worldBound);
                 var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_PackageFiltering, m_UpmClient, m_PackageDatabase, m_PageManager, PackageManagerWindow.instance) { position = rect };
                 DropdownContainer.ShowDropdown(dropdown);
-            }, a => DropdownMenuAction.Status.Normal);
+            }, a => DropdownMenuAction.Status.Normal, "AddByName");
 
             PackageManagerExtensions.ExtensionCallback(() =>
             {

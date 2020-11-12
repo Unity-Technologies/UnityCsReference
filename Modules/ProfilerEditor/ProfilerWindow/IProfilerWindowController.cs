@@ -19,17 +19,14 @@ namespace UnityEditorInternal
 
     internal interface IProfilerWindowController
     {
-        event ProfilerWindow.SelectionChangedCallback selectionChanged;
         event ProfilerWindow.FrameChangedCallback currentFrameChanged;
-
-        void SetSelectedPropertyPath(string path);
-        void ClearSelectedPropertyPath();
-
         void SetClearOnPlay(bool enabled);
         bool GetClearOnPlay();
 
-        HierarchyFrameDataView GetFrameDataView(string threadName, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending);
+        HierarchyFrameDataView GetFrameDataView(string groupName, string threadName, ulong threadId, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending);
+        HierarchyFrameDataView GetFrameDataView(int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending);
         int GetActiveVisibleFrameIndex();
+        void SetActiveVisibleFrameIndex(int frame);
         bool IsRecording();
         void Repaint();
 

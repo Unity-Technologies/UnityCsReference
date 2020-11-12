@@ -14,6 +14,8 @@ namespace UnityEditorInternal
     {
         public delegate void ChangedEventHandler(Chart sender);
 
+        public Rect lastChartRect = Rect.zero;
+
         private static int s_ChartHash = "Charts".GetHashCode();
         public const float kSideWidth = 180.0f;
         private const int kDistFromTopToFirstLabel = 38;
@@ -57,7 +59,6 @@ namespace UnityEditorInternal
             public static readonly GUIStyle seriesLabel = "ProfilerPaneSubLabel";
             public static readonly GUIStyle seriesDragHandle = "RL DragHandle";
             public static readonly GUIStyle whiteLabel = "ProfilerBadge";
-            public static readonly GUIStyle selectedLabel = "ProfilerSelectedLabel";
             public static readonly GUIStyle noDataOverlayBox = "ProfilerNoDataAvailable";
             public static readonly GUIContent notSupportedWarningIcon =
                 new GUIContent("", EditorGUIUtility.LoadIcon("console.warnicon.sml"));
@@ -230,6 +231,9 @@ namespace UnityEditorInternal
 
             if (evtType == EventType.MouseDown && chartRect.Contains(evt.mousePosition) && selected != null)
                 ChartSelected();
+
+            if (evtType == EventType.Repaint)
+                lastChartRect = r;
 
             // if we are not dragging labels, handle graph frame selection
             if (m_DragItemIndex == -1)
@@ -422,25 +426,6 @@ namespace UnityEditorInternal
 
             DrawGridStacked(r, cdata);
             DrawLabels(r, cdata, selectedFrame, ChartType.StackedFill);
-
-            // Show selected property name
-            //@TODO: not the best place to put this code.
-
-            if (!cdata.hasOverlay)
-                return;
-
-            string selectedName = ProfilerDriver.selectedPropertyPath;
-            if (selectedName.Length > 0)
-            {
-                int selectedNameBegin = selectedName.LastIndexOf('/');
-                if (selectedNameBegin != -1)
-                    selectedName = selectedName.Substring(selectedNameBegin + 1);
-
-                GUIContent content = EditorGUIUtility.TempContent("Selected: " + selectedName);
-                Vector2 size = EditorStyles.whiteBoldLabel.CalcSize(content);
-                EditorGUI.DropShadowLabel(new Rect(r.x + r.width - size.x - 3.0f, r.y + 3.0f, size.x, size.y), content,
-                    Styles.selectedLabel);
-            }
         }
 
         internal static void DoLabel(float x, float y, string text, float alignment)
@@ -540,6 +525,10 @@ namespace UnityEditorInternal
 
             // populate layout data array with default data
             m_LabelData.Clear();
+            // leave some space for "Selected" overlay in CPU view...
+            if (data.hasOverlay)
+                chartPosition.yMin += EditorGUIUtility.singleLineHeight;
+
             var selectedFrameMidline =
                 chartPosition.x + chartPosition.width * ((selectedIndex + 0.5f) / (domain.y - domain.x));
             var maxLabelWidth = 0f;

@@ -49,7 +49,7 @@ namespace UnityEngine
             EditorGUILayout.LabelField(Styles.slice, GUILayout.Width(40));
             m_Slice = EditorGUILayout.IntSlider(m_Slice, 0, t.cubemapCount - 1, GUILayout.Width(120));
             EditorGUI.EndDisabledGroup();
-            m_Material.SetInt("_SliceIndex", m_Slice);
+            m_Material.SetFloat("_SliceIndex", (float)m_Slice);
 
             EditorGUI.BeginDisabledGroup(!TextureUtil.NeedsExposureControl(t));
             m_ExposureSliderValue = EditorGUIInternal.ExposureSlider(m_ExposureSliderValue, ref m_ExposureSliderMax, EditorStyles.toolbarSlider);
@@ -111,7 +111,7 @@ namespace UnityEngine
             m_Mip = Mathf.RoundToInt(GetMipLevelForRendering());
             m_MipCount = TextureUtil.GetMipmapCount(t);
 
-            m_Material.SetInt("_SliceIndex", m_Slice);
+            m_Material.SetFloat("_SliceIndex", (float)m_Slice);
             m_Material.SetFloat("_Mip", m_Mip);
             m_Material.SetFloat("_Exposure", GetExposureValueForTexture(t));
         }

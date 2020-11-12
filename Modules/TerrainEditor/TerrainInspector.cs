@@ -1202,6 +1202,15 @@ namespace UnityEditor
             }
         }
 
+        private string GetTerrainShaderName()
+        {
+            RenderPipelineAsset currentRP = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline;
+            string retString = "shaders in Nature/Terrain";
+            if (currentRP)
+                retString = currentRP.defaultTerrainMaterial.shader.name;
+            return retString;
+        }
+
         public void ShowSettings()
         {
             TerrainData terrainData = m_Terrain.terrainData;
@@ -1277,7 +1286,7 @@ namespace UnityEditor
                     Shader s = materialTemplate.shader;
                     if (ShaderUtil.HasTangentChannel(s))
                     {
-                        GUIContent c = EditorGUIUtility.TrTextContent("Can't use materials with shaders which need tangent geometry on terrain, use shaders in Nature/Terrain instead.");
+                        GUIContent c = EditorGUIUtility.TrTextContent("Can't use materials with shaders which need tangent geometry on terrain, use " + GetTerrainShaderName() + " instead.");
                         EditorGUILayout.HelpBox(c.text, MessageType.Warning, false);
                     }
                 }

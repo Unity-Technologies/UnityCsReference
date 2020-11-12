@@ -23,6 +23,15 @@ namespace UnityEditorInternal
             return Do(id, position, Vector3.zero, direction, direction, size, capFunction, snap);
         }
 
+        private static Quaternion ToQuaternion(Vector3 direction)
+        {
+            if (direction == Vector3.zero)
+            {
+                return Quaternion.identity;
+            }
+            return Quaternion.LookRotation(direction);
+        }
+
         internal static Vector3 Do(int id, Vector3 position, Vector3 offset, Vector3 handleDirection, Vector3 slideDirection, float size, Handles.CapFunction capFunction, float snap)
         {
             Event evt = Event.current;
@@ -32,7 +41,7 @@ namespace UnityEditorInternal
                 case EventType.Layout:
                 case EventType.MouseMove:
                     if (capFunction != null)
-                        capFunction(id, position + offset, Quaternion.LookRotation(handleDirection), size, EventType.Layout);
+                        capFunction(id, position + offset, ToQuaternion(handleDirection), size, EventType.Layout);
                     else
                         HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(position + offset, size * .2f));
                     break;
@@ -57,7 +66,7 @@ namespace UnityEditorInternal
 
                 case EventType.MouseDrag:
 
-                    capFunction?.Invoke(id, position + offset, Quaternion.LookRotation(handleDirection), size, EventType.Layout);
+                    capFunction?.Invoke(id, position + offset, ToQuaternion(handleDirection), size, EventType.Layout);
 
                     if (GUIUtility.hotControl == id)
                     {
@@ -113,7 +122,7 @@ namespace UnityEditorInternal
 
                 case EventType.Repaint:
                     Handles.SetupHandleColor(id, evt, out var prevColor, out var thickness);
-                    capFunction(id, position + offset, Quaternion.LookRotation(handleDirection), size, EventType.Repaint);
+                    capFunction(id, position + offset, ToQuaternion(handleDirection), size, EventType.Repaint);
                     Handles.color = prevColor;
                     break;
             }

@@ -288,7 +288,7 @@ namespace UnityEditor
         bool m_SceneIsLit = true;
 
         [Obsolete("m_SceneLighting has been deprecated. Use sceneLighting instead (UnityUpgradable) -> UnityEditor.SceneView.sceneLighting", true)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public bool m_SceneLighting = true;
 
         public bool sceneLighting
@@ -536,7 +536,7 @@ namespace UnityEditor
                     return;
 
                 m_DoValidateTrueMetals = value;
-                Shader.SetGlobalInt("_CheckPureMetal", m_DoValidateTrueMetals ? 1 : 0);
+                Shader.SetGlobalFloat("_CheckPureMetal", m_DoValidateTrueMetals ? 1.0f : 0.0f);
             }
         }
 
@@ -2097,7 +2097,7 @@ namespace UnityEditor
                     GUIClip.Push(new Rect(0f, 0f, position.width, position.height), Vector2.zero, Vector2.zero, true);
                     pushedGUIClip = true;
                 }
-                Handles.DrawCameraStep1(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, gridParam, drawGizmos);
+                Handles.DrawCameraStep1(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, gridParam, drawGizmos, true);
 
                 DrawRenderModeOverlay(groupSpaceCameraRect);
             }
@@ -2726,7 +2726,7 @@ namespace UnityEditor
                 Handles.BeginGUI();
                 if (Event.current.type == EventType.Repaint)
                 {
-                    s_DeferredOverlayMaterial.SetInt("_DisplayMode", (int)m_CameraMode.drawMode - (int)DrawCameraMode.DeferredDiffuse);
+                    s_DeferredOverlayMaterial.SetFloat("_DisplayMode", (float)((int)m_CameraMode.drawMode - (int)DrawCameraMode.DeferredDiffuse));
                     Graphics.DrawTexture(cameraRect, EditorGUIUtility.whiteTexture, s_DeferredOverlayMaterial);
                 }
                 Handles.EndGUI();
@@ -3541,8 +3541,7 @@ namespace UnityEditor
         void CreateSceneCameraAndLights()
         {
             GameObject cameraGO = EditorUtility.CreateGameObjectWithHideFlags("SceneCamera", HideFlags.HideAndDontSave, typeof(Camera));
-            cameraGO.AddComponentInternal("FlareLayer");
-            cameraGO.AddComponentInternal("HaloLayer");
+            cameraGO.AddComponent<FlareLayer>();
 
             m_Camera = cameraGO.GetComponent<Camera>();
             m_Camera.enabled = false;

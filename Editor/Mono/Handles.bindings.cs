@@ -47,10 +47,13 @@ namespace UnityEditor
         internal static extern bool IsCameraDrawModeEnabled([NotNull("NullExceptionObject")] Camera camera, DrawCameraMode drawMode);
 
         [FreeFunction]
-        static extern void Internal_DrawCameraWithGrid([NotNull("NullExceptionObject")] Camera cam, DrawCameraMode renderMode, ref DrawGridParameters gridParam, bool drawGizmos);
+        static extern void Internal_DrawCameraWithGrid([NotNull("NullExceptionObject")] Camera cam, DrawCameraMode renderMode, ref DrawGridParameters gridParam, bool drawGizmos, bool drawSelection);
 
         [FreeFunction]
-        static extern void Internal_DrawCamera([NotNull("NullExceptionObject")] Camera cam, DrawCameraMode renderMode, bool drawGizmos);
+        static extern void Internal_DrawCamera([NotNull("NullExceptionObject")] Camera cam, DrawCameraMode renderMode, bool drawGizmos, bool drawSelection);
+
+        [FreeFunction]
+        static extern void Internal_DrawCameraWithFilter([NotNull("NullExceptionObject")] Camera cam, DrawCameraMode renderMode, bool drawGizmos, bool drawSelection, GameObject[] filter);
 
         [FreeFunction]
         static extern void Internal_FinishDrawingCamera([NotNull("NullExceptionObject")] Camera cam, [DefaultValue("true")] bool drawGizmos);

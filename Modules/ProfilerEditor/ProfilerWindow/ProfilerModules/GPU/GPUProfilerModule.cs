@@ -11,7 +11,7 @@ using UnityEngine.Profiling;
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
-    internal class GPUProfilerModule : CPUorGPUProfilerModule
+    internal class GPUProfilerModule : CPUOrGPUProfilerModule
     {
         const string k_SettingsKeyPrefix = "Profiler.GPUProfilerModule.";
         protected override string SettingsKeyPrefix => k_SettingsKeyPrefix;

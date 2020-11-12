@@ -2992,23 +2992,11 @@
     <Compile Include="..\..\Editor\Mono\Scripting\APIUpdater\APIUpdaterManager.bindings.cs">
       <Link>Editor\Mono\Scripting\APIUpdater\APIUpdaterManager.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\APIUpdater\APIUpdaterUtils.cs">
-      <Link>Editor\Mono\Scripting\APIUpdater\APIUpdaterUtils.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\APIUpdater\AssemblyDependencyGraph.cs">
       <Link>Editor\Mono\Scripting\APIUpdater\AssemblyDependencyGraph.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\CompilerFactory.cs">
-      <Link>Editor\Mono\Scripting\CompilerFactory.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\Compilers\APIUpdaterHelper.cs">
       <Link>Editor\Mono\Scripting\Compilers\APIUpdaterHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\Compilers\CSharpCompilerOutputParserBase.cs">
-      <Link>Editor\Mono\Scripting\Compilers\CSharpCompilerOutputParserBase.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\Compilers\CSharpLanguage.cs">
-      <Link>Editor\Mono\Scripting\Compilers\CSharpLanguage.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\Compilers\CommandLineFormatter.cs">
       <Link>Editor\Mono\Scripting\Compilers\CommandLineFormatter.cs</Link>
@@ -3022,14 +3010,8 @@
     <Compile Include="..\..\Editor\Mono\Scripting\Compilers\CompilerSpecificReponseFiles.cs">
       <Link>Editor\Mono\Scripting\Compilers\CompilerSpecificReponseFiles.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\Compilers\ExternalCSharpCompiler.cs">
-      <Link>Editor\Mono\Scripting\Compilers\ExternalCSharpCompiler.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\Compilers\Il2CppOutputParser.cs">
       <Link>Editor\Mono\Scripting\Compilers\Il2CppOutputParser.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\Compilers\MicrosoftCSharpCompiler.cs">
-      <Link>Editor\Mono\Scripting\Compilers\MicrosoftCSharpCompiler.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\Compilers\MicrosoftCSharpCompilerOutputParser.cs">
       <Link>Editor\Mono\Scripting\Compilers\MicrosoftCSharpCompilerOutputParser.cs</Link>
@@ -3045,9 +3027,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\Compilers\ScriptCompilerBase.cs">
       <Link>Editor\Mono\Scripting\Compilers\ScriptCompilerBase.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\Compilers\SupportedLanguage.cs">
-      <Link>Editor\Mono\Scripting\Compilers\SupportedLanguage.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\Compilers\UWPReferences.cs">
       <Link>Editor\Mono\Scripting\Compilers\UWPReferences.cs</Link>
@@ -3085,14 +3064,32 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\AutoReferencedPackageAssemblies.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\AutoReferencedPackageAssemblies.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\BeeScriptCompilation.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\BeeScriptCompilation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\PotentiallyUpdatableErrorMessages.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\PotentiallyUpdatableErrorMessages.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnityBeeDriver.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnityBeeDriver.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnityProgressAPI.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnityProgressAPI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnityScriptUpdater.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnityScriptUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnityScriptUpdaterConsentAPI.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnityScriptUpdaterConsentAPI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnitySourceFileUpdatersResultHandler.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnitySourceFileUpdatersResultHandler.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CompilationPipeline.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\CompilationPipeline.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CompilationPipelineCommonHelper.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\CompilationPipelineCommonHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CompilationTask.cs">
-      <Link>Editor\Mono\Scripting\ScriptCompilation\CompilationTask.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CompilerMessage.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\CompilerMessage.cs</Link>
@@ -3106,9 +3103,6 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\DefineConstraintsHelper.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\DefineConstraintsHelper.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\DirtySource.cs">
-      <Link>Editor\Mono\Scripting\ScriptCompilation\DirtySource.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\EditorBuildRules.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\EditorBuildRules.cs</Link>
     </Compile>
@@ -3120,6 +3114,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\EditorScriptCompilationOptions.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\EditorScriptCompilationOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\EnumerableExtensions.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\EnumerableExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ExpressionNotValidException.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\ExpressionNotValidException.cs</Link>
@@ -3133,23 +3130,17 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\GUIDReference.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\GUIDReference.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ILPostProcessing.cs">
-      <Link>Editor\Mono\Scripting\ScriptCompilation\ILPostProcessing.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\MonoLibraryHelpers.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\MonoLibraryHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\PlatformSupportModuleHelpers.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\PlatformSupportModuleHelpers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\PostProcessorTask.cs">
-      <Link>Editor\Mono\Scripting\ScriptCompilation\PostProcessorTask.cs</Link>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\PostProcessorOutputParser.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\PostProcessorOutputParser.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\PrecompiledAssembly.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\PrecompiledAssembly.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ReferenceAssemblyHelpers.cs">
-      <Link>Editor\Mono\Scripting\ScriptCompilation\ReferenceAssemblyHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\RoslynAnalysisRunner.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\RoslynAnalysisRunner.cs</Link>
@@ -3177,6 +3168,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\UnityCodeGenHelpers.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\UnityCodeGenHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\UnitySpecificCompilerMessageProcessor.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\UnitySpecificCompilerMessageProcessor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\Utility.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\Utility.cs</Link>
@@ -4095,9 +4089,6 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\PopupField.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\PopupField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\ProgressBar.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\ProgressBar.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\PropertyControl.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\PropertyControl.cs</Link>
@@ -5698,6 +5689,9 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Rendering\RenderingProfilerModule.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Rendering\RenderingProfilerModule.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\SampleSelection.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\SampleSelection.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Video\VideoProfilerModule.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Video\VideoProfilerModule.cs</Link>
     </Compile>
@@ -6838,6 +6832,9 @@
     <Reference Include="Unity.IL2CPP.BeeSettings">
       <HintPath>..\..\External\il2cpp\builds\build\BeeSettings\offline\Unity.IL2CPP.BeeSettings.dll</HintPath>
     </Reference>
+    <Reference Include="Bee.BeeDriver">
+      <HintPath>..\..\artifacts\Stevedore\bee-libraries_8418\Bee.BeeDriver.dll</HintPath>
+    </Reference>
     <ProjectReference Include="UnityEngine.csproj">
       <Project>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</Project>
       <Name>UnityEngine</Name>
@@ -6849,6 +6846,10 @@
     <ProjectReference Include="..\..\Tools\Unity.CecilTools\Unity.CecilTools.gen.csproj">
       <Project>{35FF4EBD-85F0-4727-8AC0-32AE4F3723D0}</Project>
       <Name>Unity.CecilTools</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Editor\ScriptCompilationBuildProgram.Data\ScriptCompilationBuildProgram.Data.gen.csproj">
+      <Project>{201222DE-2488-4150-E3B5-DC5FCCE3C890}</Project>
+      <Name>ScriptCompilationBuildProgram.Data</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

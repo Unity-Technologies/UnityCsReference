@@ -15,6 +15,8 @@ namespace UnityEditorInternal.Profiling
     [Serializable]
     internal class ProfilerFrameDataHierarchyView : ProfilerFrameDataViewBase
     {
+        public const int invalidTreeViewId = -1;
+        public const int invalidTreeViewDepth = -1;
         enum DetailedViewType
         {
             None,
@@ -44,7 +46,7 @@ namespace UnityEditorInternal.Profiling
         bool m_Serialized;
 
         [NonSerialized]
-        int m_FrameIndex = -1;
+        int m_FrameIndex = FrameDataView.invalidOrCurrentFrameIndex;
 
         [SerializeField]
         TreeViewState m_TreeViewState;
@@ -53,20 +55,23 @@ namespace UnityEditorInternal.Profiling
         MultiColumnHeaderState m_MultiColumnHeaderState;
 
         [SerializeField]
-        int m_ThreadIndex = 0;
+        int m_ThreadIndexInThreadNames = 0;
 
-        int threadIndex
+        int threadIndexInThreadNames
         {
             set
             {
-                m_ThreadIndex = value;
-                if (Event.current.type != EventType.Layout)
+                m_ThreadIndexInThreadNames = value;
+                if (Event.current == null || Event.current.type != EventType.Layout)
                 {
                     m_ThreadIndexDuringLastNonLayoutEvent = value;
                 }
             }
-            get { return m_ThreadIndex; }
+            get { return m_ThreadIndexInThreadNames; }
         }
+
+        // threadGroupName, threadName
+        public Action<string, string> userChangedThread = delegate {};
 
         int m_ThreadIndexDuringLastNonLayoutEvent = 0;
 
@@ -106,17 +111,55 @@ namespace UnityEditorInternal.Profiling
         }
 
         [SerializeField]
+        string m_FullThreadName;
+
+        public string fullThreadName
+        {
+            get
+            {
+                return m_FullThreadName;
+            }
+            private set
+            {
+                m_FullThreadName = value;
+            }
+        }
+
+        [SerializeField]
         string m_ThreadName;
 
         public string threadName
         {
             get
             {
+                if (m_ThreadName == null)
+                    m_ThreadName = string.Empty;
                 return m_ThreadName;
             }
-            set
+            private set
             {
                 m_ThreadName = value;
+            }
+        }
+
+        [field: SerializeField]
+        public ulong threadId { get; private set; }
+
+
+        [SerializeField]
+        string m_GroupName;
+
+        public string groupName
+        {
+            get
+            {
+                if (m_GroupName == null)
+                    m_GroupName = string.Empty;
+                return m_GroupName;
+            }
+            private set
+            {
+                m_GroupName = value;
             }
         }
 
@@ -136,8 +179,7 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        public delegate void SelectionChangedCallback(int id);
-        public event SelectionChangedCallback selectionChanged;
+        public event Action<SampleSelection> selectionChanged;
 
         public delegate void SearchChangedCallback(string newSearch);
         public event SearchChangedCallback searchChanged;
@@ -156,7 +198,9 @@ namespace UnityEditorInternal.Profiling
         public ProfilerFrameDataHierarchyView(string serializationPrefKeyPrefix)
         {
             m_Initialized = false;
+            m_FullThreadName = kMainThreadName;
             m_ThreadName = kMainThreadName;
+            m_GroupName = null;
             k_SerializationPrefKeyPrefix = serializationPrefKeyPrefix;
         }
 
@@ -228,11 +272,12 @@ namespace UnityEditorInternal.Profiling
                 m_DetailedObjectsView = new ProfilerDetailedObjectsView(detailedObjectsViewPrefKeyPrefix);
             m_DetailedObjectsView.gpuView = gpuView;
             m_DetailedObjectsView.frameItemEvent += FrameItem;
+            m_DetailedObjectsView.OnEnable(cpuModule, this);
             if (m_DetailedCallsView == null)
             {
                 m_DetailedCallsView = new ProfilerDetailedCallsView(detailedCallsViewPrefKeyPrefix);
-                m_DetailedCallsView.profilerSampleNameProvider = cpuModule;
             }
+            m_DetailedCallsView.OnEnable(cpuModule, this);
             m_DetailedCallsView.frameItemEvent += FrameItem;
             if (m_DetailedViewSpliterState == null || !m_DetailedViewSpliterState.IsValid())
                 m_DetailedViewSpliterState = SplitterState.FromRelative(new[] { SessionState.GetFloat(splitter0StatePrefKey, 70f), SessionState.GetFloat(splitter1StatePrefKey, 30f) }, new[] { 450f, 50f }, null);
@@ -243,11 +288,11 @@ namespace UnityEditorInternal.Profiling
             m_Initialized = true;
         }
 
-        public override void OnEnable(CPUorGPUProfilerModule cpuModule, IProfilerWindowController profilerWindow, bool isGpuView)
+        public override void OnEnable(CPUOrGPUProfilerModule cpuModule, IProfilerWindowController profilerWindow, bool isGpuView)
         {
             base.OnEnable(cpuModule, profilerWindow, isGpuView);
-            m_DetailedObjectsView?.OnEnable(cpuModule);
-            m_DetailedCallsView?.OnEnable(cpuModule);
+            m_DetailedObjectsView?.OnEnable(cpuModule, this);
+            m_DetailedCallsView?.OnEnable(cpuModule, this);
         }
 
         void OnMultiColumnHeaderChanged(MultiColumnHeader header)
@@ -365,9 +410,9 @@ namespace UnityEditorInternal.Profiling
         {
             using (m_DoGUIMarker.Auto())
             {
-                if (Event.current.type != EventType.Layout && m_ThreadIndexDuringLastNonLayoutEvent != threadIndex)
+                if (Event.current.type != EventType.Layout && m_ThreadIndexDuringLastNonLayoutEvent != threadIndexInThreadNames)
                 {
-                    m_ThreadIndexDuringLastNonLayoutEvent = threadIndex;
+                    m_ThreadIndexDuringLastNonLayoutEvent = threadIndexInThreadNames;
                     EditorGUIUtility.ExitGUI();
                 }
                 InitIfNeeded();
@@ -404,8 +449,91 @@ namespace UnityEditorInternal.Profiling
                 else
                 {
                     var rect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandHeight(true), GUILayout.ExpandHeight(true));
+
                     m_TreeView.SetFrameDataView(frameDataView);
                     m_TreeView.OnGUI(rect);
+
+                    if (m_TreeView.HasSelection() && m_TreeView.proxySelectionInfo.hasProxySelection)
+                    {
+                        if (m_TreeView.proxySelectionInfo.cachedDisplayContent == null)
+                        {
+                            var diff = Math.Abs(m_TreeView.proxySelectionInfo.pathLengthDifferenceForProxy);
+                            m_TreeView.proxySelectionInfo.cachedDisplayContent = new GUIContent(
+                                BaseStyles.selectionExtraInfoHierarhcyView + string.Format(
+                                    BaseStyles.proxySampleMessage,
+                                    m_TreeView.proxySelectionInfo.nonProxyName, diff,
+                                    diff == 1 ? BaseStyles.proxySampleMessageScopeSingular : BaseStyles.proxySampleMessageScopePlural),
+                                BaseStyles.warningTriangle.image);
+                        }
+                        GUILayout.BeginHorizontal();
+                        GUILayout.Box(m_TreeView.proxySelectionInfo.cachedDisplayContent, BaseStyles.selectionExtraInfoArea);
+                        var rectForSampleStackButton = GUILayoutUtility.GetRect(BaseStyles.showDetailsDropdownContent, BaseStyles.tooltipDropdown, GUILayout.ExpandHeight(false), GUILayout.ExpandHeight(false));
+                        if (GUI.Button(rectForSampleStackButton, BaseStyles.showDetailsDropdownContent, BaseStyles.tooltipDropdown))
+                        {
+                            var selection = m_TreeView.GetSelection();
+                            var selectedId = (selection != null && selection.Count > 0) ? selection[0] : ProfilerFrameDataHierarchyView.invalidTreeViewId;
+                            if (selectedId >= 0)
+                            {
+                                var menu = new GenericMenu();
+
+                                // Show Sample Selection:
+                                var rawSampleIndices = new List<int>(frameDataView.GetItemMergedSamplesCount(selectedId));
+                                frameDataView.GetItemRawFrameDataViewIndices(selectedId, rawSampleIndices);
+                                var actualMarkerIdPath = new List<int>(frameDataView.GetItemDepth(selectedId));
+                                using (var iterator = new RawFrameDataView(frameDataView.frameIndex, frameDataView.threadIndex))
+                                {
+                                    string name = null;
+                                    var rawIndex = ProfilerTimelineGUI.GetItemMarkerIdPath(iterator, cpuModule, rawSampleIndices[0], ref name, ref actualMarkerIdPath);
+                                }
+
+                                var actualMarkerPath = new List<string>(actualMarkerIdPath.Count);
+                                foreach (var id in actualMarkerIdPath)
+                                {
+                                    if ((frameDataView.GetMarkerFlags(id) & Unity.Profiling.LowLevel.MarkerFlags.AvailabilityEditor) != 0)
+                                        actualMarkerPath.Add(string.Format("EditorOnly [{0}]", frameDataView.GetMarkerName(id)));
+                                    else
+                                        actualMarkerPath.Add(frameDataView.GetMarkerName(id));
+                                }
+
+                                // admittedly, it'd be nice to only generate the text if sample selection option was chosen...
+                                // however, that would need to happen in an OnGui call and not within the callback of the generic menu,
+                                // to be able to calculate the needed window size and avoid glitches on first displaying it.
+                                // at least the user already clicked on the dropdown for this...
+
+                                string selectedSampleStackText = null;
+                                var sampleStackSb = new System.Text.StringBuilder();
+                                if (m_TreeView.proxySelectionInfo.nonProxySampleStack != null && m_TreeView.proxySelectionInfo.nonProxySampleStack.Count > 0)
+                                {
+                                    for (int i = m_TreeView.proxySelectionInfo.nonProxySampleStack.Count - 1; i >= 0; i--)
+                                    {
+                                        sampleStackSb.AppendLine(m_TreeView.proxySelectionInfo.nonProxySampleStack[i]);
+                                    }
+                                    selectedSampleStackText = sampleStackSb.ToString();
+                                }
+                                string actualSampleStackText = null;
+                                if (actualMarkerPath != null && actualMarkerPath.Count > 0)
+                                {
+                                    sampleStackSb.Clear();
+
+                                    for (int i = actualMarkerPath.Count - 1; i >= 0; i--)
+                                    {
+                                        sampleStackSb.AppendLine(actualMarkerPath[i]);
+                                    }
+                                    actualSampleStackText = sampleStackSb.ToString();
+                                }
+
+                                var selectionSampleStackContent = selectedSampleStackText != null ? new GUIContent(selectedSampleStackText) : null;
+                                var actualSampleStackContent = actualSampleStackText != null ? new GUIContent(actualSampleStackText) : null;
+                                var sampleStackWindowSize = SelectedSampleStackWindow.CalculateSize(selectionSampleStackContent, actualSampleStackContent);
+                                menu.AddItem(BaseStyles.showSelectedSampleStacks, false, () =>
+                                {
+                                    SelectedSampleStackWindow.ShowSampleStackWindow(GUIUtility.GUIToScreenRect(rectForSampleStackButton).position, sampleStackWindowSize, selectionSampleStackContent, actualSampleStackContent);
+                                });
+                                menu.DropDown(rectForSampleStackButton);
+                            }
+                        }
+                        GUILayout.EndHorizontal();
+                    }
                 }
 
                 GUILayout.EndVertical();
@@ -517,13 +645,13 @@ namespace UnityEditorInternal.Profiling
             return 10;
         }
 
-        void UpdateThreadNamesAndThreadIndex(HierarchyFrameDataView frameDataView)
+        void UpdateThreadNamesAndThreadIndex(HierarchyFrameDataView frameDataView, bool forceUpdate = false)
         {
-            if (m_FrameIndex == frameDataView.frameIndex)
+            if (!frameDataView.valid || (m_FrameIndex == frameDataView.frameIndex && !forceUpdate))
                 return;
 
             m_FrameIndex = frameDataView.frameIndex;
-            threadIndex = 0;
+            threadIndexInThreadNames = 0;
 
             using (var frameIterator = new ProfilerFrameDataIterator())
             {
@@ -550,8 +678,8 @@ namespace UnityEditorInternal.Profiling
                 for (var i = 0; i < threadCount; ++i)
                 {
                     m_ThreadNames[i] = m_ThreadInfoCache[i].fullName;
-                    if (m_ThreadName == m_ThreadNames[i])
-                        threadIndex = i;
+                    if (m_FullThreadName == m_ThreadNames[i])
+                        threadIndexInThreadNames = i;
                 }
             }
         }
@@ -559,38 +687,50 @@ namespace UnityEditorInternal.Profiling
         UnityEditor.Tuple<int, string[]> GetThreadNamesLazy(HierarchyFrameDataView frameDataView)
         {
             UpdateThreadNamesAndThreadIndex(frameDataView);
-            return new UnityEditor.Tuple<int, string[]>(threadIndex, m_ThreadNames);
+            return new UnityEditor.Tuple<int, string[]>(threadIndexInThreadNames, m_ThreadNames);
         }
 
         private void DrawThreadPopup(HierarchyFrameDataView frameDataView)
         {
             if (!(frameDataView != null && frameDataView.valid))
             {
-                var disabledValues = new string[] { m_ThreadName };
+                var disabledValues = new string[] { m_FullThreadName };
                 EditorGUILayout.AdvancedPopup(0, disabledValues, BaseStyles.threadSelectionToolbarDropDown, GUILayout.MinWidth(BaseStyles.detailedViewTypeToolbarDropDown.fixedWidth));
                 return;
             }
 
             var newThreadIndex = 0;
-            if (threadIndex == 0)
+            if (threadIndexInThreadNames == 0)
             {
-                newThreadIndex = EditorGUILayout.AdvancedLazyPopup(m_ThreadName, threadIndex,
+                newThreadIndex = EditorGUILayout.AdvancedLazyPopup(m_FullThreadName, threadIndexInThreadNames,
                     (() => GetThreadNamesLazy(frameDataView)),
                     BaseStyles.threadSelectionToolbarDropDown, GUILayout.MinWidth(BaseStyles.detailedViewTypeToolbarDropDown.fixedWidth));
             }
             else
             {
                 float minWidth, maxWidth;
-                var content = new GUIContent(m_ThreadName);
+                var content = new GUIContent(m_FullThreadName);
                 BaseStyles.threadSelectionToolbarDropDown.CalcMinMaxWidth(content, out minWidth, out maxWidth);
                 UpdateThreadNamesAndThreadIndex(frameDataView);
-                newThreadIndex = EditorGUILayout.AdvancedPopup(threadIndex, m_ThreadNames, BaseStyles.threadSelectionToolbarDropDown, GUILayout.MinWidth(Math.Max(BaseStyles.detailedViewTypeToolbarDropDown.fixedWidth, minWidth)));
+                newThreadIndex = EditorGUILayout.AdvancedPopup(threadIndexInThreadNames, m_ThreadNames, BaseStyles.threadSelectionToolbarDropDown, GUILayout.MinWidth(Math.Max(BaseStyles.detailedViewTypeToolbarDropDown.fixedWidth, minWidth)));
             }
 
-            if (newThreadIndex != threadIndex)
+            if (newThreadIndex != threadIndexInThreadNames)
             {
-                threadIndex = newThreadIndex;
-                m_ThreadName = m_ThreadNames[threadIndex];
+                threadIndexInThreadNames = newThreadIndex;
+                m_FullThreadName = m_ThreadNames[threadIndexInThreadNames];
+                var indexOfGroupNameSeparator = m_FullThreadName.IndexOf('.');
+                if (indexOfGroupNameSeparator > 0)
+                {
+                    m_GroupName = m_FullThreadName.Substring(0, indexOfGroupNameSeparator);
+                    m_ThreadName = m_FullThreadName.Substring(indexOfGroupNameSeparator + 1);
+                }
+                else
+                {
+                    m_GroupName = string.Empty;
+                    m_ThreadName = m_FullThreadName;
+                }
+                userChangedThread(m_GroupName, m_ThreadName);
                 cpuModule.Repaint();
                 EditorGUIUtility.ExitGUI();
             }
@@ -633,10 +773,10 @@ namespace UnityEditorInternal.Profiling
                 Selection.objects = selection.ToArray();
         }
 
-        void OnMainTreeViewSelectionChanged(int id)
+        void OnMainTreeViewSelectionChanged(SampleSelection selection)
         {
             if (selectionChanged != null)
-                selectionChanged.Invoke(id);
+                selectionChanged.Invoke(selection);
         }
 
         void OnMainTreeViewSearchChanged(string newSearch)
@@ -657,14 +797,47 @@ namespace UnityEditorInternal.Profiling
         void FrameItem(int id)
         {
             m_TreeView.SetFocus();
-            m_TreeView.SetSelection(new List<int>(1) { id });
+            m_TreeView.SetSelection(new List<int>(1) { id }, TreeViewSelectionOptions.FireSelectionChanged);
             m_TreeView.FrameItem(id);
         }
 
-        public void SetSelectionFromLegacyPropertyPath(string selectedPropertyPath)
+        public void SetSelection(SampleSelection selection, bool expandSelection)
+        {
+            if (selection.markerIdPath == null)
+            {
+                throw new ArgumentNullException(nameof(selection.markerIdPath));
+            }
+            if (selection.markerNamePath == null)
+            {
+                throw new ArgumentNullException(nameof(selection.markerNamePath));
+            }
+            if (selection.markerIdPath.Count != selection.markerPathDepth)
+            {
+                throw new ArgumentException($"ProfilerFrameDataHierarchyView.SetSelectionFromMarkerIDPath needs to be called with {nameof(selection)} having {nameof(selection.markerIdPath)} and {nameof(selection.markerNamePath)} with the same amount of elements.");
+            }
+            InitIfNeeded();
+            m_TreeView.SetSelection(selection, expandSelection);
+        }
+
+        public void ClearSelection()
         {
             InitIfNeeded();
-            m_TreeView.SetSelectionFromLegacyPropertyPath(selectedPropertyPath);
+            m_TreeView.ClearSelection();
+        }
+
+        public void SetFrameDataView(HierarchyFrameDataView frameDataView)
+        {
+            InitIfNeeded();
+
+            if (frameDataView.valid)
+            {
+                threadName = frameDataView.threadName;
+                groupName = frameDataView.threadGroupName;
+                threadId = frameDataView.threadId;
+                fullThreadName = string.IsNullOrEmpty(groupName) ? threadName : $"{groupName}.{threadName}";
+            }
+            m_TreeView.SetFrameDataView(frameDataView);
+            UpdateThreadNamesAndThreadIndex(frameDataView, forceUpdate: true);
         }
 
         public override void Clear()
@@ -699,8 +872,9 @@ namespace UnityEditorInternal.Profiling
                 m_DetailedCallsView.SaveViewSettings();
         }
 
-        public void OnDisable()
+        public override void OnDisable()
         {
+            base.OnDisable();
             SaveViewSettings();
             if (m_TreeView != null)
             {

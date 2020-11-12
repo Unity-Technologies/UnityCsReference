@@ -15,18 +15,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         const string k_CodeGenTestsSuffix = ".CodeGen.Tests";
         const string k_CodeGenPrefix = "Unity.";
 
-        const string k_UnityEngineModules = "UnityEngine";
-        const string k_UnityEngineModulesLower = "unityengine";
-
-        const string k_UnityEditorModules = "UnityEditor";
-        const string k_UnityEditorModulesLower = "unityeditor";
-
-        public struct ScriptCodeGenAssemblies
-        {
-            public List<ScriptAssembly> ScriptAssemblies;
-            public List<ScriptAssembly> CodeGenAssemblies;
-        }
-
         public static bool IsCodeGen(string assemblyName)
         {
             var name = AssetPath.GetAssemblyNameWithoutExtension(assemblyName);
@@ -51,30 +39,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return true;
 
             return false;
-        }
-
-        public static ScriptCodeGenAssemblies ToScriptCodeGenAssemblies(ScriptAssembly[] scriptAssemblies)
-        {
-            var result = new ScriptCodeGenAssemblies();
-
-            result.ScriptAssemblies = new List<ScriptAssembly>(scriptAssemblies.Length);
-            result.CodeGenAssemblies = new List<ScriptAssembly>(scriptAssemblies.Length);
-
-            foreach (var scriptAssembly in scriptAssemblies)
-            {
-                bool isCodeGen = IsCodeGen(scriptAssembly.Filename);
-
-                if (isCodeGen)
-                {
-                    result.CodeGenAssemblies.Add(scriptAssembly);
-                }
-                else
-                {
-                    result.ScriptAssemblies.Add(scriptAssembly);
-                }
-            }
-
-            return result;
         }
     }
 }

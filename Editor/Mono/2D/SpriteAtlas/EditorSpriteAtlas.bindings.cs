@@ -67,11 +67,14 @@ namespace UnityEditor.U2D
         private bool m_EnableRotation;
         [NativeName("enableTightPacking")]
         private bool m_EnableTightPacking;
+        [NativeName("enableAlphaDilation")]
+        private bool m_EnableAlphaDilation;
 
         public int blockOffset { get { return m_BlockOffset; } set { m_BlockOffset = value; } }
         public int padding { get { return m_Padding; } set { m_Padding = value; } }
         public bool enableRotation { get { return m_EnableRotation; } set { m_EnableRotation = value; } }
         public bool enableTightPacking { get { return m_EnableTightPacking; } set { m_EnableTightPacking = value; } }
+        public bool enableAlphaDilation { get { return m_EnableAlphaDilation; } set { m_EnableAlphaDilation = value; } }
     }
 
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporterTypes.h")]

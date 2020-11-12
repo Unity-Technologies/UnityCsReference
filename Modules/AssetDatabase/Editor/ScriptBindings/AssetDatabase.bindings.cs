@@ -51,6 +51,12 @@ namespace UnityEditor
         ReserializeAssetsAndMetadata = ReserializeAssets | ReserializeMetadata
     }
 
+    public enum AssetPathToGUIDOptions
+    {
+        IncludeRecentlyDeletedAssets = 0, // Return a GUID if an asset has been recently deleted.
+        OnlyExistingAssets = 1, // Return a GUID only if the asset exists on disk.
+    }
+
     internal enum ImportPackageOptions
     {
         Default = 0,
@@ -299,7 +305,23 @@ namespace UnityEditor
 
         public static string AssetPathToGUID(string path)
         {
-            var guid = AssetPathToGUID_Internal(path);
+            return AssetPathToGUID(path, AssetPathToGUIDOptions.IncludeRecentlyDeletedAssets);
+        }
+
+        public static string AssetPathToGUID(string path, [DefaultValue("AssetPathToGUIDOptions.IncludeRecentlyDeletedAssets")] AssetPathToGUIDOptions options)
+        {
+            GUID guid;
+
+            switch (options)
+            {
+                case AssetPathToGUIDOptions.OnlyExistingAssets:
+                    guid = GUIDFromExistingAssetPath(path);
+                    break;
+                default:
+                    guid = AssetPathToGUID_Internal(path);
+                    break;
+            }
+
             return guid.Empty() ? "" : guid.ToString();
         }
 

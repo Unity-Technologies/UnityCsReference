@@ -18,6 +18,7 @@ using UnityEngine;
 using UnityEngine.Networking.PlayerConnection;
 using UnityEngine.Profiling;
 using UnityEngine.Scripting;
+using Unity.Profiling;
 using Debug = UnityEngine.Debug;
 
 namespace UnityEditor
@@ -132,9 +133,9 @@ namespace UnityEditor
         [SerializeField]
         int m_SelectedModuleIndex;
 
-        int m_CurrentFrame = -1;
-        int m_LastFrameFromTick = -1;
-        int m_PrevLastFrame = -1;
+        int m_CurrentFrame = FrameDataView.invalidOrCurrentFrameIndex;
+        int m_LastFrameFromTick = FrameDataView.invalidOrCurrentFrameIndex;
+        int m_PrevLastFrame = FrameDataView.invalidOrCurrentFrameIndex;
 
         bool m_CurrentFrameEnabled = false;
 
@@ -170,8 +171,6 @@ namespace UnityEditor
         const string kProfilerEditorTargetModeEnabledSessionKey = "ProfilerTargetMode";
         const string kProfilerDeepProfilingWarningSessionKey = "ProfilerDeepProfilingWarning";
 
-        internal delegate void SelectionChangedCallback(string selectedPropertyPath);
-        public event SelectionChangedCallback selectionChanged = delegate {};
 
         internal delegate void FrameChangedCallback(int i, bool b);
         public event FrameChangedCallback currentFrameChanged = delegate {};
@@ -192,26 +191,6 @@ namespace UnityEditor
                 }
 
                 return null;
-            }
-        }
-
-        public void SetSelectedPropertyPath(string path)
-        {
-            if (ProfilerDriver.selectedPropertyPath != path)
-            {
-                ProfilerDriver.selectedPropertyPath = path;
-                selectionChanged.Invoke(path);
-                UpdateModules();
-            }
-        }
-
-        public void ClearSelectedPropertyPath()
-        {
-            if (ProfilerDriver.selectedPropertyPath != string.Empty)
-            {
-                ProfilerDriver.selectedPropertyPath = string.Empty;
-                selectionChanged.Invoke(string.Empty);
-                UpdateModules();
             }
         }
 
@@ -240,7 +219,7 @@ namespace UnityEditor
         {
             // Update the current frame only at fixed intervals,
             // otherwise it looks weird when it is rapidly jumping around when we have a lot of repaints
-            return m_CurrentFrame == -1 ? m_LastFrameFromTick : m_CurrentFrame;
+            return m_CurrentFrame == FrameDataView.invalidOrCurrentFrameIndex ? m_LastFrameFromTick : m_CurrentFrame;
         }
 
         public bool IsRecording()
@@ -333,7 +312,7 @@ namespace UnityEditor
 
         void Initialize()
         {
-            m_ProfilerWindowControllerProxy.SetRealSubject(this, selectionChanged.GetInvocationList());
+            m_ProfilerWindowControllerProxy.SetRealSubject(this);
 
             // When reinitializing (e.g. because Colorblind mode or PlatformModule changed) we don't need a new state
             if (m_AttachProfilerState == null)
@@ -461,8 +440,10 @@ namespace UnityEditor
         void OnProfileLoaded()
         {
             // Reset frame state to trigger a redraw.
-            m_PrevLastFrame = -1;
-            m_LastFrameFromTick = -1;
+            m_PrevLastFrame = FrameDataView.invalidOrCurrentFrameIndex;
+            m_LastFrameFromTick = FrameDataView.invalidOrCurrentFrameIndex;
+            // Reset the cached data view
+            m_FrameDataView = null;
         }
 
         void IProfilerWindowController.SelectModule(ProfilerModuleBase module)
@@ -470,7 +451,7 @@ namespace UnityEditor
             var previousSelectedModuleIndex = m_SelectedModuleIndex;
             int newSelectedModuleIndex = IndexOfModule(module);
             if ((previousSelectedModuleIndex == newSelectedModuleIndex) ||
-                (newSelectedModuleIndex == -1))
+                (newSelectedModuleIndex == k_NoModuleSelected))
             {
                 return;
             }
@@ -478,19 +459,13 @@ namespace UnityEditor
             var previousSelectedModule = SelectedModule;
             m_SelectedModuleIndex = newSelectedModuleIndex;
 
-            // If switched out of CPU area, reset selected property.
-            if (previousSelectedModule != null &&
-                previousSelectedModule is CPUProfilerModule)
-            {
-                ClearSelectedPropertyPath();
-            }
-
             previousSelectedModule?.OnDeselected();
             SelectedModule?.OnSelected();
 
             Repaint();
             GUIUtility.keyboardControl = 0;
-            GUIUtility.ExitGUI();
+            if (Event.current != null)
+                GUIUtility.ExitGUI();
         }
 
         void IProfilerWindowController.CloseModule(ProfilerModuleBase module)
@@ -505,7 +480,7 @@ namespace UnityEditor
 
         int IndexOfModule(ProfilerModuleBase module)
         {
-            int index = -1;
+            int index = k_NoModuleSelected;
             for (int i = 0; i < m_Modules.Count; i++)
             {
                 var m = m_Modules[i];
@@ -788,20 +763,20 @@ namespace UnityEditor
         string PickFrameLabel()
         {
             var lastFrame = (ProfilerDriver.lastFrameIndex + 1);
-            return ((m_CurrentFrame == -1) ? lastFrame : m_CurrentFrame + 1) + " / " + lastFrame;
+            return ((m_CurrentFrame == FrameDataView.invalidOrCurrentFrameIndex) ? lastFrame : m_CurrentFrame + 1) + " / " + lastFrame;
         }
 
         void PrevFrame()
         {
             int previousFrame = ProfilerDriver.GetPreviousFrameIndex(m_CurrentFrame);
-            if (previousFrame != -1)
+            if (previousFrame != FrameDataView.invalidOrCurrentFrameIndex)
                 SetCurrentFrame(previousFrame);
         }
 
         void NextFrame()
         {
             int nextFrame = ProfilerDriver.GetNextFrameIndex(m_CurrentFrame);
-            if (nextFrame != -1)
+            if (nextFrame != FrameDataView.invalidOrCurrentFrameIndex)
                 SetCurrentFrame(nextFrame);
         }
 
@@ -810,10 +785,10 @@ namespace UnityEditor
             return property != null && property.frameDataReady;
         }
 
-        public HierarchyFrameDataView GetFrameDataView(string threadName, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
+        public HierarchyFrameDataView GetFrameDataView(string groupName, string threadName, ulong threadId, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
         {
             var frameIndex = GetActiveVisibleFrameIndex();
-            var threadIndex = -1;
+            var foundThreadIndex = FrameDataView.invalidThreadIndex;
             using (var frameIterator = new ProfilerFrameDataIterator())
             {
                 var threadCount = frameIterator.GetThreadCount(frameIndex);
@@ -821,16 +796,33 @@ namespace UnityEditor
                 {
                     frameIterator.SetRoot(frameIndex, i);
                     var grp = frameIterator.GetGroupName();
+                    // only string compare if both names aren't null or empty, i.e. don't compare ` null != "" ` but treat null the same as empty
+                    if (!(string.IsNullOrEmpty(grp) && string.IsNullOrEmpty(groupName)) && grp != groupName)
+                        continue;
                     var thrd = frameIterator.GetThreadName();
-                    var name = string.IsNullOrEmpty(grp) ? thrd : grp + "." + thrd;
-                    if (threadName == name)
+                    if (threadName == thrd)
                     {
-                        threadIndex = i;
-                        break;
+                        using (var rawFrameData = new RawFrameDataView(frameIndex, i))
+                        {
+                            // do we have a valid thread id to check against and a direct match?
+                            if (threadId == FrameDataView.invalidThreadId || threadId == rawFrameData.threadId)
+                            {
+                                foundThreadIndex = i;
+                                break;
+                            }
+                            // else store the first found thread index as a fallback
+                            if (foundThreadIndex < 0)
+                                foundThreadIndex = i;
+                        }
                     }
                 }
             }
+            return GetFrameDataView(foundThreadIndex, viewMode, profilerSortColumn, sortAscending);
+        }
 
+        public HierarchyFrameDataView GetFrameDataView(int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
+        {
+            var frameIndex = GetActiveVisibleFrameIndex();
             if (m_FrameDataView != null && m_FrameDataView.valid)
             {
                 if (m_FrameDataView.frameIndex == frameIndex && m_FrameDataView.threadIndex == threadIndex && m_FrameDataView.viewMode == viewMode)
@@ -936,7 +928,7 @@ namespace UnityEditor
 
             FrameNavigationControls();
 
-            using (new EditorGUI.DisabledScope(ProfilerDriver.lastFrameIndex == -1))
+            using (new EditorGUI.DisabledScope(ProfilerDriver.lastFrameIndex == FrameDataView.invalidOrCurrentFrameIndex))
             {
                 // Clear
                 if (GUILayout.Button(Styles.clearData, EditorStyles.toolbarButton))
@@ -975,7 +967,7 @@ namespace UnityEditor
             }
 
             // Save profile
-            using (new EditorGUI.DisabledScope(ProfilerDriver.lastFrameIndex == -1))
+            using (new EditorGUI.DisabledScope(ProfilerDriver.lastFrameIndex == FrameDataView.invalidOrCurrentFrameIndex))
             {
                 if (GUILayout.Button(Styles.saveProfilingData, EditorStyles.toolbarButton))
                 {
@@ -1067,9 +1059,9 @@ namespace UnityEditor
             }
 
             ProfilerDriver.ClearAllFrames();
-            m_LastFrameFromTick = -1;
+            m_LastFrameFromTick = FrameDataView.invalidOrCurrentFrameIndex;
             m_FrameCountLabelMinWidth = 0;
-            m_CurrentFrame = -1;
+            m_CurrentFrame = FrameDataView.invalidOrCurrentFrameIndex;
             m_CurrentFrameEnabled = true;
 
 #pragma warning disable CS0618
@@ -1085,17 +1077,17 @@ namespace UnityEditor
             }
 
             // Previous/next/current buttons
-            using (new EditorGUI.DisabledScope(ProfilerDriver.GetPreviousFrameIndex(m_CurrentFrame) == -1))
+            using (new EditorGUI.DisabledScope(ProfilerDriver.GetPreviousFrameIndex(m_CurrentFrame) == FrameDataView.invalidOrCurrentFrameIndex))
             {
                 if (GUILayout.Button(Styles.prevFrame, EditorStyles.toolbarButton))
                 {
-                    if (m_CurrentFrame == -1)
+                    if (m_CurrentFrame == FrameDataView.invalidOrCurrentFrameIndex)
                         PrevFrame();
                     PrevFrame();
                 }
             }
 
-            using (new EditorGUI.DisabledScope(ProfilerDriver.GetNextFrameIndex(m_CurrentFrame) == -1))
+            using (new EditorGUI.DisabledScope(ProfilerDriver.GetNextFrameIndex(m_CurrentFrame) == FrameDataView.invalidOrCurrentFrameIndex))
             {
                 if (GUILayout.Button(Styles.nextFrame, EditorStyles.toolbarButton))
                     NextFrame();
@@ -1104,16 +1096,16 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledScope(ProfilerDriver.lastFrameIndex < 0))
             {
-                if (GUILayout.Toggle(ProfilerDriver.lastFrameIndex >= 0 && m_CurrentFrame == -1, Styles.currentFrame, EditorStyles.toolbarButton))
+                if (GUILayout.Toggle(ProfilerDriver.lastFrameIndex >= 0 && m_CurrentFrame == FrameDataView.invalidOrCurrentFrameIndex, Styles.currentFrame, EditorStyles.toolbarButton))
                 {
                     if (!m_CurrentFrameEnabled)
                     {
-                        SetCurrentFrame(-1);
+                        SetCurrentFrame(FrameDataView.invalidOrCurrentFrameIndex);
                         m_LastFrameFromTick = ProfilerDriver.lastFrameIndex;
                         m_CurrentFrameEnabled = true;
                     }
                 }
-                else if (m_CurrentFrame == -1)
+                else if (m_CurrentFrame == FrameDataView.invalidOrCurrentFrameIndex)
                 {
                     m_CurrentFrameEnabled = false;
                     PrevFrame();
@@ -1141,7 +1133,7 @@ namespace UnityEditor
 
         void SetCurrentFrame(int frame)
         {
-            bool shouldPause = frame != -1 && ProfilerDriver.enabled && !ProfilerDriver.profileEditor && m_CurrentFrame != frame;
+            bool shouldPause = frame != FrameDataView.invalidOrCurrentFrameIndex && ProfilerDriver.enabled && !ProfilerDriver.profileEditor && m_CurrentFrame != frame;
             if (shouldPause && EditorApplication.isPlayingOrWillChangePlaymode)
                 EditorApplication.isPaused = true;
 
@@ -1151,6 +1143,16 @@ namespace UnityEditor
                 ProfilerInstrumentationPopup.UpdateInstrumentableFunctions();
 
             SetCurrentFrameDontPause(frame);
+        }
+
+        public void SetActiveVisibleFrameIndex(int frame)
+        {
+            if (frame != FrameDataView.invalidOrCurrentFrameIndex && (frame < ProfilerDriver.firstFrameIndex || frame > ProfilerDriver.lastFrameIndex))
+                throw new ArgumentOutOfRangeException($"{nameof(frame)}");
+
+            currentFrameChanged?.Invoke(frame, false);
+            SetCurrentFrameDontPause(frame);
+            Repaint();
         }
 
         void OnGUI()
@@ -1416,7 +1418,7 @@ namespace UnityEditor
 
         int IndexOfModuleWithName(string moduleName)
         {
-            int moduleIndex = -1;
+            int moduleIndex = k_NoModuleSelected;
             for (int i = 0; i < m_Modules.Count; i++)
             {
                 var module = m_Modules[i];
@@ -1538,15 +1540,9 @@ namespace UnityEditor
         {
             IProfilerWindowController m_ProfilerWindowController;
 
-            public void SetRealSubject(IProfilerWindowController profilerWindowController, Delegate[] existingSelectionChangedSubscribers)
+            public void SetRealSubject(IProfilerWindowController profilerWindowController)
             {
                 m_ProfilerWindowController = profilerWindowController;
-
-                // Copy any existing selectionChanged subscribers to the new real subject.
-                foreach (var existingSelectionChangedSubscriber in existingSelectionChangedSubscribers)
-                {
-                    m_ProfilerWindowController.selectionChanged += existingSelectionChangedSubscriber as SelectionChangedCallback;
-                }
             }
 
             string IProfilerWindowController.ConnectedTargetName => m_ProfilerWindowController.ConnectedTargetName;
@@ -1555,20 +1551,10 @@ namespace UnityEditor
 
             ProfilerModuleBase IProfilerWindowController.SelectedModule => m_ProfilerWindowController.SelectedModule;
 
-            event SelectionChangedCallback IProfilerWindowController.selectionChanged
-            {
-                add { m_ProfilerWindowController.selectionChanged += value; }
-                remove { m_ProfilerWindowController.selectionChanged -= value; }
-            }
             event FrameChangedCallback IProfilerWindowController.currentFrameChanged
             {
                 add { m_ProfilerWindowController.currentFrameChanged += value; }
                 remove { m_ProfilerWindowController.currentFrameChanged -= value; }
-            }
-
-            void IProfilerWindowController.ClearSelectedPropertyPath()
-            {
-                m_ProfilerWindowController.ClearSelectedPropertyPath();
             }
 
             void IProfilerWindowController.CloseModule(ProfilerModuleBase module)
@@ -1596,9 +1582,14 @@ namespace UnityEditor
                 return m_ProfilerWindowController.GetClearOnPlay();
             }
 
-            HierarchyFrameDataView IProfilerWindowController.GetFrameDataView(string threadName, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
+            HierarchyFrameDataView IProfilerWindowController.GetFrameDataView(string groupName, string threadName, ulong threadId, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
             {
-                return m_ProfilerWindowController.GetFrameDataView(threadName, viewMode, profilerSortColumn, sortAscending);
+                return m_ProfilerWindowController.GetFrameDataView(groupName, threadName, threadId, viewMode, profilerSortColumn, sortAscending);
+            }
+
+            HierarchyFrameDataView IProfilerWindowController.GetFrameDataView(int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
+            {
+                return m_ProfilerWindowController.GetFrameDataView(threadIndex, viewMode, profilerSortColumn, sortAscending);
             }
 
             bool IProfilerWindowController.IsRecording()
@@ -1616,6 +1607,11 @@ namespace UnityEditor
                 m_ProfilerWindowController.SelectModule(module);
             }
 
+            void IProfilerWindowController.SetActiveVisibleFrameIndex(int frame)
+            {
+                m_ProfilerWindowController.SetActiveVisibleFrameIndex(frame);
+            }
+
             void IProfilerWindowController.SetAreasInUse(IEnumerable<ProfilerArea> areas, bool inUse)
             {
                 m_ProfilerWindowController.SetAreasInUse(areas, inUse);
@@ -1624,11 +1620,6 @@ namespace UnityEditor
             void IProfilerWindowController.SetClearOnPlay(bool enabled)
             {
                 m_ProfilerWindowController.SetClearOnPlay(enabled);
-            }
-
-            void IProfilerWindowController.SetSelectedPropertyPath(string path)
-            {
-                m_ProfilerWindowController.SetSelectedPropertyPath(path);
             }
         }
     }

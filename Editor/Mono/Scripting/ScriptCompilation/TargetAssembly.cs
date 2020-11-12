@@ -29,7 +29,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
     internal class TargetAssembly
     {
         public string Filename { get; private set; }
-        public SupportedLanguage Language { get; set; }
         public AssemblyFlags Flags { get; private set; }
         public string PathPrefix { get; private set; }
         public string[] AdditionalPrefixes { get; set; }
@@ -43,6 +42,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string RootNamespace { get; set; }
         public ScriptCompilerOptions CompilerOptions { get; set; }
         public List<VersionDefine> VersionDefines { get; set; }
+        public string AsmDefPath { get; set; }
 
         public int MaxPathLength { get; private set; }
 
@@ -53,7 +53,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         public TargetAssembly(string name,
-                              SupportedLanguage language,
                               AssemblyFlags flags,
                               TargetAssemblyType type,
                               string pathPrefix,
@@ -62,7 +61,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                               Func<ScriptAssemblySettings, string[], bool> compatFunc,
                               ScriptCompilerOptions compilerOptions) : this()
         {
-            Language = language;
             Filename = name;
             Flags = flags;
             PathPrefix = pathPrefix;

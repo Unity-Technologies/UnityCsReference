@@ -147,6 +147,10 @@ namespace UnityEditor.PackageManager
         [NativeName("unityLifecycle")]
         private UnityLifecycleInfo m_UnityLifecycle = new UnityLifecycleInfo();
 
+        [SerializeField]
+        [NativeName("upmReserved")]
+        private string m_UpmReserved = "";
+
         internal PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
@@ -177,6 +181,7 @@ namespace UnityEditor.PackageManager
         public string changelogUrl { get { return m_ChangelogUrl; } }
         public string licensesUrl { get { return m_LicensesUrl; } }
         internal UnityLifecycleInfo unityLifecycle { get { return m_UnityLifecycle; } }
+        internal string upmReserved { get { return m_UpmReserved; } }
 
         public RegistryInfo registry
         {

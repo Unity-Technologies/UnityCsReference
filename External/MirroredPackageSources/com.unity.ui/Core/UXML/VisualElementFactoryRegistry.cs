@@ -81,6 +81,7 @@ namespace UnityEngine.UIElements
                 new Box.UxmlFactory(),
                 new HelpBox.UxmlFactory(),
                 new PopupWindow.UxmlFactory(),
+                new ProgressBar.UxmlFactory(),
                 new ListView.UxmlFactory(),
                 new TwoPaneSplitView.UxmlFactory(),
                 new TreeView.UxmlFactory(),

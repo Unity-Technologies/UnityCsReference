@@ -91,6 +91,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\PopupWindow.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\PopupWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\ProgressBar.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\ProgressBar.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\RepeatButton.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\RepeatButton.cs</Link>
     </Compile>
@@ -1992,6 +1995,15 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Debug\Debug.deprecated.cs">
       <Link>Runtime\Export\Debug\Debug.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Device\Application.cs">
+      <Link>Runtime\Export\Device\Application.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Device\Screen.cs">
+      <Link>Runtime\Export\Device\Screen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Device\SystemInfo.cs">
+      <Link>Runtime\Export\Device\SystemInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\DiagnosticSwitch\DiagnosticSwitch.cs">
       <Link>Runtime\Export\DiagnosticSwitch\DiagnosticSwitch.cs</Link>

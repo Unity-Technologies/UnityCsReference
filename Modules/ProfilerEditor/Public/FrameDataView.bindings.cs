@@ -52,6 +52,11 @@ namespace UnityEditor.Profiling
 
         public const int invalidMarkerId = -1;
 
+        internal const int invalidThreadIndex = -1;
+        internal const ulong invalidThreadId = ~0ul;
+
+        internal const int invalidOrCurrentFrameIndex = -1;
+
         ~FrameDataView()
         {
             DisposeInternal();

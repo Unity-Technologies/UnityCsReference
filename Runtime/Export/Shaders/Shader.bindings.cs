@@ -226,8 +226,15 @@ namespace UnityEngine
         [NativeName("HasFloatFromScript")] extern private bool HasFloatImpl(int name);
         public bool HasFloat(string name) { return HasFloatImpl(Shader.PropertyToID(name)); }
         public bool HasFloat(int nameID) { return HasFloatImpl(nameID); }
+
+        [Obsolete("Use HasFloat for Float and Int preperties and HasInteger for Integer properties instead", false)]
         public bool HasInt(string name) { return HasFloatImpl(Shader.PropertyToID(name)); }
+        [Obsolete("Use HasFloat for Float and Int preperties and HasInteger for Integer properties instead", false)]
         public bool HasInt(int nameID) { return HasFloatImpl(nameID); }
+
+        [NativeName("HasIntegerFromScript")] extern private bool HasIntImpl(int name);
+        public bool HasInteger(string name) { return HasIntImpl(Shader.PropertyToID(name)); }
+        public bool HasInteger(int nameID) { return HasIntImpl(nameID); }
         [NativeName("HasTextureFromScript")] extern private bool HasTextureImpl(int name);
         public bool HasTexture(string name) { return HasTextureImpl(Shader.PropertyToID(name)); }
         public bool HasTexture(int nameID) { return HasTextureImpl(nameID); }
@@ -383,6 +390,7 @@ namespace UnityEngine
 
         [NativeName("HasPropertyFromScript")] extern private bool HasPropertyImpl(int name);
         [NativeName("HasFloatFromScript")] extern private bool HasFloatImpl(int name);
+        [NativeName("HasIntegerFromScript")] extern private bool HasIntImpl(int name);
         [NativeName("HasTextureFromScript")] extern private bool HasTextureImpl(int name);
         [NativeName("HasMatrixFromScript")] extern private bool HasMatrixImpl(int name);
         [NativeName("HasVectorFromScript")] extern private bool HasVectorImpl(int name);

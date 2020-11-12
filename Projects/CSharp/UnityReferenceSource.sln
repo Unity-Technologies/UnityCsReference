@@ -11,6 +11,8 @@ Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "Unity.CecilTools.gen", "..\
 EndProject
 Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "Unity.SerializationLogic.gen", "..\..\Tools\Unity.SerializationLogic\Unity.SerializationLogic.gen.csproj", "{A6749DFF-E369-4FE6-9019-6B7C555E80EA}"
 EndProject
+Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "ScriptCompilationBuildProgram.Data.gen", "..\..\Editor\ScriptCompilationBuildProgram.Data\ScriptCompilationBuildProgram.Data.gen.csproj", "{201222DE-2488-4150-E3B5-DC5FCCE3C890}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{A6749DFF-E369-4FE6-9019-6B7C555E80EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A6749DFF-E369-4FE6-9019-6B7C555E80EA}.Release|Any CPU.ActiveCfg = Debug|Any CPU
 		{A6749DFF-E369-4FE6-9019-6B7C555E80EA}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{201222DE-2488-4150-E3B5-DC5FCCE3C890}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{201222DE-2488-4150-E3B5-DC5FCCE3C890}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{201222DE-2488-4150-E3B5-DC5FCCE3C890}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{201222DE-2488-4150-E3B5-DC5FCCE3C890}.Release|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

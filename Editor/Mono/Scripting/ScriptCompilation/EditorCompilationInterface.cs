@@ -5,10 +5,10 @@
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using System;
 using UnityEditor.Compilation;
-using UnityEditor.Scripting.Compilers;
-using UnityEditorInternal;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using CompilerMessageType = UnityEditor.Scripting.Compilers.CompilerMessageType;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -70,25 +70,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     }
                     else
                     {
-                        UnityEngine.Debug.LogException(exception);
+                        Debug.LogException(exception);
                     }
                 }
             }
             else
             {
-                UnityEngine.Debug.LogException(exception);
-            }
-        }
-
-        static void EmitExceptionAsError(Action action)
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception e)
-            {
-                LogException(e);
+                Debug.LogException(exception);
             }
         }
 
@@ -121,12 +109,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static void Initialize()
-        {
-            Instance.Initialize();
-        }
-
-        [RequiredByNativeCode]
         public static void SetAssetPathsMetaData(AssetPathMetaData[] assetPathMetaDatas)
         {
             Instance.SetAssetPathsMetaData(assetPathMetaDatas);
@@ -139,75 +121,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static bool IsExtensionSupportedByCompiler(string extension)
+        public static bool HaveScriptsForEditorBeenCompiledSinceLastDomainReload()
         {
-            return Instance.IsExtensionSupportedByCompiler(extension);
+            return Instance.HaveScriptsForEditorBeenCompiledSinceLastDomainReload();
         }
 
         [RequiredByNativeCode]
-        public static string[] GetExtensionsSupportedByCompiler()
+        public static void RequestScriptCompilation(string reason)
         {
-            return Instance.GetExtensionsSupportedByCompiler();
-        }
-
-        [RequiredByNativeCode]
-        public static string[] GetChangedAssemblies()
-        {
-            return Instance.GetChangedAssemblies();
-        }
-
-        [RequiredByNativeCode]
-        public static void DirtyPredefinedAssemblyScripts(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform)
-        {
-            EmitExceptionAsError(() => Instance.DirtyPredefinedAssemblyScripts(options, platformGroup, platform));
-        }
-
-        [RequiredByNativeCode]
-        public static void DirtyAllScripts()
-        {
-            Instance.DirtyAllScripts();
-        }
-
-        [RequiredByNativeCode]
-        public static void DirtyScript(string path, string assemblyFilename)
-        {
-            Instance.DirtyScript(path, assemblyFilename);
-        }
-
-        [RequiredByNativeCode]
-        public static void DirtyRemovedScript(string path)
-        {
-            Instance.DirtyRemovedScript(path);
-        }
-
-        [RequiredByNativeCode]
-        public static void DirtyMovedScript(string oldPath, string newPath)
-        {
-            Instance.DirtyMovedScript(oldPath, newPath);
-        }
-
-        [RequiredByNativeCode]
-        public static void DirtyPrecompiledAssemblies(string[] paths)
-        {
-            EmitExceptionAsError(() => Instance.DirtyPrecompiledAssemblies(paths));
-        }
-
-        [RequiredByNativeCode]
-        public static void ClearDirtyScripts()
-        {
-            Instance.ClearDirtyScripts();
-        }
-
-        [RequiredByNativeCode]
-        public static void RecompileAllScriptsOnNextTick()
-        {
-            Instance.RecompileAllScriptsOnNextTick();
-        }
-
-        [RequiredByNativeCode]
-        public static bool WillRecompileAllScriptsOnNextTick()
-        {
-            return Instance.WillRecompileAllScriptsOnNextTick();
+            Instance.RequestScriptCompilation(reason);
         }
 
         [RequiredByNativeCode]
@@ -223,9 +145,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static void RunScriptUpdaterOnAssembly(string assemblyFilename)
+        public static void DeleteScriptAssemblies()
         {
-            Instance.RunScriptUpdaterOnAssembly(assemblyFilename);
+            Instance.DeleteScriptAssemblies();
         }
 
         [RequiredByNativeCode]
@@ -242,21 +164,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static void SetAssembliesOutputDirectories(string directory, string editorDirectory)
-        {
-            Instance.SetAssembliesOutputDirectories(directory, editorDirectory);
-        }
-
-        [RequiredByNativeCode]
         public static string GetCompileScriptsOutputDirectory()
         {
             return EmitExceptionAsError(() => Instance.GetCompileScriptsOutputDirectory(), string.Empty);
-        }
-
-        [RequiredByNativeCode]
-        public static void SetAllCustomScriptAssemblyJsons(string[] allAssemblyJsons, string[] guids)
-        {
-            EmitExceptionsAsErrors(Instance.SetAllCustomScriptAssemblyJsons(allAssemblyJsons, guids));
         }
 
         [RequiredByNativeCode]
@@ -310,34 +220,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static string[] GetCompiledAssemblyGraph(string assemblyName)
-        {
-            return EmitExceptionAsError(() => Instance.GetCompiledAssemblyGraph(assemblyName), new string[0]);
-        }
-
-        [RequiredByNativeCode]
-        public static EditorCompilation.TargetAssemblyInfo[] GetTargetAssembliesWithScripts()
-        {
-            var options = GetAdditionalEditorScriptCompilationOptions();
-            return EmitExceptionAsError(() => Instance.GetTargetAssembliesWithScripts(options), new EditorCompilation.TargetAssemblyInfo[0]);
-        }
-
-        [RequiredByNativeCode]
         public static bool HaveSetupErrors()
         {
             return Instance.HaveSetupErrors();
-        }
-
-        [RequiredByNativeCode]
-        public static void DirtyChangedAssemblyDefinition(string assemblyName)
-        {
-            EmitExceptionAsError(() => Instance.DirtyChangedAssemblyDefinition(assemblyName));
-        }
-
-        [RequiredByNativeCode]
-        public static void DeleteUnusedAssemblies()
-        {
-            EmitExceptionAsError(() => Instance.DeleteUnusedAssemblies());
         }
 
         [RequiredByNativeCode]
@@ -348,52 +233,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static EditorCompilation.CompileStatus CompileScriptsNoStop(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines)
-        {
-            return EmitExceptionAsError(() => Instance.CompileScripts(definesOptions, platformGroup, platform, extraScriptingDefines, CompilationTaskOptions.None),
-                EditorCompilation.CompileStatus.CompilationFailed);
-        }
-
-        [RequiredByNativeCode]
-        public static bool CompileCustomScriptAssemblies(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform)
-        {
-            return EmitExceptionAsError(() => Instance.CompileCustomScriptAssemblies(definesOptions, platformGroup, platform), false);
-        }
-
-        [RequiredByNativeCode]
-        public static bool DoesProjectFolderHaveAnyDirtyScripts()
-        {
-            return Instance.DoesProjectFolderHaveAnyDirtyScripts();
-        }
-
-        [RequiredByNativeCode]
-        public static bool ArePrecompiledAssembliesDirty()
-        {
-            return Instance.ArePrecompiledAssembliesDirty();
-        }
-
-        [RequiredByNativeCode]
         public static bool DoesProjectFolderHaveAnyScripts()
         {
             return Instance.DoesProjectFolderHaveAnyScripts();
         }
 
         [RequiredByNativeCode]
-        public static bool DoesProjectHaveAnyCustomScriptAssemblies()
-        {
-            return Instance.DoesProjectHaveAnyCustomScriptAssemblies();
-        }
-
-        [RequiredByNativeCode]
-        public static EditorCompilation.AssemblyCompilerMessages[] GetCompileMessages()
-        {
-            return Instance.GetCompileMessages();
-        }
-
-        [RequiredByNativeCode]
         public static bool IsCompilationPending()
         {
-            return Instance.IsCompilationPending();
+            return Instance.IsScriptCompilationRequested();
         }
 
         [RequiredByNativeCode]
@@ -412,15 +260,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             catch (Exception e)
             {
                 LogException(e);
-                ClearDirtyScripts();
                 return EditorCompilation.CompileStatus.CompilationFailed;
             }
-        }
-
-        [RequiredByNativeCode]
-        public static EditorCompilation.CompileStatus PollCompilation()
-        {
-            return EmitExceptionAsError(() => Instance.PollCompilation(), EditorCompilation.CompileStatus.Idle);
         }
 
         [RequiredByNativeCode]
@@ -435,7 +276,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return Instance.GetTargetAssembly(scriptPath);
         }
 
-        [RequiredByNativeCode]
         public static MonoIsland[] GetAllMonoIslands()
         {
             var options = GetAdditionalEditorScriptCompilationOptions();
@@ -449,26 +289,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (PlayerSettings.allowUnsafeCode)
                 options |= EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode;
 
-            if (PlayerSettings.useReferenceAssemblies)
-                options |= EditorScriptCompilationOptions.BuildingUseReferenceAssemblies;
-
             if (PlayerSettings.UseDeterministicCompilation)
                 options |= EditorScriptCompilationOptions.BuildingUseDeterministicCompilation;
 
             return options;
-        }
-
-        public static ScriptAssembly[] GetAllScriptAssembliesForLanguage<T>() where T : SupportedLanguage
-        {
-            var additionalOptions = GetAdditionalEditorScriptCompilationOptions();
-            return Instance.GetAllScriptAssembliesForLanguage<T>(additionalOptions);
-        }
-
-        public static ScriptAssembly GetScriptAssemblyForLanguage<T>(string assemblyNameOrPath) where T : SupportedLanguage
-        {
-            var additionalOptions = GetAdditionalEditorScriptCompilationOptions();
-
-            return Instance.GetScriptAssemblyForLanguage<T>(assemblyNameOrPath, additionalOptions);
         }
     }
 }

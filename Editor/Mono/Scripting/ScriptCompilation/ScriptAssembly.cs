@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Mono.Cecil.Cil;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Compilation;
 using UnityEditor.Modules;
@@ -24,6 +25,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string[] AdditionalCompilerArguments { get; set; }
         public ICompilationExtension CompilationExtension { get; set; }
         public string ProjectRootNamespace { get; set; }
+        public string ProjectDirectory { get; set; } = ".";
 
         public CodeOptimization EditorCodeOptimization { get; set; }
 
@@ -45,6 +47,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             get { return (CompilationOptions & EditorScriptCompilationOptions.BuildingDevelopmentBuild) == EditorScriptCompilationOptions.BuildingDevelopmentBuild; }
         }
+
+        public CodeOptimization CodeOptimization
+        {
+            get { return BuildingForEditor ? EditorCodeOptimization : BuildingDevelopmentBuild? CodeOptimization.Debug : CodeOptimization.Release; }
+        }
+
+        public bool BuildingWithoutScriptUpdater
+        {
+            get { return (CompilationOptions & EditorScriptCompilationOptions.BuildingWithoutScriptUpdater) == EditorScriptCompilationOptions.BuildingWithoutScriptUpdater; }
+        }
     }
 
     [DebuggerDisplay("{Filename}")]
@@ -53,16 +65,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string OriginPath { get; set; }
         public AssemblyFlags Flags { get; set; }
         public BuildTarget BuildTarget { get; set; }
-        public SupportedLanguage Language { get; set; }
         public string Filename { get; set; }
-
-        public string PdbFilename
-        {
-            get
-            {
-                return $"{AssetPath.GetAssemblyNameWithoutExtension(Filename)}.pdb";
-            }
-        }
         public string OutputDirectory { get; set; }
 
         /// <summary>
@@ -77,35 +80,29 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string[] Defines { get; set; }
         public string[] Files { get; set; }
         public string RootNamespace { get; set; }
-        public bool CallOnBeforeCompilationStarted { get; set; }
         public ScriptCompilerOptions CompilerOptions { get; set; }
         public string GeneratedResponseFile { get; set; }
-        public DirtySource DirtySource { get; set; }
         // Indicates whether the assembly had compile errors on last compilation
         public bool HasCompileErrors { get; set; }
         internal TargetAssemblyType TargetAssemblyType { get; set; }
+        public string AsmDefPath { get; set; }
 
         public ScriptAssembly()
         {
-            DirtySource = DirtySource.None;
             CompilerOptions = new ScriptCompilerOptions();
         }
 
         public string FullPath { get { return AssetPath.Combine(OutputDirectory, Filename); } }
-        public string PdbFullPath { get { return AssetPath.Combine(OutputDirectory, PdbFilename); } }
-
-        public string ReferenceAssemblyFilename
-        {
-            get
-            {
-                return $"{Filename}.ref";
-            }
-        }
 
         public string[] GetAllReferences()
         {
             return References.Concat(ScriptAssemblyReferences.Select(a => a.FullPath)).ToArray();
         }
+
+        public IEnumerable<ScriptAssembly> AllRecursiveScripAssemblyReferencesIncludingSelf() =>
+            ScriptAssemblyReferences
+                .SelectMany(a => a.AllRecursiveScripAssemblyReferencesIncludingSelf())
+                .Concat(new[] {this});
 
         public MonoIsland ToMonoIsland(EditorScriptCompilationOptions options, string buildOutputDirectory, string projectPath = null)
         {
@@ -116,8 +113,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var referencesArray = references.Concat(References).ToArray();
 
-            var responseFileProvider = Language?.CreateResponseFileProvider();
-            if (!string.IsNullOrEmpty(projectPath) && responseFileProvider != null)
+            var responseFileProvider = new MicrosoftCSharpResponseFileProvider();
+            if (!string.IsNullOrEmpty(projectPath))
             {
                 responseFileProvider.ProjectPath = projectPath;
             }
@@ -140,12 +137,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public string[] GetResponseFiles()
         {
-            if (Language == null)
-            {
-                throw new ArgumentException("Language: not set on ScriptAssembly. Cannot resolve responsefiles");
-            }
-            var responseFileProvider = Language.CreateResponseFileProvider();
-            return responseFileProvider.Get(OriginPath).ToArray();
+            return new MicrosoftCSharpResponseFileProvider().Get(OriginPath).ToArray();
         }
     }
 }

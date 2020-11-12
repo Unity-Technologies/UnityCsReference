@@ -375,7 +375,7 @@ namespace UnityEngine
         }
     }
 
-    internal partial class ApplicationEditor
+    public partial class Application
     {
         // Returns the platform the game is running (RO).
         extern public static RuntimePlatform platform
@@ -426,18 +426,5 @@ namespace UnityEngine
             [FreeFunction("GetInternetReachability")]
             get;
         }
-    }
-
-    public partial class Application
-    {
-        public static RuntimePlatform platform => ShimManager.applicationShim.platform;
-
-        public static bool isMobilePlatform => ShimManager.applicationShim.isMobilePlatform;
-
-        public static bool isConsolePlatform => ShimManager.applicationShim.isConsolePlatform;
-
-        public static SystemLanguage systemLanguage => ShimManager.applicationShim.systemLanguage;
-
-        public static NetworkReachability internetReachability => ShimManager.applicationShim.internetReachability;
     }
 }

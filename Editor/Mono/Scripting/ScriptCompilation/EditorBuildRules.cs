@@ -5,14 +5,9 @@
 // Do not add "using System.IO", use AssetPath methods instead
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading;
-using Unity.Profiling;
 using UnityEditor.Compilation;
-using UnityEditor.Scripting.Compilers;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -35,28 +30,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public string[] RoslynAnalyzerDllPaths { get; set; }
         }
 
-        public class GenerateChangedScriptAssembliesArgs
-        {
-            public Dictionary<string, string> AllSourceFiles { get; set; }
-            public IEnumerable<TargetAssembly> DirtyTargetAssemblies { get; set; }
-            public IEnumerable<string> DirtyPrecompiledAssemblies { get; set; }
-            public string ProjectDirectory { get; set; }
-            public ScriptAssemblySettings Settings { get; set; }
-            public CompilationAssemblies Assemblies { get; set; }
-            public HashSet<string> RunUpdaterAssemblies { get; set; }
-            public HashSet<TargetAssembly> NotCompiledTargetAssemblies { get; set; }
-            public TargetAssembly[] NoScriptsCustomTargetAssemblies { get; set; }
-            public HashSet<string> NotCompiledScripts { get; set; }
-
-            public GenerateChangedScriptAssembliesArgs()
-            {
-                NotCompiledTargetAssemblies = new HashSet<TargetAssembly>();
-                NoScriptsCustomTargetAssemblies = new TargetAssembly[0];
-                NotCompiledScripts = new HashSet<string>();
-            }
-        }
-
         static readonly TargetAssembly[] predefinedTargetAssemblies;
+
+        private static readonly string[] s_CSharpVersionDefines =
+        {
+            "CSHARP_7_OR_LATER", // Incremental Compiler adds this.
+            "CSHARP_7_3_OR_NEWER",
+        };
 
         static EditorBuildRules()
         {
@@ -66,30 +46,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static TargetAssembly[] GetPredefinedTargetAssemblies()
         {
             return predefinedTargetAssemblies;
-        }
-
-        public static PrecompiledAssembly CreateUserCompiledAssembly(string path)
-        {
-            var flags = AssemblyFlags.None;
-
-            var lowerPath = Utility.FastToLower(path);
-            if (lowerPath.Contains("/editor/") || lowerPath.Contains(@"\editor\"))
-                flags |= AssemblyFlags.EditorOnly;
-
-            return new PrecompiledAssembly
-            {
-                Path = path,
-                Flags = flags
-            };
-        }
-
-        public static PrecompiledAssembly CreateEditorCompiledAssembly(string path)
-        {
-            return new PrecompiledAssembly
-            {
-                Path = path,
-                Flags = AssemblyFlags.EditorOnly
-            };
         }
 
         public static string[] PredefinedTargetAssemblyNames
@@ -135,7 +91,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 var lowerAdditionalPathPrefixes = customAssembly.AdditionalPrefixes?.Select(Utility.FastToLower).ToArray();
 
                 var targetAssembly = new TargetAssembly(customAssembly.Name + ".dll",
-                    null,
                     customAssembly.AssemblyFlags,
                     TargetAssemblyType.Custom,
                     customAssembly.PathPrefix,
@@ -149,6 +104,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         ? customAssembly.VersionDefines.ToList() : new List<VersionDefine>(),
                     RootNamespace = customAssembly.RootNamespace,
                     ResponseFileDefines = customAssembly.ResponseFileDefines,
+                    AsmDefPath = customAssembly.FilePath
                 };
 
                 targetAssemblies.Add(targetAssembly);
@@ -194,7 +150,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             String projectDirectory,
             ScriptAssemblySettings settings,
             CompilationAssemblies assemblies,
-            HashSet<String> runUpdaterAssemblies,
             TargetAssemblyType onlyIncludeType = TargetAssemblyType.Undefined,
             Func<TargetAssembly, bool> targetAssemblyCondition = null)
         {
@@ -222,207 +177,28 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (onlyIncludeType != TargetAssemblyType.Undefined && targetAssembly.Type != onlyIncludeType)
                     continue;
 
-                var scriptExtension = ScriptCompilers.GetExtensionOfSourceFile(scriptFile);
-                var scriptLanguage = ScriptCompilers.GetLanguageFromExtension(scriptExtension);
-
-                if (targetAssembly.Language == null && targetAssembly.Type == TargetAssemblyType.Custom)
-                    targetAssembly.Language = scriptLanguage;
-
                 DirtyTargetAssembly dirtyTargetAssembly;
 
                 if (!targetAssemblyFiles.TryGetValue(targetAssembly, out dirtyTargetAssembly))
                 {
-                    dirtyTargetAssembly = new DirtyTargetAssembly(DirtySource.None);
+                    dirtyTargetAssembly = new DirtyTargetAssembly();
                     targetAssemblyFiles[targetAssembly] = dirtyTargetAssembly;
                 }
 
                 dirtyTargetAssembly.SourceFiles.Add(AssetPath.Combine(projectDirectory, scriptFile));
             }
 
-            return ToScriptAssemblies(targetAssemblyFiles, settings, assemblies, runUpdaterAssemblies);
+            return ToScriptAssemblies(targetAssemblyFiles, settings, assemblies);
         }
 
         internal class DirtyTargetAssembly
         {
-            public DirtyTargetAssembly(DirtySource dirtySource)
+            public DirtyTargetAssembly()
             {
                 SourceFiles = new HashSet<string>();
-                DirtySource = dirtySource;
             }
 
             public HashSet<string> SourceFiles { get; set; }
-            public DirtySource DirtySource { get; set; }
-        }
-
-        static void AddDirtyTargetAssembly(Dictionary<TargetAssembly, DirtyTargetAssembly> dirtyTargetAssemblies, TargetAssembly targetAssembly, DirtySource dirtySource)
-        {
-            DirtyTargetAssembly dirtyTargetAssembly;
-
-            if (dirtyTargetAssemblies.TryGetValue(targetAssembly, out dirtyTargetAssembly))
-            {
-                dirtyTargetAssembly.DirtySource |= dirtySource;
-            }
-            else
-            {
-                dirtyTargetAssembly = new DirtyTargetAssembly(dirtySource);
-                dirtyTargetAssemblies[targetAssembly] = dirtyTargetAssembly;
-            }
-        }
-
-        public static ScriptAssembly[] GenerateChangedScriptAssemblies(GenerateChangedScriptAssembliesArgs args)
-        {
-            var dirtyTargetAssemblies = new Dictionary<TargetAssembly, DirtyTargetAssembly>();
-
-            // Add initial dirty target assemblies
-            foreach (var dirtyTargetAssembly in args.DirtyTargetAssemblies)
-            {
-                if (!IsCompatibleWithPlatformAndDefines(dirtyTargetAssembly, args.Settings))
-                    continue;
-
-                AddDirtyTargetAssembly(dirtyTargetAssemblies, dirtyTargetAssembly, DirtySource.DirtyAssembly);
-            }
-
-            // Dirty custom script assemblies that have explicit references to
-            // explicitly referenced dirty precompiled assemblies.
-            if (args.Assemblies.CustomTargetAssemblies != null)
-            {
-                foreach (var dirtyPrecompiledAssembly in args.DirtyPrecompiledAssemblies)
-                {
-                    var customTargetAssembliesWithExplictReferences = args.Assemblies.CustomTargetAssemblies.Where(a => (a.Value.Flags & AssemblyFlags.ExplicitReferences) == AssemblyFlags.ExplicitReferences);
-
-                    foreach (var entry in customTargetAssembliesWithExplictReferences)
-                    {
-                        var customTargetAssembly = entry.Value;
-
-                        if (!customTargetAssembly.ExplicitPrecompiledReferences.Contains(dirtyPrecompiledAssembly))
-                            continue;
-
-                        if (!IsCompatibleWithPlatformAndDefines(customTargetAssembly, args.Settings))
-                            continue;
-
-                        AddDirtyTargetAssembly(dirtyTargetAssemblies, customTargetAssembly, DirtySource.DirtyReference);
-                    }
-                }
-            }
-
-            var allTargetAssemblies = args.Assemblies.CustomTargetAssemblies == null ?
-                predefinedTargetAssemblies :
-                predefinedTargetAssemblies.Concat(args.Assemblies.CustomTargetAssemblies.Values).ToArray();
-
-            // Mark all assemblies that the script updater must be run on as dirty.
-            if (args.RunUpdaterAssemblies != null)
-                foreach (var assemblyFilename in args.RunUpdaterAssemblies)
-                {
-                    var targetAssembly = allTargetAssemblies.First(a => a.Filename == assemblyFilename);
-
-                    AddDirtyTargetAssembly(dirtyTargetAssemblies, targetAssembly, DirtySource.DirtyAssembly);
-                }
-
-            bool isAnyCustomScriptAssemblyDirty = dirtyTargetAssemblies.Any(entry =>
-            {
-                var targetAssembly = entry.Key;
-                bool isCustomScriptAssembly = targetAssembly.Type == TargetAssemblyType.Custom;
-                bool isExplicitlyReferenced = (targetAssembly.Flags & AssemblyFlags.ExplicitlyReferenced) == AssemblyFlags.ExplicitlyReferenced;
-                return isCustomScriptAssembly && !isExplicitlyReferenced;
-            });
-
-            // If we have any dirty custom target assemblies, then the predefined target assemblies are marked as dirty,
-            // as the predefined assemblies always reference the custom script assemblies.
-            if (isAnyCustomScriptAssemblyDirty)
-            {
-                foreach (var assembly in predefinedTargetAssemblies)
-                {
-                    if (!IsCompatibleWithPlatformAndDefines(assembly, args.Settings))
-                        continue;
-
-                    AddDirtyTargetAssembly(dirtyTargetAssemblies, assembly, DirtySource.DirtyReference);
-                }
-            }
-
-            // Return empty array in case of no dirty target assemblies
-            if (dirtyTargetAssemblies.Count == 0)
-                return new ScriptAssembly[0];
-
-            // Collect any TargetAssemblies that reference the dirty TargetAssemblies, as they will also be dirty.
-            int dirtyAssemblyCount;
-
-            do
-            {
-                dirtyAssemblyCount = 0;
-
-                foreach (var assembly in allTargetAssemblies)
-                {
-                    if (!IsCompatibleWithPlatformAndDefines(assembly, args.Settings))
-                        continue;
-
-                    // If already dirty, skip.
-                    if (dirtyTargetAssemblies.ContainsKey(assembly))
-                        continue;
-
-                    foreach (var reference in assembly.References)
-                        if (dirtyTargetAssemblies.ContainsKey(reference))
-                        {
-                            AddDirtyTargetAssembly(dirtyTargetAssemblies, assembly, DirtySource.DirtyReference);
-                            dirtyAssemblyCount++;
-                            break;
-                        }
-                }
-            }
-            while (dirtyAssemblyCount > 0);
-
-            // Add any source files that belong to dirty TargetAssemblies
-            foreach (var entry in args.AllSourceFiles)
-            {
-                var sourceFile = entry.Key;
-                var assemblyName = entry.Value;
-                var targetAssembly = GetTargetAssembly(sourceFile, assemblyName, args.ProjectDirectory, args.Assemblies.CustomTargetAssemblies);
-
-                if (targetAssembly == null)
-                {
-                    args.NotCompiledScripts.Add(sourceFile);
-                    continue;
-                }
-
-                DirtyTargetAssembly dirtyTargetAssembly;
-                if (!dirtyTargetAssemblies.TryGetValue(targetAssembly, out dirtyTargetAssembly))
-                    continue;
-
-                var scriptExtension = ScriptCompilers.GetExtensionOfSourceFile(sourceFile);
-                var scriptLanguage = ScriptCompilers.GetLanguageFromExtension(scriptExtension);
-
-                if (targetAssembly.Language == null && targetAssembly.Type == TargetAssemblyType.Custom)
-                    targetAssembly.Language = scriptLanguage;
-
-                dirtyTargetAssembly.SourceFiles.Add(AssetPath.Combine(args.ProjectDirectory, sourceFile));
-            }
-
-            // Remove any target assemblies which have no source files associated with them.
-            var noScriptsCustomTargetAssemblies = new List<TargetAssembly>();
-
-            foreach (var entry in dirtyTargetAssemblies)
-            {
-                var targetAssembly = entry.Key;
-                if (!IsCompatibleWithPlatformAndDefines(targetAssembly, args.Settings))
-                {
-                    throw new InvalidOperationException($"{targetAssembly.Filename}: is not compatible with {args.Settings.BuildTarget}.");
-                }
-                if (entry.Value.SourceFiles.Count == 0 && targetAssembly.Type == TargetAssemblyType.Custom)
-                {
-                    noScriptsCustomTargetAssemblies.Add(targetAssembly);
-                }
-            }
-
-            args.NoScriptsCustomTargetAssemblies = noScriptsCustomTargetAssemblies.ToArray();
-
-            dirtyTargetAssemblies = dirtyTargetAssemblies.Where(e => e.Value.SourceFiles.Count > 0).ToDictionary(e => e.Key, e => e.Value);
-
-            // Remove any target assemblies which have been marked as do not compile.
-            foreach (var removeAssembly in args.NotCompiledTargetAssemblies)
-                dirtyTargetAssemblies.Remove(removeAssembly);
-
-            // Convert TargetAssemblies to ScriptAssembiles
-            var scriptAssemblies = ToScriptAssemblies(dirtyTargetAssemblies, args.Settings, args.Assemblies, args.RunUpdaterAssemblies);
-            return scriptAssemblies;
         }
 
         static bool ShouldUseAnalyzerForScriptAssembly(ScriptAssembly sa, TargetAssembly targetAssemblyOwningAnalyzer)
@@ -448,8 +224,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         internal static ScriptAssembly[] ToScriptAssemblies(
             IDictionary<TargetAssembly, DirtyTargetAssembly> targetAssemblies,
             ScriptAssemblySettings settings,
-            CompilationAssemblies assemblies,
-            HashSet<string> runUpdaterAssemblies)
+            CompilationAssemblies assemblies)
         {
             var scriptAssemblies = new ScriptAssembly[targetAssemblies.Count];
 
@@ -470,28 +245,23 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 // Setup ScriptAssembly
                 scriptAssembly.Flags = targetAssembly.Flags;
                 scriptAssembly.BuildTarget = settings.BuildTarget;
-                scriptAssembly.Language = targetAssembly.Language;
                 scriptAssembly.OriginPath = targetAssembly.PathPrefix;
                 scriptAssembly.Filename = targetAssembly.Filename;
                 scriptAssembly.RootNamespace = targetAssembly.Type == TargetAssemblyType.Predefined ? settings.ProjectRootNamespace : targetAssembly.RootNamespace;
-                scriptAssembly.DirtySource = dirtyTargetAssembly.DirtySource;
-
-                if (runUpdaterAssemblies != null && runUpdaterAssemblies.Contains(scriptAssembly.Filename))
-                    scriptAssembly.CallOnBeforeCompilationStarted = true;
-
-                var compilerDefines = scriptAssembly.Language.GetCompilerDefines();
 
                 scriptAssembly.OutputDirectory = settings.OutputDirectory;
-                scriptAssembly.Defines = targetAssembly.Defines == null ? compilerDefines : targetAssembly.Defines.Concat(compilerDefines).ToArray();
+                scriptAssembly.Defines = targetAssembly.Defines == null ? s_CSharpVersionDefines : targetAssembly.Defines.Concat(s_CSharpVersionDefines).ToArray();
                 scriptAssembly.Files = dirtyTargetAssembly.SourceFiles.ToArray();
-
                 scriptAssembly.TargetAssemblyType = targetAssembly.Type;
+                scriptAssembly.AsmDefPath = targetAssembly.AsmDefPath;
 
                 if (scriptAssembly.TargetAssemblyType == TargetAssemblyType.Predefined)
                     scriptAssembly.CompilerOptions = new ScriptCompilerOptions(settings.PredefinedAssembliesCompilerOptions);
                 else
                     scriptAssembly.CompilerOptions = targetAssembly.CompilerOptions;
 
+                scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths = new string[0];
+                scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath = string.Empty;
                 scriptAssembly.CompilerOptions.AdditionalCompilerArguments = settings.AdditionalCompilerArguments;
 
                 var editorOnlyTargetAssembly = (targetAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
@@ -501,27 +271,25 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 else
                     scriptAssembly.CompilerOptions.ApiCompatibilityLevel = settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel;
 
-                if (buildingForEditor && (settings.CompilationOptions & EditorScriptCompilationOptions.BuildingUseReferenceAssemblies) > 0)
-                    scriptAssembly.CompilerOptions.EmitReferenceAssembly = true;
-
-                if ((settings.CompilationOptions &
-                     EditorScriptCompilationOptions.BuildingUseDeterministicCompilation) ==
-                    EditorScriptCompilationOptions.BuildingUseDeterministicCompilation)
-                {
+                if ((settings.CompilationOptions & EditorScriptCompilationOptions.BuildingUseDeterministicCompilation) == EditorScriptCompilationOptions.BuildingUseDeterministicCompilation)
                     scriptAssembly.CompilerOptions.UseDeterministicCompilation = true;
-                }
+                else
+                    scriptAssembly.CompilerOptions.UseDeterministicCompilation = false;
 
-                scriptAssembly.CompilerOptions.CodeOptimization = (buildingForEditor
-                    && settings.EditorCodeOptimization == CodeOptimization.Release
-                    || !buildingForEditor && !settings.BuildingDevelopmentBuild)
-                    ? CodeOptimization.Release : CodeOptimization.Debug;
+                scriptAssembly.CompilerOptions.CodeOptimization = settings.CodeOptimization;
             }
 
             // Don't add the auto-referenced engine assemblies if the assembly either has the flag set, or
             // is a codegen assembly
             AutoReferencedPackageAssemblies.AddReferences(assemblies.CustomTargetAssemblies, settings.CompilationOptions,
-                t => !(((t.Flags & AssemblyFlags.NoEngineReferences) == AssemblyFlags.NoEngineReferences) ||
-                    UnityCodeGenHelpers.IsCodeGen(t.Filename)));
+                t =>
+                {
+                    var hasNoEngineReferencesFlag = (t.Flags & AssemblyFlags.NoEngineReferences) == AssemblyFlags.NoEngineReferences;
+                    if (hasNoEngineReferencesFlag)
+                        return false;
+
+                    return !UnityCodeGenHelpers.IsCodeGen(t.Filename);
+                });
 
             // Setup ScriptAssembly references
             index = 0;
@@ -562,7 +330,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                                 scriptAssembly.TargetAssemblyType == TargetAssemblyType.Predefined
                                 ? RuleSetFileCache.GetRuleSetFilePathInRootFolder(Path.ChangeExtension(scriptAssembly.Filename, null))
                                 : RuleSetFileCache.GetPathForAssembly(scriptAssembly.OriginPath);
-                            scriptAssembly.CompilerOptions.EmitReferenceAssembly = false;
                         }
                     }
                 }
@@ -629,14 +396,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     System.Diagnostics.Debug.Assert(scriptAssemblyReference != null);
                     scriptAssemblyReferences.Add(scriptAssemblyReference);
                 }
-                else
-                {
-                    // Add string references to other assemblies that do not need to be rebuilt.
-                    var assemblyPath = reference.FullPath(settings.OutputDirectory);
-
-                    if (AssetPath.Exists(assemblyPath))
-                        references.Add(assemblyPath);
-                }
             }
 
             // For predefined target assembly add references to custom target assemblies
@@ -650,14 +409,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     // Otherwise just add already compiled custom target assembly as precompiled reference.
                     if (targetToScriptAssembly.TryGetValue(customTargetAssembly, out scriptAssemblyReference))
                         scriptAssemblyReferences.Add(scriptAssemblyReference);
-                    else
-                    {
-                        var customTargetAssemblyPath = customTargetAssembly.FullPath(settings.OutputDirectory);
-
-                        // File might not exist if there are no scripts in the custom target assembly folder.
-                        if (AssetPath.Exists(customTargetAssemblyPath))
-                            references.Add(customTargetAssemblyPath);
-                    }
                 }
             }
 
@@ -702,7 +453,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (buildingForEditor && assemblies.EditorAssemblyReferences != null)
                 references.AddRange(assemblies.EditorAssemblyReferences);
 
-            references.AddRange(MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.CompilerOptions.ApiCompatibilityLevel, scriptAssembly.Language));
+            references.AddRange(MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.CompilerOptions.ApiCompatibilityLevel));
 
             scriptAssembly.ScriptAssemblyReferences = scriptAssemblyReferences.ToArray();
             scriptAssembly.References = references.ToArray();
@@ -855,7 +606,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return (settings.CompilationOptions & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
         }
 
-        static bool IsCompatibleWithPlatformAndDefines(TargetAssembly assembly, ScriptAssemblySettings settings)
+        public static bool IsCompatibleWithPlatformAndDefines(TargetAssembly assembly, ScriptAssemblySettings settings)
         {
             return assembly.IsCompatibleFunc == null || assembly.IsCompatibleFunc(settings, assembly.Defines);
         }
@@ -878,18 +629,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var editorFirstPassAssemblies = new List<TargetAssembly>();
             var editorAssemblies = new List<TargetAssembly>();
 
-            var supportedLanguages = ScriptCompilers.SupportedLanguages;
             var assemblies = new List<TargetAssembly>();
 
             var scriptCompilerOptions = new ScriptCompilerOptions();
 
             // Initialize predefined assembly targets
-            foreach (var language in supportedLanguages)
             {
-                var languageName = language.GetLanguageName();
+                const string languageName = "CSharp";
 
                 var runtimeFirstPass = new TargetAssembly("Assembly-" + languageName + "-firstpass" + ".dll",
-                    language,
                     AssemblyFlags.FirstPass | AssemblyFlags.UserAssembly | AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers,
                     TargetAssemblyType.Predefined,
                     null,
@@ -899,7 +647,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     scriptCompilerOptions);
 
                 var runtime = new TargetAssembly("Assembly-" + languageName + ".dll",
-                    language,
                     AssemblyFlags.UserAssembly | AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers,
                     TargetAssemblyType.Predefined,
                     null,
@@ -909,7 +656,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     scriptCompilerOptions);
 
                 var editorFirstPass = new TargetAssembly("Assembly-" + languageName + "-Editor-firstpass" + ".dll",
-                    language,
                     AssemblyFlags.EditorOnly | AssemblyFlags.FirstPass | AssemblyFlags.UserAssembly | AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers,
                     TargetAssemblyType.Predefined,
                     null,
@@ -919,7 +665,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     scriptCompilerOptions);
 
                 var editor = new TargetAssembly("Assembly-" + languageName + "-Editor" + ".dll",
-                    language,
                     AssemblyFlags.EditorOnly | AssemblyFlags.UserAssembly | AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers,
                     TargetAssemblyType.Predefined,
                     null,

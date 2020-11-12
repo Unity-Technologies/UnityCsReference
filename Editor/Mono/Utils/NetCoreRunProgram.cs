@@ -16,6 +16,8 @@ namespace UnityEditor.Scripting
         static string netcoreRunPath;
         static bool? isNetCoreRunSupported;
 
+        public static string NetCoreRunPath => netcoreRunPath;
+
         static NetCoreRunProgram()
         {
             netcoreRunPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "netcorerun", "netcorerun");

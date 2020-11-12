@@ -816,6 +816,34 @@ namespace UnityEditor
             return (int)prop.floatValue;
         }
 
+        public int IntegerProperty(MaterialProperty prop, string label)
+        {
+            return IntegerPropertyInternal(prop, new GUIContent(label));
+        }
+
+        internal int IntegerPropertyInternal(MaterialProperty prop, GUIContent label)
+        {
+            Rect r = GetPropertyRect(prop, label, true);
+            return IntegerPropertyInternal(r, prop, label);
+        }
+
+        public int IntegerProperty(Rect position, MaterialProperty prop, string label)
+        {
+            return IntegerPropertyInternal(position, prop, new GUIContent(label));
+        }
+
+        internal int IntegerPropertyInternal(Rect position, MaterialProperty prop, GUIContent label)
+        {
+            EditorGUI.BeginChangeCheck();
+            EditorGUI.showMixedValue = prop.hasMixedValue;
+            int newValue = EditorGUI.IntField(position, label, prop.intValue);
+            EditorGUI.showMixedValue = false;
+            if (EditorGUI.EndChangeCheck())
+                prop.intValue = newValue;
+
+            return prop.intValue;
+        }
+
         public float FloatProperty(MaterialProperty prop, string label)
         {
             return FloatPropertyInternal(prop, new GUIContent(label));
@@ -1478,6 +1506,9 @@ namespace UnityEditor
                     break;
                 case MaterialProperty.PropType.Float: // floats
                     FloatPropertyInternal(position, prop, label);
+                    break;
+                case MaterialProperty.PropType.Int: // ints
+                    IntegerPropertyInternal(position, prop, label);
                     break;
                 case MaterialProperty.PropType.Color: // colors
                     ColorPropertyInternal(position, prop, label);

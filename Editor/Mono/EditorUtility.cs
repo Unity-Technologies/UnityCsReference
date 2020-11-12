@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEditor.Compilation;
 using UnityEditor.Experimental;
 using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
@@ -343,9 +344,10 @@ namespace UnityEditor
             return (target.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector;
         }
 
-        public static string[] CompileCSharp(string[] sources, string[] references, string[] defines, string outputFile)
+        [Obsolete(message: "Use UnityEditor.Compilation.AssemblyBuilder instead", error: true)]
+        public static string[] CompileCSharp(string[] scripts, string[] references, string[] defines, string outputAssembly)
         {
-            return Scripting.Compilers.MicrosoftCSharpCompiler.Compile(sources, references, defines, outputFile, PlayerSettings.allowUnsafeCode);
+            throw new NotSupportedException("CompileCSharp is no longer supported. Use UnityEditor.Compilation.AssemblyBuilder instead.");
         }
 
         [Obsolete("Use PrefabUtility.InstantiatePrefab", false)]
@@ -590,7 +592,6 @@ namespace UnityEditor
         internal static void InitInstantiatedPreviewRecursive(GameObject go)
         {
             go.hideFlags = HideFlags.HideAndDontSave;
-            go.layer = Camera.PreviewCullingLayer;
             foreach (Transform c in go.transform)
                 InitInstantiatedPreviewRecursive(c.gameObject);
         }

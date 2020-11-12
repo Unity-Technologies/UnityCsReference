@@ -8,7 +8,7 @@ namespace UnityEditor.Compilation
 {
     public class AssemblyDefinitionException : Exception
     {
-        public string[] filePaths { get; private set; }
+        public string[] filePaths { get; }
 
         public AssemblyDefinitionException(string message, params string[] filePaths) : base(message)
         {
@@ -18,7 +18,7 @@ namespace UnityEditor.Compilation
 
     public class PrecompiledAssemblyException : Exception
     {
-        public string[] filePaths { get; private set; }
+        public string[] filePaths { get; }
 
         public PrecompiledAssemblyException(string message, params string[] filePaths) : base(message)
         {

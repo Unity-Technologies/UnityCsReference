@@ -4,13 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using UnityEditor.Scripting.ScriptCompilation;
 using System.Linq;
 using UnityEditor.Scripting.Compilers;
 using sc = UnityEditor.Scripting.ScriptCompilation;
 using UnityEditorInternal;
-using UnityEngine;
 using UnityEngine.Scripting;
 
 namespace UnityEditor.Compilation
@@ -27,9 +25,16 @@ namespace UnityEditor.Compilation
         public string RoslynAnalyzerRulesetPath { get; set; }
         public string[] RoslynAnalyzerDllPaths { get; set; }
         public bool AllowUnsafeCode { get; set; }
-        public bool EmitReferenceAssembly { get; set; }
-        public string[] AdditionalCompilerArguments { get; set; }
+
+        [Obsolete("Use of reference assemblies is always enabled", true)]
+        public bool EmitReferenceAssembly
+        {
+            get { throw new NotImplementedException("Use of reference assemblies is always enabled"); }
+            set { throw new NotImplementedException("Use of reference assemblies is always enabled"); }
+        }
+
         internal bool UseDeterministicCompilation { get; set; }
+        public string[] AdditionalCompilerArguments { get; set; }
         public CodeOptimization CodeOptimization { get; set; }
         public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
         public string[] ResponseFiles { get; set; }
@@ -50,7 +55,6 @@ namespace UnityEditor.Compilation
             RoslynAnalyzerDllPaths = new List<string>(scriptCompilerOptions.RoslynAnalyzerDllPaths).ToArray();
             RoslynAnalyzerRulesetPath = scriptCompilerOptions.RoslynAnalyzerRulesetPath;
             UseDeterministicCompilation = scriptCompilerOptions.UseDeterministicCompilation;
-            EmitReferenceAssembly = scriptCompilerOptions.EmitReferenceAssembly;
             AllowUnsafeCode = scriptCompilerOptions.AllowUnsafeCode;
             CodeOptimization = scriptCompilerOptions.CodeOptimization;
             ApiCompatibilityLevel = scriptCompilerOptions.ApiCompatibilityLevel;
@@ -183,6 +187,7 @@ namespace UnityEditor.Compilation
 
         public static event Action<object> compilationStarted;
         public static event Action<object> compilationFinished;
+        [Obsolete("Use compilationStarted, compilationFinished or assemblyCompilationFinished instead. Note that using any of these functions to do time measurements is a bad idea as they run async to actual compilation.")]
         public static event Action<string> assemblyCompilationStarted;
         public static event Action<string, CompilerMessage[]> assemblyCompilationFinished;
 
@@ -231,8 +236,7 @@ namespace UnityEditor.Compilation
             {
                 try
                 {
-                    if (compilationStarted != null)
-                        compilationStarted(context);
+                    compilationStarted?.Invoke(context);
                 }
                 catch (Exception e)
                 {
@@ -244,8 +248,7 @@ namespace UnityEditor.Compilation
             {
                 try
                 {
-                    if (compilationFinished != null)
-                        compilationFinished(context);
+                    compilationFinished?.Invoke(context);
                 }
                 catch (Exception e)
                 {
@@ -253,25 +256,22 @@ namespace UnityEditor.Compilation
                 }
             };
 
-            editorCompilation.assemblyCompilationStarted += (assemblyPath) =>
+            editorCompilation.assemblyCompilationFinished += (scriptAssembly, messages) =>
             {
                 try
                 {
-                    if (assemblyCompilationStarted != null)
-                        assemblyCompilationStarted(assemblyPath);
+#pragma warning disable 618
+                    assemblyCompilationStarted?.Invoke(scriptAssembly.FullPath);
+#pragma warning restore 618
                 }
                 catch (Exception e)
                 {
                     UnityEngine.Debug.LogException(e);
                 }
-            };
 
-            editorCompilation.assemblyCompilationFinished += (assembly, messages, editorScriptCompilationSettings) =>
-            {
                 try
                 {
-                    if (assemblyCompilationFinished != null)
-                        assemblyCompilationFinished(assembly.FullPath, messages);
+                    assemblyCompilationFinished?.Invoke(scriptAssembly.FullPath, messages);
                 }
                 catch (Exception e)
                 {
@@ -302,19 +302,38 @@ namespace UnityEditor.Compilation
 
         internal static Assembly[] GetAssemblies(EditorCompilation editorCompilation, AssembliesType assembliesType)
         {
+            return ToAssemblies(GetScriptAssemblies(editorCompilation, assembliesType));
+        }
+
+        internal static ScriptAssembly[] GetScriptAssemblies(EditorCompilation editorCompilation, AssembliesType assembliesType)
+        {
             var options = EditorCompilationInterface.GetAdditionalEditorScriptCompilationOptions();
 
             switch (assembliesType)
             {
                 case AssembliesType.Editor:
-                    return GetEditorAssemblies(editorCompilation, options | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies, null);
+                    options |= EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
+                    options |= EditorScriptCompilationOptions.BuildingForEditor;
+                    break;
                 case AssembliesType.Player:
-                    return GetPlayerAssemblies(editorCompilation, options | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies, null);
+                    options |= EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
+                    options &= ~EditorScriptCompilationOptions.BuildingForEditor;
+                    break;
                 case AssembliesType.PlayerWithoutTestAssemblies:
-                    return GetPlayerAssemblies(editorCompilation, options, null);
+                    options &= ~EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
+                    options &= ~EditorScriptCompilationOptions.BuildingForEditor;
+                    break;
                 default:
-                    throw new ArgumentOutOfRangeException("assembliesType");
+                    throw new ArgumentOutOfRangeException(nameof(assembliesType));
             }
+
+            var group = EditorUserBuildSettings.activeBuildTargetGroup;
+            var target = EditorUserBuildSettings.activeBuildTarget;
+            var buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) != 0;
+
+            var unityAssemblies = InternalEditorUtility.GetUnityAssemblies(buildingForEditor, group, target);
+            var precompiledAssemblies = editorCompilation.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(buildingForEditor, group, target);
+            return editorCompilation.GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies, null);
         }
 
         public static string GetAssemblyNameFromScriptPath(string sourceFilePath)
@@ -463,7 +482,7 @@ namespace UnityEditor.Compilation
             sc.AssemblyFlags flags = sc.AssemblyFlags.None;
             if ((precompiledAssemblySources & PrecompiledAssemblySources.SystemAssembly) != 0)
             {
-                foreach (var a in MonoLibraryHelpers.GetSystemLibraryReferences(ApiCompatibilityLevel.NET_4_6, Scripting.ScriptCompilers.CSharpSupportedLanguage))
+                foreach (var a in MonoLibraryHelpers.GetSystemLibraryReferences(ApiCompatibilityLevel.NET_4_6))
                 {
                     assemblyNames.Add(a);
                 }
@@ -505,24 +524,6 @@ namespace UnityEditor.Compilation
                 }
             }
             return null;
-        }
-
-        private static Assembly[] GetEditorAssemblies(EditorCompilation editorCompilation, EditorScriptCompilationOptions additionalOptions, string[] defines)
-        {
-            var scriptAssemblies = editorCompilation.GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | additionalOptions, defines);
-            return ToAssemblies(scriptAssemblies);
-        }
-
-        internal static Assembly[] GetPlayerAssemblies(EditorCompilation editorCompilation, EditorScriptCompilationOptions options, string[] defines)
-        {
-            var group = EditorUserBuildSettings.activeBuildTargetGroup;
-            var target = EditorUserBuildSettings.activeBuildTarget;
-
-            PrecompiledAssembly[] unityAssemblies = InternalEditorUtility.GetUnityAssemblies(false, group, target);
-            var precompiledAssemblies = EditorCompilationInterface.Instance.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(false, group, target);
-
-            var scriptAssemblies = editorCompilation.GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies, defines);
-            return ToAssemblies(scriptAssemblies);
         }
 
         internal static Assembly[] ToAssemblies(ScriptAssembly[] scriptAssemblies)
@@ -656,15 +657,7 @@ namespace UnityEditor.Compilation
             }
         }
 
-        public static void RequestScriptCompilation()
-        {
-            RequestScriptCompilation(EditorCompilationInterface.Instance);
-        }
-
-        internal static void RequestScriptCompilation(EditorCompilation editorCompilation)
-        {
-            editorCompilation.DirtyAllScripts();
-        }
+        public static void RequestScriptCompilation() => EditorCompilationInterface.RequestScriptCompilation("Requested through public api");
 
         [RequiredByNativeCode]
         internal static void OnCodeOptimizationChanged(bool scriptDebugInfoEnabled)

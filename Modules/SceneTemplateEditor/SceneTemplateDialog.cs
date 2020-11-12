@@ -85,7 +85,7 @@ namespace UnityEditor.SceneTemplate
             name = "Empty (Built-in)",
             isPinned = true,
             thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-empty-scene.png",
-            description = L10n.Tr("Just an empty scene - no Game Objects, uses the built-in renderer."),
+            description = L10n.Tr("Just an empty scene - no Game Objects."),
             onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Empty, additive)
         };
         internal static SceneTemplateInfo default2DSceneTemplateInfo = new SceneTemplateInfo
@@ -101,7 +101,7 @@ namespace UnityEditor.SceneTemplate
             name = "Basic 3D (Built-in)",
             isPinned = true,
             thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-3d-scene.png",
-            description = L10n.Tr("Contains a camera and directional light, works with built-in renderer."),
+            description = L10n.Tr("Contains a camera and directional light. Works with built-in renderer."),
             onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default2DMode3DCamera, additive)
         };
         internal static SceneTemplateInfo default3DSceneTemplateInfo = new SceneTemplateInfo

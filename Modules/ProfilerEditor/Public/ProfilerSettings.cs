@@ -40,7 +40,7 @@ namespace UnityEditor.Profiling
                 if (m_FrameCount == 0)
                 {
                     var value = EditorPrefs.GetInt(k_FrameCountSettingKey, kMinFrameCount);
-                    m_FrameCount = Mathf.Clamp(value, 0, kMaxFrameCount);
+                    m_FrameCount = Mathf.Clamp(value, kMinFrameCount, kMaxFrameCount);
                     ProfilerDriver.SetMaxFrameHistoryLength(m_FrameCount);
                 }
 

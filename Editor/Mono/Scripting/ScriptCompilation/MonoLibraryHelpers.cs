@@ -20,12 +20,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static CachedReferences cachedReferences;
 
-        public static string[] GetSystemLibraryReferences(ApiCompatibilityLevel apiCompatibilityLevel, SupportedLanguage supportedLanguage)
+        public static string[] GetSystemLibraryReferences(ApiCompatibilityLevel apiCompatibilityLevel)
         {
-            // The language may not be compatible with these additional references
-            if (supportedLanguage != null && !supportedLanguage.CompilerRequiresAdditionalReferences())
-                return new string[0];
-
             return GetCachedSystemLibraryReferences(apiCompatibilityLevel);
         }
 

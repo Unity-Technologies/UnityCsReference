@@ -82,8 +82,6 @@ namespace UnityEditor
         [SerializeField] RenderTexture m_RenderTexture;
 
         int m_SizeChangeID = int.MinValue;
-        [System.NonSerialized]
-        bool m_IsRepaintDelegateRegistered = false;
 
         List<XRDisplaySubsystem> m_DisplaySubsystems = new List<XRDisplaySubsystem>();
 
@@ -293,7 +291,6 @@ namespace UnityEditor
 
         public void OnDisable()
         {
-            RemoveRepaintDelegate();
             ModeService.modeChanged -= OnEditorModeChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             if (m_RenderTexture)
@@ -761,41 +758,21 @@ namespace UnityEditor
             {
                 // Enable vsync in play mode to get as much as possible frame rate consistency
                 m_Parent.EnableVSync(m_VSyncEnabled);
-                RemoveRepaintDelegate();
             }
             else if (state == PlayModeStateChange.ExitingPlayMode)
             {
                 m_Parent.EnableVSync(false);
-                AddRepaintDelegate();
             }
         }
 
         void OnBecameVisible()
         {
-            AddRepaintDelegate();
+            EditorApplication.update += RepaintIfNeeded;
         }
 
         void OnBecameInvisible()
         {
-            RemoveRepaintDelegate();
-        }
-
-        void AddRepaintDelegate()
-        {
-            if (!m_IsRepaintDelegateRegistered && !EditorApplication.isPlaying)
-            {
-                EditorApplication.update += RepaintIfNeeded;
-                m_IsRepaintDelegateRegistered = true;
-            }
-        }
-
-        void RemoveRepaintDelegate()
-        {
-            if (m_IsRepaintDelegateRegistered)
-            {
-                EditorApplication.update -= RepaintIfNeeded;
-                m_IsRepaintDelegateRegistered = false;
-            }
+            EditorApplication.update -= RepaintIfNeeded;
         }
 
         void RepaintIfNeeded()

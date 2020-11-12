@@ -163,8 +163,9 @@ namespace UnityEditor
             public static readonly GUIContent skinOnGPUCompute = EditorGUIUtility.TrTextContent("Compute Skinning*", "Use Compute pipeline for Skinning");
             public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols", "Preprocessor defines passed to the C# script compiler.");
             public static readonly GUIContent additionalCompilerArguments = EditorGUIUtility.TrTextContent("Additional Compiler Arguments", "Additional arguments passed to the C# script compiler.");
-            public static readonly GUIContent applyButtonText = EditorGUIUtility.TrTextContent("Apply");
-            public static readonly GUIContent revertButtonText = EditorGUIUtility.TrTextContent("Revert");
+            public static readonly GUIContent scriptingDefineSymbolsApply = EditorGUIUtility.TrTextContent("Apply");
+            public static readonly GUIContent scriptingDefineSymbolsApplyRevert = EditorGUIUtility.TrTextContent("Revert");
+            public static readonly GUIContent scriptingDefineSymbolsCopyDefines = EditorGUIUtility.TrTextContent("Copy Defines", "Copy applied defines");
             public static readonly GUIContent suppressCommonWarnings = EditorGUIUtility.TrTextContent("Suppress Common Warnings", "Suppresses C# warnings CS0169 and CS0649.");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
@@ -184,7 +185,6 @@ namespace UnityEditor
             public static readonly GUIContent scriptCompilationTitle = EditorGUIUtility.TrTextContent("Script Compilation");
             public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code", "Allow compilation of unsafe code for predefined assemblies (Assembly-CSharp.dll, etc.)");
             public static readonly GUIContent useDeterministicCompilation = EditorGUIUtility.TrTextContent("Use Deterministic Compilation", "Compile with -deterministic compilation flag");
-            public static readonly GUIContent useReferenceAssembclies = EditorGUIUtility.TrTextContent("Use Roslyn Reference Assemblies", "Skips compilation of assembly references if the metadata of the modified assembly does not change.");
             public static readonly GUIContent enableRoslynAnalyzers = EditorGUIUtility.TrTextContent("Enable Roslyn Analyzers", "User-written scripts will be compiled with Roslyn analyzer DLLs that are present in the project.");
             public static readonly GUIContent activeInputHandling = EditorGUIUtility.TrTextContent("Active Input Handling*");
             public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager (Old)"), EditorGUIUtility.TrTextContent("Input System Package (New)"), EditorGUIUtility.TrTextContent("Both") };
@@ -387,7 +387,6 @@ namespace UnityEditor
 
         // Scripting
         SerializedProperty m_UseDeterministicCompilation;
-        SerializedProperty m_UseReferenceAssemblies;
         SerializedProperty m_ScriptingBackend;
         SerializedProperty m_EnableRoslynAnalyzers;
         SerializedProperty m_APICompatibilityLevel;
@@ -412,6 +411,7 @@ namespace UnityEditor
             s_GraphicsDeviceLists[target].list = PlayerSettings.GetGraphicsAPIs(target).ToList();
         }
 
+        static ReorderableList s_ScriptingDefineSymbolsList;
         static ReorderableList s_ColorGamutList;
 
         public static void SyncColorGamuts()
@@ -526,7 +526,6 @@ namespace UnityEditor
             m_GCIncremental                 = FindPropertyAssert("gcIncremental");
             m_AssemblyVersionValidation = FindPropertyAssert("assemblyVersionValidation");
             m_UseDeterministicCompilation   = FindPropertyAssert("useDeterministicCompilation");
-            m_UseReferenceAssemblies        = FindPropertyAssert("useReferenceAssemblies");
             m_ScriptingBackend              = FindPropertyAssert("scriptingBackend");
             m_EnableRoslynAnalyzers         = FindPropertyAssert("enableRoslynAnalyzers");
             m_APICompatibilityLevel         = FindPropertyAssert("apiCompatibilityLevelPerPlatform");
@@ -2012,51 +2011,7 @@ namespace UnityEditor
                 m_VirtualTexturingSupportEnabled.boolValue = EditorGUILayout.Toggle(SettingsContent.virtualTexturingSupportEnabled, m_VirtualTexturingSupportEnabled.boolValue);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    bool doApply = false;
-                    var dirtyScenes = new List<Scene>(EditorSceneManager.sceneCount);
-                    for (int i = 0; i < EditorSceneManager.sceneCount; ++i)
-                    {
-                        var scene = EditorSceneManager.GetSceneAt(i);
-                        if (scene.isDirty)
-                            dirtyScenes.Add(scene);
-                    }
-                    if (dirtyScenes.Count != 0)
-                    {
-                        var result = EditorUtility.DisplayDialogComplex("Changing Virtual Texturing support",
-                            "Enabling or disabling Virtual Texturing requires a restart of the Editor.",
-                            "Save and Restart", "Cancel", "Discard Changes and Restart");
-                        if (result == 1)
-                        {
-                            doApply = false; // Cancel was selected
-                        }
-                        else
-                        {
-                            doApply = true;
-                            if (result == 0) // Save and Restart was selected
-                            {
-                                for (int i = 0; i < dirtyScenes.Count; ++i)
-                                {
-                                    bool saved = EditorSceneManager.SaveScene(dirtyScenes[i]);
-                                    if (saved == false)
-                                    {
-                                        doApply = false;
-                                    }
-                                }
-                            }
-                            else // Discard Changes and Restart was selected
-                            {
-                                for (int i = 0; i < dirtyScenes.Count; ++i)
-                                    EditorSceneManager.ClearSceneDirtiness(dirtyScenes[i]);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        doApply = EditorUtility.DisplayDialog("Changing Virtual Texturing support",
-                            "Enabling or disabling Virtual Texturing requires a restart of the Editor.",
-                            "Restart Editor", "Cancel");
-                    }
-                    if (doApply)
+                    if (PlayerSettings.OnVirtualTexturingChanged())
                     {
                         PlayerSettings.SetVirtualTexturingSupportEnabled(m_VirtualTexturingSupportEnabled.boolValue);
                         EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
@@ -2205,17 +2160,23 @@ namespace UnityEditor
         internal static void ShowApplicationIdentifierUI(SerializedProperty prop, BuildTargetGroup targetGroup, bool overrideDefaultID, string defaultID, string label, string tooltip)
         {
             var oldIdentifier = "";
-            string currentIdentifier = defaultID;
+            string currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(defaultID, targetGroup);
+            var buildTargetGroup = (targetGroup == BuildTargetGroup.iOS) ? "iPhone" : targetGroup.ToString();
 
             if (!prop.serializedObject.isEditingMultipleObjects)
             {
-                prop.TryGetMapEntry(targetGroup.ToString(), out var entry);
+                prop.TryGetMapEntry(buildTargetGroup, out var entry);
 
                 if (entry != null)
                     oldIdentifier = entry.FindPropertyRelative("second").stringValue;
 
-                if (overrideDefaultID && currentIdentifier != oldIdentifier)
-                    currentIdentifier = oldIdentifier;
+                if (currentIdentifier != oldIdentifier)
+                {
+                    if (overrideDefaultID)
+                        currentIdentifier = oldIdentifier;
+                    else
+                        prop.SetMapValue(buildTargetGroup, currentIdentifier);
+                }
 
                 EditorGUI.BeginChangeCheck();
 
@@ -2228,28 +2189,24 @@ namespace UnityEditor
                     currentIdentifier = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent(label, tooltip), currentIdentifier);
                 }
 
-                if (!overrideDefaultID && currentIdentifier != oldIdentifier)
-                {
-                    currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
-                    prop.SetMapValue(targetGroup.ToString(), currentIdentifier);
-                }
-
                 if (EditorGUI.EndChangeCheck())
                 {
                     var sanitizedIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
                     if (overrideDefaultID && sanitizedIdentifier != currentIdentifier)
                         Debug.LogError("Invalid characters have been removed from the Applicaton Identifier");
                     currentIdentifier = sanitizedIdentifier;
-                    prop.SetMapValue(targetGroup.ToString(), currentIdentifier);
+                    prop.SetMapValue(buildTargetGroup, currentIdentifier);
                 }
             }
         }
 
         internal static void ShowBuildNumberUI(SerializedProperty prop, BuildTargetGroup targetGroup, string label, string tooltip)
         {
+            var buildTargetGroup = (targetGroup == BuildTargetGroup.iOS) ? "iPhone" : targetGroup.ToString();
+
             if (!prop.serializedObject.isEditingMultipleObjects)
             {
-                prop.TryGetMapEntry(targetGroup.ToString(), out var entry);
+                prop.TryGetMapEntry(buildTargetGroup, out var entry);
 
                 if (entry != null)
                 {
@@ -2554,38 +2511,47 @@ namespace UnityEditor
                     if (serializedScriptingDefines == null || scriptingDefineSymbolsList == null)
                         InitReorderableScriptingDefineSymbolsList(targetGroup);
 
-                    using (var propertyScope = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_ScriptingDefines))
+                    scriptingDefineSymbolsList.DoLayoutList();
+
+                    using (new EditorGUILayout.HorizontalScope())
                     {
-                        scriptingDefineSymbolsList.DoLayoutList();
+                        GUILayout.FlexibleSpace();
 
-                        using (new EditorGUILayout.HorizontalScope())
+                        var GUIState = GUI.enabled;
+
+                        if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsCopyDefines,
+                            EditorStyles.miniButton))
                         {
-                            GUILayout.FlexibleSpace();
-
-                            var GUIState = GUI.enabled;
-
-                            GUI.enabled = hasScriptingDefinesBeenModified;
-
-                            if (GUILayout.Button(SettingsContent.revertButtonText, EditorStyles.miniButton))
-                            {
-                                UpdateScriptingDefineSymbolsLists();
-                            }
-
-                            if (GUILayout.Button(SettingsContent.applyButtonText, EditorStyles.miniButton))
-                            {
-                                SetScriptingDefineSymbolsForGroup(targetGroup, scriptingDefinesList.ToArray());
-
-                                // Get Scripting Define Symbols without duplicates
-                                serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(targetGroup);
-                                UpdateScriptingDefineSymbolsLists();
-
-                                if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
-                                    RecompileScripts(RecompileReason.scriptingDefineSymbolsModified);
-                            }
-
-                            // Set previous GUIState
-                            GUI.enabled = GUIState;
+                            EditorGUIUtility.systemCopyBuffer = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup);
                         }
+
+                        GUI.enabled = hasScriptingDefinesBeenModified;
+
+                        if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApplyRevert, EditorStyles.miniButton))
+                        {
+                            // Make sure to remove focus from reorderable list text field on revert
+                            GUI.FocusControl(null);
+
+                            UpdateScriptingDefineSymbolsLists();
+                        }
+
+                        if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApply, EditorStyles.miniButton))
+                        {
+                            // Make sure to remove focus from reorderable list text field on apply
+                            GUI.FocusControl(null);
+
+                            SetScriptingDefineSymbolsForGroup(targetGroup, scriptingDefinesList.ToArray());
+
+                            // Get Scripting Define Symbols without duplicates
+                            serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(targetGroup);
+                            UpdateScriptingDefineSymbolsLists();
+
+                            if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
+                                RecompileScripts(RecompileReason.scriptingDefineSymbolsModified);
+                        }
+
+                        // Set previous GUIState
+                        GUI.enabled = GUIState;
                     }
 
                     scriptingDefinesControlID = EditorGUIUtility.s_LastControlID;
@@ -2608,12 +2574,12 @@ namespace UnityEditor
 
                             using (new EditorGUI.DisabledScope(!hasAdditionalCompilerArgumentsBeenModified))
                             {
-                                if (GUILayout.Button(SettingsContent.revertButtonText, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                                if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApplyRevert, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                                 {
                                     UpdateAdditionalCompilerArgumentsLists();
                                 }
 
-                                if (GUILayout.Button(SettingsContent.applyButtonText, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                                if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApply, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                                 {
                                     SetAdditionalCompilerArgumentsForGroup(targetGroup, additionalCompilerArgumentsList.ToArray());
 
@@ -2657,7 +2623,6 @@ namespace UnityEditor
             }
 
             EditorGUILayout.PropertyField(m_EnableRoslynAnalyzers, SettingsContent.enableRoslynAnalyzers);
-            EditorGUILayout.PropertyField(m_UseReferenceAssemblies, SettingsContent.useReferenceAssembclies);
         }
 
         void DrawTextField(Rect rect, int index)
@@ -2674,7 +2639,8 @@ namespace UnityEditor
             }
 
             string define = scriptingDefinesList[index];
-            scriptingDefinesList[index] = GUI.TextField(rect, scriptingDefinesList[index]);
+            scriptingDefinesList[index] = EditorGUI.TextField(rect, scriptingDefinesList[index]);
+
             if (!scriptingDefinesList[index].Equals(define))
                 SetScriptingDefinesListDirty();
         }
@@ -2708,6 +2674,14 @@ namespace UnityEditor
         {
             scriptingDefinesList.RemoveAt(list.index);
             SetScriptingDefinesListDirty();
+        }
+
+        void DrawScriptingDefinesHeaderCallback(Rect rect)
+        {
+            using (new EditorGUI.PropertyScope(rect, GUIContent.none, m_ScriptingDefines))
+            {
+                GUI.Label(rect, SettingsContent.scriptingDefineSymbols, EditorStyles.label);
+            }
         }
 
         void SetScriptingDefinesListDirty(ReorderableList list = null)
@@ -3165,11 +3139,14 @@ namespace UnityEditor
 
         void InitReorderableScriptingDefineSymbolsList(BuildTargetGroup targetGroup)
         {
+            // Get Scripting Define Symbols data
+            string defines = GetScriptingDefineSymbolsForGroup(targetGroup);
             scriptingDefinesList = new List<string>(PlayerSettings.ConvertScriptingDefineStringToArray(serializedScriptingDefines));
 
+            // Initialize Reorderable List
             scriptingDefineSymbolsList = new ReorderableList(scriptingDefinesList, typeof(string), true, true, true, true);
             scriptingDefineSymbolsList.drawElementCallback = (rect, index, isActive, isFocused) => DrawTextField(rect, index);
-            scriptingDefineSymbolsList.drawHeaderCallback = (rect) => GUI.Label(rect, SettingsContent.scriptingDefineSymbols, EditorStyles.label);
+            scriptingDefineSymbolsList.drawHeaderCallback = (rect) => DrawScriptingDefinesHeaderCallback(rect);
             scriptingDefineSymbolsList.onAddCallback = AddScriptingDefineCallback;
             scriptingDefineSymbolsList.onRemoveCallback = RemoveScriptingDefineCallback;
             scriptingDefineSymbolsList.onChangedCallback = SetScriptingDefinesListDirty;

@@ -158,7 +158,7 @@ namespace UnityEditor
             else if (m_ChannelMode == ChannelMode.SpecificChannel)
                 mode = m_SpecificChannel;
 
-            s_Material.SetInt("_ChanDrawMode", mode);
+            s_Material.SetFloat("_ChanDrawMode", (float)mode);
 
             Graphics.DrawTexture(rect, m_Texture, s_Material);
         }

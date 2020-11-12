@@ -75,8 +75,6 @@ namespace UnityEditor.UIElements
                 new Vector3IntField.UxmlFactory(),
                 new BoundsIntField.UxmlFactory(),
 
-                new ProgressBar.UxmlFactory(),
-
                 new EventTypeSelectField.UxmlFactory()
             };
 

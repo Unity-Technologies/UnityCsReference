@@ -405,7 +405,7 @@ namespace UnityEngine
         static public bool UnloadLevel(string scenePath) { return SceneManager.UnloadScene(scenePath); }
     }
 
-    internal partial class ApplicationEditor
+    public partial class Application
     {
         // Are we running inside the Unity editor? (RO)
         public static bool isEditor
@@ -415,10 +415,5 @@ namespace UnityEngine
                 return true;
             }
         }
-    }
-
-    public partial class Application
-    {
-        public static bool isEditor => ShimManager.applicationShim.isEditor;
     }
 }

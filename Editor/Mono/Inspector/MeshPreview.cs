@@ -142,7 +142,7 @@ namespace UnityEditor
             var mat = new Material(shader);
             mat.hideFlags = HideFlags.HideAndDontSave;
             mat.SetColor("_Color", new Color(0, 0, 0, 0.3f));
-            mat.SetInt("_ZWrite", 0);
+            mat.SetFloat("_ZWrite", 0.0f);
             mat.SetFloat("_ZBias", -1.0f);
             return mat;
         }
@@ -170,10 +170,10 @@ namespace UnityEditor
             }
             var mat = new Material(shader);
             mat.hideFlags = HideFlags.HideAndDontSave;
-            mat.SetInt("_SrcBlend", (int)BlendMode.SrcAlpha);
-            mat.SetInt("_DstBlend", (int)BlendMode.OneMinusSrcAlpha);
-            mat.SetInt("_Cull", (int)CullMode.Off);
-            mat.SetInt("_ZWrite", 0);
+            mat.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+            mat.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+            mat.SetFloat("_Cull", (float)CullMode.Off);
+            mat.SetFloat("_ZWrite", 0.0f);
             return mat;
         }
 
@@ -185,7 +185,7 @@ namespace UnityEditor
 
             m_Settings.activeUVChannel = 0;
 
-            m_Settings.meshMultiPreviewMaterial.SetInt("_UVChannel", m_Settings.activeUVChannel);
+            m_Settings.meshMultiPreviewMaterial.SetFloat("_UVChannel", (float)m_Settings.activeUVChannel);
             m_Settings.meshMultiPreviewMaterial.SetTexture("_MainTex", null);
 
             m_Settings.activeBlendshape = 0;
@@ -256,7 +256,7 @@ namespace UnityEditor
             m_Settings.activeUVChannel = popupIndex;
 
             if (m_Settings.displayMode == DisplayMode.UVLayout || m_Settings.displayMode == DisplayMode.UVChecker)
-                m_Settings.activeMaterial.SetInt("_UVChannel", popupIndex);
+                m_Settings.activeMaterial.SetFloat("_UVChannel", (float)popupIndex);
         }
 
         void DestroyBakedSkinnedMesh()
@@ -682,8 +682,8 @@ namespace UnityEditor
 
             m_Settings.activeMaterial = mat;
 
-            m_Settings.activeMaterial.SetInt("_Mode", mode);
-            m_Settings.activeMaterial.SetInt("_UVChannel", 0);
+            m_Settings.activeMaterial.SetFloat("_Mode", (float)mode);
+            m_Settings.activeMaterial.SetFloat("_UVChannel", 0.0f);
         }
 
         void MeshPreviewZoom(Rect rect, Event evt)

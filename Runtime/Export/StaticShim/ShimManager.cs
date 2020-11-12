@@ -83,17 +83,17 @@ namespace UnityEngine
             return s_ActiveApplicationShim == shim;
         }
 
-        internal bool IsScreenShimActive()
+        internal static bool IsScreenShimActive()
         {
             return s_ActiveScreenShim != null;
         }
 
-        internal bool IsSystemInfoShimActive()
+        internal static bool IsSystemInfoShimActive()
         {
             return s_ActiveSystemInfoShim != null;
         }
 
-        internal bool IsApplicationShimActive()
+        internal static bool IsApplicationShimActive()
         {
             return s_ActiveApplicationShim != null;
         }
