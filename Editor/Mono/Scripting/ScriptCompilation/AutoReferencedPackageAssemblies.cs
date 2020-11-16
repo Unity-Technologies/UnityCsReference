@@ -22,7 +22,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static HashSet<string> editorAssemblyNames = new HashSet<string>(new[]
         {
             "UnityEditor.UI.dll",
-            "UnityEditor.UIElementsModule.dll"
+            "UnityEditor.UIElementsModule.dll",
+            "UnityEditor.UIBuilderModule.dll"
         },
             StringComparer.Ordinal);
 

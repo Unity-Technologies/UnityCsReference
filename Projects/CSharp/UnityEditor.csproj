@@ -3331,9 +3331,6 @@
     <Compile Include="..\..\Editor\Mono\StaticOcclusionCulling.bindings.cs">
       <Link>Editor\Mono\StaticOcclusionCulling.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\SyncProject.cs">
-      <Link>Editor\Mono\SyncProject.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\TagManager.bindings.cs">
       <Link>Editor\Mono\TagManager.bindings.cs</Link>
     </Compile>
@@ -3586,23 +3583,8 @@
     <Compile Include="..\..\Editor\Mono\View.cs">
       <Link>Editor\Mono\View.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\AssemblyNameProvider.cs">
-      <Link>Editor\Mono\VisualStudioIntegration\AssemblyNameProvider.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\FileIO.cs">
       <Link>Editor\Mono\VisualStudioIntegration\FileIO.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\GUIDGenerator.cs">
-      <Link>Editor\Mono\VisualStudioIntegration\GUIDGenerator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\SolutionSynchronizationSettings.cs">
-      <Link>Editor\Mono\VisualStudioIntegration\SolutionSynchronizationSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\SolutionSynchronizer.cs">
-      <Link>Editor\Mono\VisualStudioIntegration\SolutionSynchronizer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\UnityVSSupport.cs">
-      <Link>Editor\Mono\VisualStudioIntegration\UnityVSSupport.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\VisualStudioUtil.bindings.cs">
       <Link>Editor\Mono\VisualStudioUtil.bindings.cs</Link>
@@ -3616,17 +3598,449 @@
     <Compile Include="..\..\External\JsonParsers\MiniJson\MiniJSON.cs">
       <Link>External\JsonParsers\MiniJson\MiniJSON.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Builder.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Builder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\BuilderExternalPackages.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\BuilderExternalPackages.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\BuilderPane.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\BuilderPane.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\BuilderPaneContent.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\BuilderPaneContent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\BuilderPaneWindow.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\BuilderPaneWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\BuilderSelection.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\BuilderSelection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\BuilderSettingsProvider.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\BuilderSettingsProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Document\BuilderDocument.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Document\BuilderDocument.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Document\BuilderDocumentOpenUSS.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Document\BuilderDocumentOpenUSS.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Document\BuilderDocumentOpenUXML.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Document\BuilderDocumentOpenUXML.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Document\BuilderDocumentSettings.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Document\BuilderDocumentSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Document\BuilderUXMLFileSettings.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Document\BuilderUXMLFileSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Draggers\BuilderClassDragger.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Draggers\BuilderClassDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Draggers\BuilderDragger.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Draggers\BuilderDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Draggers\BuilderExplorerDragger.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Draggers\BuilderExplorerDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Draggers\BuilderHierarchyDragger.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Draggers\BuilderHierarchyDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Draggers\BuilderLibraryDragger.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Draggers\BuilderLibraryDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Draggers\BuilderStyleSheetsDragger.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Draggers\BuilderStyleSheetsDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderExplorer.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderExplorer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderExplorerItem.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderExplorerItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderHierarchy.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderHierarchy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderHierarchyUtilities.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderHierarchyUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderHierarchyWindow.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderHierarchyWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderNewSelectorField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderNewSelectorField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderStyleSheets.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderStyleSheets.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderStyleSheetsContextMenu.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderStyleSheetsContextMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderStyleSheetsUtilities.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderStyleSheetsUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderStyleSheetsWindow.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Explorer\BuilderStyleSheetsWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspector.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorAttributes.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorCanvas.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorCanvas.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorInheritedStyles.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorInheritedStyles.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorLocalStyles.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorLocalStyles.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorMatchingSelectors.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorMatchingSelectors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorSelector.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorStyleFields.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorStyleFields.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorStyleSheet.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorStyleSheet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorWindow.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderStyleRow.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderStyleRow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\IBuilderInspectorSection.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\IBuilderInspectorSection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Library\BuilderLibrary.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Library\BuilderLibrary.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Library\BuilderLibraryContent.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Library\BuilderLibraryContent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Library\BuilderLibraryPlainView.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Library\BuilderLibraryPlainView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Library\BuilderLibraryProjectScanner.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Library\BuilderLibraryProjectScanner.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Library\BuilderLibraryTreeItem.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Library\BuilderLibraryTreeItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Library\BuilderLibraryTreeView.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Library\BuilderLibraryTreeView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Library\BuilderLibraryView.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Library\BuilderLibraryView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Library\BuilderLibraryWindow.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Library\BuilderLibraryWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Manipulators\BuilderAnchorer.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Manipulators\BuilderAnchorer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Manipulators\BuilderManipulator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Manipulators\BuilderManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Manipulators\BuilderMover.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Manipulators\BuilderMover.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Manipulators\BuilderParentTracker.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Manipulators\BuilderParentTracker.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Manipulators\BuilderResizer.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Manipulators\BuilderResizer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Manipulators\BuilderSelectionIndicator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Manipulators\BuilderSelectionIndicator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Manipulators\BuilderTracker.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Manipulators\BuilderTracker.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Manipulators\BuilderTransformer.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Manipulators\BuilderTransformer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Previews\BuilderCodePreview.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Previews\BuilderCodePreview.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Previews\BuilderPreviewWindow.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Previews\BuilderPreviewWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Previews\BuilderTooltipPreview.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Previews\BuilderTooltipPreview.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Previews\BuilderUssPreview.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Previews\BuilderUssPreview.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Previews\BuilderUssPreviewWindow.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Previews\BuilderUssPreviewWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Previews\BuilderUxmlPreview.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Previews\BuilderUxmlPreview.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Previews\BuilderUxmlPreviewWindow.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Previews\BuilderUxmlPreviewWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Toolbar\BuilderToolbar.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Toolbar\BuilderToolbar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderAssetModificationProcessor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderAssetModificationProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderAssetPostprocessor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderAssetPostprocessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderAssetUtilities.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderAssetUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderCommandHandler.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderCommandHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderConstants.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderConstants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderDialogsUtility.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderDialogsUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderEditorUtility.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderEditorUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderElementContextMenu.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderElementContextMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderNameUtilities.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderNameUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderPackageUtilities.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderPackageUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderProjectSettings.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderProjectSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderSharedStyles.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderSharedStyles.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderUXMLEditorFactories.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderUXMLEditorFactories.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderCanvas.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderCanvas.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderInPlaceTextEditingUtilities.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderInPlaceTextEditingUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderNotifications.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderNotifications.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderPanner.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderPanner.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderViewport.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderViewport.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderViewportWindow.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderViewportWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderZoomer.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderZoomer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\IBuilderViewportWindow.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\IBuilderViewportWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Background\CheckerboardBackground.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Background\CheckerboardBackground.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ButtonStrip\ButtonStrip.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ButtonStrip\ButtonStrip.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ElementHierarchyView\BaseOverlayPainter.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ElementHierarchyView\BaseOverlayPainter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ElementHierarchyView\ElementHierarchyView.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ElementHierarchyView\ElementHierarchyView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ElementHierarchyView\HighlightOverlayPainter.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ElementHierarchyView\HighlightOverlayPainter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ElementHierarchyView\LayoutOverlayPainter.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ElementHierarchyView\LayoutOverlayPainter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ElementHierarchyView\OverlayPainterHelperElement.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ElementHierarchyView\OverlayPainterHelperElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ElementHierarchyView\RepaintOverlayPainter.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ElementHierarchyView\RepaintOverlayPainter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\FoldoutField\FoldoutColorField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\FoldoutField\FoldoutColorField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\FoldoutField\FoldoutField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\FoldoutField\FoldoutField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\FoldoutField\FoldoutNumberField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\FoldoutField\FoldoutNumberField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\FoldoutWithCheckbox\FoldoutWithCheckbox.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\FoldoutWithCheckbox\FoldoutWithCheckbox.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\FontStyleStrip\FontStyleStrip.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\FontStyleStrip\FontStyleStrip.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\HelpBox\HelpBox.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\HelpBox\HelpBox.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Importers\BuilderStyleSheetImporter.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Importers\BuilderStyleSheetImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Importers\BuilderVisualTreeAssetImporter.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Importers\BuilderVisualTreeAssetImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\LibraryFoldout\LibraryFoldout.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\LibraryFoldout\LibraryFoldout.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ModalPopup\ModalPopup.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ModalPopup\ModalPopup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\MultiTypeField\MultiTypeField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\MultiTypeField\MultiTypeField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\PercentSlider\PercentSlider.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\PercentSlider\PercentSlider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\PersistedFoldout\PersistedFoldout.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\PersistedFoldout\PersistedFoldout.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ReflectionExtensions\ReflectionExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ReflectionExtensions\ReflectionExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\SampleDocument\BuilderAttributesTestElement.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\SampleDocument\BuilderAttributesTestElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\DimensionStyleField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\DimensionStyleField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\ImageStyleField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\ImageStyleField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\IntegerStyleField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\IntegerStyleField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\NumericStyleField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\NumericStyleField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\StyleField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\StyleField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\StyleFieldConstants.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\StyleFieldConstants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\StyleVariableUtilities.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\StyleVariableUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\VariableEditingHandler.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\VariableEditingHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\VariableField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\VariableField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\VariableInfoTooltip.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\VariableInfoTooltip.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\CSSSpecCopy.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\CSSSpecCopy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StyleComplexSelectorExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StyleComplexSelectorExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StylePropertyExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StylePropertyExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StyleRuleExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StyleRuleExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StyleSheetExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StyleSheetExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StyleSheetToUss.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StyleSheetToUss.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StyleSheetUtilities.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StyleSheetUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StyleValueHandleExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StyleValueHandleExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TextAlignStrip\TextAlignStrip.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TextAlignStrip\TextAlignStrip.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ToggleButtonStrip\ToggleButtonStrip.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ToggleButtonStrip\ToggleButtonStrip.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TwoPaneSplitView\TwoPaneSplitView.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TwoPaneSplitView\TwoPaneSplitView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TwoPaneSplitView\TwoPaneSplitViewResizer.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TwoPaneSplitView\TwoPaneSplitViewResizer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TwoPaneSplitView\TwoPaneSplitViewTestWindow.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TwoPaneSplitView\TwoPaneSplitViewTestWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\UIExtensionsTestWindow\UIExtensionsTestWindow.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\UIExtensionsTestWindow\UIExtensionsTestWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\UnityUIBuilderSelectionMarker\UnityUIBuilderSelectionMarker.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\UnityUIBuilderSelectionMarker\UnityUIBuilderSelectionMarker.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualElementExtensions\VisualElementExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualElementExtensions\VisualElementExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\IUxmlFactoryExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\IUxmlFactoryExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\TemplateAssetExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\TemplateAssetExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\VisualElementAssetExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\VisualElementAssetExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\VisualTreeAssetExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\VisualTreeAssetExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\VisualTreeAssetLinkedCloneTree.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\VisualTreeAssetLinkedCloneTree.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\VisualTreeAssetToUXML.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\VisualTreeAssetToUXML.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\VisualTreeAssetUtilities.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\VisualTreeAssetUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Bindings\BindingExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Bindings\BindingExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Bindings\BindingStyleHelpers.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Bindings\BindingStyleHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Bindings\BindingsInterface.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Bindings\BindingsInterface.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Bindings\ListViewBindings.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Bindings\ListViewBindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Bindings\SerializedPropertyHelper.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Bindings\SerializedPropertyHelper.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\BaseCompositeField.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\BaseCompositeField.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\BasePopupField.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\BasePopupField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\BindingExtensions.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\BindingExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\BindingsInterface.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\BindingsInterface.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\BoundsField.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\BoundsField.cs</Link>
@@ -3669,9 +4083,6 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\LayerMaskField.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\LayerMaskField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\ListViewBindings.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\ListViewBindings.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\LongField.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\LongField.cs</Link>
@@ -3885,6 +4296,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\WindowBackends\DefaultWindowBackend.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\WindowBackends\DefaultWindowBackend.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\NiceIO\NiceIO.cs">
+      <Link>External\NiceIO\NiceIO.cs</Link>
     </Compile>
     <Compile Include="..\..\External\il2cpp\builds\Il2CppEditorIntegration\SharedWithEditor.cs">
       <Link>External\il2cpp\builds\Il2CppEditorIntegration\SharedWithEditor.cs</Link>
@@ -4164,6 +4578,12 @@
     </Compile>
     <Compile Include="..\..\Modules\DeviceSimulatorEditor\DeviceSimulatorMain.cs">
       <Link>Modules\DeviceSimulatorEditor\DeviceSimulatorMain.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DeviceSimulatorEditor\Input\InputManagerBackend.cs">
+      <Link>Modules\DeviceSimulatorEditor\Input\InputManagerBackend.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DeviceSimulatorEditor\Input\TouchEventManipulator.cs">
+      <Link>Modules\DeviceSimulatorEditor\Input\TouchEventManipulator.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\DeviceSimulatorEditor\Shims\ScreenSimulation.cs">
       <Link>Modules\DeviceSimulatorEditor\Shims\ScreenSimulation.cs</Link>
@@ -4633,6 +5053,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmVersionList.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmVersionList.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\AddPackageByNameDropdown.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\AddPackageByNameDropdown.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\Alert.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\Alert.cs</Link>
     </Compile>
@@ -4672,6 +5095,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\SimplePage.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\SimplePage.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\TextFieldPlaceholder.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Common\TextFieldPlaceholder.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\ToolbarWindowMenu.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\ToolbarWindowMenu.cs</Link>
     </Compile>
@@ -4684,8 +5110,17 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\VisualStateList.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\VisualStateList.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\DropdownContainer.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\DropdownContainer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\DropdownContent.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\DropdownContent.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Filters\AssetStoreFiltersWindow.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Filters\AssetStoreFiltersWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\GenericInputDropdown.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\GenericInputDropdown.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\InProgressView.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\InProgressView.cs</Link>
@@ -4803,6 +5238,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\DependencyInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\DependencyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\EntitlementLicenseType.cs">
+      <Link>Modules\PackageManager\Editor\Managed\EntitlementLicenseType.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\EntitlementsInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\EntitlementsInfo.cs</Link>

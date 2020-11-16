@@ -273,6 +273,8 @@ namespace UnityEditor.UIElements
         }
 
         private readonly ObjectFieldDisplay m_ObjectFieldDisplay;
+        private readonly Action m_AsyncOnProjectOrHierarchyChangedCallback;
+        private readonly Action m_OnProjectOrHierarchyChangedCallback;
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -316,13 +318,28 @@ namespace UnityEditor.UIElements
 
             allowSceneObjects = true;
 
-            m_ObjectFieldDisplay = new ObjectFieldDisplay(this) {focusable = true};
+            m_ObjectFieldDisplay = new ObjectFieldDisplay(this) { focusable = true };
             m_ObjectFieldDisplay.AddToClassList(objectUssClassName);
             var objectSelector = new ObjectFieldSelector(this);
             objectSelector.AddToClassList(selectorUssClassName);
             visualInput.AddToClassList(inputUssClassName);
             visualInput.Add(m_ObjectFieldDisplay);
             visualInput.Add(objectSelector);
+
+            // Get notified when hierarchy or project changes so we can update the display to handle renamed/missing objects.
+            // This event is occasionally triggered before the reference in memory is updated, so we give it time to process.
+            m_AsyncOnProjectOrHierarchyChangedCallback = () => schedule.Execute(m_OnProjectOrHierarchyChangedCallback);
+            m_OnProjectOrHierarchyChangedCallback = () => m_ObjectFieldDisplay.Update();
+            RegisterCallback<AttachToPanelEvent>((evt) =>
+            {
+                EditorApplication.projectChanged += m_AsyncOnProjectOrHierarchyChangedCallback;
+                EditorApplication.hierarchyChanged += m_AsyncOnProjectOrHierarchyChangedCallback;
+            });
+            RegisterCallback<DetachFromPanelEvent>((evt) =>
+            {
+                EditorApplication.projectChanged -= m_AsyncOnProjectOrHierarchyChangedCallback;
+                EditorApplication.hierarchyChanged -= m_AsyncOnProjectOrHierarchyChangedCallback;
+            });
         }
 
         private void OnObjectChanged(Object obj)

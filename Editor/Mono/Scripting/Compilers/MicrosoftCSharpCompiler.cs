@@ -28,9 +28,19 @@ namespace UnityEditor.Scripting.Compilers
             // This will ensure that csc.exe won't include csc.rsp
             // csc.rsp references .NET 4.5 assemblies which cause conflicts for us
             arguments.Add("/nostdlib+");
+            arguments.Add("/utf8output");
 
-            // Case 755238: Always use english for outputing errors, the same way as Mono compilers do
-            arguments.Add("/preferreduilang:en-US");
+            var lang = LocalizationDatabase.currentEditorLanguage;
+            if (lang == SystemLanguage.English || !EditorPrefs.GetBool("Editor.kEnableCompilerMessagesLocalization", false))
+            {
+                arguments.Add("/preferreduilang:en-US");
+            }
+            else
+            {
+                var culture = LocalizationDatabase.GetCulture(lang);
+                arguments.Add("/preferreduilang:" + culture);
+            }
+
             arguments.Add("/langversion:" + languageVersion);
         }
 

@@ -139,7 +139,7 @@ namespace UnityEngine.UIElements.UIR
 
         RenderChainCommand m_FirstCommand;
         DepthOrderedDirtyTracking m_DirtyTracker;
-        Pool<RenderChainCommand> m_CommandPool = new Pool<RenderChainCommand>();
+        LinkedPool<RenderChainCommand> m_CommandPool = new LinkedPool<RenderChainCommand>(() => new RenderChainCommand(), cmd => {});
         BasicNodePool<TextureEntry> m_TexturePool = new BasicNodePool<TextureEntry>();
         List<RenderNodeData> m_RenderNodesData = new List<RenderNodeData>();
         Shader m_DefaultShader, m_DefaultWorldSpaceShader;

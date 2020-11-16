@@ -74,12 +74,13 @@ namespace UnityEditor.DeviceSimulation
                 return;
 
             var type = Event.current.type;
-
             if (type == EventType.Repaint)
             {
                 targetSize = m_Main.TargetSize;
-                m_Main.DisplayTexture = RenderView(new Vector2(0, 0), false);
+                m_Main.DisplayTexture = RenderView(m_Main.MousePositionInUICoordinates, false);
             }
+            else if (type != EventType.Layout && type != EventType.Used)
+                m_Main.HandleInputEvent();
         }
 
         public void OnBeforeSerialize()

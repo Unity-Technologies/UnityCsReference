@@ -10,7 +10,7 @@ namespace UnityEditor.UIElements
 {
     class DefaultEditorWindowBackend : DefaultWindowBackend, IEditorWindowBackend
     {
-        private const string k_LiveReloadMenuText = "Live Reload";
+        private const string k_LiveReloadMenuText = "UI Toolkit Live Reload";
         private const string k_LiveReloadPreferenceKeySuffix = ".LiveReloadOn";
         private static string k_GameViewLiveReloadPreferenceKey = null;
 

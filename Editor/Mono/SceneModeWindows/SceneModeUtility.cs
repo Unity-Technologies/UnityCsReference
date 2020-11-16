@@ -146,7 +146,7 @@ namespace UnityEditor
 
         public static bool SetStaticFlags(Object[] targetObjects, int changedFlags, bool flagValue)
         {
-            bool allFlagsAreChanged = (changedFlags == ~0);
+            bool allFlagsAreChanged = (changedFlags == int.MaxValue);
             var msgChangedFlags = changedFlags;
             if (msgChangedFlags < 0 && !allFlagsAreChanged)
             {
@@ -184,6 +184,11 @@ namespace UnityEditor
             foreach (GameObject go in objects)
             {
                 int goFlags = (int)GameObjectUtility.GetStaticEditorFlags(go);
+
+                // Following change is for backward compatibility after fixing case 1221145
+                if (goFlags < 0)
+                    goFlags = int.MaxValue;
+
                 goFlags = flagValue ?
                     goFlags | changedFlags :
                     goFlags & ~changedFlags;

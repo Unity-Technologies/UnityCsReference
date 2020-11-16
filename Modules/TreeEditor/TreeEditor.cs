@@ -264,7 +264,6 @@ namespace TreeEditor
         private Quaternion m_StartPointRotation = Quaternion.identity;
         private bool m_StartPointRotationDirty = false;
         private Quaternion m_GlobalToolRotation = Quaternion.identity;
-        private TreeSpline m_TempSpline;
 
 
 
@@ -983,7 +982,6 @@ namespace TreeEditor
 
                     Matrix4x4 branchMatrix = treeMatrix * branch.matrix;
 
-
                     // Draw Points
                     for (int pointIndex = 0; pointIndex < spline.nodes.Length; pointIndex++)
                     {
@@ -1087,27 +1085,46 @@ namespace TreeEditor
 
                                 break;
                             case EditMode.RotateNode:
-                                Handles.FreeMoveHandle(worldPos, Quaternion.identity, handleSize, Vector3.zero, Handles.CircleHandleCap);
 
-                                // check if point was just selected
-                                if (oldEventType == EventType.MouseDown && evt.type == EventType.Used && oldKeyboardControl != GUIUtility.keyboardControl)
+                                EditorGUI.BeginChangeCheck();
+                                Quaternion newRotation = Handles.FreeRotateHandle(point.rot, worldPos, handleSize);
+                                if (EditorGUI.EndChangeCheck())
                                 {
                                     SelectNode(branch, treeData);
+                                    s_SelectedGroup.Lock();
                                     s_SelectedPoint = pointIndex;
-                                    m_GlobalToolRotation = Quaternion.identity;
-                                    m_TempSpline = new TreeSpline(branch.spline);
+
+                                    Undo.RecordObject(this, "Rotate branch");
+
+                                    //Move all points after the rotation pivot accordingly to the rotation
+                                    for (int i = s_SelectedPoint + 1; i < spline.nodes.Length; i++)
+                                    {
+                                        Vector3 pointVector = (spline.nodes[i].point - point.point);
+                                        pointVector = branchMatrix.MultiplyVector(pointVector);
+                                        pointVector = newRotation * pointVector;
+                                        pointVector = branchMatrix.inverse.MultiplyVector(pointVector);
+                                        Vector3 newPos = point.point + pointVector;
+                                        s_SelectedNode.spline.nodes[i].point = newPos;
+                                    }
+
+                                    spline.UpdateTime();
+                                    spline.UpdateRotations();
+
+                                    PreviewMesh(tree);
                                 }
-
-                                GUI.changed = false;
+                                else if (s_SelectedPoint == pointIndex && treeData.isInPreviewMode)
+                                {
+                                    s_SelectedPoint = -1;
+                                    UpdateMesh(tree);
+                                }
                                 break;
-                            case EditMode.Freehand:
-                                Handles.FreeMoveHandle(worldPos, Quaternion.identity, handleSize, Vector3.zero, Handles.CircleHandleCap);
 
-                                // check if point was just selected
-                                if (oldEventType == EventType.MouseDown && evt.type == EventType.Used && oldKeyboardControl != GUIUtility.keyboardControl)
+                            case EditMode.Freehand:
+                                EditorGUI.BeginChangeCheck();
+                                Vector3 newPosition = Handles.FreeMoveHandle(worldPos, Quaternion.identity, handleSize, Vector3.zero, Handles.CircleHandleCap);
+                                if (EditorGUI.EndChangeCheck())
                                 {
                                     Undo.RegisterCompleteObjectUndo(treeData, "Free Hand");
-
                                     SelectNode(branch, treeData);
                                     s_SelectedPoint = pointIndex;
                                     s_StartPosition = worldPos;
@@ -1115,11 +1132,6 @@ namespace TreeEditor
                                     int cutCount = Mathf.Max(2, s_SelectedPoint + 1);
                                     branch.spline.SetNodeCount(cutCount);
 
-                                    evt.Use();
-                                }
-
-                                if (s_SelectedPoint == pointIndex && s_SelectedNode == branch && oldEventType == EventType.MouseDrag)
-                                {
                                     Ray mouseRay = HandleUtility.GUIPointToWorldRay(evt.mousePosition);
 
                                     // In draw mode.. move current spline node to mouse position
@@ -1146,8 +1158,6 @@ namespace TreeEditor
                                             s_SelectedNode.spline.nodes[s_SelectedPoint - 1].point;
                                         if (delta.magnitude > 1.0f)
                                         {
-                                            s_SelectedNode.spline.nodes[s_SelectedPoint].point =
-                                                s_SelectedNode.spline.nodes[s_SelectedPoint - 1].point + delta;
                                             // move on to the next node
                                             s_SelectedPoint++;
                                             if (s_SelectedPoint >= s_SelectedNode.spline.nodes.Length)
@@ -1160,9 +1170,16 @@ namespace TreeEditor
                                         s_SelectedNode.spline.UpdateRotations();
 
                                         // Make sure changes are saved
-                                        // EditorUtility.SetDirty( selectedGroup );
-                                        evt.Use();
                                         PreviewMesh(tree);
+                                    }
+                                }
+                                else if (s_SelectedPoint == pointIndex)
+                                {
+                                    //SelectNode(null,treeData);
+                                    if (treeData.isInPreviewMode)
+                                    {
+                                        // We need a complete rebuild..
+                                        UpdateMesh(tree);
                                     }
                                 }
                                 break;
@@ -1181,17 +1198,6 @@ namespace TreeEditor
 
                             m_StartPointRotationDirty = false;
                         }
-                    }
-                }
-
-                if (oldEventType == EventType.MouseUp && editMode == EditMode.Freehand)
-                {
-                    s_SelectedPoint = -1;
-
-                    if (treeData.isInPreviewMode)
-                    {
-                        // We need a complete rebuild..
-                        UpdateMesh(tree);
                     }
                 }
 
@@ -1229,56 +1235,7 @@ namespace TreeEditor
                     // check if we're done dragging handle (so we can change ids)
                     if (oldEventType == EventType.MouseUp && evt.type == EventType.Used)
                     {
-                        if (treeData.isInPreviewMode)
-                        {
-                            // We need a complete rebuild..
-                            UpdateMesh(tree);
-                        }
-                    }
-                }
-
-                // Draw Rotation Handles for selected Point
-                if (s_SelectedPoint >= 0 && editMode == EditMode.RotateNode && s_SelectedNode != null)
-                {
-                    TreeNode branch = s_SelectedNode;
-                    SplineNode point = branch.spline.nodes[s_SelectedPoint];
-                    Matrix4x4 branchMatrix = treeMatrix * branch.matrix;
-
-                    if (m_TempSpline == null)
-                    {
-                        m_TempSpline = new TreeSpline(branch.spline);
-                    }
-
-                    Vector3 worldPos = branchMatrix.MultiplyPoint(point.point);
-                    Quaternion rotation = Quaternion.identity;
-                    m_GlobalToolRotation = Handles.RotationHandle(m_GlobalToolRotation, worldPos);
-                    rotation = m_GlobalToolRotation;
-
-                    if (GUI.changed)
-                    {
-                        Undo.RegisterCompleteObjectUndo(treeData, "Move");
-
-                        s_SelectedGroup.Lock();
-
-                        for (int i = s_SelectedPoint + 1; i < m_TempSpline.nodes.Length; i++)
-                        {
-                            Vector3 pointVector = (m_TempSpline.nodes[i].point - point.point);
-                            pointVector = branchMatrix.MultiplyVector(pointVector);
-                            pointVector = rotation * pointVector;
-                            pointVector = branchMatrix.inverse.MultiplyVector(pointVector);
-                            Vector3 newPos = point.point + pointVector;
-                            s_SelectedNode.spline.nodes[i].point = newPos;
-                        }
-
-                        branch.spline.UpdateTime();
-                        branch.spline.UpdateRotations();
-
-                        PreviewMesh(tree);
-                    }
-
-                    // check if we're done dragging handle (so we can change ids)
-                    if (oldEventType == EventType.MouseUp && evt.type == EventType.Used)
-                    {
+                        s_SelectedPoint = -1;
                         if (treeData.isInPreviewMode)
                         {
                             // We need a complete rebuild..
@@ -1322,6 +1279,7 @@ namespace TreeEditor
                             // check if we're done dragging handle (so we can change ids)
                             if (oldEventType == EventType.MouseUp && evt.type == EventType.Used)
                             {
+                                s_SelectedPoint = -1;
                                 if (treeData.isInPreviewMode)
                                 {
                                     // We need a complete rebuild..
@@ -1371,45 +1329,24 @@ namespace TreeEditor
 
                         case EditMode.RotateNode:
                         {
-                            Handles.FreeMoveHandle(worldPos, Quaternion.identity, handleSize, Vector3.zero, Handles.CircleHandleCap);
+                            m_GlobalToolRotation = MathUtils.QuaternionFromMatrix(leafMatrix);
+                            m_StartMatrix = leafMatrix;
+                            m_LockedWorldPos = new Vector3(leafMatrix.m03, leafMatrix.m13, leafMatrix.m23);
 
-                            // check if point was just selected
-                            if (oldEventType == EventType.MouseDown && evt.type == EventType.Used && oldKeyboardControl != GUIUtility.keyboardControl)
+                            EditorGUI.BeginChangeCheck();
+                            Quaternion newRotation = Handles.FreeRotateHandle(leaf.rotation, m_LockedWorldPos, handleSize);
+                            if (EditorGUI.EndChangeCheck())
                             {
                                 SelectNode(leaf, treeData);
-                                m_GlobalToolRotation = MathUtils.QuaternionFromMatrix(leafMatrix);
-                                m_StartMatrix = leafMatrix;
-                                m_StartPointRotation = leaf.rotation;
-                                m_LockedWorldPos = new Vector3(leafMatrix.m03, leafMatrix.m13, leafMatrix.m23);
+                                s_SelectedGroup.Lock();
+
+                                Undo.RecordObject(this, "Rotate leaf");
+                                leaf.rotation = newRotation;
+                                PreviewMesh(tree);
                             }
-
-                            // Rotation handle for selected leaf
-                            if (s_SelectedNode == leaf)
+                            else if (s_SelectedNode == leaf && treeData.isInPreviewMode)
                             {
-                                oldEventType = evt.GetTypeForControl(GUIUtility.hotControl);
-                                m_GlobalToolRotation = Handles.RotationHandle(m_GlobalToolRotation, m_LockedWorldPos);
-
-                                // check if we're done dragging handle (so we can change ids)
-                                if (oldEventType == EventType.MouseUp && evt.type == EventType.Used)
-                                {
-                                    // update position of gizmo
-                                    m_LockedWorldPos = new Vector3(leafMatrix.m03, leafMatrix.m13, leafMatrix.m23);
-
-                                    if (treeData.isInPreviewMode)
-                                    {
-                                        // We need a complete rebuild..
-                                        UpdateMesh(tree);
-                                    }
-                                }
-
-                                if (GUI.changed)
-                                {
-                                    s_SelectedGroup.Lock();
-                                    Quaternion invStart = Quaternion.Inverse(MathUtils.QuaternionFromMatrix(m_StartMatrix));
-                                    leaf.rotation = m_StartPointRotation * (invStart * m_GlobalToolRotation);
-                                    MathUtils.QuaternionNormalize(ref leaf.rotation);
-                                    PreviewMesh(tree);
-                                }
+                                UpdateMesh(tree);
                             }
                         }
                         break;

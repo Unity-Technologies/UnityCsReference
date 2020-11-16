@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor.Scripting.Compilers;
@@ -13,10 +12,17 @@ using UnityEngine.Profiling;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
+    // When compiling a Unity project that contains Roslyn analyzers, we run two rounds of compilation.
+    // The first round of compilation is run without Roslyn analyzers. This is to ensure that our users
+    // do not experience any slow-down in iteration speeds when making code changes in their projects.
+    // After the first round finishes, a domain reload happens, and we kick off a second round of compilation,
+    // this time including Roslyn analyzers. The second round of compilation is run asynchronously in the background.
     [InitializeOnLoad]
     internal static class RoslynAnalysisRunner
     {
         private const string BuildOutputDirectory = "Temp/RoslynAnalysisRunner";
+
+        private static DirectoryInfo BuildOutputDirectoryInfo = new DirectoryInfo(BuildOutputDirectory);
         private static string RoslynAnalysisRunnerId => nameof(RunRoslynAnalyzers);
         private static bool RunRoslynAnalyzers =>
             !EditorCompilationInstance.IsRunningRoslynAnalysisSynchronously
@@ -24,13 +30,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             && PlayerSettings.EnableRoslynAnalyzers;
 
         private static CompilationTask CompilationTask { get; set; }
-        public static bool IsTerminated { get; private set; }
 
         // This field is set during testing to ensure that we do not invoke CompiledAssemblyCache.GetAllPaths(), which in turn invokes native code
         private static Func<string[]> GetCandidateAssembliesForRoslynAnalysis { get; set; }
 
         private static EditorCompilation _editorCompilationInstance;
-
         private static EditorCompilation EditorCompilationInstance
         {
             get => _editorCompilationInstance;
@@ -45,13 +49,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             EditorCompilationInstance.assemblyCompilationStarted += assembly =>
             {
+                // When the first round of compilation starts, we check whether we should run Roslyn analyzers in the project.
                 if (RunRoslynAnalyzers)
                 {
+                    // If we should kick off a second round of compilation with Roslyn analyzers, then a tag is stored
+                    // in the CompiledAssemblyCache, which is maintained in native code. The contents of the CompiledAssemblyCache
+                    // are able to survive domain reload. After the first round of compilation finishes and the domain reloads, we
+                    // will check whether this tag exists in the CompiledAssemblyCache. If it exists, then a second round of
+                    // compilation is kicked off.
                     if (!CompiledAssemblyCache.Contains(RoslynAnalysisRunnerId))
                     {
-                        // Add to CompiledAssemblyCache instead of SessionState.
-                        // SessionState is part of a public API, so if we add this as
-                        // a SessionState key, users will be able to clear/change it.
                         CompiledAssemblyCache.AddPath(RoslynAnalysisRunnerId);
                     }
                 }
@@ -60,6 +67,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     CompiledAssemblyCache.RemovePath(RoslynAnalysisRunnerId);
                 }
                 string assemblyName = assembly.ConvertSeparatorsToUnity().Split('/').Last();
+
+                // Since there are code changes in this assembly, we want to exclude it from the current round of compilation with Roslyn analyzers.
                 CompilationTask?.TryRemovePendingAssembly(assemblyName);
             };
 
@@ -74,6 +83,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         public static bool ShouldRun { get; private set; }
+        public static bool IsTerminated { get; private set; }
 
         public static event Action OnTermination;
         public static event Action<CompilerMessage[]> OnCurrentCompilationTaskFinished;
@@ -99,6 +109,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             CheckShouldRun();
         }
 
+        // This method is also called from tests.
         internal static void CheckShouldRun()
         {
             ShouldRun = CompiledAssemblyCache.Contains(RoslynAnalysisRunnerId);
@@ -111,32 +122,35 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        internal static bool TryCreateCompilationTask()
+        internal static CompilationTask TryCreateCompilationTask()
         {
             Profiler.BeginSample(KickOffCompilationProfilingName);
             ScriptAssembly[] assembliesToAnalyze = GetScriptAssembliesToAnalyze();
 
             if (!assembliesToAnalyze.Any())
             {
-                CompilationTask = null;
                 Profiler.EndSample();
-                return false;
-            }
-            if (!Directory.Exists(BuildOutputDirectory))
-            {
-                Directory.CreateDirectory(BuildOutputDirectory);
+                return null;
             }
 
-            CompilationTask = CreateCompilationTask(assembliesToAnalyze);
-            Console.WriteLine($"A new compilation task is started by {nameof(RoslynAnalysisRunner)} to compiled these assemblies:");
+            Directory.CreateDirectory(BuildOutputDirectory);
+
+            if (BuildOutputDirectoryInfo.Exists)
+            {
+                Console.WriteLine($"{BuildOutputDirectoryInfo.FullName} has been created.");
+            }
+
+            var compilationTask = CreateCompilationTask(assembliesToAnalyze);
+            Console.WriteLine($"A new compilation task is started by {nameof(RoslynAnalysisRunner)} to compile these assemblies:");
 
             foreach (ScriptAssembly assembly in assembliesToAnalyze)
             {
                 Console.WriteLine(assembly.Filename);
             }
             Console.WriteLine();
+
             Profiler.EndSample();
-            return true;
+            return compilationTask;
         }
 
         internal static ScriptAssembly[] GetScriptAssembliesToAnalyze()
@@ -159,11 +173,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             CompilationTask compilationTask = CompilationTask.RoslynAnalysis(assemblies, BuildOutputDirectory);
             compilationTask.OnCompilationTaskFinished += _ =>
             {
-                foreach (string artifact in Directory.GetFiles(BuildOutputDirectory))
-                {
-                    File.Delete(artifact);
-                }
-
                 Console.WriteLine($"A compilation task started by {nameof(RoslynAnalysisRunner)} has completed. These assemblies were compiled:");
 
                 foreach (ScriptAssembly scriptAssembly in compilationTask.CompilerMessages.Keys)
@@ -175,10 +184,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 CompilerMessage[] compilerMessages = compilationTask.CompilerMessages.Values.SelectMany(m => m).ToArray();
                 PrintCompilerMessagesToConsole(compilerMessages);
 
-                compilationTask.Dispose();
-
-                CompilationTask = null;
                 OnCurrentCompilationTaskFinished?.Invoke(compilerMessages);
+
+                Directory.Delete(BuildOutputDirectory, recursive: true);
+                Console.WriteLine($"{BuildOutputDirectoryInfo.FullName} has been deleted.");
             };
             return compilationTask;
         }
@@ -216,11 +225,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 CompilationTask?.Stop();
                 CompilationTask?.Dispose();
 
-                if (Directory.Exists(BuildOutputDirectory))
-                {
-                    Directory.Delete(BuildOutputDirectory, recursive: true);
-                    Console.WriteLine($"{BuildOutputDirectory} has been deleted.");
-                }
+                CompilationTask = null;
             }
             finally
             {
@@ -244,17 +249,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (CompilationTask == null)
             {
                 // Check whether there are assemblies that require compilation
-                bool compile = TryCreateCompilationTask();
-
-                // There are no outstanding assemblies to compile
-                if (!compile)
-                {
-                    Terminate();
-                }
+                CompilationTask = TryCreateCompilationTask();
             }
             else
             {
-                CompilationTask.Poll();
+                bool compilationFinished = CompilationTask.Poll();
+
+                if (compilationFinished)
+                {
+                    Terminate();
+                }
             }
             Profiler.EndSample();
         }

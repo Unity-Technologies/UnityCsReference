@@ -20,6 +20,7 @@ using UnityEditor.StyleSheets;
 using UnityEditor.VersionControl;
 using UnityEngine.Internal;
 using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
+using PreviewMaterialType = UnityEditor.EditorGUIUtility.PreviewType;
 using System.Linq;
 
 namespace UnityEditor
@@ -4617,14 +4618,26 @@ namespace UnityEditor
             var wasEnabled = GUI.enabled;
             var eventType = GetEventTypeForControlAllowDisabledContextMenuPaste(evt, id);
 
+            if (showEyedropper)
+                hovered ^= hoveredEyedropper;
+
             switch (eventType)
             {
-                case EventType.MouseUp:
+                case EventType.MouseDown:
                     if (showEyedropper)
                     {
-                        hovered ^= hoveredEyedropper;
+                        if (hoveredEyedropper && wasEnabled)
+                        {
+                            GUIUtility.keyboardControl = id;
+                            EyeDropper.Start(GUIView.current);
+                            s_ColorPickID = id;
+                            evt.Use();
+                            GUIUtility.ExitGUI();
+                        }
                     }
+                    break;
 
+                case EventType.MouseUp:
                     if (hovered)
                     {
                         var currentView = GUIView.current;
@@ -4667,17 +4680,6 @@ namespace UnityEditor
                                     null);
                                 evt.Use();
                                 return origColor;
-                        }
-                    }
-
-                    if (showEyedropper)
-                    {
-                        if (hoveredEyedropper && wasEnabled)
-                        {
-                            GUIUtility.keyboardControl = id;
-                            EyeDropper.Start(GUIView.current);
-                            s_ColorPickID = id;
-                            GUIUtility.ExitGUI();
                         }
                     }
                     break;
@@ -6423,10 +6425,23 @@ namespace UnityEditor
             }
         }
 
-        private static Material GetPreviewMaterial(ref Material m, string shaderPath)
+        // before we had preview materials as static vars, but these go null on domain reload, leaking memory
+        // so now we keep those in native land
+        // i have tried to store just pointers in a native land and continue creating material in cs
+        // but this didn't quite work (and this brings questions of who manages lifetime, etc)
+        // so we switch to having materials managed in native land, and cs just querying them
+        // now, i must admit, i was stumbled by the fact that sometimes on domain reload we crash in unmarshaling
+        // hence we do this magic:
+        // we still keep these static vars (which will go null on domain reload)
+        // and we create scripting objects in native land, returning it to managed land and assigning to static var
+        // to summarize:
+        // we create actual material (and load shader) only ONCE in native
+        // every time our managed reference is null we create managed object in native land and assign to our static var
+
+        private static Material GetPreviewMaterial(ref Material m, PreviewMaterialType type)
         {
             if (m == null)
-                m = new Material(EditorGUIUtility.LoadRequired(shaderPath) as Shader);
+                m = EditorGUIUtility.CreatePreviewMaterial(type);
             return m;
         }
 
@@ -6436,51 +6451,51 @@ namespace UnityEditor
 
         internal static Material colorMaterial
         {
-            get { return GetPreviewMaterial(ref s_ColorMaterial, "Previews/PreviewColor2D.shader"); }
+            get { return GetPreviewMaterial(ref s_ColorMaterial, PreviewMaterialType.Color); }
         }
         internal static Material colorVTMaterial
         {
-            get { return GetPreviewMaterial(ref s_ColorVTMaterial, "Previews/PreviewColor2DVT.shader"); }
+            get { return GetPreviewMaterial(ref s_ColorVTMaterial, PreviewMaterialType.ColorVT); }
         }
         internal static Material alphaMaterial
         {
-            get { return GetPreviewMaterial(ref s_AlphaMaterial, "Previews/PreviewAlpha.shader"); }
+            get { return GetPreviewMaterial(ref s_AlphaMaterial, PreviewMaterialType.Alpha); }
         }
         internal static Material alphaVTMaterial
         {
-            get { return GetPreviewMaterial(ref s_AlphaVTMaterial, "Previews/PreviewAlphaVT.shader"); }
+            get { return GetPreviewMaterial(ref s_AlphaVTMaterial, PreviewMaterialType.AlphaVT); }
         }
         internal static Material transparentMaterial
         {
-            get { return GetPreviewMaterial(ref s_TransparentMaterial, "Previews/PreviewTransparent.shader"); }
+            get { return GetPreviewMaterial(ref s_TransparentMaterial, PreviewMaterialType.Transparent); }
         }
         internal static Material transparentVTMaterial
         {
-            get { return GetPreviewMaterial(ref s_TransparentVTMaterial, "Previews/PreviewTransparentVT.shader"); }
+            get { return GetPreviewMaterial(ref s_TransparentVTMaterial, PreviewMaterialType.TransparentVT); }
         }
         internal static Material normalmapMaterial
         {
-            get { return GetPreviewMaterial(ref s_NormalmapMaterial, "Previews/PreviewEncodedNormals.shader"); }
+            get { return GetPreviewMaterial(ref s_NormalmapMaterial, PreviewMaterialType.Normalmap); }
         }
         internal static Material normalmapVTMaterial
         {
-            get { return GetPreviewMaterial(ref s_NormalmapVTMaterial, "Previews/PreviewEncodedNormalsVT.shader"); }
+            get { return GetPreviewMaterial(ref s_NormalmapVTMaterial, PreviewMaterialType.NormalmapVT); }
         }
         internal static Material lightmapRGBMMaterial
         {
-            get { return GetPreviewMaterial(ref s_LightmapRGBMMaterial, "Previews/PreviewEncodedLightmapRGBM.shader"); }
+            get { return GetPreviewMaterial(ref s_LightmapRGBMMaterial, PreviewMaterialType.LightmapRGBM); }
         }
         internal static Material lightmapDoubleLDRMaterial
         {
-            get { return GetPreviewMaterial(ref s_LightmapDoubleLDRMaterial, "Previews/PreviewEncodedLightmapDoubleLDR.shader"); }
+            get { return GetPreviewMaterial(ref s_LightmapDoubleLDRMaterial, PreviewMaterialType.LightmapDoubleLDR); }
         }
         internal static Material lightmapFullHDRMaterial
         {
-            get { return GetPreviewMaterial(ref s_LightmapFullHDRMaterial, "Previews/PreviewEncodedLightmapFullHDR.shader"); }
+            get { return GetPreviewMaterial(ref s_LightmapFullHDRMaterial, PreviewMaterialType.LightmapFullHDR); }
         }
         internal static Material guiTextureClipVerticallyMaterial
         {
-            get { return GetPreviewMaterial(ref s_GUITextureClipVertically, "Inspectors/Internal-GUITextureClipVertically.shader"); }
+            get { return GetPreviewMaterial(ref s_GUITextureClipVertically, PreviewMaterialType.GUITextureClipVertically); }
         }
 
         internal static void SetExpandedRecurse(SerializedProperty property, bool expanded)

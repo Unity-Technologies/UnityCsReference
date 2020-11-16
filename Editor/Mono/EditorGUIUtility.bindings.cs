@@ -162,6 +162,24 @@ namespace UnityEditor
         private static extern void Internal_MoveKeyboardFocus(bool forward);
         private static extern int Internal_GetNextKeyboardControlID(bool forward);
         private static extern void Internal_AddCursorRect(Rect r, MouseCursor m, int controlID);
+
+        // preview materials handling
+        internal enum PreviewType
+        {
+            Color,
+            ColorVT,
+            Alpha,
+            AlphaVT,
+            Transparent,
+            TransparentVT,
+            Normalmap,
+            NormalmapVT,
+            LightmapRGBM,
+            LightmapDoubleLDR,
+            LightmapFullHDR,
+            GUITextureClipVertically,
+        }
+        internal static extern Material CreatePreviewMaterial(PreviewType type);
     }
 
     [NativeHeader("Editor/Src/InspectorExpandedState.h"),

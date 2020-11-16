@@ -17,11 +17,12 @@ namespace UnityEditor
             public readonly GUIStyle listEvenBg = "ObjectPickerResultsOdd";
             public readonly GUIStyle listOddBg = "ObjectPickerResultsEven";
             public readonly GUIStyle separator = "sv_iconselector_sep";
-            public readonly GUIStyle lockButton = "IN LockButton";
             public readonly GUIStyle listTextStyle;
             public readonly GUIStyle listHeaderStyle;
-            public readonly Texture2D visibleOn  = EditorGUIUtility.LoadIcon("animationvisibilitytoggleon");
+            public readonly Texture2D visibleOn = EditorGUIUtility.LoadIcon("animationvisibilitytoggleon");
             public readonly Texture2D visibleOff = EditorGUIUtility.LoadIcon("animationvisibilitytoggleoff");
+            public readonly Texture2D pickable = EditorGUIUtility.LoadIcon("scenepicking_pickable");
+            public readonly Texture2D notpickable = EditorGUIUtility.LoadIcon("scenepicking_notpickable");
             public readonly GUIContent editLayers = EditorGUIUtility.TrTextContent("Edit Layers...");
             public Styles()
             {
@@ -39,7 +40,7 @@ namespace UnityEditor
         const float kToggleSize = 17;
         const float kSeparatorHeight = 6;
         const string kLayerVisible = "Show/Hide Layer";
-        const string kLayerLocked = "Lock Layer for Picking";
+        const string kLayerPickable = "Toggle Pickable status this Layer. Non-Pickable items cannot be selected in the Scene View.";
 
         private static LayerVisibilityWindow s_LayerVisibilityWindow;
         private static long s_LastClosedTime;
@@ -271,7 +272,7 @@ namespace UnityEditor
             even = !even;
         }
 
-        private void DoLayerEntry(Rect rect, string layerName, bool even, bool showVisible, bool showLock, bool visible, bool locked, out bool visibleChanged, out bool lockedChanged)
+        private void DoLayerEntry(Rect rect, string layerName, bool even, bool showVisible, bool showLock, bool visible, bool picked, out bool visibleChanged, out bool lockedChanged)
         {
             DrawListBackground(rect, even);
 
@@ -287,7 +288,6 @@ namespace UnityEditor
             if (showVisible)
             {
                 var iconRect = toggleRect;
-                iconRect.y += 3;
                 var gc = new GUIContent(string.Empty, visible ? s_Styles.visibleOn : s_Styles.visibleOff, kLayerVisible);
                 GUI.Toggle(iconRect, visible, gc, GUIStyle.none);
                 visibleChanged = EditorGUI.EndChangeCheck();
@@ -299,7 +299,8 @@ namespace UnityEditor
             {
                 toggleRect.x += kToggleSize;
                 EditorGUI.BeginChangeCheck();
-                GUI.Toggle(toggleRect, locked, new GUIContent(string.Empty, kLayerLocked), s_Styles.lockButton);
+                var gc = new GUIContent(string.Empty, picked ? s_Styles.notpickable : s_Styles.pickable, kLayerPickable);
+                GUI.Toggle(toggleRect, picked, gc, GUIStyle.none);
                 lockedChanged = EditorGUI.EndChangeCheck();
             }
         }

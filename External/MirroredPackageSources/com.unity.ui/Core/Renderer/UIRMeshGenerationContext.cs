@@ -265,6 +265,11 @@ namespace UnityEngine.UIElements
             public int rightSlice;
             public int bottomSlice;
 
+            // Cached sprite geometry, which is expensive to evaluate.
+            internal Rect spriteGeomRect;
+
+            internal MeshGenerationContext.MeshFlags meshFlags;
+
             public static RectangleParams MakeSolid(Rect rect, Color color, ContextType panelContext)
             {
                 var playmodeTintColor = panelContext == ContextType.Editor
@@ -325,8 +330,178 @@ namespace UnityEngine.UIElements
                     default:
                         throw new NotImplementedException();
                 }
+
                 rectOut = rect;
                 uvOut = uv;
+            }
+
+            private static void AdjustSpriteUVsForScaleMode(Rect rect, Rect uv, Rect geomRect, Texture texture, Sprite sprite, ScaleMode scaleMode, out Rect rectOut, out Rect uvOut)
+            {
+                // Adjust the sprite rect size and then determine where the sprite geometry should be inside it.
+
+                float srcAspect = sprite.rect.width / sprite.rect.height;
+                float destAspect = rect.width / rect.height;
+
+                // Normalize the geom rect for easy scaling
+                var geomRectNorm = geomRect;
+                geomRectNorm.position -= (Vector2)sprite.bounds.min;
+                geomRectNorm.position /= sprite.bounds.size;
+                geomRectNorm.size /= sprite.bounds.size;
+
+                // Convert to Y-down convention
+                var p = geomRectNorm.position;
+                p.y = 1.0f - geomRectNorm.size.y - p.y;
+                geomRectNorm.position = p;
+
+                switch (scaleMode)
+                {
+                    case ScaleMode.StretchToFill:
+                    {
+                        var scale = rect.size;
+                        rect.position = geomRectNorm.position * scale;
+                        rect.size = geomRectNorm.size * scale;
+                    }
+                    break;
+
+                    case ScaleMode.ScaleAndCrop:
+                    {
+                        // This is the complex code path. Scale-and-crop works like the following:
+                        // - Scale the sprite rect to match the largest destination rect size
+                        // - Evaluate the sprite geometry rect inside that scaled sprite rect
+                        // - Compute the intersection of the geometry rect with the destination rect
+                        // - Re-evaluate the UVs from that intersection
+
+                        var stretchedRect = rect;
+                        if (destAspect > srcAspect)
+                        {
+                            stretchedRect.height = stretchedRect.width / srcAspect;
+                            stretchedRect.position = new Vector2(stretchedRect.position.x, -(stretchedRect.height - rect.height) / 2.0f);
+                        }
+                        else
+                        {
+                            stretchedRect.width = stretchedRect.height * srcAspect;
+                            stretchedRect.position = new Vector2(-(stretchedRect.width - rect.width) / 2.0f, stretchedRect.position.y);
+                        }
+
+                        var scale = stretchedRect.size;
+                        stretchedRect.position += geomRectNorm.position * scale;
+                        stretchedRect.size = geomRectNorm.size * scale;
+
+                        // Intersect the stretched rect with the destination rect to compute the new UVs
+                        var newRect = RectIntersection(rect, stretchedRect);
+                        if (newRect.width < Mathf.Epsilon || newRect.height < Mathf.Epsilon)
+                            newRect = Rect.zero;
+                        else
+                        {
+                            var uvScale = newRect;
+                            uvScale.position -= stretchedRect.position;
+                            uvScale.position /= stretchedRect.size;
+                            uvScale.size /= stretchedRect.size;
+
+                            // Textures are using a Y-up convention
+                            var scalePos = uvScale.position;
+                            scalePos.y = 1.0f - uvScale.size.y - scalePos.y;
+                            uvScale.position = scalePos;
+
+                            uv.position += uvScale.position * uv.size;
+                            uv.size *= uvScale.size;
+                        }
+
+                        rect = newRect;
+                    }
+                    break;
+
+                    case ScaleMode.ScaleToFit:
+                    {
+                        if (destAspect > srcAspect)
+                        {
+                            float stretch = srcAspect / destAspect;
+                            rect = new Rect(rect.xMin + rect.width * (1.0f - stretch) * .5f, rect.yMin, stretch * rect.width, rect.height);
+                        }
+                        else
+                        {
+                            float stretch = destAspect / srcAspect;
+                            rect = new Rect(rect.xMin, rect.yMin + rect.height * (1.0f - stretch) * .5f, rect.width, stretch * rect.height);
+                        }
+
+                        rect.position += geomRectNorm.position * rect.size;
+                        rect.size *= geomRectNorm.size;
+                    }
+                    break;
+
+                    default:
+                        throw new NotImplementedException();
+                }
+
+
+                rectOut = rect;
+                uvOut = uv;
+            }
+
+            static Rect RectIntersection(Rect a, Rect b)
+            {
+                var r = Rect.zero;
+                r.min = Vector2.Max(a.min, b.min);
+                r.max = Vector2.Min(a.max, b.max);
+                r.size = Vector2.Max(r.size, Vector2.zero);
+                return r;
+            }
+
+            static Rect ComputeGeomRect(Sprite sprite)
+            {
+                var vMin = new Vector2(float.MaxValue, float.MaxValue);
+                var vMax = new Vector2(float.MinValue, float.MinValue);
+                foreach (var uv in sprite.vertices)
+                {
+                    vMin = Vector2.Min(vMin, uv);
+                    vMax = Vector2.Max(vMax, uv);
+                }
+                return new Rect(vMin, vMax - vMin);
+            }
+
+            static Rect ComputeUVRect(Sprite sprite)
+            {
+                var uvMin = new Vector2(float.MaxValue, float.MaxValue);
+                var uvMax = new Vector2(float.MinValue, float.MinValue);
+                foreach (var uv in sprite.uv)
+                {
+                    uvMin = Vector2.Min(uvMin, uv);
+                    uvMax = Vector2.Max(uvMax, uv);
+                }
+                return new Rect(uvMin, uvMax - uvMin);
+            }
+
+            static Rect ApplyPackingRotation(Rect uv, SpritePackingRotation rotation)
+            {
+                switch (rotation)
+                {
+                    case SpritePackingRotation.FlipHorizontal:
+                    {
+                        uv.position += new Vector2(uv.size.x, 0.0f);
+                        var size = uv.size;
+                        size.x = -size.x;
+                        uv.size = size;
+                    }
+                    break;
+                    case SpritePackingRotation.FlipVertical:
+                    {
+                        uv.position += new Vector2(0.0f, uv.size.y);
+                        var size = uv.size;
+                        size.y = -size.y;
+                        uv.size = size;
+                    }
+                    break;
+                    case SpritePackingRotation.Rotate180:
+                    {
+                        uv.position += uv.size;
+                        uv.size = -uv.size;
+                    }
+                    break;
+                    default:
+                        break;
+                }
+
+                return uv;
             }
 
             public static RectangleParams MakeTextured(Rect rect, Rect uv, Texture texture, ScaleMode scaleMode, ContextType panelContext)
@@ -349,18 +524,6 @@ namespace UnityEngine.UIElements
                 return rp;
             }
 
-            private static Rect ComputeUVRect(Sprite sprite)
-            {
-                var uvMin = new Vector2(float.MaxValue, float.MaxValue);
-                var uvMax = new Vector2(float.MinValue, float.MinValue);
-                foreach (var uv in sprite.uv)
-                {
-                    uvMin = Vector2.Min(uvMin, uv);
-                    uvMax = Vector2.Max(uvMax, uv);
-                }
-                return new Rect(uvMin, uvMax - uvMin);
-            }
-
             public static RectangleParams MakeSprite(Rect rect, Sprite sprite, ScaleMode scaleMode, ContextType panelContext, bool hasRadius, ref Vector4 slices)
             {
                 if (sprite.texture == null)
@@ -373,25 +536,32 @@ namespace UnityEngine.UIElements
                     ? UIElementsUtility.editorPlayModeTintColor
                     : Color.white;
 
+                var geomRect = ComputeGeomRect(sprite);
                 var uv = ComputeUVRect(sprite);
-                AdjustUVsForScaleMode(rect, uv, sprite.texture, scaleMode, out rect, out uv);
 
                 // Use a textured quad (ignoring tight-mesh) if dealing with slicing or with
                 // scale-and-crop scale mode. This avoids expensive CPU-side transformation and
                 // polygon clipping.
                 var border = sprite.border;
                 bool hasSlices = (border != Vector4.zero) || (slices != Vector4.zero);
-                bool useFullTexture = (scaleMode == ScaleMode.ScaleAndCrop) || hasSlices || hasRadius;
+                bool useTexturedQuad = (scaleMode == ScaleMode.ScaleAndCrop) || hasSlices || hasRadius;
+
+                if (useTexturedQuad && sprite.packed && sprite.packingRotation != SpritePackingRotation.None)
+                    uv = ApplyPackingRotation(uv, sprite.packingRotation);
+
+                AdjustSpriteUVsForScaleMode(rect, uv, geomRect, sprite.texture, sprite, scaleMode, out rect, out uv);
 
                 var rp = new RectangleParams
                 {
                     rect = rect,
                     uv = uv,
                     color = Color.white,
-                    texture = useFullTexture ? sprite.texture : (Texture2D)null,
-                    sprite = useFullTexture ? (Sprite)null : sprite,
+                    texture = useTexturedQuad ? sprite.texture : (Texture2D)null,
+                    sprite = useTexturedQuad ? (Sprite)null : sprite,
+                    spriteGeomRect = geomRect,
                     scaleMode = scaleMode,
-                    playmodeTintColor = playmodeTintColor
+                    playmodeTintColor = playmodeTintColor,
+                    meshFlags = sprite.packed ? MeshGenerationContext.MeshFlags.SkipDynamicAtlas : MeshGenerationContext.MeshFlags.None
                 };
 
                 // Store the slices in VisualElement order (left, top, right, bottom)

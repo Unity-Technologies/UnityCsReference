@@ -11,7 +11,6 @@ using System.IO;
 using System.Linq;
 using JetBrains.Annotations;
 using Unity.CodeEditor;
-using UnityEditor.VisualStudioIntegration;
 using UnityEditor.Connect;
 using UnityEngine.UIElements;
 using UnityEditor.Experimental;
@@ -150,6 +149,7 @@ namespace UnityEditor
         {
             public static readonly GUIContent editorLanguageExperimental = EditorGUIUtility.TrTextContent("Editor Language (Experimental)");
             public static readonly GUIContent editorLanguage = EditorGUIUtility.TrTextContent("Editor language");
+            public static readonly GUIContent localizeCompileMessages = EditorGUIUtility.TrTextContent("Localize compiler messages");
         }
 
         internal class DeveloperModeProperties
@@ -204,6 +204,7 @@ namespace UnityEditor
         private static GUIContent[] m_EditorLanguageNames;
         private bool m_EnableEditorLocalization;
         private static SystemLanguage[] m_stableLanguages = { SystemLanguage.English };
+        private bool m_EnableCompilerMessagesLocalization;
 
         private bool m_AllowAlphaNumericHierarchy = false;
         private bool m_EnableCodeCoverage = false;
@@ -213,7 +214,6 @@ namespace UnityEditor
         private bool m_GraphSnapping;
 
         private string[] m_ScriptApps;
-        private string[] m_ScriptAppsEditions;
         private string[] m_ImageApps;
         private static string[] m_DiffTools;
 
@@ -400,50 +400,12 @@ namespace UnityEditor
                 drawAction(searchContext);
         }
 
-        static void SettingsButton(ProjectGenerationFlag preference, string guiMessage, string toolTip)
-        {
-            var prevValue = (SyncVS.Synchronizer.AssemblyNameProvider.ProjectGenerationFlag & preference) == preference;
-            var newValue = EditorGUILayout.Toggle(new GUIContent(guiMessage, toolTip), prevValue);
-            if (newValue != prevValue)
-            {
-                SyncVS.Synchronizer.AssemblyNameProvider.ToggleProjectGeneration(preference);
-            }
-        }
-
         private void ShowExternalApplications(string searchContext)
         {
             // Applications
             FilePopup(ExternalProperties.externalScriptEditor, ScriptEditorUtility.GetExternalScriptEditor(), ref m_ScriptAppDisplayNames, ref m_ScriptApps, m_ScriptEditorPath, CodeEditor.SystemDefaultPath, OnScriptEditorChanged);
 
-            #pragma warning disable 618
-            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.Other
-                || ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.SystemDefault)
-            {
-                CodeEditor.Editor.Current.OnGUI();
-            }
-            else
-            {
-                EditorGUILayout.LabelField("Generate .csproj files for:");
-                EditorGUI.indentLevel++;
-
-                SettingsButton(ProjectGenerationFlag.Embedded, "Embedded packages", "");
-                SettingsButton(ProjectGenerationFlag.Local, "Local packages", "");
-                SettingsButton(ProjectGenerationFlag.Registry, "Registry packages", "");
-                SettingsButton(ProjectGenerationFlag.Git, "Git packages", "");
-                SettingsButton(ProjectGenerationFlag.BuiltIn, "Built-in packages", "");
-                SettingsButton(ProjectGenerationFlag.Unknown, "Packages from unknown sources", "");
-                SettingsButton(ProjectGenerationFlag.PlayerAssemblies, "Player projects", "For each player project generate an additional csproj with the name 'project-player.csproj'");
-                RegenerateProjectFiles();
-                EditorGUI.indentLevel--;
-            }
-
-            if (GetSelectedScriptEditor() == ScriptEditorUtility.ScriptEditor.VisualStudioExpress)
-            {
-                GUILayout.BeginHorizontal(EditorStyles.helpBox);
-                GUILayout.Label("", Constants.warningIcon);
-                GUILayout.Label(k_ExpressNotSupportedMessage, Constants.errorLabel);
-                GUILayout.EndHorizontal();
-            }
+            CodeEditor.Editor.CurrentCodeEditor.OnGUI();
 
             GUILayout.Space(10f);
 
@@ -496,26 +458,9 @@ namespace UnityEditor
             ApplyChangesToPrefs();
         }
 
-        private void RegenerateProjectFiles()
-        {
-            var rect = EditorGUI.IndentedRect(EditorGUILayout.GetControlRect(new GUILayoutOption[] {}));
-            rect.width = 252;
-            if (GUI.Button(rect, "Regenerate project files"))
-            {
-                SyncVS.Synchronizer.Sync();
-            }
-        }
-
-        #pragma warning disable 618
-        private ScriptEditorUtility.ScriptEditor GetSelectedScriptEditor()
-        {
-            return ScriptEditorUtility.GetScriptEditorFromPath(m_ScriptEditorPath.str);
-        }
-
         private void OnScriptEditorChanged()
         {
-            CodeEditor.SetExternalScriptEditor(m_ScriptEditorPath);
-            UnityEditor.VisualStudioIntegration.UnityVSSupport.ScriptEditorChanged(m_ScriptEditorPath.str);
+            CodeEditor.Editor.SetCodeEditor(m_ScriptEditorPath);
         }
 
         private void EnableGeneral()
@@ -595,7 +540,7 @@ namespace UnityEditor
 
                     // Refresh skin to get new font
                     Unsupported.ClearSkinCache();
-                    InternalEditorUtility.RequestScriptReload();
+                    UnityEditor.EditorUtility.RequestScriptReload();
                     InternalEditorUtility.RepaintAllViews();
                 }
             }
@@ -995,6 +940,8 @@ namespace UnityEditor
                 int sel = EditorGUILayout.Popup(LanguageProperties.editorLanguage, idx, m_EditorLanguageNames);
                 m_SelectedLanguage = (sel == 0) ? LocalizationDatabase.GetDefaultEditorLanguage().ToString() :
                     editorLanguages[sel - k_LangListMenuOffset].ToString();
+
+                m_EnableCompilerMessagesLocalization = EditorGUILayout.Toggle(LanguageProperties.localizeCompileMessages, m_EnableCompilerMessagesLocalization);
             }
             EditorGUI.EndDisabledGroup();
 
@@ -1122,7 +1069,7 @@ namespace UnityEditor
 
         private void WritePreferences()
         {
-            CodeEditor.SetExternalScriptEditor(m_ScriptEditorPath);
+            CodeEditor.Editor.SetCodeEditor(m_ScriptEditorPath);
 
             EditorPrefs.SetString("kImagesDefaultApp", m_ImageAppPath);
             EditorPrefs.SetString("kDiffsDefaultApp", m_DiffTools.Length == 0 ? "" : m_DiffTools[m_DiffToolIndex]);
@@ -1166,6 +1113,7 @@ namespace UnityEditor
 
             EditorPrefs.SetBool("Editor.kEnableEditorLocalization", m_EnableEditorLocalization);
             EditorPrefs.SetString("Editor.kEditorLocale", m_SelectedLanguage);
+            EditorPrefs.SetBool("Editor.kEnableCompilerMessagesLocalization", m_EnableCompilerMessagesLocalization);
 
             EditorPrefs.SetBool("AllowAlphaNumericHierarchy", m_AllowAlphaNumericHierarchy);
 
@@ -1202,40 +1150,22 @@ namespace UnityEditor
             m_ImageAppPath.str = EditorPrefs.GetString("kImagesDefaultApp");
 
             m_ScriptApps = BuildAppPathList(m_ScriptEditorPath, kRecentScriptAppsKey, CodeEditor.SystemDefaultPath);
-            m_ScriptAppsEditions = new string[m_ScriptApps.Length];
-
-            if (Application.platform == RuntimePlatform.WindowsEditor && UnityVSSupport.IsUnityVSEnabled())
-            {
-                foreach (var vsPaths in SyncVS.InstalledVisualStudios.Values)
-                    foreach (var vsPath in vsPaths)
-                    {
-                        int index = Array.IndexOf(m_ScriptApps, vsPath.Path);
-                        if (index == -1)
-                        {
-                            ArrayUtility.Add(ref m_ScriptApps, vsPath.Path);
-                            ArrayUtility.Add(ref m_ScriptAppsEditions, vsPath.Edition);
-                        }
-                        else
-                        {
-                            m_ScriptAppsEditions[index] = vsPath.Edition;
-                        }
-                    }
-            }
 
             var foundScriptEditorPaths = CodeEditor.Editor.GetFoundScriptEditorPaths();
 
-            foreach (var scriptEditorPath in foundScriptEditorPaths.Keys)
+            foreach (var apps in m_ScriptApps)
             {
-                ArrayUtility.Add(ref m_ScriptApps, scriptEditorPath);
-                ArrayUtility.Add(ref m_ScriptAppsEditions, null);
+                foundScriptEditorPaths[apps] = CodeEditor.Editor.GetInstallationForPath(apps).Name;
             }
+
+            m_ScriptApps = new[] { "" }.Concat(foundScriptEditorPaths.Keys).ToArray();
+            m_ScriptAppDisplayNames = new[] { "Open by file extension" }.Concat(foundScriptEditorPaths.Values).ToArray();
 
             m_ImageApps = BuildAppPathList(m_ImageAppPath, kRecentImageAppsKey, "");
 
-            m_ScriptAppDisplayNames = BuildFriendlyAppNameList(m_ScriptApps, m_ScriptAppsEditions, foundScriptEditorPaths,
-                "Open by file extension");
+            //BuildFriendlyAppNameList(m_ScriptApps, foundScriptEditorPaths, "Open by file extension");
 
-            m_ImageAppDisplayNames = BuildFriendlyAppNameList(m_ImageApps, null, null,
+            m_ImageAppDisplayNames = BuildFriendlyAppNameList(m_ImageApps, null,
                 L10n.Tr("Open by file extension"));
 
             m_DiffTools = InternalEditorUtility.GetAvailableDiffTools();
@@ -1274,6 +1204,7 @@ namespace UnityEditor
             m_ScriptDebugInfoEnabled = EditorPrefs.GetBool("ScriptDebugInfoEnabled", false);
             m_EnableEditorLocalization = EditorPrefs.GetBool("Editor.kEnableEditorLocalization", true);
             m_SelectedLanguage = EditorPrefs.GetString("Editor.kEditorLocale", LocalizationDatabase.GetDefaultEditorLanguage().ToString());
+            m_EnableCompilerMessagesLocalization = EditorPrefs.GetBool("Editor.kEnableCompilerMessagesLocalization", false);
             m_AllowAlphaNumericHierarchy = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false);
             m_EnableCodeCoverage = EditorPrefs.GetBool("CodeCoverageEnabled", false);
             m_ProgressDialogDelay = EditorPrefs.GetFloat("EditorBusyProgressDialogDelay", 3.0f);
@@ -1325,15 +1256,6 @@ namespace UnityEditor
 
             if (EditorWindow.HasOpenInstances<PreferenceSettingsWindow>())
                 EditorWindow.GetWindow<PreferenceSettingsWindow>().Repaint();
-        }
-
-        private string StripMicrosoftFromVisualStudioName(string arg)
-        {
-            if (!arg.Contains("Visual Studio"))
-                return arg;
-            if (!arg.StartsWith("Microsoft"))
-                return arg;
-            return arg.Substring("Microsoft ".Length);
         }
 
         class AppsListUserData
@@ -1423,7 +1345,7 @@ namespace UnityEditor
             return apps;
         }
 
-        private string[] BuildFriendlyAppNameList(string[] appPathList, string[] appEditionList, Dictionary<string, string> appPathToName, string defaultBuiltIn)
+        private string[] BuildFriendlyAppNameList(string[] appPathList, Dictionary<string, string> appPathToName, string defaultBuiltIn)
         {
             var list = new List<string>();
             for (int i = 0; i < appPathList.Length; ++i)
@@ -1434,14 +1356,10 @@ namespace UnityEditor
                     list.Add(defaultBuiltIn);
                 else
                 {
-                    var friendlyName = StripMicrosoftFromVisualStudioName(OSUtil.GetAppFriendlyName(appPath));
-
-                    if (appEditionList != null && !string.IsNullOrEmpty(appEditionList[i]))
-                        friendlyName = string.Format("{0} ({1})", friendlyName, appEditionList[i]);
-                    else if (appPathToName != null && appPathToName.ContainsKey(appPath))
-                        friendlyName = appPathToName[appPath];
-
-                    list.Add(friendlyName);
+                    if (appPathToName != null && appPathToName.ContainsKey(appPath))
+                        list.Add(appPathToName[appPath]);
+                    else
+                        list.Add(appPath);
                 }
             }
 

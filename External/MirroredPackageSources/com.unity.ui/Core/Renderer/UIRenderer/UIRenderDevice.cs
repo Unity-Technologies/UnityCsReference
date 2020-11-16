@@ -21,7 +21,7 @@ namespace UnityEngine.UIElements.UIR
     // The values stored here could be updated behind the back of the holder of this
     // object. Hence, never turn this into a struct or else we can't do automatic
     // defragmentation and address ordering optimizations
-    internal class MeshHandle : PoolItem
+    internal class MeshHandle : LinkedPoolItem<MeshHandle>
     {
         internal Alloc allocVerts, allocIndices;
         internal uint triangleCount; // Can be less than the actual indices if only a portion of the allocation is used
@@ -83,7 +83,7 @@ namespace UnityEngine.UIElements.UIR
         private uint m_NextUpdateID = 1; // For the current frame only, 0 is not an accepted value here
         private DrawStatistics m_DrawStats;
 
-        readonly Pool<MeshHandle> m_MeshHandles = new Pool<MeshHandle>();
+        readonly LinkedPool<MeshHandle> m_MeshHandles = new LinkedPool<MeshHandle>(() => new MeshHandle(), mh => {});
         readonly DrawParams m_DrawParams = new DrawParams();
         readonly TextureSlotManager m_TextureSlotManager = new TextureSlotManager();
 

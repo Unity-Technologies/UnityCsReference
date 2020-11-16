@@ -124,7 +124,7 @@ namespace UnityEngine
         [NativeName("Padding")]
         public extern int lightmapPadding { get; set; }
 
-        // Whether to use DXT1 compression on the generated lightmaps.
+        // Whether to use texture compression on the generated lightmaps.
         [NativeName("TextureCompression")]
         public extern bool compressLightmaps { get; set; }
 

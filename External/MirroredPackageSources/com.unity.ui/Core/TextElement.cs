@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
@@ -69,8 +70,10 @@ namespace UnityEngine.UIElements
         internal ITextHandle textHandle
         {
             get { return m_TextHandle; }
-            private set { m_TextHandle = value; }
+            set { m_TextHandle = value; }
         }
+
+        internal static int maxTextVertices = MeshBuilder.s_MaxTextMeshVertices;
 
         private void OnAttachToPanel(AttachToPanelEvent e)
         {
@@ -301,6 +304,12 @@ namespace UnityEngine.UIElements
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
         {
             return MeasureTextSize(text, desiredWidth, widthMode, desiredHeight, heightMode);
+		}
+        internal int VerticesCount(string text)
+        {
+            var textParams = m_TextParams;
+            textParams.text = text;
+            return textHandle.VerticesCount(textParams, scaledPixelsPerPoint);
         }
 
         //INotifyValueChange

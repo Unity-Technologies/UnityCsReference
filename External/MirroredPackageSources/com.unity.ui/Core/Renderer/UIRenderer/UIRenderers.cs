@@ -62,7 +62,7 @@ namespace UnityEngine.UIElements.UIR
         internal readonly Stack<Rect> scissor = new Stack<Rect>(8);
     }
 
-    internal class RenderChainCommand : PoolItem
+    internal class RenderChainCommand : LinkedPoolItem<RenderChainCommand>
     {
         internal VisualElement owner;
         internal RenderChainCommand prev, next;

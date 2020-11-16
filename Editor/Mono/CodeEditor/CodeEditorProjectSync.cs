@@ -4,7 +4,6 @@
 
 using Unity.CodeEditor;
 using UnityEngine.Scripting;
-using UnityEditorInternal;
 
 namespace UnityEditor
 {
@@ -16,14 +15,14 @@ namespace UnityEditor
 
             public void OnActiveBuildTargetChanged(BuildTarget oldTarget, BuildTarget newTarget)
             {
-                CodeEditor.Editor.Current.SyncAll();
+                CodeEditor.Editor.CurrentCodeEditor.SyncAll();
             }
         }
 
         [RequiredByNativeCode]
         public static void SyncEditorProject()
         {
-            CodeEditor.Editor.Current.SyncAll();
+            CodeEditor.Editor.CurrentCodeEditor.SyncAll();
         }
 
         // For the time being this doesn't use the callback
@@ -34,7 +33,7 @@ namespace UnityEditor
             string[] movedAssets,
             string[] movedFromAssetPaths)
         {
-            CodeEditor.Editor.Current.SyncIfNeeded(addedAssets, deletedAssets, movedAssets, movedFromAssetPaths, importedAssets);
+            CodeEditor.Editor.CurrentCodeEditor.SyncIfNeeded(addedAssets, deletedAssets, movedAssets, movedFromAssetPaths, importedAssets);
         }
 
         [MenuItem("Assets/Open C# Project")]
@@ -42,35 +41,9 @@ namespace UnityEditor
         {
             // Ensure that the mono islands are up-to-date
             AssetDatabase.Refresh();
-            #pragma warning disable 618
-            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.Other
-                || ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.SystemDefault)
-            {
-                CodeEditor.Editor.Current.SyncAll();
-            }
-            else
-            {
-                SyncVS.Synchronizer.Sync();
-            }
+            CodeEditor.Editor.CurrentCodeEditor.SyncAll();
 
-            OpenProjectFileUnlessInBatchMode();
-        }
-
-        static void OpenProjectFileUnlessInBatchMode()
-        {
-            if (InternalEditorUtility.inBatchMode)
-                return;
-
-            #pragma warning disable 618
-            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.Other
-                || ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.SystemDefault)
-            {
-                CodeEditor.Editor.Current.OpenProject();
-            }
-            else
-            {
-                InternalEditorUtility.OpenFileAtLineExternal("", -1, -1);
-            }
+            CodeEditor.Editor.CurrentCodeEditor.OpenProject();
         }
     }
 }

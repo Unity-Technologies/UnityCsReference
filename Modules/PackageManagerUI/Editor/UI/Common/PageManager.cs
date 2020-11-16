@@ -356,7 +356,8 @@ namespace UnityEditor.PackageManager.UI
             if (package?.Is(PackageType.AssetStore) == true)
                 return PackageFilterTab.AssetStore;
 
-            if (version?.isInstalled == true || package?.versions?.installed != null)
+            if (version?.isInstalled == true || package?.versions?.installed != null
+                || (package?.progress == PackageProgress.Installing && package is PlaceholderPackage))
                 return PackageFilterTab.InProject;
 
             if (!m_SettingsProxy.enablePreReleasePackages && ((version?.version?.Prerelease.StartsWith("pre.") ?? false) ||

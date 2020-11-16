@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace UnityEngine.UIElements
 {
-    static class VisualElementFactoryRegistry
+    internal static class VisualElementFactoryRegistry
     {
         private static Dictionary<string, List<IUxmlFactory>> s_Factories;
 

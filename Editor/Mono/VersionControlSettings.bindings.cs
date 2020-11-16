@@ -5,7 +5,6 @@
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
-using UnityEditor.VisualStudioIntegration;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using Object = UnityEngine.Object;

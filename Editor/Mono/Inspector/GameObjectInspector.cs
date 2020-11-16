@@ -583,7 +583,7 @@ namespace UnityEditor
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
             {
-                SceneModeUtility.SetStaticFlags(targets, ~0, toggled);
+                SceneModeUtility.SetStaticFlags(targets, int.MaxValue, toggled);
                 serializedObject.SetIsDifferentCacheDirty();
 
                 // Displaying the dialog to ask the user whether to update children nukes the gui state (case 962453)

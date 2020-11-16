@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -363,10 +364,18 @@ namespace UnityEditor.UIElements
             return ed;
         }
 
-        private VisualElement CreateDefaultInspector(SerializedObject serializedObject)
+        /// <summary>
+        /// Adds default inspector property fields under a container VisualElement
+        /// </summary>
+        /// <param name="container">The parent VisualElement</param>
+        /// <param name="serializedObject">The SerializedObject to inspect</param>
+        /// <param name="editor">The editor currently used</param>
+        public static void FillDefaultInspector(VisualElement container, SerializedObject serializedObject, Editor editor)
         {
             if (serializedObject == null)
-                return null;
+                return;
+
+            bool isPartOfPrefabInstance = editor != null && GenericInspector.IsAnyMonoBehaviourTargetPartOfPrefabInstance(editor);
 
             SerializedProperty property = serializedObject.GetIterator();
             if (property.NextVisible(true)) // Expand first child.
@@ -378,17 +387,25 @@ namespace UnityEditor.UIElements
 
                     if (property.propertyPath == "m_Script")
                     {
-                        if ((serializedObject.targetObject != null) || GenericInspector.IsAnyMonoBehaviourTargetPartOfPrefabInstance(editor))
+                        if ((serializedObject.targetObject != null) || isPartOfPrefabInstance)
                             field.SetEnabled(false);
                     }
 
-                    hierarchy.Add(field);
+                    container.Add(field);
                 }
                 while (property.NextVisible(false));
             }
 
             if (serializedObject.targetObject == null)
-                AddMissingScriptLabel(serializedObject, GenericInspector.IsAnyMonoBehaviourTargetPartOfPrefabInstance(editor));
+                AddMissingScriptLabel(container, serializedObject, isPartOfPrefabInstance);
+        }
+
+        private VisualElement CreateDefaultInspector(SerializedObject serializedObject)
+        {
+            if (serializedObject == null)
+                return null;
+
+            FillDefaultInspector(this, serializedObject, editor);
 
             AddToClassList(uIEDefaultVariantUssClassName);
             AddToClassList(uIEInspectorVariantUssClassName);
@@ -396,12 +413,12 @@ namespace UnityEditor.UIElements
             return this;
         }
 
-        bool AddMissingScriptLabel(SerializedObject serializedObject, bool isPartOfPrefabInstance)
+        static bool AddMissingScriptLabel(VisualElement container, SerializedObject serializedObject, bool isPartOfPrefabInstance)
         {
             SerializedProperty scriptProperty = serializedObject.FindProperty("m_Script");
             if (scriptProperty != null)
             {
-                hierarchy.Add(new IMGUIContainer(() => GenericInspector.ShowScriptNotLoadedWarning(scriptProperty, isPartOfPrefabInstance)));
+                container.Add(new IMGUIContainer(() => GenericInspector.ShowScriptNotLoadedWarning(scriptProperty, isPartOfPrefabInstance)));
                 return true;
             }
 
@@ -673,6 +690,7 @@ namespace UnityEditor.UIElements
             if ((mode & Mode.UIECustom) > 0)
             {
                 inspectorElement = editor.CreateInspectorGUI();
+
                 if (inspectorElement != null)
                 {
                     AddToClassList(uIECustomVariantUssClassName);

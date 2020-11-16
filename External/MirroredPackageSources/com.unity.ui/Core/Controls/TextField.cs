@@ -146,7 +146,6 @@ namespace UnityEngine.UIElements
         protected override string ValueToString(string value) => value;
         
         protected override string StringToValue(string str) => str;
-
         class TextInput : TextInputBase
         {
             TextField parentTextField => (TextField)parent;
@@ -162,6 +161,21 @@ namespace UnityEngine.UIElements
                     m_Multiline = value;
                     if (!value)
                         text = text.Replace("\n", "");
+                    SetTextAlign();
+                }
+            }
+
+            private void SetTextAlign()
+            {
+                if (m_Multiline)
+                {
+                    RemoveFromClassList(singleLineInputUssClassName);
+                    AddToClassList(multilineInputUssClassName);
+                }
+                else
+                {
+                    RemoveFromClassList(multilineInputUssClassName);
+                    AddToClassList(singleLineInputUssClassName);
                 }
             }
 

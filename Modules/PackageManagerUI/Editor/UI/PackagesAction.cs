@@ -8,6 +8,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
 {
+    // This class is kept because it is still used in Upm develop package
     internal class PackagesAction : VisualElement
     {
         public Action<string> actionClicked { get; set; }

@@ -58,6 +58,7 @@ namespace UnityEditor.UIElements
         // This property to alleviate the fact we have to cast all the time
         TextValueInput textValueInput => (TextValueInput)textInputBase;
 
+
         /// <summary>
         /// The format string for the value.
         /// </summary>

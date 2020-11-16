@@ -371,6 +371,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void DrawRectangle(MeshGenerationContextUtils.RectangleParams rectParams)
         {
+            if (rectParams.rect.width < Mathf.Epsilon || rectParams.rect.height < Mathf.Epsilon)
+                return; // Nothing to draw
+
             if (currentElement.panel.contextType == ContextType.Editor)
                 rectParams.color *= rectParams.playmodeTintColor;
 
@@ -378,7 +381,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 alloc = m_AllocThroughDrawMeshDelegate,
                 texture = rectParams.texture,
-                material = rectParams.material
+                material = rectParams.material,
+                flags = rectParams.meshFlags
             };
 
             if (rectParams.vectorImage != null)
@@ -617,7 +621,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 alloc = m_AllocThroughDrawMeshDelegate,
                 texture = sprite.texture,
-                flags = MeshGenerationContext.MeshFlags.SkipDynamicAtlas
+                flags = rectParams.meshFlags
             };
 
             // Remap vertices inside rect
@@ -629,23 +633,29 @@ namespace UnityEngine.UIElements.UIR.Implementation
             var vertices = new Vertex[vertexCount];
             var indices = AdjustSpriteWinding(sprite);
 
+            var mwd = meshAlloc.Allocate((uint)vertices.Length, (uint)indices.Length);
+            var uvRegion = mwd.uvRegion;
+
             for (int i = 0; i < vertexCount; ++i)
             {
                 var v = sprite.vertices[i];
-                v -= spriteMin;
-                v /= spriteSize;
+                v -= rectParams.spriteGeomRect.position;
+                v /= rectParams.spriteGeomRect.size;
                 v.y = 1.0f - v.y;
                 v *= rectParams.rect.size;
                 v += rectParams.rect.position;
 
+                var uv = sprite.uv[i];
+                uv *= uvRegion.size;
+                uv += uvRegion.position;
+
                 vertices[i] = new Vertex() {
                     position = new Vector3(v.x, v.y, Vertex.nearZ),
                     tint = rectParams.color,
-                    uv = sprite.uv[i]
+                    uv = uv
                 };
             }
 
-            var mwd = meshAlloc.Allocate((uint)vertices.Length, (uint)indices.Length);
             mwd.SetAllVertices(vertices);
             mwd.SetAllIndices(indices);
         }

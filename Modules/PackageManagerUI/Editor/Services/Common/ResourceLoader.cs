@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -15,18 +16,16 @@ namespace UnityEditor.PackageManager.UI
     {
         private const string k_TemplateRoot = "UXML/PackageManager/";
 
+        private const string k_PackageManagerInputDropdownStyleSheetPath = "StyleSheets/PackageManager/InputDropdown.uss";
         private const string k_PackageManagerFiltersStyleSheetPath = "StyleSheets/PackageManager/Filters.uss";
-        private const string k_PackageManagerCommonStyleSheetPath = "StyleSheets/PackageManager/Common.uss";
         private const string k_PackageManagerDarkVariablesSheetPath = "StyleSheets/PackageManager/Dark.uss";
         private const string k_PackageManagerLightVariablesSheetPath = "StyleSheets/PackageManager/Light.uss";
         private const string k_ExtensionDarkVariablesSheetPath = "StyleSheets/Extensions/base/dark.uss";
         private const string k_ExtensionLightVariablesSheetPath = "StyleSheets/Extensions/base/light.uss";
-        private const string s_PublicNorthStarCommonVariableStyleSheetPath = "UIPackageResources/StyleSheets/Default/Variables/Public/common.uss";
-        private const string k_PublicNorthStarDarkVariablesSheetPath = "UIPackageResources/StyleSheets/Default/Northstar/Palette/dark.uss";
-        private const string k_PublicNorthStarLightVariablesSheetPath = "UIPackageResources/StyleSheets/Default/Northstar/Palette/light.uss";
 
-        private static readonly string[] k_PackageManagerStyleSheetPaths =
+        private static readonly string[] k_PackageManagerStyleSheetPaths = new string[]
         {
+            "StyleSheets/PackageManager/Common.uss",
             "StyleSheets/PackageManager/PackageDependencies.uss",
             "StyleSheets/PackageManager/PackageDetails.uss",
             "StyleSheets/PackageManager/PackageItem.uss",
@@ -45,7 +44,10 @@ namespace UnityEditor.PackageManager.UI
             get
             {
                 if (m_DarkStyleSheet == null)
-                    m_DarkStyleSheet = LoadAndResolveStyleSheet(true);
+                {
+                    var commonStyleSheets = new[] { GetDefaultCommonStyleSheet(true), GetExtensionStyleSheet(true), GetPackageManagerVariablesStyleSheet(true) };
+                    m_DarkStyleSheet = ResolveStyleSheets(commonStyleSheets.Concat(GetPackageManagerStyles()).ToArray());
+                }
                 return m_DarkStyleSheet;
             }
         }
@@ -57,7 +59,10 @@ namespace UnityEditor.PackageManager.UI
             get
             {
                 if (m_LightStyleSheet == null)
-                    m_LightStyleSheet = LoadAndResolveStyleSheet(false);
+                {
+                    var commonStyleSheets = new[] { GetDefaultCommonStyleSheet(false), GetExtensionStyleSheet(false), GetPackageManagerVariablesStyleSheet(false) };
+                    m_LightStyleSheet = ResolveStyleSheets(commonStyleSheets.Concat(GetPackageManagerStyles()).ToArray());
+                }
                 return m_LightStyleSheet;
             }
         }
@@ -69,7 +74,7 @@ namespace UnityEditor.PackageManager.UI
             get
             {
                 if (m_DarkFilterStyleSheet == null)
-                    m_DarkFilterStyleSheet = LoadAndResolveFilterStyleSheet();
+                    m_DarkFilterStyleSheet = ResolveStyleSheets(GetPackageManagerVariablesStyleSheet(true), EditorGUIUtility.Load(k_PackageManagerFiltersStyleSheetPath) as StyleSheet);
                 return m_DarkFilterStyleSheet;
             }
         }
@@ -81,54 +86,65 @@ namespace UnityEditor.PackageManager.UI
             get
             {
                 if (m_LightFilterStyleSheet == null)
-                    m_LightFilterStyleSheet = LoadAndResolveFilterStyleSheet();
+                    m_LightFilterStyleSheet = ResolveStyleSheets(GetPackageManagerVariablesStyleSheet(false), EditorGUIUtility.Load(k_PackageManagerFiltersStyleSheetPath) as StyleSheet);
                 return m_LightFilterStyleSheet;
             }
         }
 
-        private static StyleSheet LoadAndResolveStyleSheet(bool isDarkTheme)
+        [SerializeField]
+        private StyleSheet m_DarkInputDropdownStyleSheet;
+        private StyleSheet darkInputDropdownStyleSheet
         {
-            var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
-            styleSheet.hideFlags = HideFlags.HideAndDontSave;
-            styleSheet.isUnityStyleSheet = true;
-
-            var packageManagerThemeVariablesSheetPath = isDarkTheme ? k_PackageManagerDarkVariablesSheetPath : k_PackageManagerLightVariablesSheetPath;
-            var variablesThemeStyleSheetPath = isDarkTheme ? UIElementsEditorUtility.s_DefaultCommonDarkStyleSheetPath : UIElementsEditorUtility.s_DefaultCommonLightStyleSheetPath;
-            var extensionThemeStyleSheetPath = isDarkTheme ? k_ExtensionDarkVariablesSheetPath : k_ExtensionLightVariablesSheetPath;
-            var NorthStarThemeStyleSheetPath = isDarkTheme ? k_PublicNorthStarDarkVariablesSheetPath : k_PublicNorthStarLightVariablesSheetPath;
-
-            var packageManagerCommon = EditorGUIUtility.Load(k_PackageManagerCommonStyleSheetPath) as StyleSheet;
-            var packageManagerTheme = EditorGUIUtility.Load(packageManagerThemeVariablesSheetPath) as StyleSheet;
-
-            var packageManagerStyles = k_PackageManagerStyleSheetPaths.Select(p => EditorGUIUtility.Load(p) as StyleSheet).ToArray();
-
-            var variableThemeSheet = EditorGUIUtility.Load(UIElementsEditorUtility.GetStyleSheetPathForCurrentFont(variablesThemeStyleSheetPath)) as StyleSheet;
-            var extensionThemeStyleSheet = EditorGUIUtility.Load(extensionThemeStyleSheetPath) as StyleSheet;
-            var NorthStarCommonVariablesStyleSheet = EditorGUIUtility.Load(s_PublicNorthStarCommonVariableStyleSheetPath) as StyleSheet;
-            var NorthStarVariablesStyleSheet = EditorGUIUtility.Load(NorthStarThemeStyleSheetPath) as StyleSheet;
-
-            var resolver = new StyleSheets.StyleSheetResolver();
-            resolver.AddStyleSheets(variableThemeSheet, extensionThemeStyleSheet, NorthStarCommonVariablesStyleSheet, NorthStarVariablesStyleSheet, packageManagerCommon, packageManagerTheme);
-            resolver.AddStyleSheets(packageManagerStyles);
-            resolver.ResolveTo(styleSheet);
-
-            return styleSheet;
+            get
+            {
+                if (m_DarkInputDropdownStyleSheet == null)
+                    m_DarkInputDropdownStyleSheet = ResolveStyleSheets(GetDefaultCommonStyleSheet(true), GetPackageManagerVariablesStyleSheet(true), EditorGUIUtility.Load(k_PackageManagerInputDropdownStyleSheetPath) as StyleSheet);
+                return m_DarkInputDropdownStyleSheet;
+            }
         }
 
-        private static StyleSheet LoadAndResolveFilterStyleSheet()
+        [SerializeField]
+        private StyleSheet m_LightInputDropdownStyleSheet;
+        private StyleSheet lightInputDropdownStyleSheet
+        {
+            get
+            {
+                if (m_LightInputDropdownStyleSheet == null)
+                    m_LightInputDropdownStyleSheet = ResolveStyleSheets(GetDefaultCommonStyleSheet(false), GetPackageManagerVariablesStyleSheet(false), EditorGUIUtility.Load(k_PackageManagerInputDropdownStyleSheetPath) as StyleSheet);
+                return m_LightInputDropdownStyleSheet;
+            }
+        }
+
+        private StyleSheet GetDefaultCommonStyleSheet(bool isDarkTheme)
+        {
+            var stylesheetPath = isDarkTheme ? UIElementsEditorUtility.s_DefaultCommonDarkStyleSheetPath : UIElementsEditorUtility.s_DefaultCommonLightStyleSheetPath;
+            return EditorGUIUtility.Load(UIElementsEditorUtility.GetStyleSheetPathForCurrentFont(stylesheetPath)) as StyleSheet;
+        }
+
+        private StyleSheet GetExtensionStyleSheet(bool isDarkTheme)
+        {
+            return EditorGUIUtility.Load(isDarkTheme ? k_ExtensionDarkVariablesSheetPath : k_ExtensionLightVariablesSheetPath) as StyleSheet;
+        }
+
+        private StyleSheet GetPackageManagerVariablesStyleSheet(bool isDarkTheme)
+        {
+            return EditorGUIUtility.Load(isDarkTheme ? k_PackageManagerDarkVariablesSheetPath : k_PackageManagerLightVariablesSheetPath) as StyleSheet;
+        }
+
+        private IEnumerable<StyleSheet> GetPackageManagerStyles()
+        {
+            return k_PackageManagerStyleSheetPaths.Select(p => EditorGUIUtility.Load(p) as StyleSheet);
+        }
+
+        private static StyleSheet ResolveStyleSheets(params StyleSheet[] sheets)
         {
             var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
             styleSheet.hideFlags = HideFlags.HideAndDontSave;
             styleSheet.isUnityStyleSheet = true;
 
-            var packageManagerThemeVariablesSheetPath = EditorGUIUtility.isProSkin ? k_PackageManagerDarkVariablesSheetPath : k_PackageManagerLightVariablesSheetPath;
-            var packageManagerTheme = EditorGUIUtility.Load(packageManagerThemeVariablesSheetPath) as StyleSheet;
-            var packageManagerFilterCommon = EditorGUIUtility.Load(k_PackageManagerFiltersStyleSheetPath) as StyleSheet;
-
             var resolver = new StyleSheets.StyleSheetResolver();
-            resolver.AddStyleSheets(packageManagerFilterCommon, packageManagerTheme);
+            resolver.AddStyleSheets(sheets);
             resolver.ResolveTo(styleSheet);
-
             return styleSheet;
         }
 
@@ -169,6 +185,11 @@ namespace UnityEditor.PackageManager.UI
         public virtual StyleSheet GetFiltersWindowStyleSheet()
         {
             return EditorGUIUtility.isProSkin ? darkFilterStyleSheet : lightFilterStyleSheet;
+        }
+
+        public virtual StyleSheet GetInputDropdownWindowStylesheet()
+        {
+            return EditorGUIUtility.isProSkin ? darkInputDropdownStyleSheet : lightInputDropdownStyleSheet;
         }
     }
 }

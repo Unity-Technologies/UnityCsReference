@@ -369,7 +369,7 @@ namespace UnityEditor.U2D
             if (HasModified())
             {
                 serializedAssetObject.ApplyModifiedPropertiesWithoutUndo();
-                InternalEditorUtility.SaveToSerializedFileAndForget(new Object[] { spriteAtlasAsset }, m_AssetPath, true);
+                SpriteAtlasAsset.Save(spriteAtlasAsset, m_AssetPath);
             }
         }
 

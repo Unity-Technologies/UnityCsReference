@@ -63,7 +63,8 @@ namespace UnityEditor
         kNoAssetDatabaseRestriction = 0,
         kImporting = 1 << 0,
         kImportingAsset = 1 << 1,
-        kPreventCustomDependencyChanges = 1 << 2
+        kPreventCustomDependencyChanges = 1 << 2,
+        kGatheringDependenciesFromSourceFile = 1 << 3
     }
 
     public struct CacheServerConnectionChangedParameters
@@ -180,6 +181,7 @@ namespace UnityEditor
         extern public static bool IsValidFolder(string path);
 
         [NativeThrows]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be created during gathering of import dependencies")]
         extern public static void CreateAsset([NotNull] Object asset, string path);
         [NativeThrows]
         extern static internal void CreateAssetFromObjects(Object[] assets, string path);
@@ -213,6 +215,7 @@ namespace UnityEditor
 
         [NativeThrows]
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedBySecondArgument)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
         extern public static Object LoadAssetAtPath(string assetPath, Type type);
 
         public static T LoadAssetAtPath<T>(string assetPath) where T : Object
@@ -220,16 +223,22 @@ namespace UnityEditor
             return (T)LoadAssetAtPath(assetPath, typeof(T));
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
         extern public static Object LoadMainAssetAtPath(string assetPath);
 
         [FreeFunction("AssetDatabase::GetMainAssetObject")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
         extern internal static Object LoadMainAssetAtGUID(GUID assetGUID);
 
         extern public static System.Type GetMainAssetTypeAtPath(string assetPath);
 
         extern public static System.Type GetTypeFromPathAndFileID(string assetPath, long localIdentifierInFile);
         extern public static bool IsMainAssetAtPathLoaded(string assetPath);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
         extern public static Object[] LoadAllAssetRepresentationsAtPath(string assetPath);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
         extern public static Object[] LoadAllAssetsAtPath(string assetPath);
         extern public static string[] GetAllAssetPaths();
 

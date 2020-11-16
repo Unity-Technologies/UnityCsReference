@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace UnityEditor.Search
 {
@@ -108,6 +109,20 @@ namespace UnityEditor.Search
         {
             RefreshProviders();
             RefreshProviderActions();
+        }
+
+        /// <summary>
+        /// Refreshes all open windows.
+        /// </summary>
+        public static void RefreshWindows()
+        {
+            var windows = Resources.FindObjectsOfTypeAll<QuickSearch>();
+            if (windows == null)
+                return;
+            foreach (var win in windows)
+            {
+                win.Refresh();
+            }
         }
 
         /// <summary>

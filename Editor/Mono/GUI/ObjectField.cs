@@ -222,7 +222,7 @@ namespace UnityEditor
                         }
                     }
                     break;
-                case EventType.MouseUp:
+                case EventType.MouseDown:
                     if (position.Contains(Event.current.mousePosition))
                     {
                         if (Event.current.button == 1)

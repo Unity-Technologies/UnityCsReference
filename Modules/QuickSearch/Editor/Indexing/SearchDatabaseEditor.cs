@@ -50,7 +50,7 @@ namespace UnityEditor.Search
 
         public override void OnInspectorGUI()
         {
-            if (m_DB.index == null)
+            if (!m_DB || m_DB.index == null)
                 return;
 
             EditorGUILayout.PropertyField(m_Settings, title, true);

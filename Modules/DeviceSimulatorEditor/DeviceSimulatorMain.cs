@@ -12,6 +12,7 @@ namespace UnityEditor.DeviceSimulation
     {
         private ScreenSimulation m_ScreenSimulation;
         private UserInterfaceController m_UserInterface;
+        private TouchEventManipulator m_TouchInput;
 
         public Vector2 TargetSize => new Vector2(m_ScreenSimulation.currentResolution.width, m_ScreenSimulation.currentResolution.height);
 
@@ -23,6 +24,9 @@ namespace UnityEditor.DeviceSimulation
                 m_UserInterface.OverlayTexture = m_Devices[m_DeviceIndex]?.screens[0].presentation.overlay;
             }
         }
+
+        public Vector2 MousePositionInUICoordinates =>
+            m_TouchInput.IsPointerInsideDeviceScreen ? new Vector2(m_TouchInput.PointerPosition.x, m_ScreenSimulation.Height - m_TouchInput.PointerPosition.y) : Vector2.negativeInfinity;
 
         private DeviceInfo[] m_Devices;
         public DeviceInfo[] Devices => m_Devices;
@@ -43,13 +47,15 @@ namespace UnityEditor.DeviceSimulation
         {
             m_Devices = DeviceLoader.LoadDevices();
             InitDeviceIndex(serializedState);
-            m_UserInterface = new UserInterfaceController(this, rootVisualElement);
+            m_TouchInput = new TouchEventManipulator();
+            m_UserInterface = new UserInterfaceController(this, rootVisualElement, m_TouchInput);
             InitSimulation();
             m_UserInterface.ApplySerializedStates(serializedState);
         }
 
         public void Dispose()
         {
+            m_TouchInput.Dispose();
             m_ScreenSimulation.Dispose();
             DeviceLoader.UnloadOverlays(m_Devices[m_DeviceIndex]);
         }
@@ -73,6 +79,7 @@ namespace UnityEditor.DeviceSimulation
             var playerSettings = new SimulationPlayerSettings();
             DeviceLoader.LoadOverlay(m_Devices[m_DeviceIndex], 0);
             m_ScreenSimulation = new ScreenSimulation(m_Devices[m_DeviceIndex], playerSettings);
+            m_TouchInput.InitTouchInput(m_Devices[m_DeviceIndex].screens[0].width, m_Devices[m_DeviceIndex].screens[0].height, m_ScreenSimulation);
             m_UserInterface.OnSimulationStart(m_ScreenSimulation);
         }
 
@@ -120,6 +127,37 @@ namespace UnityEditor.DeviceSimulation
             }
 
             InitSimulation();
+        }
+
+        public void HandleInputEvent()
+        {
+            if (!EditorApplication.isPlaying || EditorApplication.isPaused)
+                return;
+
+            // The following code makes IMGUI work in-game, it's mostly copied from the GameView class.
+
+            // MouseDown events outside game view rect are not send to scripts but MouseUp events are (see below)
+            if (Event.current.rawType == EventType.MouseDown && !m_TouchInput.IsPointerInsideDeviceScreen)
+                return;
+
+            var editorMousePosition = Event.current.mousePosition;
+
+            // If this is not set IMGUI doesn't know when you drag cursor from one element to another.
+            // For example you could press the mouse on a button then drag the cursor onto a TextField, release the mouse and the button would still get pressed.
+            Event.current.mousePosition = new Vector2(m_TouchInput.PointerPosition.x, m_ScreenSimulation.Height - m_TouchInput.PointerPosition.y);
+
+            // This sends keyboard events to input systems and UI
+            EditorGUIUtility.QueueGameViewInputEvent(Event.current);
+
+            var useEvent = Event.current.rawType != EventType.MouseUp || m_TouchInput.IsPointerInsideDeviceScreen;
+
+            if (Event.current.type == EventType.ExecuteCommand || Event.current.type == EventType.ValidateCommand)
+                useEvent = false;
+
+            if (useEvent)
+                Event.current.Use();
+            else
+                Event.current.mousePosition = editorMousePosition;
         }
     }
 }

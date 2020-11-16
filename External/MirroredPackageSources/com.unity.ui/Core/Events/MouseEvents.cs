@@ -238,6 +238,7 @@ namespace UnityEngine.UIElements
                 {
                     pointerEvent.PreventDefault();
                 }
+                pointerEvent.processedByFocusController |= processedByFocusController;
             }
 
             base.PostDispatch(panel);

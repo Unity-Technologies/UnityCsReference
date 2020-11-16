@@ -14,7 +14,10 @@ namespace UnityEditor
     internal class DefaultExternalCodeEditor : IExternalCodeEditor
     {
         static readonly GUIContent k_ResetArguments = EditorGUIUtility.TrTextContent("Reset argument");
+        static readonly string[] supportedExtensions = {"json", "asmdef", "log", "cs", "uxml", "uss", "shader", "compute", "cginc", "hlsl", "glslinc", "template", "raytrace" };
         static bool IsOSX => Application.platform == RuntimePlatform.OSXEditor;
+        static bool IsWindows => Application.platform == RuntimePlatform.WindowsEditor;
+        static bool IsLinux => Application.platform == RuntimePlatform.LinuxEditor;
 
         string m_ChosenInstallation;
 
@@ -61,7 +64,7 @@ namespace UnityEditor
             get
             {
                 if (m_ChosenInstallation == null)
-                    m_ChosenInstallation = CodeEditor.CurrentEditorInstallation;
+                    m_ChosenInstallation = CodeEditor.CurrentEditorPath;
                 return m_ChosenInstallation;
             }
             set
@@ -73,9 +76,18 @@ namespace UnityEditor
         public CodeEditor.Installation[] Installations { get; }
         public bool TryGetInstallationForPath(string editorPath, out CodeEditor.Installation installation)
         {
+            if (string.IsNullOrEmpty(editorPath))
+            {
+                installation = new CodeEditor.Installation
+                {
+                    Name = "",
+                    Path = ""
+                };
+                return false;
+            }
             installation = new CodeEditor.Installation
             {
-                Name = Path.GetFileNameWithoutExtension(editorPath),
+                Name = OSUtil.GetAppFriendlyName(editorPath) + " (internal)",
                 Path = editorPath
             };
             return true;
@@ -102,37 +114,30 @@ namespace UnityEditor
         {
         }
 
-        static string[] defaultExtensions
-        {
-            get
-            {
-                var customExtensions = new[] {"json", "asmdef", "log"};
-                return EditorSettings.projectGenerationBuiltinExtensions
-                    .Concat(EditorSettings.projectGenerationUserExtensions)
-                    .Concat(customExtensions)
-                    .Distinct().ToArray();
-            }
-        }
+        static string[] DefaultExtensions =>
+            EditorSettings.projectGenerationUserExtensions
+                .Concat(supportedExtensions)
+                .Distinct().ToArray();
 
         static bool SupportsExtension(string path)
         {
             var extension = Path.GetExtension(path);
             if (string.IsNullOrEmpty(extension))
                 return false;
-            return defaultExtensions.Contains(extension.TrimStart('.'));
+            return DefaultExtensions.Contains(extension.TrimStart('.'));
         }
 
         public bool OpenProject(string path, int line, int column)
         {
-            if (path != "" && !SupportsExtension(path)) // Assets - Open C# Project passes empty path here
+            if (path != CodeEditor.SystemDefaultPath && !SupportsExtension(path)) // Assets - Open C# Project passes empty path here
             {
                 return false;
             }
 
-            string applicationPath = CodeEditor.CurrentEditorInstallation.Trim();
+            string applicationPath = CodeEditor.CurrentEditorPath.Trim();
             if (applicationPath == CodeEditor.SystemDefaultPath)
             {
-                return InternalEditorUtility.OpenFileAtLineExternal("", -1, -1);
+                return InternalEditorUtility.OpenFileAtLineExternal(path, -1, -1);
             }
 
             if (IsOSX)
@@ -140,12 +145,28 @@ namespace UnityEditor
                 return CodeEditor.OSOpenFile(applicationPath, CodeEditor.ParseArgument(Arguments, path, line, column));
             }
 
+            string fileName = "";
+            string arguments = "";
+
+            if (IsLinux)
+            {
+                fileName = applicationPath;
+                arguments = CodeEditor.ParseArgument(Arguments, path, line, column);
+            }
+
+            if (IsWindows)
+            {
+                fileName = "cmd.exe";
+                arguments = "/C \"" + CodeEditor.QuoteForProcessStart(applicationPath) +
+                    " " + CodeEditor.ParseArgument(Arguments, path, line, column) + "\"";
+            }
+
             var process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = applicationPath,
-                    Arguments = CodeEditor.ParseArgument(Arguments, path, line, column),
+                    FileName = fileName,
+                    Arguments = arguments,
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
                     UseShellExecute = true,

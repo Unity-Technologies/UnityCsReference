@@ -13,6 +13,8 @@ namespace UnityEngine.UIElements.UIR
         static ProfilerMarker s_VectorGraphics9Slice = new ProfilerMarker("UIR.MakeVector9Slice");
         static ProfilerMarker s_VectorGraphicsStretch = new ProfilerMarker("UIR.MakeVectorStretch");
 
+        internal static readonly int s_MaxTextMeshVertices = 0xC000; // Max 48k vertices. We leave room for masking, borders, background, etc.
+
         internal struct AllocMeshData
         {
             internal delegate MeshWriteData Allocator(uint vertexCount, uint indexCount, ref AllocMeshData allocatorData);
@@ -82,15 +84,13 @@ namespace UnityEngine.UIElements.UIR
 
         static int LimitTextVertices(int vertexCount, bool logTruncation = true)
         {
-            const int maxTextMeshVertices = 0xC000; // Max 48k vertices. We leave room for masking, borders, background, etc.
-
-            if (vertexCount <= maxTextMeshVertices)
+            if (vertexCount <= s_MaxTextMeshVertices)
                 return vertexCount;
 
             if (logTruncation)
-                Debug.LogError($"Generated text will be truncated because it exceeds {maxTextMeshVertices} vertices.");
+                Debug.LogWarning($"Generated text will be truncated because it exceeds {s_MaxTextMeshVertices} vertices.");
 
-            return maxTextMeshVertices;
+            return s_MaxTextMeshVertices;
         }
 
         internal static void MakeText(TextMeshInfo textMeshInfo, Vector2 offset, AllocMeshData meshAlloc)

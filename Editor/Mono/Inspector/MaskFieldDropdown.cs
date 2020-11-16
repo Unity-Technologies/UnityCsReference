@@ -82,14 +82,14 @@ namespace UnityEditor
             }
 
             var isNothing = m_SerializedProperty.intValue == 0;
-            var isEverything = m_SerializedProperty.intValue == -1;
+            var isEverything = m_SerializedProperty.intValue == int.MaxValue;
 
             GUILayout.Space(2);
 
             var toggleStyle = m_SerializedProperty.hasMultipleDifferentValues && isNothing ? Styles.menuItemMixed : Styles.menuItem;
             DrawEverythingOrNothingSelectedToggle(isNothing, "Nothing", toggleStyle, 0);
             toggleStyle = m_SerializedProperty.hasMultipleDifferentValues && isEverything ? Styles.menuItemMixed : Styles.menuItem;
-            DrawEverythingOrNothingSelectedToggle(isEverything, "Everything", toggleStyle, -1);
+            DrawEverythingOrNothingSelectedToggle(isEverything, "Everything", toggleStyle, int.MaxValue);
 
             for (int i = 0; i < m_OptionNames.Length; i++)
             {
@@ -123,7 +123,7 @@ namespace UnityEditor
                 var serializedObject = new SerializedObject(m_SerializedProperty.serializedObject.targetObjects[i]);
                 var property = serializedObject.FindProperty(m_SerializedProperty.propertyPath);
 
-                if (property.intValue == ~0)
+                if (property.intValue == int.MaxValue)
                 {
                     property.intValue = 0;
                     for (int j = 0; j < m_OptionMaskValues.Length; j++)
@@ -134,7 +134,7 @@ namespace UnityEditor
                 }
                 else if ((property.intValue |= 1 << maskIndex) == m_MaxMaskValue && add)
                 {
-                    property.intValue = -1;
+                    property.intValue = int.MaxValue;
                 }
                 else if (add)
                     property.intValue = property.intValue |= 1 << maskIndex;
@@ -199,7 +199,7 @@ namespace UnityEditor
             GUILayout.Toggle(state, label, style);
             if (EditorGUI.EndChangeCheck())
             {
-                ChangeMaskValues(-1, changedTo);
+                ChangeMaskValues(int.MaxValue, changedTo);
                 var valueToPopulate = changedTo ? SelectionModes.All : SelectionModes.None;
                 m_SelectionMatch = new SelectionModes[m_OptionCount];
                 m_SelectionMatch = m_SelectionMatch.Select(el => el = valueToPopulate).ToArray();
@@ -222,7 +222,7 @@ namespace UnityEditor
             }
 
             var isNothing = m_SerializedProperty.intValue == 0;
-            var isEverything = m_SerializedProperty.intValue == -1;
+            var isEverything = m_SerializedProperty.intValue == int.MaxValue;
 
             GUILayout.Space(Styles.menuItem.margin.bottom);
 
@@ -313,7 +313,7 @@ namespace UnityEditor
         {
             if (maskValue == 0)
                 selected = new int[0];
-            else if (maskValue == -1)
+            else if (maskValue == int.MaxValue)
                 selected = Enumerable.Range(1, size).ToArray();
             else
             {

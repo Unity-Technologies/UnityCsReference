@@ -341,13 +341,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                             Profiler.BeginSample("ReferenceAssemblyHelpers.IsReferenceAssemblyUnchanged");
                             bool isUnchanged = ReferenceAssemblyHelpers.IsReferenceAssemblyUnchanged(assembly, buildOutputDirectory);
                             Profiler.EndSample();
-
                             if (isUnchanged)
                             {
                                 unchangedCompiledAssemblies.Add(assembly);
                             }
                         }
-
                         File.Delete(referenceAssemblyPath);
                     }
                     catch (Exception e)

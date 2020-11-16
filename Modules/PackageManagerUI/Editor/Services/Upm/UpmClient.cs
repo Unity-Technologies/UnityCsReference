@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
@@ -18,6 +17,7 @@ namespace UnityEditor.PackageManager.UI
 
         public virtual event Action<IOperation> onListOperation = delegate {};
         public virtual event Action<IOperation> onSearchAllOperation = delegate {};
+        public virtual event Action<IOperation> onExtraFetchOperation = delegate {};
         public virtual event Action<IOperation> onRemoveOperation = delegate {};
         public virtual event Action<IOperation> onAddOperation = delegate {};
         public virtual event Action<IOperation> onEmbedOperation = delegate {};
@@ -161,20 +161,27 @@ namespace UnityEditor.PackageManager.UI
             if (isAddRemoveOrEmbedInProgress)
                 return;
 
-            path = path.Replace('\\', '/');
-            var projectPath = Path.GetDirectoryName(Application.dataPath).Replace('\\', '/') + '/';
-            if (path.StartsWith(projectPath))
+            try
             {
-                var packageFolderPrefix = "Packages/";
-                var relativePathToProjectRoot = path.Substring(projectPath.Length);
-                if (relativePathToProjectRoot.StartsWith(packageFolderPrefix, StringComparison.InvariantCultureIgnoreCase))
-                    path = relativePathToProjectRoot.Substring(packageFolderPrefix.Length);
-                else
-                    path = $"../{relativePathToProjectRoot}";
-            }
+                path = path.Replace('\\', '/');
+                var projectPath = m_IOProxy.GetDirectoryName(Application.dataPath).Replace('\\', '/') + '/';
+                if (path.StartsWith(projectPath))
+                {
+                    var packageFolderPrefix = "Packages/";
+                    var relativePathToProjectRoot = path.Substring(projectPath.Length);
+                    if (relativePathToProjectRoot.StartsWith(packageFolderPrefix, StringComparison.InvariantCultureIgnoreCase))
+                        path = relativePathToProjectRoot.Substring(packageFolderPrefix.Length);
+                    else
+                        path = $"../{relativePathToProjectRoot}";
+                }
 
-            addOperation.AddByUrlOrPath($"file:{path}", PackageTag.Local);
-            SetupAddOperation();
+                addOperation.AddByUrlOrPath($"file:{path}", PackageTag.Local);
+                SetupAddOperation();
+            }
+            catch (System.IO.IOException e)
+            {
+                Debug.Log($"[Package Manager] Cannot add package {path}: {e.Message}");
+            }
         }
 
         public virtual void AddByUrl(string url)
@@ -236,11 +243,18 @@ namespace UnityEditor.PackageManager.UI
             var packageInfo = m_UpmCache.GetInstalledPackageInfo(packageName);
             if (packageInfo != null)
             {
-                // Fix case 1237777, make files writable first
-                foreach (var file in m_IOProxy.DirectoryGetFiles(packageInfo.resolvedPath, "*", SearchOption.AllDirectories))
-                    m_IOProxy.MakeFileWritable(file);
-                m_IOProxy.DirectoryDelete(packageInfo.resolvedPath, true);
-                Resolve();
+                try
+                {
+                    // Fix case 1237777, make files writable first
+                    foreach (var file in m_IOProxy.DirectoryGetFiles(packageInfo.resolvedPath, "*", System.IO.SearchOption.AllDirectories))
+                        m_IOProxy.MakeFileWritable(file, true);
+                    m_IOProxy.DeleteDirectory(packageInfo.resolvedPath);
+                    Resolve();
+                }
+                catch (System.IO.IOException e)
+                {
+                    Debug.Log($"[Package Manager] Cannot remove embedded package {packageName}: {e.Message}");
+                }
             }
         }
 
@@ -307,6 +321,7 @@ namespace UnityEditor.PackageManager.UI
             operation.onOperationError += (op, error) => OnProcessExtraFetchError(error, productId);
             operation.onOperationFinalized += (op) => OnExtraFetchFinalized(packageIdOrName);
             m_ExtraFetchOperations[packageIdOrName] = operation;
+            onExtraFetchOperation?.Invoke(operation);
         }
 
         private void OnProcessExtraFetchResult(SearchRequest request, string productId = null)

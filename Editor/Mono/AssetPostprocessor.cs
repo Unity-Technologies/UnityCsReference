@@ -103,17 +103,7 @@ namespace UnityEditor
             }
 
             Profiler.BeginSample("SyncVS.PostprocessSyncProject");
-            #pragma warning disable 618
-            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.Other
-                || ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.SystemDefault)
-            {
-                CodeEditorProjectSync.PostprocessSyncProject(importedAssets, addedAssets, deletedAssets, movedAssets, movedFromPathAssets);
-            }
-            else
-            {
-                ///@TODO: we need addedAssets for SyncVS. Make this into a proper API and write tests
-                SyncVS.PostprocessSyncProject(importedAssets, addedAssets, deletedAssets, movedAssets, movedFromPathAssets);
-            }
+            CodeEditorProjectSync.PostprocessSyncProject(importedAssets, addedAssets, deletedAssets, movedAssets, movedFromPathAssets);
             Profiler.EndSample();
         }
 
@@ -124,67 +114,6 @@ namespace UnityEditor
             {
                 InvokeMethodIfAvailable(inst, "OnPreprocessAssembly", new[] { pathName });
             }
-        }
-
-        //This is undocumented, and a "safeguard" for when visualstudio gets a new release that is incompatible with ours, so that users can postprocess our csproj to fix it.
-        //(or just completely replace them). Hopefully we'll never need this.
-        static internal void CallOnGeneratedCSProjectFiles()
-        {
-            object[] args = {};
-            foreach (var method in AllPostProcessorMethodsNamed("OnGeneratedCSProjectFiles"))
-            {
-                InvokeMethod(method, args);
-            }
-        }
-
-        //This callback is used by C# code editors to modify the .sln file.
-        static internal string CallOnGeneratedSlnSolution(string path, string content)
-        {
-            foreach (var method in AllPostProcessorMethodsNamed("OnGeneratedSlnSolution"))
-            {
-                object[] args = { path, content };
-                object returnValue = InvokeMethod(method, args);
-
-                if (method.ReturnType == typeof(string))
-                    content = (string)returnValue;
-            }
-
-            return content;
-        }
-
-        // This callback is used by C# code editors to modify the .csproj files.
-        static internal string CallOnGeneratedCSProject(string path, string content)
-        {
-            foreach (var method in AllPostProcessorMethodsNamed("OnGeneratedCSProject"))
-            {
-                object[] args = { path, content };
-                object returnValue = InvokeMethod(method, args);
-
-                if (method.ReturnType == typeof(string))
-                    content = (string)returnValue;
-            }
-
-            return content;
-        }
-
-        //This callback is used by UnityVS to take over project generation from unity
-        static internal bool OnPreGeneratingCSProjectFiles()
-        {
-            object[] args = {};
-            bool result = false;
-            foreach (var method in AllPostProcessorMethodsNamed("OnPreGeneratingCSProjectFiles"))
-            {
-                object returnValue = InvokeMethod(method, args);
-
-                if (method.ReturnType == typeof(bool))
-                    result = result | (bool)returnValue;
-            }
-            return result;
-        }
-
-        private static IEnumerable<MethodInfo> AllPostProcessorMethodsNamed(string callbackName)
-        {
-            return GetCachedAssetPostprocessorClasses().Select(assetPostprocessorClass => assetPostprocessorClass.GetMethod(callbackName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)).Where(method => method != null);
         }
 
         internal class CompareAssetImportPriority : IComparer

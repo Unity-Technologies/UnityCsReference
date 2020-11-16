@@ -35,5 +35,10 @@ namespace UnityEditor
 
             serializedObject.ApplyModifiedProperties();
         }
+
+        void OnSceneGUI()
+        {
+            // This enables a toggle in the Annotation Manager
+        }
     }
 }

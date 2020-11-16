@@ -35,12 +35,12 @@ namespace UnityEngine.UIElements
             OrderMinMaxRect(ref r);
         }
 
-        internal static void TransformAlignedRect(in Matrix4x4 matrix, ref Rect rect)
+        internal static void TransformAlignedRect(ref Matrix4x4 matrix, ref Rect rect)
         {
             // We assume that the transform performs translation/scaling without rotation.
             rect = new Rect(
-                MultiplyMatrix44Point2(in matrix, rect.position),
-                MultiplyVector2(in matrix, rect.size));
+                MultiplyMatrix44Point2(ref matrix, rect.position),
+                MultiplyVector2(ref matrix, rect.size));
             OrderMinMaxRect(ref rect);
         }
 
@@ -59,7 +59,7 @@ namespace UnityEngine.UIElements
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        internal static Vector2 MultiplyMatrix44Point2(in Matrix4x4 lhs, Vector2 point)
+        internal static Vector2 MultiplyMatrix44Point2(ref Matrix4x4 lhs, Vector2 point)
         {
             Vector2 res;
             res.x = lhs.m00 * point.x + lhs.m01 * point.y + lhs.m03;
@@ -68,7 +68,7 @@ namespace UnityEngine.UIElements
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        internal static Vector2 MultiplyVector2(in Matrix4x4 lhs, Vector2 vector)
+        internal static Vector2 MultiplyVector2(ref Matrix4x4 lhs, Vector2 vector)
         {
             Vector2 res;
             res.x = lhs.m00 * vector.x + lhs.m01 * vector.y;
@@ -77,14 +77,14 @@ namespace UnityEngine.UIElements
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        internal static Rect MultiplyMatrix44Rect2(in Matrix4x4 lhs, Rect r)
+        internal static Rect MultiplyMatrix44Rect2(ref Matrix4x4 lhs, Rect r)
         {
-            r.position = MultiplyMatrix44Point2(in lhs, r.position);
-            r.size = MultiplyVector2(in lhs, r.size);
+            r.position = MultiplyMatrix44Point2(ref lhs, r.position);
+            r.size = MultiplyVector2(ref lhs, r.size);
             return r;
         }
 
-        internal static void MultiplyMatrix34(in Matrix4x4 lhs, in Matrix4x4 rhs, out Matrix4x4 res)
+        internal static void MultiplyMatrix34(ref Matrix4x4 lhs, ref Matrix4x4 rhs, out Matrix4x4 res)
         {
             res.m00 = lhs.m00 * rhs.m00 + lhs.m01 * rhs.m10 + lhs.m02 * rhs.m20;
             res.m01 = lhs.m00 * rhs.m01 + lhs.m01 * rhs.m11 + lhs.m02 * rhs.m21;
@@ -118,7 +118,7 @@ namespace UnityEngine.UIElements
                 throw new ArgumentNullException(nameof(ele));
             }
 
-            return VisualElement.MultiplyMatrix44Point2(in ele.worldTransformInverse, p);
+            return VisualElement.MultiplyMatrix44Point2(ref ele.worldTransformInverse, p);
         }
 
         // transforms a point to Panel space referential
@@ -129,7 +129,7 @@ namespace UnityEngine.UIElements
                 throw new ArgumentNullException(nameof(ele));
             }
 
-            return VisualElement.MultiplyMatrix44Point2(in ele.worldTransformRef, p);
+            return VisualElement.MultiplyMatrix44Point2(ref ele.worldTransformRef, p);
         }
 
         // transforms a rect assumed in Panel space to the referential inside of the element bound (local)
@@ -140,7 +140,7 @@ namespace UnityEngine.UIElements
                 throw new ArgumentNullException(nameof(ele));
             }
 
-            return VisualElement.MultiplyMatrix44Rect2(in ele.worldTransformInverse, r);
+            return VisualElement.MultiplyMatrix44Rect2(ref ele.worldTransformInverse, r);
         }
 
         // transforms a rect to Panel space referential
@@ -151,7 +151,7 @@ namespace UnityEngine.UIElements
                 throw new ArgumentNullException(nameof(ele));
             }
 
-            return VisualElement.MultiplyMatrix44Rect2(in ele.worldTransformRef, r);
+            return VisualElement.MultiplyMatrix44Rect2(ref ele.worldTransformRef, r);
         }
 
         // transform point from the local space of one element to to the local space of another

@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
@@ -217,14 +216,6 @@ namespace UnityEditor.PackageManager.UI
             RefreshContent();
         }
 
-        public UnityEngine.Object GetDisplayPackageManifestAsset()
-        {
-            var assetPath = displayVersion?.packageInfo?.assetPath;
-            if (string.IsNullOrEmpty(assetPath))
-                return null;
-            return m_AssetDatabase.LoadMainAssetAtPath(Path.Combine(assetPath, "package.json"));
-        }
-
         public void OnEnable()
         {
             detailImagesWidthsWhenImagesRemoved = new Stack<float>();
@@ -362,7 +353,7 @@ namespace UnityEditor.PackageManager.UI
         {
             detailScrollView.scrollOffset = new Vector2(0, 0);
 
-            var detailVisible = package != null && displayVersion != null && !inProgressView.Refresh(package, displayVersion);
+            var detailVisible = package != null && displayVersion != null && !inProgressView.Refresh(package);
             var detailEnabled = displayVersion == null || displayVersion.isFullyFetched;
             if (!detailVisible)
             {

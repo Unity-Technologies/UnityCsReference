@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEditor.Scripting.ScriptCompilation;
@@ -425,19 +424,17 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnUpmAddOperation(IOperation operation)
         {
-            // if we don't know the package unique id before hand, we'll do some special handling
-            // as we don't know what package will be installed until the installation finishes (e.g, git packages)
-            var addOperation = operation as UpmAddOperation;
-            if (string.IsNullOrEmpty(operation.packageUniqueId) && !string.IsNullOrEmpty(addOperation.specialUniqueId))
+            var package = GetPackage(operation.packageUniqueId);
+            if (package == null)
             {
-                m_UpmClient.specialInstallations.Add(addOperation.specialUniqueId);
+                // When adding any package that's not already in the PackageDatabase, we consider it a `special` installation and we'll create a placeholder package for it accordingly
+                var addOperation = operation as UpmAddOperation;
+                var specialUniqueId = !string.IsNullOrEmpty(addOperation.specialUniqueId) ? addOperation.specialUniqueId : addOperation.packageId;
 
-                if ((addOperation.packageTag & PackageTag.Git) != 0)
-                {
-                    var placeholerPackage = new PlaceholderPackage(addOperation.specialUniqueId, L10n.Tr("Adding a new GIT package"), PackageType.Installable, addOperation.packageTag, PackageProgress.Installing);
-                    OnPackagesChanged(new[] { placeholerPackage });
-                }
-                operation.onOperationError += (op, error) => RemoveSpecialInstallation(addOperation.specialUniqueId);
+                m_UpmClient.specialInstallations.Add(specialUniqueId);
+                var placeholerPackage = new PlaceholderPackage(specialUniqueId, L10n.Tr("Adding a new package"), PackageType.Installable, addOperation.packageTag, PackageProgress.Installing);
+                OnPackagesChanged(new[] { placeholerPackage });
+                operation.onOperationError += (op, error) => RemoveSpecialInstallation(specialUniqueId);
                 return;
             }
             SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.Installing);
@@ -454,7 +451,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void RemoveSpecialInstallation(string specialUniqueId)
         {
-            var placeHolderPackage = m_Packages.Get(specialUniqueId);
+            var placeHolderPackage = GetPackage(specialUniqueId);
             // Fix issue where package was added by id without version. Remove package from package database only if it's a placeholder
             if (placeHolderPackage is PlaceholderPackage)
             {
@@ -617,9 +614,14 @@ namespace UnityEditor.PackageManager.UI
                 return;
 
             var path = package.versions.primary.localPath;
-            if (m_IOProxy.FileExists(path))
+            try
             {
-                m_AssetDatabase.ImportPackage(path, true);
+                if (m_IOProxy.FileExists(path))
+                    m_AssetDatabase.ImportPackage(path, true);
+            }
+            catch (System.IO.IOException e)
+            {
+                Debug.Log($"[Package Manager] Cannot import package {package.displayName}: {e.Message}");
             }
         }
     }

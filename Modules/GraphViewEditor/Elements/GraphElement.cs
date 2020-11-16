@@ -203,7 +203,7 @@ namespace UnityEditor.Experimental.GraphView
         public virtual Vector3 GetGlobalCenter()
         {
             var globalCenter = layout.center + parent.layout.position;
-            return MultiplyMatrix44Point2(parent.worldTransform, globalCenter);
+            return MultiplyMatrix44Point2(ref parent.worldTransformRef, globalCenter);
         }
 
         // TODO: Temporary transition function.

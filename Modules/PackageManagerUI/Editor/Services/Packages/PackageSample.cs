@@ -3,10 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
@@ -65,7 +64,18 @@ namespace UnityEditor.PackageManager.UI
         /// </value>
         public bool isImported
         {
-            get { return !string.IsNullOrEmpty(importPath) && m_IOProxy.DirectoryExists(importPath); }
+            get
+            {
+                try
+                {
+                    return !string.IsNullOrEmpty(importPath) && m_IOProxy.DirectoryExists(importPath);
+                }
+                catch (IOException e)
+                {
+                    Debug.Log($"[Package Manager] Cannot determine if sample {displayName} is imported: {e.Message}");
+                    return false;
+                }
+            }
         }
 
         [NonSerialized]
@@ -74,6 +84,8 @@ namespace UnityEditor.PackageManager.UI
         private AssetDatabaseProxy m_AssetDatabase;
         internal Sample(IOProxy ioProxy, AssetDatabaseProxy assetDatabase, string displayName, string description, string resolvedPath, string importPath, bool interactiveImport)
         {
+            m_PreviousImports = null;
+            m_Size = null;
             m_IOProxy = ioProxy;
             m_AssetDatabase = assetDatabase;
             this.displayName = displayName;
@@ -90,12 +102,12 @@ namespace UnityEditor.PackageManager.UI
                 if (string.IsNullOrEmpty(package?.resolvedPath))
                     return Enumerable.Empty<Sample>();
 
-                var jsonPath = Path.Combine(package.resolvedPath, "package.json");
-                if (!ioProxy.FileExists(jsonPath))
-                    return Enumerable.Empty<Sample>();
-
                 try
                 {
+                    var jsonPath = ioProxy.PathsCombine(package.resolvedPath, "package.json");
+                    if (!ioProxy.FileExists(jsonPath))
+                        return Enumerable.Empty<Sample>();
+
                     var packageJson = Json.Deserialize(ioProxy.FileReadAllText(jsonPath)) as Dictionary<string, object>;
                     var samples = packageJson.GetList<IDictionary<string, object>>("samples");
                     return samples?.Select(sample =>
@@ -105,8 +117,8 @@ namespace UnityEditor.PackageManager.UI
                         var description = sample.GetString("description");
                         var interactiveImport = sample.Get("interactiveImport", false);
 
-                        var resolvedSamplePath = Path.Combine(package.resolvedPath, path);
-                        var importPath = IOUtils.CombinePaths(
+                        var resolvedSamplePath = ioProxy.PathsCombine(package.resolvedPath, path);
+                        var importPath = ioProxy.PathsCombine(
                             Application.dataPath,
                             "Samples",
                             IOUtils.SanitizeFileName(package.displayName),
@@ -115,6 +127,11 @@ namespace UnityEditor.PackageManager.UI
                         );
                         return new Sample(ioProxy, assetDatabaseProxy, displayName, description, resolvedSamplePath, importPath, interactiveImport);
                     });
+                }
+                catch (IOException e)
+                {
+                    Debug.Log($"[Package Manager] Cannot find samples for package {package.displayName}: {e.Message}");
+                    return Enumerable.Empty<Sample>();
                 }
                 catch (Exception)
                 {
@@ -157,55 +174,103 @@ namespace UnityEditor.PackageManager.UI
         /// <returns>Returns whether the import is successful</returns>
         public bool Import(ImportOptions options = ImportOptions.None)
         {
-            string[] unityPackages;
-            var interactive = (options & ImportOptions.HideImportWindow) != ImportOptions.None ? false : interactiveImport;
-            if ((unityPackages = m_IOProxy.DirectoryGetFiles(resolvedPath, "*.unitypackage")).Length == 1)
-                m_AssetDatabase.ImportPackage(unityPackages[0], interactive);
-            else
+            try
             {
-                var prevImports = previousImports;
-                if (prevImports.Count > 0 && (options & ImportOptions.OverridePreviousImports) == ImportOptions.None)
-                    return false;
-                foreach (var v in prevImports)
-                    m_IOProxy.RemovePathAndMeta(v, true);
+                var interactive = (options & ImportOptions.HideImportWindow) == ImportOptions.None && interactiveImport;
+                var unityPackages = m_IOProxy.DirectoryGetFiles(resolvedPath, "*.unitypackage");
+                if (unityPackages.Any())
+                    m_AssetDatabase.ImportPackage(unityPackages[0], interactive);
+                else
+                {
+                    var prevImports = previousImports;
+                    if (prevImports.Any() && (options & ImportOptions.OverridePreviousImports) == ImportOptions.None)
+                        return false;
+                    foreach (var v in prevImports)
+                    {
+                        EditorUtility.DisplayProgressBar(L10n.Tr("Copying samples files"), L10n.Tr("Cleaning previous import..."), 0);
+                        m_IOProxy.RemovePathAndMeta(v, true);
+                    }
 
-                m_IOProxy.DirectoryCopy(resolvedPath, importPath, true);
-                m_AssetDatabase.Refresh();
+                    var sourcePath = resolvedPath;
+                    m_IOProxy.DirectoryCopy(sourcePath, importPath, true,
+                        (fileName, progress) =>
+                        {
+                            var name = fileName.Replace(sourcePath + Path.DirectorySeparatorChar, "");
+                            EditorUtility.DisplayProgressBar(L10n.Tr("Copying samples files"), name, progress);
+                        }
+                    );
+                    EditorUtility.ClearProgressBar();
+                    m_AssetDatabase.Refresh();
+                }
+
+                return true;
             }
-            return true;
+            catch (IOException e)
+            {
+                Debug.Log($"[Package Manager] Cannot import sample {displayName}: {e.Message}");
+                return false;
+            }
         }
 
+        [NonSerialized]
+        private List<string> m_PreviousImports;
         internal List<string> previousImports
         {
             get
             {
-                var result = new List<string>();
-                if (!string.IsNullOrEmpty(importPath))
+                if (m_PreviousImports == null)
                 {
-                    var importDirectoryInfo = new DirectoryInfo(importPath);
-                    if (importDirectoryInfo.Parent.Parent.Exists)
+                    m_PreviousImports = new List<string>();
+                    if (!string.IsNullOrEmpty(importPath))
                     {
-                        var versionDirs = importDirectoryInfo.Parent.Parent.GetDirectories();
-                        foreach (var d in versionDirs)
+                        try
                         {
-                            var p = Path.Combine(d.ToString(), importDirectoryInfo.Name);
-                            if (m_IOProxy.DirectoryExists(p))
-                                result.Add(p);
+                            var importDirectory = m_IOProxy.GetParentDirectory(m_IOProxy.GetParentDirectory(importPath));
+                            if (m_IOProxy.DirectoryExists(importDirectory))
+                            {
+                                var versionDirs = m_IOProxy.DirectoryGetDirectories(importDirectory, "*");
+                                foreach (var d in versionDirs)
+                                {
+                                    var p = m_IOProxy.PathsCombine(d, m_IOProxy.GetDirectoryName(importPath));
+                                    if (m_IOProxy.DirectoryExists(p))
+                                        m_PreviousImports.Add(p);
+                                }
+                            }
+                        }
+                        catch (IOException e)
+                        {
+                            Debug.Log($"[Package Manager] Cannot get previous import for sample {displayName}: {e.Message}");
                         }
                     }
                 }
-                return result;
+
+                return m_PreviousImports;
             }
         }
 
+        [NonSerialized]
+        private string m_Size;
         internal string size
         {
             get
             {
-                if (string.IsNullOrEmpty(resolvedPath) || !m_IOProxy.DirectoryExists(resolvedPath))
-                    return "0 KB";
-                var sizeInBytes = m_IOProxy.DirectorySizeInBytes(resolvedPath);
-                return UIUtils.ConvertToHumanReadableSize(sizeInBytes);
+                if (m_Size == null)
+                {
+                    try
+                    {
+                        if (string.IsNullOrEmpty(resolvedPath) || !m_IOProxy.DirectoryExists(resolvedPath))
+                            return "0 KB";
+                        var sizeInBytes = m_IOProxy.DirectorySizeInBytes(resolvedPath);
+                        m_Size = UIUtils.ConvertToHumanReadableSize(sizeInBytes);
+                    }
+                    catch (IOException e)
+                    {
+                        Debug.Log($"[Package Manager] Cannot determine sample {displayName} size: {e.Message}");
+                        m_Size = "- KB";
+                    }
+                }
+
+                return m_Size;
             }
         }
     }

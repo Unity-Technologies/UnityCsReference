@@ -183,7 +183,7 @@ namespace UnityEditor
 
             {
                 EditorGUILayout.Space();
-                m_ShowInfoFoldout.value = EditorGUILayout.Foldout(m_ShowInfoFoldout.value, Style.selectedObjectInfo);
+                m_ShowInfoFoldout.value = EditorGUILayout.Foldout(m_ShowInfoFoldout.value, Style.selectedObjectInfo, true);
                 if (m_ShowInfoFoldout.value)
                 {
                     EditorGUI.indentLevel++;
@@ -247,7 +247,7 @@ namespace UnityEditor
             PhysicsVisualizationSettings.SetShowSleepingBodies(EditorGUILayout.Toggle(
                 Style.showSleepingBodies, PhysicsVisualizationSettings.GetShowSleepingBodies()));
 
-            m_ShowColliderTypeFoldout.value = EditorGUILayout.Foldout(m_ShowColliderTypeFoldout.value, Style.colliderTypes);
+            m_ShowColliderTypeFoldout.value = EditorGUILayout.Foldout(m_ShowColliderTypeFoldout.value, Style.colliderTypes, true);
             if (m_ShowColliderTypeFoldout.value)
             {
                 EditorGUI.indentLevel++;
@@ -294,7 +294,7 @@ namespace UnityEditor
 
             GUILayout.EndHorizontal();
 
-            m_ColorFoldout.value = EditorGUILayout.Foldout(m_ColorFoldout.value, Style.colors);
+            m_ColorFoldout.value = EditorGUILayout.Foldout(m_ColorFoldout.value, Style.colors, true);
             if (m_ColorFoldout.value)
             {
                 EditorGUI.indentLevel++;
@@ -320,7 +320,7 @@ namespace UnityEditor
                 EditorGUI.indentLevel--;
             }
 
-            m_RenderingFoldout.value = EditorGUILayout.Foldout(m_RenderingFoldout.value, Style.rendering);
+            m_RenderingFoldout.value = EditorGUILayout.Foldout(m_RenderingFoldout.value, Style.rendering, true);
             if (m_RenderingFoldout.value)
             {
                 EditorGUI.indentLevel++;

@@ -157,7 +157,7 @@ namespace UnityEditor.Search
                 for (int i = 0; i < m_Editors.Length; ++i)
                 {
                     var e = m_Editors[i];
-                    if (!e)
+                    if (!e || !e.serializedObject.isValid)
                         continue;
 
                     GUI.changed = false;
@@ -244,7 +244,7 @@ namespace UnityEditor.Search
         {
             if (m_Editors != null && m_Editors.Length > 0)
             {
-                var previewEditor = m_Editors.FirstOrDefault(e => e.HasPreviewGUI());
+                var previewEditor = m_Editors.FirstOrDefault(e => e.serializedObject.isValid && e.HasPreviewGUI());
                 if (previewEditor != null)
                 {
                     var previewRect = EditorGUILayout.GetControlRect(false, 256,

@@ -87,7 +87,7 @@ namespace UnityEditor.DeviceSimulation
         private VisualElement m_DeviceViewContainer;
         private DeviceView m_DeviceView;
 
-        public UserInterfaceController(DeviceSimulatorMain deviceSimulatorMain, VisualElement rootVisualElement)
+        public UserInterfaceController(DeviceSimulatorMain deviceSimulatorMain, VisualElement rootVisualElement, TouchEventManipulator touchEventManipulator)
         {
             m_Main = deviceSimulatorMain;
 
@@ -142,6 +142,8 @@ namespace UnityEditor.DeviceSimulation
             m_ScrollViewContainer.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             m_ScrollView = rootVisualElement.Q<ScrollView>("preview-scroll-view");
             m_DeviceView = new DeviceView(Quaternion.Euler(0, 0, 360 - Rotation), Scale / 100f) {ShowSafeArea = HighlightSafeArea};
+            m_DeviceView.AddManipulator(touchEventManipulator);
+            m_DeviceView.OnViewToScreenChanged += () => { touchEventManipulator.PreviewImageRendererSpaceToScreenSpace = m_DeviceView.ViewToScreen; };
             m_DeviceViewContainer = rootVisualElement.Q<VisualElement>("preview-container");
             m_DeviceViewContainer.Add(m_DeviceView);
             m_DeviceView.SafeAreaColor = new Color(0.95f, 1f, 0f);

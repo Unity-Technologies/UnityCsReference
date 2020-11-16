@@ -58,7 +58,7 @@ namespace UnityEditor.U2D
             if (asset == null)
                 throw new ArgumentNullException("Parameter asset is null");
             var objs = new UnityEngine.Object[] { asset };
-            UnityEditorInternal.InternalEditorUtility.SaveToSerializedFileAndForget(objs, assetPath, true);
+            UnityEditorInternal.InternalEditorUtility.SaveToSerializedFileAndForget(objs, assetPath, UnityEditor.EditorSettings.serializationMode != UnityEditor.SerializationMode.ForceBinary);
         }
     }
 };

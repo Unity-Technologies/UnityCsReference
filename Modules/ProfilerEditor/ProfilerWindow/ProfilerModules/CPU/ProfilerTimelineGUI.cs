@@ -76,7 +76,10 @@ namespace UnityEditorInternal
             {
                 if (this == other)
                     return 0;
-                return EditorUtility.NaturalCompare(name, other.name);
+                var results = EditorUtility.NaturalCompare(name, other.name);
+                if (results != 0)
+                    return results;
+                return threadIndex.CompareTo(other.threadIndex);
             }
 
             public struct FlowEventData

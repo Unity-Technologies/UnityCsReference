@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
@@ -129,25 +131,37 @@ namespace UnityEngine.UIElements
 
     class DynamicAtlas : AtlasBase
     {
-        DynamicAtlasCore m_PointCore;
-        TextureId m_PointDynamicTexture;
+        class TextureInfo : LinkedPoolItem<TextureInfo>
+        {
+            public DynamicAtlasPage page;
+            public int counter;
+            public Allocator2D.Alloc2D alloc;
+            public RectInt rect;
 
-        DynamicAtlasCore m_BilinearCore;
-        TextureId m_BilinearDynamicTexture;
+            public static readonly LinkedPool<TextureInfo> pool = new LinkedPool<TextureInfo>(Create, Reset, 1024);
 
-        readonly Func<Texture2D, bool> m_IsValidPointDelegate;
-        readonly Func<Texture2D, bool> m_IsValidBilinearDelegate;
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            static TextureInfo Create() => new TextureInfo();
+
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            static void Reset(TextureInfo info)
+            {
+                info.page = null;
+                info.counter = 0;
+                info.alloc = new Allocator2D.Alloc2D();
+                info.rect = new RectInt();
+            }
+        }
+
+        Dictionary<Texture, TextureInfo> m_Database = new Dictionary<Texture, TextureInfo>();
+
+        DynamicAtlasPage m_PointPage;
+        DynamicAtlasPage m_BilinearPage;
 
         ColorSpace m_ColorSpace;
         List<IPanel> m_Panels = new List<IPanel>(1);
 
-        internal bool isInitialized => m_PointCore != null || m_BilinearCore != null;
-
-        public DynamicAtlas()
-        {
-            m_IsValidPointDelegate = t => IsTextureValid(t, FilterMode.Point);
-            m_IsValidBilinearDelegate = t => IsTextureValid(t, FilterMode.Bilinear);
-        }
+        internal bool isInitialized => m_PointPage != null || m_BilinearPage != null;
 
         protected override void OnAssignedToPanel(IPanel panel)
         {
@@ -161,7 +175,7 @@ namespace UnityEngine.UIElements
         {
             m_Panels.Remove(panel);
             if (m_Panels.Count == 0 && isInitialized)
-                DestroyCores();
+                DestroyPages();
             base.OnRemovedFromPanel(panel);
         }
 
@@ -169,14 +183,14 @@ namespace UnityEngine.UIElements
         {
             if (isInitialized)
             {
-                DestroyCores();
+                DestroyPages();
 
                 for (int i = 0, count = m_Panels.Count; i < count; ++i)
                     RepaintTexturedElements(m_Panels[i]);
             }
         }
 
-        void InitCores()
+        void InitPages()
         {
             // Sanitize the parameters
             int cleanMaxSubTextureSize = Mathf.Max(m_MaxSubTextureSize, 1);
@@ -190,69 +204,103 @@ namespace UnityEngine.UIElements
             cleanMinAtlasSize = Mathf.NextPowerOfTwo(cleanMinAtlasSize);
             cleanMinAtlasSize = Mathf.Min(cleanMinAtlasSize, cleanMaxAtlasSize);
 
-            m_PointCore = new DynamicAtlasCore(RenderTextureFormat.ARGB32, FilterMode.Point, cleanMaxSubTextureSize, cleanMinAtlasSize, cleanMaxAtlasSize);
-            m_PointDynamicTexture = AllocateDynamicTexture();
+            var cleanMinSize = new Vector2Int(cleanMinAtlasSize, cleanMinAtlasSize);
+            var cleanMaxSize = new Vector2Int(cleanMaxAtlasSize, cleanMaxAtlasSize);
 
-            m_BilinearCore = new DynamicAtlasCore(RenderTextureFormat.ARGB32, FilterMode.Bilinear, cleanMaxSubTextureSize, cleanMinAtlasSize, cleanMaxAtlasSize);
-            m_BilinearDynamicTexture = AllocateDynamicTexture();
+            m_PointPage = new DynamicAtlasPage(RenderTextureFormat.ARGB32, FilterMode.Point, cleanMinSize, cleanMaxSize);
+            m_BilinearPage = new DynamicAtlasPage(RenderTextureFormat.ARGB32, FilterMode.Bilinear, cleanMinSize, cleanMaxSize);
         }
 
-        void DestroyCores()
+        void DestroyPages()
         {
-            FreeDynamicTexture(m_PointDynamicTexture);
-            m_PointCore.Dispose();
-            m_PointCore = null;
+            m_PointPage.Dispose();
+            m_PointPage = null;
 
-            FreeDynamicTexture(m_BilinearDynamicTexture);
-            m_BilinearCore.Dispose();
-            m_BilinearCore = null;
+            m_BilinearPage.Dispose();
+            m_BilinearPage = null;
+
+            m_Database.Clear();
         }
 
         public override bool TryGetAtlas(VisualElement ve, Texture2D src, out TextureId atlas, out RectInt atlasRect)
         {
-            atlas = TextureId.invalid;
-            atlasRect = new RectInt();
-
-            if (m_Panels.Count == 0)
+            if (m_Panels.Count == 0 || src == null)
+            {
+                atlas = TextureId.invalid;
+                atlasRect = new RectInt();
                 return false;
+            }
 
             if (!isInitialized)
-                InitCores();
+                InitPages();
 
-            // Purposely attempting the bilinear atlas first so that if the user ignores filtering, at least trilinear
-            // will possibly end up in the bilinear atlas which is the lesser of two evils.
-            if (m_BilinearCore.TryGetRect(src, out atlasRect, m_IsValidBilinearDelegate))
+            if (m_Database.TryGetValue(src, out TextureInfo info))
             {
-                atlas = m_BilinearDynamicTexture;
+                atlas = info.page.textureId;
+                atlasRect = info.rect;
+                ++info.counter;
                 return true;
             }
 
-            if (m_PointCore.TryGetRect(src, out atlasRect, m_IsValidPointDelegate))
+            // For the time being, we don't have a trilinear page. If users keep the filterMode check enabled, a
+            // mip-mapped texture will NOT enter any of our pages. However, if they disable this check, we should try
+            // to put it in the bilinear atlas first, because it will provide some interpolation, unlike the Point page.
+            Allocator2D.Alloc2D alloc;
+            if (IsTextureValid(src, FilterMode.Bilinear) && m_BilinearPage.TryAdd(src, out alloc, out atlasRect))
             {
-                atlas = m_PointDynamicTexture;
+                info = TextureInfo.pool.Get();
+                info.alloc = alloc;
+                info.counter = 1;
+                info.page = m_BilinearPage;
+                info.rect = atlasRect;
+                m_Database[src] = info;
+                atlas = m_BilinearPage.textureId;
                 return true;
             }
 
+            if (IsTextureValid(src, FilterMode.Point) && m_PointPage.TryAdd(src, out alloc, out atlasRect))
+            {
+                info = TextureInfo.pool.Get();
+                info.alloc = alloc;
+                info.counter = 1;
+                info.page = m_PointPage;
+                info.rect = atlasRect;
+                m_Database[src] = info;
+                atlas = m_PointPage.textureId;
+                return true;
+            }
+
+            atlas = TextureId.invalid;
+            atlasRect = new RectInt();
             return false;
         }
 
         public override void ReturnAtlas(VisualElement ve, Texture2D src, TextureId atlas)
         {
-            // Once we implement removals from the atlas, we should decrement some counter.
+            if (m_Database.TryGetValue(src, out TextureInfo info))
+            {
+                --info.counter;
+                if (info.counter == 0)
+                {
+                    info.page.Remove(info.alloc);
+                    m_Database.Remove(src);
+                    TextureInfo.pool.Return(info);
+                }
+            }
         }
 
         protected override void OnUpdateDynamicTextures(IPanel panel)
         {
-            if (m_PointCore != null)
+            if (m_PointPage != null)
             {
-                m_PointCore.Commit();
-                SetDynamicTexture(m_PointDynamicTexture, m_PointCore.atlas);
+                m_PointPage.Commit();
+                SetDynamicTexture(m_PointPage.textureId, m_PointPage.atlas);
             }
 
-            if (m_BilinearCore != null)
+            if (m_BilinearPage != null)
             {
-                m_BilinearCore.Commit();
-                SetDynamicTexture(m_BilinearDynamicTexture, m_BilinearCore.atlas);
+                m_BilinearPage.Commit();
+                SetDynamicTexture(m_BilinearPage.textureId, m_BilinearPage.atlas);
             }
         }
 
@@ -390,8 +438,11 @@ namespace UnityEngine.UIElements
 
         public void SetDirty(Texture2D tex) // This API will be used later.
         {
-            m_PointCore?.UpdateTexture(tex);
-            m_BilinearCore?.UpdateTexture(tex);
+            if (tex == null)
+                return;
+
+            if (m_Database.TryGetValue(tex, out TextureInfo info))
+                info.page.Update(tex, info.rect);
         }
 
         #region Atlas Settings

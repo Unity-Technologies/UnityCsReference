@@ -96,6 +96,8 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
         var wasBoldDefaultFont = EditorGUIUtility.GetBoldDefaultFont();
 
         var valuePosition = DrawLabel(showContextMenu, currentOverrideState, label, position, exposedPropertyTable, exposedNameStr, exposedName, defaultValue);
+        var indent = EditorGUI.indentLevel;
+        EditorGUI.indentLevel = 0;
 
         if (propertyMode == ExposedPropertyMode.DefaultValue || propertyMode == ExposedPropertyMode.NamedGUID)
         {
@@ -116,7 +118,6 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
         GUI.color = previousColor;
         EditorGUIUtility.SetBoldDefaultFont(wasBoldDefaultFont);
 
-
         if (showContextMenu && GUI.Button(driveFieldPosition, GUIContent.none, kDropDownStyle))
         {
             GenericMenu menu = new GenericMenu();
@@ -124,6 +125,8 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
             menu.ShowAsContext();
             Event.current.Use();
         }
+
+        EditorGUI.indentLevel = indent;
     }
 
     Rect DrawLabel(bool showContextMenu, OverrideState currentOverrideState, GUIContent label, Rect position, IExposedPropertyTable exposedPropertyTable, string exposedNameStr, SerializedProperty exposedName, SerializedProperty defaultValue)

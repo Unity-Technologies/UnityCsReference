@@ -20,6 +20,12 @@ namespace UnityEditor.PackageManager
         [NativeName("isAllowed")]
         private bool m_IsAllowed;
 
+        [SerializeField]
+        [NativeName("licenseType")]
+        private EntitlementLicenseType m_licenseType;
+
+        public EntitlementLicenseType licenseType => m_licenseType;
+
         public bool isAllowed { get { return m_IsAllowed;  } }
     }
 }

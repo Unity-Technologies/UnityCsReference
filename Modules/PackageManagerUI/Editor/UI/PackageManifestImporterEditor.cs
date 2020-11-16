@@ -4,12 +4,10 @@
 
 using System;
 using System.Collections;
-using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditorInternal;
 using UnityEditor.AssetImporters;
-using UnityEditor.PackageManager.UI;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -473,7 +471,8 @@ namespace UnityEditor.PackageManager.UI
 
             try
             {
-                var jsonString = File.ReadAllText(assetPath);
+                var ioProxy = ServicesContainer.instance.Resolve<IOProxy>();
+                var jsonString = ioProxy.FileReadAllText(assetPath);
                 var info = Json.Deserialize(jsonString) as Dictionary<string, object>;
 
                 packageState.dependencies = new List<PackageDependency>();
@@ -563,7 +562,7 @@ namespace UnityEditor.PackageManager.UI
                     }
                 }
             }
-            catch (IOException)
+            catch (System.IO.IOException)
             {
                 Debug.Log($"Couldn't open package manifest file {assetPath}.");
                 packageState.isValidFile = false;
@@ -576,15 +575,16 @@ namespace UnityEditor.PackageManager.UI
             if (importer == null)
                 return;
 
+            var ioProxy = ServicesContainer.instance.Resolve<IOProxy>();
             var assetPath = importer.assetPath;
             Dictionary<string, object> json = null;
 
             try
             {
-                var jsonString = File.ReadAllText(assetPath);
+                var jsonString = ioProxy.FileReadAllText(assetPath);
                 json = Json.Deserialize(jsonString) as Dictionary<string, object>;
             }
-            catch (IOException)
+            catch (System.IO.IOException)
             {
                 Debug.Log($"Couldn't open package manifest file {assetPath}.");
             }
@@ -654,10 +654,10 @@ namespace UnityEditor.PackageManager.UI
 
             try
             {
-                File.WriteAllText(assetPath, Json.Serialize(json, true));
+                ioProxy.FileWriteAllText(assetPath, Json.Serialize(json, true));
                 Client.Resolve();
             }
-            catch (IOException)
+            catch (System.IO.IOException)
             {
                 Debug.Log($"Couldn't write package manifest file {assetPath}.");
             }

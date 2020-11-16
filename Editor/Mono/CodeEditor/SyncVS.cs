@@ -5,12 +5,10 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
-using Unity.CodeEditor;
-using UnityEditorInternal;
 
 namespace UnityEditor
 {
-    partial class SyncVS
+    internal class SyncVS
     {
         public static void SyncSolution()
         {
@@ -19,18 +17,13 @@ namespace UnityEditor
 
             // TODO: Rider and possibly other code editors, use reflection to call this method.
             // To avoid conflicts and null reference exception, this is left as a dummy method.
-            Unity.CodeEditor.CodeEditor.Editor.Current.SyncAll();
-
-            #pragma warning disable 618
-            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) != ScriptEditorUtility.ScriptEditor.Other)
-            {
-                Synchronizer.Sync();
-            }
+            Unity.CodeEditor.CodeEditor.Editor.CurrentCodeEditor.SyncAll();
         }
     }
 
     namespace VisualStudioIntegration
     {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static class SolutionGuidGenerator
         {
             public static string GuidForProject(string projectName)

@@ -31,6 +31,7 @@ namespace UnityEditor.PackageManager.UI
         private PackageFiltering m_PackageFiltering;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
+        private UpmClient m_UpmClient;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private IOProxy m_IOProxy;
 
@@ -43,6 +44,7 @@ namespace UnityEditor.PackageManager.UI
             m_PackageFiltering = container.Resolve<PackageFiltering>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
+            m_UpmClient = container.Resolve<UpmClient>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             m_IOProxy = container.Resolve<IOProxy>();
         }
@@ -250,16 +252,24 @@ namespace UnityEditor.PackageManager.UI
                 if (string.IsNullOrEmpty(path))
                     return;
 
-                if (m_IOProxy.GetFileName(path) != "package.json")
+                try
                 {
-                    Debug.Log(L10n.Tr("Please select a valid package.json file in a package folder."));
-                    return;
-                }
+                    if (m_IOProxy.GetFileName(path) != "package.json")
+                    {
+                        Debug.Log(L10n.Tr("[Package Manager] Please select a valid package.json file in a package folder."));
+                        return;
+                    }
 
-                if (!m_PackageDatabase.isInstallOrUninstallInProgress)
+
+                    if (!m_PackageDatabase.isInstallOrUninstallInProgress)
+                    {
+                        m_PackageDatabase.InstallFromPath(m_IOProxy.GetDirectoryName(path));
+                        PackageManagerWindowAnalytics.SendEvent("addFromDisk");
+                    }
+                }
+                catch (System.IO.IOException e)
                 {
-                    m_PackageDatabase.InstallFromPath(m_IOProxy.GetDirectoryName(path));
-                    PackageManagerWindowAnalytics.SendEvent("addFromDisk");
+                    Debug.Log($"[Package Manager] Cannot add package from disk {path}: {e.Message}");
                 }
             }, a => DropdownMenuAction.Status.Normal);
 
@@ -275,28 +285,41 @@ namespace UnityEditor.PackageManager.UI
 
             addMenu.menu.AppendAction(L10n.Tr("Add package from git URL..."), a =>
             {
-                var addFromGitUrl = new PackagesAction(L10n.Tr("Add"));
-                addFromGitUrl.actionClicked += url =>
+                var configs = new GenericInputDropdown.Configs
                 {
-                    addFromGitUrl.Hide();
-                    if (!m_PackageDatabase.isInstallOrUninstallInProgress)
+                    title = L10n.Tr("Add package from git URL"),
+                    iconUssClass = "git",
+                    label = L10n.Tr("URL"),
+                    submitButtonText = L10n.Tr("Add"),
+                    inputSubmittedCallback = url =>
                     {
-                        m_PackageDatabase.InstallFromUrl(url);
-                        PackageManagerWindowAnalytics.SendEvent("addFromGitUrl");
-
-                        // while adding a git package is in progress, we'll show an `in-progress` package, and that package will NOT be part of the `In Project` tab
-                        // until the installation is complete. Therefore we want to switch to `All tab` and focus on the `in-progress` package
-                        var package = m_PackageDatabase.GetPackage(url);
-                        if (package != null)
+                        if (!m_PackageDatabase.isInstallOrUninstallInProgress)
                         {
-                            m_PackageFiltering.currentFilterTab = PackageFilterTab.InProject;
-                            m_PageManager.SetSelected(package);
+                            m_PackageDatabase.InstallFromUrl(url);
+                            PackageManagerWindowAnalytics.SendEvent("addFromGitUrl", url);
+
+                            var package = m_PackageDatabase.GetPackage(url);
+                            if (package != null)
+                            {
+                                m_PackageFiltering.currentFilterTab = PackageFilterTab.InProject;
+                                m_PageManager.SetSelected(package);
+                            }
                         }
                     }
                 };
+                // We are using the `worldBound` of the toolbar rather than the worldBound of the addMenu because addMenu have a `-1` left margin
+                // And that makes the dropdown show in a bit of a misaligned place
+                var rect = GUIUtility.GUIToScreenRect(worldBound);
+                var dropdown = new GenericInputDropdown(m_ResourceLoader, PackageManagerWindow.instance, configs) { position = rect };
+                DropdownContainer.ShowDropdown(dropdown);
+            }, a => DropdownMenuAction.Status.Normal);
 
-                parent.Add(addFromGitUrl);
-                addFromGitUrl.Show();
+            addMenu.menu.AppendAction(L10n.Tr("Add package by name..."), a =>
+            {
+                // Same as above, the worldBound of the toolbar is used rather than the addMenu
+                var rect = GUIUtility.GUIToScreenRect(worldBound);
+                var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_PackageFiltering, m_UpmClient, m_PackageDatabase, m_PageManager, PackageManagerWindow.instance) { position = rect };
+                DropdownContainer.ShowDropdown(dropdown);
             }, a => DropdownMenuAction.Status.Normal);
 
             PackageManagerExtensions.ExtensionCallback(() =>

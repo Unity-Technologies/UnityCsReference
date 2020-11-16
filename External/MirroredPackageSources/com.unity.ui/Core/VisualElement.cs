@@ -99,21 +99,26 @@ namespace UnityEngine.UIElements
         }
     }
 
-    internal static class StringListPool
+    internal class ObjectListPool<T>
     {
-        static ObjectPool<List<string>> pool = new ObjectPool<List<string>>(20);
+        static ObjectPool<List<T>> pool = new ObjectPool<List<T>>(20);
 
-        public static List<string> Get()
+        public static List<T> Get()
         {
             return pool.Get();
         }
 
-        public static void Release(List<string> elements)
+        public static void Release(List<T> elements)
         {
             elements.Clear();
             pool.Release(elements);
         }
     }
+
+    internal class StringObjectListPool : ObjectListPool<string>
+    {
+    }
+
 
     /// <summary>
     /// Base class for objects that are part of the UIElements visual tree.
@@ -612,7 +617,7 @@ namespace UnityEngine.UIElements
         internal void UpdateWorldBoundingBox()
         {
             m_WorldBoundingBox = boundingBox;
-            TransformAlignedRect(in worldTransformRef, ref m_WorldBoundingBox);
+            TransformAlignedRect(ref worldTransformRef, ref m_WorldBoundingBox);
         }
 
         /// <summary>
@@ -623,7 +628,7 @@ namespace UnityEngine.UIElements
             get
             {
                 var result = rect;
-                TransformAlignedRect(in worldTransformRef, ref result);
+                TransformAlignedRect(ref worldTransformRef, ref result);
                 return result;
             }
         }
@@ -718,7 +723,7 @@ namespace UnityEngine.UIElements
             if (hierarchy.parent != null)
             {
                 var mat = matrixWithLayout;
-                MultiplyMatrix34(in hierarchy.parent.worldTransformRef,  in mat, out m_WorldTransformCache);
+                MultiplyMatrix34(ref hierarchy.parent.worldTransformRef,  ref mat, out m_WorldTransformCache);
             }
             else
             {
@@ -906,7 +911,7 @@ namespace UnityEngine.UIElements
             {
                 if (ReferenceEquals(m_ClassList, s_EmptyClassList))
                 {
-                    m_ClassList = StringListPool.Get();
+                    m_ClassList = StringObjectListPool.Get();
                 }
 
                 return m_ClassList;
@@ -1659,7 +1664,7 @@ namespace UnityEngine.UIElements
         {
             if (m_ClassList.Count > 0)
             {
-                StringListPool.Release(m_ClassList);
+                StringObjectListPool.Release(m_ClassList);
                 m_ClassList = s_EmptyClassList;
                 IncrementVersion(VersionChangeType.StyleSheet);
             }
@@ -1669,7 +1674,7 @@ namespace UnityEngine.UIElements
         {
             if (m_ClassList == s_EmptyClassList)
             {
-                m_ClassList = StringListPool.Get();
+                m_ClassList = StringObjectListPool.Get();
             }
             else
             {
@@ -1695,7 +1700,7 @@ namespace UnityEngine.UIElements
             {
                 if (m_ClassList.Count == 0)
                 {
-                    StringListPool.Release(m_ClassList);
+                    StringObjectListPool.Release(m_ClassList);
                     m_ClassList = s_EmptyClassList;
                 }
                 IncrementVersion(VersionChangeType.StyleSheet);

@@ -162,7 +162,7 @@ namespace UnityEditor.PackageManager.UI
             if (downloadOperation.state == DownloadState.Completed &&
                 !string.IsNullOrEmpty(downloadOperation.packageOldPath) && downloadOperation.packageNewPath != downloadOperation.packageOldPath)
             {
-                m_IOProxy.FileDelete(downloadOperation.packageOldPath);
+                m_IOProxy.DeleteFile(downloadOperation.packageOldPath);
             }
         }
 

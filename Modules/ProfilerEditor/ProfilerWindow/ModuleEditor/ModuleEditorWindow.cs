@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using UnityEditorInternal.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -17,8 +18,9 @@ namespace UnityEditor.Profiling.ModuleEditor
         const string k_UssSelectorModuleEditorWindowDark = "module-editor-window__dark";
         const string k_UssSelectorModuleEditorWindowLight = "module-editor-window__light";
         const int k_InvalidIndex = -1;
-        const string k_NewProfilerModuleDefaultName = "New Profiler Module";
+        const string k_NewProfilerModuleDefaultName = "New Profiler Module {0}";
         static readonly Vector2 k_MinimumWindowSize = new Vector2(720f, 405f);
+        const int kMaxModuleIndex = 256;
 
         bool m_IsInitialized;
         [SerializeField] List<ModuleData> m_Modules;
@@ -26,6 +28,7 @@ namespace UnityEditor.Profiling.ModuleEditor
         [SerializeField] List<ModuleData> m_CreatedModules = new List<ModuleData>();
         [SerializeField] List<ModuleData> m_DeletedModules = new List<ModuleData>();
         bool m_ChangesHaveBeenConfirmed;
+        [SerializeField] int m_LastModuleNameIndex = 1;
 
         ModuleListViewController m_ModuleListViewController;
         ModuleDetailsViewController m_ModuleDetailsViewController;
@@ -129,7 +132,19 @@ namespace UnityEditor.Profiling.ModuleEditor
 
         void CreateModule()
         {
-            var moduleName = k_NewProfilerModuleDefaultName;
+            // Find first free module name
+            var namesList = m_Modules.Select(x => x.name).Distinct();
+            var moduleName = String.Format(k_NewProfilerModuleDefaultName, "-");
+            for (; m_LastModuleNameIndex < kMaxModuleIndex; m_LastModuleNameIndex++)
+            {
+                var newModuleName = String.Format(k_NewProfilerModuleDefaultName, m_LastModuleNameIndex);
+                if (namesList.Contains(newModuleName))
+                    continue;
+
+                moduleName = newModuleName;
+                break;
+            }
+
             var module = new ModuleData(moduleName, true, true);
             m_Modules.Add(module);
             m_CreatedModules.Add(module);

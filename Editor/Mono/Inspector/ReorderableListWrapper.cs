@@ -169,14 +169,14 @@ namespace UnityEditorInternal
                     Object[] objReferences = DragAndDrop.objectReferences;
                     foreach (var o in objReferences)
                     {
-                        if (EditorGUI.ValidateObjectFieldAssignment(new[] { o }, typeof(Object), m_ReorderableList.serializedProperty,
-                            EditorGUI.ObjectFieldValidatorOptions.None) != null)
+                        Object validatedObject = EditorGUI.ValidateObjectFieldAssignment(new[] { o }, typeof(Object), m_ReorderableList.serializedProperty, EditorGUI.ObjectFieldValidatorOptions.None);
+                        if (validatedObject != null)
                         {
                             DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
                         }
                         else continue;
 
-                        if (Event.current.type == EventType.DragPerform) ReorderableList.defaultBehaviours.DoAddButton(m_ReorderableList, o);
+                        if (Event.current.type == EventType.DragPerform) ReorderableList.defaultBehaviours.DoAddButton(m_ReorderableList, validatedObject);
                     }
                     DragAndDrop.AcceptDrag();
                     Event.current.Use();

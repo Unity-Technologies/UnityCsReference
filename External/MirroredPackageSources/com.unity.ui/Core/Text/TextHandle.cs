@@ -39,10 +39,9 @@ namespace UnityEngine.UIElements
         Vector2 GetCursorPosition(CursorPositionStylePainterParameters parms, float scaling);
         float ComputeTextWidth(MeshGenerationContextUtils.TextParams parms, float scaling);
         float ComputeTextHeight(MeshGenerationContextUtils.TextParams parms, float scaling);
-
         void DrawText(UIRStylePainter painter, MeshGenerationContextUtils.TextParams textParams, float pixelsPerPoint);
-
         TextInfo Update(MeshGenerationContextUtils.TextParams parms, float pixelsPerPoint);
+        int VerticesCount(MeshGenerationContextUtils.TextParams parms, float pixelPerPoint);
     }
 
     internal struct TextCoreHandle : ITextHandle
@@ -141,6 +140,15 @@ namespace UnityEngine.UIElements
         public void DrawText(UIRStylePainter painter, MeshGenerationContextUtils.TextParams textParams, float pixelsPerPoint)
         {
             painter.DrawTextCore(textParams, this, pixelsPerPoint);
+        }
+
+        public int VerticesCount(MeshGenerationContextUtils.TextParams parms, float pixelPerPoint)
+        {
+            Update(parms, pixelPerPoint);
+            var verticesCount = 0;
+            foreach (var meshInfo in textInfo.meshInfo)
+                verticesCount += meshInfo.vertexCount;
+            return verticesCount;
         }
 
         public TextInfo Update(MeshGenerationContextUtils.TextParams parms, float pixelsPerPoint)
@@ -271,14 +279,24 @@ namespace UnityEngine.UIElements
         {
             return textHandle.Update(parms, pixelsPerPoint);
         }
+
+        public int VerticesCount(MeshGenerationContextUtils.TextParams parms, float pixelPerPoint)
+        {
+            return textHandle.VerticesCount(parms, pixelPerPoint);
+        }
     }
 
 
     internal struct TextNativeHandle : ITextHandle
     {
+        // For automated testing purposes
+        internal NativeArray<TextVertex> textVertices;
+        private int m_PreviousTextParamsHash;
+
         public static ITextHandle New()
         {
             TextNativeHandle h = new TextNativeHandle();
+            h.textVertices = new NativeArray<TextVertex>();
             return h;
         }
 
@@ -293,10 +311,21 @@ namespace UnityEngine.UIElements
             return null;
         }
 
-        public NativeArray<TextVertex> GetVerticies(MeshGenerationContextUtils.TextParams parms, float scaling)
+        public int VerticesCount(MeshGenerationContextUtils.TextParams parms, float pixelPerPoint)
         {
+            return GetVertices(parms, pixelPerPoint).Length;
+        }
+
+        public NativeArray<TextVertex> GetVertices(MeshGenerationContextUtils.TextParams parms, float scaling)
+        {
+            int paramsHash = parms.GetHashCode();
+            if (m_PreviousTextParamsHash == paramsHash)
+                return textVertices;
+
+            m_PreviousTextParamsHash = paramsHash;
             TextNativeSettings textSettings = MeshGenerationContextUtils.TextParams.GetTextNativeSettings(parms, scaling);
-            return TextNative.GetVertices(textSettings);
+            textVertices = TextNative.GetVertices(textSettings);
+            return textVertices;
         }
 
         public Vector2 GetCursorPosition(CursorPositionStylePainterParameters parms, float scaling)

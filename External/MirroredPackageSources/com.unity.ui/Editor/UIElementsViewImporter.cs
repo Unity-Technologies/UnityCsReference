@@ -151,6 +151,8 @@ namespace UnityEditor.UIElements
                         return "Please use '{0}' instead";
                     case ImportErrorCode.AttributeOverridesMissingElementNameAttr:
                         return "AttributeOverrides node missing 'element-name' attribute.";
+                    case ImportErrorCode.AttributeOverridesInvalidAttr:
+                        return "AttributeOverrides node cannot override attribute '{0}'.";
                     case ImportErrorCode.ReferenceInvalidURILocation:
                         return "The specified URL is empty or invalid : {0}";
                     case ImportErrorCode.ReferenceInvalidURIScheme:
@@ -251,7 +253,8 @@ namespace UnityEditor.UIElements
             }
         }
 
-
+        const string k_ClassAttr = "class";
+        const string k_StyleAttr = "style";
         const string k_GenericPathAttr = UxmlGenericAttributeNames.k_PathAttributeName;
         const string k_GenericSrcAttr = UxmlGenericAttributeNames.k_SrcAttributeName;
 
@@ -664,8 +667,17 @@ namespace UnityEditor.UIElements
 
             foreach (var attribute in attributeOverridesElt.Attributes())
             {
-                if (attribute.Name.LocalName == k_AttributeOverridesElementNameAttr)
+                string attributeName = attribute.Name.LocalName;
+                if (attributeName == k_AttributeOverridesElementNameAttr)
                     continue;
+
+                if (attributeName == k_ClassAttr ||
+                    attributeName == k_StyleAttr ||
+                    attributeName == nameof(VisualElement.name))
+                {
+                    logger.LogError(ImportErrorType.Semantic, ImportErrorCode.AttributeOverridesInvalidAttr, attributeName, Error.Level.Warning, attributeOverridesElt);
+                    continue;
+                }
 
                 var attributeOverride = new TemplateAsset.AttributeOverride()
                 {
@@ -727,7 +739,7 @@ namespace UnityEditor.UIElements
                 // start with special cases
                 switch (attrName)
                 {
-                    case "class":
+                    case k_ClassAttr:
                         res.AddProperty(xattr.Name.LocalName, xattr.Value);
                         res.classes = xattr.Value.Split(' ');
                         continue;
@@ -766,7 +778,7 @@ namespace UnityEditor.UIElements
                         }
                         templateAsset.AddSlotUsage(xattr.Value, res.id);
                         continue;
-                    case "style":
+                    case k_StyleAttr:
                         res.AddProperty(xattr.Name.LocalName, xattr.Value);
 
                         ExCSS.StyleSheet parsed = new Parser().Parse("* { " + xattr.Value + " }");
@@ -833,6 +845,7 @@ namespace UnityEditor.UIElements
         DeprecatedAttributeName,
         ReplaceByAttributeName,
         AttributeOverridesMissingElementNameAttr,
+        AttributeOverridesInvalidAttr,
         ReferenceInvalidURILocation,
         ReferenceInvalidURIScheme,
         ReferenceInvalidURIProjectAssetPath,

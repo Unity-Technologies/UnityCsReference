@@ -287,7 +287,23 @@ namespace UnityEngine.UIElements
             clampedDragger = new ClampedDragger<TValueType>(this, SetSliderValueFromClick, SetSliderValueFromDrag);
             visualInput.AddManipulator(clampedDragger);
 
+            RegisterCallback<KeyDownEvent>(OnKeyDown);
+
             UpdateTextFieldVisibility();
+        }
+
+        protected static float GetClosestPowerOfTen(float positiveNumber)
+        {
+            if (positiveNumber <= 0)
+                return 1;
+            return Mathf.Pow(10, Mathf.RoundToInt(Mathf.Log10(positiveNumber)));
+        }
+
+        protected static float RoundToMultipleOf(float value, float roundingValue)
+        {
+            if (roundingValue == 0)
+                return value;
+            return Mathf.Round(value / roundingValue) * roundingValue;
         }
 
         private void ClampValue()
@@ -300,6 +316,18 @@ namespace UnityEngine.UIElements
         internal abstract float SliderNormalizeValue(TValueType currentValue, TValueType lowerValue, TValueType higherValue);
         internal abstract TValueType SliderRange();
         internal abstract TValueType ParseStringToValue(string stringValue);
+        internal abstract void ComputeValueFromKey(SliderKey sliderKey, bool isShift);
+
+        internal enum SliderKey
+        {
+            None,
+            Lowest,
+            LowerPage,
+            Lower,
+            Higher,
+            HigherPage,
+            Highest
+        };
 
         // Calculates the value based on desired direction (inverted and vertical sliders)
         TValueType SliderLerpDirectionalUnclamped(TValueType a, TValueType b, float positionInterpolant)
@@ -378,6 +406,31 @@ namespace UnityEngine.UIElements
                 ComputeValueAndDirectionFromClick(dragContainer.resolvedStyle.width, dragElement.resolvedStyle.width, dragElement.transform.position.x, clampedDragger.lastMousePosition.x);
             else
                 ComputeValueAndDirectionFromClick(dragContainer.resolvedStyle.height, dragElement.resolvedStyle.height, dragElement.transform.position.y, clampedDragger.lastMousePosition.y);
+        }
+
+        void OnKeyDown(KeyDownEvent evt)
+        {
+            SliderKey sliderKey = SliderKey.None;
+            bool isHorizontal = direction == SliderDirection.Horizontal;
+
+            if (isHorizontal && evt.keyCode == KeyCode.Home || !isHorizontal && evt.keyCode == KeyCode.End)
+                sliderKey = inverted ? SliderKey.Highest : SliderKey.Lowest;
+            else if (isHorizontal && evt.keyCode == KeyCode.End || !isHorizontal && evt.keyCode == KeyCode.Home)
+                sliderKey = inverted ? SliderKey.Lowest : SliderKey.Highest;
+            else if (isHorizontal && evt.keyCode == KeyCode.PageUp || !isHorizontal && evt.keyCode == KeyCode.PageDown)
+                sliderKey = inverted ? SliderKey.HigherPage : SliderKey.LowerPage;
+            else if (isHorizontal && evt.keyCode == KeyCode.PageDown || !isHorizontal && evt.keyCode == KeyCode.PageUp)
+                sliderKey = inverted ? SliderKey.LowerPage : SliderKey.HigherPage;
+            else if (isHorizontal && evt.keyCode == KeyCode.LeftArrow || !isHorizontal && evt.keyCode == KeyCode.DownArrow)
+                sliderKey = inverted ? SliderKey.Higher : SliderKey.Lower;
+            else if (isHorizontal && evt.keyCode == KeyCode.RightArrow || !isHorizontal && evt.keyCode == KeyCode.UpArrow)
+                sliderKey = inverted ? SliderKey.Lower : SliderKey.Higher;
+
+            if (sliderKey == SliderKey.None)
+                return;
+
+            ComputeValueFromKey(sliderKey, evt.shiftKey);
+            evt.StopPropagation();
         }
 
         internal virtual void ComputeValueAndDirectionFromClick(float sliderLength, float dragElementLength, float dragElementPos, float dragElementLastPos)

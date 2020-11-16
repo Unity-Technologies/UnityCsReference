@@ -4,9 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using UnityEditor.Utils;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
@@ -114,12 +112,19 @@ namespace UnityEditor.PackageManager.UI
                 return null;
 
             var hash = Hash128.Compute(url);
-            var path = Paths.Combine(m_Application.userAppDataPath, "Asset Store", "Cache", "Images", productId.ToString(), hash.ToString());
-            if (m_IOProxy.FileExists(path))
+            try
             {
-                var texture = new Texture2D(2, 2);
-                if (texture.LoadImage(m_IOProxy.FileReadAllBytes(path)))
-                    return texture;
+                var path = m_IOProxy.PathsCombine(m_Application.userAppDataPath, "Asset Store", "Cache", "Images", productId.ToString(), hash.ToString());
+                if (m_IOProxy.FileExists(path))
+                {
+                    var texture = new Texture2D(2, 2);
+                    if (texture.LoadImage(m_IOProxy.FileReadAllBytes(path)))
+                        return texture;
+                }
+            }
+            catch (System.IO.IOException e)
+            {
+                Debug.Log($"[Package Manager] Cannot load image: {e.Message}");
             }
 
             return null;
@@ -130,13 +135,20 @@ namespace UnityEditor.PackageManager.UI
             if (string.IsNullOrEmpty(url) || texture == null)
                 return;
 
-            var path = Paths.Combine(m_Application.userAppDataPath, "Asset Store", "Cache", "Images", productId.ToString());
-            if (!m_IOProxy.DirectoryExists(path))
-                m_IOProxy.CreateDirectory(path);
+            try
+            {
+                var path = m_IOProxy.PathsCombine(m_Application.userAppDataPath, "Asset Store", "Cache", "Images", productId.ToString());
+                if (!m_IOProxy.DirectoryExists(path))
+                    m_IOProxy.CreateDirectory(path);
 
-            var hash = Hash128.Compute(url);
-            path = Paths.Combine(path, hash.ToString());
-            m_IOProxy.FileWriteAllBytes(path, texture.EncodeToJPG());
+                var hash = Hash128.Compute(url);
+                path = m_IOProxy.PathsCombine(path, hash.ToString());
+                m_IOProxy.FileWriteAllBytes(path, texture.EncodeToJPG());
+            }
+            catch (System.IO.IOException e)
+            {
+                Debug.Log($"[Package Manager] Cannot save image: {e.Message}");
+            }
         }
 
         public void DownloadImageAsync(long productID, string url, Action<long, Texture2D> doneCallbackAction = null)

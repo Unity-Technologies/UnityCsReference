@@ -35,7 +35,7 @@ namespace UnityEditor.UIElements.Debugger
 
         void GotoCode(DropdownMenuAction action)
         {
-            CodeEditor.Editor.Current.OpenProject(m_FileName, m_LineNumber);
+            CodeEditor.Editor.CurrentCodeEditor.OpenProject(m_FileName, m_LineNumber);
         }
     }
 }

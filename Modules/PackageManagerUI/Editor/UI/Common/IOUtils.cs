@@ -18,10 +18,5 @@ namespace UnityEditor.PackageManager.UI
                 name = name.Replace(c, '_');
             return name.Trim();
         }
-
-        public static string CombinePaths(params string[] paths)
-        {
-            return paths.Aggregate(Path.Combine);
-        }
     }
 }

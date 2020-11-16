@@ -27,11 +27,11 @@ namespace UnityEditor.PackageManager.UI
             Add(m_Description);
         }
 
-        public bool Refresh(IPackage package, IPackageVersion version)
+        public bool Refresh(IPackage package)
         {
-            if (package?.progress == PackageProgress.Installing && version?.HasTag(PackageTag.Git) == true)
+            if (package?.progress == PackageProgress.Installing && package is PlaceholderPackage)
             {
-                m_Title.text = L10n.Tr("Please wait, installing a GIT package...");
+                m_Title.text = L10n.Tr("Please wait, installing a package...");
                 m_Description.text = package.uniqueId;
                 m_Spinner.Start();
                 UIUtils.SetElementDisplay(this, true);

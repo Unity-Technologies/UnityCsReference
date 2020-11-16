@@ -78,6 +78,12 @@ namespace UnityEditor.Search.Providers
             if (FilterIndexes(updated).Except(loaded).Count() > 0 || loaded.Intersect(FilterIndexes(deleted)).Count() > 0)
                 reloadAssetIndexes = true;
 
+            if (deleted != null && deleted.Length > 0)
+            {
+                EditorApplication.delayCall -= SearchService.RefreshWindows;
+                EditorApplication.delayCall += SearchService.RefreshWindows;
+            }
+
             FindProvider.Update(updated, deleted, moved);
         }
 

@@ -33,6 +33,7 @@ namespace UnityEditor
 
     public enum WebGLWasmArithmeticExceptions
     {
+        [Obsolete("WebGLWasmArithmeticExceptions.Throw mode is no longer supported. WebAssembly arithmetic exceptions are always ignored.")]
         Throw,
         Ignore
     }

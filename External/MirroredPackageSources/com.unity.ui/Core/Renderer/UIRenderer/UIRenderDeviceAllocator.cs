@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
@@ -26,25 +27,6 @@ namespace UnityEngine.UIElements.UIR
     }
 
     #region Internals
-    class PoolItem { internal PoolItem poolNext; }
-    class Pool<T> where T : PoolItem, new()
-    {
-        public T Get()
-        {
-            if (m_Pool == null)
-                return new T();
-
-            Debug.Assert(m_Pool != null);
-            T block = (T)m_Pool;
-            m_Pool = m_Pool.poolNext;
-            block.poolNext = null;
-            return block;
-        }
-
-        public void Return(T obj) { obj.poolNext = m_Pool; m_Pool = obj; }
-
-        PoolItem m_Pool;
-    }
 
     // Can handle up to 4GB due to uint, UIntPtr is just unusable
     // Maintains its available memory range to the best, giving practically a fast allocation time
@@ -251,7 +233,23 @@ namespace UnityEngine.UIElements.UIR
             block.end = after.start;
         }
 
-        class Block : PoolItem
+        class BlockPool : LinkedPool<Block>
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            static Block CreateBlock()
+            {
+                return new Block();
+            }
+
+            // Nothing to do, this is done externally.
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            static void ResetBlock(Block block) {}
+
+            public BlockPool()
+                : base(CreateBlock, ResetBlock) {}
+        }
+
+        class Block : LinkedPoolItem<Block>
         {
             public uint size { get { return end - start; } }
             public uint start, end; // end is exclusive
@@ -261,7 +259,7 @@ namespace UnityEngine.UIElements.UIR
         }
 
         Block m_FirstBlock, m_FirstAvailableBlock; // Sorted by address
-        Pool<Block> m_BlockPool = new Pool<Block>();
+        BlockPool m_BlockPool = new BlockPool();
         uint m_HighWatermark;
     }
 

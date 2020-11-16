@@ -48,5 +48,38 @@ namespace UnityEngine.UIElements
             else
                 Object.DestroyImmediate(obj);
         }
+
+        public static int GetPrevPow2(int n)
+        {
+            int bits = 0;
+            while (n > 1)
+            {
+                n >>= 1;
+                ++bits;
+            }
+
+            return 1 << bits;
+        }
+
+        public static int GetNextPow2(int n)
+        {
+            int test = 1;
+            while (test < n)
+                test <<= 1;
+            return test;
+        }
+
+        public static int GetNextPow2Exp(int n)
+        {
+            int test = 1;
+            int exp = 0;
+            while (test < n)
+            {
+                test <<= 1;
+                ++exp;
+            }
+
+            return exp;
+        }
     }
 }
