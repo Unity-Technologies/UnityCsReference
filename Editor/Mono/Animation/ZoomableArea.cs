@@ -88,6 +88,8 @@ namespace UnityEditor
         private const float kMinWidth = 0.05f;
         private const float kMinHeight = 0.05f;
 
+        private const float k_ScrollStepSize = 10f; // mirrors GUI scrollstepsize as there is no global const for this.
+
         public float hScaleMin
         {
             get { return m_HScaleMin; }
@@ -696,7 +698,10 @@ namespace UnityEditor
                     break;
                 case EventType.ScrollWheel:
                     if (!area.Contains(Event.current.mousePosition))
+                    {
+                        HandleScrolling(area);
                         break;
+                    }
                     if (m_IgnoreScrollWheelUntilClicked && GUIUtility.keyboardControl != id)
                         break;
 
@@ -707,6 +712,24 @@ namespace UnityEditor
             }
 
             GUILayout.EndArea();
+        }
+
+        void HandleScrolling(Rect area)
+        {
+            if (m_MinimalGUI)
+                return;
+            if (m_VSlider && new Rect(area.x + area.width, area.y + GUI.skin.verticalScrollbarUpButton.fixedHeight, vSliderWidth, area.height - (GUI.skin.verticalScrollbarDownButton.fixedHeight + hSliderHeight)).Contains(Event.current.mousePosition))
+            {
+                SetTransform(new Vector2(m_Translation.x, m_Translation.y - (Event.current.delta.y * k_ScrollStepSize)), m_Scale);
+                Event.current.Use();
+                return;
+            }
+
+            if (m_HSlider && new Rect(area.x + GUI.skin.horizontalScrollbarLeftButton.fixedWidth, area.y + area.height, area.width - (GUI.skin.horizontalScrollbarRightButton.fixedWidth + vSliderWidth), hSliderHeight).Contains(Event.current.mousePosition))
+            {
+                SetTransform(new Vector2(m_Translation.x + (Event.current.delta.y * k_ScrollStepSize), m_Translation.y), m_Scale);
+                Event.current.Use();
+            }
         }
 
         public void EndViewGUI()

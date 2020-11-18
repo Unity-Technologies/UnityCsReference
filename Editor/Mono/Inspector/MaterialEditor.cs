@@ -2350,7 +2350,7 @@ namespace UnityEditor
                     }
                 }
 
-                Undo.RegisterCompleteObjectUndo(r, Styles.undoAssignMaterial);
+                Undo.RecordObject(r, Styles.undoAssignMaterial);
                 var materials = r.sharedMaterials;
 
                 bool isValidMaterialIndex = (materialIndex >= 0 && materialIndex < r.sharedMaterials.Length);

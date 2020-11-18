@@ -68,7 +68,7 @@ namespace UnityEditor
             public GUIContent buildWithDeepProfiler = EditorGUIUtility.TrTextContent("Deep Profiling Support", "Build Player with Deep Profiling Support. This might affect Player performance.");
             public GUIContent buildWithDeepProfilerDisabled = EditorGUIUtility.TrTextContent("Deep Profiling", "Profiling is only enabled in a Development Player.");
             public GUIContent allowDebugging = EditorGUIUtility.TrTextContent("Script Debugging");
-            public GUIContent waitForManagedDebugger = EditorGUIUtility.TrTextContent("Wait For Managed Debugger", "Show a dialog where you can attach a managed debugger before any script execution.");
+            public GUIContent waitForManagedDebugger = EditorGUIUtility.TrTextContent("Wait For Managed Debugger", "Show a dialog where you can attach a managed debugger before any script execution. Can also use volume Up or Down button to confirm on Android.");
             public GUIContent explicitNullChecks = EditorGUIUtility.TrTextContent("Explicit Null Checks");
             public GUIContent explicitDivideByZeroChecks = EditorGUIUtility.TrTextContent("Divide By Zero Checks");
             public GUIContent explicitArrayBoundsChecks = EditorGUIUtility.TrTextContent("Array Bounds Checks");

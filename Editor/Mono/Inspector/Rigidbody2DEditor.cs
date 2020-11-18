@@ -157,9 +157,10 @@ namespace UnityEditor
                             EditorGUILayout.HelpBox("The physics simulation mode is set to run manually in the scripts. Some or all selected Rigidbody2D are using an interpolation mode other than 'None' which will be executed per-frame. If the manual simulation is being run per-frame then the interpolation mode should be set to 'None'.", MessageType.Info);
                     }
 
-                    GUILayout.BeginHorizontal();
-                    m_Constraints.isExpanded = EditorGUILayout.Foldout(m_Constraints.isExpanded, "Constraints", true);
-                    GUILayout.EndHorizontal();
+                    Rect position = EditorGUILayout.GetControlRect();
+                    EditorGUI.BeginProperty(position, null, m_Constraints);
+                    m_Constraints.isExpanded = EditorGUI.Foldout(position, m_Constraints.isExpanded, m_Constraints.displayName, true);
+                    EditorGUI.EndProperty();
 
                     var constraints = (RigidbodyConstraints2D)m_Constraints.intValue;
                     if (m_Constraints.isExpanded)

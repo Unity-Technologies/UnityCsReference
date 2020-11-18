@@ -112,7 +112,7 @@ namespace UnityEngine
 
         public void GetComponents<T>(List<T> results)
         {
-            GetComponentsInternal(typeof(T), false, false, true, false, results);
+            GetComponentsInternal(typeof(T), true, false, true, false, results);
         }
 
         [uei.ExcludeFromDocs]
