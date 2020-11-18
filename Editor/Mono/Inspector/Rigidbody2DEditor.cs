@@ -149,9 +149,10 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_SleepingMode);
                     EditorGUILayout.PropertyField(m_Interpolate);
 
-                    GUILayout.BeginHorizontal();
-                    m_Constraints.isExpanded = EditorGUILayout.Foldout(m_Constraints.isExpanded, "Constraints", true);
-                    GUILayout.EndHorizontal();
+                    Rect position = EditorGUILayout.GetControlRect();
+                    EditorGUI.BeginProperty(position, null, m_Constraints);
+                    m_Constraints.isExpanded = EditorGUI.Foldout(position, m_Constraints.isExpanded, m_Constraints.displayName, true);
+                    EditorGUI.EndProperty();
 
                     var constraints = (RigidbodyConstraints2D)m_Constraints.intValue;
                     if (m_Constraints.isExpanded)

@@ -1081,6 +1081,9 @@ namespace UnityEditor
 
         private void RefreshStylesAfterExternalEvent()
         {
+            if (m_Parent == null || m_Parent.visualTree == null)
+                return;
+
             var panel = m_Parent.visualTree.elementPanel;
             if (panel == null)
                 return;

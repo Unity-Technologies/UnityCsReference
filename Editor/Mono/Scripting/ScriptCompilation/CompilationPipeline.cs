@@ -286,7 +286,15 @@ namespace UnityEditor.Compilation
             try
             {
                 var assembly = editorCompilation.GetCustomTargetAssemblyFromName(assemblyName);
-                return assembly?.Defines;
+
+                var scriptAssemblySettings = new ScriptAssemblySettings()
+                {
+                    BuildTarget = EditorUserBuildSettings.activeBuildTarget,
+                    BuildTargetGroup = EditorUserBuildSettings.activeBuildTargetGroup,
+                    CompilationOptions = EditorScriptCompilationOptions.BuildingForEditor
+                };
+
+                return EditorCompilation.GetTargetAssemblyDefines(assembly, scriptAssemblySettings);
             }
             catch (ArgumentException)
             {
