@@ -45,6 +45,7 @@ namespace UnityEditor.Scripting.Compilers
             {
                 "/target:library",
                 "/nowarn:0169",
+                "/nowarn:0649",
                 "/out:" + assemblyOutputPath
             };
 

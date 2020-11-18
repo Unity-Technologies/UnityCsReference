@@ -397,6 +397,8 @@ namespace UnityEditor
             panel.saveViewData = m_ActualView.SaveViewData;
             panel.name = m_ActualView.GetType().Name;
 
+            SendCreateGUIIfNecessary();
+
             if (GetPaneMethod("Update") != null)
             {
                 EditorApplication.update -= SendUpdate;
@@ -490,6 +492,28 @@ namespace UnityEditor
             {
                 m_NotificationContainer.onGUIHandler = null;
                 m_NotificationContainer.RemoveFromHierarchy();
+            }
+        }
+
+        void SendCreateGUIIfNecessary()
+        {
+            var window = m_ActualView;
+
+
+            if (window != null)
+            {
+                if (window.rootVisualElement.GetProperty("Initialized") != null)
+                    return;
+
+                if (EditorApplication.isUpdating)
+                {
+                    EditorApplication.delayCall += SendCreateGUIIfNecessary;
+                    return;
+                }
+
+                window.rootVisualElement.SetProperty("Initialized", true);
+
+                Invoke("CreateGUI");
             }
         }
 

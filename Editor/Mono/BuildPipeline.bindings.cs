@@ -204,7 +204,7 @@ namespace UnityEditor
         internal static extern string GetBuildTargetGroupDisplayName(BuildTargetGroup targetPlatformGroup);
 
         [FreeFunction("GetBuildTargetUniqueName", IsThreadSafe = true)]
-        internal static extern string GetBuildTargetName(BuildTarget targetPlatform);
+        public static extern string GetBuildTargetName(BuildTarget targetPlatform);
 
         [FreeFunction(IsThreadSafe = true)]
         internal static extern string GetEditorTargetName();
