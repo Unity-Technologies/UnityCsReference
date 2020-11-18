@@ -142,6 +142,8 @@ namespace UnityEditorInternal
                 }
             }
 
+            public float sortWeight { get; set; }
+
             public FrameDataTreeViewItem(HierarchyFrameDataView frameDataView, int id, int depth, TreeViewItem parent)
                 : base(id, depth, parent, null)
             {
@@ -517,6 +519,10 @@ namespace UnityEditorInternal
                 if (functionName.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     var item = AcquireFrameDataTreeViewItem(m_FrameDataView, current, kItemDepth, searchFromThis);
+
+                    item.displayName = functionName;
+                    item.sortWeight = m_FrameDataView.GetItemColumnDataAsFloat(current, m_FrameDataView.sortColumn);
+
                     searchFromThis.AddChild(item);
                     result.Add(item);
                 }
@@ -525,6 +531,23 @@ namespace UnityEditorInternal
                 foreach (var childId in m_ReusableChildrenIds)
                     stack.Push(childId);
             }
+
+            // Sort filtered results based on HerarchyFrameData sorting settings
+            var sortModifier = m_FrameDataView.sortColumnAscending ? 1 : -1;
+            result.Sort((_x, _y) => {
+                var x = _x as FrameDataTreeViewItem;
+                var y = _y as FrameDataTreeViewItem;
+                if ((x == null) || (y == null))
+                    return 0;
+
+                int retVal;
+                if (x.sortWeight != y.sortWeight)
+                    retVal = x.sortWeight < y.sortWeight ? -1 : 1;
+                else
+                    retVal = EditorUtility.NaturalCompare(x.displayName, y.displayName);
+
+                return retVal * sortModifier;
+            });
         }
 
         // Hierarchy traversal state.

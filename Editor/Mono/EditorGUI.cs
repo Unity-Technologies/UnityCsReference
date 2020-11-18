@@ -5911,8 +5911,7 @@ namespace UnityEditor
             }
 
             bool wasBoldDefaultFont = EditorGUIUtility.GetBoldDefaultFont();
-            if (Event.current.type == EventType.Repaint &&
-                property.serializedObject.targetObjectsCount == 1 &&
+            if (property.serializedObject.targetObjectsCount == 1 &&
                 property.isInstantiatedPrefab &&
                 EditorGUIUtility.comparisonViewMode != EditorGUIUtility.ComparisonViewMode.Original)
             {
@@ -5922,7 +5921,8 @@ namespace UnityEditor
                 var hasPrefabOverride = property.prefabOverride;
                 if (!linkedProperties || hasPrefabOverride)
                     EditorGUIUtility.SetBoldDefaultFont(hasPrefabOverride);
-                if (hasPrefabOverride && !property.isDefaultOverride && !property.isDrivenRectTransformProperty)
+
+                if (Event.current.type == EventType.Repaint && hasPrefabOverride && !property.isDefaultOverride && !property.isDrivenRectTransformProperty)
                 {
                     Rect highlightRect = totalPosition;
                     highlightRect.xMin += EditorGUI.indent;

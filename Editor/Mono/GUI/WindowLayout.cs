@@ -22,6 +22,18 @@ using JSONObject = System.Collections.IDictionary;
 
 namespace UnityEditor
 {
+    class LayoutException : Exception
+    {
+        public LayoutException()
+        {
+        }
+
+        public LayoutException(string message)
+            : base(message)
+        {
+        }
+    }
+
     [InitializeOnLoad]
     internal static class WindowLayout
     {
@@ -146,7 +158,7 @@ namespace UnityEditor
 
                 var childrenData = viewInfo.extendedData["children"] as IList;
                 if (childrenData == null)
-                    throw new InvalidDataException("Invalid split view data");
+                    throw new LayoutException("Invalid split view data");
 
                 int childIndex = 0;
                 foreach (var childData in childrenData)
@@ -771,7 +783,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    throw new Exception();
+                    throw new LayoutException("No parent view");
                 }
 
                 // Kill the maximizedMainView
@@ -994,9 +1006,7 @@ namespace UnityEditor
                 UnityObject[] loadedWindows = InternalEditorUtility.LoadSerializedFileAndForget(path);
 
                 if (loadedWindows == null || loadedWindows.Length == 0)
-                {
-                    throw new ArgumentException("Window layout at '" + path + "' could not be loaded.");
-                }
+                    throw new LayoutException($"Window layout at {path} could not be loaded.");
 
                 List<UnityObject> newWindows = new List<UnityObject>();
 
@@ -1096,10 +1106,7 @@ namespace UnityEditor
                 // Always show main window before other windows. So that other windows can
                 // get their parent/owner.
                 if (!mainWindow)
-                {
-                    Debug.LogError("Error while reading window layout: no main window found");
-                    throw new Exception();
-                }
+                    throw new LayoutException("Error while reading window layout: no main window found");
 
                 mainWindow.Show(mainWindow.showMode, loadPosition: true, displayImmediately: true, setFocus: true);
 
@@ -1133,11 +1140,16 @@ namespace UnityEditor
 
                 int option = 0;
 
-                UnityObject[] containerWindows = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
-
-                // Only show dialog if an actual window is present. If not, revert to default immediately
-                if (!Application.isTestRun && containerWindows.Length > 0)
-                    option = EditorUtility.DisplayDialogComplex("Failed to load window layout", "This can happen if layout contains custom windows and there are compile errors in the project.", "Load Default Layout", "Quit", "Revert Factory Settings");
+                if (!Application.isTestRun && Application.isHumanControllingUs)
+                {
+                    option = EditorUtility.DisplayDialogComplex("Failed to load window layout",
+                        $"This can happen if layout contains custom windows and there are compile errors in the project.\r\n\r\n{ex.Message}",
+                        "Load Default Layout", "Quit", "Revert Factory Settings");
+                }
+                else
+                {
+                    ResetUserLayouts();
+                }
 
                 switch (option)
                 {
@@ -1168,6 +1180,13 @@ namespace UnityEditor
                 Debug.Log("The editor layout could not be fully loaded, this can happen when the layout contains EditorWindows not available in this project");
 
             return true;
+        }
+
+        private static void ResetUserLayouts()
+        {
+            FileUtil.DeleteFileOrDirectory(layoutsPreferencesPath);
+            foreach (var path in Directory.GetFiles("Library", "*.dwlt", System.IO.SearchOption.TopDirectoryOnly))
+                File.Delete(path);
         }
 
         internal static void LoadDefaultLayout()
@@ -1347,7 +1366,7 @@ namespace UnityEditor
         public static void RevertFactorySettings(bool quitOnCancel = true)
         {
             if (!EditorUtility.DisplayDialog("Revert All Window Layouts",
-                "Unity is about to delete all window layout and restore them to the default settings",
+                "Unity is about to delete all window layout and restore them to the default settings.",
                 "Continue", quitOnCancel ? "Quit" : "Cancel"))
             {
                 if (quitOnCancel)
@@ -1355,9 +1374,10 @@ namespace UnityEditor
                 return;
             }
 
-            FileUtil.DeleteFileOrDirectory(layoutsPreferencesPath);
-            FileUtil.DeleteFileOrDirectory(ProjectLayoutPath);
-            FileUtil.DeleteFileOrDirectory(GetProjectLayoutPerMode("default"));
+            // Reset user layouts
+            ResetUserLayouts();
+
+            // Reset mode settings
             ModeService.ChangeModeById("default");
 
             LoadCurrentModeLayout(true);

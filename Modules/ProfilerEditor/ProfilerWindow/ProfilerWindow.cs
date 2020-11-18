@@ -739,7 +739,7 @@ namespace UnityEditor
         public HierarchyFrameDataView GetFrameDataView(string threadName, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
         {
             var frameIndex = GetActiveVisibleFrameIndex();
-            var threadIndex = 0;
+            var threadIndex = -1;
             using (var frameIterator = new ProfilerFrameDataIterator())
             {
                 var threadCount = frameIterator.GetThreadCount(frameIndex);

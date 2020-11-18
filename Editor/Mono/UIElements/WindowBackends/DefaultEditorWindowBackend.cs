@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
+using System.Reflection;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements.Debugger;
 using UnityEngine;
@@ -96,6 +98,8 @@ namespace UnityEditor.UIElements
             m_Panel.name = window.GetType().Name;
 
             m_NotificationContainer.onGUIHandler = window.DrawNotification;
+
+            SendInitializeIfNecessary();
         }
 
         const TrickleDown k_TricklePhase = TrickleDown.TrickleDown;
@@ -253,6 +257,52 @@ namespace UnityEditor.UIElements
                 var child = ve.hierarchy[i];
                 PropagateDirtyRepaint(child);
             }
+        }
+
+        void SendInitializeIfNecessary()
+        {
+            var window = editorWindowModel.window;
+
+
+            if (window != null)
+            {
+                if (window.rootVisualElement.GetProperty("Initialized") != null)
+                    return;
+
+                if (EditorApplication.isUpdating)
+                {
+                    EditorApplication.delayCall += SendInitializeIfNecessary;
+                    return;
+                }
+
+                window.rootVisualElement.SetProperty("Initialized", true);
+
+                Invoke("CreateGUI");
+            }
+        }
+
+        protected void Invoke(string methodName)
+        {
+            MethodInfo mi = GetPaneMethod(methodName, editorWindowModel.window);
+            mi?.Invoke(editorWindowModel.window, null);
+        }
+
+        protected MethodInfo GetPaneMethod(string methodName, object obj)
+        {
+            if (obj == null)
+                return null;
+
+            Type t = obj.GetType();
+
+            while (t != null)
+            {
+                var method = t.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                if (method != null)
+                    return method;
+
+                t = t.BaseType;
+            }
+            return null;
         }
 
         private void Focused()
