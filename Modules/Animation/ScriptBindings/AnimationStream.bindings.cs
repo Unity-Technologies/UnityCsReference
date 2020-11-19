@@ -120,9 +120,18 @@ namespace UnityEngine.Animations
             return InternalGetInputWeight(index);
         }
 
+        public void CopyAnimationStreamMotion(AnimationStream animationStream)
+        {
+            CheckIsValid();
+            animationStream.CheckIsValid();
+            CopyAnimationStreamMotionInternal(animationStream);
+        }
+
         private void ReadSceneTransforms() { CheckIsValid(); InternalReadSceneTransforms(); }
         private void WriteSceneTransforms() { CheckIsValid(); InternalWriteSceneTransforms(); }
 
+        [NativeMethod(Name = "AnimationStreamBindings::CopyAnimationStreamMotion", IsFreeFunction = true, IsThreadSafe = true, HasExplicitThis = true)]
+        private extern void CopyAnimationStreamMotionInternal(AnimationStream animationStream);
 
         [NativeMethod(IsThreadSafe = true)]
         private extern float GetDeltaTime();

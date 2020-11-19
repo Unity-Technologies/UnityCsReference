@@ -134,6 +134,19 @@ namespace UnityEditor
             return new Rect(0, 0, 1000, 600);
         }
 
+        // sets position and size of the main Unity Editor window
+        public static void SetMainWindowPosition(Rect position)
+        {
+            foreach (var win in ContainerWindow.windows)
+            {
+                if (win.IsMainWindow())
+                {
+                    win.position = position;
+                    break;
+                }
+            }
+        }
+
         internal static void RepaintCurrentWindow()
         {
             CheckOnGUI();

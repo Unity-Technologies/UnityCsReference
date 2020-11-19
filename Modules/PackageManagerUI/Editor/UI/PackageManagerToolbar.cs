@@ -321,7 +321,7 @@ namespace UnityEditor.PackageManager.UI
             AddFilterTabToDropdownMenu(PackageFilterTab.UnityRegistry);
             AddFilterTabToDropdownMenu(PackageFilterTab.MyRegistries, null, a =>
             {
-                if (!m_PackageDatabase.allPackages.Any(p => p.Is(PackageType.ScopedRegistry)))
+                if (!m_PackageDatabase.allPackages.Any(p => p.Is(PackageType.ScopedRegistry)) && !m_PackageDatabase.allPackages.Any(p => p.Is(PackageType.MainNotUnity)))
                     return DropdownMenuAction.Status.Hidden;
                 else if (m_PackageFiltering.currentFilterTab == PackageFilterTab.MyRegistries)
                     return DropdownMenuAction.Status.Checked;

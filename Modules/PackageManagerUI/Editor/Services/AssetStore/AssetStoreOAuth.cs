@@ -290,9 +290,15 @@ namespace UnityEditor.PackageManager.UI
                     m_AccessTokenRequest = null;
                     m_AccessToken = null;
 
-                    var response = AssetStoreUtils.ParseResponseAsDictionary(httpClient, OnGetAccessTokenError);
+                    var response = AssetStoreUtils.ParseResponseAsDictionary(httpClient);
                     if (response != null)
                     {
+                        if (response.ContainsKey("errorMessage"))
+                        {
+                            OnGetAccessTokenError(response.GetString("errorMessage"));
+                            return;
+                        }
+
                         var accessToken = new AccessToken(response);
                         if (accessToken.IsValid())
                         {
@@ -330,9 +336,15 @@ namespace UnityEditor.PackageManager.UI
                     m_TokenRequest = null;
                     m_TokenInfo = null;
 
-                    var response = AssetStoreUtils.ParseResponseAsDictionary(httpClient, OnOperationError);
+                    var response = AssetStoreUtils.ParseResponseAsDictionary(httpClient);
                     if (response != null)
                     {
+                        if (response.ContainsKey("errorMessage"))
+                        {
+                            OnOperationError(response.GetString("errorMessage"));
+                            return;
+                        }
+
                         var tokenInfo = new TokenInfo(response);
                         if (tokenInfo.IsValid())
                         {
@@ -371,9 +383,15 @@ namespace UnityEditor.PackageManager.UI
                     m_UserInfoRequest = null;
                     m_UserInfo = null;
 
-                    var response = AssetStoreUtils.ParseResponseAsDictionary(httpClient, OnOperationError);
+                    var response = AssetStoreUtils.ParseResponseAsDictionary(httpClient);
                     if (response != null)
                     {
+                        if (response.ContainsKey("errorMessage"))
+                        {
+                            OnOperationError(response.GetString("errorMessage"));
+                            return;
+                        }
+
                         var userInfo = new UserInfo(response, tokenInfo);
                         if (userInfo.isValid)
                         {

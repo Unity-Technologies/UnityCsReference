@@ -197,6 +197,9 @@ namespace UnityEngine
         [FreeFunction(Name = "ParticleSystemGeometryJob::ResetPreMappedBufferMemory")]
         extern public static void ResetPreMappedBufferMemory();
 
+        [FreeFunction(Name = "ParticleSystemGeometryJob::SetMaximumPreMappedBufferCounts")]
+        extern public static void SetMaximumPreMappedBufferCounts(int vertexBuffersCount, int indexBuffersCount);
+
         unsafe extern internal void* GetManagedJobData();
         extern internal JobHandle GetManagedJobHandle();
         extern internal void SetManagedJobHandle(JobHandle handle);

@@ -69,6 +69,8 @@ namespace UnityEngine
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("TerrainScriptingClasses.h")]
+    [NativeHeader("Modules/Terrain/Public/TerrainDataScriptingInterface.h")]
     [UsedByNativeCode]
     public sealed partial class DetailPrototype
     {
@@ -166,6 +168,15 @@ namespace UnityEngine
 
             return equals;
         }
+
+        public bool Validate()
+            => ValidateDetailPrototype(this, out _);
+
+        public bool Validate(out string errorMessage)
+            => ValidateDetailPrototype(this, out errorMessage);
+
+        [FreeFunction("TerrainDataScriptingInterface::ValidateDetailPrototype")]
+        extern internal static bool ValidateDetailPrototype([NotNull] DetailPrototype prototype, out string errorMessage);
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -693,6 +704,9 @@ namespace UnityEngine
 
         [FreeFunction(k_ScriptingInterfacePrefix + "SetDetailLayer", HasExplicitThis = true)]
         extern private void Internal_SetDetailLayer(int xBase, int yBase, int totalWidth, int totalHeight, int detailIndex, int[,] data);
+
+        [FreeFunction(k_ScriptingInterfacePrefix + "GetClampedDetailPatches", HasExplicitThis = true)]
+        extern public Vector2Int[] GetClampedDetailPatches(float density);
 
         public TreeInstance[] treeInstances
         {

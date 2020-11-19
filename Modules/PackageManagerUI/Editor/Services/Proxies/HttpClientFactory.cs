@@ -15,5 +15,10 @@ namespace UnityEditor.PackageManager.UI
         {
             return new AsyncHTTPClient(url, "POST") { postData = postData };
         }
+
+        public virtual void AbortByTag(string tag)
+        {
+            AsyncHTTPClient.AbortByTag(tag);
+        }
     }
 }

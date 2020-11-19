@@ -16,9 +16,17 @@ namespace UnityEngine
         [NativeProperty("CurTime")]
         public static extern float time { get; }
 
+        // The time this frame has started (RO). This is the time in seconds since the start of the game. Double precision version of time, please prefer to use it instead of single precision (float).
+        [NativeProperty("CurTime")]
+        public static extern double timeAsDouble { get; }
+
         // The time this frame has started (RO). This is the time in seconds since the last level has been loaded.
         [NativeProperty("TimeSinceSceneLoad")]
         public static extern float timeSinceLevelLoad { get; }
+
+        // The time this frame has started (RO). This is the time in seconds since the last level has been loaded. Double precision version of timeSinceLevelLoad, please prefer to use it instead of single precision (float).
+        [NativeProperty("TimeSinceSceneLoad")]
+        public static extern double timeSinceLevelLoadAsDouble { get; }
 
         // The time in seconds it took to complete the last frame (RO).
         public static extern float deltaTime { get; }
@@ -26,11 +34,24 @@ namespace UnityEngine
         // The time the latest MonoBehaviour::pref::FixedUpdate has started (RO). This is the time in seconds since the start of the game.
         public static extern float fixedTime { get; }
 
+        // The time the latest MonoBehaviour::pref::FixedUpdate has started (RO). This is the time in seconds since the start of the game.
+        // Double precision version of unscaledTime, please prefer to use it instead of single precision (float).
+        [NativeProperty("FixedTime")]
+        public static extern double fixedTimeAsDouble { get; }
+
         // The cached real time (realTimeSinceStartup) at the start of this frame
         public static extern float unscaledTime { get; }
 
+        // The cached real time (realTimeSinceStartup) at the start of this frame. Double precision version of unscaledTime, please prefer to use it instead of single precision (float).
+        [NativeProperty("UnscaledTime")]
+        public static extern double unscaledTimeAsDouble { get; }
+
         // The real time corresponding to this fixed frame
         public static extern float fixedUnscaledTime { get; }
+
+        // The real time corresponding to this fixed frame. Double precision version of unscaledTime, please prefer to use it instead of single precision (float).
+        [NativeProperty("FixedUnscaledTime")]
+        public static extern double fixedUnscaledTimeAsDouble { get; }
 
         // The delta time based upon the realTime
         public static extern float unscaledDeltaTime { get; }
@@ -63,6 +84,10 @@ namespace UnityEngine
         // The real time in seconds since the game started (RO).
         [NativeProperty("Realtime")]
         public static extern float realtimeSinceStartup { get; }
+
+        // The real time in seconds since the game started (RO). Double precision version of realtimeSinceStartup, please prefer to use it instead of single precision (float).
+        [NativeProperty("Realtime")]
+        public static extern double realtimeSinceStartupAsDouble { get; }
 
         // If /captureDeltaTime/ is set to a value larger than 0, time will advance by that increment.
         public static extern float captureDeltaTime { get; set; }

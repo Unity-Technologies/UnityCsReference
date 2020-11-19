@@ -45,12 +45,17 @@ namespace UnityEditor
             if (terrain.terrainData.terrainLayers.Length > 0)
             {
                 TerrainLayer[] layers = terrain.terrainData.terrainLayers;
-                Texture2D[] layerIcons = new Texture2D[layers.Length];
-                for (int i = 0; i < layerIcons.Length; ++i)
+                var layerGUIContents = new GUIContent[layers.Length];
+                for (int i = 0; i < layers.Length; ++i)
                 {
-                    layerIcons[i] = (layers[i] == null || layers[i].diffuseTexture == null) ? EditorGUIUtility.whiteTexture : AssetPreview.GetAssetPreview(layers[i].diffuseTexture) ?? layers[i].diffuseTexture;
+                    layerGUIContents[i] = new GUIContent
+                    {
+                        image = (layers[i] == null || layers[i].diffuseTexture == null) ? EditorGUIUtility.whiteTexture : AssetPreview.GetAssetPreview(layers[i].diffuseTexture) ?? layers[i].diffuseTexture,
+                        text = layers[i] == null ? "Missing" : layers[i].name,
+                        tooltip = layers[i] == null ? "Missing" : layers[i].name
+                    };
                 }
-                selectedTerrainLayer = TerrainInspector.AspectSelectionGrid(activeTerrainLayer, layerIcons, 64, new GUIStyle("GridList"), s_Styles.errNoLayersFound, out doubleClick);
+                selectedTerrainLayer = TerrainInspector.AspectSelectionGridImageAndText(activeTerrainLayer, layerGUIContents, 64, s_Styles.errNoLayersFound, out doubleClick);
             }
             else
                 selectedTerrainLayer = -1;

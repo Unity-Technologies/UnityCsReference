@@ -371,9 +371,7 @@ namespace UnityEditor
 
         public bool IsMainWindow()
         {
-            if (UnityEditor.MPE.ProcessService.level == UnityEditor.MPE.ProcessLevel.Master)
-                return m_ShowMode == (int)ShowMode.MainWindow && m_DontSaveToLayout == false;
-            return false;
+            return m_ShowMode == (int)ShowMode.MainWindow && m_DontSaveToLayout == false;
         }
 
         internal void SaveGeometry()
