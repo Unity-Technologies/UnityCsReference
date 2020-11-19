@@ -47,7 +47,7 @@ namespace UnityEditorInternal.Profiling
             Simple = 0,
             Detailed = 1
         }
-        ProfilerAudioView m_ShowDetailedAudioPane = (ProfilerAudioView)EditorPrefs.GetInt(k_ViewTypeSettingsKey, (int)ProfilerAudioView.Channels);
+        ProfilerAudioView m_ShowDetailedAudioPane;
 
         int m_LastAudioProfilerFrame = -1;
 

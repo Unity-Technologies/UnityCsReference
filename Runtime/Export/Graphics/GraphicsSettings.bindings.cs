@@ -70,7 +70,7 @@ namespace UnityEngine.Rendering
             }
         }
 
-        [FreeFunction] extern internal static Object GetGraphicsSettings();
+        [FreeFunction] extern public static Object GetGraphicsSettings();
 
         [NativeName("SetShaderModeScript")]   extern static public void                 SetShaderMode(BuiltinShaderType type, BuiltinShaderMode mode);
         [NativeName("GetShaderModeScript")]   extern static public BuiltinShaderMode    GetShaderMode(BuiltinShaderType type);

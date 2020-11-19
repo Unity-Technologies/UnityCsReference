@@ -441,9 +441,9 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        private void OnProductListFetched(AssetStorePurchases productList, bool fetchDetailsCalled)
+        private void OnProductListFetched(AssetStorePurchases productList)
         {
-            GetPageFromTab<PaginatedPage>(PackageFilterTab.AssetStore).OnProductListFetched(productList, fetchDetailsCalled);
+            GetPageFromTab<PaginatedPage>(PackageFilterTab.AssetStore).OnProductListFetched(productList);
         }
 
         private void OnProductFetched(long productId)
@@ -510,7 +510,7 @@ namespace UnityEditor.PackageManager.UI
                     queryArgs.isReverseOrder = page.filters.isReverseOrder;
                 }
 
-                m_AssetStoreClient.ListPurchases(queryArgs, false);
+                m_AssetStoreClient.ListPurchases(queryArgs);
             }
             if ((options & RefreshOptions.PurchasedOffline) != 0)
                 m_AssetStoreClient.RefreshLocal();
@@ -518,10 +518,17 @@ namespace UnityEditor.PackageManager.UI
 
         public virtual void Fetch(string uniqueId)
         {
-            long productId;
-            if (m_UnityConnect.isUserLoggedIn && long.TryParse(uniqueId, out productId))
+            if (m_UnityConnect.isUserLoggedIn && long.TryParse(uniqueId, out var productId))
             {
                 m_AssetStoreClient.Fetch(productId);
+            }
+        }
+
+        public virtual void FetchDetail(IPackage package, Action doneCallbackAction = null)
+        {
+            if (m_UnityConnect.isUserLoggedIn && long.TryParse(package?.uniqueId, out var productId))
+            {
+                m_AssetStoreClient.FetchDetail(productId, doneCallbackAction);
             }
         }
 

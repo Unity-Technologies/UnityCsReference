@@ -3,7 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+
 using UnityEditor;
+using UnityEditor.Profiling;
 using UnityEditor.StyleSheets;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -13,6 +16,9 @@ namespace UnityEditorInternal.Profiling
     [Serializable]
     internal class NetworkingOperationsProfilerModule : ProfilerModuleBase
     {
+        static public Action<Rect, IProfilerWindowController> DrawDetailsViewOverride = null;
+        static public Func<List<ProfilerCounterData>> GetCustomChartCounters = null;
+
         const string k_IconName = "Profiler.NetworkOperations";
         const int k_DefaultOrderIndex = 9;
         static readonly string k_Name = LocalizationDatabase.GetLocalizedString("Network Operations");
@@ -22,7 +28,19 @@ namespace UnityEditorInternal.Profiling
 
         static SVC<Color> s_SeparatorColor = new SVC<Color>("--theme-profiler-border-color-darker", Color.black);
 
-        public NetworkingOperationsProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName) {}
+        public NetworkingOperationsProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName)
+        {
+            InitCounterOverride();
+        }
+
+        private void InitCounterOverride()
+        {
+            if (GetCustomChartCounters != null)
+            {
+                var chartCounters = GetCustomChartCounters.Invoke();
+                SetCounters(chartCounters, chartCounters);
+            }
+        }
 
         public override ProfilerArea area => ProfilerArea.NetworkOperations;
 
@@ -51,7 +69,10 @@ namespace UnityEditorInternal.Profiling
 
         public override void DrawDetailsView(Rect position)
         {
-            DrawNetworkOperationsPane(position);
+            if (DrawDetailsViewOverride != null)
+                DrawDetailsViewOverride.Invoke(position, m_ProfilerWindow);
+            else
+                DrawNetworkOperationsPane(position);
         }
 
         [SerializeField]

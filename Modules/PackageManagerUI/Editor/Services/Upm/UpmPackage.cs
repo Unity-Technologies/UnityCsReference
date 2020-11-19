@@ -63,6 +63,9 @@ namespace UnityEditor.PackageManager.UI
             var primaryUpmVersion = versions?.primary as UpmPackageVersion;
             _ = primaryUpmVersion?.isUnityPackage ?? false ? m_Type |= PackageType.Unity : m_Type &= ~PackageType.Unity;
             _ = primaryUpmVersion?.isFromScopedRegistry ?? false ? m_Type |= PackageType.ScopedRegistry : m_Type &= ~PackageType.ScopedRegistry;
+            _ = primaryUpmVersion?.packageInfo.registry?.isDefault ?? false ? (!primaryUpmVersion?.isUnityPackage ?? false ?
+                m_Type |= PackageType.MainNotUnity : m_Type &= ~PackageType.ScopedRegistry) :
+                m_Type &= ~PackageType.ScopedRegistry;
         }
 
         public override IPackage Clone()

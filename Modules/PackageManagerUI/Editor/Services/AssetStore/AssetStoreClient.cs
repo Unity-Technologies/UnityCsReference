@@ -15,7 +15,7 @@ namespace UnityEditor.PackageManager.UI
         public virtual event Action<IEnumerable<IPackage>> onPackagesChanged = delegate {};
         public virtual event Action<string, IPackageVersion> onPackageVersionUpdated = delegate {};
 
-        public virtual event Action<AssetStorePurchases, bool> onProductListFetched = delegate {};
+        public virtual event Action<AssetStorePurchases> onProductListFetched = delegate {};
         public virtual event Action<long> onProductFetched = delegate {};
 
         public virtual event Action onFetchDetailsStart = delegate {};
@@ -112,7 +112,6 @@ namespace UnityEditor.PackageManager.UI
                     purchaseInfo = fetchOperation.result.list.FirstOrDefault();
                     if (purchaseInfo != null)
                     {
-                        var updatedPackages = new List<IPackage>();
                         m_AssetStoreCache.SetPurchaseInfo(purchaseInfo);
                     }
                     ;
@@ -139,7 +138,7 @@ namespace UnityEditor.PackageManager.UI
             onProductFetched?.Invoke(productId);
         }
 
-        public virtual void ListPurchases(PurchasesQueryArgs queryArgs, bool fetchDetails = true)
+        public virtual void ListPurchases(PurchasesQueryArgs queryArgs)
         {
             RefreshLocalInfos();
             if (queryArgs.startIndex == 0)
@@ -174,19 +173,56 @@ namespace UnityEditor.PackageManager.UI
 
                     if (updatedPackages.Any())
                         onPackagesChanged?.Invoke(updatedPackages);
-
-                    if (fetchDetails)
-                        FetchDetails(result.productIds);
                 }
 
                 foreach (var cat in result.categories)
                     m_AssetStoreCache.SetCategory(cat.name, cat.count);
 
-                onProductListFetched?.Invoke(result, fetchDetails);
+                onProductListFetched?.Invoke(result);
             };
 
             onListOperation?.Invoke(m_ListOperation);
             m_ListOperation.Start(queryArgs);
+        }
+
+        public void FetchDetail(long productId, Action doneCallbackAction = null)
+        {
+            m_AssetStoreRestAPI.GetProductDetail(productId, productDetail =>
+            {
+                IPackage package =  null;
+                var error = productDetail.GetString("errorMessage");
+                var idString = productId.ToString();
+                if (string.IsNullOrEmpty(error))
+                {
+                    var productInfo = AssetStoreProductInfo.ParseProductInfo(m_AssetStoreUtils, idString, productDetail);
+                    if (productInfo == null)
+                        package = new AssetStorePackage(m_AssetStoreUtils, m_IOProxy, idString, new UIError(UIErrorCode.AssetStoreClientError, L10n.Tr("Error parsing product details.")));
+                    else
+                    {
+                        var oldProductInfo = m_AssetStoreCache.GetProductInfo(idString);
+                        if (oldProductInfo == null || oldProductInfo.versionId != productInfo.versionId || oldProductInfo.versionString != productInfo.versionString)
+                        {
+                            if (string.IsNullOrEmpty(productInfo.packageName))
+                                package = new AssetStorePackage(m_AssetStoreUtils, m_IOProxy, m_AssetStoreCache.GetPurchaseInfo(idString), productInfo, m_AssetStoreCache.GetLocalInfo(idString));
+                            else
+                                m_UpmClient.FetchForProduct(idString, productInfo.packageName);
+                            m_AssetStoreCache.SetProductInfo(productInfo);
+                        }
+                    }
+                }
+                else
+                {
+                    var purchaseInfo = m_AssetStoreCache.GetPurchaseInfo(idString);
+                    m_AssetStoreCache.RemoveProductInfo(idString);
+                    var uiError = new UIError(UIErrorCode.AssetStoreClientError, error);
+                    package = new PlaceholderPackage(idString, purchaseInfo?.displayName ?? string.Empty, PackageType.AssetStore, PackageTag.None, PackageProgress.None, uiError);
+                }
+
+                if (package != null)
+                    onPackagesChanged?.Invoke(new[] { package });
+
+                doneCallbackAction?.Invoke();
+            });
         }
 
         public virtual void FetchDetails(IEnumerable<long> productIds)
@@ -199,40 +235,8 @@ namespace UnityEditor.PackageManager.UI
 
             foreach (var id in productIds)
             {
-                m_AssetStoreRestAPI.GetProductDetail(id, productDetail =>
+                FetchDetail(id, () =>
                 {
-                    IPackage package =  null;
-                    var error = productDetail.GetString("errorMessage");
-                    var idString = id.ToString();
-                    if (string.IsNullOrEmpty(error))
-                    {
-                        var productInfo = AssetStoreProductInfo.ParseProductInfo(m_AssetStoreUtils, idString, productDetail);
-                        if (productInfo == null)
-                            package = new AssetStorePackage(m_AssetStoreUtils, m_IOProxy, idString, new UIError(UIErrorCode.AssetStoreClientError, L10n.Tr("Error parsing product details.")));
-                        else
-                        {
-                            var oldProductInfo = m_AssetStoreCache.GetProductInfo(idString);
-                            if (oldProductInfo == null || oldProductInfo.versionId != productInfo.versionId || oldProductInfo.versionString != productInfo.versionString)
-                            {
-                                if (string.IsNullOrEmpty(productInfo.packageName))
-                                    package = new AssetStorePackage(m_AssetStoreUtils, m_IOProxy, m_AssetStoreCache.GetPurchaseInfo(idString), productInfo, m_AssetStoreCache.GetLocalInfo(idString));
-                                else
-                                    m_UpmClient.FetchForProduct(idString, productInfo.packageName);
-                                m_AssetStoreCache.SetProductInfo(productInfo);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        var purchaseInfo = m_AssetStoreCache.GetPurchaseInfo(idString);
-                        m_AssetStoreCache.RemoveProductInfo(idString);
-                        var uiError = new UIError(UIErrorCode.AssetStoreClientError, error);
-                        package = new PlaceholderPackage(idString, purchaseInfo?.displayName ?? string.Empty, PackageType.AssetStore, PackageTag.None, PackageProgress.None, uiError);
-                    }
-
-                    if (package != null)
-                        onPackagesChanged?.Invoke(new[] { package });
-
                     countProduct--;
                     if (countProduct == 0)
                         onFetchDetailsFinish?.Invoke();

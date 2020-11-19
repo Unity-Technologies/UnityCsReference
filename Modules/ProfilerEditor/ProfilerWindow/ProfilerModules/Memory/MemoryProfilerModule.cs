@@ -55,7 +55,7 @@ namespace UnityEditorInternal.Profiling
         [SerializeField]
         SplitterState m_ViewSplit;
 
-        ProfilerMemoryView m_ShowDetailedMemoryPane = (ProfilerMemoryView)EditorPrefs.GetInt(k_ViewTypeSettingsKey, (int)ProfilerMemoryView.Simple);
+        ProfilerMemoryView m_ShowDetailedMemoryPane;
 
         MemoryTreeList m_ReferenceListView;
         MemoryTreeListClickable m_MemoryListView;

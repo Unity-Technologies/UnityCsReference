@@ -339,9 +339,9 @@ namespace UnityEngine.Profiling
         }
 
         [Conditional("ENABLE_PROFILER")]
-        unsafe public static void EmitFrameMetaData<T>(Guid id, int tag, Unity.Collections.NativeArray<T> data) where T : struct
+        public static unsafe void EmitFrameMetaData<T>(Guid id, int tag, Unity.Collections.NativeArray<T> data) where T : struct
         {
-            Internal_EmitFrameMetaData_Native(id.ToByteArray(), tag, (IntPtr)data.GetUnsafeReadOnlyPtr(), data.Length, UnsafeUtility.SizeOf<T>());
+            Internal_EmitFrameMetaData_Native(&id, 16, tag, (IntPtr)data.GetUnsafeReadOnlyPtr(), data.Length, UnsafeUtility.SizeOf<T>());
         }
 
         [NativeMethod(Name = "ProfilerBindings::Internal_EmitFrameMetaData_Array", IsFreeFunction = true, IsThreadSafe = true)]
@@ -350,6 +350,6 @@ namespace UnityEngine.Profiling
 
         [NativeMethod(Name = "ProfilerBindings::Internal_EmitFrameMetaData_Native", IsFreeFunction = true, IsThreadSafe = true)]
         [NativeConditional("ENABLE_PROFILER")]
-        static extern void Internal_EmitFrameMetaData_Native(byte[] id, int tag, IntPtr data, int count, int elementSize);
+        static extern unsafe void Internal_EmitFrameMetaData_Native(void* id, int idLen, int tag, IntPtr data, int count, int elementSize);
     }
 }
