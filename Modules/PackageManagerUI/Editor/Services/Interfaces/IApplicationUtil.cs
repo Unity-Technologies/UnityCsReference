@@ -46,6 +46,8 @@ namespace UnityEditor.PackageManager.UI
 
         IAsyncHTTPClient PostASyncHTTPClient(string url, string postData);
 
+        void AbortASyncHTTPClientByTag(string tag);
+
         void GetAuthorizationCodeAsync(string clientId, Action<UnityOAuth.AuthCodeResponse> callback);
 
         int CalculateNumberOfElementsInsideContainerToDisplay(VisualElement container, float elementHeight);

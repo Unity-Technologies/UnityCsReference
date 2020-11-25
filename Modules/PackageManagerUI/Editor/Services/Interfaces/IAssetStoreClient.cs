@@ -9,7 +9,7 @@ namespace UnityEditor.PackageManager.UI
 {
     internal interface IAssetStoreClient
     {
-        event Action<AssetStorePurchases, bool> onProductListFetched;
+        event Action<AssetStorePurchases> onProductListFetched;
 
         event Action<long> onProductFetched;
 
@@ -26,9 +26,11 @@ namespace UnityEditor.PackageManager.UI
 
         void ListLabels(Action<List<string>> callback);
 
-        void ListPurchases(PurchasesQueryArgs queryArgs, bool fetchDetails = true);
+        void ListPurchases(PurchasesQueryArgs queryArgs);
 
         void Fetch(long productId);
+
+        void FetchDetail(long productId, Action doneCallbackAction = null);
 
         void FetchDetails(IEnumerable<long> productIds);
 

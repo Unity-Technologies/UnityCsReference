@@ -720,7 +720,7 @@ namespace UnityEditor
                 if (profile)
                     Profiler.EndSample();
 
-                return true;
+                return returnedObject != null;
             }
             return false;
         }

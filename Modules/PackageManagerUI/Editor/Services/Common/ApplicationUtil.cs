@@ -171,6 +171,11 @@ namespace UnityEditor.PackageManager.UI
                 return new AsyncHTTPClient(url, "POST") {postData = postData};
             }
 
+            public void AbortASyncHTTPClientByTag(string tag)
+            {
+                AsyncHTTPClient.AbortByTag(tag);
+            }
+
             public void GetAuthorizationCodeAsync(string clientId, Action<UnityOAuth.AuthCodeResponse> callback)
             {
                 UnityOAuth.GetAuthorizationCodeAsync(clientId, callback);

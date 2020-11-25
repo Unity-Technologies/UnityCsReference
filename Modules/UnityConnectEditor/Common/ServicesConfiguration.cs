@@ -555,14 +555,14 @@ namespace UnityEditor.Connect
 
         public void RequestCurrentProjectServiceFlagsApiUrl(Action<string> callback)
         {
-            RequestProjectServiceFlagsApiUrl(UnityConnect.instance.projectInfo.projectId, callback);
+            RequestProjectServiceFlagsApiUrl(UnityConnect.instance.projectInfo.projectGUID, callback);
         }
 
-        public void RequestProjectServiceFlagsApiUrl(string projectId, Action<string> callback)
+        public void RequestProjectServiceFlagsApiUrl(string projectGUID, Action<string> callback)
         {
             RequestAsyncUrl(AsyncUrlId.ProjectServiceFlagsApiUrl, projectServiceFlagsApiUrl =>
             {
-                callback(string.Format(projectServiceFlagsApiUrl, projectId));
+                callback(string.Format(projectServiceFlagsApiUrl, projectGUID));
             });
         }
 

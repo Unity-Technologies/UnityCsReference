@@ -20,5 +20,7 @@ namespace UnityEditor.PackageManager.UI
         void GetDownloadDetail(long productID, Action<AssetStoreDownloadInfo> doneCallbackAction);
 
         void GetProductUpdateDetail(IEnumerable<AssetStoreLocalInfo> localInfos, Action<Dictionary<string, object>> doneCallbackAction);
+
+        void HandleHttpRequest(IAsyncHTTPClient httpRequest, Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction);
     }
 }

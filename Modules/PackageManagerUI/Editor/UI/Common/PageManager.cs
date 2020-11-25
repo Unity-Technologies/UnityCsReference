@@ -402,9 +402,9 @@ namespace UnityEditor.PackageManager.UI
                 }
             }
 
-            private void OnProductListFetched(AssetStorePurchases productList, bool fetchDetailsCalled)
+            private void OnProductListFetched(AssetStorePurchases productList)
             {
-                GetPageFromTab<PaginatedPage>(PackageFilterTab.AssetStore).OnProductListFetched(productList, fetchDetailsCalled);
+                GetPageFromTab<PaginatedPage>(PackageFilterTab.AssetStore).OnProductListFetched(productList);
             }
 
             private void OnProductFetched(long productId)
@@ -476,7 +476,7 @@ namespace UnityEditor.PackageManager.UI
                         queryArgs.isReverseOrder = page.filters.isReverseOrder;
                     }
 
-                    AssetStoreClient.instance.ListPurchases(queryArgs, false);
+                    AssetStoreClient.instance.ListPurchases(queryArgs);
                 }
                 if ((options & RefreshOptions.PurchasedOffline) != 0)
                     AssetStoreClient.instance.RefreshLocal();
