@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -14,6 +13,7 @@ namespace UnityEditor.PackageManager.UI
     internal class PackageList : VisualElement
     {
         private const string k_UnityPackageGroupDisplayName = "Unity Technologies";
+        private const double k_DelayBeforeCheck = 0.5;
 
         internal new class UxmlFactory : UxmlFactory<PackageList> {}
 
@@ -21,6 +21,9 @@ namespace UnityEditor.PackageManager.UI
 
         internal IEnumerable<PackageItem> packageItems => packageGroups.SelectMany(group => group.packageItems);
         private IEnumerable<PackageGroup> packageGroups => itemsList.Children().Cast<PackageGroup>();
+
+        [NonSerialized]
+        private double m_Timestamp;
 
         public PackageList()
         {
@@ -59,6 +62,9 @@ namespace UnityEditor.PackageManager.UI
 
             // manually build the items on initialization to refresh the UI
             OnListRebuild(PageManager.instance.GetCurrentPage());
+
+            scrollView.RegisterCallback<GeometryChangedEvent>(OnScrollViewGeometryChanged);
+            scrollView.verticalScroller.valueChanged += OnScrollViewVerticalScrollerValueChanged;
         }
 
         public void OnDisable()
@@ -75,6 +81,47 @@ namespace UnityEditor.PackageManager.UI
             ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
 
             PackageFiltering.instance.onFilterTabChanged -= OnFilterTabChanged;
+
+            scrollView.UnregisterCallback<GeometryChangedEvent>(OnScrollViewGeometryChanged);
+            scrollView.verticalScroller.valueChanged -= OnScrollViewVerticalScrollerValueChanged;
+        }
+
+        private void OnScrollViewVerticalScrollerValueChanged(float value)
+        {
+            if (PackageFiltering.instance.currentFilterTab != PackageFilterTab.AssetStore)
+                return;
+
+            m_Timestamp = EditorApplication.timeSinceStartup;
+            EditorApplication.update -= DelayedCheckPackageItemsBecomeVisible;
+            EditorApplication.update += DelayedCheckPackageItemsBecomeVisible;
+        }
+
+        private void OnScrollViewGeometryChanged(GeometryChangedEvent evt)
+        {
+            if (PackageFiltering.instance.currentFilterTab != PackageFilterTab.AssetStore)
+                return;
+
+            m_Timestamp = EditorApplication.timeSinceStartup;
+            EditorApplication.update -= DelayedCheckPackageItemsBecomeVisible;
+            EditorApplication.update += DelayedCheckPackageItemsBecomeVisible;
+        }
+
+        private void DelayedCheckPackageItemsBecomeVisible()
+        {
+            if (EditorApplication.timeSinceStartup - m_Timestamp <= k_DelayBeforeCheck)
+                return;
+
+            EditorApplication.update -= DelayedCheckPackageItemsBecomeVisible;
+            CheckPackageItemsBecomeVisible();
+        }
+
+        private void CheckPackageItemsBecomeVisible()
+        {
+            foreach (var item in packageItems.Where(item => item?.package is PlaceholderPackage))
+            {
+                if (scrollView.worldBound.Contains(item.worldBound.min) || scrollView.worldBound.Contains(item.worldBound.max))
+                    item.BecomesVisible();
+            }
         }
 
         private PackageItem GetPackageItem(string packageUniqueId)

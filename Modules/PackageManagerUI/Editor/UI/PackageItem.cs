@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.UIElements;
@@ -22,6 +23,9 @@ namespace UnityEditor.PackageManager.UI
 
         public IPackageVersion targetVersion { get { return package?.versions.primary; } }
         public VisualElement element { get { return this; } }
+
+        [NonSerialized]
+        private bool m_FetchingDetail;
 
         internal PackageGroup packageGroup { get; set; }
 
@@ -53,6 +57,18 @@ namespace UnityEditor.PackageManager.UI
             UpdateVisualState(state);
         }
 
+        public void BecomesVisible()
+        {
+            if (m_FetchingDetail || !(package is PlaceholderPackage) || !package.Is(PackageType.AssetStore))
+                return;
+
+            if (long.TryParse(package.uniqueId, out var productId))
+            {
+                m_FetchingDetail = true;
+                AssetStoreClient.instance.FetchDetail(productId, () => { m_FetchingDetail = false; });
+            }
+        }
+
         public void UpdateVisualState(VisualState newVisualState)
         {
             var seeAllVersionsOld = visualState?.seeAllVersions ?? false;
@@ -79,6 +95,8 @@ namespace UnityEditor.PackageManager.UI
 
         internal void SetPackage(IPackage package)
         {
+            m_FetchingDetail = false;
+
             var displayVersion = package?.versions.primary;
             if (displayVersion == null)
                 return;

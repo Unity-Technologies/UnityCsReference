@@ -5,6 +5,7 @@
 using UnityEditor;
 using UnityEngine;
 using System;
+using System.Collections.Generic;
 
 internal class ImportSettingInternalID
 {
@@ -20,6 +21,35 @@ internal class ImportSettingInternalID
         lid.longValue = id;
         SerializedProperty sname = newEntry.FindPropertyRelative("second");
         sname.stringValue = name;
+    }
+
+    static public void RegisterInternalID(SerializedObject serializedObject, UnityType type, ICollection<long> ids, ICollection<string> names)
+    {
+        if (ids.Count != names.Count)
+            return;
+
+        SerializedProperty internalIDMap = serializedObject.FindProperty("m_InternalIDToNameTable");
+        var startIdx = internalIDMap.arraySize;
+        internalIDMap.arraySize += ids.Count;
+        var id = ids.GetEnumerator();
+        id.Reset(); id.MoveNext();
+        var name = names.GetEnumerator();
+        name.Reset(); name.MoveNext();
+        if (internalIDMap.arraySize > 0)
+        {
+            SerializedProperty newEntry = internalIDMap.GetArrayElementAtIndex(startIdx);
+            for (int i = 0; i < ids.Count; ++i, id.MoveNext(), name.MoveNext())
+            {
+                SerializedProperty first = newEntry.FindPropertyRelative("first");
+                SerializedProperty cid = first.FindPropertyRelative("first");
+                SerializedProperty lid = first.FindPropertyRelative("second");
+                cid.intValue = type.persistentTypeID;
+                lid.longValue = id.Current;
+                SerializedProperty sname = newEntry.FindPropertyRelative("second");
+                sname.stringValue = name.Current;
+                newEntry.Next(false);
+            }
+        }
     }
 
     static public bool RemoveEntryFromInternalIDTable(SerializedObject serializedObject, UnityType type, long id,

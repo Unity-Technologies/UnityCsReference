@@ -431,5 +431,8 @@ namespace UnityEditor
 
         public extern bool ignorePngGamma { get; set; }
         internal static readonly int MaxTextureSizeAllowedForReadable = 8192; //keep in sync with TextureImporter.h
+
+        // This is for remapping Sprite that are renamed.
+        extern internal bool GetNameFromInternalIDMap(long id, ref string name);
     }
 }

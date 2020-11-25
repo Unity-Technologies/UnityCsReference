@@ -39,7 +39,7 @@ namespace UnityEditor.PackageManager.UI
 
             m_Filters = filters.Clone();
             var queryArgs = BuildQueryFromFilter(0, PackageManagerWindow.instance?.packageList?.CalculateNumberOfPackagesToDisplay() ?? PageManager.k_DefaultPageSize);
-            AssetStoreClient.instance.ListPurchases(queryArgs, false);
+            AssetStoreClient.instance.ListPurchases(queryArgs);
 
             m_VisualStateList.ClearList();
             m_VisualStateList.ClearExtraItems();
@@ -118,7 +118,7 @@ namespace UnityEditor.PackageManager.UI
                 return;
 
             var queryArgs = BuildQueryFromFilter((int)numCurrentItems, numberOfPackages);
-            AssetStoreClient.instance.ListPurchases(queryArgs, false);
+            AssetStoreClient.instance.ListPurchases(queryArgs);
         }
 
         public override void Load(IPackage package, IPackageVersion version = null)
@@ -151,7 +151,7 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        public void OnProductListFetched(AssetStorePurchases purchases, bool fetchDetailsCalled)
+        public void OnProductListFetched(AssetStorePurchases purchases)
         {
             var isSet = purchases.queryArgs?.isFilterSet == true;
             if (isSet && !filters.Equals(purchases.queryArgs))
@@ -185,9 +185,6 @@ namespace UnityEditor.PackageManager.UI
                 // if the content is neither starting from zero or next page, we simply discard it
                 return;
             }
-
-            if (!fetchDetailsCalled && purchases.list.Any())
-                AssetStoreClient.instance.FetchDetails(purchases.productIds);
 
             // only try to rebuild the list immediately if we are already on the `AssetStore` tab.
             // if not we'll just wait for tab switch which will trigger the rebuild as well
