@@ -751,7 +751,7 @@ namespace UnityEditor
                     returnedObject = method.Invoke(target, args) as T;
                 }
 
-                return true;
+                return returnedObject != null;
             }
             return false;
         }

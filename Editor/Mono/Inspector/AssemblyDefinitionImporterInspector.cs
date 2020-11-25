@@ -492,14 +492,11 @@ namespace UnityEditor
 
         private string[] GetDefines()
         {
-            var responseFileDefinesFromAssemblyName =
-                CompilationPipeline.GetResponseFileDefinesFromAssemblyName(m_AssemblyName.stringValue) ?? new string[0];
-            var definesFromAssemblyName =
-                CompilationPipeline.GetDefinesFromAssemblyName(m_AssemblyName.stringValue) ?? new string[0];
-            var defines = definesFromAssemblyName
-                .Concat(responseFileDefinesFromAssemblyName)
-                .ToArray();
-            return defines;
+            var responseFileDefinesFromAssemblyName = CompilationPipeline.GetResponseFileDefinesFromAssemblyName(m_AssemblyName.stringValue) ?? new string[0];
+            var definesFromAssemblyName = CompilationPipeline.GetDefinesFromAssemblyName(m_AssemblyName.stringValue) ?? new string[0];
+            var defines = definesFromAssemblyName.Concat(responseFileDefinesFromAssemblyName);
+
+            return defines.Distinct().ToArray();
         }
 
         private void DrawVersionDefineListElement(Rect rect, int index, bool isactive, bool isfocused)
