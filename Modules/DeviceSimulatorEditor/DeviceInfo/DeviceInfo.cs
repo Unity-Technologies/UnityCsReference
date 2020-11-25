@@ -23,9 +23,6 @@ namespace UnityEditor.DeviceSimulation
             return friendlyName;
         }
 
-        [NonSerialized] internal bool editorResource;
-        public string directory;
-
         public bool IsAndroidDevice()
         {
             return IsGivenDevice("android");
@@ -96,7 +93,6 @@ namespace UnityEditor.DeviceSimulation
         public bool supportsLocationService;
         public bool supportsVibration;
         public int systemMemorySize;
-        public string unsupportedIdentifier;
         public GraphicsSystemInfoData[] graphicsDependentData;
     }
 

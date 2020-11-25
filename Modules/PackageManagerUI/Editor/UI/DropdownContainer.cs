@@ -5,7 +5,7 @@
 using UnityEditor.UIElements;
 using UnityEngine;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class DropdownContainer : EditorWindow
     {

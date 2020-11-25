@@ -2,13 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-//#define DEBUG_INDEXING
-
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
@@ -17,7 +14,7 @@ namespace UnityEditor.Search
     class SceneIndexer : ObjectIndexer
     {
         public SceneIndexer(SearchDatabase.Settings settings)
-            : base(String.IsNullOrEmpty(settings.name) ? "objects" : settings.name, settings)
+            : base(string.IsNullOrEmpty(settings.name) ? "objects" : settings.name, settings)
         {
         }
 
@@ -86,7 +83,7 @@ namespace UnityEditor.Search
                 IndexScene(scenePath, checkIfDocumentExists);
             else if (scenePath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
                 IndexPrefab(scenePath, checkIfDocumentExists);
-            AddDocumentHash(scenePath, GetDocumentHash(scenePath));
+            AddSourceDocument(scenePath, GetDocumentHash(scenePath));
         }
 
         private void IndexObjects(GameObject[] objects, string type, string containerName, bool checkIfDocumentExists)
@@ -112,13 +109,8 @@ namespace UnityEditor.Search
                 var path = SearchUtils.GetTransformPath(obj.transform);
                 var documentIndex = AddDocument(id, path, checkIfDocumentExists);
 
-                if (!string.IsNullOrEmpty(name))
-                    IndexProperty(documentIndex, "a", name, saveKeyword: true);
-
-                var depth = GetObjectDepth(obj);
-                IndexNumber(documentIndex, "depth", depth);
-
-                IndexWordComponents(documentIndex, path.Replace(containerName, "").Trim(' ', '/'));
+                IndexNumber(documentIndex, "depth", GetObjectDepth(obj));
+                IndexWordComponents(documentIndex, Path.GetFileName(path));
                 IndexProperty(documentIndex, "from", type, saveKeyword: true, exact: true);
                 IndexProperty(documentIndex, type, containerName, saveKeyword: true);
                 IndexGameObject(documentIndex, obj, options);

@@ -70,8 +70,7 @@ namespace UnityEditorInternal
         [NonSerialized] List<int> m_LocalSelectedItemMarkerIdPath = new List<int>();
 
         [NonSerialized] List<int> m_CachedDeepestRawSampleIndexPath = new List<int>(1024);
-        [NonSerialized] SampleSelection m_Selected = SampleSelection.InvalidSampleSelection;
-
+        [NonSerialized] ProfilerTimeSampleSelection m_Selected = null;
         [NonSerialized]
         internal ProxySelection proxySelectionInfo = new ProxySelection();
         internal struct ProxySelection
@@ -118,7 +117,7 @@ namespace UnityEditorInternal
         bool m_ShouldExecuteDelayedSearch = false;
         int m_PrevFrameIndex;
 
-        public event Action<SampleSelection> selectionChanged;
+        public event Action<ProfilerTimeSampleSelection> selectionChanged;
 
         public delegate void SearchChangedCallback(string newSearch);
         public event SearchChangedCallback searchChanged;
@@ -281,7 +280,7 @@ namespace UnityEditorInternal
             AddExpandedChildrenRecursively(rootItem, m_ExpandedMarkersHierarchy);
         }
 
-        public void SetSelection(SampleSelection selection, bool expandSelection)
+        public void SetSelection(ProfilerTimeSampleSelection selection, bool expandSelection)
         {
             m_Selected = selection;
             m_LocalSelectedItemMarkerIdPath.Clear();
@@ -299,7 +298,7 @@ namespace UnityEditorInternal
         // if SetSelection(new List<int>()) would be triggered during SelectionChanged, the TreeViews selection state would get corrupted before it is even fully set.
         void ClearSelection(bool setClearedSelection)
         {
-            m_Selected = SampleSelection.InvalidSampleSelection;
+            m_Selected = null;
             m_LocalSelectedItemMarkerIdPath.Clear();
             m_ExpandDuringNextSelectionMigration = false;
             proxySelectionInfo = default;
@@ -325,7 +324,7 @@ namespace UnityEditorInternal
             if (m_LocalSelectedItemMarkerIdPath == null)
                 m_LocalSelectedItemMarkerIdPath = new List<int>();
 
-            if (m_LocalSelectedItemMarkerIdPath.Count == 0 || !m_Selected.valid)
+            if (m_LocalSelectedItemMarkerIdPath.Count == 0 || m_Selected == null)
                 return;
 
             if (m_FrameDataView == null || !m_FrameDataView.valid)
@@ -349,14 +348,15 @@ namespace UnityEditorInternal
         static readonly ProfilerMarker k_MigrateSelectionStateMarker = new ProfilerMarker($"{nameof(ProfilerFrameDataTreeView)}.{nameof(MigrateSelectedState)}");
         void MigrateSelectedState(bool expandIfNecessary)
         {
-            var markerNamePath = m_Selected.markerNamePath;
-            if (m_LocalSelectedItemMarkerIdPath == null || !m_Selected.valid || m_LocalSelectedItemMarkerIdPath.Count != markerNamePath.Count)
+            if (m_LocalSelectedItemMarkerIdPath == null || m_Selected == null || m_LocalSelectedItemMarkerIdPath.Count != m_Selected.markerNamePath.Count)
                 return;
+
+            var markerNamePath = m_Selected.markerNamePath;
 
             expandIfNecessary |= m_ExpandDuringNextSelectionMigration;
 
             k_MigrateSelectionStateMarker.Begin();
-            var safeFrameWithSafeMarkerIds = m_Selected.frameIndexIsSafe && m_FrameDataView.frameIndex == m_Selected.frameIndex;
+            var safeFrameWithSafeMarkerIds = m_Selected.frameIndexIsSafe && m_FrameDataView.frameIndex == m_Selected.safeFrameIndex;
             var rawHierarchyView = (m_FrameDataView.viewMode & HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName) == HierarchyFrameDataView.ViewModes.Default;
             var allowProxySelection = !safeFrameWithSafeMarkerIds;
 
@@ -376,7 +376,7 @@ namespace UnityEditorInternal
                 {
                     for (int i = 0; i < m_LocalSelectedItemMarkerIdPath.Count; i++)
                     {
-                        var markerIsEditorOnlyMarker = (frameData.GetMarkerFlags(m_LocalSelectedItemMarkerIdPath[i]) & Unity.Profiling.LowLevel.MarkerFlags.AvailabilityEditor) != 0;
+                        var markerIsEditorOnlyMarker = frameData.GetMarkerFlags(m_LocalSelectedItemMarkerIdPath[i]).HasFlag(Unity.Profiling.LowLevel.MarkerFlags.AvailabilityEditor);
                         if (markerIsEditorOnlyMarker && i < m_LocalSelectedItemMarkerIdPath.Count - 1)
                         {
                             // Technically, proxy selections are not supposed to be allowed when switching between views in the same frame.
@@ -387,7 +387,7 @@ namespace UnityEditorInternal
                         }
                     }
                 }
-                var name = m_Selected.sampleName;
+                var name = m_Selected.sampleDisplayName;
                 m_CachedDeepestRawSampleIndexPath.Clear();
                 if (m_CachedDeepestRawSampleIndexPath.Capacity < markerNamePath.Count)
                     m_CachedDeepestRawSampleIndexPath.Capacity = markerNamePath.Count;
@@ -420,7 +420,7 @@ namespace UnityEditorInternal
                 if (m_LocalSelectedItemMarkerIdPath.Count > deepestPath && newSelectedId >= 0)
                 {
                     proxySelection.hasProxySelection = true;
-                    proxySelection.nonProxyName = m_Selected.sampleName;
+                    proxySelection.nonProxyName = m_Selected.sampleDisplayName;
                     proxySelection.nonProxySampleStack = m_Selected.markerNamePath;
                     proxySelection.pathLengthDifferenceForProxy = deepestPath - m_LocalSelectedItemMarkerIdPath.Count;
                 }
@@ -812,7 +812,7 @@ namespace UnityEditorInternal
 
         protected override void SelectionChanged(IList<int> selectedIds)
         {
-            SampleSelection selection;
+            ProfilerTimeSampleSelection selection;
             // When we navigate through frames and there is no path exists,
             // we still want to be able to frame and select proper sample once it is present again.
             // Thus we invalidate selection only if user selected new item.
@@ -837,7 +837,7 @@ namespace UnityEditorInternal
                 {
                     m_FrameDataView.GetItemRawFrameDataViewIndices(selectedIds[0], rawIds);
                 }
-                selection = new SampleSelection(m_FrameDataView.frameIndex, m_FrameDataView.threadGroupName, m_FrameDataView.threadName, m_FrameDataView.threadId, rawIds, m_ProfilerSampleNameProvider.GetItemName(m_FrameDataView, selectedIds[0]));
+                selection = new ProfilerTimeSampleSelection(m_FrameDataView.frameIndex, m_FrameDataView.threadGroupName, m_FrameDataView.threadName, m_FrameDataView.threadId, rawIds, m_ProfilerSampleNameProvider.GetItemName(m_FrameDataView, selectedIds[0]));
                 var selectedId = selectedIds[0];
                 var rawSampleIndices = new List<int>(m_FrameDataView.GetItemMergedSamplesCount(selectedId));
                 m_FrameDataView.GetItemRawFrameDataViewIndices(selectedId, rawSampleIndices);
@@ -851,7 +851,7 @@ namespace UnityEditorInternal
             }
             else
             {
-                selection = SampleSelection.InvalidSampleSelection;
+                selection = null;
             }
 
             var id = selectedIds.Count > 0 ? selectedIds[0] : RawFrameDataView.invalidSampleIndex;

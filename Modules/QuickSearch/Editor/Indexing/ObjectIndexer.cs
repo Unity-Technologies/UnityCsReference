@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.Search.Providers;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -39,14 +40,28 @@ namespace UnityEditor.Search
         /// Run a search query in the index.
         /// </summary>
         /// <param name="searchQuery">Search query to look out for. If if matches any of the indexed variations a result will be returned.</param>
+        /// <param name="context">The search context on which the query is applied.</param>
+        /// <param name="provider">The provider that initiated the search.</param>
         /// <param name="maxScore">Maximum score of any matched Search Result. See <see cref="SearchResult.score"/>.</param>
         /// <param name="patternMatchLimit">Maximum number of matched Search Result that can be returned. See <see cref="SearchResult"/>.</param>
         /// <returns>Returns a collection of Search Result matching the query.</returns>
-        public override IEnumerable<SearchResult> Search(string searchQuery, int maxScore = int.MaxValue, int patternMatchLimit = 2999)
+        public override IEnumerable<SearchResult> Search(string searchQuery, SearchContext context, SearchProvider provider, int maxScore = int.MaxValue, int patternMatchLimit = 2999)
         {
             if (settings.options.disabled)
                 return Enumerable.Empty<SearchResult>();
-            return base.Search(searchQuery, maxScore, patternMatchLimit);
+            return base.Search(searchQuery, context, provider, maxScore, patternMatchLimit);
+        }
+
+        internal override IEnumerable<SearchResult> SearchWord(string word, SearchIndexOperator op, int maxScore, SearchResultCollection subset, int patternMatchLimit)
+        {
+            var baseScore = settings.baseScore;
+            var options = FindOptions.Words | FindOptions.Regex | FindOptions.Glob | FindOptions.Fuzzy;
+            if (op == SearchIndexOperator.Equal)
+                options = FindOptions.Exact;
+            var documents = subset != null ? subset.Select(r => GetDocument(r.index)) : GetDocuments(ignoreNulls: true);
+            return base.SearchWord(word, op, maxScore, subset, patternMatchLimit)
+                .Concat(FindProvider.SearchWord(false, word, options, documents)
+                    .Select(r => new SearchResult(r.id, m_IndexByDocuments[r.id], baseScore + r.score + 5)));
         }
 
         /// <summary>
@@ -197,7 +212,7 @@ namespace UnityEditor.Search
         /// <param name="exact">If exact is true, only the exact match of the value will be stored in the index (not the variations).</param>
         public void IndexProperty(int documentIndex, string name, string value, bool saveKeyword, bool exact = false)
         {
-            if (String.IsNullOrEmpty(value))
+            if (string.IsNullOrEmpty(value))
                 return;
             var valueLower = value.ToLowerInvariant();
             if (exact)

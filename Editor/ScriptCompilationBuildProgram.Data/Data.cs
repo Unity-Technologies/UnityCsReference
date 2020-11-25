@@ -27,24 +27,25 @@ namespace ScriptCompilationBuildProgram.Data
         public string outputdirectory;
         public bool debug;
         public string buildTarget;
+        public string localization;
         public PackageInfo[] packages;
     }
 
     public class AssemblyData
     {
         public string name;
-        public string[] sourceFiles;
-        public string[] defines;
-        public string[] prebuiltReferences;
-        public int[] references;
+        public string[] sourceFiles = new string[0];
+        public string[] defines = new string[0];
+        public string[] prebuiltReferences = new string[0];
+        public int[] references = new int[0];
         public bool allowUnsafeCode;
         public string ruleSet;
         public string languageVersion;
         public bool useDeterministicCompilation;
-        public string[] analyzers;
+        public string[] analyzers = new string[0];
         public string asmdef;
-        public string[] bclDirectories;
-        public string[] customCompilerOptions;
+        public string[] bclDirectories = new string[0];
+        public string[] customCompilerOptions = new string[0];
         public int debugIndex;
     }
 
@@ -63,6 +64,5 @@ namespace ScriptCompilationBuildProgram.Data
         public string path;
         public string scriptUpdaterRsp;
         public string movedFromExtractorFile;
-        public bool sourcesAreInsideProjectFolder;
     }
 }

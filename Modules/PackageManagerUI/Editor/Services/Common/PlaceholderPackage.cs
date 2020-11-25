@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
     internal class PlaceholderPackage : BasePackage

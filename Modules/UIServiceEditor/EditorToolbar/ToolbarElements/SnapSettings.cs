@@ -47,7 +47,7 @@ namespace UnityEditor.Toolbars
 
         void UpdateGridSnapEnableState()
         {
-            m_GridSnapEnabledToggle.SetEnabled(EditorSnapSettings.activeToolSupportsGridSnap);
+            m_GridSnapEnabledToggle.SetEnabled(EditorSnapSettings.activeToolGridSnapEnabled);
         }
 
         void OnGridSnapEnableValueChanged(ChangeEvent<bool> evt)

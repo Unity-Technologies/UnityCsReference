@@ -466,7 +466,7 @@ namespace UnityEditor.ShortcutManagement
             m_CategoryTreeView.selectedIndex = m_ViewController.selectedCategoryIndex;
             m_CategoryTreeView.onSelectionChange += CategorySelectionChanged;
 
-            m_ShortcutsTable.Q<ScrollView>().showVertical = true;
+            m_ShortcutsTable.Q<ScrollView>().verticalScrollerVisibility = ScrollerVisibility.AlwaysVisible;
             m_ShortcutsTable.onSelectionChange += ShortcutSelectionChanged;
             m_ShortcutsTable.onItemsChosen += ShortcutTableEntryChosen;
             m_ShortcutsTable.RegisterCallback<MouseDownEvent>(ShortcutTableRightClickDown);

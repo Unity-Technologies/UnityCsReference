@@ -738,7 +738,7 @@ namespace UnityEditor
         private static void ComponentBasedWorkflowButton()
         {
             GUILayout.BeginHorizontal();
-            if (EditorGUILayout.LinkLabel(s_Styles.m_LearnAboutComponent))
+            if (EditorGUILayout.LinkButton(s_Styles.m_LearnAboutComponent))
                 Help.BrowseURL("https://github.com/Unity-Technologies/NavMeshComponents");
             GUILayout.EndHorizontal();
         }

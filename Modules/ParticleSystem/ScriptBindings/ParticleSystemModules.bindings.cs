@@ -24,6 +24,7 @@ namespace UnityEngine
             internal MainModule(ParticleSystem particleSystem) { m_ParticleSystem = particleSystem; }
             internal ParticleSystem m_ParticleSystem;
 
+            extern public Vector3 emitterVelocity { get; [NativeThrows] set; }
             extern public float duration { get; [NativeThrows] set; }
             extern public bool loop { get; [NativeThrows] set; }
             extern public bool prewarm { get; [NativeThrows] set; }

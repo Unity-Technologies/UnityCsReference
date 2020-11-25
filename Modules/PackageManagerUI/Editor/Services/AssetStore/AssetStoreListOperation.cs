@@ -5,7 +5,7 @@
 using System;
 using UnityEngine;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
     internal class AssetStoreListOperation : IOperation

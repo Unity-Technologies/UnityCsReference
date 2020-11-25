@@ -225,7 +225,7 @@ namespace UnityEditor.UIElements
             base.SetValueWithoutNotify(MaskToValue(UpdateMaskIfEverything(ValueToMask(newValue))));
         }
 
-        internal override void AddMenuItems(GenericMenu menu)
+        internal override void AddMenuItems(IGenericMenu menu)
         {
             if (menu == null)
             {
@@ -262,7 +262,7 @@ namespace UnityEditor.UIElements
                         break;
                 }
 
-                menu.AddItem(new GUIContent(GetListItemToDisplay(MaskToValue(maskOfItem))), isSelected, () => ChangeValueFromMenu(item));
+                menu.AddItem(GetListItemToDisplay(MaskToValue(maskOfItem)), isSelected, () => ChangeValueFromMenu(item));
             }
         }
 

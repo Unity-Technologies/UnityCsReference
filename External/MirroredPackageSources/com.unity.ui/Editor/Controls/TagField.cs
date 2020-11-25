@@ -128,7 +128,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        internal override void AddMenuItems(GenericMenu menu)
+        internal override void AddMenuItems(IGenericMenu menu)
         {
             if (menu == null)
             {
@@ -139,10 +139,10 @@ namespace UnityEditor.UIElements
             foreach (var menuItem in choices)
             {
                 var isSelected = (menuItem == value);
-                menu.AddItem(new GUIContent(menuItem), isSelected, () => ChangeValueFromMenu(menuItem));
+                menu.AddItem(menuItem, isSelected, () => ChangeValueFromMenu(menuItem));
             }
-            menu.AddItem(new GUIContent(""), false, null); // This is a separator...
-            menu.AddItem(new GUIContent(L10n.Tr("Add Tag...")), false, OpenTagInspector);
+            menu.AddSeparator(String.Empty);
+            menu.AddItem(L10n.Tr("Add Tag..."), false, OpenTagInspector);
         }
 
         void ChangeValueFromMenu(string menuItem)

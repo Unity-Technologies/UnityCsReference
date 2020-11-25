@@ -5,7 +5,7 @@
 using System;
 using UnityEditor.Connect;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class UnityOAuthProxy
     {

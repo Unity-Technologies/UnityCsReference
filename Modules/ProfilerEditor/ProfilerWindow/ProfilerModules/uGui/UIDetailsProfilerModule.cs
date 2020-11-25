@@ -13,9 +13,10 @@ namespace UnityEditorInternal.Profiling
     {
         const string k_IconName = "Profiler.UIDetails";
         const int k_DefaultOrderIndex = 11;
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("UI Details");
+        static readonly string k_UnLocalizedName = "UI Details";
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
 
-        public UIDetailsProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName, Chart.ChartType.Line) {}
+        public UIDetailsProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName, Chart.ChartType.Line) {}
 
         public override ProfilerArea area => ProfilerArea.UIDetails;
 
@@ -27,7 +28,7 @@ namespace UnityEditorInternal.Profiling
         protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
         {
             // [Coverity Defect 53724] Intentionally not calling the base class here to instantiate a custom chart type.
-            m_Chart = new UISystemProfilerChart(m_ChartType, defaultChartScale, chartMaximumScaleInterpolationValue, m_ChartCounters.Count, name, m_IconName);
+            m_Chart = new UISystemProfilerChart(m_ChartType, defaultChartScale, chartMaximumScaleInterpolationValue, m_ChartCounters.Count, k_Name, name, m_IconName);
             return m_Chart;
         }
     }

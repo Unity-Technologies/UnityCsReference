@@ -4,7 +4,7 @@
 
 using UnityEditor.PackageManager.Requests;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class UpmEmbedOperation : UpmBaseOperation<EmbedRequest>
     {

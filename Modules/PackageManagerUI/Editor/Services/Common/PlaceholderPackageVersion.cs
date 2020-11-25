@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEditor.Scripting.ScriptCompilation;
 using System.Collections.Generic;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
     internal class PlaceholderPackageVersion : BasePackageVersion

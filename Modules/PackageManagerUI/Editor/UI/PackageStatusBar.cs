@@ -7,7 +7,7 @@ using System.Globalization;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageStatusBar : VisualElement
     {

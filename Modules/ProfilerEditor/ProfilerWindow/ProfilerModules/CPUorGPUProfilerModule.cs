@@ -11,6 +11,30 @@ using UnityEditor.Profiling;
 using UnityEditor.IMGUI.Controls;
 using Unity.Profiling;
 using UnityEditor.MPE;
+using UnityEditorInternal.Profiling;
+using UnityEditorInternal;
+
+namespace UnityEditor.Profiling
+{
+    internal interface IProfilerFrameTimeViewSampleSelectionControllerInternal
+    {
+        int FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(int frameIndex, int threadIndex, string sampleName, out List<int> markerIdPath, string markerNamePath = null);
+        int FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(int frameIndex, int threadIndex, ref string sampleName, ref List<int> markerIdPath, int sampleMarkerId);
+        void SetSelectionWithoutIntegrityChecks(ProfilerTimeSampleSelection selectionToSet, List<int> markerIdPath);
+        IProfilerWindowController profilerWindow { get; }
+        int GetActiveVisibleFrameIndexOrLatestFrameForSettingTheSelection();
+    }
+
+    public interface IProfilerFrameTimeViewSampleSelectionController
+    {
+        event Action<IProfilerFrameTimeViewSampleSelectionController, ProfilerTimeSampleSelection> selectionChanged;
+        ProfilerTimeSampleSelection selection { get; }
+        string sampleNameSearchFilter { get; set; }
+        int focusedThreadIndex { get; set; }
+        bool SetSelection(ProfilerTimeSampleSelection selection);
+        void ClearSelection();
+    }
+}
 
 namespace UnityEditorInternal.Profiling
 {
@@ -22,7 +46,10 @@ namespace UnityEditorInternal.Profiling
     }
 
     [Serializable]
-    internal abstract class CPUOrGPUProfilerModule : ProfilerModuleBase, IProfilerSampleNameProvider
+    // TODO: refactor: rename to CpuOrGpuProfilerModule
+    // together with CpuProfilerModule and GpuProfilerModule
+    // in a PR that doesn't affect performance so that the sample names can be fixed as well without loosing comparability in Performance tests.
+    internal abstract class CPUOrGPUProfilerModule : ProfilerModuleBase, IProfilerSampleNameProvider, IProfilerFrameTimeViewSampleSelectionController, IProfilerFrameTimeViewSampleSelectionControllerInternal
     {
         [SerializeField]
         protected ProfilerViewType m_ViewType = ProfilerViewType.Timeline;
@@ -49,8 +76,14 @@ namespace UnityEditorInternal.Profiling
                 }
             }
         }
+        IProfilerWindowController IProfilerFrameTimeViewSampleSelectionControllerInternal.profilerWindow => m_ProfilerWindow;
 
-        protected CPUOrGPUProfilerModule(IProfilerWindowController profilerWindow, string name, string iconName) : base(profilerWindow, name, iconName, Chart.ChartType.StackedFill) {}
+        protected CPUOrGPUProfilerModule(IProfilerWindowController profilerWindow,  string name, string localizedName, string iconName) : base(profilerWindow, name, localizedName, iconName, Chart.ChartType.StackedFill)
+        {
+            // check that the selection is still valid and wasn't badly deserialized on Domain Reload
+            if (selection != null && (selection.markerPathDepth <= 0 || selection.rawSampleIndices == null))
+                m_Selection = null;
+        }
 
         protected bool fetchData
         {
@@ -61,6 +94,8 @@ namespace UnityEditorInternal.Profiling
 
         const string k_ViewTypeSettingsKey = "ViewType";
         const string k_HierarchyViewSettingsKeyPrefix = "HierarchyView.";
+
+        protected abstract string ModuleName { get; }
         protected abstract string SettingsKeyPrefix { get; }
         string ViewTypeSettingsKey { get { return SettingsKeyPrefix + k_ViewTypeSettingsKey; } }
         string HierarchyViewSettingsKeyPrefix { get { return SettingsKeyPrefix + k_HierarchyViewSettingsKeyPrefix; } }
@@ -70,18 +105,29 @@ namespace UnityEditorInternal.Profiling
         protected abstract ProfilerViewType DefaultViewTypeSetting { get; }
 
         [SerializeField]
-        SampleSelection m_selection = SampleSelection.InvalidSampleSelection;
-        internal SampleSelection Selection
+        ProfilerTimeSampleSelection m_Selection = null;
+        public ProfilerTimeSampleSelection selection
         {
-            get { return m_selection ?? SampleSelection.InvalidSampleSelection;  }
+            get { return m_Selection;  }
             private set
             {
-                // revoke frameIndex guarantee on old selection before we loose control over it
-                Selection.frameIndexIsSafe = false;
-                m_selection = value;
+                if (selection != null)
+                    // revoke frameIndex guarantee on old selection before we loose control over it
+                    selection.frameIndexIsSafe = false;
+
+                m_Selection = value;
+                // as soon as any selection is made, the thread focus will now be driven by the selection, not by this field
+                m_FocusedThreadIndex = FrameDataView.invalidThreadIndex;
                 m_HierarchyOverruledThreadFromSelection = false;
+
+                // I'm not sure how this can happen, but it does.
+                if (selectionChanged == null)
+                    selectionChanged = delegate {};
+                selectionChanged(this, value);
             }
         }
+
+        public event Action<IProfilerFrameTimeViewSampleSelectionController, ProfilerTimeSampleSelection> selectionChanged = delegate {};
 
         // anything that resets the selection, resets this override
         // this is here so that a user can purposefully change aways from a thread with a selection in it and go through other frames without being reset to the thread of the selection
@@ -111,6 +157,81 @@ namespace UnityEditorInternal.Profiling
         [SerializeField]
         int m_ProfilerViewFilteringOptions = (int)ProfilerViewFilteringOptions.CollapseEditorBoundarySamples;
 
+        string m_SampleNameSearchFilter = null;
+        public string sampleNameSearchFilter
+        {
+            get => m_SampleNameSearchFilter;
+            set
+            {
+                m_SampleNameSearchFilter = value;
+                if (m_FrameDataHierarchyView != null)
+                    m_FrameDataHierarchyView.treeView.searchString = value;
+            }
+        }
+
+        [NonSerialized]
+        int m_FocusedThreadIndex = FrameDataView.invalidThreadIndex;
+        public int focusedThreadIndex
+        {
+            get
+            {
+                // if (multiple threads or a thread group is focused / shown in Hierarchy)
+                //      return FrameDataView.invalidThreadIndex;
+
+                // return in order of precedence:
+                // 1. The thread set as focused thread via focusedThreadIndex setter and not yet reset through user action or setting the selection
+                if (m_FocusedThreadIndex == FrameDataView.invalidThreadIndex)
+                {
+                    // 2. What thread a currently displayed Hierarchy view is showing, if that overrules the thread the selection was made in
+                    // 3.What thread a current selection was made in
+                    // 4.What thread the Hierarchy view was last set to if there is no active selection.
+
+                    var hierarchyHasValidThreadIndex = m_FrameDataHierarchyView != null && m_FrameDataHierarchyView.threadIndex != FrameDataView.invalidThreadIndex;
+                    if (ViewType != ProfilerViewType.Timeline && m_HierarchyOverruledThreadFromSelection && hierarchyHasValidThreadIndex)
+                        return m_FrameDataHierarchyView.threadIndex;
+                    if (selection != null && CurrentFrameIndex > 0)
+                        return selection.GetThreadIndex(CurrentFrameIndex);
+                    if (hierarchyHasValidThreadIndex)
+                        return m_FrameDataHierarchyView.threadIndex;
+                }
+                return m_FocusedThreadIndex;
+            }
+            set
+            {
+                if (value == FrameDataView.invalidThreadIndex)
+                {
+                    m_FocusedThreadIndex = FrameDataView.invalidThreadIndex;
+                    return;
+                }
+                if (value < 0)
+                    throw new ArgumentOutOfRangeException("value", "Thread index c");
+                if (CurrentFrameIndex < 0)
+                {
+                    m_FocusedThreadIndex = value;
+                    return;
+                }
+                using (var iter = new ProfilerFrameDataIterator())
+                {
+                    if (value >= iter.GetThreadCount(CurrentFrameIndex))
+                        throw new ArgumentOutOfRangeException("value", $"The chose thread index is out of range of valid thread Ids in this frame (frame index: {CurrentFrameIndex})");
+                    m_FocusedThreadIndex = value;
+                    m_HierarchyOverruledThreadFromSelection = true;
+                    if (value != m_FrameDataHierarchyView.threadIndex)
+                    {
+                        FrameThread(value);
+                        using (var dataView = new RawFrameDataView(CurrentFrameIndex, value))
+                        {
+                            m_FrameDataHierarchyView.SetFrameDataView(GetFrameDataView(dataView.threadGroupName, dataView.threadName, dataView.threadId));
+                        }
+                    }
+                }
+            }
+        }
+
+        protected virtual void FrameThread(int threadIndex)
+        {
+        }
+
         [SerializeField]
         protected ProfilerFrameDataHierarchyView m_FrameDataHierarchyView;
 
@@ -120,11 +241,31 @@ namespace UnityEditorInternal.Profiling
         internal ProfilerViewFilteringOptions ViewOptions => (ProfilerViewFilteringOptions)m_ProfilerViewFilteringOptions;
 
         // Used by Tests/PerformanceTests/Profiler ProfilerWindowTests.CPUViewTests
-        internal ProfilerViewType ViewType
+        internal virtual ProfilerViewType ViewType
         {
             get { return m_ViewType; }
-            set { CPUOrGPUViewTypeChanged(value);}
+            set { CPUOrGPUViewTypeChanged(value); }
         }
+
+        //// TODO: refactor and converge all usages of ProfilerViewType to FrameTimeViewType
+        //public ProfilerFrameTimeViewType frameTimeViewType
+        //{
+        //    get { return (ProfilerFrameTimeViewType)ViewType; }
+        //    set
+        //    {
+        //        // check if any of these are necessary
+
+        //        //if (m_ProfilerWindow.selectedModule != this)
+        //        //    m_ProfilerWindow.SelectModule(this);
+
+        //        //if(!isActive)
+        //        //    throw new InvalidOperationException($"The {ModuleName} module is currently not present in the Profiler Window.");
+
+        //        //if (m_ProfilerWindow.selectedModule != this)
+        //        //        throw new InvalidOperationException($"The {ModuleName} module is not currently selected in the Profiler Window.");
+        //        ViewType = (ProfilerViewType)value;
+        //    }
+        //}
 
         public override void OnEnable()
         {
@@ -140,6 +281,10 @@ namespace UnityEditorInternal.Profiling
             m_FrameDataHierarchyView.selectionChanged += SetSelectionWithoutIntegrityChecksOnSelectionChangeInDetailedView;
             m_FrameDataHierarchyView.userChangedThread -= ThreadSelectionInHierarchyViewChanged;
             m_FrameDataHierarchyView.userChangedThread += ThreadSelectionInHierarchyViewChanged;
+            if (!string.IsNullOrEmpty(sampleNameSearchFilter))
+                m_FrameDataHierarchyView.treeView.searchString = sampleNameSearchFilter;
+            m_FrameDataHierarchyView.searchChanged -= SearchFilterInHierarchyViewChanged;
+            m_FrameDataHierarchyView.searchChanged += SearchFilterInHierarchyViewChanged;
             ProfilerDriver.profileLoaded -= ProfileLoaded;
             ProfilerDriver.profileLoaded += ProfileLoaded;
 
@@ -234,7 +379,7 @@ namespace UnityEditorInternal.Profiling
 
         public override void DrawDetailsView(Rect position)
         {
-            CurrentFrameIndex = m_ProfilerWindow.GetActiveVisibleFrameIndex();
+            CurrentFrameIndex = (int)m_ProfilerWindow.selectedFrameIndex;
             m_FrameDataHierarchyView.DoGUI(fetchData ? GetFrameDataView() : null, fetchData, ref updateViewLive, m_ViewType);
         }
 
@@ -243,7 +388,12 @@ namespace UnityEditorInternal.Profiling
             var viewMode = HierarchyFrameDataView.ViewModes.Default;
             if (m_ViewType == ProfilerViewType.Hierarchy)
                 viewMode |= HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName;
-            return m_ProfilerWindow.GetFrameDataView(m_FrameDataHierarchyView.groupName, m_FrameDataHierarchyView.threadName, m_FrameDataHierarchyView.threadId, viewMode | GetFilteringMode(), m_FrameDataHierarchyView.sortedProfilerColumn, m_FrameDataHierarchyView.sortedProfilerColumnAscending);
+
+            if (m_FocusedThreadIndex != FrameDataView.invalidThreadIndex &&
+                m_FocusedThreadIndex != m_FrameDataHierarchyView.threadIndex)
+                return m_ProfilerWindow.GetFrameDataView(m_FocusedThreadIndex, viewMode | GetFilteringMode(), m_FrameDataHierarchyView.sortedProfilerColumn, m_FrameDataHierarchyView.sortedProfilerColumnAscending);
+            else
+                return m_ProfilerWindow.GetFrameDataView(m_FrameDataHierarchyView.groupName, m_FrameDataHierarchyView.threadName, m_FrameDataHierarchyView.threadId, viewMode | GetFilteringMode(), m_FrameDataHierarchyView.sortedProfilerColumn, m_FrameDataHierarchyView.sortedProfilerColumnAscending);
         }
 
         HierarchyFrameDataView GetFrameDataView(string threadGroupName, string threadName, ulong threadId)
@@ -281,18 +431,27 @@ namespace UnityEditorInternal.Profiling
             // otherwise, switching back and forth between hierarchy views and Timeline feels inconsistent once you overruled the thread selection
             // basically, the override is in effect as long as the user sees the thread selection drop down, once that's gone, so is the override. (out of sight, out of mind)
             if (viewtype == ProfilerViewType.Timeline)
+            {
+                m_FocusedThreadIndex = FrameDataView.invalidThreadIndex;
                 m_HierarchyOverruledThreadFromSelection = false;
+            }
             ApplySelection(true, true);
         }
 
-        void ThreadSelectionInHierarchyViewChanged(string threadGroupName, string threadName)
+        void ThreadSelectionInHierarchyViewChanged(string threadGroupName, string threadName, int threadIndex)
         {
+            m_FocusedThreadIndex = threadIndex;
             m_HierarchyOverruledThreadFromSelection = true;
+        }
+
+        void SearchFilterInHierarchyViewChanged(string sampleNameSearchFiler)
+        {
+            m_SampleNameSearchFilter = sampleNameSearchFiler;
         }
 
         void FrameChanged(int frameIndex)
         {
-            if (Selection.valid)
+            if (selection != null)
             {
                 ApplySelection(false, !m_ProfilerWindow.IsRecording());
             }
@@ -300,16 +459,16 @@ namespace UnityEditorInternal.Profiling
 
         void ProfileLoaded()
         {
-            Selection.frameIndexIsSafe = false;
+            if (selection != null)
+                selection.frameIndexIsSafe = false;
             Clear();
             TryRestoringSelection();
         }
 
-        static readonly ProfilerMarker k_SetSelectionIntegrityCheckMarker = new ProfilerMarker($"{nameof(CPUOrGPUProfilerModule)}.{nameof(CPUOrGPUProfilerModule.SetSelection)} Integrity Check");
-        static readonly ProfilerMarker k_SetSelectionApplyMarker = new ProfilerMarker($"{nameof(CPUOrGPUProfilerModule)}.{nameof(CPUOrGPUProfilerModule.SetSelection)} Apply Selection");
+        internal static readonly ProfilerMarker setSelectionIntegrityCheckMarker = new ProfilerMarker($"{nameof(CPUOrGPUProfilerModule)}.{nameof(CPUOrGPUProfilerModule.SetSelection)} Integrity Check");
+        internal static readonly ProfilerMarker setSelectionApplyMarker = new ProfilerMarker($"{nameof(CPUOrGPUProfilerModule)}.{nameof(CPUOrGPUProfilerModule.SetSelection)} Apply Selection");
 
-
-        int IntegrityCheckFrameAndThreadDataOfSelection(long frameIndex, string threadGroupName, string threadName, ref ulong threadId)
+        internal static int IntegrityCheckFrameAndThreadDataOfSelection(long frameIndex, string threadGroupName, string threadName, ref ulong threadId)
         {
             if (string.IsNullOrEmpty(threadName))
                 throw new ArgumentException($"{nameof(threadName)} can't be null or empty.");
@@ -325,8 +484,8 @@ namespace UnityEditorInternal.Profiling
             {
                 var threadCount = frameView.GetThreadCount((int)frameIndex);
                 if (threadGroupName == null)
-                    threadGroupName = string.Empty; // simplify this to empty
-                threadIndex = SampleSelection.GetThreadIndex((int)frameIndex, threadGroupName, threadName, threadId);
+                    threadGroupName = string.Empty; // simplify null to empty
+                threadIndex = ProfilerTimeSampleSelection.GetThreadIndex((int)frameIndex, threadGroupName, threadName, threadId);
                 if (threadIndex < 0 || threadIndex >= threadCount)
                     throw new ArgumentException($"A Thread named: \"{threadName}\" in group \"{threadGroupName}\" could not be found in frame {frameIndex}");
                 using (var frameData = ProfilerDriver.GetRawFrameDataView((int)frameIndex, threadIndex))
@@ -340,128 +499,26 @@ namespace UnityEditorInternal.Profiling
             return threadIndex;
         }
 
-        // selects first occurence of this sample in the given frame and thread (and optionally given the markerNamePath leading up to it or a (grand, (grand)...) parent of it)
-        public bool SetSelection(int frameIndex, string threadGroupName, string threadName, string sampleName, string markerNamePath = null, ulong threadId = FrameDataView.invalidThreadId)
-        {
-            SampleSelection selection;
-            List<int> markerIdPath;
-            using (k_SetSelectionIntegrityCheckMarker.Auto())
-            {
-                // this could've come from anywhere, check the inputs first
-                if (string.IsNullOrEmpty(sampleName))
-                    throw new ArgumentException($"{nameof(sampleName)} can't be null or empty. Hint: To clear a selection, use {nameof(ClearSelection)} instead.");
-
-
-                var threadIndex = IntegrityCheckFrameAndThreadDataOfSelection(frameIndex, threadGroupName, threadName, ref threadId);
-
-                int selectedSampleRawIndex = FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(frameIndex, threadIndex, sampleName, out markerIdPath, markerNamePath);
-
-                selection = new SampleSelection(frameIndex, threadGroupName, threadName, threadId, selectedSampleRawIndex, sampleName);
-                if (!selection.valid)
-                    return false;
-            }
-            using (k_SetSelectionApplyMarker.Auto())
-            {
-                // looks good, apply
-                selection.frameIndexIsSafe = true;
-                SetSelectionWithoutIntegrityChecks(selection, markerIdPath);
-                return true;
-            }
-        }
-
-        // selects first occurence of this sample in the given frame and thread and markerId path leading up to it or a (grand, (grand)...) parent of it
-        public bool SetSelection(int frameIndex, string threadGroupName, string threadName, int sampleMarkerId, List<int> markerIdPath = null, ulong threadId = FrameDataView.invalidThreadId)
-        {
-            SampleSelection selection;
-            using (k_SetSelectionIntegrityCheckMarker.Auto())
-            {
-                // this could've come from anywhere, check the inputs first
-                if (sampleMarkerId == FrameDataView.invalidMarkerId)
-                    throw new ArgumentException($"{nameof(sampleMarkerId)} can't invalid ({FrameDataView.invalidMarkerId}). Hint: To clear a selection, use {nameof(ClearSelection)} instead.");
-
-                var threadIndex = IntegrityCheckFrameAndThreadDataOfSelection(frameIndex, threadGroupName, threadName, ref threadId);
-
-                string sampleName = null;
-                int selectedSampleRawIndex = FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(frameIndex, threadIndex, ref sampleName, ref markerIdPath, sampleMarkerId);
-
-                selection = new SampleSelection(frameIndex, threadGroupName, threadName, threadId, selectedSampleRawIndex, sampleName);
-                if (!selection.valid)
-                    return false;
-            }
-            using (k_SetSelectionApplyMarker.Auto())
-            {
-                // looks good, apply
-                selection.frameIndexIsSafe = true;
-                SetSelectionWithoutIntegrityChecks(selection, markerIdPath);
-                return true;
-            }
-        }
-
-        /// <summary>
-        /// Search for a sample fitting the '/' seperated path to it and select it
-        /// </summary>
-        /// <param name="markerNameOrMarkerNamePath">'/' seperated path to the marker </param>
-        /// <param name="frameIndex"> The frame to make the selection in, or -1 to select in currently active frame. </param>
-        /// <param name="threadIndex"> The index of the thread to find the sample in. </param>
-        /// <returns></returns>
-        public bool SetSelection(string markerNameOrMarkerNamePath, int frameIndex = FrameDataView.invalidOrCurrentFrameIndex, string threadGroupName = null, string threadName = k_MainThreadName, ulong threadId = FrameDataView.invalidThreadId)
-        {
-            SampleSelection selection;
-            List<int> markerIdPath;
-            using (k_SetSelectionIntegrityCheckMarker.Auto())
-            {
-                // this could've come from anywhere, check the inputs first
-                if (string.IsNullOrEmpty(markerNameOrMarkerNamePath))
-                    throw new ArgumentException($"{nameof(markerNameOrMarkerNamePath)} can't be null or empty. Hint: To clear a selection, use {nameof(ClearSelection)} instead.");
-
-                if (frameIndex == FrameDataView.invalidOrCurrentFrameIndex)
-                {
-                    frameIndex = GetActiveVisibleFrameIndexOrLatestFrameForSettingTheSelection();
-                }
-
-                var threadIndex = IntegrityCheckFrameAndThreadDataOfSelection(frameIndex, threadGroupName, threadName, ref threadId);
-
-                int lastSlashIndex = markerNameOrMarkerNamePath.LastIndexOf('/');
-                string sampleName = lastSlashIndex == -1 ? markerNameOrMarkerNamePath : markerNameOrMarkerNamePath.Substring(lastSlashIndex + 1, markerNameOrMarkerNamePath.Length - (lastSlashIndex + 1));
-
-                if (lastSlashIndex == -1)// no path provided? just find the first sample
-                    markerNameOrMarkerNamePath = null;
-
-                int selectedSampleRawIndex = FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(frameIndex, 0, sampleName, out markerIdPath, markerNameOrMarkerNamePath);
-
-                selection = new SampleSelection(frameIndex, threadGroupName, threadName, threadId, selectedSampleRawIndex, sampleName);
-                if (!selection.valid)
-                    return false;
-            }
-            using (k_SetSelectionApplyMarker.Auto())
-            {
-                // looks good, apply
-                selection.frameIndexIsSafe = true;
-                SetSelectionWithoutIntegrityChecks(selection, markerIdPath);
-                return true;
-            }
-        }
-
-        public bool SetSelection(SampleSelection selection)
+        public bool SetSelection(ProfilerTimeSampleSelection selection)
         {
             var markerIdPath = new List<int>();
-            using (k_SetSelectionIntegrityCheckMarker.Auto())
+            using (setSelectionIntegrityCheckMarker.Auto())
             {
                 // this could've come from anywhere, check the inputs first
-                if (!selection.valid)
+                if (selection == null)
                     throw new ArgumentException($"{nameof(selection)} can't be invalid. To clear a selection, use {nameof(ClearSelection)} instead.");
 
                 // Since SetSelection is going to validate the the frame index, it is fine to use the unsafeFrameIndex and set selection.frameIndexIsSafe once everything is checked
                 var threadId = selection.threadId;
-                var threadIndex = IntegrityCheckFrameAndThreadDataOfSelection(selection.unsafeFrameIndex, selection.threadGroupName, selection.threadName, ref threadId);
+                var threadIndex = IntegrityCheckFrameAndThreadDataOfSelection(selection.frameIndex, selection.threadGroupName, selection.threadName, ref threadId);
 
                 if (threadId != selection.threadId)
-                    throw new ArgumentException($"The {nameof(selection)}.{nameof(selection.threadId)} of {selection.threadId} does not match to a fitting thread in frame {selection.unsafeFrameIndex}.");
+                    throw new ArgumentException($"The {nameof(selection)}.{nameof(selection.threadId)} of {selection.threadId} does not match to a fitting thread in frame {selection.frameIndex}.");
 
                 if (selection.rawSampleIndices != null && selection.rawSampleIndices.Count > 1)
                 {
                     // multiple rawSampleIndices are currently only allowed if they all correspond to one item in Hierarchy view
-                    using (var frameData = new HierarchyFrameDataView((int)selection.unsafeFrameIndex,
+                    using (var frameData = new HierarchyFrameDataView((int)selection.frameIndex,
                         threadIndex, HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName,
                         m_FrameDataHierarchyView.sortedProfilerColumn,
                         m_FrameDataHierarchyView.sortedProfilerColumnAscending))
@@ -492,7 +549,7 @@ namespace UnityEditorInternal.Profiling
                     }
                 }
 
-                using (var frameData = new RawFrameDataView((int)selection.unsafeFrameIndex, threadIndex))
+                using (var frameData = new RawFrameDataView((int)selection.frameIndex, threadIndex))
                 {
                     var name = string.Empty;
                     var foundSampleIndex = ProfilerTimelineGUI.GetItemMarkerIdPath(frameData, this, selection.rawSampleIndex, ref name, ref markerIdPath);
@@ -503,73 +560,86 @@ namespace UnityEditorInternal.Profiling
                     selection.GenerateMarkerNamePath(frameData, name, markerIdPath);
                 }
             }
-            using (k_SetSelectionApplyMarker.Auto())
+            using (setSelectionApplyMarker.Auto())
             {
                 // looks good, apply
                 selection.frameIndexIsSafe = true;
                 SetSelectionWithoutIntegrityChecks(selection, markerIdPath);
+                ApplySelection(false, true);
                 return true;
             }
         }
 
         public void ClearSelection()
         {
-            SetSelectionWithoutIntegrityChecks(SampleSelection.InvalidSampleSelection, null);
+            SetSelectionWithoutIntegrityChecks(null, null);
             ApplySelection(false, false);
         }
 
-        public SampleSelection GetSelection()
+        public ProfilerTimeSampleSelection GetSelection()
         {
-            return Selection;
+            return selection;
         }
 
         // Used for testing
         internal virtual void GetSelectedSampleIdsForCurrentFrameAndView(ref List<int> ids)
         {
             ids.Clear();
-            if (Selection.valid)
+            if (selection != null)
             {
                 ids.AddRange(m_FrameDataHierarchyView.treeView.GetSelection());
             }
         }
 
-        // Only call this for SetSelection code that runs before SetSelectionWithoutIntegrityChecks sets the activel visible Frame index
+        // Only call this for SetSelection code that runs before SetSelectionWithoutIntegrityChecks sets the active visible Frame index
         // We don't want to desync from ProfilerWindow.m_LastFrameFromTick unless we're about to set it to something else and forcing a repaint anyways.
         // Most OnGUI scope code in this class should be able to rely on CurrentFrameIndex instead.
+        int IProfilerFrameTimeViewSampleSelectionControllerInternal.GetActiveVisibleFrameIndexOrLatestFrameForSettingTheSelection() => GetActiveVisibleFrameIndexOrLatestFrameForSettingTheSelection();
         int GetActiveVisibleFrameIndexOrLatestFrameForSettingTheSelection()
         {
             if (m_ProfilerWindow == null)
                 return FrameDataView.invalidOrCurrentFrameIndex;
-            var currentFrame = m_ProfilerWindow.GetActiveVisibleFrameIndex();
+            var currentFrame = (int)m_ProfilerWindow.selectedFrameIndex;
             return currentFrame == FrameDataView.invalidOrCurrentFrameIndex ? ProfilerDriver.lastFrameIndex : currentFrame;
         }
 
-        protected void SetSelectionWithoutIntegrityChecksOnSelectionChangeInDetailedView(SampleSelection selection)
+        protected void SetSelectionWithoutIntegrityChecksOnSelectionChangeInDetailedView(ProfilerTimeSampleSelection selection)
         {
+            if (selection == null)
+            {
+                ClearSelection();
+                return;
+            }
             // trust the internal views to provide a correct frame index
             selection.frameIndexIsSafe = true;
             SetSelectionWithoutIntegrityChecks(selection, null);
         }
 
-        protected void SetSelectionWithoutIntegrityChecks(SampleSelection selection, List<int> markerIdPath)
+        void IProfilerFrameTimeViewSampleSelectionControllerInternal.SetSelectionWithoutIntegrityChecks(ProfilerTimeSampleSelection selectionToSet, List<int> markerIdPath)
         {
-            if (selection.valid)
+            SetSelectionWithoutIntegrityChecks(selectionToSet, markerIdPath);
+            ApplySelection(false, true);
+        }
+
+        protected void SetSelectionWithoutIntegrityChecks(ProfilerTimeSampleSelection selectionToSet, List<int> markerIdPath)
+        {
+            if (selectionToSet != null)
             {
-                if (selection.frameIndex != m_ProfilerWindow.GetActiveVisibleFrameIndex())
-                    m_ProfilerWindow.SetActiveVisibleFrameIndex(selection.frameIndex != FrameDataView.invalidOrCurrentFrameIndex ? (int)selection.frameIndex : ProfilerDriver.lastFrameIndex);
-                if (string.IsNullOrEmpty(selection.legacyMarkerPath))
+                if (selectionToSet.safeFrameIndex != m_ProfilerWindow.selectedFrameIndex)
+                    m_ProfilerWindow.SetActiveVisibleFrameIndex(selectionToSet.safeFrameIndex != FrameDataView.invalidOrCurrentFrameIndex ? (int)selectionToSet.safeFrameIndex : ProfilerDriver.lastFrameIndex);
+                if (string.IsNullOrEmpty(selectionToSet.legacyMarkerPath))
                 {
-                    var frameDataView = GetFrameDataView(selection.threadGroupName, selection.threadName, selection.threadId);
+                    var frameDataView = GetFrameDataView(selectionToSet.threadGroupName, selectionToSet.threadName, selectionToSet.threadId);
                     if (frameDataView == null || !frameDataView.valid)
                         return;
-                    selection.GenerateMarkerNamePath(frameDataView, markerIdPath);
+                    selectionToSet.GenerateMarkerNamePath(frameDataView, markerIdPath);
                 }
-                Selection = selection;
-                SetSelectedPropertyPath(selection.legacyMarkerPath, Selection.threadName);
+                selection = selectionToSet;
+                SetSelectedPropertyPath(selectionToSet.legacyMarkerPath, selectionToSet.threadName);
             }
             else
             {
-                Selection = SampleSelection.InvalidSampleSelection;
+                selection = null;
                 ClearSelectedPropertyPath();
             }
         }
@@ -586,13 +656,20 @@ namespace UnityEditorInternal.Profiling
 
         void TryRestoringSelection()
         {
-            if (Selection.valid)
+            if (selection != null)
             {
+                // check that the selection is still valid and wasn't badly deserialized on Domain Reload
+                if (selection.markerPathDepth <= 0 || selection.rawSampleIndices == null)
+                {
+                    m_Selection = null;
+                    return;
+                }
+
                 if (ProfilerDriver.firstFrameIndex >= 0 && ProfilerDriver.lastFrameIndex >= 0)
                 {
                     ApplySelection(true, true);
                 }
-                SetSelectedPropertyPath(Selection.legacyMarkerPath, Selection.threadName);
+                SetSelectedPropertyPath(selection.legacyMarkerPath, selection.threadName);
             }
         }
 
@@ -602,14 +679,14 @@ namespace UnityEditorInternal.Profiling
         {
             if (ViewType == ProfilerViewType.Hierarchy || ViewType == ProfilerViewType.RawHierarchy)
             {
-                if (Selection.valid)
+                if (selection != null)
                 {
                     using (k_ApplyValidSelectionMarker.Auto())
                     {
-                        var currentFrame = m_ProfilerWindow.GetActiveVisibleFrameIndex();
-                        if (Selection.frameIndexIsSafe && Selection.frameIndex == currentFrame)
+                        var currentFrame = m_ProfilerWindow.selectedFrameIndex;
+                        if (selection.frameIndexIsSafe && selection.safeFrameIndex == currentFrame)
                         {
-                            var frameDataView = m_HierarchyOverruledThreadFromSelection ? GetFrameDataView() : GetFrameDataView(Selection.threadGroupName, Selection.threadName, Selection.threadId);
+                            var frameDataView = m_HierarchyOverruledThreadFromSelection || m_FocusedThreadIndex != FrameDataView.invalidThreadIndex ? GetFrameDataView() : GetFrameDataView(selection.threadGroupName, selection.threadName, selection.threadId);
                             // avoid Selection Migration happening twice during SetFrameDataView by clearing the old one out first
                             m_FrameDataHierarchyView.ClearSelection();
                             m_FrameDataHierarchyView.SetFrameDataView(frameDataView);
@@ -619,15 +696,15 @@ namespace UnityEditorInternal.Profiling
                             var treeViewID = ProfilerFrameDataHierarchyView.invalidTreeViewId;
                             // GetItemIDFromRawFrameDataViewIndex is a bit expensive so only use that if showing the Raw view (where the raw id is relevant)
                             // or when the cheaper option (setting selection via MarkerIdPath) isn't available
-                            if (ViewType == ProfilerViewType.RawHierarchy || (Selection.markerPathDepth <= 0))
+                            if (ViewType == ProfilerViewType.RawHierarchy || (selection.markerPathDepth <= 0))
                             {
-                                treeViewID = m_FrameDataHierarchyView.treeView.GetItemIDFromRawFrameDataViewIndex(frameDataView, Selection.rawSampleIndex, Selection.markerIdPath);
+                                treeViewID = m_FrameDataHierarchyView.treeView.GetItemIDFromRawFrameDataViewIndex(frameDataView, selection.rawSampleIndex, selection.markerIdPath);
                             }
                             if (treeViewID == ProfilerFrameDataHierarchyView.invalidTreeViewId)
                             {
-                                if (Selection.markerPathDepth > 0)
+                                if (selection.markerPathDepth > 0)
                                 {
-                                    m_FrameDataHierarchyView.SetSelection(Selection, viewChanged || frameSelection);
+                                    m_FrameDataHierarchyView.SetSelection(selection, viewChanged || frameSelection);
                                 }
                             }
                             else
@@ -639,15 +716,15 @@ namespace UnityEditorInternal.Profiling
                                 m_FrameDataHierarchyView.treeView.SetSelection(ids, TreeViewSelectionOptions.RevealAndFrame);
                             }
                         }
-                        else if (currentFrame >= 0 && Selection.markerPathDepth > 0)
+                        else if (currentFrame >= 0 && selection.markerPathDepth > 0)
                         {
-                            var frameDataView = m_HierarchyOverruledThreadFromSelection ? GetFrameDataView() : GetFrameDataView(Selection.threadGroupName, Selection.threadName, Selection.threadId);
+                            var frameDataView = m_HierarchyOverruledThreadFromSelection || m_FocusedThreadIndex != FrameDataView.invalidThreadIndex ? GetFrameDataView() : GetFrameDataView(selection.threadGroupName, selection.threadName, selection.threadId);
                             if (!frameDataView.valid)
                                 return;
                             // avoid Selection Migration happening twice during SetFrameDataView by clearing the old one out first
                             m_FrameDataHierarchyView.ClearSelection();
                             m_FrameDataHierarchyView.SetFrameDataView(frameDataView);
-                            m_FrameDataHierarchyView.SetSelection(Selection, (!m_ProfilerWindow.IsRecording() || !ProfilerDriver.IsConnectionEditor()) && (viewChanged || frameSelection));
+                            m_FrameDataHierarchyView.SetSelection(selection, (!m_ProfilerWindow.IsRecording() || !ProfilerDriver.IsConnectionEditor()) && (viewChanged || frameSelection));
                         }
                         // else: the selection was not in the shown frame AND there was no other frame to select it in or the Selection contains no marker path.
                         // So either there is no data to apply the selection to, or the selection isn't one that can be applied to another frame because there is no path
@@ -664,12 +741,14 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        protected int GetThreadIndexInCurrentFrameToApplySelectionFromAnotherFrame(SampleSelection selection)
+        protected int GetThreadIndexInCurrentFrameToApplySelectionFromAnotherFrame(ProfilerTimeSampleSelection selection)
         {
-            var currentFrame = m_ProfilerWindow.GetActiveVisibleFrameIndex();
+            var currentFrame = (int)m_ProfilerWindow.selectedFrameIndex;
             return selection.GetThreadIndex(currentFrame);
         }
 
+        int IProfilerFrameTimeViewSampleSelectionControllerInternal.FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(int frameIndex, int threadIndex, string sampleName, out List<int> markerIdPath, string markerNamePath)
+            => FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(frameIndex, threadIndex, sampleName, out markerIdPath, markerNamePath);
         protected virtual int FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(int frameIndex, int threadIndex, string sampleName, out List<int> markerIdPath, string markerNamePath = null)
         {
             if (ViewType == ProfilerViewType.RawHierarchy || ViewType == ProfilerViewType.Hierarchy)
@@ -682,6 +761,8 @@ namespace UnityEditorInternal.Profiling
             return RawFrameDataView.invalidSampleIndex;
         }
 
+        int IProfilerFrameTimeViewSampleSelectionControllerInternal.FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(int frameIndex, int threadIndex, ref string sampleName, ref List<int> markerIdPath, int sampleMarkerId)
+            => FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(frameIndex, threadIndex, ref sampleName, ref markerIdPath, sampleMarkerId);
         protected virtual int FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(int frameIndex, int threadIndex, ref string sampleName, ref List<int> markerIdPath, int sampleMarkerId)
         {
             if (ViewType == ProfilerViewType.RawHierarchy || ViewType == ProfilerViewType.Hierarchy)
@@ -801,7 +882,7 @@ namespace UnityEditorInternal.Profiling
                         markerIdPath = new List<int>();
                     if (markerIdPath.Count == 0)
                     {
-                        SampleSelection.GetCleanMarkerIdsFromSampleIds(frameData, sampleIdPath, markerIdPath);
+                        ProfilerTimeSampleSelection.GetCleanMarkerIdsFromSampleIds(frameData, sampleIdPath, markerIdPath);
                     }
 
                     frameData.GetItemRawFrameDataViewIndices(foundSampleIndex, rawIds);
@@ -881,6 +962,7 @@ namespace UnityEditorInternal.Profiling
 
         static readonly ProfilerMarker k_GetItemNameScriptingSimplificationMarker = new ProfilerMarker($"{nameof(CPUOrGPUProfilerModule)}.{nameof(GetItemName)} Scripting Name Simplification");
         const int k_AnyFullManagedMarker = (int)(MarkerFlags.ScriptInvoke | MarkerFlags.ScriptDeepProfiler);
+
         public string GetItemName(HierarchyFrameDataView frameData, int itemId)
         {
             var name = frameData.GetItemName(itemId);

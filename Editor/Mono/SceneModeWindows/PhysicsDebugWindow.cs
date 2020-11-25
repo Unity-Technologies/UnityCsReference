@@ -136,6 +136,7 @@ namespace UnityEditor
         static void RepaintSceneAndGameViews()
         {
             SceneView.RepaintAll();
+            GameView.RepaintAll();
         }
 
         void OnSceneViewGUI(SceneView view)

@@ -103,6 +103,8 @@ namespace UnityEditor
         // Search filter
         [SerializeField]
         SearchFilter m_SearchFilter;
+        string m_OldSearch;
+        bool m_SyncSearch;
 
         [NonSerialized]
         string m_SearchFieldText = "";
@@ -240,6 +242,8 @@ namespace UnityEditor
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
             s_LastInteractedProjectBrowser = this;
 
+            SearchService.SearchService.syncSearchChanged += OnSyncSearchChanged;
+
             // Keep for debugging
             //EditorApplication.projectWindowItemOnGUI += TestProjectItemOverlayCallback;
         }
@@ -253,6 +257,7 @@ namespace UnityEditor
 
         void OnDisable()
         {
+            SearchService.SearchService.syncSearchChanged -= OnSyncSearchChanged;
             EditorApplication.pauseStateChanged -= OnPauseStateChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             EditorApplication.projectChanged -= OnProjectChanged;
@@ -260,6 +265,33 @@ namespace UnityEditor
             EditorApplication.assetBundleNameChanged -= OnAssetBundleNameChanged;
             AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
             s_ProjectBrowsers.Remove(this);
+        }
+
+        private void OnSyncSearchChanged(SearchService.SearchService.SyncSearchEvent evt, string syncViewId, string searchQuery)
+        {
+            if (SearchService.ProjectSearch.HasEngineOverride())
+            {
+                if (evt == SearchService.SearchService.SyncSearchEvent.StartSession)
+                {
+                    m_OldSearch = m_SearchFilter.originalText;
+                }
+
+                if (syncViewId == SearchService.ProjectSearch.GetActiveSearchEngine().GetType().FullName)
+                {
+                    SetSearch(searchQuery);
+                    m_SyncSearch = true;
+                }
+                else if (m_SyncSearch)
+                {
+                    m_SyncSearch = false;
+                    SetSearch(m_OldSearch);
+                }
+
+                if (evt == SearchService.SearchService.SyncSearchEvent.EndSession)
+                {
+                    m_SyncSearch = false;
+                }
+            }
         }
 
         void OnPauseStateChanged(PauseState state)
@@ -2269,7 +2301,7 @@ namespace UnityEditor
 
         void SearchField()
         {
-            Rect rect = GUILayoutUtility.GetRect(0, EditorGUILayout.kLabelFloatMaxW * 1.5f, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.toolbarSearchField, GUILayout.MinWidth(65), GUILayout.MaxWidth(300));
+            Rect rect = GUILayoutUtility.GetRect(0, EditorGUILayout.kLabelFloatMaxW * 1.5f, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.toolbarSearchFieldWithJump, GUILayout.MinWidth(65), GUILayout.MaxWidth(300));
             int searchFieldControlID = EditorGUIUtility.GetControlID(s_HashForSearchField, FocusType.Passive, rect); // We use 'Passive' to ensure we only tab between folder tree and list area. Focus search field by using Ctrl+F.
 
             if (m_FocusSearchField)
@@ -2280,11 +2312,11 @@ namespace UnityEditor
                     m_FocusSearchField = false;
             }
 
-            // On arrow down/up swicth to control selection in list area
             Event evt = Event.current;
-            if (evt.type == EventType.KeyDown && (evt.keyCode == KeyCode.DownArrow || evt.keyCode == KeyCode.UpArrow))
+            if (GUIUtility.keyboardControl == searchFieldControlID)
             {
-                if (GUIUtility.keyboardControl == searchFieldControlID)
+                // On arrow down/up swicth to control selection in list area
+                if (evt.type == EventType.KeyDown && (evt.keyCode == KeyCode.DownArrow || evt.keyCode == KeyCode.UpArrow))
                 {
                     if (!m_ListArea.IsLastClickedItemVisible())
                         m_ListArea.SelectFirst();
@@ -2292,9 +2324,16 @@ namespace UnityEditor
                     GUIUtility.keyboardControl = m_ListKeyboardControlID;
                     evt.Use();
                 }
+
+                SearchService.SearchService.HandleSearchEvent(this, evt, m_SearchFieldText);
             }
 
-            m_lastSearchFilter = EditorGUI.ToolbarSearchField(searchFieldControlID, rect, m_SearchFieldText, false);
+            m_lastSearchFilter = EditorGUI.ToolbarSearchField(
+                searchFieldControlID,
+                rect,
+                m_SearchFieldText,
+                m_SyncSearch ? EditorStyles.toolbarSearchFieldWithJumpSynced : EditorStyles.toolbarSearchFieldWithJump,
+                string.IsNullOrEmpty(m_SearchFieldText) ? EditorStyles.toolbarSearchFieldCancelButtonWithJumpEmpty : EditorStyles.toolbarSearchFieldCancelButtonWithJump);
 
             if (m_lastSearchFilter != m_SearchFieldText || m_FocusSearchField)
             {
@@ -2303,6 +2342,8 @@ namespace UnityEditor
 
                 m_NextSearch = EditorApplication.timeSinceStartup + SearchableEditorWindow.k_SearchTimerDelaySecs;
             }
+
+            SearchService.SearchService.DrawOpenSearchButton(this, m_SearchFieldText);
         }
 
         void TopBarSearchSettingsChanged()

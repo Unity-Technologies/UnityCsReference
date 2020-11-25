@@ -42,7 +42,7 @@ namespace UnityEditor.Search
 
         public virtual Texture2D GetThumbnail(Object obj)
         {
-            var thumbnail = EditorGUIUtility.FindTexture(obj.GetType());
+            var thumbnail = EditorGUIUtility.FindTexture(obj.GetType().Name);
             return thumbnail ?? Icons.quicksearch;
         }
 
@@ -98,7 +98,7 @@ namespace UnityEditor.Search
         public override void TrackSelection(Object obj)
         {
             var path = AssetDatabase.GetAssetOrScenePath(obj);
-            EditorGUIUtility.PingObject(AssetDatabase.GetMainAssetInstanceID(path));
+            Utils.PingAsset(path);
         }
 
         private static bool IsAsset(Object obj)
@@ -134,9 +134,9 @@ namespace UnityEditor.Search
             Texture2D thumbnail = null;
             if (obj is MonoBehaviour)
             {
-                thumbnail = EditorGUIUtility.GetIconForObject(obj) ?? EditorGUIUtility.FindTexture("cs Script Icon");
+                thumbnail = Utils.GetIconForObject(obj) ?? EditorGUIUtility.FindTexture("cs Script Icon");
             }
-            return thumbnail ?? EditorGUIUtility.FindTexture(obj.GetType());
+            return thumbnail ?? Utils.FindTextureForType(obj.GetType());
         }
 
         public override void TrackSelection(Object obj)

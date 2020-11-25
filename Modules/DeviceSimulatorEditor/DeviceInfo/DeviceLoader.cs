@@ -14,13 +14,80 @@ namespace UnityEditor.DeviceSimulation
     {
         private static string[] s_BuiltInDevices =
         {
+            "Apple Ipod Touch 6th Gen.device",
+            "Apple iPad (5th generation).device",
+            "Apple iPad (7th gen).device",
+            "Apple iPad 4.device",
+            "Apple iPad 6th Gen.device",
+            "Apple iPad Air.device",
+            "Apple iPad Mini 2.device",
+            "Apple iPad Mini 4.device",
+            "Apple iPad Pro 10.15.device",
+            "Apple iPad Pro 11.device",
+            "Apple iPad Pro 12.9 (2018).device",
+            "Apple iPhone 11.device",
+            "Apple iPhone 6.device",
+            "Apple iPhone 6S.device",
+            "Apple iPhone 7 Plus.device",
+            "Apple iPhone 7.device",
+            "Apple iPhone 8 Plus.device",
+            "Apple iPhone 8.device",
+            "Apple iPhone X.device",
             "Apple iPhone XR.device",
-            "Samsung Galaxy S10e.device"
+            "Apple iPhone XS Max.device",
+            "Apple iPhone XS.device",
+            "Apple iPod Touch 7th Gen.device",
+            "Asus ROG Phone.device",
+            "DeviceOverlays",
+            "Google Nexus 4.device",
+            "Google Pixel 2 XL.device",
+            "Google Pixel 2.device",
+            "Google Pixel 3.device",
+            "Google Pixel 4.device",
+            "Google Pixel X.device",
+            "HTC 10.device",
+            "HTC One M9.device",
+            "Huawei Mate 20 Pro.device",
+            "Huawei P9.device",
+            "LG G4.device",
+            "LG Nexus 5.device",
+            "LGE LG G3.device",
+            "Lenovo Phab2 Pro.device",
+            "Motorola Moto E.device",
+            "Motorola Moto G7 Power.device",
+            "Motorola Nexus 6.device",
+            "Nvidia Shield Tablet.device",
+            "OnePlus 6T.device",
+            "Razer Phone.device",
+            "Samsung Galaxy J7 (2017).device",
+            "Samsung Galaxy Note3 Neo.device",
+            "Samsung Galaxy Note8.device",
+            "Samsung Galaxy Note9.device",
+            "Samsung Galaxy S10 5G.device",
+            "Samsung Galaxy S10+.device",
+            "Samsung Galaxy S10e.device",
+            "Samsung Galaxy S5 Mini.device",
+            "Samsung Galaxy S5 Neo.device",
+            "Samsung Galaxy S6.device",
+            "Samsung Galaxy S7.device",
+            "Samsung Note4.device",
+            "Sony Xperia XZ Premium.device",
+            "Sony Xperia Z.device",
+            "Sony Xperia Z2 Tablet.device",
+            "Xiaomi MI 4LTE.device",
+            "Xiaomi MI Max.device",
+            "Xiaomi MI Note Pro.device",
+            "Xiaomi Mi 4i.device",
+            "Xiaomi Mi 5.device",
+            "Xiaomi Redmi 4.device",
+            "Xiaomi Redmi 6 Pro.device",
+            "Xiaomi Redmi Note 3.device",
+            "Xiaomi Redmi Note7.device"
         };
 
-        public static DeviceInfo[] LoadDevices()
+        public static DeviceInfoAsset[] LoadDevices()
         {
-            var devices = new List<DeviceInfo>();
+            var devices = new List<DeviceInfoAsset>();
 
             var deviceInfoGUIDs = AssetDatabase.FindAssets("t:DeviceInfoAsset");
             foreach (var guid in deviceInfoGUIDs)
@@ -29,8 +96,8 @@ namespace UnityEditor.DeviceSimulation
                 var deviceAsset = AssetDatabase.LoadAssetAtPath<DeviceInfoAsset>(assetPath);
                 if (deviceAsset.parseErrors == null || deviceAsset.parseErrors.Length == 0)
                 {
-                    deviceAsset.deviceInfo.directory = Path.GetDirectoryName(assetPath);
-                    devices.Add(deviceAsset.deviceInfo);
+                    deviceAsset.directory = Path.GetDirectoryName(assetPath);
+                    devices.Add(deviceAsset);
                 }
             }
 
@@ -40,44 +107,44 @@ namespace UnityEditor.DeviceSimulation
                 var deviceAsset = EditorGUIUtility.Load(Path.Combine(assetDirectory, assetName)) as DeviceInfoAsset;
                 if (deviceAsset != null && (deviceAsset.parseErrors == null || deviceAsset.parseErrors.Length == 0))
                 {
-                    deviceAsset.deviceInfo.directory = assetDirectory;
-                    deviceAsset.deviceInfo.editorResource = true;
-                    devices.Add(deviceAsset.deviceInfo);
+                    deviceAsset.directory = assetDirectory;
+                    deviceAsset.editorResource = true;
+                    devices.Add(deviceAsset);
                 }
             }
 
-            devices.Sort((x, y) => string.CompareOrdinal(x.friendlyName, y.friendlyName));
+            devices.Sort((x, y) => string.CompareOrdinal(x.deviceInfo.friendlyName, y.deviceInfo.friendlyName));
             return devices.ToArray();
         }
 
-        public static bool LoadOverlay(DeviceInfo deviceInfo, int screenIndex)
+        public static bool LoadOverlay(DeviceInfoAsset device, int screenIndex)
         {
-            var screen = deviceInfo.screens[screenIndex];
+            var screen = device.deviceInfo.screens[screenIndex];
             var path = screen.presentation.overlayPath;
 
             if (string.IsNullOrEmpty(path))
                 return false;
 
-            if (deviceInfo.editorResource)
+            if (device.editorResource)
             {
-                var filePath = Path.Combine(deviceInfo.directory, screen.presentation.overlayPath);
+                var filePath = Path.Combine(device.directory, screen.presentation.overlayPath);
                 var overlay = EditorGUIUtility.Load(filePath) as Texture;
-                Debug.Assert(overlay != null, $"Failed to load built-in device {deviceInfo} overlay");
+                Debug.Assert(overlay != null, $"Failed to load built-in device {device.deviceInfo} overlay");
                 screen.presentation.overlay = overlay;
             }
             else
             {
                 if (!path.StartsWith("Assets/") && !path.StartsWith("Packages/"))
-                    path = Path.Combine(deviceInfo.directory, path);
+                    path = Path.Combine(device.directory, path);
                 screen.presentation.overlay = AssetDatabase.LoadAssetAtPath<Texture>(path);
             }
 
             return screen.presentation.overlay != null;
         }
 
-        public static void UnloadOverlays(DeviceInfo deviceInfo)
+        public static void UnloadOverlays(DeviceInfoAsset device)
         {
-            foreach (var screen in deviceInfo.screens)
+            foreach (var screen in device.deviceInfo.screens)
             {
                 screen.presentation.overlay = null;
             }

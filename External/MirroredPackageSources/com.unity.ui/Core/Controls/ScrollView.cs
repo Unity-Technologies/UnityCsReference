@@ -67,6 +67,25 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
+    /// Options for controlling the visibility of scroll bars in the <see cref="ScrollView"/>.
+    /// </summary>
+    public enum ScrollerVisibility
+    {
+        /// <summary>
+        /// Displays a scroll bar only if the content does not fit in the scroll view. Otherwise, hides the scroll bar.
+        /// </summary>
+        Auto,
+        /// <summary>
+        /// The scroll bar is always visible.
+        /// </summary>
+        AlwaysVisible,
+        /// <summary>
+        /// The scroll bar is always hidden.
+        /// </summary>
+        Hidden
+    }
+
+    /// <summary>
     /// Displays its contents inside a scrollable frame.
     /// </summary>
     public class ScrollView : VisualElement
@@ -83,33 +102,35 @@ namespace UnityEngine.UIElements
         /// </summary>
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
-            UxmlEnumAttributeDescription<ScrollViewMode> m_ScrollViewMode =
-                new UxmlEnumAttributeDescription<ScrollViewMode>
-            {name = "mode", defaultValue = ScrollViewMode.Vertical};
+            UxmlEnumAttributeDescription<ScrollViewMode> m_ScrollViewMode = new UxmlEnumAttributeDescription<ScrollViewMode>
+            { name = "mode", defaultValue = ScrollViewMode.Vertical };
 
             UxmlBoolAttributeDescription m_ShowHorizontal = new UxmlBoolAttributeDescription
-            {name = "show-horizontal-scroller"};
+            { name = "show-horizontal-scroller" };
 
             UxmlBoolAttributeDescription m_ShowVertical = new UxmlBoolAttributeDescription
-            {name = "show-vertical-scroller"};
+            { name = "show-vertical-scroller" };
+
+            UxmlEnumAttributeDescription<ScrollerVisibility> m_HorizontalScrollerVisibility = new UxmlEnumAttributeDescription<ScrollerVisibility>
+            { name = "horizontal-scroller-visibility"};
+
+            UxmlEnumAttributeDescription<ScrollerVisibility> m_VerticalScrollerVisibility = new UxmlEnumAttributeDescription<ScrollerVisibility>
+            { name = "vertical-scroller-visibility" };
 
             UxmlFloatAttributeDescription m_HorizontalPageSize = new UxmlFloatAttributeDescription
-            {name = "horizontal-page-size", defaultValue = Scroller.kDefaultPageSize};
+            { name = "horizontal-page-size", defaultValue = Scroller.kDefaultPageSize };
 
             UxmlFloatAttributeDescription m_VerticalPageSize = new UxmlFloatAttributeDescription
-            {name = "vertical-page-size", defaultValue = Scroller.kDefaultPageSize};
+            { name = "vertical-page-size", defaultValue = Scroller.kDefaultPageSize };
 
-            UxmlEnumAttributeDescription<TouchScrollBehavior> m_TouchScrollBehavior =
-                new UxmlEnumAttributeDescription<TouchScrollBehavior>
-            {
-                name = "touch-scroll-type", defaultValue = TouchScrollBehavior.Clamped
-            };
+            UxmlEnumAttributeDescription<TouchScrollBehavior> m_TouchScrollBehavior = new UxmlEnumAttributeDescription<TouchScrollBehavior>
+            { name = "touch-scroll-type", defaultValue = TouchScrollBehavior.Clamped };
 
             UxmlFloatAttributeDescription m_ScrollDecelerationRate = new UxmlFloatAttributeDescription
-            {name = "scroll-deceleration-rate", defaultValue = k_DefaultScrollDecelerationRate};
+            { name = "scroll-deceleration-rate", defaultValue = k_DefaultScrollDecelerationRate };
 
             UxmlFloatAttributeDescription m_Elasticity = new UxmlFloatAttributeDescription
-            {name = "elasticity", defaultValue = k_DefaultElasticity};
+            { name = "elasticity", defaultValue = k_DefaultElasticity };
 
 
             /// <summary>
@@ -124,8 +145,22 @@ namespace UnityEngine.UIElements
 
                 ScrollView scrollView = (ScrollView)ve;
                 scrollView.SetScrollViewMode(m_ScrollViewMode.GetValueFromBag(bag, cc));
-                scrollView.showHorizontal = m_ShowHorizontal.GetValueFromBag(bag, cc);
-                scrollView.showVertical = m_ShowVertical.GetValueFromBag(bag, cc);
+
+                // Remove once showHorizontal and showVertical are fully deprecated.
+#pragma warning disable 618
+                var horizontalVisibility = ScrollerVisibility.Auto;
+                if (m_HorizontalScrollerVisibility.TryGetValueFromBag(bag, cc, ref horizontalVisibility))
+                    scrollView.horizontalScrollerVisibility = horizontalVisibility;
+                else
+                    scrollView.showHorizontal = m_ShowHorizontal.GetValueFromBag(bag, cc);
+
+                var verticalVisibility = ScrollerVisibility.Auto;
+                if (m_VerticalScrollerVisibility.TryGetValueFromBag(bag, cc, ref verticalVisibility))
+                    scrollView.verticalScrollerVisibility = verticalVisibility;
+                else
+                    scrollView.showVertical = m_ShowVertical.GetValueFromBag(bag, cc);
+#pragma warning restore 618
+
                 scrollView.horizontalPageSize = m_HorizontalPageSize.GetValueFromBag(bag, cc);
                 scrollView.verticalPageSize = m_VerticalPageSize.GetValueFromBag(bag, cc);
                 scrollView.scrollDecelerationRate = m_ScrollDecelerationRate.GetValueFromBag(bag, cc);
@@ -134,41 +169,61 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private bool m_ShowHorizontal;
+        ScrollerVisibility m_HorizontalScrollerVisibility;
 
         /// <summary>
-        /// Should the horizontal scroller be visible.
+        /// Specifies whether the horizontal scroll bar is visible.
         /// </summary>
-        public bool showHorizontal
+        public ScrollerVisibility horizontalScrollerVisibility
         {
-            get { return m_ShowHorizontal; }
+            get { return m_HorizontalScrollerVisibility; }
             set
             {
-                m_ShowHorizontal = value;
-                UpdateScrollers(m_ShowHorizontal, m_ShowVertical);
+                m_HorizontalScrollerVisibility = value;
+                UpdateScrollers(needsHorizontal, needsVertical);
             }
         }
 
-        private bool m_ShowVertical;
+        ScrollerVisibility m_VerticalScrollerVisibility;
 
         /// <summary>
-        /// Should the vertical scroller be visible.
+        /// Specifies whether the vertical scroll bar is visible.
         /// </summary>
-        public bool showVertical
+        public ScrollerVisibility verticalScrollerVisibility
         {
-            get { return m_ShowVertical; }
+            get { return m_VerticalScrollerVisibility; }
             set
             {
-                m_ShowVertical = value;
-                UpdateScrollers(m_ShowHorizontal, m_ShowVertical);
+                m_VerticalScrollerVisibility = value;
+                UpdateScrollers(needsHorizontal, needsVertical);
             }
+        }
+
+        /// <summary>
+        /// Obsolete. Use <see cref="ScrollView.horizontalScrollerVisibility"/> instead.
+        /// </summary>
+        [Obsolete("showHorizontal is obsolete. Use horizontalScrollerVisibility instead")]
+        public bool showHorizontal
+        {
+            get => horizontalScrollerVisibility == ScrollerVisibility.AlwaysVisible;
+            set => m_HorizontalScrollerVisibility = value ? ScrollerVisibility.AlwaysVisible : ScrollerVisibility.Auto;
+        }
+
+        /// <summary>
+        /// Obsolete. Use <see cref="ScrollView.verticalScrollerVisibility"/> instead.
+        /// </summary>
+        [Obsolete("showVertical is obsolete. Use verticalScrollerVisibility instead")]
+        public bool showVertical
+        {
+            get => verticalScrollerVisibility == ScrollerVisibility.AlwaysVisible;
+            set => m_VerticalScrollerVisibility = value ? ScrollerVisibility.AlwaysVisible : ScrollerVisibility.Auto;
         }
 
         internal bool needsHorizontal
         {
             get
             {
-                return showHorizontal || (scrollableWidth > 0);
+                return horizontalScrollerVisibility == ScrollerVisibility.AlwaysVisible || (horizontalScrollerVisibility == ScrollerVisibility.Auto && scrollableWidth > 0);
             }
         }
 
@@ -176,7 +231,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                return showVertical || (scrollableHeight > 0);
+                return verticalScrollerVisibility == ScrollerVisibility.AlwaysVisible || (verticalScrollerVisibility == ScrollerVisibility.Auto && scrollableHeight > 0);
             }
         }
 
@@ -924,10 +979,12 @@ namespace UnityEngine.UIElements
             verticalScroller.SetEnabled(contentContainer.boundingBox.height - contentViewport.layout.height > 0);
 
             // Expand content if scrollbars are hidden
-            contentViewport.style.marginRight = displayVertical ? verticalScroller.layout.width : 0;
-            horizontalScroller.style.right = displayVertical ? verticalScroller.layout.width : 0;
-            contentViewport.style.marginBottom = displayHorizontal ? horizontalScroller.layout.height : 0;
-            verticalScroller.style.bottom = displayHorizontal ? horizontalScroller.layout.height : 0;
+            var newShowVertical = displayVertical && m_VerticalScrollerVisibility != ScrollerVisibility.Hidden;
+            var newShowHorizontal = displayHorizontal && m_HorizontalScrollerVisibility != ScrollerVisibility.Hidden;
+            contentViewport.style.marginRight = newShowVertical ? verticalScroller.layout.width : 0;
+            horizontalScroller.style.right = newShowVertical ? verticalScroller.layout.width : 0;
+            contentViewport.style.marginBottom = newShowHorizontal ? horizontalScroller.layout.height : 0;
+            verticalScroller.style.bottom = newShowHorizontal ? horizontalScroller.layout.height : 0;
 
             if (displayHorizontal && scrollableWidth > 0f)
             {
@@ -950,13 +1007,13 @@ namespace UnityEngine.UIElements
             }
 
             // Set visibility and remove/add content viewport margin as necessary
-            if (horizontalScroller.visible != displayHorizontal)
+            if (horizontalScroller.visible != newShowHorizontal)
             {
-                horizontalScroller.visible = displayHorizontal;
+                horizontalScroller.visible = newShowHorizontal;
             }
-            if (verticalScroller.visible != displayVertical)
+            if (verticalScroller.visible != newShowVertical)
             {
-                verticalScroller.visible = displayVertical;
+                verticalScroller.visible = newShowVertical;
             }
         }
 

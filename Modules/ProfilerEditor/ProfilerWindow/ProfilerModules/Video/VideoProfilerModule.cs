@@ -14,9 +14,10 @@ namespace UnityEditorInternal.Profiling
     {
         const string k_IconName = "Profiler.Video";
         const int k_DefaultOrderIndex = 5;
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("Video");
+        static readonly string k_UnLocalizedName = "Video";
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
 
-        public VideoProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName) {}
+        public VideoProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName) {}
 
         public override ProfilerArea area => ProfilerArea.Video;
 

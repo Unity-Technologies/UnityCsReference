@@ -218,7 +218,8 @@ namespace UnityEngine
     public enum ParticleSystemEmitterVelocityMode
     {
         Transform = 0,              // Use the Transform component for calculating velocity
-        Rigidbody = 1               // Use the Rigidbody or Rigidbody2D component for calculating velocity.
+        Rigidbody = 1,              // Use the Rigidbody or Rigidbody2D component for calculating velocity.
+        Custom = 2                  // The value is driven by user script, a property in the inspector or animation.
     }
 
     // The mode used for velocity inheritence

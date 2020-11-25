@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEditor.Scripting.ScriptCompilation;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
     internal class AssetStorePackageVersion : BasePackageVersion, ISerializationCallbackReceiver

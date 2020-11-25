@@ -39,7 +39,10 @@ namespace UnityEngine.Rendering
         {
             get
             {
-                return (int)(GetEffectiveRenderFrameRate() + 0.5f);
+                float frameRate = GetEffectiveRenderFrameRate();
+                if (frameRate <= 0.0)
+                    return (int)frameRate;
+                return (int)(frameRate + 0.5f);
             }
         }
     }

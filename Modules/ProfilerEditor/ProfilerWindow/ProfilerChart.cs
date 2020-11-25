@@ -34,11 +34,12 @@ namespace UnityEditorInternal
         public bool m_SharedScale;
 
         string m_Name;
+        string m_LocalizedName;
         string m_Tooltip;
         string m_IconName;
         float m_MaximumScaleInterpolationValue;
 
-        public ProfilerChart(ProfilerArea area, ChartType type, float dataScale, float maximumScaleInterpolationValue, int seriesCount, string name, string iconName) : base()
+        public ProfilerChart(ProfilerArea area, ChartType type, float dataScale, float maximumScaleInterpolationValue, int seriesCount, string name, string localizedName, string iconName) : base()
         {
             Debug.Assert(seriesCount <= k_MaximumSeriesCount);
 
@@ -51,10 +52,11 @@ namespace UnityEditorInternal
             m_Data = new ChartViewData();
             m_Series = new ChartSeriesViewData[seriesCount];
             m_Name = name;
+            m_LocalizedName = localizedName;
             m_IconName = iconName;
 
             var localizedTooltipFormat = LocalizationDatabase.GetLocalizedString("A chart showing performance counters related to '{0}'.");
-            m_Tooltip = string.Format(localizedTooltipFormat, name);
+            m_Tooltip = string.Format(localizedTooltipFormat, m_LocalizedName);
         }
 
         string ChartSettingsPreferenceKey => string.Format(k_ProfilerChartSettingsPreferenceKeyFormat, m_Name);
@@ -119,7 +121,7 @@ namespace UnityEditorInternal
 
             if (legendHeaderLabel == null)
             {
-                legendHeaderLabel = new GUIContent(m_Name, EditorGUIUtility.LoadIconRequired(m_IconName), m_Tooltip);
+                legendHeaderLabel = new GUIContent(m_LocalizedName, EditorGUIUtility.LoadIconRequired(m_IconName), m_Tooltip);
             }
 
             return DoGUI(m_Type, currentFrame, m_Data, active);

@@ -21,14 +21,15 @@ namespace UnityEditorInternal.Profiling
 
         const string k_IconName = "Profiler.NetworkOperations";
         const int k_DefaultOrderIndex = 9;
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("Network Operations");
+        static readonly string k_UnLocalizedName = "Network Operations";
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
 
         [SerializeField]
         SplitterState m_NetworkSplit;
 
         static SVC<Color> s_SeparatorColor = new SVC<Color>("--theme-profiler-border-color-darker", Color.black);
 
-        public NetworkingOperationsProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName)
+        public NetworkingOperationsProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow,  k_UnLocalizedName, k_Name, k_IconName)
         {
             InitCounterOverride();
         }

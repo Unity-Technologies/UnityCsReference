@@ -125,8 +125,7 @@ namespace UnityEditor.Search.Providers
         {
             return new[]
             {
-                new SearchAction(type, "select", null, "Select resource") { handler = (item) => TrackSelection(item) },
-                new SearchAction(type, "inspect", null, "Open property editor") { handler = item => OpenPropertyEditor(item) }
+                new SearchAction(type, "select", null, "Select resource") { handler = (item) => TrackSelection(item) }
             };
         }
 
@@ -153,7 +152,10 @@ namespace UnityEditor.Search.Providers
 
             var query = s_QueryEngine.Parse(sanitizedSearchQuery);
             if (!query.valid)
+            {
+                context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e.index, e.length, e.reason, context, provider)));
                 yield break;
+            }
 
             var allObjects = Resources.FindObjectsOfTypeAll(typeof(Object));
             var filteredObjects = query.Apply(allObjects);
@@ -223,11 +225,6 @@ namespace UnityEditor.Search.Providers
         {
             var instanceID = Convert.ToInt32(item.id);
             return EditorUtility.InstanceIDToObject(instanceID);
-        }
-
-        private static void OpenPropertyEditor(SearchItem item)
-        {
-            PropertyEditor.OpenPropertyEditor(GetItemObject(item));
         }
     }
 }

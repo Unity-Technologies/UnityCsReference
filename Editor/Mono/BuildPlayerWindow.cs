@@ -941,7 +941,7 @@ namespace UnityEditor
             }
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            if (EditorGUILayout.LinkLabel(styles.learnAboutUnityCloudBuild))
+            if (EditorGUILayout.LinkButton(styles.learnAboutUnityCloudBuild))
             {
                 Application.OpenURL(string.Format("{0}/from/editor/buildsettings?upid={1}&pid={2}&currentplatform={3}&selectedplatform={4}&unityversion={5}",
                     UnityEditorInternal.WebURLs.cloudBuildPage, CloudProjectSettings.projectId, PlayerSettings.productGUID, EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget(), Application.unityVersion));

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -176,7 +175,7 @@ namespace UnityEditor.UIElements
             this.formatSelectedValueCallback = formatSelectedValueCallback;
         }
 
-        internal override void AddMenuItems(GenericMenu menu)
+        internal override void AddMenuItems(IGenericMenu menu)
         {
             if (menu == null)
             {
@@ -186,7 +185,7 @@ namespace UnityEditor.UIElements
             foreach (T item in m_Choices)
             {
                 bool isSelected = EqualityComparer<T>.Default.Equals(item, value);
-                menu.AddItem(new GUIContent(GetListItemToDisplay(item)), isSelected,
+                menu.AddItem(GetListItemToDisplay(item), isSelected,
                     () => ChangeValueFromMenu(item));
             }
         }

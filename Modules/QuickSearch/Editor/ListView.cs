@@ -12,7 +12,6 @@ namespace UnityEditor.Search
 {
     class ListView : ResultView
     {
-        private int m_FetchedPreview = 0;
         private float m_ItemRowHeight = Styles.itemRowHeight;
 
         public ListView(ISearchView hostView)
@@ -167,13 +166,8 @@ namespace UnityEditor.Search
                 {
                     var previewSize = new Vector2(Styles.itemPreviewSize, Styles.itemPreviewSize);
                     thumbnail = item.provider.fetchPreview(item, context, previewSize, FetchPreviewOptions.Preview2D | FetchPreviewOptions.Normal);
-                    if (thumbnail)
-                    {
+                    if (thumbnail && !AssetPreview.IsLoadingAssetPreviews())
                         item.preview = thumbnail;
-                        m_FetchedPreview++;
-                        if (m_FetchedPreview > 25)
-                            m_FetchedPreview = 0;
-                    }
                 }
             }
 
@@ -183,7 +177,7 @@ namespace UnityEditor.Search
                 if (!thumbnail && item.provider.fetchThumbnail != null)
                 {
                     thumbnail = item.provider.fetchThumbnail(item, context);
-                    if (thumbnail)
+                    if (thumbnail && !AssetPreview.IsLoadingAssetPreviews())
                         item.thumbnail = thumbnail;
                 }
             }
@@ -204,7 +198,7 @@ namespace UnityEditor.Search
             if (AutoComplete.IsHovered(mousePosition))
                 return;
 
-            if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
+            if (Event.current.type == EventType.MouseDown)
             {
                 var clickedItemIndex = (int)(mousePosition.y / m_ItemRowHeight);
                 if (clickedItemIndex >= 0 && clickedItemIndex < itemTotalCount)

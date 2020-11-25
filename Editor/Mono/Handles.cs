@@ -340,6 +340,11 @@ namespace UnityEditor
             }
 
             var mat = SetupArcMaterial();
+            if (mat == null) // can't do thick lines
+            {
+                DrawLine(p1, p2);
+                return;
+            }
             mat.SetVector(kPropArcCenterRadius, new Vector4(p1.x, p1.y, p1.z, 0));
             mat.SetVector(kPropArcFromCount, new Vector4(p2.x, p2.y, p2.z, 0));
             mat.SetVector(kPropArcThicknessSides, new Vector4(thickness, kArcSides, 0, 0));
@@ -1085,8 +1090,10 @@ namespace UnityEditor
 
         static Material SetupArcMaterial()
         {
-            var col = color * lineTransparency;
             var mat = HandleUtility.handleArcMaterial;
+            if (!mat.shader.isSupported) // can happen when editor is actually using OpenGL ES 2 (no instancing)
+                return null;
+            var col = color * lineTransparency;
             mat.SetFloat(kPropUseGuiClip, Camera.current ? 0.0f : 1.0f);
             mat.SetFloat(kPropHandleZTest, (float)zTest);
             mat.SetColor(kPropColor, col);
@@ -1105,6 +1112,13 @@ namespace UnityEditor
             thickness = ThicknessToPixels(thickness);
 
             var mat = SetupArcMaterial();
+            if (mat == null) // can't do arcs or thick lines (only on GLES2), fallback to thin arc via CPU path
+            {
+                SetDiscSectionPoints(s_WireArcPoints, center, normal, from, angle, radius);
+                DrawPolyLine(s_WireArcPoints);
+                return;
+            }
+
             mat.SetVector(kPropArcCenterRadius, new Vector4(center.x, center.y, center.z, radius));
             mat.SetVector(kPropArcNormalAngle, new Vector4(normal.x, normal.y, normal.z, angle * Mathf.Deg2Rad));
             mat.SetVector(kPropArcFromCount, new Vector4(from.x, from.y, from.z, kArcSegments));

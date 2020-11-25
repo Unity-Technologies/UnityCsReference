@@ -9,7 +9,7 @@ namespace UnityEditor.Search.Providers
     static class Query
     {
         internal const string type = "query";
-        private const string displayName = "Queries";
+        private const string displayName = "Saved Queries";
 
         [SearchItemProvider]
         internal static SearchProvider CreateProvider()
@@ -18,27 +18,29 @@ namespace UnityEditor.Search.Providers
             {
                 filterId = "q:",
                 isExplicitProvider = true,
-                fetchItems = (context, items, provider) =>
-                {
-                    var queryItems = SearchQuery.GetAllSearchQueryItems(context);
-                    if (string.IsNullOrEmpty(context.searchQuery))
-                    {
-                        items.AddRange(queryItems);
-                    }
-                    else
-                    {
-                        foreach (var qi in queryItems)
-                        {
-                            if (SearchUtils.MatchSearchGroups(context, qi.label, true) ||
-                                SearchUtils.MatchSearchGroups(context, ((SearchQuery)qi.data).searchQuery, true))
-                            {
-                                items.Add(qi);
-                            }
-                        }
-                    }
-                    return null;
-                }
+                fetchItems = (context, items, provider) => Search(context)
             };
+        }
+
+        private static IEnumerable<SearchItem> Search(SearchContext context)
+        {
+            var queryItems = SearchQuery.GetAllSearchQueryItems(context);
+            if (string.IsNullOrEmpty(context.searchQuery))
+            {
+                foreach (var qi in queryItems)
+                    yield return qi;
+            }
+            else
+            {
+                foreach (var qi in queryItems)
+                {
+                    if (SearchUtils.MatchSearchGroups(context, qi.label, true) ||
+                        SearchUtils.MatchSearchGroups(context, ((SearchQuery)qi.data).text, true))
+                    {
+                        yield return qi;
+                    }
+                }
+            }
         }
 
         [SearchActionsProvider]

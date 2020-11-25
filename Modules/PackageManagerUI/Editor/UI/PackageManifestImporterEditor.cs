@@ -11,7 +11,7 @@ using UnityEditor.AssetImporters;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [CustomEditor(typeof(PackageManifestImporter))]
     [CanEditMultipleObjects]

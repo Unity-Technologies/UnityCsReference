@@ -29,7 +29,7 @@ namespace UnityEditor.Search
         private readonly ResolveHandler finished;
         private readonly System.Diagnostics.Stopwatch sw;
         private string status = null;
-        private bool disposed = false;
+        private volatile bool disposed = false;
         private readonly ITaskReporter reporter;
 
         public int total { get; set; }
@@ -91,9 +91,9 @@ namespace UnityEditor.Search
 
         public void Dispose()
         {
-            Dispose(true);
             cancelEvent?.Dispose();
             cancelEvent = null;
+            Dispose(true);
         }
 
         public bool RunThread(Action routine, Action finalize = null)
@@ -124,6 +124,9 @@ namespace UnityEditor.Search
 
         public void Report(string status)
         {
+            if (disposed)
+                return;
+
             if (progressId == k_NoProgress)
                 return;
 
@@ -147,6 +150,9 @@ namespace UnityEditor.Search
 
         public void Report(int current, int total)
         {
+            if (disposed)
+                return;
+
             if (progressId == k_NoProgress)
                 return;
 
@@ -189,19 +195,25 @@ namespace UnityEditor.Search
 
         public void Resolve(T data)
         {
+            if (disposed)
+                return;
             if (Canceled())
                 return;
             finished?.Invoke(this, data);
-            FinishReport(progressId);
+            Dispose();
         }
 
-        public void Resolve()
+        private void Resolve()
         {
+            if (disposed)
+                return;
             FinishReport(progressId);
         }
 
         internal void Resolve(Exception err)
         {
+            if (disposed)
+                return;
             error = err;
             canceled = true;
 

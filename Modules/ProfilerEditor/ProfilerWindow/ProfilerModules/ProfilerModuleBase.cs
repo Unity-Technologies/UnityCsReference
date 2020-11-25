@@ -24,6 +24,7 @@ namespace UnityEditorInternal.Profiling
         [SerializeReference] protected IProfilerWindowController m_ProfilerWindow;
 
         [SerializeField] protected string m_Name;
+        [SerializeField] protected string m_LocalizedName;
         [SerializeField] protected string m_IconName;
 
         protected ProfilerChart m_Chart;
@@ -33,10 +34,13 @@ namespace UnityEditorInternal.Profiling
 
         [SerializeField] protected Vector2 m_PaneScroll;
 
-        protected ProfilerModuleBase(IProfilerWindowController profilerWindow, string name, string iconName, Chart.ChartType chartType = Chart.ChartType.Line)
+        protected ProfilerModuleBase(IProfilerWindowController profilerWindow, string name, string localizedName, string iconName, Chart.ChartType chartType = Chart.ChartType.Line)
         {
             m_ProfilerWindow = profilerWindow;
             m_Name = name;
+            if (string.IsNullOrEmpty(localizedName))
+                localizedName = name;
+            m_LocalizedName = localizedName;
             m_IconName = iconName;
             m_ChartType = chartType;
 
@@ -55,7 +59,30 @@ namespace UnityEditorInternal.Profiling
         public ReadOnlyCollection<ProfilerCounterData> chartCounters => m_ChartCounters.AsReadOnly();
         public ProfilerChart chart => m_Chart;
         public ReadOnlyCollection<ProfilerCounterData> detailCounters => m_DetailCounters.AsReadOnly();
-        public bool isActive { get; private set; }
+
+        [NonSerialized]
+        bool m_Active = false;
+        public bool active
+        {
+            get => m_Active;
+            set
+            {
+                if (value == active)
+                {
+                    return;
+                }
+
+                m_Active = value;
+                ApplyActiveState();
+                SaveActiveState();
+
+                if (active == false)
+                {
+                    m_Chart.Close();
+                }
+            }
+        }
+
         public string name
         {
             get => m_Name;
@@ -63,6 +90,10 @@ namespace UnityEditorInternal.Profiling
             {
                 SetNameAndUpdateAllPreferences(value);
             }
+        }
+        public string localizedName
+        {
+            get => m_LocalizedName;
         }
         public int orderIndex
         {
@@ -101,12 +132,7 @@ namespace UnityEditorInternal.Profiling
         {
             BuildChartIfNecessary();
 
-            isActive = ReadActiveState();
-            // The active state only needs to be applied (reference counted) in OnEnable() if the module is active.
-            if (isActive)
-            {
-                ApplyActiveState();
-            }
+            active = ReadActiveState();
         }
 
         public virtual void OnDisable()
@@ -150,26 +176,9 @@ namespace UnityEditorInternal.Profiling
 
         public virtual void DrawChartOverlay(Rect chartRect) {}
 
-        public void SetActive(bool active)
-        {
-            if (active == isActive)
-            {
-                return;
-            }
-
-            isActive = active;
-            ApplyActiveState();
-            SaveActiveState();
-
-            if (isActive == false)
-            {
-                m_Chart.Close();
-            }
-        }
-
         public void ToggleActive()
         {
-            SetActive(!isActive);
+            active = !active;
         }
 
         public void SetCounters(List<ProfilerCounterData> chartCounters, List<ProfilerCounterData> detailCounters)
@@ -179,7 +188,7 @@ namespace UnityEditorInternal.Profiling
                 throw new ArgumentException($"Chart counters cannot contain more than {maximumNumberOfChartCounters} counters.");
             }
 
-            if (isActive)
+            if (active)
             {
                 // Decrement existing areas prior to updating counters.
                 var previousAreas = GetProfilerAreas();
@@ -221,7 +230,7 @@ namespace UnityEditorInternal.Profiling
                 }
             }
 
-            if (isActive)
+            if (active)
             {
                 // Increment new areas after updating counters.
                 var areas = GetProfilerAreas();
@@ -286,7 +295,7 @@ namespace UnityEditorInternal.Profiling
         /// </summary>
         protected virtual ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
         {
-            m_Chart = new ProfilerChart(area, m_ChartType, defaultChartScale, chartMaximumScaleInterpolationValue, m_ChartCounters.Count, name, m_IconName);
+            m_Chart = new ProfilerChart(area, m_ChartType, defaultChartScale, chartMaximumScaleInterpolationValue, m_ChartCounters.Count, name, localizedName, m_IconName);
             return m_Chart;
         }
 
@@ -295,7 +304,7 @@ namespace UnityEditorInternal.Profiling
         protected virtual void ApplyActiveState()
         {
             var areas = GetProfilerAreas();
-            m_ProfilerWindow.SetAreasInUse(areas, isActive);
+            m_ProfilerWindow.SetAreasInUse(areas, active);
         }
 
         protected virtual bool ReadActiveState()
@@ -305,7 +314,7 @@ namespace UnityEditorInternal.Profiling
 
         protected virtual void SaveActiveState()
         {
-            EditorPrefs.SetBool(activeStatePreferenceKey, isActive);
+            EditorPrefs.SetBool(activeStatePreferenceKey, active);
         }
 
         protected void DrawEmptyToolbar()
@@ -379,7 +388,7 @@ namespace UnityEditorInternal.Profiling
 
         void OnChartSelected(Chart chart)
         {
-            m_ProfilerWindow.SelectModule(this);
+            m_ProfilerWindow.selectedModule = this;
         }
 
         void OnChartClosed(Chart chart)
@@ -389,6 +398,7 @@ namespace UnityEditorInternal.Profiling
 
         void UpdateChart()
         {
+            BuildChartIfNecessary();
             int frameCount = ProfilerUserSettings.frameCount;
             int firstEmptyFrame = firstFrameIndexWithHistoryOffset;
             int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
@@ -476,10 +486,11 @@ namespace UnityEditorInternal.Profiling
             EditorPrefs.DeleteKey(orderIndexPreferenceKey);
 
             m_Name = name;
+            m_LocalizedName = name;
 
             SaveActiveState();
             orderIndex = orderIndex;
-            m_Chart.SetName(name, legacyPreferenceKey);
+            m_Chart.SetName(localizedName, legacyPreferenceKey);
         }
     }
 }

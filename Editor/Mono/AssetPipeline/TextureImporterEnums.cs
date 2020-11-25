@@ -295,27 +295,28 @@ namespace UnityEditor
     public enum TextureImporterType
     {
         Default = 0,
-        [System.Obsolete("Use Default (UnityUpgradable) -> Default")]
-        Image = 0,
-        [System.Obsolete("Use NormalMap (UnityUpgradable) -> NormalMap")]
-        Bump = 1,
         NormalMap = 1,
         GUI = 2,
         Sprite = 8,
         Cursor = 7,
-        [System.Obsolete("Use importer.textureShape = TextureImporterShape.TextureCube")]
-        Cubemap = 3,
-        [System.Obsolete("Use a texture setup as a cubemap with glossy reflection instead")]
-        Reflection = 3,
         Cookie = 4,
         Lightmap = 6,
-        [System.Obsolete("HDRI is not supported anymore")]
-        HDRI = 9,
-        [System.Obsolete("Use Default instead. All texture types now have an Advanced foldout (UnityUpgradable) -> Default")]
-        Advanced = 5,
         SingleChannel = 10,
         Shadowmask = 11,
         DirectionalLightmap = 12,
+
+        [System.Obsolete("Use Default (UnityUpgradable) -> Default", true)]
+        Image = Int32.MinValue,
+        [System.Obsolete("Use NormalMap (UnityUpgradable) -> NormalMap", true)]
+        Bump = -1,
+        [System.Obsolete("Use importer.textureShape = TextureImporterShape.TextureCube", true)]
+        Cubemap = -3,
+        [System.Obsolete("Use a texture setup as a cubemap with glossy reflection instead", true)]
+        Reflection = -3,
+        [System.Obsolete("Use Default instead. All texture types now have an Advanced foldout (UnityUpgradable) -> Default", true)]
+        Advanced = -5,
+        [System.Obsolete("HDRI is not supported anymore", true)]
+        HDRI = -9,
     }
 
     public enum TextureImporterCompression

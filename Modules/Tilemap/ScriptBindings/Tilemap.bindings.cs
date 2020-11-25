@@ -160,13 +160,23 @@ namespace UnityEngine.Tilemaps
 
         public extern int GetUsedTilesCount();
 
+        public extern int GetUsedSpritesCount();
+
         public int GetUsedTilesNonAlloc(TileBase[] usedTiles)
         {
             return Internal_GetUsedTilesNonAlloc(usedTiles);
         }
 
+        public int GetUsedSpritesNonAlloc(Sprite[] usedSprites)
+        {
+            return Internal_GetUsedSpritesNonAlloc(usedSprites);
+        }
+
         [FreeFunction(Name = "TilemapBindings::GetUsedTilesNonAlloc", HasExplicitThis = true)]
         internal extern int Internal_GetUsedTilesNonAlloc(Object[] usedTiles);
+
+        [FreeFunction(Name = "TilemapBindings::GetUsedSpritesNonAlloc", HasExplicitThis = true)]
+        internal extern int Internal_GetUsedSpritesNonAlloc(Object[] usedSprites);
 
         public extern Sprite GetSprite(Vector3Int position);
 

@@ -21,9 +21,10 @@ namespace UnityEditorInternal.Profiling
 
         const string k_IconName = "Profiler.NetworkMessages";
         const int k_DefaultOrderIndex = 8;
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("Network Messages");
+        static readonly string k_UnLocalizedName = "Network Messages";
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
 
-        public NetworkingMessagesProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName)
+        public NetworkingMessagesProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow,  k_UnLocalizedName, k_Name, k_IconName)
         {
             InitCounterOverride();
         }

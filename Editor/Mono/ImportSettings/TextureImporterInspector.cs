@@ -1012,7 +1012,7 @@ namespace UnityEditor
                 {
                     GUILayout.BeginVertical();
                     EditorGUILayout.HelpBox(s_Styles.psdRemoveMatteInfo.text, MessageType.Info, true);
-                    if (EditorGUILayout.LinkLabel(s_Styles.psdRemoveMatteURLButton))
+                    if (EditorGUILayout.LinkButton(s_Styles.psdRemoveMatteURLButton))
                         Application.OpenURL(s_Styles.psdRemoveMatteURL);
                     GUILayout.EndVertical();
                 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace UnityEngine.UIElements
 {
@@ -195,8 +196,21 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class DropdownMenu
     {
-        List<DropdownMenuItem> menuItems = new List<DropdownMenuItem>();
+        List<DropdownMenuItem> m_MenuItems = new List<DropdownMenuItem>();
         DropdownMenuEventInfo m_DropdownMenuEventInfo;
+
+        static Type s_EditorMenuType = null;
+
+        static DropdownMenu()
+        {
+            var editorAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "UnityEditor.UIElementsModule");
+            s_EditorMenuType = editorAssembly?.GetType("UnityEditor.UIElements.GenericOSMenu");
+        }
+
+        internal static IGenericMenu CreateDropdown()
+        {
+            return Activator.CreateInstance(s_EditorMenuType ?? typeof(GenericDropdownMenu)) as IGenericMenu;
+        }
 
         /// <summary>
         /// Get the list of menu items.
@@ -204,7 +218,7 @@ namespace UnityEngine.UIElements
         /// <returns>The list of items in the menu.</returns>
         public List<DropdownMenuItem> MenuItems()
         {
-            return menuItems;
+            return m_MenuItems;
         }
 
         /// <summary>
@@ -217,7 +231,7 @@ namespace UnityEngine.UIElements
         public void AppendAction(string actionName, Action<DropdownMenuAction> action, Func<DropdownMenuAction, DropdownMenuAction.Status> actionStatusCallback, object userData = null)
         {
             DropdownMenuAction menuAction = new DropdownMenuAction(actionName, action, actionStatusCallback, userData);
-            menuItems.Add(menuAction);
+            m_MenuItems.Add(menuAction);
         }
 
         /// <summary>
@@ -253,7 +267,7 @@ namespace UnityEngine.UIElements
         public void InsertAction(int atIndex, string actionName, Action<DropdownMenuAction> action, Func<DropdownMenuAction, DropdownMenuAction.Status> actionStatusCallback, object userData = null)
         {
             DropdownMenuAction menuAction = new DropdownMenuAction(actionName, action, actionStatusCallback, userData);
-            menuItems.Insert(atIndex, menuAction);
+            m_MenuItems.Insert(atIndex, menuAction);
         }
 
         /// <summary>
@@ -285,10 +299,10 @@ namespace UnityEngine.UIElements
         /// <param name="subMenuPath">The submenu path where the separator will be added. Path components are delimited by forward slashes ('/').</param>
         public void AppendSeparator(string subMenuPath = null)
         {
-            if (menuItems.Count > 0 && !(menuItems[menuItems.Count - 1] is DropdownMenuSeparator))
+            if (m_MenuItems.Count > 0 && !(m_MenuItems[m_MenuItems.Count - 1] is DropdownMenuSeparator))
             {
                 DropdownMenuSeparator separator = new DropdownMenuSeparator(subMenuPath ?? String.Empty);
-                menuItems.Add(separator);
+                m_MenuItems.Add(separator);
             }
         }
 
@@ -299,10 +313,10 @@ namespace UnityEngine.UIElements
         /// <param name="atIndex">Index where the separator should be inserted.</param>
         public void InsertSeparator(string subMenuPath, int atIndex)
         {
-            if (atIndex > 0 && atIndex <= menuItems.Count && !(menuItems[atIndex - 1] is DropdownMenuSeparator))
+            if (atIndex > 0 && atIndex <= m_MenuItems.Count && !(m_MenuItems[atIndex - 1] is DropdownMenuSeparator))
             {
                 DropdownMenuSeparator separator = new DropdownMenuSeparator(subMenuPath ?? String.Empty);
-                menuItems.Insert(atIndex, separator);
+                m_MenuItems.Insert(atIndex, separator);
             }
         }
 
@@ -312,7 +326,7 @@ namespace UnityEngine.UIElements
         /// <param name="index">The index of the item to remove.</param>
         public void RemoveItemAt(int index)
         {
-            menuItems.RemoveAt(index);
+            m_MenuItems.RemoveAt(index);
         }
 
         /// <summary>
@@ -322,10 +336,10 @@ namespace UnityEngine.UIElements
         {
             m_DropdownMenuEventInfo = e != null ? new DropdownMenuEventInfo(e) : null;
 
-            if (menuItems.Count == 0)
+            if (m_MenuItems.Count == 0)
                 return;
 
-            foreach (DropdownMenuItem item in menuItems)
+            foreach (DropdownMenuItem item in m_MenuItems)
             {
                 DropdownMenuAction action = item as DropdownMenuAction;
                 if (action != null)
@@ -334,9 +348,9 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            if (menuItems[menuItems.Count - 1] is DropdownMenuSeparator)
+            if (m_MenuItems[m_MenuItems.Count - 1] is DropdownMenuSeparator)
             {
-                menuItems.RemoveAt(menuItems.Count - 1);
+                m_MenuItems.RemoveAt(m_MenuItems.Count - 1);
             }
         }
     }

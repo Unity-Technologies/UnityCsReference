@@ -5,7 +5,7 @@
 using System.IO;
 using System.Linq;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     internal static class IOUtils
     {

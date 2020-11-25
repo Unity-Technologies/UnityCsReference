@@ -137,7 +137,7 @@ namespace UnityEditor.Experimental
         public extern static UInt32 UnregisterCustomDependencyPrefixFilter(string prefixFilter);
 
         [FreeFunction("AssetDatabase::IsAssetImportProcess")]
-        [Obsolete("AssetDatabaseExperimental.IsAssetImportWorkerProcess() has been deprecated. Use AssetDatabase.IsAssetImportWorkerProcess()", false)]
+        [Obsolete("AssetDatabaseExperimental.IsAssetImportWorkerProcess() has been deprecated. Use AssetDatabase.IsAssetImportWorkerProcess() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.IsAssetImportWorkerProcess(*)", false)]
         public extern static bool IsAssetImportWorkerProcess();
 
         [Obsolete("Has been replaced by AssetDatabaseExperimental.RefreshSettings", true)]

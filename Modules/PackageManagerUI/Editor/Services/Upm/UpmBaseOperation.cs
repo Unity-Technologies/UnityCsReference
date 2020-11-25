@@ -6,7 +6,7 @@ using System;
 using UnityEngine;
 using UnityEditor.PackageManager.Requests;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     internal abstract class UpmBaseOperation : IOperation
     {

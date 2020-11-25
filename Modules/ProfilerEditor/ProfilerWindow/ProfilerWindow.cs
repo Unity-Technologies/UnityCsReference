@@ -20,11 +20,13 @@ using UnityEngine.Profiling;
 using UnityEngine.Scripting;
 using Unity.Profiling;
 using Debug = UnityEngine.Debug;
+using System.Net;
+using UnityEditor.Collaboration;
 
 namespace UnityEditor
 {
-    [EditorWindowTitle(title = "Profiler", useTypeNameAsIconName = true)]
-    internal class ProfilerWindow : EditorWindow, IProfilerWindowController, IHasCustomMenu, ProfilerModulesDropdownWindow.IResponder
+    [EditorWindowTitle(title = "Profiler", icon = "UnityEditor.ProfilerWindow")]
+    public sealed class ProfilerWindow : EditorWindow, IHasCustomMenu, IProfilerWindowController, ProfilerModulesDropdownWindow.IResponder
     {
         internal static class Styles
         {
@@ -148,7 +150,9 @@ namespace UnityEditor
 
         HierarchyFrameDataView m_FrameDataView;
 
-        // used by Tests/PerformanceTests/Profiler ProfilerWindowTests.CPUViewTests through reflection
+        public const string cpuModuleName = CPUProfilerModule.k_UnlocalizedName;
+        public const string gpuModuleName = GPUProfilerModule.k_UnlocalizedName;
+
         [SerializeReference]
         List<ProfilerModuleBase> m_Modules;
         // Used by ProfilerEditorTests/ProfilerAreaReferenceCounterTests through reflection.
@@ -160,8 +164,8 @@ namespace UnityEditor
         [SerializeField]
         ProfilerMemoryRecordMode m_CallstackRecordMode = ProfilerMemoryRecordMode.None;
 
-        public string ConnectedTargetName => m_AttachProfilerState.connectionName;
-        public bool ConnectedToEditor => m_AttachProfilerState.connectedToTarget == ConnectionTarget.Editor;
+        internal string ConnectedTargetName => m_AttachProfilerState.connectionName;
+        internal bool ConnectedToEditor => m_AttachProfilerState.connectedToTarget == ConnectionTarget.Editor;
 
         [SerializeField]
         bool m_ClearOnPlay;
@@ -171,15 +175,15 @@ namespace UnityEditor
         const string kProfilerEditorTargetModeEnabledSessionKey = "ProfilerTargetMode";
         const string kProfilerDeepProfilingWarningSessionKey = "ProfilerDeepProfilingWarning";
 
-
-        internal delegate void FrameChangedCallback(int i, bool b);
-        public event FrameChangedCallback currentFrameChanged = delegate {};
+        internal event Action<int, bool> currentFrameChanged = delegate {};
 
         internal event Action<bool> recordingStateChanged = delegate {};
         internal event Action<bool> deepProfileChanged = delegate {};
         internal event Action<ProfilerMemoryRecordMode> memoryRecordingModeChanged = delegate {};
 
-        public ProfilerModuleBase SelectedModule
+        public string selectedModuleName => selectedModule?.name ?? null;
+
+        internal ProfilerModuleBase selectedModule
         {
             get
             {
@@ -192,16 +196,76 @@ namespace UnityEditor
 
                 return null;
             }
+            set
+            {
+                var previousSelectedModule = selectedModule;
+                var previousSelectedModuleIndex = m_SelectedModuleIndex;
+                int newSelectedModuleIndex = k_NoModuleSelected;
+                if (value == null)
+                {
+                    // ??? should this be like this?
+                    //throw new ArgumentNullException($"???????.", $"{nameof(value)}");
+                    m_SelectedModuleIndex = k_NoModuleSelected;
+                    SessionState.SetInt(k_SelectedModuleIndexPreferenceKey, k_NoModuleSelected);
+                    InitializeSelectedModuleIndex();
+                    newSelectedModuleIndex = m_SelectedModuleIndex;
+                }
+                else
+                {
+                    newSelectedModuleIndex = IndexOfModule(value as ProfilerModuleBase);
+                    if (newSelectedModuleIndex == k_NoModuleSelected)
+                        throw new ArgumentException($"The {value.name} module is not registered with the Profiler Window.", $"{nameof(value)}");
+                    if (!value.active)
+                    {
+                        value.active = true;
+                    }
+                }
+
+                if (previousSelectedModuleIndex == newSelectedModuleIndex)
+                    // nothing changed
+                    return;
+
+                m_SelectedModuleIndex = newSelectedModuleIndex;
+
+                previousSelectedModule?.OnDeselected();
+                selectedModule?.OnSelected();
+
+                Repaint();
+                GUIUtility.keyboardControl = 0;
+                if (Event.current != null)
+                    GUIUtility.ExitGUI();
+            }
         }
 
-        public ProfilerProperty CreateProperty()
+        // IProfilerWindow Interface implementation
+        public long selectedFrameIndex
+        {
+            get => GetActiveVisibleFrameIndex();
+            set
+            {
+                if (value < 0)
+                    throw new ArgumentOutOfRangeException("value", $"Can't set a value < 0 for the {nameof(selectedFrameIndex)}.");
+                if (value < firstAvailableFrameIndex)
+                    throw new ArgumentOutOfRangeException("value", $"Can't set a value smaller than {nameof(firstAvailableFrameIndex)} which is currently {firstAvailableFrameIndex}.");
+                if (value > lastAvailableFrameIndex)
+                    throw new ArgumentOutOfRangeException("value", $"Can't set a value smaller than {nameof(lastAvailableFrameIndex)} which is currently {lastAvailableFrameIndex}.");
+                SetActiveVisibleFrameIndex((int)value);
+            }
+        }
+
+        // these properties act as a redirect to ProfilerDriver for now.
+        // Once the Profiler Window isn't so tightly coupled to the ProfilerDriver singleton anymore, they will relate just the data stream displayed in this instance.
+        public long firstAvailableFrameIndex => ProfilerDriver.firstFrameIndex;
+        public long lastAvailableFrameIndex => ProfilerDriver.lastFrameIndex;
+
+        internal ProfilerProperty CreateProperty()
         {
             return CreateProperty(HierarchyFrameDataView.columnDontSort);
         }
 
-        public ProfilerProperty CreateProperty(int sortType)
+        internal ProfilerProperty CreateProperty(int sortType)
         {
-            int targetedFrame = GetActiveVisibleFrameIndex();
+            var targetedFrame = GetActiveVisibleFrameIndex();
             if (targetedFrame < 0)
                 targetedFrame = ProfilerDriver.lastFrameIndex;
             if (targetedFrame < Math.Max(0, ProfilerDriver.firstFrameIndex))
@@ -211,27 +275,43 @@ namespace UnityEditor
 
             var property = new ProfilerProperty();
             property.SetRoot(targetedFrame, sortType, (int)ProfilerViewType.Hierarchy);
-            property.onlyShowGPUSamples = (SelectedModule is GPUProfilerModule);
+            property.onlyShowGPUSamples = (selectedModule is GPUProfilerModule);
             return property;
         }
 
-        public int GetActiveVisibleFrameIndex()
+        internal int GetActiveVisibleFrameIndex()
         {
             // Update the current frame only at fixed intervals,
             // otherwise it looks weird when it is rapidly jumping around when we have a lot of repaints
             return m_CurrentFrame == FrameDataView.invalidOrCurrentFrameIndex ? m_LastFrameFromTick : m_CurrentFrame;
         }
 
-        public bool IsRecording()
+        internal bool IsRecording()
         {
             return IsSetToRecord() && ((EditorApplication.isPlaying && !EditorApplication.isPaused) || ProfilerDriver.profileEditor || !ProfilerDriver.IsConnectionEditor());
         }
 
-        public bool IsSetToRecord()
+        internal bool IsSetToRecord()
         {
             return m_Recording;
         }
 
+        public IProfilerFrameTimeViewSampleSelectionController GetFrameTimeViewSampleSelectionController(string moduleName)
+        {
+            switch (moduleName)
+            {
+                case cpuModuleName:
+                    var cpuModule = this.GetProfilerModuleByType<CPUProfilerModule>();
+                    return cpuModule;
+                case gpuModuleName:
+                    var gpuModule = this.GetProfilerModuleByType<GPUProfilerModule>();
+                    return gpuModule;
+                default:
+                    throw new ArgumentException($"\"{moduleName}\" is not a valid module name for a module implementing IProfilerFrameTimeViewSampleSelectionController. Try \"{nameof(ProfilerWindow.cpuModuleName)}\" or \"{nameof(ProfilerWindow.gpuModuleName)}\" instead.", $"{nameof(moduleName)}");
+            }
+        }
+
+        // TODO: Remove this once Profile Analizer version 1.0.5 is verified.
         // Used by Profiler Analyzer via reflection.
         internal T GetProfilerModule<T>(ProfilerArea area) where T : ProfilerModuleBase
         {
@@ -246,32 +326,43 @@ namespace UnityEditor
             return null;
         }
 
-        // used by Tests/PerformanceTests/Profiler to avoid brittle tests due to reflection
-        internal T GetProfilerModuleByType<T>() where T : ProfilerModuleBase
-        {
-            foreach (var module in m_Modules)
-            {
-                if (module is T)
-                {
-                    return module as T;
-                }
-            }
-
-            return null;
-        }
-
         // Used by Tests/ProfilerEditorTests/ProfilerModulePreferenceKeyTests.
         internal ProfilerModuleBase GetProfilerModuleByType(Type type)
         {
+            ProfilerModuleBase fittingModule = null;
+            if (type.IsAbstract)
+                throw new ArgumentException($"{nameof(type)} can't be abstract.", $"{nameof(type)}");
+
             foreach (var module in m_Modules)
             {
-                if (module.GetType() == type)
+                if (type == module.GetType())
                 {
-                    return module;
+                    fittingModule = module;
                 }
             }
+            if (fittingModule == null)
+                throw new ArgumentException($"A {nameof(type)} of {type.Name} is not a type that describes an existing Profiler Module.", $"{nameof(type)}");
+            return fittingModule;
+        }
 
-            return null;
+        internal void SetProfilerModuleActiveState(ProfilerModuleBase module, bool active)
+        {
+            if (module == null)
+                throw new ArgumentNullException($"{nameof(module)}");
+            var moduleIndex = IndexOfModule(module as ProfilerModuleBase);
+            if (moduleIndex == k_NoModuleSelected)
+                throw new ArgumentException($"The {module.name} module is not registered with the Profiler Window.", $"{nameof(module)}");
+            m_Modules[moduleIndex].active = active;
+        }
+
+        internal bool GetProfilerModuleActiveState(ProfilerModuleBase module)
+        {
+            if (module == null)
+                throw new ArgumentNullException($"{nameof(module)}");
+            var moduleIndex = IndexOfModule(module as ProfilerModuleBase);
+            if (moduleIndex == k_NoModuleSelected)
+                throw new ArgumentException($"The {module.name} module is not registered with the Profiler Window.", $"{nameof(module)}");
+            return m_Modules[moduleIndex].active;
         }
 
         void OnEnable()
@@ -299,7 +390,7 @@ namespace UnityEditor
             {
                 module.OnEnable();
             }
-            SelectedModule?.OnSelected();
+            selectedModule?.OnSelected();
         }
 
         void InitializeIfNeeded()
@@ -401,12 +492,12 @@ namespace UnityEditor
             m_SelectedModuleIndex = SessionState.GetInt(k_SelectedModuleIndexPreferenceKey, k_NoModuleSelected);
 
             // If no module is selected or the selected module is not active anymore, attempt to select the first active module.
-            if (m_SelectedModuleIndex == k_NoModuleSelected || (SelectedModule != null && !SelectedModule.isActive))
+            if (m_SelectedModuleIndex == k_NoModuleSelected || (selectedModule != null && !selectedModule.active))
             {
                 for (int i = 0; i < m_Modules.Count; i++)
                 {
                     var module = m_Modules[i];
-                    if (module.isActive)
+                    if (module.active)
                     {
                         m_SelectedModuleIndex = i;
                         break;
@@ -446,32 +537,28 @@ namespace UnityEditor
             m_FrameDataView = null;
         }
 
-        void IProfilerWindowController.SelectModule(ProfilerModuleBase module)
+        internal ProfilerModuleBase[] GetProfilerModules()
         {
-            var previousSelectedModuleIndex = m_SelectedModuleIndex;
-            int newSelectedModuleIndex = IndexOfModule(module);
-            if ((previousSelectedModuleIndex == newSelectedModuleIndex) ||
-                (newSelectedModuleIndex == k_NoModuleSelected))
-            {
-                return;
-            }
-
-            var previousSelectedModule = SelectedModule;
-            m_SelectedModuleIndex = newSelectedModuleIndex;
-
-            previousSelectedModule?.OnDeselected();
-            SelectedModule?.OnSelected();
-
-            Repaint();
-            GUIUtility.keyboardControl = 0;
-            if (Event.current != null)
-                GUIUtility.ExitGUI();
+            var copy = new ProfilerModuleBase[m_Modules.Count];
+            m_Modules.CopyTo(copy);
+            return copy;
         }
 
-        void IProfilerWindowController.CloseModule(ProfilerModuleBase module)
+        internal void GetProfilerModules(ref List<ProfilerModuleBase> outModules)
+        {
+            if (outModules == null)
+            {
+                outModules = new List<ProfilerModuleBase>(m_Modules);
+                return;
+            }
+            outModules.Clear();
+            outModules.AddRange(m_Modules);
+        }
+
+        void CloseModule(ProfilerModuleBase module)
         {
             // Reset the current selection. TODO Perhaps we could maintain module selection?
-            var previousSelectedModule = SelectedModule;
+            var previousSelectedModule = selectedModule;
             m_SelectedModuleIndex = k_NoModuleSelected;
             previousSelectedModule?.OnDeselected();
 
@@ -522,7 +609,7 @@ namespace UnityEditor
             m_AttachProfilerState = null;
             s_ProfilerWindows.Remove(this);
 
-            SelectedModule?.OnDeselected();
+            selectedModule?.OnDeselected();
             foreach (var module in m_Modules)
             {
                 module.OnDisable();
@@ -634,7 +721,7 @@ namespace UnityEditor
             ProfilerWindowAnalytics.OnProfilerWindowLostFocus();
         }
 
-        public virtual void AddItemsToMenu(GenericMenu menu)
+        void IHasCustomMenu.AddItemsToMenu(GenericMenu menu)
         {
             menu.AddItem(Styles.accessibilityModeLabel, UserAccessiblitySettings.colorBlindCondition != ColorBlindCondition.Default, OnToggleColorBlindMode);
         }
@@ -653,10 +740,13 @@ namespace UnityEditor
 
         // Used by Native method DoBuildPlayer_PostBuild() in BuildPlayer.cpp
         [MenuItem("Window/Analysis/Profiler %7", false, 0)]
-        static void ShowProfilerWindow()
+        internal static ProfilerWindow ShowProfilerWindow()
         {
-            EditorWindow.GetWindow<ProfilerWindow>(false);
+            return EditorWindow.GetWindow<ProfilerWindow>(false);
         }
+
+        // The Constructor shouldn't be part of the public API
+        internal ProfilerWindow() {}
 
         [MenuItem("Window/Analysis/Profiler (Standalone Process)", false, 1)]
         static void ShowProfilerOOP()
@@ -785,7 +875,7 @@ namespace UnityEditor
             return property != null && property.frameDataReady;
         }
 
-        public HierarchyFrameDataView GetFrameDataView(string groupName, string threadName, ulong threadId, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
+        internal HierarchyFrameDataView GetFrameDataView(string groupName, string threadName, ulong threadId, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
         {
             var frameIndex = GetActiveVisibleFrameIndex();
             var foundThreadIndex = FrameDataView.invalidThreadIndex;
@@ -820,7 +910,7 @@ namespace UnityEditor
             return GetFrameDataView(foundThreadIndex, viewMode, profilerSortColumn, sortAscending);
         }
 
-        public HierarchyFrameDataView GetFrameDataView(int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
+        internal HierarchyFrameDataView GetFrameDataView(int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
         {
             var frameIndex = GetActiveVisibleFrameIndex();
             if (m_FrameDataView != null && m_FrameDataView.valid)
@@ -901,7 +991,7 @@ namespace UnityEditor
             }
         }
 
-        public void SetRecordingEnabled(bool profilerEnabled)
+        internal void SetRecordingEnabled(bool profilerEnabled)
         {
             ProfilerDriver.enabled = profilerEnabled;
             m_Recording = profilerEnabled;
@@ -1008,7 +1098,7 @@ namespace UnityEditor
                 {
                     var popupScreenRect = GUIUtility.GUIToScreenRect(popupRect);
                     var modulesDropdownWindow = ProfilerModulesDropdownWindow.Present(popupScreenRect, m_Modules);
-                    modulesDropdownWindow.responder = this as ProfilerModulesDropdownWindow.IResponder;
+                    modulesDropdownWindow.responder = m_ProfilerWindowControllerProxy as ProfilerModulesDropdownWindow.IResponder;
                 }
             }
         }
@@ -1100,9 +1190,7 @@ namespace UnityEditor
                 {
                     if (!m_CurrentFrameEnabled)
                     {
-                        SetCurrentFrame(FrameDataView.invalidOrCurrentFrameIndex);
-                        m_LastFrameFromTick = ProfilerDriver.lastFrameIndex;
-                        m_CurrentFrameEnabled = true;
+                        SelectAndStayOnLatestFrame();
                     }
                 }
                 else if (m_CurrentFrame == FrameDataView.invalidOrCurrentFrameIndex)
@@ -1126,6 +1214,13 @@ namespace UnityEditor
             GUILayout.Label(frameCountLabel, EditorStyles.toolbarLabel, GUILayout.MinWidth(m_FrameCountLabelMinWidth));
         }
 
+        public void SelectAndStayOnLatestFrame()
+        {
+            SetCurrentFrame(FrameDataView.invalidOrCurrentFrameIndex);
+            m_LastFrameFromTick = ProfilerDriver.lastFrameIndex;
+            m_CurrentFrameEnabled = true;
+        }
+
         void SetCurrentFrameDontPause(int frame)
         {
             m_CurrentFrame = frame;
@@ -1145,7 +1240,7 @@ namespace UnityEditor
             SetCurrentFrameDontPause(frame);
         }
 
-        public void SetActiveVisibleFrameIndex(int frame)
+        internal void SetActiveVisibleFrameIndex(int frame)
         {
             if (frame != FrameDataView.invalidOrCurrentFrameIndex && (frame < ProfilerDriver.firstFrameIndex || frame > ProfilerDriver.lastFrameIndex))
                 throw new ArgumentOutOfRangeException($"{nameof(frame)}");
@@ -1170,7 +1265,7 @@ namespace UnityEditor
                 for (int i = 0; i < m_Modules.Count; i++)
                 {
                     var module = m_Modules[i];
-                    if (module.isActive)
+                    if (module.active)
                     {
                         var chart = module.chart;
                         chart.ChartSelected();
@@ -1196,7 +1291,8 @@ namespace UnityEditor
             {
                 SetCurrentFrame(newCurrentFrame);
                 Repaint();
-                GUIUtility.ExitGUI();
+                if (Event.current.type != EventType.Repaint)
+                    GUIUtility.ExitGUI();
             }
 
             if (hasNoActiveModules)
@@ -1213,7 +1309,7 @@ namespace UnityEditor
             EditorGUILayout.EndScrollView();
 
             GUILayout.BeginVertical();
-            var selectedModule = this.SelectedModule;
+            var selectedModule = this.selectedModule;
             if (selectedModule != null)
             {
                 DrawDetailsViewForModule(selectedModule);
@@ -1234,7 +1330,7 @@ namespace UnityEditor
             for (int i = 0; i < m_Modules.Count; i++)
             {
                 var module = m_Modules[i];
-                if (module.isActive)
+                if (module.active)
                 {
                     hasNoActiveModules = false;
                     bool isSelected = (m_SelectedModuleIndex == i);
@@ -1410,7 +1506,7 @@ namespace UnityEditor
 
             var moduleToDelete = m_Modules[index];
             // Ensure that active areas in use are decremented. Additionally, if moduleToDelete is currently selected, the SetActive(false) call will invoke its OnDeselected callback prior to the OnDisable callback below (via its chart's onClosed callback, which invokes the IProfilerWindowController's CloseModule method, which invokes the OnDeselected callback).
-            moduleToDelete.SetActive(false);
+            moduleToDelete.active = false;
             moduleToDelete.OnDisable();
             moduleToDelete.DeleteAllPreferences();
             m_Modules.RemoveAt(index);
@@ -1439,12 +1535,12 @@ namespace UnityEditor
             EditorPrefs.SetString(k_DynamicModulesPreferenceKey, json);
         }
 
-        public void SetClearOnPlay(bool enabled)
+        internal void SetClearOnPlay(bool enabled)
         {
             m_ClearOnPlay = enabled;
         }
 
-        public bool GetClearOnPlay()
+        internal bool GetClearOnPlay()
         {
             return m_ClearOnPlay;
         }
@@ -1516,7 +1612,7 @@ namespace UnityEditor
             return doApply;
         }
 
-        void IProfilerWindowController.SetAreasInUse(IEnumerable<ProfilerArea> areas, bool inUse)
+        void SetAreasInUse(IEnumerable<ProfilerArea> areas, bool inUse)
         {
             if (inUse)
             {
@@ -1534,14 +1630,43 @@ namespace UnityEditor
             }
         }
 
+        long IProfilerWindowController.selectedFrameIndex { get => selectedFrameIndex; set => selectedFrameIndex = value; }
+        ProfilerModuleBase IProfilerWindowController.selectedModule { get => selectedModule; set => selectedModule = value; }
+        ProfilerModuleBase IProfilerWindowController.GetProfilerModuleByType(Type T) => GetProfilerModuleByType(T);
+        void IProfilerWindowController.Repaint() => Repaint();
+
+
+        event Action<int, bool> IProfilerWindowController.currentFrameChanged
+        {
+            add { currentFrameChanged += value; }
+            remove { currentFrameChanged -= value; }
+        }
+        void IProfilerWindowController.SetClearOnPlay(bool enabled) => SetClearOnPlay(enabled);
+        bool IProfilerWindowController.GetClearOnPlay() => GetClearOnPlay();
+        HierarchyFrameDataView IProfilerWindowController.GetFrameDataView(string groupName, string threadName, ulong threadId, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
+            => GetFrameDataView(groupName, threadName, threadId, viewMode, profilerSortColumn, sortAscending);
+        HierarchyFrameDataView IProfilerWindowController.GetFrameDataView(int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
+            => GetFrameDataView(threadIndex, viewMode, profilerSortColumn, sortAscending);
+        bool IProfilerWindowController.IsRecording() => IsRecording();
+        string IProfilerWindowController.ConnectedTargetName { get => ConnectedTargetName; }
+        bool IProfilerWindowController.ConnectedToEditor { get => ConnectedToEditor; }
+        ProfilerProperty IProfilerWindowController.CreateProperty() => CreateProperty();
+        ProfilerProperty IProfilerWindowController.CreateProperty(int sortType) => CreateProperty(sortType);
+        void IProfilerWindowController.CloseModule(ProfilerModuleBase module) => CloseModule(module);
+        void IProfilerWindowController.SetAreasInUse(IEnumerable<ProfilerArea> areas, bool inUse) => SetAreasInUse(areas, inUse);
+
         // Using a serializable proxy object that does not inherit from UnityEngine.Object allows the modules to use [SerializeReference] to hold a reference to the window across domain reloads.
         [Serializable]
-        internal class ProfilerWindowControllerProxy : IProfilerWindowController
+        internal class ProfilerWindowControllerProxy : IProfilerWindowController, ProfilerModulesDropdownWindow.IResponder
         {
+            // It is tempting to change this to ProfilerWindow and it will look like its working. Except for weird issues during domain reload...
+            // Because it NEEDS to be an interface or at the very least NOT the ProfilerWindow, because that would then break with [SerializeReference]
             IProfilerWindowController m_ProfilerWindowController;
 
             public void SetRealSubject(IProfilerWindowController profilerWindowController)
             {
+                if (profilerWindowController as ProfilerModulesDropdownWindow.IResponder == null)
+                    throw new ArgumentException($"The passed {nameof(profilerWindowController)} did not implement {nameof(ProfilerModulesDropdownWindow.IResponder)}", $"{nameof(profilerWindowController)}");
                 m_ProfilerWindowController = profilerWindowController;
             }
 
@@ -1549,12 +1674,19 @@ namespace UnityEditor
 
             bool IProfilerWindowController.ConnectedToEditor => m_ProfilerWindowController.ConnectedToEditor;
 
-            ProfilerModuleBase IProfilerWindowController.SelectedModule => m_ProfilerWindowController.SelectedModule;
 
-            event FrameChangedCallback IProfilerWindowController.currentFrameChanged
+            event Action<int, bool> IProfilerWindowController.currentFrameChanged
             {
                 add { m_ProfilerWindowController.currentFrameChanged += value; }
                 remove { m_ProfilerWindowController.currentFrameChanged -= value; }
+            }
+
+            long IProfilerWindowController.selectedFrameIndex { get => m_ProfilerWindowController.selectedFrameIndex; set => m_ProfilerWindowController.selectedFrameIndex = value; }
+
+            public ProfilerModuleBase selectedModule
+            {
+                get => m_ProfilerWindowController.selectedModule;
+                set => m_ProfilerWindowController.selectedModule = value;
             }
 
             void IProfilerWindowController.CloseModule(ProfilerModuleBase module)
@@ -1570,11 +1702,6 @@ namespace UnityEditor
             ProfilerProperty IProfilerWindowController.CreateProperty(int sortType)
             {
                 return m_ProfilerWindowController.CreateProperty(sortType);
-            }
-
-            int IProfilerWindowController.GetActiveVisibleFrameIndex()
-            {
-                return m_ProfilerWindowController.GetActiveVisibleFrameIndex();
             }
 
             bool IProfilerWindowController.GetClearOnPlay()
@@ -1597,21 +1724,6 @@ namespace UnityEditor
                 return m_ProfilerWindowController.IsRecording();
             }
 
-            void IProfilerWindowController.Repaint()
-            {
-                m_ProfilerWindowController.Repaint();
-            }
-
-            void IProfilerWindowController.SelectModule(ProfilerModuleBase module)
-            {
-                m_ProfilerWindowController.SelectModule(module);
-            }
-
-            void IProfilerWindowController.SetActiveVisibleFrameIndex(int frame)
-            {
-                m_ProfilerWindowController.SetActiveVisibleFrameIndex(frame);
-            }
-
             void IProfilerWindowController.SetAreasInUse(IEnumerable<ProfilerArea> areas, bool inUse)
             {
                 m_ProfilerWindowController.SetAreasInUse(areas, inUse);
@@ -1621,6 +1733,23 @@ namespace UnityEditor
             {
                 m_ProfilerWindowController.SetClearOnPlay(enabled);
             }
+
+            ProfilerModuleBase IProfilerWindowController.GetProfilerModuleByType(Type T)
+            {
+                return m_ProfilerWindowController.GetProfilerModuleByType(T);
+            }
+
+            void IProfilerWindowController.Repaint()
+            {
+                m_ProfilerWindowController.Repaint();
+            }
+
+            void ProfilerModulesDropdownWindow.IResponder.OnModuleActiveStateChanged()
+                => (m_ProfilerWindowController as ProfilerModulesDropdownWindow.IResponder).OnModuleActiveStateChanged();
+            void ProfilerModulesDropdownWindow.IResponder.OnConfigureModules()
+                => (m_ProfilerWindowController as ProfilerModulesDropdownWindow.IResponder).OnConfigureModules();
+            void ProfilerModulesDropdownWindow.IResponder.OnRestoreDefaultModules()
+                => (m_ProfilerWindowController as ProfilerModulesDropdownWindow.IResponder).OnRestoreDefaultModules();
         }
     }
 }

@@ -149,7 +149,7 @@ namespace UnityEditor.UIElements
             SetValueWithoutNotify(defaultValue);
         }
 
-        internal override void AddMenuItems(GenericMenu menu)
+        internal override void AddMenuItems(IGenericMenu menu)
         {
             if (menu == null)
             {
@@ -163,11 +163,10 @@ namespace UnityEditor.UIElements
                 var item = layerList[i];
                 var menuItemIndex = m_Choices[i];
                 var isSelected = (menuItemIndex == value);
-                menu.AddItem(new GUIContent(item), isSelected,
-                    () => ChangeValueFromMenu(menuItemIndex));
+                menu.AddItem(item, isSelected, () => ChangeValueFromMenu(menuItemIndex));
             }
-            menu.AddItem(new GUIContent(""), false, null);
-            menu.AddItem(new GUIContent(L10n.Tr("Add Layer...")), false, OpenLayerInspector);
+            menu.AddSeparator(String.Empty);
+            menu.AddItem(L10n.Tr("Add Layer..."), false, OpenLayerInspector);
         }
 
         void ChangeValueFromMenu(int menuItemIndex)

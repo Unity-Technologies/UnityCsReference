@@ -472,7 +472,7 @@ namespace UnityEngine.UIElements
             if (needsElement)
             {
                 IStyle inlineStyles = dragElement.style;
-                dragElement.visible = true;
+                dragElement.visible = visible; // Only visible if parent is as well.
 
                 // Any factor smaller than 1f will necessitate a drag element
                 if (direction == SliderDirection.Horizontal)

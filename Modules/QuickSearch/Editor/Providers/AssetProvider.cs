@@ -45,18 +45,24 @@ namespace UnityEditor.Search.Providers
                 filterId = "p:",
                 showDetails = true,
                 showDetailsOptions = ShowDetailsOptions.Default | ShowDetailsOptions.Inspector,
-
+                supportsSyncViewSearch = true,
                 isEnabledForContextualSearch = () => Utils.IsFocusedWindowTypeName("ProjectBrowser"),
-                toObject = (item, type) => AssetDatabase.LoadAssetAtPath(item.id, type),
+                toObject = ToObject,
                 fetchItems = (context, items, provider) => SearchAssets(context, provider),
                 fetchDescription = (item, context) => (item.description = GetAssetDescription(item.id)),
                 fetchThumbnail = (item, context) => Utils.GetAssetThumbnailFromPath(item.id),
                 fetchPreview = (item, context, size, options) => Utils.GetAssetPreviewFromPath(item.id, size, options),
-                openContextual = (selection, rect) => OpenContextualMenu(selection, rect),
                 startDrag = (item, context) => StartDrag(item, context),
-                trackSelection = (item, context) => EditorGUIUtility.PingObject(AssetDatabase.GetMainAssetInstanceID(item.id)),
+                trackSelection = (item, context) => EditorGUIUtility.PingObject(Utils.GetMainAssetInstanceID(item.id)),
                 fetchPropositions = (context, options) => FetchPropositions(context, options)
             };
+        }
+
+        private static Object ToObject(SearchItem item, Type type)
+        {
+            if (typeof(AssetImporter).IsAssignableFrom(type))
+                return AssetImporter.GetAtPath(item.id);
+            return AssetDatabase.LoadAssetAtPath(item.id, type);
         }
 
         private static IEnumerable<SearchProposition> FetchPropositions(SearchContext context, SearchPropositionOptions options)
@@ -78,22 +84,13 @@ namespace UnityEditor.Search.Providers
             if (FilterIndexes(updated).Except(loaded).Count() > 0 || loaded.Intersect(FilterIndexes(deleted)).Count() > 0)
                 reloadAssetIndexes = true;
 
-            if (deleted != null && deleted.Length > 0)
+            if (deleted.Length > 0)
             {
                 EditorApplication.delayCall -= SearchService.RefreshWindows;
                 EditorApplication.delayCall += SearchService.RefreshWindows;
             }
 
             FindProvider.Update(updated, deleted, moved);
-        }
-
-        private static bool OpenContextualMenu(SearchSelection selection, Rect contextRect)
-        {
-            var old = Selection.instanceIDs;
-            SearchUtils.SelectMultipleItems(selection);
-            EditorUtility.DisplayPopupMenu(contextRect, "Assets/", null);
-            EditorApplication.delayCall += () => EditorApplication.delayCall += () => Selection.instanceIDs = old;
-            return true;
         }
 
         private static void StartDrag(SearchItem item, SearchContext context)
@@ -111,7 +108,7 @@ namespace UnityEditor.Search.Providers
         private static IEnumerator SearchAssets(SearchContext context, SearchProvider provider)
         {
             var searchQuery = context.searchQuery;
-            var useIndexing = !context.options.HasFlag(SearchFlags.NoIndexing);
+            var useIndexing = !context.options.HasFlag(SearchFlags.NoIndexing) && assetIndexes.Count > 0;
             if (!string.IsNullOrEmpty(searchQuery))
             {
                 // Search by GUID
@@ -120,21 +117,29 @@ namespace UnityEditor.Search.Providers
                     yield return provider.CreateItem(context, guidPath, -1, $"{Path.GetFileName(guidPath)} ({searchQuery})", null, null, null);
 
                 // Search indexes that are ready
+                bool allIndexesReady = false;
                 if (useIndexing)
                 {
-                    foreach (var db in assetIndexes.Where(db => db.ready))
-                        yield return SearchIndexes(context.searchQuery, context, provider, db);
+                    allIndexesReady = assetIndexes.All(db => db.ready);
+                    if (allIndexesReady)
+                    {
+                        foreach (var db in assetIndexes)
+                            yield return SearchIndexes(context.searchQuery, context, provider, db);
+                    }
                 }
 
-                // Perform a quick search on asset paths
-                var findOptions = FindOptions.Words | FindOptions.Regex | FindOptions.Glob | (context.wantsMore ? FindOptions.Fuzzy : FindOptions.None);
-                foreach (var e in FindProvider.Search(context, findOptions))
-                    yield return CreateItem(context, provider, "Find", e.path, 998 + e.score);
+                if (!useIndexing || !allIndexesReady || context.options.HasFlag(SearchFlags.WantsMore))
+                {
+                    // Perform a quick search on asset paths
+                    var findOptions = FindOptions.Words | FindOptions.Regex | FindOptions.Glob | (context.wantsMore ? FindOptions.Fuzzy : FindOptions.None);
+                    foreach (var e in FindProvider.Search(context, provider, findOptions))
+                        yield return CreateItem(context, provider, "Find", e.path, 998 + e.score);
+                }
 
                 // Finally wait for indexes that are being built to end the search.
-                if (useIndexing && !context.options.HasFlag(SearchFlags.Synchronous))
+                if (useIndexing && !allIndexesReady && !context.options.HasFlag(SearchFlags.Synchronous))
                 {
-                    foreach (var db in assetIndexes.Where(db => !db.ready))
+                    foreach (var db in assetIndexes)
                         yield return SearchIndexes(context.searchQuery, context, provider, db);
                 }
             }
@@ -146,7 +151,7 @@ namespace UnityEditor.Search.Providers
                     .Select(path => CreateItem(context, provider, "More", path, 999));
 
                 if (assetIndexes != null)
-                    yield return assetIndexes.Select(db => SearchIndexes($"has={context.filterType.Name}", context, provider, db));
+                    yield return assetIndexes.Select(db => SearchIndexes($"t={context.filterType.Name}", context, provider, db));
             }
         }
 
@@ -162,7 +167,7 @@ namespace UnityEditor.Search.Providers
             // Search index
             var index = db.index;
             db.Report("Search", searchQuery);
-            yield return index.Search(searchQuery.ToLowerInvariant())
+            yield return index.Search(searchQuery.ToLowerInvariant(), context, provider)
                 .Where(e => e.id != null)
                 .Select(e => CreateItem(context, provider, db.name, e.id, e.score));
         }
@@ -176,7 +181,7 @@ namespace UnityEditor.Search.Providers
 
             var filename = Path.GetFileName(assetPath);
             if (context.options.HasFlag(SearchFlags.Debug) && !string.IsNullOrEmpty(dbName))
-                filename += $" ({dbName}, {itemScore})";
+                filename += $" ({dbName})";
             return provider.CreateItem(context, assetPath, itemScore, filename, null, null, null);
         }
 
@@ -190,6 +195,21 @@ namespace UnityEditor.Search.Providers
             var fileSize = new FileInfo(assetPath).Length;
             return $"{assetPath} ({EditorUtility.FormatBytes(fileSize)})";
         }
+
+        private static void ReimportAssets(IEnumerable<SearchItem> items)
+        {
+            const ImportAssetOptions reimportAssetOptions =
+                ImportAssetOptions.ForceUpdate |
+                ImportAssetOptions.ImportRecursive |
+                ImportAssetOptions.DontDownloadFromCacheServer |
+                (ImportAssetOptions)(1 << 7); // AssetDatabase::kMayCancelImport
+
+            foreach (var searchItem in items)
+            {
+                AssetDatabase.ImportAsset(searchItem.id, reimportAssetOptions);
+            }
+        }
+
 
         [SearchActionsProvider]
         internal static IEnumerable<SearchAction> CreateActionHandlers()
@@ -212,6 +232,14 @@ namespace UnityEditor.Search.Providers
                             EditorUtility.OpenWithDefaultApp(item.id);
                     }
                 },
+                new SearchAction(type, "reimport", null, "Reimport")
+                {
+                    handler = item =>
+                    {
+                        ReimportAssets(new[] { item });
+                    },
+                    execute = ReimportAssets
+                },
                 new SearchAction(type, "add_scene", null, "Add scene")
                 {
                     // Only works in single selection and adds a scene to the current hierarchy.
@@ -221,7 +249,7 @@ namespace UnityEditor.Search.Providers
                 new SearchAction(type, "reveal", null, k_RevealActionLabel)
                 {
                     handler = (item) => EditorUtility.RevealInFinder(item.id)
-                }
+                },
             };
         }
 

@@ -164,10 +164,10 @@ namespace UnityEditor.Profiling
 
             public void ConfigureWithModule(ProfilerModuleBase module)
             {
-                bool isActive = module.isActive;
+                bool isActive = module.active;
                 SetActive(isActive);
 
-                m_Label.text = module.name;
+                m_Label.text = module.localizedName;
             }
 
             public void SetActive(bool active)

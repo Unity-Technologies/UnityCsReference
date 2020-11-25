@@ -14,7 +14,16 @@ using Button = UnityEngine.UIElements.Button;
 
 namespace UnityEditor.PackageManager.UI
 {
-    internal class PackageDetails : VisualElement
+    internal abstract class PackageDetails : VisualElement
+    {
+        internal abstract IAlert detailError { get; }
+        internal abstract void RefreshPackageActionButtons();
+    }
+}
+
+namespace UnityEditor.PackageManager.UI.Internal
+{
+    internal class PackageDetails : UI.PackageDetails
     {
         internal new class UxmlFactory : UxmlFactory<PackageDetails> {}
 
@@ -207,6 +216,7 @@ namespace UnityEditor.PackageManager.UI
             detailImages?.RegisterCallback<GeometryChangedEvent>(ImagesGeometryChangeEvent);
 
             scopedRegistryInfoBox.Q<Button>().clickable.clicked += OnInfoBoxClickMore;
+            detailScrollView.verticalScroller.valueChanged += OnDetailScroll;
 
             root.Query<TextField>().ForEach(t =>
             {
@@ -214,6 +224,11 @@ namespace UnityEditor.PackageManager.UI
             });
 
             RefreshContent();
+        }
+
+        private void OnDetailScroll(float offset)
+        {
+            m_PackageManagerPrefs.packageDetailVerticalScrollOffset = offset;
         }
 
         public void OnEnable()
@@ -235,8 +250,7 @@ namespace UnityEditor.PackageManager.UI
 
             m_SettingsProxy.onEnablePackageDependenciesChanged += (value) => RefreshDependencies();
 
-            // manually call the callback function once on initialization to refresh the UI
-            OnSelectionChanged(m_PageManager.GetSelectedVersion());
+            RefreshUI(m_PageManager.GetSelectedVersion());
         }
 
         public void OnDisable()
@@ -325,6 +339,12 @@ namespace UnityEditor.PackageManager.UI
 
         internal void OnSelectionChanged(IPackageVersion version)
         {
+            m_PackageManagerPrefs.packageDetailVerticalScrollOffset = 0;
+            RefreshUI(version);
+        }
+
+        internal void RefreshUI(IPackageVersion version)
+        {
             if (version != null)
                 SetPackage(m_PackageDatabase.GetPackage(version), version);
             else
@@ -351,7 +371,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void RefreshContent()
         {
-            detailScrollView.scrollOffset = new Vector2(0, 0);
+            detailScrollView.scrollOffset = new Vector2(0, m_PackageManagerPrefs.packageDetailVerticalScrollOffset);
 
             var detailVisible = package != null && displayVersion != null && !inProgressView.Refresh(package);
             var detailEnabled = displayVersion == null || displayVersion.isFullyFetched;
@@ -826,7 +846,7 @@ namespace UnityEditor.PackageManager.UI
             RefreshPackageActionButtons();
         }
 
-        internal void RefreshPackageActionButtons()
+        internal override void RefreshPackageActionButtons()
         {
             RefreshAddButton();
             RefreshRemoveButton();
@@ -1273,7 +1293,7 @@ namespace UnityEditor.PackageManager.UI
         private Button detailDescMore { get { return cache.Get<Button>("detailDescMore"); } }
         private Button detailDescLess { get { return cache.Get<Button>("detailDescLess"); } }
         private VisualElement detailLinksContainer => cache.Get<VisualElement>("detailLinksContainer");
-        internal Alert detailError { get { return cache.Get<Alert>("detailError"); } }
+        internal override IAlert detailError { get { return cache.Get<Alert>("detailError"); } }
         private ScrollView detailScrollView { get { return cache.Get<ScrollView>("detailScrollView"); } }
         private VisualElement detailContainer { get { return cache.Get<VisualElement>("detail"); } }
         private TextField detailTitle { get { return cache.Get<TextField>("detailTitle"); } }

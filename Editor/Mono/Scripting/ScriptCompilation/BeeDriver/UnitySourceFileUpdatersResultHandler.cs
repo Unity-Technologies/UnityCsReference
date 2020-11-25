@@ -18,103 +18,75 @@ namespace UnityEditor.Scripting.ScriptCompilation
     class UnitySourceFileUpdatersResultHandler : SourceFileUpdatersResultHandler
     {
         bool m_HaveConsentToOverwriteUserScripts;
-        NPath ProjectRoot { get; }
+
         private readonly UnityScriptUpdaterConsentAPI ConstentAPI;
 
-        public UnitySourceFileUpdatersResultHandler(NPath projectRoot)
+        public UnitySourceFileUpdatersResultHandler()
         {
-            ProjectRoot = projectRoot;
             ConstentAPI = new UnityScriptUpdaterConsentAPI();
         }
 
-        struct UpdatedFile
+        public override void ProcessUpdaterResults(SourceFileUpdaterBase.Update[] updates)
         {
-            public NPath virtualPath;
-            public NPath projectRelativePhysicalPath;
-            public NPath updatedPath;
-        }
+            NPath libraryPackageCache = "Library/PackageCache";
 
-        public override void ProcessUpdaterResults(SourceFileUpdaterBase.Task[] succesfullyFinishedTasks)
-        {
-            var resolvedPathsToPackages = PackageManager.PackageInfo.GetAll().Where(LivesInPackageCache).ToDictionary(p => new NPath(p.resolvedPath).RelativeTo(NPath.CurrentDirectory), p => p);
+            var problemUpdates = new List<(SourceFileUpdaterBase.Update update, Exception exception)>();
 
-            foreach (var task in succesfullyFinishedTasks)
+            void ExecuteUpdates(IEnumerable<SourceFileUpdaterBase.Update> updates)
             {
-                var files = new NPath(task.TempOutputDirectory).Files(true);
-                if (!files.Any())
-                    continue;
-
-                var firstFileProjectRelative = files.First().RelativeTo(task.TempOutputDirectory);
-                var matchingPackage = resolvedPathsToPackages.FirstOrDefault(kvp => firstFileProjectRelative.IsChildOf(kvp.Key));
-
-                var updatedFiles = files.Select(p =>
+                foreach (var update in updates)
                 {
-                    var projectRelativePhysicalPath = p.RelativeTo(task.TempOutputDirectory);
-                    return new UpdatedFile()
+                    try
                     {
-                        projectRelativePhysicalPath = projectRelativePhysicalPath,
-                        virtualPath = matchingPackage.Value != null
-                            ? new NPath($"Packages/{matchingPackage.Value.name}/{projectRelativePhysicalPath.RelativeTo(matchingPackage.Value.resolvedPath)}")
-                            : null,
-                        updatedPath = p
-                    };
-                }).ToArray();
-
-                Console.WriteLine("[API Updater] Updated Files:");
-
-                var updatedPackageCacheFiles = updatedFiles.Where(a => a.virtualPath != null).ToArray();
-                if (updatedPackageCacheFiles.Any())
-                {
-                    ImmutableAssets.SetAssetsAllowedToBeModified(updatedPackageCacheFiles.Select(p => p.virtualPath.ToString()).ToArray());
-
-                    foreach (var updatedPackageCacheFile in updatedPackageCacheFiles)
-                    {
-                        Console.WriteLine(updatedPackageCacheFile.projectRelativePhysicalPath);
-                        updatedPackageCacheFile.updatedPath.Copy(ProjectRoot.Combine(updatedPackageCacheFile.projectRelativePhysicalPath));
+                        Console.WriteLine(update.originalFileWithError);
+                        new NPath(update.tempFileWithNewContents).Copy(update.originalFileWithError);
                     }
-                }
-
-                var myNonPackageUpdatedFiles = updatedFiles.Where(a => a.virtualPath == null).ToArray();
-                if (myNonPackageUpdatedFiles.Any())
-                {
-                    var relativeVersionedFiles = myNonPackageUpdatedFiles.Select(p => p.projectRelativePhysicalPath).ToArray();
-                    if (MayOverwrite(relativeVersionedFiles))
+                    catch (Exception e)
                     {
-                        if (PrepareForOverwritingUpdatedFiles(relativeVersionedFiles))
-                        {
-                            var problemFiles = new List<(NPath, Exception)>();
-                            foreach (var updatedNonPackageFile in myNonPackageUpdatedFiles)
-                            {
-                                Console.WriteLine(updatedNonPackageFile.projectRelativePhysicalPath);
-                                try
-                                {
-                                    updatedNonPackageFile.updatedPath.Copy(ProjectRoot.Combine(updatedNonPackageFile.projectRelativePhysicalPath));
-                                }
-                                catch (Exception e)
-                                {
-                                    problemFiles.Add((updatedNonPackageFile.projectRelativePhysicalPath, e));
-                                }
-                            }
-
-                            if (problemFiles.Any())
-                            {
-                                var sb = new StringBuilder();
-                                sb.AppendLine("Unable to update the following files. Are they marked readonly?");
-                                foreach (var(file, exception) in problemFiles)
-                                    sb.AppendLine($"{file} {exception.Message}");
-
-                                Debug.LogError(sb.ToString());
-                            }
-                        }
+                        problemUpdates.Add((update, e));
                     }
                 }
             }
-            Console.WriteLine("Finished running ScriptUpdaters");
-        }
 
-        private bool LivesInPackageCache(PackageManager.PackageInfo arg)
-        {
-            return new NPath(arg.resolvedPath).MakeAbsolute(NPath.CurrentDirectory).IsChildOf(NPath.CurrentDirectory.Combine("Library/PackageCache"));
+            var packageResolvePathsAndNames = PackageManager.PackageInfo.GetAll().Where(p => new NPath(p.resolvedPath).ToString().Contains("Library/PackageCache")).Select(p => (p.resolvedPath, p.name)).ToArray();
+
+            string VirtualizedPathFor(NPath file)
+            {
+                foreach (var packageResolvePathAndName in packageResolvePathsAndNames)
+                    if (file.IsChildOf(packageResolvePathAndName.resolvedPath))
+                        return $"Packages/{packageResolvePathAndName.name}/{file.RelativeTo(packageResolvePathAndName.resolvedPath)}";
+                throw new ArgumentException($"Failed to virtualize path: {file}");
+            }
+
+            var(immutablePackageUpdates, nonImmutableUpdates) = updates.SplitBy(u => new NPath(u.originalFileWithError).IsChildOf(libraryPackageCache));
+
+            Console.WriteLine("[API Updater] Updated Files:");
+            if (immutablePackageUpdates.Any())
+            {
+                var virtualizedPackageFiles = immutablePackageUpdates.Select(u => VirtualizedPathFor(u.originalFileWithError)).ToArray();
+                ImmutableAssets.SetAssetsAllowedToBeModified(virtualizedPackageFiles);
+                ExecuteUpdates(immutablePackageUpdates);
+            }
+
+            if (nonImmutableUpdates.Any())
+            {
+                var nonImmutableTargetFiles = nonImmutableUpdates.Select(u => new NPath(u.originalFileWithError)).ToArray();
+
+                if (MayOverwrite(nonImmutableTargetFiles) && PrepareForOverwritingUpdatedFiles(nonImmutableTargetFiles))
+                    ExecuteUpdates(nonImmutableUpdates);
+            }
+
+            if (problemUpdates.Any())
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("Unable to update the following files. Are they marked readonly?");
+                foreach (var problem in problemUpdates)
+                    sb.AppendLine(problem.update.originalFileWithError + " " + problem.exception.Message);
+
+                Debug.LogError(sb.ToString());
+            }
+
+            Console.WriteLine("Finished running ScriptUpdaters");
         }
 
         bool MayOverwrite(NPath[] files)
@@ -132,7 +104,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 case ScriptUpdaterConsentType.NoConsent:
                     return false;
                 default:
-                    throw new InvalidOperationException(result.ToString());
+                    throw new ArgumentOutOfRangeException();
             }
         }
 

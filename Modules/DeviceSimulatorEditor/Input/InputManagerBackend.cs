@@ -14,7 +14,7 @@ namespace UnityEditor.DeviceSimulation
 
         private int m_NextId;
         private Vector2 m_NextPosition;
-        private TouchPhase m_NextPhase = TouchPhase.Canceled;
+        private UnityEngine.TouchPhase m_NextPhase = UnityEngine.TouchPhase.Canceled;
 
         public InputManagerBackend()
         {
@@ -28,24 +28,24 @@ namespace UnityEditor.DeviceSimulation
                 Input.SimulateTouch(m_NextId, m_NextPosition, m_NextPhase);
                 m_LastSubmittedEventFrame = m_LastEventFrame;
             }
-            else if (m_NextPhase == TouchPhase.Moved || m_NextPhase == TouchPhase.Began)
+            else if (m_NextPhase == UnityEngine.TouchPhase.Moved || m_NextPhase == UnityEngine.TouchPhase.Began)
             {
-                Input.SimulateTouch(m_NextId, m_NextPosition, TouchPhase.Stationary);
+                Input.SimulateTouch(m_NextId, m_NextPosition, UnityEngine.TouchPhase.Stationary);
             }
         }
 
-        public void Touch(int id, Vector2 position, SimulatorTouchPhase phase)
+        public void Touch(int id, Vector2 position, TouchPhase phase)
         {
             // Input.SimulateTouch expects a single event each frame and if sent two like Moved then Ended will create a separate touch.
             // So we delay calling Input.SimulateTouch until update.
             var newPhase = ToLegacy(phase);
             if (Time.frameCount == m_LastEventFrame)
             {
-                if (m_NextPhase == TouchPhase.Began)
+                if (m_NextPhase == UnityEngine.TouchPhase.Began)
                     return;
-                else if (m_NextPhase == TouchPhase.Moved && newPhase == TouchPhase.Ended)
+                else if (m_NextPhase == UnityEngine.TouchPhase.Moved && newPhase == UnityEngine.TouchPhase.Ended)
                 {
-                    m_NextPhase = TouchPhase.Ended;
+                    m_NextPhase = UnityEngine.TouchPhase.Ended;
                     m_NextPosition = position;
                 }
             }
@@ -58,20 +58,20 @@ namespace UnityEditor.DeviceSimulation
             }
         }
 
-        private static TouchPhase ToLegacy(SimulatorTouchPhase original)
+        private static UnityEngine.TouchPhase ToLegacy(TouchPhase original)
         {
             switch (original)
             {
-                case SimulatorTouchPhase.Began:
-                    return TouchPhase.Began;
-                case SimulatorTouchPhase.Moved:
-                    return TouchPhase.Moved;
-                case SimulatorTouchPhase.Ended:
-                    return TouchPhase.Ended;
-                case SimulatorTouchPhase.Canceled:
-                    return TouchPhase.Canceled;
-                case SimulatorTouchPhase.Stationary:
-                    return TouchPhase.Stationary;
+                case TouchPhase.Began:
+                    return UnityEngine.TouchPhase.Began;
+                case TouchPhase.Moved:
+                    return UnityEngine.TouchPhase.Moved;
+                case TouchPhase.Ended:
+                    return UnityEngine.TouchPhase.Ended;
+                case TouchPhase.Canceled:
+                    return UnityEngine.TouchPhase.Canceled;
+                case TouchPhase.Stationary:
+                    return UnityEngine.TouchPhase.Stationary;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(original), original, "None is not a supported phase with legacy input system");
             }

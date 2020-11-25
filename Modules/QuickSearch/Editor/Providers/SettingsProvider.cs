@@ -24,7 +24,7 @@ namespace UnityEditor.Search.Providers
 
             private static SettingsProvider[] FetchSettingsProviders()
             {
-                return SettingsService.FetchSettingsProviders();
+                return Utils.FetchSettingsProviders();
             }
         }
 

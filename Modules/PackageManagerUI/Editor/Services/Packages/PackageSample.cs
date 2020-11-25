@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
+using UnityEditor.PackageManager.UI.Internal;
 
 namespace UnityEditor.PackageManager.UI
 {

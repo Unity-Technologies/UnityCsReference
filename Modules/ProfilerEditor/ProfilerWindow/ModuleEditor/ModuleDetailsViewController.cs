@@ -111,7 +111,7 @@ namespace UnityEditor.Profiling.ModuleEditor
 
             if (m_Module.isEditable)
             {
-                m_TitleTextField.SetValueWithoutNotify(m_Module.name);
+                m_TitleTextField.SetValueWithoutNotify(m_Module.localizedName);
                 UpdateChartCountersCountLabel();
                 m_ChartCountersListView.itemsSource = m_Module.chartCounters;
                 m_ChartCountersListView.Refresh();
@@ -345,7 +345,7 @@ namespace UnityEditor.Profiling.ModuleEditor
         {
             var title = LocalizationDatabase.GetLocalizedString("Delete Module");
             var localizedMessageFormat = LocalizationDatabase.GetLocalizedString("Are you sure you want to delete the module '{0}'?");
-            var message = string.Format(localizedMessageFormat, m_Module.name);
+            var message = string.Format(localizedMessageFormat, m_Module.localizedName);
             var delete = LocalizationDatabase.GetLocalizedString("Delete");
             var cancel = LocalizationDatabase.GetLocalizedString("Cancel");
             if (EditorUtility.DisplayDialog(title, message, delete, cancel))

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor.Search
@@ -77,6 +78,7 @@ namespace UnityEditor.Search
     {
         const string k_ProjectUserSettingsPath = "UserSettings/Search.settings";
         public const string settingsPreferencesKey = "Preferences/Search";
+        public static readonly string globalSearchSettingsFolder = Path.Combine(InternalEditorUtility.unityPreferencesFolder, "Search").Replace("\\", "/");
 
         // Per project settings
         public static bool trackSelection { get; set; }
@@ -241,59 +243,6 @@ namespace UnityEditor.Search
             return settings;
         }
 
-        static void DrawSearchServiceSettings()
-        {
-            EditorGUILayout.LabelField("Search Engines", EditorStyles.largeLabel);
-            var orderedApis = UnityEditor.SearchService.SearchService.searchApis.OrderBy(api => api.displayName);
-            foreach (var api in orderedApis)
-            {
-                var searchContextName = api.displayName;
-                var searchEngines = OrderSearchEngines(api.engines);
-                if (searchEngines.Count == 0)
-                    continue;
-
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    try
-                    {
-                        var items = searchEngines.Select(se => new GUIContent(se.name,
-                            searchEngines.Count == 1 ?
-                            $"Search engine for {searchContextName}" :
-                            $"Set search engine for {searchContextName}")).ToArray();
-                        var activeEngine = api.GetActiveSearchEngine();
-                        var activeEngineIndex = Math.Max(searchEngines.FindIndex(engine => engine.name == activeEngine?.name), 0);
-
-                        GUILayout.Space(20);
-                        GUILayout.Label(new GUIContent(searchContextName), GUILayout.Width(175));
-                        GUILayout.Space(20);
-
-                        using (var scope = new EditorGUI.ChangeCheckScope())
-                        {
-                            var newSearchEngine = EditorGUILayout.Popup(activeEngineIndex, items, GUILayout.ExpandWidth(true));
-                            if (scope.changed)
-                            {
-                                api.SetActiveSearchEngine(searchEngines[newSearchEngine].name);
-                                GUI.changed = true;
-                            }
-                            GUILayout.Space(10);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.LogException(ex);
-                    }
-                }
-            }
-        }
-
-        static List<UnityEditor.SearchService.ISearchEngineBase> OrderSearchEngines(IEnumerable<UnityEditor.SearchService.ISearchEngineBase> engines)
-        {
-            var defaultEngine = engines.First(engine => engine is UnityEditor.SearchService.LegacySearchEngineBase);
-            var overrides = engines.Where(engine => !(engine is UnityEditor.SearchService.LegacySearchEngineBase));
-            var orderedSearchEngines = new List<UnityEditor.SearchService.ISearchEngineBase> { defaultEngine };
-            orderedSearchEngines.AddRange(overrides);
-            return orderedSearchEngines;
-        }
 
         private static void DrawSearchSettings(string searchContext)
         {
@@ -311,7 +260,6 @@ namespace UnityEditor.Search
                         var newDebounceMs = EditorGUILayout.IntSlider(Styles.debounceThreshold, debounceMs, 0, 1000);
                         if (newDebounceMs != debounceMs)
                         {
-                            SearchAnalytics.DebounceSendEvent(() => SendDebounceValueChanged());
                             debounceMs = newDebounceMs;
                         }
 
@@ -324,7 +272,6 @@ namespace UnityEditor.Search
                     }
 
                     GUILayout.Space(10);
-                    DrawSearchServiceSettings();
                 }
                 GUILayout.EndVertical();
             }
@@ -560,7 +507,6 @@ namespace UnityEditor.Search
             if (string.IsNullOrEmpty(providerId) || string.IsNullOrEmpty(actionId))
                 return;
 
-
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.PreferenceChanged, "SetDefaultAction", providerId, actionId);
             GetProviderSettings(providerId).defaultAction = actionId;
             SortActionsPriority();
@@ -593,6 +539,14 @@ namespace UnityEditor.Search
 
                 return 0;
             });
+        }
+
+        public static string GetFullQueryFolderPath()
+        {
+            var initialFolder = Utils.CleanPath(new DirectoryInfo(queryFolder).FullName);
+            if (!Directory.Exists(initialFolder) || !Utils.IsPathUnderProject(initialFolder))
+                initialFolder = new DirectoryInfo("Assets").FullName;
+            return initialFolder;
         }
 
         static class Styles

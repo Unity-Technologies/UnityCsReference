@@ -14,9 +14,10 @@ namespace UnityEditorInternal.Profiling
     {
         const string k_IconName = "Profiler.GlobalIllumination";
         const int k_DefaultOrderIndex = 12;
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("Global Illumination");
+        static readonly string k_UnLocalizedName = "Global Illumination";
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
 
-        public GlobalIlluminationProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName, Chart.ChartType.StackedFill) {}
+        public GlobalIlluminationProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName, Chart.ChartType.StackedFill) {}
 
         public override ProfilerArea area => ProfilerArea.GlobalIllumination;
 

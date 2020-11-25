@@ -15,7 +15,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
     /// </summary>
     class UnityProgressAPI : ProgressAPI
     {
-        public override ProgressToken Start(string msg) => new UnityProgressAPIToken(msg);
+        private string Title { get; }
+
+        public UnityProgressAPI(string title)
+        {
+            Title = title;
+        }
+
+        public override ProgressToken Start() => new UnityProgressAPIToken(Title);
 
         private class UnityProgressAPIToken : ProgressToken
         {

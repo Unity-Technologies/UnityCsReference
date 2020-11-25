@@ -29,13 +29,16 @@ namespace UnityEditor.UIElements
         internal Func<TValueChoice, string> m_FormatSelectedValueCallback;
         internal Func<TValueChoice, string> m_FormatListItemCallback;
 
+        // Set this callback to provide a specific implementation of the menu.
+        internal Func<IGenericMenu> createMenuCallback;
+
         // This is the value to display to the user
         internal abstract string GetValueToDisplay();
 
         internal abstract string GetListItemToDisplay(TValueType item);
 
         // This method is used when the menu is built to fill up all the choices.
-        internal abstract void AddMenuItems(GenericMenu menu);
+        internal abstract void AddMenuItems(IGenericMenu menu);
 
         internal virtual List<TValueChoice> choices
         {
@@ -152,9 +155,18 @@ namespace UnityEditor.UIElements
 
         private void ShowMenu()
         {
-            var menu = new GenericMenu();
+            IGenericMenu menu;
+            if (createMenuCallback != null)
+            {
+                menu = createMenuCallback.Invoke();
+            }
+            else
+            {
+                menu = elementPanel?.contextType == ContextType.Player ? new GenericDropdownMenu() : DropdownMenu.CreateDropdown();
+            }
+
             AddMenuItems(menu);
-            menu.DropDown(visualInput.worldBound);
+            menu.DropDown(visualInput.worldBound, this, true);
         }
 
         private class PopupTextElement : TextElement

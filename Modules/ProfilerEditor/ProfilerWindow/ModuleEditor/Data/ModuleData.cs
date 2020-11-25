@@ -14,15 +14,17 @@ namespace UnityEditor.Profiling.ModuleEditor
         public const int k_MaximumChartCountersCount = UnityEditorInternal.ProfilerChart.k_MaximumSeriesCount;
 
         [SerializeField] string m_Name;
+        [SerializeField] string m_LocalizedName;
         [SerializeField] List<ProfilerCounterData> m_ChartCounters = new List<ProfilerCounterData>();
         [SerializeField] List<ProfilerCounterData> m_DetailCounters = new List<ProfilerCounterData>();
         [SerializeField] bool m_IsEditable;
         [SerializeField] string m_CurrentProfilerModuleName;
         [SerializeField] EditedState m_EditedState;
 
-        public ModuleData(string name, bool isEditable, bool newlyCreatedModule = false)
+        public ModuleData(string name, string localizedName, bool isEditable, bool newlyCreatedModule = false)
         {
             m_Name = name;
+            m_LocalizedName = localizedName;
             m_CurrentProfilerModuleName = m_Name;
             m_IsEditable = isEditable;
             m_EditedState = (newlyCreatedModule) ? EditedState.Created : EditedState.NoChanges;
@@ -31,6 +33,7 @@ namespace UnityEditor.Profiling.ModuleEditor
         public bool isEditable => m_IsEditable;
         public EditedState editedState => m_EditedState;
         public string name => m_Name;
+        public string localizedName => m_LocalizedName;
         public string currentProfilerModuleName => m_CurrentProfilerModuleName;
         public List<ProfilerCounterData> chartCounters => m_ChartCounters;
         // We currently don't allow users to specify detail counters in the UI. Instead we mirror the chart counters in the details view.
@@ -53,7 +56,7 @@ namespace UnityEditor.Profiling.ModuleEditor
         static ModuleData CreateWithProfilerModule(ProfilerModuleBase module)
         {
             var isEditable = module is DynamicProfilerModule;
-            var moduleData = new ModuleData(module.name, isEditable);
+            var moduleData = new ModuleData(module.name, module.localizedName, isEditable);
 
             var chartCounters = new List<ProfilerCounterData>(module.chartCounters);
             moduleData.m_ChartCounters = chartCounters;
@@ -67,6 +70,7 @@ namespace UnityEditor.Profiling.ModuleEditor
         public void SetName(string name)
         {
             m_Name = name;
+            m_LocalizedName = name;
             SetUpdatedEditedStateIfNoChanges();
         }
 

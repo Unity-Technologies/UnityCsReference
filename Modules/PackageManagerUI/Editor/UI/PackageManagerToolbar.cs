@@ -9,7 +9,7 @@ using System.Linq;
 using System;
 using UnityEngine;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageManagerToolbar : VisualElement
     {

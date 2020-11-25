@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Linq;
 using UnityEditor;
+using UnityEditor.Search.Providers;
 using UnityEngine;
 
 namespace UnityEditor.Search
@@ -147,7 +149,7 @@ namespace UnityEditor.Search
         internal static void IndexColor(string propertyName, Color c, ObjectIndexer indexer, int documentIndex)
         {
             var colorHex = c.a < 1f ? ColorUtility.ToHtmlStringRGBA(c) : ColorUtility.ToHtmlStringRGB(c);
-            indexer.AddProperty(propertyName, colorHex.ToLowerInvariant(), documentIndex, exact: true, saveKeyword: false);
+            indexer.AddProperty(propertyName, "#" + colorHex.ToLowerInvariant(), documentIndex, exact: true, saveKeyword: false);
         }
 
         internal static void IndexVector(string propertyName, Vector2 v, ObjectIndexer indexer, int documentIndex)
@@ -169,6 +171,21 @@ namespace UnityEditor.Search
             indexer.AddNumber(propertyName + ".y", v.y, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".z", v.z, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".w", v.w, indexer.settings.baseScore, documentIndex);
+        }
+
+        [SceneQueryEngineFilter("material", supportedOperators = new[] { ":" })]
+        internal static bool FilterMeshRendererMaterials(GameObject go, string op, string value)
+        {
+            if (!go.TryGetComponent<MeshRenderer>(out var c))
+                return false;
+            foreach (var m in c.sharedMaterials)
+            {
+                var mname = m.name.Replace(" (Instance)", "");
+                if (mname.IndexOf(value, System.StringComparison.OrdinalIgnoreCase) != -1)
+                    return true;
+            }
+
+            return false;
         }
     }
 }

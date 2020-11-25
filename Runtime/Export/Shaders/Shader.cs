@@ -106,9 +106,7 @@ namespace UnityEngine
             GC.SuppressFinalize(this);
         }
 
-        [Obsolete("Use SetFloat for Float and Int preperties and SetInteger for Integer properties instead", false)]
         public void SetInt(string name, int value)              { SetFloatImpl(Shader.PropertyToID(name), (float)value); }
-        [Obsolete("Use SetFloat for Float and Int preperties and SetInteger for Integer properties instead", false)]
         public void SetInt(int nameID, int value)               { SetFloatImpl(nameID, (float)value); }
 
         public void SetFloat(string name, float value)          { SetFloatImpl(Shader.PropertyToID(name), value); }
@@ -152,9 +150,7 @@ namespace UnityEngine
         public bool HasProperty(string name) { return HasPropertyImpl(Shader.PropertyToID(name)); }
         public bool HasProperty(int nameID) { return HasPropertyImpl(nameID); }
 
-        [Obsolete("Use HasFloat for Float and Int preperties and HasInteger for Integer properties instead", false)]
         public bool HasInt(string name) { return HasFloatImpl(Shader.PropertyToID(name)); }
-        [Obsolete("Use HasFloat for Float and Int preperties and HasInteger for Integer properties instead", false)]
         public bool HasInt(int nameID) { return HasFloatImpl(nameID); }
 
         public bool HasFloat(string name) { return HasFloatImpl(Shader.PropertyToID(name)); }
@@ -177,9 +173,7 @@ namespace UnityEngine
         public float     GetFloat(string name)      { return GetFloatImpl(Shader.PropertyToID(name)); }
         public float     GetFloat(int nameID)       { return GetFloatImpl(nameID); }
 
-        [Obsolete("Use GetFloat for Float and Int preperties and GetInteger for Integer properties instead", false)]
         public int       GetInt(string name)        { return (int)GetFloatImpl(Shader.PropertyToID(name)); }
-        [Obsolete("Use GetFloat for Float and Int preperties and GetInteger for Integer properties instead", false)]
         public int       GetInt(int nameID)         { return (int)GetFloatImpl(nameID); }
 
         public int       GetInteger(string name)    { return GetIntImpl(Shader.PropertyToID(name)); }
@@ -362,9 +356,7 @@ namespace UnityEngine
 
     public sealed partial class Shader
     {
-        [Obsolete("Use SetGlobalFloat for Float and Int preperties and SetGlobalInteger for Integer properties instead", false)]
         public static void SetGlobalInt(string name, int value)                 { SetGlobalFloatImpl(Shader.PropertyToID(name), (float)value); }
-        [Obsolete("Use SetGlobalFloat for Float and Int preperties and SetGlobalInteger for Integer properties instead", false)]
         public static void SetGlobalInt(int nameID, int value)                  { SetGlobalFloatImpl(nameID, (float)value); }
 
         public static void SetGlobalFloat(string name, float value)             { SetGlobalFloatImpl(Shader.PropertyToID(name), value); }
@@ -407,9 +399,7 @@ namespace UnityEngine
         public static void SetGlobalMatrixArray(string name, Matrix4x4[] values)    { SetGlobalMatrixArray(Shader.PropertyToID(name), values, values.Length); }
         public static void SetGlobalMatrixArray(int nameID, Matrix4x4[] values)     { SetGlobalMatrixArray(nameID, values, values.Length); }
 
-        [Obsolete("Use GetGlobalFloat for Float and Int preperties and GetGlobalInteger for Integer properties instead", false)]
         public static int         GetGlobalInt(string name)         { return (int)GetGlobalFloatImpl(Shader.PropertyToID(name)); }
-        [Obsolete("Use GetGlobalFloat for Float and Int preperties and GetGlobalInteger for Integer properties instead", false)]
         public static int         GetGlobalInt(int nameID)          { return (int)GetGlobalFloatImpl(nameID); }
 
         public static float       GetGlobalFloat(string name)       { return GetGlobalFloatImpl(Shader.PropertyToID(name)); }
@@ -548,9 +538,7 @@ namespace UnityEngine
 
     public partial class Material
     {
-        [Obsolete("Use SetFloat for Float and Int preperties and SetInteger for Integer properties instead", false)]
         public void SetInt(string name, int value)              { SetFloatImpl(Shader.PropertyToID(name), (float)value); }
-        [Obsolete("Use SetFloat for Float and Int preperties and SetInteger for Integer properties instead", false)]
         public void SetInt(int nameID, int value)               { SetFloatImpl(nameID, (float)value); }
 
         public void SetFloat(string name, float value)          { SetFloatImpl(Shader.PropertyToID(name), value); }
@@ -596,9 +584,7 @@ namespace UnityEngine
         public void SetMatrixArray(string name, Matrix4x4[] values)       { SetMatrixArray(Shader.PropertyToID(name), values, values.Length); }
         public void SetMatrixArray(int nameID,    Matrix4x4[] values)     { SetMatrixArray(nameID, values, values.Length); }
 
-        [Obsolete("Use GetFloat for Float and Int preperties and GetInteger for Integer properties instead", false)]
         public int       GetInt(string name)     { return (int)GetFloatImpl(Shader.PropertyToID(name)); }
-        [Obsolete("Use GetFloat for Float and Int preperties and GetInteger for Integer properties instead", false)]
         public int       GetInt(int nameID)      { return (int)GetFloatImpl(nameID); }
 
         public float     GetFloat(string name)   { return GetFloatImpl(Shader.PropertyToID(name)); }

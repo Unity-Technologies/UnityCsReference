@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.AnimatedValues;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -20,12 +21,21 @@ namespace UnityEditor
 
         private Tilemap tilemap { get { return (target as Tilemap); } }
 
+        private readonly AnimBool m_ShowInfo = new AnimBool();
+        private SavedBool m_ShowInfoFoldout;
+        private TileBase[] usedTiles;
+        private Sprite[] usedSprites;
+
         private static class Styles
         {
             public static readonly GUIContent animationFrameRateLabel = EditorGUIUtility.TrTextContent("Animation Frame Rate", "Frame rate for playing animated tiles in the tilemap");
             public static readonly GUIContent tilemapColorLabel = EditorGUIUtility.TrTextContent("Color", "Color tinting all Sprites from tiles in the tilemap");
             public static readonly GUIContent tileAnchorLabel = EditorGUIUtility.TrTextContent("Tile Anchor", "Anchoring position for Sprites from tiles in the tilemap");
             public static readonly GUIContent orientationLabel = EditorGUIUtility.TrTextContent("Orientation", "Orientation for tiles in the tilemap");
+
+            public static readonly GUIContent usedTilesLabel = EditorGUIUtility.TrTextContent("Tiles", "Tiles used in the Tilemap");
+            public static readonly GUIContent usedSpritesLabel = EditorGUIUtility.TrTextContent("Sprites", "Sprites used in the Tilemap");
+            public static readonly GUIContent noneUsedLabel = EditorGUIUtility.TrTextContent("None");
         }
 
         private void OnEnable()
@@ -35,6 +45,10 @@ namespace UnityEditor
             m_TileAnchor = serializedObject.FindProperty("m_TileAnchor");
             m_Orientation = serializedObject.FindProperty("m_TileOrientation");
             m_OrientationMatrix = serializedObject.FindProperty("m_TileOrientationMatrix");
+
+            m_ShowInfo.valueChanged.AddListener(Repaint);
+            m_ShowInfoFoldout = new SavedBool($"{target.GetType()}.ShowFoldout", false);
+            m_ShowInfo.value = m_ShowInfoFoldout.value;
         }
 
         private void OnDisable()
@@ -67,6 +81,59 @@ namespace UnityEditor
             GUI.enabled = true;
 
             serializedObject.ApplyModifiedProperties();
+
+            DrawInfoView();
+        }
+
+        private void DrawInfoView()
+        {
+            m_ShowInfoFoldout.value = m_ShowInfo.target = EditorGUILayout.Foldout(m_ShowInfo.target, "Info", true);
+            if (EditorGUILayout.BeginFadeGroup(m_ShowInfo.faded))
+            {
+                if (targets.Length == 1)
+                {
+                    EditorGUI.BeginDisabledGroup(true);
+                    var tileCount = tilemap.GetUsedTilesCount();
+                    var spriteCount = tilemap.GetUsedSpritesCount();
+                    if (usedTiles == null || usedTiles.Length != tileCount)
+                        usedTiles = new TileBase[tileCount];
+                    if (usedSprites == null || usedSprites.Length != spriteCount)
+                        usedSprites = new Sprite[spriteCount];
+                    tilemap.GetUsedTilesNonAlloc(usedTiles);
+                    tilemap.GetUsedSpritesNonAlloc(usedSprites);
+
+                    EditorGUILayout.LabelField(Styles.usedTilesLabel, EditorStyles.boldLabel);
+                    if (tileCount > 0)
+                    {
+                        foreach (var tile in usedTiles)
+                        {
+                            EditorGUILayout.ObjectField(tile, typeof(TileBase), false);
+                        }
+                    }
+                    else
+                    {
+                        EditorGUILayout.LabelField(Styles.noneUsedLabel);
+                    }
+                    EditorGUILayout.LabelField(Styles.usedSpritesLabel, EditorStyles.boldLabel);
+                    if (spriteCount > 0)
+                    {
+                        foreach (var sprite in usedSprites)
+                        {
+                            EditorGUILayout.ObjectField(sprite, typeof(Sprite), false);
+                        }
+                    }
+                    else
+                    {
+                        EditorGUILayout.LabelField(Styles.noneUsedLabel);
+                    }
+                    EditorGUI.EndDisabledGroup();
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox("Cannot show Info properties when multiple Tilemaps are selected.", MessageType.Info);
+                }
+            }
+            EditorGUILayout.EndFadeGroup();
         }
 
         // Called from SceneView code using reflection

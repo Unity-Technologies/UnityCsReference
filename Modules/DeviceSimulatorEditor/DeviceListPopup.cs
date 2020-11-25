@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
@@ -29,7 +28,7 @@ namespace UnityEditor.DeviceSimulation
         private const int k_SpaceWidth = 15;
         private const int k_SpaceHeight = 2;
 
-        private readonly DeviceInfo[] m_DeviceList;
+        private readonly DeviceInfoAsset[] m_DeviceList;
         private int m_SelectedDeviceIndex;
         private int m_HoverDeviceIndex = -1;
 
@@ -49,7 +48,7 @@ namespace UnityEditor.DeviceSimulation
 
         public Action<string> OnSearchInput { get; set; }
 
-        public DeviceListPopup(DeviceInfo[] deviceList, int selectedDeviceIndex, int maximumVisibleDeviceCount, string lastSearchContent)
+        public DeviceListPopup(DeviceInfoAsset[] deviceList, int selectedDeviceIndex, int maximumVisibleDeviceCount, string lastSearchContent)
         {
             m_DeviceList = deviceList;
             m_SelectedDeviceIndex = selectedDeviceIndex;
@@ -69,7 +68,7 @@ namespace UnityEditor.DeviceSimulation
             m_SelectedDeviceIndexInFilteredList = -1;
             if (string.IsNullOrEmpty(m_SearchContent))
             {
-                m_FilteredDevices = m_DeviceList.Select((deviceInfo, index) => new IndexedDevice(index, deviceInfo)).ToList();
+                m_FilteredDevices = m_DeviceList.Select((device, index) => new IndexedDevice(index, device.deviceInfo)).ToList();
                 m_SelectedDeviceIndexInFilteredList = m_SelectedDeviceIndex;
                 return;
             }
@@ -79,13 +78,13 @@ namespace UnityEditor.DeviceSimulation
             var lowercaseSearchContent = m_SearchContent.ToLower();
             for (int index = 0; index < m_DeviceList.Length; ++index)
             {
-                if (!m_DeviceList[index].friendlyName.ToLower().Contains(lowercaseSearchContent))
+                if (!m_DeviceList[index].deviceInfo.friendlyName.ToLower().Contains(lowercaseSearchContent))
                     continue;
 
                 if (index == m_SelectedDeviceIndex)
                     m_SelectedDeviceIndexInFilteredList = m_FilteredDevices.Count;
 
-                m_FilteredDevices.Add(new IndexedDevice(index, m_DeviceList[index]));
+                m_FilteredDevices.Add(new IndexedDevice(index, m_DeviceList[index].deviceInfo));
             }
         }
 

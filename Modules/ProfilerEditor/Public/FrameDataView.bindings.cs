@@ -52,8 +52,8 @@ namespace UnityEditor.Profiling
 
         public const int invalidMarkerId = -1;
 
-        internal const int invalidThreadIndex = -1;
-        internal const ulong invalidThreadId = ~0ul;
+        public const int invalidThreadIndex = -1;
+        public const ulong invalidThreadId = 0;
 
         internal const int invalidOrCurrentFrameIndex = -1;
 

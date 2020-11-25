@@ -5,7 +5,7 @@
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     /// <summary>
     /// We had a demonstrated speed improvement with our UI when caching queried objects.

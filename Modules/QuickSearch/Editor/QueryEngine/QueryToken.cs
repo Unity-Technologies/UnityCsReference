@@ -47,5 +47,11 @@ namespace UnityEditor.Search
         {
             this.length = length;
         }
+
+        internal QueryToken(int position, int length)
+            : this("", position)
+        {
+            this.length = length;
+        }
     }
 }

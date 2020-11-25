@@ -17,7 +17,7 @@ namespace UnityEditor.DeviceSimulation
         private static List<SimulatorWindow> s_SimulatorInstances = new List<SimulatorWindow>();
         private bool m_DeviceListDirty;
 
-        [SerializeField] private SimulatorSerializationStates m_SimulatorSerializationStates;
+        [SerializeField] private SimulatorState m_SimulatorState;
         private SimulationState m_State = SimulationState.Enabled;
         private DeviceSimulatorMain m_Main;
 
@@ -31,6 +31,7 @@ namespace UnityEditor.DeviceSimulation
         void OnEnable()
         {
             titleContent = GetLocalizedTitleContent();
+            minSize = new Vector2(200, 200);
             autoRepaintOnSceneChange = true;
             clearColor = Color.black;
             playModeViewName = "Device Simulator";
@@ -38,7 +39,7 @@ namespace UnityEditor.DeviceSimulation
             targetDisplay = 0;
             renderIMGUI = true;
 
-            m_Main = new DeviceSimulatorMain(m_SimulatorSerializationStates, rootVisualElement);
+            m_Main = new DeviceSimulatorMain(m_SimulatorState, rootVisualElement);
             s_SimulatorInstances.Add(this);
         }
 
@@ -76,8 +77,8 @@ namespace UnityEditor.DeviceSimulation
             var type = Event.current.type;
             if (type == EventType.Repaint)
             {
-                targetSize = m_Main.TargetSize;
-                m_Main.DisplayTexture = RenderView(m_Main.MousePositionInUICoordinates, false);
+                targetSize = m_Main.targetSize;
+                m_Main.displayTexture = RenderView(m_Main.mousePositionInUICoordinates, false);
             }
             else if (type != EventType.Layout && type != EventType.Used)
                 m_Main.HandleInputEvent();
@@ -85,7 +86,7 @@ namespace UnityEditor.DeviceSimulation
 
         public void OnBeforeSerialize()
         {
-            m_SimulatorSerializationStates = m_Main.SerializeSimulatorState();
+            m_SimulatorState = m_Main.SerializeSimulatorState();
         }
 
         public void OnAfterDeserialize()

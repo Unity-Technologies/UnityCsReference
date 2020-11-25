@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using UnityEditor;
 
 namespace UnityEditor.Search
 {
@@ -88,7 +87,7 @@ namespace UnityEditor.Search
             if (itemEnumerator != null)
             {
                 m_ItemsEnumerator = new StackedEnumerator<SearchItem>(itemEnumerator);
-                EditorApplication.tick += OnUpdate;
+                Utils.tick += OnUpdate;
             }
         }
 
@@ -106,8 +105,8 @@ namespace UnityEditor.Search
                 sessionEnded?.Invoke(m_Context);
 
             searchInProgress = false;
-            EditorApplication.tick -= OnUpdate;
-            m_ItemsEnumerator.Clear();
+            Utils.tick -= OnUpdate;
+            m_ItemsEnumerator.Dispose();
         }
 
         /// <summary>

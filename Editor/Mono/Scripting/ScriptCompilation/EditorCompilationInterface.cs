@@ -115,6 +115,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static void SetAdditionalVersionMetaDatas(VersionMetaData[] versionMetaDatas)
+        {
+            Instance.SetAdditionalVersionMetaDatas(versionMetaDatas);
+        }
+
+        [RequiredByNativeCode]
         public static void SetAllScripts(string[] allScripts, string[] assemblyFilenames)
         {
             Instance.SetAllScripts(allScripts, assemblyFilenames);
@@ -274,12 +280,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static EditorCompilation.TargetAssemblyInfo GetTargetAssembly(string scriptPath)
         {
             return Instance.GetTargetAssembly(scriptPath);
-        }
-
-        public static MonoIsland[] GetAllMonoIslands()
-        {
-            var options = GetAdditionalEditorScriptCompilationOptions();
-            return Instance.GetAllMonoIslands(options);
         }
 
         public static EditorScriptCompilationOptions GetAdditionalEditorScriptCompilationOptions()

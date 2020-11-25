@@ -227,9 +227,7 @@ namespace UnityEngine
         public bool HasFloat(string name) { return HasFloatImpl(Shader.PropertyToID(name)); }
         public bool HasFloat(int nameID) { return HasFloatImpl(nameID); }
 
-        [Obsolete("Use HasFloat for Float and Int preperties and HasInteger for Integer properties instead", false)]
         public bool HasInt(string name) { return HasFloatImpl(Shader.PropertyToID(name)); }
-        [Obsolete("Use HasFloat for Float and Int preperties and HasInteger for Integer properties instead", false)]
         public bool HasInt(int nameID) { return HasFloatImpl(nameID); }
 
         [NativeName("HasIntegerFromScript")] extern private bool HasIntImpl(int name);

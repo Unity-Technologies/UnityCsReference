@@ -15,7 +15,7 @@ namespace UnityEditor.Search
 
         static Dispatcher()
         {
-            EditorApplication.tick += Update;
+            Utils.tick += Update;
         }
 
         public static void Enqueue(Action action)

@@ -8,7 +8,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor.Scripting.ScriptCompilation;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
     internal abstract class BasePackageVersion : IPackageVersion, ISerializationCallbackReceiver

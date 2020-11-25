@@ -226,11 +226,11 @@ namespace Unity.UI.Builder
                 }
                 else if (attributeName == "show-horizontal-scroller")
                 {
-                    return scrollView.showHorizontal;
+                    return scrollView.horizontalScrollerVisibility == ScrollerVisibility.AlwaysVisible;
                 }
                 else if (attributeName == "show-vertical-scroller")
                 {
-                    return scrollView.showVertical;
+                    return scrollView.verticalScrollerVisibility == ScrollerVisibility.AlwaysVisible;
                 }
             }
 

@@ -6,6 +6,10 @@ using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 
+using ServicesContainer = UnityEditor.PackageManager.UI.Internal.ServicesContainer;
+using ResourceLoader = UnityEditor.PackageManager.UI.Internal.ResourceLoader;
+using VisualElementCache = UnityEditor.PackageManager.UI.Internal.VisualElementCache;
+
 namespace UnityEditor.PackageManager.UI
 {
     // This class is kept because it is still used in Upm develop package

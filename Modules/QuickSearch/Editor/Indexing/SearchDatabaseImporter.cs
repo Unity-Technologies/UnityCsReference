@@ -4,8 +4,9 @@
 
 using System.Collections.Generic;
 using System.IO;
-using UnityEditor.AssetImporters;
 using UnityEngine;
+
+using UnityEditor.AssetImporters;
 
 namespace UnityEditor.Search
 {
@@ -48,7 +49,7 @@ namespace UnityEditor.Search
         ""types"": true,
         ""properties"": true,
         ""extended"": false,
-        ""dependencies"": true
+        ""dependencies"": false
     },
     ""baseScore"": 150
 }";
@@ -59,7 +60,7 @@ namespace UnityEditor.Search
     ""excludes"": [],
     ""options"": {
         ""types"": true,
-        ""properties"": true,
+        ""properties"": false,
         ""extended"": false,
         ""dependencies"": false
     },
@@ -84,7 +85,7 @@ namespace UnityEditor.Search
             {
                 var db = ScriptableObject.CreateInstance<SearchDatabase>();
                 db.Import(ctx.assetPath);
-                ctx.AddObjectToAsset("index", db, Icons.quicksearch);
+                ctx.AddObjectToAsset("index", db);
                 ctx.SetMainObject(db);
 
                 ctx.DependsOnCustomDependency(nameof(CustomObjectIndexerAttribute));
@@ -117,9 +118,6 @@ namespace UnityEditor.Search
 
             var indexFileName = string.IsNullOrEmpty(name) ? Path.GetFileNameWithoutExtension(path) : name;
             var indexPath = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(dirPath, $"{indexFileName}.index")).Replace("\\", "/");
-
-            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null,
-                $"Creating {template.Trim('_')} index at <a file=\"{indexPath}\">{indexPath}</a>");
 
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.CreateIndexFromTemplate, template);
 

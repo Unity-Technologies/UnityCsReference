@@ -5,13 +5,19 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Runtime.Serialization.Json;
+using System.Text;
+using System.Xml;
+using System.Xml.Linq;
 using UnityEditor.AssetImporters;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace UnityEditor.DeviceSimulation
 {
     [ScriptedImporter(1, "device")]
-    class DeviceInfoImporter : ScriptedImporter
+    internal class DeviceInfoImporter : ScriptedImporter
     {
         public override void OnImportAsset(AssetImportContext ctx)
         {
@@ -20,18 +26,19 @@ namespace UnityEditor.DeviceSimulation
             var asset = ScriptableObject.CreateInstance<DeviceInfoAsset>();
 
             var deviceJson = File.ReadAllText(ctx.assetPath);
-            asset.deviceInfo = ParseDeviceInfo(deviceJson, out var parseErrors);
+            asset.deviceInfo = ParseDeviceInfo(deviceJson, out var errors, out var systemInfoElement, out var graphicsDataElement);
 
-            if (asset.deviceInfo == null)
+            if (errors.Length > 0)
             {
-                asset.parseErrors = parseErrors;
+                asset.parseErrors = errors;
             }
             else
             {
+                FindOptionalFieldAvailability(asset, systemInfoElement, graphicsDataElement);
                 AddOptionalFields(asset.deviceInfo);
 
                 // Saving asset path in order to find overlay relatively to it
-                asset.deviceInfo.directory = Path.GetDirectoryName(ctx.assetPath);
+                asset.directory = Path.GetDirectoryName(ctx.assetPath);
                 ctx.DependsOnSourceAsset(ctx.assetPath);
             }
 
@@ -39,56 +46,101 @@ namespace UnityEditor.DeviceSimulation
             ctx.SetMainObject(asset);
         }
 
-        internal static DeviceInfo ParseDeviceInfo(string deviceJson, out string[] errors)
+        internal struct GraphicsTypeElement
+        {
+            public GraphicsDeviceType type;
+            public XElement element;
+        }
+
+        internal static DeviceInfo ParseDeviceInfo(string deviceJsonText, out string[] errors, out XElement systemInfoElement, out List<GraphicsTypeElement> graphicsTypeElements)
         {
             var errorList = new List<string>();
+            graphicsTypeElements = new List<GraphicsTypeElement>();
 
+            XElement root;
             DeviceInfo deviceInfo;
             try
             {
-                deviceInfo = JsonUtility.FromJson<DeviceInfo>(deviceJson);
+                root = XElement.Load(JsonReaderWriterFactory.CreateJsonReader(Encoding.UTF8.GetBytes(deviceJsonText), new XmlDictionaryReaderQuotas()));
+                deviceInfo = JsonUtility.FromJson<DeviceInfo>(deviceJsonText);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                errorList.Add(e.Message);
+                errorList.Add("Failed parsing JSON. Make sure this is a valid JSON file.");
                 errors = errorList.ToArray();
+                systemInfoElement = null;
                 return null;
             }
 
-            if (string.IsNullOrEmpty(deviceInfo.friendlyName))
-                errorList.Add("Mandatory field [friendlyName] is omitted or empty.");
-            if (deviceInfo.version != 1)
-                errorList.Add("Mandatory field [version] is omitted or set to an unknown value. Newest device file version is 1.");
-            if (deviceInfo.screens == null || deviceInfo.screens.Length == 0)
-                errorList.Add("No screen information found, mandatory field [screens] must contain at least one screen.");
+            var versionElement = root.Element("version");
+            if (versionElement == null)
+                errorList.Add("Mandatory field [version] is missing");
+            else if (versionElement.Value != "1")
+                errorList.Add("[version] field is set to an unknown value. The newest version is 1");
+
+            var friendlyNameElement = root.Element("friendlyName");
+            if (friendlyNameElement == null)
+                errorList.Add("Mandatory field [friendlyName] is missing");
+            else if (string.IsNullOrEmpty(friendlyNameElement.Value))
+                errorList.Add("[friendlyName] field is empty, which is not allowed");
+
+            systemInfoElement = root.Element("systemInfo");
+            if (systemInfoElement == null)
+                errorList.Add("Mandatory field [systemInfo] is missing");
             else
             {
-                for (var i = 0; i < deviceInfo.screens.Length; i++)
+                var operatingSystemElement = systemInfoElement.Element("operatingSystem");
+                if (operatingSystemElement == null)
+                    errorList.Add("Mandatory field [systemInfo -> operatingSystem] is missing. [operatingSystem] must be set to a string containing either <android> or <ios>");
+                else if (!operatingSystemElement.Value.ToLower().Contains("android") && !operatingSystemElement.Value.ToLower().Contains("ios"))
+                    errorList.Add("[systemInfo -> operatingSystem] field must be set to a string containing either <android> or <ios>, other platforms are not supported at the moment");
+
+                var graphicsSystemInfoArray = systemInfoElement.Element("graphicsDependentData");
+                if (graphicsSystemInfoArray != null)
                 {
-                    var screen = deviceInfo.screens[i];
-                    if (screen.width < 4 || screen.width > 8192)
+                    var graphicsSystemInfo = graphicsSystemInfoArray.Elements("item").ToArray();
+                    for (int i = 0; i < graphicsSystemInfo.Length; i++)
                     {
-                        errorList.Add($"screens[{i}] -> width field is omitted or set to an incorrect value. Screen width must be larger than 4 and smaller than 8192.");
-                    }
-
-                    if (screen.height < 4 || screen.height > 8192)
-                    {
-                        errorList.Add($"screens[{i}] -> height field is omitted or set to an incorrect value. Screen height must be larger than 4 and smaller than 8192.");
-                    }
-
-                    if (screen.dpi < 0.0001f || screen.dpi > 10000f)
-                    {
-                        errorList.Add($"screens[{i}] -> dpi field is omitted or set to an incorrect value. Screen dpi must be larger than 0 and smaller than 10000.");
+                        var graphicsDeviceElement = graphicsSystemInfo[i].Element("graphicsDeviceType");
+                        if (graphicsDeviceElement == null)
+                            errorList.Add($"Mandatory field [systemInfo -> graphicsDependentData[{i}] -> graphicsDeviceType] is missing. [graphicsDependentData] must contain [graphicsDeviceType]");
+                        else if (!int.TryParse(graphicsDeviceElement.Value, out var typeInt) || !Enum.IsDefined(typeof(GraphicsDeviceType), typeInt))
+                            errorList.Add($"[systemInfo -> graphicsDependentData[{i}] -> graphicsDeviceType] is set to a value that could not be parsed as GraphicsDeviceType");
+                        else
+                            graphicsTypeElements.Add(new GraphicsTypeElement {element = graphicsSystemInfo[i], type = (GraphicsDeviceType)typeInt});
                     }
                 }
             }
-            if (deviceInfo.systemInfo == null || string.IsNullOrEmpty(deviceInfo.systemInfo.operatingSystem))
-                errorList.Add("Mandatory field [systemInfo -> operatingSystem] is omitted or empty.");
+
+            var screensElement = root.Element("screens");
+            if (screensElement == null)
+                errorList.Add("Mandatory field [screens] is missing. [screens] array must contain at least one screen");
             else
             {
-                var os = deviceInfo.systemInfo.operatingSystem.ToLower();
-                if (!os.Contains("ios") && !os.Contains("android"))
-                    errorList.Add("[systemInfo -> operatingSystem] field does not contain the name of the operating system. Currently supported names are iOS or Android.");
+                var screenElements = screensElement.Elements("item").ToArray();
+                if (!screenElements.Any())
+                {
+                    errorList.Add("[screens] array must contain at least one screen");
+                }
+                else
+                {
+                    for (var i = 0; i < screenElements.Length; i++)
+                    {
+                        var screen = deviceInfo.screens[i];
+                        if (screenElements[i].Element("width") == null)
+                            errorList.Add($"Mandatory field [screens[{i}] -> width] is missing");
+                        else if (screen.width < 4 || screen.width > 8192)
+                            errorList.Add($"[screens[{i}] -> width] field is set to an incorrect value {screen.width}. Screen width must be larger than 4 and smaller than 8192.");
+                        if (screenElements[i].Element("height") == null)
+                            errorList.Add($"Mandatory field [screens[{i}] -> height] is missing");
+                        else if (screen.height < 4 || screen.height > 8192)
+                            errorList.Add($"[screens[{i}] -> height] field is set to an incorrect value {screen.height}. Screen height must be larger than 4 and smaller than 8192.");
+                        if (screenElements[i].Element("dpi") == null)
+                            errorList.Add($"Mandatory field [screens[{i}] -> dpi] is missing");
+                        else if (screen.dpi < 0.0001f || screen.dpi > 10000f)
+                            errorList.Add($"[screens[{i}] -> dpi] field is set to an incorrect value {screen.dpi}. Screen dpi must be larger than 0 and smaller than 10000.");
+                    }
+                }
             }
 
             errors = errorList.ToArray();
@@ -113,6 +165,102 @@ namespace UnityEditor.DeviceSimulation
                 {
                     if (orientation.safeArea == Rect.zero)
                         orientation.safeArea = SimulatorUtilities.IsLandscape(orientation.orientation) ? new Rect(0, 0, screen.height, screen.width) : new Rect(0, 0, screen.width, screen.height);
+                }
+            }
+        }
+
+        internal static void FindOptionalFieldAvailability(DeviceInfoAsset asset, XElement systemInfoElement, List<GraphicsTypeElement> graphicsDataElements)
+        {
+            string[] systemInfoFields =
+            {
+                "deviceModel",
+                "deviceType",
+                "operatingSystemFamily",
+                "processorCount",
+                "processorFrequency",
+                "processorType",
+                "supportsAccelerometer",
+                "supportsAudio",
+                "supportsGyroscope",
+                "supportsLocationService",
+                "supportsVibration",
+                "systemMemorySize"
+            };
+
+            string[] graphicsSystemInfoFields =
+            {
+                "graphicsMemorySize",
+                "graphicsDeviceName",
+                "graphicsDeviceVendor",
+                "graphicsDeviceID",
+                "graphicsDeviceVendorID",
+                "graphicsUVStartsAtTop",
+                "graphicsDeviceVersion",
+                "graphicsShaderLevel",
+                "graphicsMultiThreaded",
+                "renderingThreadingMode",
+                "hasHiddenSurfaceRemovalOnGPU",
+                "hasDynamicUniformArrayIndexingInFragmentShaders",
+                "supportsShadows",
+                "supportsRawShadowDepthSampling",
+                "supportsMotionVectors",
+                "supports3DTextures",
+                "supports2DArrayTextures",
+                "supports3DRenderTextures",
+                "supportsCubemapArrayTextures",
+                "copyTextureSupport",
+                "supportsComputeShaders",
+                "supportsGeometryShaders",
+                "supportsTessellationShaders",
+                "supportsInstancing",
+                "supportsHardwareQuadTopology",
+                "supports32bitsIndexBuffer",
+                "supportsSparseTextures",
+                "supportedRenderTargetCount",
+                "supportsSeparatedRenderTargetsBlend",
+                "supportedRandomWriteTargetCount",
+                "supportsMultisampledTextures",
+                "supportsMultisampleAutoResolve",
+                "supportsTextureWrapMirrorOnce",
+                "usesReversedZBuffer",
+                "npotSupport",
+                "maxTextureSize",
+                "maxCubemapSize",
+                "maxComputeBufferInputsVertex",
+                "maxComputeBufferInputsFragment",
+                "maxComputeBufferInputsGeometry",
+                "maxComputeBufferInputsDomain",
+                "maxComputeBufferInputsHull",
+                "maxComputeBufferInputsCompute",
+                "maxComputeWorkGroupSize",
+                "maxComputeWorkGroupSizeX",
+                "maxComputeWorkGroupSizeY",
+                "maxComputeWorkGroupSizeZ",
+                "supportsAsyncCompute",
+                "supportsGraphicsFence",
+                "supportsAsyncGPUReadback",
+                "supportsRayTracing",
+                "supportsSetConstantBuffer",
+                "hasMipMaxLevel",
+                "supportsMipStreaming",
+                "usesLoadStoreActions"
+            };
+
+            asset.availableSystemInfoFields = new HashSet<string>();
+            foreach (var field in systemInfoFields)
+            {
+                if (systemInfoElement.Element(field) != null)
+                    asset.availableSystemInfoFields.Add(field);
+            }
+            asset.availableGraphicsSystemInfoFields = new Dictionary<GraphicsDeviceType, HashSet<string>>();
+            foreach (var graphicsDataElement in graphicsDataElements)
+            {
+                var availableFields = new HashSet<string>();
+                asset.availableGraphicsSystemInfoFields.Add(graphicsDataElement.type, availableFields);
+                foreach (var field in graphicsSystemInfoFields)
+                {
+                    if (graphicsDataElement.element.Element(field) != null)
+                        availableFields.Add(field);
                 }
             }
         }

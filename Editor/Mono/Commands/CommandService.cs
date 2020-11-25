@@ -6,6 +6,7 @@ using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.Internal;
 
@@ -67,7 +68,7 @@ namespace UnityEditor
 
         public T GetArgument<T>(int index, T defaultValue = default(T))
         {
-            if (0 < index || index >= args.Length)
+            if (index < 0 || index >= args.Length)
                 throw new ArgumentOutOfRangeException(nameof(index));
             return (T)args[index];
         }
@@ -149,22 +150,22 @@ namespace UnityEditor
         private static IEnumerable<Command> ScanAttributes()
         {
             var commands = new List<Command>();
-            var commandAttributes = AttributeHelper.GetMethodsWithAttribute<CommandHandlerAttribute>();
-            foreach (var method in commandAttributes.methodsWithAttributes)
+            foreach (var mi in TypeCache.GetMethodsWithAttribute<CommandHandlerAttribute>())
             {
-                var callback = Delegate.CreateDelegate(typeof(CommandHandler), method.info) as CommandHandler;
-                if (callback == null)
+                if (!(Delegate.CreateDelegate(typeof(CommandHandler), mi) is CommandHandler callback))
                     continue;
-                var attr = (CommandHandlerAttribute)method.attribute;
 
-                if (commands.Any(c => c.id == attr.id))
+                foreach (var attr in mi.GetCustomAttributes<CommandHandlerAttribute>())
                 {
-                    Debug.LogWarning($"There is already a command with the ID {attr.id}. " +
-                        "Commands need to have a unique ID, i.e. \"Unity/Category/Command_42\".");
-                    continue;
-                }
+                    if (commands.Any(c => c.id == attr.id))
+                    {
+                        Debug.LogWarning($"There is already a command with the ID {attr.id}. " +
+                            "Commands need to have a unique ID, i.e. \"Unity/Category/Command_42\".");
+                        continue;
+                    }
 
-                commands.Add(new Command {id = attr.id, label = attr.label ?? attr.id, hint = attr.hint, handler = callback, managed = true});
+                    commands.Add(new Command { id = attr.id, label = attr.label ?? attr.id, hint = attr.hint, handler = callback, managed = true });
+                }
             }
 
             return commands;

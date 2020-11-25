@@ -12,6 +12,12 @@ namespace UnityEditorInternal
 {
     public static class Il2CppNativeCodeBuilderUtils
     {
+        public static string GetConfigurationName(Il2CppCompilerConfiguration compilerConfiguration)
+        {
+            // In IL2CPP, Master config is called "ReleasePlus"
+            return compilerConfiguration != Il2CppCompilerConfiguration.Master ? compilerConfiguration.ToString() : "ReleasePlus";
+        }
+
         public static IEnumerable<string> AddBuilderArguments(Il2CppNativeCodeBuilder builder, string outputRelativePath, IEnumerable<string> includeRelativePaths, IEnumerable<string> additionalLibs, Il2CppCompilerConfiguration compilerConfiguration)
         {
             var arguments = new List<string>();
@@ -21,10 +27,7 @@ namespace UnityEditorInternal
                 arguments.Add("--libil2cpp-static");
             arguments.Add(FormatArgument("platform", builder.CompilerPlatform));
             arguments.Add(FormatArgument("architecture", builder.CompilerArchitecture));
-
-            // In IL2CPP, Master config is called "ReleasePlus"
-            string configurationName = compilerConfiguration != Il2CppCompilerConfiguration.Master ? compilerConfiguration.ToString() : "ReleasePlus";
-            arguments.Add(FormatArgument("configuration", configurationName));
+            arguments.Add(FormatArgument("configuration", GetConfigurationName(compilerConfiguration)));
 
             arguments.Add(FormatArgument("outputpath", builder.ConvertOutputFileToFullPath(outputRelativePath)));
 

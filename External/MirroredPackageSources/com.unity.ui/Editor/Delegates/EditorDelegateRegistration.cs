@@ -9,6 +9,7 @@ namespace UnityEditor.UIElements
         static void Initialize()
         {
             VisualTreeAssetChangeTrackerUpdater.IsEditorPlaying = IsEditorPlaying;
+            DefaultEventSystem.IsEditorRemoteConnected = IsEditorRemoteConnected;
             AssetOperationsAccess.GetAssetPath = GetAssetPath;
             AssetOperationsAccess.GetAssetDirtyCount = GetAssetDirtyCount;
         }
@@ -16,6 +17,11 @@ namespace UnityEditor.UIElements
         internal static bool IsEditorPlaying()
         {
             return EditorApplication.isPlaying;
+        }
+
+        internal static bool IsEditorRemoteConnected()
+        {
+            return EditorApplication.isRemoteConnected;
         }
 
         internal static string GetAssetPath(Object asset)

@@ -5,7 +5,7 @@
 using System;
 using System.Text.RegularExpressions;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
     internal struct PackageManagerWindowAnalytics

@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEditor.Scripting.ScriptCompilation;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
     internal class AssetStoreProductInfo

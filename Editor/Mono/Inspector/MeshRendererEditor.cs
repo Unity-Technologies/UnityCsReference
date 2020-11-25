@@ -61,7 +61,10 @@ namespace UnityEditor
                 displayMaterialWarning = mf != null && mf.sharedMesh != null && m_Materials.arraySize > mf.sharedMesh.subMeshCount;
             }
 
-            DrawMaterials();
+            using (new EditorGUI.DisabledScope(((MeshRenderer)serializedObject.targetObject).GetComponent<Tree>() != null))
+            {
+                DrawMaterials();
+            }
 
             if (!m_Materials.hasMultipleDifferentValues && displayMaterialWarning)
             {

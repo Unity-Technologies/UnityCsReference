@@ -15,16 +15,6 @@ namespace UnityEditor.DeviceSimulation
 
     internal enum SimulationState{ Enabled, Disabled }
 
-    [Serializable]
-    internal class SimulatorSerializationStates
-    {
-        public int scale = 20;
-        public bool fitToScreenEnabled = true;
-        public int rotationDegree;
-        public bool highlightSafeAreaEnabled;
-        public string friendlyName = string.Empty;
-    }
-
     internal static class SimulatorUtilities
     {
         public static ScreenOrientation ToScreenOrientation(UIOrientation original)

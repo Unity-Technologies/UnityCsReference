@@ -5,7 +5,7 @@
 using System;
 using UnityEngine;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
     internal class PackageManagerPrefs
@@ -105,6 +105,14 @@ namespace UnityEditor.PackageManager.UI
         {
             get => m_SamplesExpanded;
             set => m_SamplesExpanded = value;
+        }
+
+        [SerializeField]
+        private float m_PackageDetailVerticalScrollOffset;
+        public float packageDetailVerticalScrollOffset
+        {
+            get => m_PackageDetailVerticalScrollOffset;
+            set => m_PackageDetailVerticalScrollOffset = value;
         }
     }
 }

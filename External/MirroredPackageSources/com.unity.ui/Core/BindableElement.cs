@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
@@ -29,7 +28,7 @@ namespace UnityEngine.UIElements
             }
 
             /// <summary>
-            /// Initialize <see cref="EnumField"/> properties using values from the attribute bag.
+            /// Initialize <see cref="BindableElement"/> properties using values from the attribute bag.
             /// </summary>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {

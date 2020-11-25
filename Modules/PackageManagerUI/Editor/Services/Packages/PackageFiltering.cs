@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
     internal class PackageFiltering

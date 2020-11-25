@@ -61,6 +61,8 @@ namespace UnityEditor
 
         internal const float k_SearchTimerDelaySecs = 0.250f;
         private double m_NextSearch = double.MaxValue;
+        internal bool m_SyncSearch;
+        internal string m_OldSearch;
 
         [MenuItem("CONTEXT/Component/Find References In Scene")]
         private static void OnSearchForReferencesToComponent(MenuCommand command)
@@ -115,12 +117,50 @@ namespace UnityEditor
 
         virtual public void OnEnable()
         {
+            SearchService.SearchService.syncSearchChanged += OnSyncSearchChanged;
             searchableWindows.Add(this);
         }
 
         virtual public void OnDisable()
         {
+            SearchService.SearchService.syncSearchChanged -= OnSyncSearchChanged;
             searchableWindows.Remove(this);
+        }
+
+        private void OnSyncSearchChanged(SearchService.SearchService.SyncSearchEvent evt, string syncViewId, string searchQuery)
+        {
+            if (SearchService.SceneSearch.HasEngineOverride())
+            {
+                if (evt == SearchService.SearchService.SyncSearchEvent.StartSession)
+                {
+                    // When starting a synced session, back the current search to restore it
+                    m_OldSearch = m_SearchFilter;
+                }
+
+                if (syncViewId == SearchService.SceneSearch.GetActiveSearchEngine().GetType().FullName)
+                {
+                    SetSearchFilter(searchQuery, (SearchMode)searchMode, true, true);
+                    m_SyncSearch = true;
+                }
+                else if (m_SyncSearch)
+                {
+                    // When changing the source id, restore old search so user is not affected
+                    m_SyncSearch = false;
+                    if (string.IsNullOrEmpty(m_OldSearch))
+                    {
+                        ClearSearchFilter();
+                    }
+                    else
+                    {
+                        SetSearchFilter(m_OldSearch, (SearchMode)searchMode, true, true);
+                    }
+                }
+
+                if (evt == SearchService.SearchService.SyncSearchEvent.EndSession)
+                {
+                    m_SyncSearch = false;
+                }
+            }
         }
 
         void OnInspectorUpdate()
@@ -258,7 +298,7 @@ namespace UnityEditor
 
         internal void SearchFieldGUI(float maxWidth)
         {
-            Rect rect = GUILayoutUtility.GetRect(EditorGUILayout.kLabelFloatMaxW * 0.2f, maxWidth, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.toolbarSearchField);
+            Rect rect = GUILayoutUtility.GetRect(EditorGUILayout.kLabelFloatMaxW * 0.2f, maxWidth, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.toolbarSearchFieldWithJump);
 
             if (Event.current.type == EventType.MouseDown && rect.Contains(Event.current.mousePosition))
                 ClickedSearchField();
@@ -280,7 +320,16 @@ namespace UnityEditor
             int searchFieldControlId = GUIUtility.GetControlID(s_SearchableEditorWindowSearchField, FocusType.Keyboard, rect);
 
             EditorGUI.BeginChangeCheck();
-            string searchFilter = EditorGUI.ToolbarSearchField(searchFieldControlId, rect, enumStrings, ref searchMode, m_SearchFilter);
+            string searchFilter =
+                EditorGUI.ToolbarSearchField(
+                    searchFieldControlId,
+                    rect,
+                    enumStrings,
+                    ref searchMode,
+                    m_SearchFilter,
+                    m_SyncSearch ? EditorStyles.toolbarSearchFieldWithJumpPopupSynced : EditorStyles.toolbarSearchFieldWithJumpPopup,
+                    m_SyncSearch ? EditorStyles.toolbarSearchFieldWithJumpSynced : EditorStyles.toolbarSearchFieldWithJump,
+                    string.IsNullOrEmpty(m_SearchFilter) ? EditorStyles.toolbarSearchFieldCancelButtonWithJumpEmpty : EditorStyles.toolbarSearchFieldCancelButtonWithJump);
             if (EditorGUI.EndChangeCheck())
                 SetSearchFilter(searchFilter, (SearchMode)searchMode, true, true);
 
@@ -293,6 +342,12 @@ namespace UnityEditor
                 Event.current.Use();
                 m_HasSearchFilterFocus = false;
             }
+
+            if (m_HasSearchFilterFocus)
+            {
+                SearchService.SearchService.HandleSearchEvent(this, Event.current, m_SearchFilter);
+            }
+            SearchService.SearchService.DrawOpenSearchButton(this, m_SearchFilter);
         }
     }
 }

@@ -5,7 +5,7 @@
 using System;
 using UnityEditor.PackageManager.Requests;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
     internal class UpmRemoveOperation : UpmBaseOperation<RemoveRequest>

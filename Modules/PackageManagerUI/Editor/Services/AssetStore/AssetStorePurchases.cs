@@ -7,7 +7,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
     internal class PurchasesQueryArgs : PageFilters

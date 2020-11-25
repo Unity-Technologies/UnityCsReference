@@ -269,6 +269,32 @@ namespace TreeEditor
             return g2;
         }
 
+        internal void DeleteAll()
+        {
+            // remove nodes
+            for (int i = nodes.Length - 1; i >= 0; i--)
+            {
+                DeleteNode(nodes[i], false);
+            }
+
+            // remove branches
+            int branchCount = branchGroups.Length;
+            for (int i = branchCount - 1; i >= 0; i--)
+            {
+                TreeGroup g = branchGroups[i];
+                branchGroups = ArrayRemove(branchGroups, g as TreeGroupBranch);
+            }
+            // remove leaves
+            int leafCount = leafGroups.Length;
+            for (int i = leafCount - 1; i >= 0; i--)
+            {
+                TreeGroup g = leafGroups[i];
+                leafGroups = ArrayRemove(leafGroups, g as TreeGroupLeaf);
+            }
+
+            root = null;
+        }
+
         public void DeleteGroup(TreeGroup g)
         {
             // remove nodes
@@ -785,7 +811,7 @@ namespace TreeEditor
 
             if (!mesh)
             {
-                Debug.LogError("TreeData must have mesh  assigned");
+                Debug.LogError("TreeData must have mesh assigned");
                 return;
             }
 

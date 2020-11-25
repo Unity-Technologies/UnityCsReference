@@ -7,7 +7,8 @@ namespace UnityEditor.Compilation
     public enum CompilerMessageType
     {
         Error = 0,
-        Warning = 1
+        Warning = 1,
+        Info = 2
     }
 
     public struct CompilerMessage

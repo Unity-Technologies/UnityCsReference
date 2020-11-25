@@ -65,6 +65,11 @@ namespace UnityEditor.EditorTools
             get { return null; }
         }
 
+        public virtual bool gridSnapEnabled
+        {
+            get { return false; }
+        }
+
         public virtual void OnActivated() {}
 
         public virtual void OnWillBeDeactivated() {}

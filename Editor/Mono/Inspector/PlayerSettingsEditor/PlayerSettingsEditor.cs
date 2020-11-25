@@ -617,6 +617,9 @@ namespace UnityEditor
             serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(targetGroup);
             serializedAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(targetGroup);
             serializedUseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
+
+            InitReorderableScriptingDefineSymbolsList(targetGroup);
+            InitReorderableAdditionalCompilerArgumentsList(targetGroup);
         }
 
         void OnDisable()

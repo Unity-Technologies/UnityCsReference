@@ -4,8 +4,9 @@
 
 using UnityEngine;
 using System;
-using UnityEditor.PackageManager.UI;
 using UnityEditor.PackageManager;
+using UnityEditor.PackageManager.UI;
+using UnityEditor.PackageManager.UI.Internal;
 using System.Linq;
 
 namespace UnityEditor
@@ -163,7 +164,7 @@ namespace UnityEditor
                     GUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
                     {
                         // Learn More
-                        if (EditorGUILayout.LinkLabel(Styles.learnModeContent, GUILayout.ExpandWidth(false)))
+                        if (EditorGUILayout.LinkButton(Styles.learnModeContent, GUILayout.ExpandWidth(false)))
                             Help.ShowHelpPage(k_SafeModeManualPage);
 
                         // Exit Safe mode

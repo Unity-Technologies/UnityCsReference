@@ -190,22 +190,6 @@ namespace UnityEngine.UIElements
         ContextualMenuManager contextualMenuManager { get; }
     }
 
-    /// <summary>
-    /// Interface for classes implementing UI runtime panels.
-    /// </summary>
-    internal interface IRuntimePanel
-    {
-        /// <summary>
-        /// Sets the focus controller for this panel.
-        /// </summary>
-        FocusController focusController { get; set; }
-
-        /// <summary>
-        /// Sets the event dispatcher for this panel.
-        /// </summary>
-        EventDispatcher dispatcher { get; set; }
-    }
-
     abstract class BaseVisualElementPanel : IPanel
     {
         public abstract EventInterests IMGUIEventInterests { get; set; }
@@ -970,10 +954,42 @@ namespace UnityEngine.UIElements
         }
     }
 
-    internal abstract class BaseRuntimePanel : Panel, IRuntimePanel
+    internal abstract class BaseRuntimePanel : Panel
     {
+        private GameObject m_SelectableGameObject;
+        public GameObject selectableGameObject
+        {
+            get => m_SelectableGameObject;
+            set
+            {
+                if (m_SelectableGameObject != value)
+                {
+                    AssignPanelToComponents(null);
+                    m_SelectableGameObject = value;
+                    AssignPanelToComponents(this);
+                }
+            }
+        }
+
+        public event Action destroyed;
+
         protected BaseRuntimePanel(ScriptableObject ownerObject, EventDispatcher dispatcher = null)
-            : base(ownerObject, ContextType.Player, dispatcher) {}
+            : base(ownerObject, ContextType.Player, dispatcher)
+        {
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposed)
+                return;
+
+            if (disposing)
+            {
+                destroyed?.Invoke();
+            }
+
+            base.Dispose(disposing);
+        }
 
         private Shader m_StandardWorldSpaceShader;
 
@@ -1008,6 +1024,13 @@ namespace UnityEngine.UIElements
         internal RenderTexture targetTexture = null; // Render panel to a texture
         internal Matrix4x4 panelToWorld = Matrix4x4.identity;
 
+        internal int targetDisplay { get; set;}
+
+        internal int screenRenderingWidth => targetDisplay > 0 && targetDisplay < Display.displays.Length
+            ? Display.displays[targetDisplay].renderingWidth : Screen.width;
+        internal int screenRenderingHeight => targetDisplay > 0 && targetDisplay < Display.displays.Length
+            ? Display.displays[targetDisplay].renderingHeight : Screen.height;
+
         public override void Repaint(Event e)
         {
             // if the renderTarget is not set, we simply render on whatever target is currently set
@@ -1017,8 +1040,8 @@ namespace UnityEngine.UIElements
                 // last camera viewport will leak here.  The "overlay" panels should
                 // render on the whole framebuffer, so we force a fullscreen viewport here.
                 var rt = RenderTexture.active;
-                int width = rt != null ? rt.width : Screen.width;
-                int height = rt != null ? rt.height : Screen.height;
+                int width = rt != null ? rt.width : screenRenderingWidth;
+                int height = rt != null ? rt.height : screenRenderingHeight;
                 GL.Viewport(new Rect(0, 0, width, height));
                 base.Repaint(e);
                 return;
@@ -1044,5 +1067,51 @@ namespace UnityEngine.UIElements
         {
             return screenToPanelSpace(screen) / scale;
         }
+
+        internal bool ScreenToPanel(Vector2 screenPosition, Vector2 screenDelta,
+            out Vector2 panelPosition, out Vector2 panelDelta)
+        {
+            panelPosition = ScreenToPanel(screenPosition);
+
+            var panelRect = visualTree.layout;
+            if (!panelRect.Contains(panelPosition))
+            {
+                panelDelta = screenDelta;
+                return false;
+            }
+
+            var panelPrevPosition = ScreenToPanel(screenPosition - screenDelta);
+            if (!panelRect.Contains(panelPrevPosition))
+            {
+                panelDelta = screenDelta;
+                return true;
+            }
+
+            panelDelta = panelPosition - panelPrevPosition;
+            return true;
+        }
+
+        private void AssignPanelToComponents(BaseRuntimePanel panel)
+        {
+            if (selectableGameObject == null)
+                return;
+
+            var components = ObjectListPool<IRuntimePanelComponent>.Get();
+            try // Going through potential user code
+            {
+                selectableGameObject.GetComponents(components);
+                foreach (var component in components)
+                    component.panel = panel;
+            }
+            finally
+            {
+                ObjectListPool<IRuntimePanelComponent>.Release(components);
+            }
+        }
+    }
+
+    internal interface IRuntimePanelComponent
+    {
+        IPanel panel { get; set; }
     }
 }

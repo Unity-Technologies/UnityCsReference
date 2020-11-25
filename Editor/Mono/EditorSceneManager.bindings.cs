@@ -222,6 +222,10 @@ namespace UnityEditor.SceneManagement
         public extern static void RestoreSceneManagerSetup(SceneSetup[] value);
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod("LoadSceneManagerSetup")]
+        internal extern static bool LoadSceneManagerSetup(string path);
+
+        [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("DetectCrossSceneReferences")]
         public extern static bool DetectCrossSceneReferences(Scene scene);
 

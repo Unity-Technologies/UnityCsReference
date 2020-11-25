@@ -4,8 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
 
 namespace UnityEditor.Search.Providers
 {
@@ -24,25 +22,27 @@ namespace UnityEditor.Search.Providers
                 priority = -1,
                 filterId = "?",
                 isExplicitProvider = true,
-                fetchItems = (context, items, provider) =>
-                {
-                    if (m_StaticItemToAction == null)
-                        BuildHelpItems(context, provider);
-
-                    var helpItems = m_StaticItemToAction.Keys;
-
-                    if (string.IsNullOrEmpty(context.searchQuery) || string.IsNullOrWhiteSpace(context.searchQuery))
-                    {
-                        items.AddRange(helpItems);
-                        return null;
-                    }
-
-                    items.AddRange(helpItems.Where(item => SearchUtils.MatchSearchGroups(context, item.label) || SearchUtils.MatchSearchGroups(context, item.description)));
-                    return null;
-                }
+                fetchItems = (context, items, provider) => FetchItems(context, provider)
             };
 
             return helpProvider;
+        }
+
+        private static IEnumerable<SearchItem> FetchItems(SearchContext context, SearchProvider provider)
+        {
+            if (m_StaticItemToAction == null)
+                BuildHelpItems(context, provider);
+
+            var searchQuery = context.searchQuery.Trim();
+            var helpItems = m_StaticItemToAction.Keys;
+            var fetchAllItems = string.IsNullOrEmpty(searchQuery);
+            foreach (var helpItem in helpItems)
+            {
+                if (fetchAllItems ||
+                    helpItem.GetLabel(context, true).IndexOf(searchQuery, StringComparison.OrdinalIgnoreCase) != -1 ||
+                    helpItem.GetDescription(context, true).IndexOf(searchQuery, StringComparison.OrdinalIgnoreCase) != -1)
+                    yield return helpItem;
+            }
         }
 
         [SearchActionsProvider]
@@ -88,25 +88,6 @@ namespace UnityEditor.Search.Providers
                 helpItem.score = m_StaticItemToAction.Count;
                 helpItem.thumbnail = Icons.help;
                 m_StaticItemToAction.Add(helpItem, (item, _context) => _context.searchView.SetSearchText(provider.filterId));
-            }
-
-            // Action queries
-            foreach (var kvp in SearchService.ActionIdToProviders)
-            {
-                var actionId = kvp.Key;
-                var supportedProviderIds = kvp.Value;
-                var provider = SearchService.GetProvider(supportedProviderIds[0]);
-                var action = SearchService.GetAction(provider, actionId);
-                if (action == null)
-                    continue;
-
-                var desc = Utils.FormatProviderList(supportedProviderIds.Select(providerId => SearchService.GetProvider(providerId)), showFetchTime: false);
-                var helpItem = helpProvider.CreateItem(context, $"help_action_query_{actionId}",
-                    $"{action.displayName} for {desc}",
-                    $"Type <b> >{actionId}</b>", null, null);
-                helpItem.thumbnail = Icons.shortcut;
-                helpItem.score = m_StaticItemToAction.Count;
-                m_StaticItemToAction.Add(helpItem, (item, _context) => _context.searchView.SetSearchText($">{actionId} "));
             }
 
             {

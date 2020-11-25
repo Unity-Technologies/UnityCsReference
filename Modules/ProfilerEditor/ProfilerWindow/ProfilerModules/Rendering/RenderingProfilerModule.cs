@@ -24,7 +24,8 @@ namespace UnityEditorInternal.Profiling
 
         const string k_IconName = "Profiler.Rendering";
         const int k_DefaultOrderIndex = 2;
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("Rendering");
+        static readonly string k_UnLocalizedName = "Rendering";
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
         static readonly string k_RenderCountersCategoryName = ProfilerCategory.Render.Name;
         static readonly ProfilerCounterData[] k_DefaultRenderAreaCounterNames =
         {
@@ -50,7 +51,7 @@ namespace UnityEditorInternal.Profiling
             },
         };
 
-        public RenderingProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName) {}
+        public RenderingProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName) {}
 
         protected override int defaultOrderIndex => k_DefaultOrderIndex;
         protected override string legacyPreferenceKey => "ProfilerChartRendering";

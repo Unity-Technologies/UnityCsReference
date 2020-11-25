@@ -3,8 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor.StyleSheets;
 using UnityEngine;
+
 
 namespace UnityEditor.Search
 {
@@ -21,6 +21,7 @@ namespace UnityEditor.Search
             statusWheel = new GUIContent[12];
             for (int i = 0; i < 12; i++)
                 statusWheel[i] = EditorGUIUtility.IconContent("WaitSpin" + i.ToString("00"));
+
         }
 
         private const int itemRowPadding = 4;
@@ -35,20 +36,7 @@ namespace UnityEditor.Search
         private static readonly RectOffset paddingNone = new RectOffset(0, 0, 0, 0);
         private static readonly RectOffset defaultPadding = new RectOffset(itemRowPadding, itemRowPadding, itemRowPadding, itemRowPadding);
 
-        private static readonly Color darkColor4 = new Color(111 / 255f, 111 / 255f, 111 / 255f);
-        private static readonly Color darkColor5 = new Color(71 / 255f, 71 / 255f, 71 / 255f);
-        private static readonly Color darkColor6 = new Color(63 / 255f, 63 / 255f, 63 / 255f);
-
-        private static readonly Color lightColor4 = new Color(111 / 255f, 111 / 255f, 111 / 255f);
-        private static readonly Color lightColor5 = new Color(181 / 255f, 181 / 255f, 181 / 255f);
-        private static readonly Color lightColor6 = new Color(214 / 255f, 214 / 255f, 214 / 255f);
-
         public static readonly string highlightedTextColorFormat = isDarkTheme ? "<color=#F6B93F>{0}</color>" : "<b>{0}</b>";
-
-        private static readonly Texture2D buttonPressedBackgroundImage = GenerateSolidColorTexture(isDarkTheme ? darkColor4 : lightColor4);
-        private static readonly Texture2D buttonHoveredBackgroundImage = GenerateSolidColorTexture(isDarkTheme ? darkColor5 : lightColor5);
-
-        private static readonly Texture2D searchFieldBg = GenerateSolidColorTexture(isDarkTheme ? darkColor6 : lightColor6);
 
         public static readonly GUIStyle panelBorder = new GUIStyle("grey_border")
         {
@@ -64,7 +52,7 @@ namespace UnityEditor.Search
             margin = new RectOffset(0, 0, 0, 0)
         };
 
-        public static readonly GUIContent moreActionsContent = new GUIContent("", Icons.more, "Open actions menu (Alt + Right)");
+        public static readonly GUIContent moreActionsContent = new GUIContent("", Icons.more, "Open actions menu");
         public static readonly GUIContent moreProviderFiltersContent = new GUIContent("", Icons.more, "Display search provider filter ids and toggle their activate state.");
 
         public static readonly GUIStyle scrollbar = new GUIStyle("VerticalScrollbar");
@@ -82,10 +70,21 @@ namespace UnityEditor.Search
         public static readonly GUIStyle itemBackground2 = new GUIStyle(itemBackground1) { name = "quick-search-item-background2" };
         public static readonly GUIStyle selectedItemBackground = new GUIStyle(itemBackground1) { name = "quick-search-item-selected-background" };
 
-        public static readonly GUIStyle selectedGridItemBackground = new GUIStyle(selectedItemBackground)
+        public static readonly GUIStyle gridItemBackground = new GUIStyle()
         {
-            name = "quick-search-selected-item-grid-background",
+            name = "quick-search-grid-item-background",
+            alignment = TextAnchor.MiddleCenter,
+            imagePosition = ImagePosition.ImageOnly
+        };
+
+        public static readonly GUIStyle gridItemLabel = new GUIStyle("ProjectBrowserGridLabel")
+        {
+            wordWrap = true,
+            fixedWidth = 0,
             fixedHeight = 0,
+            alignment = TextAnchor.MiddleCenter,
+            margin = marginNone,
+            padding = new RectOffset(2, 1, 1, 1)
         };
 
         public static readonly GUIStyle itemGridBackground1 = new GUIStyle(itemBackground1) { fixedHeight = 0, };
@@ -108,7 +107,7 @@ namespace UnityEditor.Search
             name = "quick-search-item-large-preview",
             alignment = TextAnchor.MiddleCenter,
             imagePosition = ImagePosition.ImageOnly,
-            margin = new RectOffset(2, 2, 2, 2),
+            margin = new RectOffset(8, 8, 2, 2),
             padding = paddingNone,
             stretchWidth = true,
             stretchHeight = true
@@ -223,15 +222,22 @@ namespace UnityEditor.Search
             alignment = TextAnchor.MiddleCenter,
 
             margin = new RectOffset(4, 4, 4, 4),
-            padding = paddingNone,
-
-            active = new GUIStyleState { background = buttonPressedBackgroundImage, scaledBackgrounds = new[] { buttonPressedBackgroundImage } },
-            hover = new GUIStyleState { background = buttonHoveredBackgroundImage, scaledBackgrounds = new[] { buttonHoveredBackgroundImage } }
+            padding = paddingNone
         };
 
         public static readonly GUIStyle tabMoreButton = new GUIStyle(actionButton)
         {
             margin = new RectOffset(4, 4, 6, 0)
+        };
+
+        public static readonly GUIStyle syncButton = new GUIStyle("IconButton")
+        {
+            margin = new RectOffset(4, 4, 6, 0),
+            padding = paddingNone,
+            fixedWidth = actionButtonSize,
+            fixedHeight = actionButtonSize,
+            imagePosition = ImagePosition.ImageOnly,
+            alignment = TextAnchor.MiddleCenter
         };
 
         public static readonly GUIStyle actionButtonHovered = new GUIStyle(actionButton)
@@ -254,9 +260,7 @@ namespace UnityEditor.Search
             margin = new RectOffset(0, 0, 0, 0),
             padding = new RectOffset(0, 0, 0, 0),
             border = new RectOffset(0, 0, 0, 0),
-            fixedHeight = k_ToolbarHeight,
-
-            normal = new GUIStyleState() { background = searchFieldBg, scaledBackgrounds = new Texture2D[] { null } }
+            fixedHeight = k_ToolbarHeight
         };
 
         public static readonly GUIStyle searchField = new GUIStyle("ToolbarSeachTextFieldPopup")
@@ -332,9 +336,10 @@ namespace UnityEditor.Search
             imagePosition = ImagePosition.TextOnly
         };
 
-        public static readonly GUIContent saveQueryButtonContent = new GUIContent(string.Empty, EditorGUIUtility.LoadIcon("SaveAs"), "Save search query as an asset.");
+        public static readonly GUIContent saveQueryButtonContent = new GUIContent(string.Empty, EditorGUIUtility.FindTexture("SaveAs"), "Save search query as an asset.");
 
-        public static readonly GUIStyle toolbarButton = new GUIStyle(EditorStyles.iconButton)
+
+        public static readonly GUIStyle toolbarButton = new GUIStyle("IconButton")
         {
             margin = new RectOffset(0, 0, 0, 0),
             padding = new RectOffset(0, 0, 0, 0),
@@ -344,9 +349,9 @@ namespace UnityEditor.Search
             alignment = TextAnchor.MiddleCenter
         };
 
-        public static readonly GUIStyle savedSearchItem = GUIStyleExtensions.FromUSS("quick-search-saved-search-item");
-        public static readonly GUIStyle savedSearchItemSelected = GUIStyleExtensions.FromUSS("quick-search-saved-search-item-selected");
-        public static readonly GUIStyle panelHeader = GUIStyleExtensions.FromUSS(new GUIStyle() {
+        public static readonly GUIStyle savedSearchItem = Utils.FromUSS("quick-search-saved-search-item");
+        public static readonly GUIStyle savedSearchItemSelected = Utils.FromUSS("quick-search-saved-search-item-selected");
+        public static readonly GUIStyle panelHeader = Utils.FromUSS(new GUIStyle() {
             wordWrap = true,
             stretchWidth = true,
             clipping = TextClipping.Clip
@@ -358,16 +363,29 @@ namespace UnityEditor.Search
             margin = new RectOffset(10, 10, 8, 4)
         };
 
+        public static readonly GUIStyle sidebarActionDropdown = new GUIStyle(EditorStyles.miniButton)
+        {
+            fixedHeight = 20,
+            margin = new RectOffset(0, 0, 8, 4),
+            padding = new RectOffset(2, 2, 1, 1)
+        };
+
+        public static readonly GUIStyle sidebarToggle = new GUIStyle(EditorStyles.toggle)
+        {
+            margin = new RectOffset(10, 2, 4, 2)
+        };
+
         public static readonly GUIContent prefButtonContent = new GUIContent(Icons.settings, "Open search preferences...");
-        public static readonly GUIStyle prefButton = new GUIStyle("IconButton")
+        public static readonly GUIStyle statusBarButton = new GUIStyle("IconButton")
         {
             fixedWidth = 16,
             fixedHeight = 16,
             margin = new RectOffset(0, 2, 2, 2),
-            padding = new RectOffset(0, 0, 0, 0)
+            padding = new RectOffset(0, 0, 0, 0),
+            alignment = TextAnchor.MiddleCenter
         };
 
-        public static readonly GUIStyle searchInProgressButton = new GUIStyle(prefButton)
+        public static readonly GUIStyle searchInProgressButton = new GUIStyle(statusBarButton)
         {
             imagePosition = ImagePosition.ImageOnly,
             alignment = TextAnchor.MiddleLeft,
@@ -382,21 +400,6 @@ namespace UnityEditor.Search
         public static readonly GUIContent emptyContent = new GUIContent("", "No content");
 
         public static readonly GUIContent[] statusWheel;
-
-        private static Texture2D GenerateSolidColorTexture(Color fillColor)
-        {
-            Texture2D texture = new Texture2D(1, 1);
-            var fillColorArray = texture.GetPixels();
-
-            for (var i = 0; i < fillColorArray.Length; ++i)
-                fillColorArray[i] = fillColor;
-
-            texture.hideFlags = HideFlags.HideAndDontSave;
-            texture.SetPixels(fillColorArray);
-            texture.Apply();
-
-            return texture;
-        }
 
         public static readonly GUIStyle statusBarBackground = new GUIStyle()
         {
@@ -414,7 +417,7 @@ namespace UnityEditor.Search
         public static readonly GUIStyle panelBackgroundLeft = new GUIStyle() { name = "quick-search-panel-background-left" };
         public static readonly GUIStyle panelBackgroundRight = new GUIStyle() { name = "quick-search-panel-background-right" };
         public static readonly GUIStyle searchTabBackground = new GUIStyle() { name = "quick-search-tab-background" };
-        public static readonly GUIStyle searchTab = GUIStyleExtensions.FromUSS(GUIStyle.none, "quick-search-tab");
+        public static readonly GUIStyle searchTab = Utils.FromUSS("quick-search-tab");
 
         public static readonly GUIContent pressToFilterContent = new GUIContent("Press Tab \u21B9 to filter");
         public static readonly float pressToFilterContentWidth = searchFieldTabToFilterBtn.CalcSize(pressToFilterContent).x;
@@ -422,8 +425,53 @@ namespace UnityEditor.Search
         public static readonly GUIStyle inspector = new GUIStyle()
         {
             name = "quick-search-inspector",
-            margin = new RectOffset(8, 8, 1, 1),
+            margin = new RectOffset(1, 0, 0, 0),
             padding = new RectOffset(0, 0, 0, 0)
         };
+
+        public static class Wiggle
+        {
+            private static Texture2D GenerateSolidColorTexture(Color fillColor)
+            {
+                Texture2D texture = new Texture2D(1, 1);
+                var fillColorArray = texture.GetPixels();
+
+                for (var i = 0; i < fillColorArray.Length; ++i)
+                    fillColorArray[i] = fillColor;
+
+                texture.hideFlags = HideFlags.HideAndDontSave;
+                texture.SetPixels(fillColorArray);
+                texture.Apply();
+
+                return texture;
+            }
+
+            public static readonly GUIStyle wiggle = new GUIStyle()
+            {
+                name = "quick-search-wiggle",
+                fixedHeight = 1f,
+                padding = new RectOffset(0, 0, 0, 0),
+                margin = new RectOffset(0, 0, 0, 0),
+                alignment = TextAnchor.LowerCenter,
+                normal = new GUIStyleState { background = GenerateSolidColorTexture(Color.red), scaledBackgrounds = new[] { GenerateSolidColorTexture(Color.red) } },
+            };
+
+            public static readonly GUIStyle wiggleWarning = new GUIStyle()
+            {
+                name = "quick-search-wiggle",
+                fixedHeight = 1f,
+                padding = new RectOffset(0, 0, 0, 0),
+                margin = new RectOffset(0, 0, 0, 0),
+                alignment = TextAnchor.LowerCenter,
+                normal = new GUIStyleState { background = GenerateSolidColorTexture(Color.yellow), scaledBackgrounds = new[] { GenerateSolidColorTexture(Color.yellow) } },
+            };
+
+            public static readonly GUIStyle wiggleTooltip = new GUIStyle()
+            {
+                name = "quick-search-wiggle-tooltip",
+                padding = new RectOffset(0, 0, 0, 0),
+                margin = new RectOffset(0, 0, 0, 0)
+            };
+        }
     }
 }

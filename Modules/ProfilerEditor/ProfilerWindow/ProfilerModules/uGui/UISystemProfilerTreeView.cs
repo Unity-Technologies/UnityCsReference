@@ -9,6 +9,7 @@ using System.Text;
 using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEditor.Profiling;
 
 namespace UnityEditor
 {

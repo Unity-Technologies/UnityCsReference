@@ -34,7 +34,7 @@ namespace UnityEditor.Search.Providers
                 filterId = "#",
                 isExplicitProvider = true,
                 fetchItems = (context, items, provider) => FetchItems(context, provider),
-                fetchThumbnail = (item, context) => Icons.shortcut
+                fetchThumbnail = (item, context) => Icons.staticAPI
             };
         }
 
@@ -69,6 +69,7 @@ namespace UnityEditor.Search.Providers
         {
             var result = new List<MethodInfo>();
             var assemblies = aAppDomain.GetAssemblies();
+            var bindingFlags = BindingFlags.Static | (showInternalAPIs ? BindingFlags.Public | BindingFlags.NonPublic : BindingFlags.Public) | BindingFlags.DeclaredOnly;
             foreach (var assembly in assemblies)
             {
                 if (IsIgnoredAssembly(assembly.GetName()))
@@ -76,13 +77,16 @@ namespace UnityEditor.Search.Providers
                 var types = assembly.GetLoadableTypes();
                 foreach (var type in types)
                 {
-                    var methods = type.GetMethods(BindingFlags.Static | (showInternalAPIs ? BindingFlags.Public | BindingFlags.NonPublic : BindingFlags.Public) | BindingFlags.DeclaredOnly);
+                    var methods = type.GetMethods(bindingFlags);
                     foreach (var m in methods)
                     {
                         if (m.IsPrivate)
                             continue;
 
                         if (m.IsGenericMethod)
+                            continue;
+
+                        if (m.GetCustomAttribute<ObsoleteAttribute>() != null)
                             continue;
 
                         if (m.Name.Contains("Begin") || m.Name.Contains("End"))

@@ -16,7 +16,7 @@ namespace UnityEditor
 
         public bool showMarkers = true;
 
-        public UISystemProfilerChart(Chart.ChartType type, float dataScale, float maximumScaleInterpolationValue, int seriesCount, string name, string iconName) : base(ProfilerArea.UIDetails, type, dataScale, maximumScaleInterpolationValue, seriesCount, name, iconName)
+        public UISystemProfilerChart(Chart.ChartType type, float dataScale, float maximumScaleInterpolationValue, int seriesCount, string name, string localizedName, string iconName) : base(ProfilerArea.UIDetails, type, dataScale, maximumScaleInterpolationValue, seriesCount, name, localizedName, iconName)
         {
         }
 

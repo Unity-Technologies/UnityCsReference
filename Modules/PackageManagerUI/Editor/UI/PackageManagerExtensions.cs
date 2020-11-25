@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEditor.PackageManager.UI.Internal;
 
 namespace UnityEditor.PackageManager.UI
 {

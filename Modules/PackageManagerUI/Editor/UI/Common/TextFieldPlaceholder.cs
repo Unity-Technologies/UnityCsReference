@@ -5,7 +5,7 @@
 using System;
 using UnityEngine.UIElements;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class TextFieldPlaceholder : Label
     {

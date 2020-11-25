@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System;
+using UnityEditor.EditorTools;
 
 namespace UnityEditor
 {
@@ -50,19 +51,18 @@ namespace UnityEditor
             get { return EditorSnapSettingsData.instance; }
         }
 
-        internal static bool activeToolSupportsGridSnap
+        internal static bool activeToolGridSnapEnabled
         {
             get
             {
-                return (EditorTools.ToolManager.activeToolType == typeof(MoveTool)
-                    || EditorTools.ToolManager.activeToolType == typeof(TransformTool))
-                    && Tools.pivotRotation == PivotRotation.Global;
+                return (EditorTools.ToolManager.activeToolType != null)
+                    && EditorToolManager.activeTool.gridSnapEnabled;
             }
         }
 
         internal static bool gridSnapActive
         {
-            get { return !incrementalSnapActive && activeToolSupportsGridSnap && instance.snapEnabled; }
+            get { return !incrementalSnapActive && activeToolGridSnapEnabled && instance.snapEnabled; }
         }
 
         public static event Action gridSnapEnabledChanged;

@@ -58,6 +58,11 @@ namespace UnityEditor.Search
         Default = Sorted,
 
         /// <summary>
+        /// Always show query errors even when there are results available.
+        /// </summary>
+        ShowErrorsWithResults = 1 << 24,
+
+        /// <summary>
         /// Search View Flags
         /// </summary>
         SaveFilters = 1 << 25,
@@ -115,6 +120,7 @@ namespace UnityEditor.Search
         private static readonly string[] k_Empty = new string[0];
         private string m_SearchText = "";
         private string m_CachedPhrase;
+        private List<SearchQueryError> m_QueryErrors = new List<SearchQueryError>();
 
         [DebuggerDisplay("{provider} - Enabled: {enabled}")]
         internal class FilterDesc
@@ -242,6 +248,11 @@ namespace UnityEditor.Search
         public string searchQuery { get; private set; } = String.Empty;
 
         /// <summary>
+        /// Character offset of the processed search query in the raw search text.
+        /// </summary>
+        public int searchQueryOffset { get; private set; } = 0;
+
+        /// <summary>
         /// Search query tokenized by words. All text filters are discarded and all words are lower cased.
         /// </summary>
         public string[] searchWords { get; private set; } = k_Empty;
@@ -308,38 +319,27 @@ namespace UnityEditor.Search
                 m_SearchText = value ?? String.Empty;
 
                 // Reset a few values
-                filterId = actionId = null;
+                filterId = null;
                 textFilters = searchWords = k_Empty;
-                searchQuery = searchText ?? String.Empty;
+                searchQuery = searchText.TrimStart();
+                searchQueryOffset = 0;
 
                 if (String.IsNullOrEmpty(searchQuery))
                     return;
 
-                var isActionQuery = searchQuery.StartsWith(">", StringComparison.Ordinal);
-                if (isActionQuery)
+
+                foreach (var providerFilterId in m_ProviderDescs.Select(desc => desc.provider.filterId))
                 {
-                    var searchIndex = 1;
-                    var potentialCommand = Utils.GetNextWord(searchQuery, ref searchIndex).ToLowerInvariant();
-                    if (SearchService.ActionIdToProviders.ContainsKey(potentialCommand))
+                    if (searchQuery.StartsWith(providerFilterId, StringComparison.OrdinalIgnoreCase))
                     {
-                        // We are in command mode:
-                        actionId = potentialCommand;
-                        searchQuery = searchQuery.Remove(0, searchIndex).Trim();
-                    }
-                }
-                else
-                {
-                    foreach (var providerFilterId in m_ProviderDescs.Select(desc => desc.provider.filterId))
-                    {
-                        if (searchQuery.StartsWith(providerFilterId, StringComparison.OrdinalIgnoreCase))
-                        {
-                            filterId = providerFilterId;
-                            searchQuery = searchQuery.Remove(0, providerFilterId.Length).Trim();
-                            break;
-                        }
+                        filterId = providerFilterId;
+                        searchQuery = searchQuery.Remove(0, providerFilterId.Length).TrimStart();
+                        break;
                     }
                 }
 
+                searchQueryOffset = searchText.Length - searchQuery.Length;
+                searchQuery = searchQuery.TrimEnd();
                 var tokens = searchQuery.ToLowerInvariant().Split(' ').ToArray();
                 searchWords = tokens.Where(t => t.IndexOf(':') == -1).ToArray();
                 textFilters = tokens.Where(t => t.IndexOf(':') != -1).ToArray();
@@ -353,9 +353,6 @@ namespace UnityEditor.Search
         {
             get
             {
-                if (actionId != null)
-                    return m_ProviderDescs.Where(d => d.provider.actions.Any(a => a.id == actionId)).Select(d => d.provider);
-
                 if (filterId != null)
                     return m_ProviderDescs.Where(d => d.provider.filterId == filterId).Select(d => d.provider);
 
@@ -393,11 +390,6 @@ namespace UnityEditor.Search
         /// Search view holding and presenting the search results.
         /// </summary>
         public ISearchView searchView { get; internal set; }
-
-        /// <summary>
-        /// The search action id to be executed.
-        /// </summary>
-        public string actionId { get; private set; }
 
         /// <summary>
         /// Explicit filter id. Usually it is the first search token like h:, p: to do an explicit search for a given provider.
@@ -530,5 +522,72 @@ namespace UnityEditor.Search
         /// Define a subset of items that can be searched.
         /// </summary>
         internal List<SearchItem> subset { get; set; }
+
+        /// <summary>
+        /// Add a new query error on this context.
+        /// </summary>
+        /// <param name="error">The new error.</param>
+        public void AddSearchQueryError(SearchQueryError error)
+        {
+            lock (this)
+            {
+                m_QueryErrors.Add(error);
+            }
+        }
+
+        /// <summary>
+        /// Add new query errors on this context.
+        /// </summary>
+        /// <param name="errors">The new errors.</param>
+        public void AddSearchQueryErrors(IEnumerable<SearchQueryError> errors)
+        {
+            lock (this)
+            {
+                m_QueryErrors.AddRange(errors);
+            }
+        }
+
+        internal void ClearErrors()
+        {
+            lock (this)
+            {
+                m_QueryErrors.Clear();
+            }
+        }
+
+        internal bool HasError(SearchQueryErrorType errorType)
+        {
+            lock (this)
+            {
+                return m_QueryErrors.Exists(error => error.type == errorType);
+            }
+        }
+
+        internal IEnumerable<SearchQueryError> GetErrors(SearchQueryErrorType errorType)
+        {
+            lock (this)
+            {
+                // Return a new list since the list can be modified asynchronously
+                return m_QueryErrors.Where(error => error.type == errorType).ToList();
+            }
+        }
+
+        internal IEnumerable<SearchQueryError> GetAllErrors()
+        {
+            lock (this)
+            {
+                // Return a new list since the list can be modified asynchronously
+                return m_QueryErrors.ToArray();
+            }
+        }
+
+        internal IEnumerable<SearchQueryError> GetErrorsByProvider(string providerId)
+        {
+            lock (this)
+            {
+                // Return a new list since the list can be modified asynchronously
+                return m_QueryErrors.Where(error => error.provider.id == providerId).ToList();
+            }
+        }
     }
 }

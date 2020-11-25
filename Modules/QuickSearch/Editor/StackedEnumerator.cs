@@ -2,10 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+// #define DEBUG_STACKED_ENUMERATOR_DISPOSING
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Assertions;
+
 
 namespace UnityEditor.Search
 {
@@ -17,10 +19,12 @@ namespace UnityEditor.Search
 
         private static readonly bool k_IsNullable = default(T) == null;
 
+
         public int Count => m_ItemsEnumerator.Count;
 
         public StackedEnumerator()
         {}
+
 
         public StackedEnumerator(object itemEnumerator)
         {
@@ -33,11 +37,6 @@ namespace UnityEditor.Search
                 m_ItemsEnumerator.Push(enumerator);
             else
                 throw new ArgumentException($"Parameter {nameof(itemEnumerator)} is not an IEnumerable or IEnumerator.", nameof(itemEnumerator));
-        }
-
-        public void Clear()
-        {
-            m_ItemsEnumerator.Clear();
         }
 
         public bool NextItem(out T nextItem)
@@ -115,6 +114,12 @@ namespace UnityEditor.Search
 
         public void Dispose()
         {
+
+            foreach (var enumerator in m_ItemsEnumerator)
+            {
+                if (enumerator is IDisposable disposable)
+                    disposable.Dispose();
+            }
             m_ItemsEnumerator.Clear();
         }
     }

@@ -93,7 +93,7 @@ namespace UnityEditor.Search
 
         public static DateTime TimeStampFromByte(byte[] bytes)
         {
-            var binaryTimeStamp = Deserialize<long>(bytes);
+            var binaryTimeStamp = BitConverter.ToInt64(bytes, 0);
             return DateTime.FromBinary(binaryTimeStamp);
         }
     }

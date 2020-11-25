@@ -14,6 +14,27 @@ namespace UnityEditor.PackageManager.UI
 
         string displayName { get; }
 
+        // versionString and versionId are the same for UpmPackage but difference for in the case Asset Store packages:
+        // versionString - something that looks like `1.0.2` or `1.0a`
+        // versionId     - the unique numeric id that is used in the Asset Store backend that looks like `12345`
+        string versionString { get; }
+
+        string versionId { get; }
+
+        string uniqueId { get; }
+
+        string packageUniqueId { get; }
+
+        PackageInfo packageInfo { get; }
+
+        bool isInstalled { get; }
+    }
+}
+
+namespace UnityEditor.PackageManager.UI.Internal
+{
+    internal interface IPackageVersion : UI.IPackageVersion
+    {
         string author { get; }
 
         string authorLink { get; }
@@ -26,10 +47,6 @@ namespace UnityEditor.PackageManager.UI
 
         IDictionary<string, string> categoryLinks { get; }
 
-        string packageUniqueId { get; }
-
-        string uniqueId { get; }
-
         IEnumerable<UIError> errors { get; }
 
         SemVersion? version { get; }
@@ -40,11 +57,7 @@ namespace UnityEditor.PackageManager.UI
 
         DependencyInfo[] resolvedDependencies { get; }
 
-        PackageInfo packageInfo { get; }
-
         bool HasTag(PackageTag tag);
-
-        bool isInstalled { get; }
 
         // A version is fully fetched when the information isn't derived from another version (therefore may be inaccurate)
         bool isFullyFetched { get; }
@@ -54,10 +67,6 @@ namespace UnityEditor.PackageManager.UI
         bool isDirectDependency { get; }
 
         string localPath { get; }
-
-        string versionString { get; }
-
-        string versionId { get; }
 
         SemVersion? supportedVersion { get; }
 

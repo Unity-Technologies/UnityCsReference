@@ -12,6 +12,9 @@ using UnityEngine.Scripting;
 using ShaderPlatform = UnityEngine.Rendering.GraphicsDeviceType;
 using UnityEngine.Experimental.Rendering;
 using UnityEditor.AssetImporters;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("UniversalEditorTests")]
 
 namespace UnityEditor
 {
@@ -124,7 +127,12 @@ namespace UnityEditor
 
         extern internal static void FetchCachedMessages([NotNull] Shader s);
         extern public static int GetShaderMessageCount([NotNull] Shader s);
-        extern public static ShaderMessage[] GetShaderMessages([NotNull] Shader s);
+        public static ShaderMessage[] GetShaderMessages(Shader s)
+        {
+            return GetShaderMessages(s, (ShaderCompilerPlatform)0);
+        }
+
+        extern public static ShaderMessage[] GetShaderMessages([NotNull] Shader s, ShaderCompilerPlatform platform);
         extern public static void ClearShaderMessages([NotNull] Shader s);
         extern public static int GetComputeShaderMessageCount([NotNull] ComputeShader s);
         extern public static ShaderMessage[] GetComputeShaderMessages([NotNull] ComputeShader s);
@@ -197,6 +205,8 @@ namespace UnityEditor
 
 
         extern internal static void OpenCompiledShader(Shader shader, int mode, int externPlatformsMask, bool includeAllVariants, bool preprocessOnly, bool stripLineDirectives);
+        extern internal static void CompileShaderForTargetCompilerPlatform(Shader shader, ShaderCompilerPlatform platform);
+
         extern internal static void OpenCompiledComputeShader(ComputeShader shader, bool allVariantsAndPlatforms, bool showPreprocessed, bool stripLineDirectives);
         extern internal static void OpenParsedSurfaceShader(Shader shader);
         extern internal static void OpenGeneratedFixedFunctionShader(Shader shader);

@@ -14,6 +14,9 @@ using UnityEngine.UIElements;
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
+    // TODO: refactor: rename to CpuProfilerModule
+    // together with CPUOrGPUProfilerModule and GpuProfilerModule
+    // in a PR that doesn't affect performance so that the sample names can be fixed as well without loosing comparability in Performance tests.
     internal class CPUProfilerModule : CPUOrGPUProfilerModule
     {
         static class Styles
@@ -25,7 +28,10 @@ namespace UnityEditorInternal.Profiling
         const string k_SettingsKeyPrefix = "Profiler.CPUProfilerModule.";
         const string k_IconName = "Profiler.CPU";
         const int k_DefaultOrderIndex = 0;
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("CPU Usage");
+
+        protected override string ModuleName => k_UnlocalizedName;
+        internal const string k_UnlocalizedName = "CPU Usage";
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnlocalizedName);
 
         static class Content
         {
@@ -38,7 +44,7 @@ namespace UnityEditorInternal.Profiling
         [SerializeField]
         ProfilerTimelineGUI m_TimelineGUI;
 
-        public CPUProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName) {}
+        public CPUProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnlocalizedName, k_Name, k_IconName) {}
 
         public override ProfilerArea area => ProfilerArea.CPU;
 
@@ -46,6 +52,15 @@ namespace UnityEditorInternal.Profiling
         protected override string legacyPreferenceKey => "ProfilerChartCPU";
         protected override string SettingsKeyPrefix => k_SettingsKeyPrefix;
         protected override ProfilerViewType DefaultViewTypeSetting => ProfilerViewType.Timeline;
+
+        internal const string mainThreadName = "Main Thread";
+        internal const string mainThreadGroupName = "";
+        internal const string renderThreadName = "Render Thread";
+        internal const string renderThreadGroupName = "";
+        internal const string loadingThreadNamePrefix = "Loading";
+        internal const string jobThreadNamePrefix = "Job";
+        internal const string scriptingThreadNamePrefix = "Scripting Thread";
+
 
         [NonSerialized]
         string m_LastThreadName = "";
@@ -77,7 +92,7 @@ namespace UnityEditorInternal.Profiling
         public override void DrawChartOverlay(Rect chartRect)
         {
             // Show selected property name
-            if (!Selection.valid)
+            if (selection == null)
                 return;
 
             var content = selectionHighlightLabel;
@@ -108,7 +123,7 @@ namespace UnityEditorInternal.Profiling
                     ProfilerWindowAnalytics.RecordViewKeyboardEvent(ProfilerWindowAnalytics.profilerCPUModuleTimeline);
                 if (Event.current.isMouse && position.Contains(Event.current.mousePosition))
                     ProfilerWindowAnalytics.RecordViewMouseEvent(ProfilerWindowAnalytics.profilerCPUModuleTimeline);
-                CurrentFrameIndex = m_ProfilerWindow.GetActiveVisibleFrameIndex();
+                CurrentFrameIndex = (int)m_ProfilerWindow.selectedFrameIndex;
                 m_TimelineGUI.DoGUI(CurrentFrameIndex, position, fetchData, ref updateViewLive);
             }
             else
@@ -150,7 +165,7 @@ namespace UnityEditorInternal.Profiling
             if (ViewType == ProfilerViewType.Timeline)
             {
                 ids.Clear();
-                if (Selection.valid)
+                if (selection != null)
                 {
                     m_TimelineGUI.GetSelectedSampleIdsForCurrentFrameAndView(ref ids);
                 }
@@ -161,16 +176,25 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
+        protected override void FrameThread(int threadIndex)
+        {
+            base.FrameThread(threadIndex);
+            if (ViewType == ProfilerViewType.Timeline)
+            {
+                m_TimelineGUI.FrameThread(threadIndex);
+            }
+        }
+
         protected override void ApplySelection(bool viewChanged, bool frameSelection)
         {
             if (ViewType == ProfilerViewType.Timeline)
             {
-                if (Selection.valid)
+                if (selection != null)
                 {
                     using (k_ApplyValidSelectionMarker.Auto())
                     {
-                        var threadIndex = GetThreadIndexInCurrentFrameToApplySelectionFromAnotherFrame(Selection);
-                        m_TimelineGUI.SetSelection(Selection, threadIndex, frameSelection);
+                        var threadIndex = GetThreadIndexInCurrentFrameToApplySelectionFromAnotherFrame(selection);
+                        m_TimelineGUI.SetSelection(selection, threadIndex, frameSelection);
                     }
                 }
                 else
@@ -238,28 +262,28 @@ namespace UnityEditorInternal.Profiling
 
         void UpdateSelectionHighlightLabel()
         {
-            if (Selection.valid)
+            if (selection != null)
             {
                 System.Text.StringBuilder sampleStack = new System.Text.StringBuilder();
-                if (Selection.markerPathDepth > 0)
+                if (selection.markerPathDepth > 0)
                 {
-                    var markerNamePath = Selection.markerNamePath;
-                    for (int i = Selection.markerPathDepth - 1; i >= 0; i--)
+                    var markerNamePath = selection.markerNamePath;
+                    for (int i = selection.markerPathDepth - 1; i >= 0; i--)
                     {
                         sampleStack.AppendFormat("\n{0}", markerNamePath[i]);
                     }
                 }
-                if (Selection.threadName == k_MainThreadName)
+                if (selection.threadName == k_MainThreadName)
                 {
                     selectionHighlightLabel = new GUIContent(
-                        string.Format(Content.selectionHighlightLabelBaseText.text, Selection.sampleName),
+                        string.Format(Content.selectionHighlightLabelBaseText.text, selection.sampleDisplayName),
                         string.Format(Content.selectionHighlightLabelBaseText.tooltip, sampleStack.ToString()));
                 }
                 else
                 {
                     selectionHighlightLabel = new GUIContent(
-                        string.Format(Content.selectionHighlightNonMainThreadLabelBaseText.text, Selection.sampleName, Selection.threadName),
-                        string.Format(Content.selectionHighlightNonMainThreadLabelBaseText.tooltip, sampleStack.ToString(), Selection.threadName));
+                        string.Format(Content.selectionHighlightNonMainThreadLabelBaseText.text, selection.sampleDisplayName, selection.threadName),
+                        string.Format(Content.selectionHighlightNonMainThreadLabelBaseText.tooltip, sampleStack.ToString(), selection.threadName));
                 }
             }
             else
@@ -401,11 +425,15 @@ namespace UnityEditorInternal.Profiling
             for (int i = firstIndex; i <= lastSampleInSearchScope; i++)
             {
                 samplePathAndLastSampleInScope.Add(new RawSampleIterationInfo { sampleIndex = i, lastSampleIndexInScope = i + frameData.GetSampleChildrenCountRecursive(i) });
-                if (sampleMarkerId == FrameDataView.invalidMarkerId && GetItemName(frameData, i) == sampleName || frameData.GetSampleMarkerId(i) == sampleMarkerId)
+                if (sampleMarkerId == FrameDataView.invalidMarkerId && (sampleName != null && GetItemName(frameData, i) == sampleName) || frameData.GetSampleMarkerId(i) == sampleMarkerId)
                 {
-                    // ignore the first sample, it's either the thread root or the enclosing sample (which is already in the list)
-                    for (int j = 1; j < samplePathAndLastSampleInScope.Count; j++)
+                    // ignore the first sample if it's the enclosing sample (which is already in the list)
+                    for (int j = sampleIndexPath.Count > 0 ? 1 : 0; j < samplePathAndLastSampleInScope.Count; j++)
                     {
+                        // ignore the first sample if it's either the thread root sample.
+                        // we can't always assume that there is a thread root sample, as the data may be mal formed, but we need to check if this is one by checking the name
+                        if (j == 0 && frameData.GetSampleName(samplePathAndLastSampleInScope[j].sampleIndex) == frameData.threadName)
+                            continue;
                         sampleIndexPath.Add(samplePathAndLastSampleInScope[j].sampleIndex);
                     }
                     return i;
@@ -446,7 +474,7 @@ namespace UnityEditorInternal.Profiling
             base.UpdateChartOverlay(firstEmptyFrame, firstFrame, frameCount);
 
             string selectedName = ProfilerDriver.selectedPropertyPath;
-            var selectedModule = m_ProfilerWindow.SelectedModule;
+            var selectedModule = m_ProfilerWindow.selectedModule;
             bool hasCPUOverlay = (selectedName != string.Empty) && this.Equals(selectedModule);
             if (hasCPUOverlay)
             {

@@ -32,10 +32,9 @@ namespace UnityEditor.Search.Providers
                 Utils.IsFocusedWindowTypeName("SceneView") ||
                 Utils.IsFocusedWindowTypeName("SceneHierarchyWindow");
 
-            EditorSceneManager.activeSceneChangedInEditMode += (_, __) => InvalidateScene();
-            PrefabStage.prefabStageOpened += _ => InvalidateScene();
-            PrefabStage.prefabStageClosing += _ => InvalidateScene();
-            ObjectChangeEvents.changesPublished += OnObjectChanged;
+            EditorApplication.hierarchyChanged += () => m_HierarchyChanged = true;
+
+            supportsSyncViewSearch = true;
 
             toObject = (item, type) => ObjectFromItem(item, type);
 
@@ -117,76 +116,6 @@ namespace UnityEditor.Search.Providers
             trackSelection = (item, context) => PingItem(item);
         }
 
-        private void InvalidateScene()
-        {
-            m_HierarchyChanged = true;
-            m_LastSearchView?.Refresh();
-        }
-
-        private void InvalidateObject(int instanceId)
-        {
-            if (m_SceneQueryEngine.InvalidateObject(instanceId))
-                m_LastSearchView?.Refresh();
-            else if (UnityEngine.Object.FindObjectFromInstanceID(instanceId) is Component c)
-                InvalidateObject(c.gameObject.GetInstanceID());
-        }
-
-        private void OnObjectChanged(ref ObjectChangeEventStream stream)
-        {
-            if (m_SceneQueryEngine == null)
-                return;
-
-            for (int i = 0; i < stream.length; ++i)
-            {
-                var eventType = stream.GetEventType(i);
-                switch (eventType)
-                {
-                    case ObjectChangeKind.None:
-                    case ObjectChangeKind.CreateAssetObject:
-                    case ObjectChangeKind.DestroyAssetObject:
-                    case ObjectChangeKind.ChangeAssetObjectProperties:
-                        break;
-
-                    case ObjectChangeKind.ChangeScene:
-                    case ObjectChangeKind.CreateGameObjectHierarchy:
-                    case ObjectChangeKind.DestroyGameObjectHierarchy:
-                        InvalidateScene();
-                        break;
-
-                    case ObjectChangeKind.ChangeGameObjectStructureHierarchy:
-                    {
-                        stream.GetChangeGameObjectStructureHierarchyEvent(i, out var e);
-                        InvalidateObject(e.instanceId);
-                    }
-                    break;
-                    case ObjectChangeKind.ChangeGameObjectStructure:
-                    {
-                        stream.GetChangeGameObjectStructureEvent(i, out var e);
-                        InvalidateObject(e.instanceId);
-                    }
-                    break;
-                    case ObjectChangeKind.ChangeGameObjectParent:
-                    {
-                        stream.GetChangeGameObjectParentEvent(i, out var e);
-                        InvalidateObject(e.instanceId);
-                    }
-                    break;
-                    case ObjectChangeKind.ChangeGameObjectOrComponentProperties:
-                    {
-                        stream.GetChangeGameObjectOrComponentPropertiesEvent(i, out var e);
-                        InvalidateObject(e.instanceId);
-                    }
-                    break;
-                    case ObjectChangeKind.UpdatePrefabInstances:
-                    {
-                        stream.GetUpdatePrefabInstancesEvent(i, out var e);
-                        for (int idIndex = 0; idIndex < e.instanceIds.Length; ++idIndex)
-                            InvalidateObject(e.instanceIds[idIndex]);
-                    }
-                    break;
-                }
-            }
-        }
 
         public static IEnumerable<SearchAction> CreateActionHandlers(string providerId)
         {
@@ -215,7 +144,19 @@ namespace UnityEditor.Search.Providers
                                 FrameObject(go);
                         }
                     }
-                }
+                },
+
+                new SearchAction(providerId, "show", null, "Show selected object(s)")
+                {
+                    enabled = (items) => SceneVisibilityManager.instance.IsHidden(items.First().ToObject<GameObject>()),
+                    execute = (items) => SceneVisibilityManager.instance.Show(items.Select(i => i.ToObject<GameObject>()).Where(i => i).ToArray(), true)
+                },
+
+                new SearchAction(providerId, "hide", null, "Hide selected object(s)")
+                {
+                    enabled = (items) => !SceneVisibilityManager.instance.IsHidden(items.First().ToObject<GameObject>()),
+                    execute = (items) => SceneVisibilityManager.instance.Hide(items.Select(i => i.ToObject<GameObject>()).Where(i => i).ToArray(), true)
+                },
             };
         }
 
@@ -240,7 +181,7 @@ namespace UnityEditor.Search.Providers
                         .Where(obj => obj != null);
                 }
 
-                yield return m_SceneQueryEngine.Search(context, subset).Select(gameObject =>
+                yield return m_SceneQueryEngine.Search(context, provider, subset).Select(gameObject =>
                 {
                     if (!gameObject)
                         return null;
@@ -326,7 +267,7 @@ namespace UnityEditor.Search.Providers
         [SearchItemProvider]
         internal static SearchProvider CreateProvider()
         {
-            return new SceneProvider(k_DefaultProviderId, "s:", "Scene");
+            return new SceneProvider(k_DefaultProviderId, "h:", "Hierarchy");
         }
 
         [SearchActionsProvider]
@@ -335,7 +276,7 @@ namespace UnityEditor.Search.Providers
             return SceneProvider.CreateActionHandlers(k_DefaultProviderId);
         }
 
-        [Shortcut("Help/Search/Scene")]
+        [Shortcut("Help/Search/Hierarchy")]
         internal static void OpenQuickSearch()
         {
             QuickSearch.OpenWithContextualProvider(k_DefaultProviderId, Query.type);

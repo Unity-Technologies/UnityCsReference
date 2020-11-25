@@ -1,41 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
-    static class EnumFieldHelpers
-    {
-        internal static readonly UxmlTypeAttributeDescription<Enum> type = new UxmlTypeAttributeDescription<Enum> { name = "type" };
-        internal static readonly UxmlStringAttributeDescription value = new UxmlStringAttributeDescription { name = "value" };
-        internal static readonly UxmlBoolAttributeDescription includeObsoleteValues = new UxmlBoolAttributeDescription() { name = "include-obsolete-values", defaultValue = false };
-
-        internal static bool ExtractValue(IUxmlAttributes bag, CreationContext cc, out Enum resEnumValue, out bool resIncludeObsoleteValues)
-        {
-            resIncludeObsoleteValues = false;
-            resEnumValue = null;
-
-            var systemType = type.GetValueFromBag(bag, cc);
-            if (systemType == null)
-            {
-                return false;
-            }
-
-            string specifiedValue = null;
-            if (value.TryGetValueFromBag(bag, cc, ref specifiedValue) && !Enum.IsDefined(systemType, specifiedValue))
-            {
-                Debug.LogErrorFormat("EnumField: Could not parse value of '{0}', because it isn't defined in the {1} enum.", specifiedValue, systemType.FullName);
-                return false;
-            }
-
-            resEnumValue = specifiedValue != null ? (Enum)Enum.Parse(systemType, specifiedValue) : (Enum)Enum.ToObject(systemType, 0);
-            resIncludeObsoleteValues = includeObsoleteValues.GetValueFromBag(bag, cc);
-
-            return true;
-        }
-    }
 
     /// <summary>
     /// Makes a dropdown for switching between enum flag values that are marked with the Flags attribute.

@@ -1691,6 +1691,16 @@ namespace UnityEditor
 
         internal static string ToolbarSearchField(int id, Rect position, string text, bool showWithPopupArrow)
         {
+            return ToolbarSearchField(
+                id,
+                position,
+                text,
+                showWithPopupArrow ? EditorStyles.toolbarSearchFieldPopup : EditorStyles.toolbarSearchField,
+                text != "" ? EditorStyles.toolbarSearchFieldCancelButton : EditorStyles.toolbarSearchFieldCancelButtonEmpty);
+        }
+
+        internal static string ToolbarSearchField(int id, Rect position, string text, GUIStyle searchFieldStyle, GUIStyle cancelButtonStyle)
+        {
             bool dummy;
             Rect textRect = position;
             const float k_CancelButtonWidth = 14f;
@@ -1706,9 +1716,8 @@ namespace UnityEditor
                 s_RecycledEditor.text = text = "";
                 GUI.changed = true;
             }
-            text = DoTextField(s_RecycledEditor, id, textRect, text, showWithPopupArrow ? EditorStyles.toolbarSearchFieldPopup : EditorStyles.toolbarSearchField, null, out dummy, false, false, false);
-            GUI.Button(buttonRect, GUIContent.none,
-                text != "" ? EditorStyles.toolbarSearchFieldCancelButton : EditorStyles.toolbarSearchFieldCancelButtonEmpty);
+            text = DoTextField(s_RecycledEditor, id, textRect, text, searchFieldStyle, null, out dummy, false, false, false);
+            GUI.Button(buttonRect, GUIContent.none, cancelButtonStyle);
 
             return text;
         }
@@ -1720,6 +1729,19 @@ namespace UnityEditor
         }
 
         internal static string ToolbarSearchField(int id, Rect position, string[] searchModes, ref int searchMode, string text)
+        {
+            return ToolbarSearchField(
+                id,
+                position,
+                searchModes,
+                ref searchMode,
+                text,
+                EditorStyles.toolbarSearchFieldPopup,
+                EditorStyles.toolbarSearchField,
+                text != "" ? EditorStyles.toolbarSearchFieldCancelButton : EditorStyles.toolbarSearchFieldCancelButtonEmpty);
+        }
+
+        internal static string ToolbarSearchField(int id, Rect position, string[] searchModes, ref int searchMode, string text, GUIStyle searchFieldWithPopupStyle, GUIStyle searchFieldNoPopupStyle, GUIStyle cancelButtonStyle)
         {
             bool hasPopup = searchModes != null;
             if (hasPopup)
@@ -1741,7 +1763,7 @@ namespace UnityEditor
                 }
             }
 
-            text = ToolbarSearchField(id, position, text, hasPopup);
+            text = ToolbarSearchField(id, position, text, hasPopup ? searchFieldWithPopupStyle : searchFieldNoPopupStyle, cancelButtonStyle);
 
             if (hasPopup && text == "" && !s_RecycledEditor.IsEditingControl(id) && Event.current.type == EventType.Repaint)
             {
@@ -3887,8 +3909,13 @@ namespace UnityEditor
         // Make an X & Y field for entering a [[Vector2]].
         public static Vector2 Vector2Field(Rect position, GUIContent label, Vector2 value)
         {
+            return Vector2Field(position, label, value, false);
+        }
+
+        internal static Vector2 Vector2Field(Rect position, GUIContent label, Vector2 value, bool setWideMode)
+        {
             int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
-            position = MultiFieldPrefixLabel(position, id, label, 2);
+            position = MultiFieldPrefixLabel(position, id, label, 2, setWideMode);
             position.height = kSingleLineHeight;
             return Vector2Field(position, value);
         }
@@ -4618,36 +4645,23 @@ namespace UnityEditor
             var wasEnabled = GUI.enabled;
             var eventType = GetEventTypeForControlAllowDisabledContextMenuPaste(evt, id);
 
-            if (showEyedropper)
-                hovered ^= hoveredEyedropper;
-
             switch (eventType)
             {
                 case EventType.MouseDown:
                     if (showEyedropper)
                     {
-                        if (hoveredEyedropper && wasEnabled)
-                        {
-                            GUIUtility.keyboardControl = id;
-                            EyeDropper.Start(GUIView.current);
-                            s_ColorPickID = id;
-                            evt.Use();
-                            GUIUtility.ExitGUI();
-                        }
+                        hovered ^= hoveredEyedropper;
                     }
-                    break;
 
-                case EventType.MouseUp:
                     if (hovered)
                     {
-                        var currentView = GUIView.current;
                         switch (evt.button)
                         {
                             case 0:
                                 // Left click: Show the ColorPicker
                                 GUIUtility.keyboardControl = id;
                                 showMixedValue = false;
-                                ColorPicker.Show(currentView, value, showAlpha, hdr);
+                                ColorPicker.Show(GUIView.current, value, showAlpha, hdr);
                                 GUIUtility.ExitGUI();
                                 break;
 
@@ -4658,6 +4672,7 @@ namespace UnityEditor
 
                                 var names = new[] { L10n.Tr("Copy"), L10n.Tr("Paste") };
                                 var enabled = new[] {true, wasEnabled && Clipboard.hasColor};
+                                var currentView = GUIView.current;
 
                                 EditorUtility.DisplayCustomMenu(
                                     position,
@@ -4680,6 +4695,17 @@ namespace UnityEditor
                                     null);
                                 evt.Use();
                                 return origColor;
+                        }
+                    }
+
+                    if (showEyedropper)
+                    {
+                        if (hoveredEyedropper && wasEnabled)
+                        {
+                            GUIUtility.keyboardControl = id;
+                            EyeDropper.Start(GUIView.current);
+                            s_ColorPickID = id;
+                            GUIUtility.ExitGUI();
                         }
                     }
                     break;
@@ -5881,12 +5907,17 @@ namespace UnityEditor
 
         internal static Rect MultiFieldPrefixLabel(Rect totalPosition, int id, GUIContent label, int columns)
         {
+            return MultiFieldPrefixLabel(totalPosition, id, label, columns, false);
+        }
+
+        internal static Rect MultiFieldPrefixLabel(Rect totalPosition, int id, GUIContent label, int columns, bool setWideMode)
+        {
             if (!LabelHasContent(label))
             {
                 return IndentedRect(totalPosition);
             }
 
-            if (EditorGUIUtility.wideMode)
+            if (EditorGUIUtility.wideMode || setWideMode)
             {
                 Rect labelPosition = new Rect(totalPosition.x + indent, totalPosition.y, EditorGUIUtility.labelWidth - indent, kSingleLineHeight);
                 Rect fieldPosition = totalPosition;
@@ -6426,76 +6457,56 @@ namespace UnityEditor
         }
 
         // before we had preview materials as static vars, but these go null on domain reload, leaking memory
-        // so now we keep those in native land
-        // i have tried to store just pointers in a native land and continue creating material in cs
-        // but this didn't quite work (and this brings questions of who manages lifetime, etc)
-        // so we switch to having materials managed in native land, and cs just querying them
-        // now, i must admit, i was stumbled by the fact that sometimes on domain reload we crash in unmarshaling
-        // hence we do this magic:
-        // we still keep these static vars (which will go null on domain reload)
-        // and we create scripting objects in native land, returning it to managed land and assigning to static var
-        // to summarize:
-        // we create actual material (and load shader) only ONCE in native
-        // every time our managed reference is null we create managed object in native land and assign to our static var
-
-        private static Material GetPreviewMaterial(ref Material m, PreviewMaterialType type)
-        {
-            if (m == null)
-                m = EditorGUIUtility.CreatePreviewMaterial(type);
-            return m;
-        }
-
-        private static Material s_ColorMaterial, s_ColorVTMaterial, s_AlphaMaterial, s_AlphaVTMaterial, s_TransparentMaterial, s_TransparentVTMaterial, s_NormalmapMaterial, s_NormalmapVTMaterial;
-        private static Material s_LightmapRGBMMaterial, s_LightmapDoubleLDRMaterial, s_LightmapFullHDRMaterial;
-        private static Material s_GUITextureClipVertically;
+        // so now we keep them in native land
+        // we load shaders from assets and create materials once (in native), and managed code queries them when needed
 
         internal static Material colorMaterial
         {
-            get { return GetPreviewMaterial(ref s_ColorMaterial, PreviewMaterialType.Color); }
+            get { return EditorGUIUtility.GetPreviewMaterial(PreviewMaterialType.Color); }
         }
         internal static Material colorVTMaterial
         {
-            get { return GetPreviewMaterial(ref s_ColorVTMaterial, PreviewMaterialType.ColorVT); }
+            get { return EditorGUIUtility.GetPreviewMaterial(PreviewMaterialType.ColorVT); }
         }
         internal static Material alphaMaterial
         {
-            get { return GetPreviewMaterial(ref s_AlphaMaterial, PreviewMaterialType.Alpha); }
+            get { return EditorGUIUtility.GetPreviewMaterial(PreviewMaterialType.Alpha); }
         }
         internal static Material alphaVTMaterial
         {
-            get { return GetPreviewMaterial(ref s_AlphaVTMaterial, PreviewMaterialType.AlphaVT); }
+            get { return EditorGUIUtility.GetPreviewMaterial(PreviewMaterialType.AlphaVT); }
         }
         internal static Material transparentMaterial
         {
-            get { return GetPreviewMaterial(ref s_TransparentMaterial, PreviewMaterialType.Transparent); }
+            get { return EditorGUIUtility.GetPreviewMaterial(PreviewMaterialType.Transparent); }
         }
         internal static Material transparentVTMaterial
         {
-            get { return GetPreviewMaterial(ref s_TransparentVTMaterial, PreviewMaterialType.TransparentVT); }
+            get { return EditorGUIUtility.GetPreviewMaterial(PreviewMaterialType.TransparentVT); }
         }
         internal static Material normalmapMaterial
         {
-            get { return GetPreviewMaterial(ref s_NormalmapMaterial, PreviewMaterialType.Normalmap); }
+            get { return EditorGUIUtility.GetPreviewMaterial(PreviewMaterialType.Normalmap); }
         }
         internal static Material normalmapVTMaterial
         {
-            get { return GetPreviewMaterial(ref s_NormalmapVTMaterial, PreviewMaterialType.NormalmapVT); }
+            get { return EditorGUIUtility.GetPreviewMaterial(PreviewMaterialType.NormalmapVT); }
         }
         internal static Material lightmapRGBMMaterial
         {
-            get { return GetPreviewMaterial(ref s_LightmapRGBMMaterial, PreviewMaterialType.LightmapRGBM); }
+            get { return EditorGUIUtility.GetPreviewMaterial(PreviewMaterialType.LightmapRGBM); }
         }
         internal static Material lightmapDoubleLDRMaterial
         {
-            get { return GetPreviewMaterial(ref s_LightmapDoubleLDRMaterial, PreviewMaterialType.LightmapDoubleLDR); }
+            get { return EditorGUIUtility.GetPreviewMaterial(PreviewMaterialType.LightmapDoubleLDR); }
         }
         internal static Material lightmapFullHDRMaterial
         {
-            get { return GetPreviewMaterial(ref s_LightmapFullHDRMaterial, PreviewMaterialType.LightmapFullHDR); }
+            get { return EditorGUIUtility.GetPreviewMaterial(PreviewMaterialType.LightmapFullHDR); }
         }
         internal static Material guiTextureClipVerticallyMaterial
         {
-            get { return GetPreviewMaterial(ref s_GUITextureClipVertically, PreviewMaterialType.GUITextureClipVertically); }
+            get { return EditorGUIUtility.GetPreviewMaterial(PreviewMaterialType.GUITextureClipVertically); }
         }
 
         internal static void SetExpandedRecurse(SerializedProperty property, bool expanded)
@@ -7145,6 +7156,22 @@ namespace UnityEditor
         public static void LabelField(Rect position, GUIContent label, GUIContent label2, [DefaultValue("EditorStyles.label")] GUIStyle style)
         {
             LabelFieldInternal(position, label, label2, style);
+        }
+
+        public static bool LinkButton(Rect position, string label)
+        {
+            return LinkButton(position, EditorGUIUtility.TempContent(label));
+        }
+
+        public static bool LinkButton(Rect position, GUIContent label)
+        {
+            Handles.color = EditorStyles.linkLabel.normal.textColor;
+            Handles.DrawLine(new Vector3(position.xMin + EditorStyles.linkLabel.padding.left, position.yMax), new Vector3(position.xMax - EditorStyles.linkLabel.padding.right, position.yMax));
+            Handles.color = Color.white;
+
+            EditorGUIUtility.AddCursorRect(position, MouseCursor.Link);
+
+            return GUI.Button(position, label, EditorStyles.linkLabel);
         }
 
         [ExcludeFromDocs]
@@ -8219,12 +8246,12 @@ namespace UnityEditor
             }
         }
 
-        internal static bool LinkLabel(string label, params GUILayoutOption[] options)
+        public static bool LinkButton(string label, params GUILayoutOption[] options)
         {
-            return LinkLabel(EditorGUIUtility.TempContent(label), options);
+            return LinkButton(EditorGUIUtility.TempContent(label), options);
         }
 
-        internal static bool LinkLabel(GUIContent label, params GUILayoutOption[] options)
+        public static bool LinkButton(GUIContent label, params GUILayoutOption[] options)
         {
             var position = s_LastRect = GUILayoutUtility.GetRect(label, EditorStyles.linkLabel, options);
 

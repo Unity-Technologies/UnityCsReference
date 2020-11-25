@@ -8,7 +8,7 @@ using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [CustomEditor(typeof(PackageSelectionObject))]
     internal sealed class PackageEditor : Editor

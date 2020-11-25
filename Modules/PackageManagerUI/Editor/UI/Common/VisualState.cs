@@ -4,7 +4,7 @@
 
 using System;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
     internal class VisualState : IEquatable<VisualState>

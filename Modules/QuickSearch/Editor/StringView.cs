@@ -72,6 +72,25 @@ namespace UnityEditor.Search
         {
             return m_BaseString.Substring(m_StartIndex, Length);
         }
+
+        public static bool IsNullOrEmpty(StringView sv)
+        {
+            if (sv.m_BaseString == null)
+                return true;
+            return sv.Length == 0;
+        }
+
+        public static bool IsNullOrWhiteSpace(StringView sv)
+        {
+            if (IsNullOrEmpty(sv))
+                return true;
+            for (var i = 0; i < sv.Length; ++i)
+            {
+                if (!char.IsWhiteSpace(sv[i]))
+                    return false;
+            }
+            return true;
+        }
     }
 
     static class StringExtensions

@@ -590,50 +590,11 @@ namespace UnityEditorInternal
             }
         }
 
-        internal static T ParentHasComponent<T>(Transform trans) where T : Component
-        {
-            if (trans != null)
-            {
-                T comp = trans.GetComponent<T>();
-                if (comp)
-                    return comp;
-
-                return ParentHasComponent<T>(trans.parent);
-            }
-            return null;
-        }
-
         internal static IEnumerable<string> GetAllScriptGUIDs()
         {
             return AssetDatabase.GetAllAssetPaths()
                 .Where(asset => (IsScriptOrAssembly(asset) && !UnityEditor.PackageManager.Folders.IsPackagedAssetPath(asset)))
                 .Select(asset => AssetDatabase.AssetPathToGUID(asset));
-        }
-
-        // Do not remove. Called through reflection by Visual Studio Tools for Unity.
-        internal static UnityEditor.Scripting.MonoIsland[] GetMonoIslandsForPlayer()
-        {
-            var group = EditorUserBuildSettings.activeBuildTargetGroup;
-            var target = EditorUserBuildSettings.activeBuildTarget;
-
-            PrecompiledAssembly[] unityAssemblies = GetUnityAssemblies(false, group, target);
-
-            var allPrecompiledAssemblies = EditorCompilationInterface.Instance.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(false, group, target);;
-            return EditorCompilationInterface.Instance.GetAllMonoIslands(unityAssemblies, allPrecompiledAssemblies, EditorScriptCompilationOptions.BuildingEmpty | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies);
-        }
-
-        // Do not remove. Called through reflection by Visual Studio Tools for Unity.
-        // Use EditorCompilationInterface.GetAllMonoIslands internally instead of this method.
-        internal static UnityEditor.Scripting.MonoIsland[] GetMonoIslands()
-        {
-            return EditorCompilationInterface.GetAllMonoIslands();
-        }
-
-        internal static string[] GetCompilationDefinesForPlayer()
-        {
-            var group = EditorUserBuildSettings.activeBuildTargetGroup;
-            var target = EditorUserBuildSettings.activeBuildTarget;
-            return GetCompilationDefines(EditorScriptCompilationOptions.BuildingEmpty, group, target);
         }
 
         internal static string GetMonolithicEngineAssemblyPath()

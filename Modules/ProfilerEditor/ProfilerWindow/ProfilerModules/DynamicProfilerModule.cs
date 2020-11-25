@@ -15,7 +15,7 @@ namespace UnityEditor.Profiling
     {
         const string k_IconName = "Profiler.Custom";
 
-        public DynamicProfilerModule(IProfilerWindowController profilerWindow, string name) : base(profilerWindow, name, k_IconName) {}
+        public DynamicProfilerModule(IProfilerWindowController profilerWindow, string name) : base(profilerWindow, name, null, k_IconName) {}
 
         public static DynamicProfilerModule CreateFromSerializedData(SerializedData serializedData, IProfilerWindowController profilerWindow)
         {

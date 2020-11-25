@@ -8,7 +8,7 @@ using System.Globalization;
 using System.Linq;
 using UnityEngine;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
     internal abstract class BasePage : IPage

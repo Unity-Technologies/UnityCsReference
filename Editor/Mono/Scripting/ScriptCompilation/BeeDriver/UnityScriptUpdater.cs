@@ -30,17 +30,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return new SystemProcessRunnableProgram(NetCoreRunProgram.NetCoreRunPath, scriptUpdaterExe);
         }
 
-        class UnityScriptUpdaterTask : Task
+        internal class UnityScriptUpdaterTask : Task
         {
-            public UnityScriptUpdaterTask(NPath scriptUpdaterRsp, string tempOutputDirectory, NPath projectRoot,
+            private NPath _updateTxtFile { get; }
+
+            public UnityScriptUpdaterTask(NPath scriptUpdaterRsp, NPath projectRoot,
                                           RunnableProgram unityScriptUpdaterProgram, NodeResult nodeResult,
-                                          bool produceErrorIfNoUpdatesAreProduced) : base(nodeResult, tempOutputDirectory, produceErrorIfNoUpdatesAreProduced)
+                                          bool produceErrorIfNoUpdatesAreProduced) : base(nodeResult, produceErrorIfNoUpdatesAreProduced)
             {
+                var tempOutputDirectory = new NPath($"Temp/ScriptUpdater/{Math.Abs(nodeResult.outputfile.GetHashCode())}").EnsureDirectoryExists();
+                _updateTxtFile = tempOutputDirectory.MakeAbsolute().Combine("updates.txt").DeleteIfExists();
+
                 var args = new[]
                 {
                     "cs",
                     EditorApplication.applicationContentsPath,
-                    $"\"{TempOutputDirectory}\"",
+                    $"\"{tempOutputDirectory}\"",
                     $"\"{APIUpdaterManager.ConfigurationSourcesFilter}\"",
                     scriptUpdaterRsp.InQuotes()
                 };
@@ -48,7 +53,75 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 RunningProgram = unityScriptUpdaterProgram.Start(projectRoot.ToString(), args);
             }
 
-            public override RunningProgram RunningProgram { get; }
+            RunningProgram RunningProgram { get; }
+
+            public override void WaitUntilFinished() => RunningProgram.WaitForExit();
+
+            public override bool Finished => RunningProgram.HasExited;
+
+            private Results _results;
+            public override Results Results
+            {
+                get
+                {
+                    if (_results != null)
+                        return _results;
+
+                    _results = GatherResults();
+                    return _results;
+                }
+            }
+
+            Results ErrorResult(string message)
+            {
+                return new Results()
+                {
+                    Messages = new[] {new BeeDriverResult.Message(message, BeeDriverResult.MessageKind.Error)},
+                    ProducedUpdates = Array.Empty<Update>()
+                };
+            }
+
+            private Results GatherResults()
+            {
+                if (!RunningProgram.HasExited)
+                    throw new ArgumentException($"Script updater for {NodeResult.outputfile}: results requested while RunningProgram has not exited");
+                if (RunningProgram.ExitCode != 0)
+                    return ErrorResult($"Script updater for {NodeResult.outputfile} failed with exitcode {RunningProgram.ExitCode} and stdout: {RunningProgram.GetStdoutAndStdErrCombined()}");
+
+                if (!_updateTxtFile.FileExists())
+                    return ErrorResult($"Script updater for {NodeResult.outputfile} failed to produce updates.txt file");
+
+                var updateLines = _updateTxtFile.ReadAllLines();
+
+                var updates = updateLines.Select(ParseLineIntoUpdate).ToArray();
+                if (updates.Contains(null))
+                    return ErrorResult($"Script updater for {NodeResult.outputfile} emitted an invalid line to updates.txt");
+
+                return new Results()
+                {
+                    Messages = Array.Empty<BeeDriverResult.Message>(),
+                    ProducedUpdates = updates.ToArray()
+                };
+            }
+
+            internal static Update ParseLineIntoUpdate(string line)
+            {
+                var separator = " => ";
+                var indexOfSeparator = line.IndexOf(separator);
+                if (indexOfSeparator == -1)
+                    return null;
+
+                return new Update()
+                {
+                    tempFileWithNewContents = line.Substring(0, indexOfSeparator),
+                    originalFileWithError = line.Substring(indexOfSeparator + separator.Length)
+                };
+            }
+
+            public override void Abort()
+            {
+                RunningProgram.Abort();
+            }
         }
 
         enum CanUpdateAny
@@ -96,7 +169,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return m.column == compilerMessage.column && m.line == compilerMessage.line && m.file == compilerMessage.file;
         }
 
-        public override Task StartIfYouCanFixProblemsInTheseMessages(NodeResult nodeResult, string tempOutputDirectory, BeeDriver beeDriver)
+        public override Task StartIfYouCanFixProblemsInTheseMessages(NodeResult nodeResult, BeeDriver beeDriver)
         {
             var containsUpdatableCompilerMessage = ContainsUpdatableCompilerMessage(nodeResult, beeDriver);
             if (containsUpdatableCompilerMessage == CanUpdateAny.No)
@@ -104,13 +177,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var assemblyInfo = Helpers.FindOutputDataAssemblyInfoFor(nodeResult, beeDriver);
 
-            if (!assemblyInfo.sourcesAreInsideProjectFolder)
-                return null;
-
-            //future improvement opportunities: We could do more refactoring so that we do not need to get the packageName and packageResolvePath
-            //from the buildprogram, but that we use the data we have available in the editor already directly.  If we do both those combinations, then we could remove the dataForEditor file,
-            //at least until we run into situations where we want to share more data from the buildprogram to the editor.
-            return new UnityScriptUpdaterTask(assemblyInfo.scriptUpdaterRsp, tempOutputDirectory, ProjectRoot, _scriptUpdaterProgram, nodeResult, containsUpdatableCompilerMessage == CanUpdateAny.Certainly);
+            return new UnityScriptUpdaterTask(assemblyInfo.scriptUpdaterRsp, ProjectRoot, _scriptUpdaterProgram, nodeResult, containsUpdatableCompilerMessage == CanUpdateAny.Certainly);
         }
     }
 

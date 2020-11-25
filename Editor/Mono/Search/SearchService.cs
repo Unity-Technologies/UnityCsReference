@@ -144,6 +144,15 @@ namespace UnityEditor.SearchService
         public const string activeSearchEnginesPrefKey = keyPrefix + ".activeengines.";
         public static List<ISearchApi> searchApis = new List<ISearchApi>();
 
+        public enum SyncSearchEvent
+        {
+            StartSession,
+            SyncSearch,
+            EndSession
+        }
+
+        public static event Action<SyncSearchEvent, string, string> syncSearchChanged;
+
         static SearchService()
         {
             Build.BuildDefines.getScriptCompilationDefinesDelegates += AddSearchServiceBuildDefines;
@@ -153,6 +162,21 @@ namespace UnityEditor.SearchService
         {
             defines.Add("USE_SEARCH_ENGINE_API");
             defines.Add("USE_QUICK_SEARCH_MODULE");
+        }
+
+        public static void NotifySyncSearchChanged(SyncSearchEvent evt, string syncViewId, string searchQuery)
+        {
+            syncSearchChanged?.Invoke(evt, syncViewId, searchQuery);
+        }
+
+        public static void HandleSearchEvent(EditorWindow window, Event evt, string searchText)
+        {
+            OpenSearchHelper.HandleSearchEvent(window, evt, searchText);
+        }
+
+        public static void DrawOpenSearchButton(EditorWindow window, string searchText)
+        {
+            OpenSearchHelper.DrawOpenButton(window, searchText);
         }
     }
 

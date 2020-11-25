@@ -9,6 +9,7 @@ using UnityEditorInternal;
 using UnityEditorInternal.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
+using UnityEditor.Profiling;
 
 namespace UnityEditor
 {
@@ -448,6 +449,11 @@ namespace UnityEditor
                 Close();
             else
                 profiler.DrawRenderUI();
+        }
+
+        internal override bool CanMaximize()
+        {
+            return false;
         }
     }
 }

@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Internal;
 
 namespace UnityEditor.Search
 {
@@ -13,11 +14,15 @@ namespace UnityEditor.Search
     public enum DisplayMode
     {
         /// <summary>Unspecified ISearchView display mode</summary>
-        None,
+        None = 0,
         /// <summary>Display as a list view</summary>
-        List,
+        List = 32,
         /// <summary>Display as a Grid of icons of various size.</summary>
-        Grid
+        Grid = 96,
+
+        [ExcludeFromDocs]
+        /// <summary>Maximum grid size</summary>
+        Limit = 128
     }
 
     /// <summary>

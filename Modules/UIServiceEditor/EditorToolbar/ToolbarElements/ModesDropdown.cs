@@ -19,7 +19,6 @@ namespace UnityEditor.Toolbars
 
             clicked += OpenModesDropdown;
             m_Label = EditorToolbarUtility.MakeDropdown(this);
-            UpdateContent();
 
             style.display = DisplayStyle.None;
 
@@ -43,6 +42,7 @@ namespace UnityEditor.Toolbars
             style.display = Unsupported.IsDeveloperBuild() && ModeService.hasSwitchableModes
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
+            UpdateContent();
         }
 
         void OnModeChanged(ModeService.ModeChangedArgs args)

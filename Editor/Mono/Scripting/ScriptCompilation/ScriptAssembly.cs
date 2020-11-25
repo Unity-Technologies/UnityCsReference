@@ -2,11 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Mono.Cecil.Cil;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Compilation;
 using UnityEditor.Modules;
@@ -103,37 +101,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             ScriptAssemblyReferences
                 .SelectMany(a => a.AllRecursiveScripAssemblyReferencesIncludingSelf())
                 .Concat(new[] {this});
-
-        public MonoIsland ToMonoIsland(EditorScriptCompilationOptions options, string buildOutputDirectory, string projectPath = null)
-        {
-            bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
-            bool developmentBuild = (options & EditorScriptCompilationOptions.BuildingDevelopmentBuild) == EditorScriptCompilationOptions.BuildingDevelopmentBuild;
-
-            var references = ScriptAssemblyReferences.Select(a => AssetPath.Combine(a.OutputDirectory, a.Filename));
-
-            var referencesArray = references.Concat(References).ToArray();
-
-            var responseFileProvider = new MicrosoftCSharpResponseFileProvider();
-            if (!string.IsNullOrEmpty(projectPath))
-            {
-                responseFileProvider.ProjectPath = projectPath;
-            }
-
-            List<string> reposeFiles = responseFileProvider?.Get(OriginPath) ?? new List<string>();
-
-            var outputPath = AssetPath.Combine(buildOutputDirectory, Filename);
-
-            return new MonoIsland(BuildTarget,
-                buildingForEditor,
-                developmentBuild,
-                CompilerOptions.AllowUnsafeCode,
-                CompilerOptions.ApiCompatibilityLevel,
-                Files,
-                referencesArray,
-                Defines,
-                outputPath,
-                reposeFiles.ToArray());
-        }
 
         public string[] GetResponseFiles()
         {

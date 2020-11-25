@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     internal interface IVersionList : IEnumerable<IPackageVersion>
     {

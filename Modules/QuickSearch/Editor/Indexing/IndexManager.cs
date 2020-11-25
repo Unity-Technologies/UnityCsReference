@@ -92,11 +92,10 @@ namespace UnityEditor.Search
         {
             titleContent.image = Icons.quicksearch;
             titleContent.text = "Search Index Manager";
-            rootVisualElement.AddStyleSheetPath("StyleSheets/QuickSearch/IndexManager.uss");
-            if (EditorGUIUtility.isProSkin)
-                rootVisualElement.AddStyleSheetPath("StyleSheets/QuickSearch/IndexManager_Dark.uss");
-            else
-                rootVisualElement.AddStyleSheetPath("StyleSheets/QuickSearch/IndexManager_Light.uss");
+
+            Utils.AddStyleSheet(rootVisualElement, "IndexManager.uss");
+            Utils.AddStyleSheet(rootVisualElement, EditorGUIUtility.isProSkin ? "IndexManager_Dark.uss" : "IndexManager_Light.uss");
+
             rootVisualElement.AddToClassList("index-manager-variables");
             rootVisualElement.style.flexDirection = FlexDirection.Row;
 
@@ -212,6 +211,10 @@ namespace UnityEditor.Search
 
         internal void OnDisable()
         {
+            if (hasUnsavedChanges && EditorUtility.DisplayDialog(L10n.Tr("Unsaved Changes Detected"),
+                L10n.Tr("There are unsaved changes."), L10n.Tr("Save"), L10n.Tr("Discard")))
+                SaveChanges();
+
             m_ListViewIndexSettings.ListView.onSelectionChange -= OnSelectedIndexChanged;
 
             SearchDatabase.indexLoaded -= OnIndexLoaded;
@@ -660,7 +663,8 @@ namespace UnityEditor.Search
             }
         }
 
-        public override void SaveChanges()
+        private bool hasUnsavedChanges;
+        private void SaveChanges()
         {
             if (hasUnsavedChanges)
             {
@@ -789,7 +793,7 @@ namespace UnityEditor.Search
 
         private void DeleteIndexSetting()
         {
-            if (selectedIndex >= 0)
+            if (selectedIndex >= 0 && EditorUtility.DisplayDialog("Delete selected index?", "You are about to delete this index, are you sure?", "Yes", "No"))
             {
                 SendIndexEvent(SearchAnalytics.GenericEventType.IndexManagerRemoveIndex, m_IndexSettings[selectedIndex]);
                 var deleteIndex = selectedIndex;
@@ -850,12 +854,15 @@ namespace UnityEditor.Search
             }
 
             var newItem = new IndexManagerViewModel(template, true);
-            m_IndexSettings.Add(newItem);
-            m_IndexSettingsFilePaths.Add("");
-            m_IndexSettingsExists.Add(false);
-            m_IndexSettingsAssets.Add(null);
-            SendIndexEvent(SearchAnalytics.GenericEventType.IndexManagerCreateIndex, newItem);
-            m_ListViewIndexSettings.UpdateListViewOnAdd();
+            if (newItem.type == SearchDatabase.IndexType.asset || EditorUtility.DisplayDialog("Create non asset index?", $"You are about to create a {template.type} index, this type of index will do a deep indexing that will be longer and take more space than a standard asset index, are you sure?", "Yes", "No"))
+            {
+                m_IndexSettings.Add(newItem);
+                m_IndexSettingsFilePaths.Add("");
+                m_IndexSettingsExists.Add(false);
+                m_IndexSettingsAssets.Add(null);
+                SendIndexEvent(SearchAnalytics.GenericEventType.IndexManagerCreateIndex, newItem);
+                m_ListViewIndexSettings.UpdateListViewOnAdd();
+            }
         }
 
         private VisualElement MakeIndexItem()
@@ -971,10 +978,10 @@ namespace UnityEditor.Search
                 {
                     CreateIndexDetailsElement();
                 }
-            }
 
-            if (selectedItemExists)
-                EditorGUIUtility.PingObject(selectedItemAsset);
+                if (selectedItemExists)
+                    EditorGUIUtility.PingObject(selectedItemAsset);
+            }
 
             m_PreviousSelectedIndex = selectedIndex;
         }
@@ -1059,6 +1066,9 @@ namespace UnityEditor.Search
 
                 style.flexGrow = 1.0f;
                 style.flexDirection = FlexDirection.Row;
+
+                var grip = new VisualElement() { name = "ReorderableListViewGrip" };
+                Add(grip);
 
                 Add(m_EnumField = new EnumField(FilePattern.File));
                 m_EnumField.RegisterValueChangedCallback(FilePatternChanged);

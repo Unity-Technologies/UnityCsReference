@@ -283,12 +283,12 @@ namespace UnityEditorInternal
         // changing m_SelectionPendingTransfer.markerIdPath instead of this local one would potentially corrupt the markerIdPath in the original frame
         // that would lead to confusion where it is assumed to be valid.
         List<int> m_LocalSelectedItemMarkerIdPath = new List<int>();
-        SampleSelection m_SelectionPendingTransfer = SampleSelection.InvalidSampleSelection;
+        ProfilerTimeSampleSelection m_SelectionPendingTransfer = null;
         int m_ThreadIndexOfSelectionPendingTransfer = FrameDataView.invalidThreadIndex;
         bool m_FrameSelectionVerticallyAfterTransfer = false;
         bool m_Scheduled_FrameSelectionVertically = false;
 
-        public event Action<SampleSelection> selectionChanged;
+        public event Action<ProfilerTimeSampleSelection> selectionChanged;
 
         struct RawSampleIterationInfo { public int partOfThePath; public int lastSampleIndexInScope; }
 
@@ -580,7 +580,7 @@ namespace UnityEditorInternal
                     var controlId = GUIUtility.GetControlID(BaseStyles.timelineTimeAreaControlId, FocusType.Passive, localRect);
                     if (!ghost && (Event.current.GetTypeForControl(controlId) == EventType.MouseDown ||  // Ghosts are not clickable (or can contain an active selection)
                                                                                                          // Selection of samples is handled in HandleNativeProfilerTimelineInput so it needs to get called if there is a selection to transfer
-                                   (m_SelectionPendingTransfer.valid && threadIndex == m_ThreadIndexOfSelectionPendingTransfer)))
+                                   (m_SelectionPendingTransfer != null && threadIndex == m_ThreadIndexOfSelectionPendingTransfer)))
                     {
                         HandleNativeProfilerTimelineInput(localRect, frameIndex, maxContextFramesToShow, threadIndex, timeOffset, topMargin, scaleForThreadHeight, controlId);
                     }
@@ -620,13 +620,13 @@ namespace UnityEditorInternal
 
             var eventType = Event.current.GetTypeForControl(controlId);
             bool inThreadRect = clippedRect.Contains(Event.current.mousePosition);
-            if (!inThreadRect && !(m_SelectionPendingTransfer.valid && threadIndex == m_ThreadIndexOfSelectionPendingTransfer))
+            if (!inThreadRect && !(m_SelectionPendingTransfer != null && threadIndex == m_ThreadIndexOfSelectionPendingTransfer))
                 return;
 
             bool singleClick = Event.current.clickCount == 1 && eventType == EventType.MouseDown;
             bool doubleClick = Event.current.clickCount == 2 && eventType == EventType.MouseDown;
 
-            bool doSelect = (singleClick || doubleClick) && Event.current.button == 0 || (m_SelectionPendingTransfer.valid && threadIndex == m_ThreadIndexOfSelectionPendingTransfer);
+            bool doSelect = (singleClick || doubleClick) && Event.current.button == 0 || (m_SelectionPendingTransfer != null && threadIndex == m_ThreadIndexOfSelectionPendingTransfer);
             if (!doSelect)
                 return;
 
@@ -639,7 +639,7 @@ namespace UnityEditorInternal
                 string nonProxySampleName = null;
                 ReadOnlyCollection<string> markerNamePath = null;
                 var nonProxySampleDepthDifference = 0;
-                if (m_SelectionPendingTransfer.valid)
+                if (m_SelectionPendingTransfer != null)
                 {
                     using (k_TransferSelectionMarker.Auto())
                     {
@@ -651,7 +651,7 @@ namespace UnityEditorInternal
 
                         indexHelper.sampleIndex = m_SelectionPendingTransfer.rawSampleIndex;
                         fireSelectionChanged = false;
-                        name = m_SelectionPendingTransfer.sampleName;
+                        name = m_SelectionPendingTransfer.sampleDisplayName;
 
                         var markerPathLength = markerIdPath.Count;
                         // initial assumption is that the depth is the full marker path. The depth will be revised if it is a Proxy Selection
@@ -659,7 +659,7 @@ namespace UnityEditorInternal
 
                         // A quick sanity check on the validity of going with the raw index
                         var rawSampleIndexIsValid = m_SelectionPendingTransfer.frameIndexIsSafe &&
-                            frameData.frameIndex == m_SelectionPendingTransfer.frameIndex &&
+                            frameData.frameIndex == m_SelectionPendingTransfer.safeFrameIndex &&
                             m_SelectionPendingTransfer.rawSampleIndex < frameData.sampleCount &&
                             frameData.GetSampleMarkerId(m_SelectionPendingTransfer.rawSampleIndex) == markerIdPath[markerPathLength - 1];
 
@@ -704,7 +704,7 @@ namespace UnityEditorInternal
                                 }
                                 if (!indexHelper.valid)
                                 {
-                                    m_SelectionPendingTransfer = SampleSelection.InvalidSampleSelection;
+                                    m_SelectionPendingTransfer = null;
                                     m_LocalSelectedItemMarkerIdPath.Clear();
                                     m_ThreadIndexOfSelectionPendingTransfer = FrameDataView.invalidThreadIndex;
                                     m_FrameSelectionVerticallyAfterTransfer = false;
@@ -734,7 +734,7 @@ namespace UnityEditorInternal
                         entryPosArgs.shownAreaRect = m_TimeArea.shownArea;
                         NativeProfilerTimeline.GetEntryPositionInfo(ref entryPosArgs);
                         relativeYPosition = entryPosArgs.out_Position.y + entryPosArgs.out_Size.y + topMargin;
-                        m_SelectionPendingTransfer = SampleSelection.InvalidSampleSelection;
+                        m_SelectionPendingTransfer = null;
                         m_LocalSelectedItemMarkerIdPath.Clear();
                         m_ThreadIndexOfSelectionPendingTransfer = FrameDataView.invalidThreadIndex;
                         m_Scheduled_FrameSelectionVertically = m_FrameSelectionVerticallyAfterTransfer;
@@ -785,7 +785,7 @@ namespace UnityEditorInternal
 
                         if (fireSelectionChanged)
                         {
-                            var selection = new SampleSelection(frameData.frameIndex, frameData.threadGroupName, frameData.threadName, frameData.threadId, indexHelper.sampleIndex, name);
+                            var selection = new ProfilerTimeSampleSelection(frameData.frameIndex, frameData.threadGroupName, frameData.threadName, frameData.threadId, indexHelper.sampleIndex, name);
                             selection.GenerateMarkerNamePath(frameData, new List<int>(instanceInfoArgs.out_PathMarkerIds), instanceInfoArgs.out_Path);
                             selectionChanged(selection);
                             markerNamePath = selection.markerNamePath;
@@ -976,7 +976,7 @@ namespace UnityEditorInternal
 
             var skippedScopes = s_SkippedScopesCache;
             var skippedScopesCount = 0;
-            while (sampleIndex <= lastSampleInScope && partOfThePath < pathLength)
+            while (sampleIndex <= lastSampleInScope && partOfThePath < pathLength && (specificRawSampleIndexToFind <= 0 || sampleIndex <= specificRawSampleIndexToFind))
             {
                 if (markerIdPathToMatch == null ||
                     markerIdPathToMatch[partOfThePath + skippedScopesCount] == iterator.GetSampleMarkerId(sampleIndex) ||
@@ -1071,7 +1071,7 @@ namespace UnityEditorInternal
             return RawFrameDataView.invalidSampleIndex;
         }
 
-        public void SetSelection(SampleSelection selection, int threadIndexInCurrentFrame, bool frameVertically)
+        public void SetSelection(ProfilerTimeSampleSelection selection, int threadIndexInCurrentFrame, bool frameVertically)
         {
             m_SelectionPendingTransfer = selection;
             m_LocalSelectedItemMarkerIdPath.Clear();
@@ -1120,7 +1120,7 @@ namespace UnityEditorInternal
         public void ClearSelection()
         {
             // in case the Selection is cleared in the same frame it was set in, drop the pending transfer
-            m_SelectionPendingTransfer = SampleSelection.InvalidSampleSelection;
+            m_SelectionPendingTransfer = null;
             m_LocalSelectedItemMarkerIdPath.Clear();
             m_ThreadIndexOfSelectionPendingTransfer = FrameDataView.invalidThreadIndex;
             m_FrameSelectionVerticallyAfterTransfer = false;
@@ -1133,12 +1133,17 @@ namespace UnityEditorInternal
             m_RangeSelection.active = false;
         }
 
+        internal void FrameThread(int threadIndex)
+        {
+            PerformFrameSelected(0, false, false, true, threadIndex);
+        }
+
         void PerformFrameAll(float frameMS)
         {
             PerformFrameSelected(frameMS, false, true);
         }
 
-        void PerformFrameSelected(float frameMS, bool verticallyFrameSelected = true, bool hFrameAll = false, bool keepHorizontalZoomLevel = false)
+        void PerformFrameSelected(float frameMS, bool verticallyFrameSelected = true, bool hFrameAll = false, bool keepHorizontalZoomLevel = false, int verticallyFrameThreadIndex = FrameDataView.invalidThreadIndex)
         {
             float t;
             float dt;
@@ -1176,6 +1181,33 @@ namespace UnityEditorInternal
                 m_TimeArea.SetShownHRangeInsideMargins(t - dt * 0.2f, t + dt * 1.2f);
             }
 
+            float yMinPosition = -1;
+            float yMaxPosition = -1;
+            if (verticallyFrameThreadIndex != FrameDataView.invalidThreadIndex)
+            {
+                // this overrides selection framing
+                verticallyFrameSelected = false;
+                ThreadInfo focusedThread = null;
+                float yOffsetFromTop = 0;
+                foreach (var group in m_Groups)
+                {
+                    foreach (var thread in group.threads)
+                    {
+                        if (thread.threadIndex == verticallyFrameThreadIndex)
+                        {
+                            focusedThread = thread;
+                            break;
+                        }
+                        yOffsetFromTop += thread.height;
+                    }
+
+                    if (focusedThread != null)
+                        break;
+                }
+                yMinPosition = yOffsetFromTop;
+                yMaxPosition = yOffsetFromTop;
+            }
+
             // [Case 1248631] The Analyzer may set m_SelectedEntry via reflection whilst m_SelectedThread is not assigned until later in DoProfilerFrame. Therefore it's possible we get here with a null m_SelectedThread.
             if (m_SelectedEntry.instanceCount >= 0 && verticallyFrameSelected && m_SelectedThread != null)
             {
@@ -1204,12 +1236,14 @@ namespace UnityEditorInternal
                     }
                 }
 
+                yMinPosition = m_SelectedThreadYRange + m_SelectedEntry.relativeYPos - k_LineHeight;
+                yMaxPosition = m_SelectedThreadYRange + m_SelectedEntry.relativeYPos;
+            }
+
+            if (yMinPosition >= 0 && yMaxPosition >= 0)
+            {
                 float yMin = m_TimeArea.shownArea.y;
                 float yMax = yMin + m_TimeArea.shownArea.height;
-
-                float yMinPosition = m_SelectedThreadYRange + m_SelectedEntry.relativeYPos - k_LineHeight;
-                float yMaxPosition = m_SelectedThreadYRange + m_SelectedEntry.relativeYPos;
-
 
                 if (yMinPosition < m_TimeArea.shownAreaInsideMargins.yMin)
                 {
@@ -1287,7 +1321,7 @@ namespace UnityEditorInternal
                         tr.y -= fullRect.y;
                         if ((tr.yMin < m_TimeArea.shownArea.yMax && tr.yMax > m_TimeArea.shownArea.yMin)
                             // if there is a pending selection to be transfered to this thread, do process it.
-                            || (m_SelectionPendingTransfer.valid && m_ThreadIndexOfSelectionPendingTransfer == threadInfo.threadIndex))
+                            || (m_SelectionPendingTransfer != null && m_ThreadIndexOfSelectionPendingTransfer == threadInfo.threadIndex))
                         {
                             iter.SetRoot(frameIndex, threadInfo.threadIndex);
                             DoNativeProfilerTimeline(r, frameIndex, maxContextFramesToShow, threadInfo.threadIndex, offset, ghost, scaleForThreadHeight);

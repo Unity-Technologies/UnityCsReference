@@ -13,29 +13,21 @@ using System.Globalization;
 using System.Text;
 using Unity.Profiling.LowLevel;
 using System.Runtime.CompilerServices;
+using UnityEditorInternal;
 
-namespace UnityEditorInternal.Profiling
+namespace UnityEditor.Profiling
 {
     [Serializable]
-    internal class SampleSelection
+    public sealed class ProfilerTimeSampleSelection
     {
-        public static readonly SampleSelection InvalidSampleSelection = new SampleSelection(FrameDataView.invalidOrCurrentFrameIndex, "Invalid", "Invalid", FrameDataView.invalidThreadId, RawFrameDataView.invalidSampleIndex, "Invalid");
-
-        [SerializeField]
-        bool m_Valid;
-        // most indicators for validity are readonly, except for the rawSampleIndices, where only the reference is readonly
-        // there must however always be a rawIndex
-        public bool valid { get { return m_Valid && rawSampleIndex != RawFrameDataView.invalidSampleIndex; } }
-
         // The initially set frame index. When the Profiler data that the selection was made in was unloaded
         [field: SerializeField]
-        public long unsafeFrameIndex { get; private set; }
+        public long frameIndex { get; private set; }
         // err on the side of caution, don't serialize this.
         // This bool and the safe frameIndex are used for a performance optimization and precise selection of one particular instance of a sample when switching views on the same frame.
         [NonSerialized]
         internal bool frameIndexIsSafe = false;
-        public long frameIndex => frameIndexIsSafe ? unsafeFrameIndex : FrameDataView.invalidOrCurrentFrameIndex;
-
+        internal long safeFrameIndex => frameIndexIsSafe ? frameIndex : FrameDataView.invalidOrCurrentFrameIndex;
 
         [field: SerializeField]
         public string threadGroupName { get; private set; }
@@ -45,7 +37,7 @@ namespace UnityEditorInternal.Profiling
         [field: SerializeField]
         public ulong threadId { get; private set; }
         [field: SerializeField]
-        public string sampleName { get; private set; }
+        public string sampleDisplayName { get; private set; }
         // this is only used for ProfilerDriver.selectedPropertyPath
         [field: SerializeField]
         internal string legacyMarkerPath { get; private set; }
@@ -54,31 +46,32 @@ namespace UnityEditorInternal.Profiling
         public ReadOnlyCollection<string> markerNamePath => m_MarkerNamePath?.AsReadOnly();
         [SerializeField]
         List<int> m_MarkerIdPath;
-        public ReadOnlyCollection<int> markerIdPath => m_MarkerIdPath?.AsReadOnly();
+        internal ReadOnlyCollection<int> markerIdPath => m_MarkerIdPath?.AsReadOnly();
         [field: SerializeField]
         public int markerPathDepth { get; private set; }
         [SerializeField]
         List<int> m_RawSampleIndices;
-        public ReadOnlyCollection<int> rawSampleIndices => m_RawSampleIndices?.AsReadOnly();
+        public ReadOnlyCollection<int> rawSampleIndices => m_RawSampleIndices.AsReadOnly();
         public int rawSampleIndex
         {
             get
             {
-                if (rawSampleIndices == null || rawSampleIndices.Count <= 0)
-                    return RawFrameDataView.invalidSampleIndex;
                 return rawSampleIndices[0];
-            }
-            private set
-            {
-                if (rawSampleIndices == null)
-                    m_RawSampleIndices = new List<int>(1);
-                m_RawSampleIndices[0] = value;
             }
         }
 
-        public SampleSelection(int frameIndex, string threadGroupName, string threadName, ulong threadId, int rawSampleIndex, string sampleName = null)
+        public ProfilerTimeSampleSelection(long frameIndex, string threadGroupName, string threadName, ulong threadId, int rawSampleIndex, string sampleName = null)
         {
-            this.unsafeFrameIndex = frameIndex;
+            if (frameIndex < 0)
+                throw new ArgumentOutOfRangeException($"{nameof(frameIndex)}", $"{nameof(frameIndex)} at {frameIndex} is out of Range. Only positive values are accepted.");
+            if (threadName == null)
+                throw new ArgumentNullException($"{nameof(threadName)}", $"{nameof(threadName)} can't be null.");
+            if (threadName == string.Empty)
+                throw new ArgumentException($"{nameof(threadName)}", $"{nameof(threadName)} can't be empty.");
+            if (rawSampleIndex < 0)
+                throw new ArgumentOutOfRangeException($"{nameof(rawSampleIndex)}", $"{nameof(rawSampleIndex)} is out of Range. Only positive values are accepted.");
+
+            this.frameIndex = frameIndex;
             // frame index is safe until proven otherwise by Integrity checks in CPUOrGPUProfilerModule.SetSelection
             frameIndexIsSafe = false;
             if (threadGroupName == null)
@@ -86,21 +79,33 @@ namespace UnityEditorInternal.Profiling
             this.threadGroupName = threadGroupName;
             this.threadName = threadName;
             this.threadId = threadId;
-            if (rawSampleIndex >= 0)
-                m_RawSampleIndices = new List<int> { rawSampleIndex };
-            else
-                m_RawSampleIndices = null;
-            this.sampleName = sampleName;
+            m_RawSampleIndices = new List<int> { rawSampleIndex };
+            this.sampleDisplayName = sampleName;
             legacyMarkerPath = null;
             m_MarkerNamePath = null;
             m_MarkerIdPath = null;
             markerPathDepth = 0;
-            m_Valid = frameIndex >= 0 && !string.IsNullOrEmpty(threadName) && rawSampleIndex >= 0;
         }
 
-        public SampleSelection(int frameIndex, string threadGroupName, string threadName, ulong threadId, IList<int> rawSampleIndices, string sampleName = null)
+        public ProfilerTimeSampleSelection(long frameIndex, string threadGroupName, string threadName, ulong threadId, IList<int> rawSampleIndices, string sampleName = null)
         {
-            this.unsafeFrameIndex = frameIndex;
+            if (frameIndex < 0)
+                throw new ArgumentOutOfRangeException($"{nameof(frameIndex)}", $"{nameof(frameIndex)} at {frameIndex} is out of Range. Only positive values are accepted.");
+            if (threadName == null)
+                throw new ArgumentNullException($"{nameof(threadName)}", $"{nameof(threadName)} can't be null.");
+            if (threadName == string.Empty)
+                throw new ArgumentException($"{nameof(threadName)}", $"{nameof(threadName)} can't be empty.");
+            if (rawSampleIndices == null)
+                throw new ArgumentNullException($"{nameof(rawSampleIndices)}", $"{nameof(rawSampleIndices)} can't be null.");
+            if (rawSampleIndices.Count <= 0)
+                throw new ArgumentException($"{nameof(rawSampleIndices)}", $"{nameof(rawSampleIndices)} can't be empty.");
+            for (int i = 0; i < rawSampleIndices.Count; i++)
+            {
+                if (rawSampleIndices[i] < 0)
+                    throw new ArgumentOutOfRangeException($"{nameof(rawSampleIndices)}", $"{nameof(rawSampleIndices)}[{i}] is negative. Only positive values are accepted.");
+            }
+
+            this.frameIndex = frameIndex;
             // frame index is safe until proven otherwise by Integrity checks in CPUOrGPUProfilerModule.SetSelection
             frameIndexIsSafe = false;
             if (threadGroupName == null)
@@ -109,25 +114,26 @@ namespace UnityEditorInternal.Profiling
             this.threadName = threadName;
             this.threadId = threadId;
             this.m_RawSampleIndices = new List<int>(rawSampleIndices);
-            this.sampleName = sampleName;
+            this.sampleDisplayName = sampleName;
             legacyMarkerPath = null;
             m_MarkerNamePath = null;
             m_MarkerIdPath = null;
             markerPathDepth = 0;
-            m_Valid = frameIndex >= 0 && !string.IsNullOrEmpty(threadName) && rawSampleIndices.Count > 0 && rawSampleIndices[0] > 0;
         }
 
         // Deep copy constructor
-        public SampleSelection(SampleSelection selection)
+        public ProfilerTimeSampleSelection(ProfilerTimeSampleSelection selection)
         {
-            unsafeFrameIndex = selection.unsafeFrameIndex;
+            if (selection == null)
+                throw new ArgumentNullException($"{nameof(selection)}", $"{nameof(selection)} can't be null.");
+            frameIndex = selection.frameIndex;
             // frame index is safe until proven otherwise by Integrity checks in CPUOrGPUProfilerModule.SetSelection
             // creating a copy means the CPUOrGPUProfilerModule no longer has control over this, so assume its no longer safe
             frameIndexIsSafe = false;
             threadName = selection.threadName;
             threadGroupName = selection.threadGroupName;
             threadId = selection.threadId;
-            sampleName = selection.sampleName;
+            sampleDisplayName = selection.sampleDisplayName;
             legacyMarkerPath = selection.legacyMarkerPath;
 
             if (selection.rawSampleIndices != null)
@@ -164,14 +170,12 @@ namespace UnityEditorInternal.Profiling
                     throw new ArgumentException($"The Selection had a different marker path depth for {nameof(markerIdPath)} than for {nameof(markerNamePath)}, but they must be in sync");
                 m_MarkerIdPath = null;
             }
-
-            m_Valid = selection.valid;
         }
 
         // NOTE: Only pass legacyMarkerNamePath if you already got it anyways (e.g. through Native Timeline selection API), otherwise leave it null, it will be generated here.
         internal void GenerateMarkerNamePath(FrameDataView frameDataView, string sampleName, List<int> markerIdPath, string legacyMarkerNamePath = null)
         {
-            this.sampleName = sampleName;
+            this.sampleDisplayName = sampleName;
             GenerateMarkerNamePath(frameDataView, markerIdPath, legacyMarkerNamePath);
         }
 
@@ -209,8 +213,8 @@ namespace UnityEditorInternal.Profiling
                     // if this was an Editor Only sample, get the proper id and name
                     markerIdPath[markerPathDepth - 1] = GetNonEditorOnlyMarkerNameAndId(frameDataView, ref lastSampleName, lastMarkerId);
                     // if it isn't a Deep Profiling sample, update this.sampleName too
-                    if ((int)(frameDataView.GetMarkerFlags(markerIdPath[markerPathDepth - 1]) & MarkerFlags.ScriptDeepProfiler) == 0)
-                        sampleName = lastSampleName;
+                    if ((frameDataView.GetMarkerFlags(markerIdPath[markerPathDepth - 1]) & MarkerFlags.ScriptDeepProfiler) == 0)
+                        sampleDisplayName = lastSampleName;
                 }
                 propertyPathBuilder.Append(lastSampleName);
                 m_MarkerNamePath.Add(lastSampleName);
@@ -241,7 +245,7 @@ namespace UnityEditorInternal.Profiling
                     markerIdPath[markerPathDepth - 1] = GetNonEditorOnlyMarkerNameAndId(frameDataView, ref lastSampleName, lastMarkerId);
                     // if it isn't a Deep Profiling sample, update this.sampleName too
                     if ((int)(frameDataView.GetMarkerFlags(markerIdPath[markerPathDepth - 1]) & MarkerFlags.ScriptDeepProfiler) == 0)
-                        sampleName = lastSampleName;
+                        sampleDisplayName = lastSampleName;
                 }
                 m_MarkerNamePath.Add(lastSampleName);
                 this.legacyMarkerPath = legacyMarkerNamePath;

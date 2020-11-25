@@ -95,7 +95,7 @@ namespace UnityEditor.Profiling.ModuleEditor
             var moduleListViewItem = element as ModuleListViewItem;
 
             var titleLabel = moduleListViewItem.titleLabel;
-            titleLabel.text = module.name;
+            titleLabel.text = module.localizedName;
 
             bool selectable = module.isEditable;
             moduleListViewItem.SetSelectable(selectable);

@@ -191,7 +191,7 @@ namespace UnityEditor
 
             object[] attrs = field.GetCustomAttributes(typeof(PropertyAttribute), true);
             if (attrs != null && attrs.Length > 0)
-                return new List<PropertyAttribute>(attrs.Select(e => e as PropertyAttribute).OrderBy(e => - e.order));
+                return new List<PropertyAttribute>(attrs.Select(e => e as PropertyAttribute).OrderBy(e => e.order));
 
             return null;
         }
@@ -467,7 +467,7 @@ namespace UnityEditor
 
             if (attributes != null)
             {
-                for (int i = attributes.Count - 1; i >= 0; i--)
+                for (int i = 0; i < attributes.Count; i++)
                     handler.HandleAttribute(property, attributes[i], field, propertyType);
             }
 

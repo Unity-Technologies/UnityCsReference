@@ -24,9 +24,6 @@ namespace UnityEditorInternal.Profiling
             CallersAndCallees,
         }
 
-        static readonly string kMainThreadName = "Main Thread";
-        static readonly string kRenderThreadName = "Render Thread";
-
         static readonly GUIContent[] kDetailedViewTypeNames =
         {
             EditorGUIUtility.TrTextContent("No Details"),
@@ -70,8 +67,8 @@ namespace UnityEditorInternal.Profiling
             get { return m_ThreadIndexInThreadNames; }
         }
 
-        // threadGroupName, threadName
-        public Action<string, string> userChangedThread = delegate {};
+        // threadGroupName, threadName, threadIndex
+        public Action<string, string, int> userChangedThread = delegate {};
 
         int m_ThreadIndexDuringLastNonLayoutEvent = 0;
 
@@ -97,17 +94,29 @@ namespace UnityEditorInternal.Profiling
 
         public ProfilerFrameDataTreeView treeView
         {
-            get { return m_TreeView; }
+            get
+            {
+                InitIfNeeded();
+                return m_TreeView;
+            }
         }
 
         public ProfilerDetailedObjectsView detailedObjectsView
         {
-            get { return m_DetailedObjectsView; }
+            get
+            {
+                InitIfNeeded();
+                return m_DetailedObjectsView;
+            }
         }
 
         public ProfilerDetailedCallsView detailedCallsView
         {
-            get { return m_DetailedCallsView; }
+            get
+            {
+                InitIfNeeded();
+                return m_DetailedCallsView;
+            }
         }
 
         [SerializeField]
@@ -145,6 +154,9 @@ namespace UnityEditorInternal.Profiling
         [field: SerializeField]
         public ulong threadId { get; private set; }
 
+        [field: SerializeField]
+        public int threadIndex { get; private set; }
+
 
         [SerializeField]
         string m_GroupName;
@@ -179,7 +191,7 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        public event Action<SampleSelection> selectionChanged;
+        public event Action<ProfilerTimeSampleSelection> selectionChanged;
 
         public delegate void SearchChangedCallback(string newSearch);
         public event SearchChangedCallback searchChanged;
@@ -198,10 +210,12 @@ namespace UnityEditorInternal.Profiling
         public ProfilerFrameDataHierarchyView(string serializationPrefKeyPrefix)
         {
             m_Initialized = false;
-            m_FullThreadName = kMainThreadName;
-            m_ThreadName = kMainThreadName;
-            m_GroupName = null;
+            m_FullThreadName = CPUProfilerModule.mainThreadName;
+            m_ThreadName = CPUProfilerModule.mainThreadName;
+            m_GroupName = CPUProfilerModule.mainThreadGroupName;
             k_SerializationPrefKeyPrefix = serializationPrefKeyPrefix;
+            threadId = FrameDataView.invalidThreadId;
+            threadIndex = FrameDataView.invalidThreadIndex;
         }
 
         void InitIfNeeded()
@@ -632,15 +646,15 @@ namespace UnityEditorInternal.Profiling
 
         static int GetGroupOrder(string threadName)
         {
-            if (threadName.StartsWith("Job", StringComparison.Ordinal))
+            if (threadName.StartsWith(CPUProfilerModule.jobThreadNamePrefix, StringComparison.Ordinal))
                 return 2;
-            if (threadName.StartsWith("Loading", StringComparison.Ordinal))
+            if (threadName.StartsWith(CPUProfilerModule.loadingThreadNamePrefix, StringComparison.Ordinal))
                 return 3;
-            if (threadName.StartsWith("Scripting Thread", StringComparison.Ordinal))
+            if (threadName.StartsWith(CPUProfilerModule.scriptingThreadNamePrefix, StringComparison.Ordinal))
                 return 4;
-            if (threadName.StartsWith(kMainThreadName, StringComparison.Ordinal))
+            if (threadName.StartsWith(CPUProfilerModule.mainThreadName, StringComparison.Ordinal))
                 return 0;
-            if (threadName.StartsWith(kRenderThreadName, StringComparison.Ordinal))
+            if (threadName.StartsWith(CPUProfilerModule.renderThreadName, StringComparison.Ordinal))
                 return 1;
             return 10;
         }
@@ -730,7 +744,7 @@ namespace UnityEditorInternal.Profiling
                     m_GroupName = string.Empty;
                     m_ThreadName = m_FullThreadName;
                 }
-                userChangedThread(m_GroupName, m_ThreadName);
+                userChangedThread(m_GroupName, m_ThreadName, newThreadIndex);
                 cpuModule.Repaint();
                 EditorGUIUtility.ExitGUI();
             }
@@ -773,7 +787,7 @@ namespace UnityEditorInternal.Profiling
                 Selection.objects = selection.ToArray();
         }
 
-        void OnMainTreeViewSelectionChanged(SampleSelection selection)
+        void OnMainTreeViewSelectionChanged(ProfilerTimeSampleSelection selection)
         {
             if (selectionChanged != null)
                 selectionChanged.Invoke(selection);
@@ -801,7 +815,7 @@ namespace UnityEditorInternal.Profiling
             m_TreeView.FrameItem(id);
         }
 
-        public void SetSelection(SampleSelection selection, bool expandSelection)
+        public void SetSelection(ProfilerTimeSampleSelection selection, bool expandSelection)
         {
             if (selection.markerIdPath == null)
             {
@@ -834,6 +848,7 @@ namespace UnityEditorInternal.Profiling
                 threadName = frameDataView.threadName;
                 groupName = frameDataView.threadGroupName;
                 threadId = frameDataView.threadId;
+                threadIndex = frameDataView.threadIndex;
                 fullThreadName = string.IsNullOrEmpty(groupName) ? threadName : $"{groupName}.{threadName}";
             }
             m_TreeView.SetFrameDataView(frameDataView);

@@ -7,14 +7,45 @@ using System.Collections.Generic;
 
 namespace UnityEditor.Search
 {
-    interface IQueryHandler<out TData, in TPayload>
+    /// <summary>
+    /// Interface for query handlers.
+    /// </summary>
+    /// <typeparam name="TData">The filtered data type.</typeparam>
+    /// <typeparam name="TPayload">The payload type.</typeparam>
+    public interface IQueryHandler<TData, in TPayload>
+        where TPayload : class
     {
+        /// <summary>
+        /// Implement this function to evaluate the query on a payload.
+        /// </summary>
+        /// <param name="payload">The input data of the query.</param>
+        /// <returns>An enumerable of type TData.</returns>
         IEnumerable<TData> Eval(TPayload payload);
+
+        /// <summary>
+        /// Implement this function to evaluate the query on a single element.
+        /// </summary>
+        /// <param name="element">A single object to be tested.</param>
+        /// <returns>True if the object passes the query, false otherwise.</returns>
+        bool Eval(TData element);
     }
 
-    interface IQueryHandlerFactory<TData, out TQueryHandler, TPayload>
+    /// <summary>
+    /// Interface for query handler factories.
+    /// </summary>
+    /// <typeparam name="TData">The filtered data type.</typeparam>
+    /// <typeparam name="TQueryHandler">The query handler type.</typeparam>
+    /// <typeparam name="TPayload">The payload type.</typeparam>
+    public interface IQueryHandlerFactory<TData, out TQueryHandler, TPayload>
         where TQueryHandler : IQueryHandler<TData, TPayload>
+        where TPayload : class
     {
+        /// <summary>
+        /// Implement this function to create a new query handler for a specific query graph.
+        /// </summary>
+        /// <param name="graph">A graph representing a query.</param>
+        /// <param name="errors">A collection of errors. Use this to report errors when needed.</param>
+        /// <returns>An object of type TQueryHandler.</returns>
         TQueryHandler Create(QueryGraph graph, ICollection<QueryError> errors);
     }
 
@@ -88,6 +119,15 @@ namespace UnityEditor.Search
         }
 
         /// <summary>
+        /// Optimize the query by optimizing the underlying filtering graph.
+        /// </summary>
+        /// <param name="options">Optimization options.</param>
+        public void Optimize(QueryGraphOptimizationOptions options)
+        {
+            evaluationGraph?.Optimize(options);
+        }
+
+        /// <summary>
         /// Get the query node located at the specified position in the query.
         /// </summary>
         /// <param name="position">The position of the query node in the text.</param>
@@ -155,6 +195,24 @@ namespace UnityEditor.Search
             }
 
             return graphHandler.Eval(data);
+        }
+
+        /// <summary>
+        /// Test the query on a single object. Returns true if the test passes.
+        /// </summary>
+        /// <param name="element">A single object to be tested.</param>
+        /// <returns>True if the object passes the query, false otherwise.</returns>
+        public bool Test(T element)
+        {
+            if (!valid)
+                return false;
+
+            if (evaluationGraph.empty)
+            {
+                return returnPayloadIfEmpty;
+            }
+
+            return graphHandler.Eval(element);
         }
     }
 }

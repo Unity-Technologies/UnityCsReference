@@ -506,7 +506,7 @@ namespace UnityEditor.Search
 
         private static bool IsEditingControl(this TextEditor self, int id)
         {
-            return GUIUtility.keyboardControl == id && self.controlID == id && s_ActuallyEditing && HasCurrentWindowKeyFocus();
+            return GUIUtility.keyboardControl == id && self.controlID == id && s_ActuallyEditing && Utils.HasCurrentWindowKeyFocus();
         }
 
         private static void BeginEditing(this TextEditor self, int id, string newText, Rect _position, GUIStyle _style, bool _multiline, bool passwordField)
@@ -547,7 +547,7 @@ namespace UnityEditor.Search
             // Every EditorWindow has its own keyboardControl state so we also need to
             // check if the current OS view has focus to determine if the control has actual key focus (gets the input)
             // and not just being a focused control in an unfocused window.
-            return GUIUtility.keyboardControl == controlID && HasCurrentWindowKeyFocus();
+            return GUIUtility.keyboardControl == controlID && Utils.HasCurrentWindowKeyFocus();
         }
 
         private static EventType GetEventTypeForControlAllowDisabledContextMenuPaste(Event evt, int id)
@@ -666,11 +666,6 @@ namespace UnityEditor.Search
             return true;
         }
 
-        private static bool HasCurrentWindowKeyFocus()
-        {
-            return EditorGUIUtility.HasCurrentWindowKeyFocus();
-        }
-
         private static string CyclePreviousSearch(int shift)
         {
             if (SearchSettings.recentSearches.Count == 0)
@@ -690,6 +685,44 @@ namespace UnityEditor.Search
                 return;
             s_RecentSearchIndex = 0;
             SearchSettings.AddRecentSearch(value);
+        }
+
+        public static void DrawError(int errorIndex, int errorLength, string errorTooltip)
+        {
+            DrawLineWithTooltip(errorIndex, errorIndex + errorLength, errorTooltip, Styles.Wiggle.wiggle, Styles.Wiggle.wiggleTooltip);
+        }
+
+        public static void DrawWarning(int errorIndex, int errorLength, string errorTooltip)
+        {
+            DrawLineWithTooltip(errorIndex, errorIndex + errorLength, errorTooltip, Styles.Wiggle.wiggleWarning, Styles.Wiggle.wiggleTooltip);
+        }
+
+        private static void DrawLineWithTooltip(int lineStartIndex, int lineEndIndex, string tooltip, GUIStyle lineStyle, GUIStyle tooltipStyle)
+        {
+            if (Event.current.type != EventType.Repaint)
+                return;
+
+            var te = GetTextEditor();
+
+            var content = new GUIContent(te.text);
+            var startPosition = te.style.GetCursorPixelPosition(te.position, content, lineStartIndex);
+            var endPosition = te.style.GetCursorPixelPosition(te.position, content, lineEndIndex);
+
+            var visibleRect = te.style.padding.Remove(te.position);
+            startPosition.x -= te.scrollOffset.x;
+            endPosition.x -= te.scrollOffset.x;
+            if (startPosition.x < visibleRect.x && endPosition.x < visibleRect.x)
+                return;
+
+            startPosition.x = Mathf.Max(startPosition.x, visibleRect.x);
+            var tooltipRect = new Rect(te.position) { xMin = startPosition.x, xMax = endPosition.x };
+
+            var lineRect = new Rect(tooltipRect);
+            lineRect.yMax = visibleRect.yMax; // Offset the line so it is floating above the bottom of the search field wrt to padding.
+            lineRect.yMin = lineRect.yMax - lineStyle.fixedHeight;
+
+            lineStyle.Draw(lineRect, new GUIContent(""), controlID);
+            tooltipStyle.Draw(tooltipRect, new GUIContent("", null, tooltip), controlID);
         }
     }
 }

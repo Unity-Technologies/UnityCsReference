@@ -4,6 +4,37 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    static class EnumFieldHelpers
+    {
+        internal static readonly UxmlTypeAttributeDescription<Enum> type = new UxmlTypeAttributeDescription<Enum> { name = "type" };
+        internal static readonly UxmlStringAttributeDescription value = new UxmlStringAttributeDescription { name = "value" };
+        internal static readonly UxmlBoolAttributeDescription includeObsoleteValues = new UxmlBoolAttributeDescription() { name = "include-obsolete-values", defaultValue = false };
+
+        internal static bool ExtractValue(IUxmlAttributes bag, CreationContext cc, out Enum resEnumValue, out bool resIncludeObsoleteValues)
+        {
+            resIncludeObsoleteValues = false;
+            resEnumValue = null;
+
+            var systemType = type.GetValueFromBag(bag, cc);
+            if (systemType == null)
+            {
+                return false;
+            }
+
+            string specifiedValue = null;
+            if (value.TryGetValueFromBag(bag, cc, ref specifiedValue) && !Enum.IsDefined(systemType, specifiedValue))
+            {
+                Debug.LogErrorFormat("EnumField: Could not parse value of '{0}', because it isn't defined in the {1} enum.", specifiedValue, systemType.FullName);
+                return false;
+            }
+
+            resEnumValue = specifiedValue != null ? (Enum)Enum.Parse(systemType, specifiedValue) : (Enum)Enum.ToObject(systemType, 0);
+            resIncludeObsoleteValues = includeObsoleteValues.GetValueFromBag(bag, cc);
+
+            return true;
+        }
+    }
+
     /// <summary>
     /// Makes a dropdown for switching between enum values.
     /// </summary>
@@ -49,6 +80,9 @@ namespace UnityEditor.UIElements
         private TextElement m_TextElement;
         private VisualElement m_ArrowElement;
         private EnumData m_EnumData;
+
+        // Set this callback to provide a specific implementation of the menu.
+        internal Func<IGenericMenu> createMenuCallback;
 
         /// <summary>
         /// Return the text value of the currently selected enum.
@@ -207,22 +241,25 @@ namespace UnityEditor.UIElements
             if (m_EnumType == null)
                 return;
 
-            var menu = new GenericMenu();
+            IGenericMenu menu;
+            if (createMenuCallback != null)
+            {
+                menu = createMenuCallback.Invoke();
+            }
+            else
+            {
+                menu = elementPanel?.contextType == ContextType.Player ? new GenericDropdownMenu() : DropdownMenu.CreateDropdown();
+            }
 
             int selectedIndex = Array.IndexOf(m_EnumData.values, value);
 
             for (int i = 0; i < m_EnumData.values.Length; ++i)
             {
                 bool isSelected = selectedIndex == i;
-                menu.AddItem(new GUIContent(m_EnumData.displayNames[i]), isSelected,
-                    contentView => ChangeValueFromMenu(contentView),
-                    m_EnumData.values[i]);
+                menu.AddItem(m_EnumData.displayNames[i], isSelected, contentView => ChangeValueFromMenu(contentView), m_EnumData.values[i]);
             }
 
-            var menuPosition = new Vector2(visualInput.layout.xMin, visualInput.layout.height);
-            menuPosition = this.LocalToWorld(menuPosition);
-            var menuRect = new Rect(menuPosition, Vector2.zero);
-            menu.DropDown(menuRect);
+            menu.DropDown(visualInput.worldBound, this, true);
         }
 
         private void ChangeValueFromMenu(object menuItem)

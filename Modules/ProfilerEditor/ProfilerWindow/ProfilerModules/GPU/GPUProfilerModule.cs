@@ -5,12 +5,16 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
 
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
+    // TODO: refactor: rename to GpuProfilerModule
+    // together with CPUOrGPUProfilerModule and CpuProfilerModule
+    // in a PR that doesn't affect performance so that the sample names can be fixed as well without loosing comparability in Performance tests.
     internal class GPUProfilerModule : CPUOrGPUProfilerModule
     {
         const string k_SettingsKeyPrefix = "Profiler.GPUProfilerModule.";
@@ -45,14 +49,26 @@ namespace UnityEditorInternal.Profiling
 
         const string k_IconName = "Profiler.GPU";
         const int k_DefaultOrderIndex = 1;
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("GPU Usage");
+        protected override string ModuleName => k_UnlocalizedName;
+        internal const string k_UnlocalizedName = "GPU Usage";
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnlocalizedName);
 
-        public GPUProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName) {}
+        public GPUProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnlocalizedName, k_Name, k_IconName) {}
 
         public override ProfilerArea area => ProfilerArea.GPU;
 
         protected override int defaultOrderIndex => k_DefaultOrderIndex;
         protected override string legacyPreferenceKey => "ProfilerChartGPU";
+
+        internal override ProfilerViewType ViewType
+        {
+            set
+            {
+                if (value == ProfilerViewType.Timeline)
+                    throw new ArgumentException($"{ModuleName} does not implement a {nameof(ProfilerViewType.Timeline)} view.");
+                CPUOrGPUViewTypeChanged(value);
+            }
+        }
 
         static string GetStatisticsAvailabilityStateReason(int statisticsAvailabilityState)
         {
@@ -100,7 +116,7 @@ namespace UnityEditorInternal.Profiling
 
         public override void DrawDetailsView(Rect position)
         {
-            int selectedFrameIndex = m_ProfilerWindow.GetActiveVisibleFrameIndex();
+            var selectedFrameIndex = (int)m_ProfilerWindow.selectedFrameIndex;
             if (selectedFrameIndex >= ProfilerDriver.firstFrameIndex && selectedFrameIndex <= ProfilerDriver.lastFrameIndex)
             {
                 GpuProfilingStatisticsAvailabilityStates state = (GpuProfilingStatisticsAvailabilityStates)ProfilerDriver.GetGpuStatisticsAvailabilityState(selectedFrameIndex);
@@ -131,7 +147,7 @@ namespace UnityEditorInternal.Profiling
 
         protected override void SaveActiveState()
         {
-            SessionState.SetBool(activeStatePreferenceKey, isActive);
+            SessionState.SetBool(activeStatePreferenceKey, active);
         }
     }
 }

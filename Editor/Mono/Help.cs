@@ -171,7 +171,10 @@ namespace UnityEditor
             if (attrs.Length > 0)
             {
                 var attr = (HelpURLAttribute)attrs[0];
-                var url = attr.m_Url;
+                if (attrs.Length > 1)
+                    Debug.LogWarningFormat("Multiple HelpURL attributes detected on <i>{0}</i>; only one is supported per class. <i>{1}</i> will be used.", obj.GetType().Name, attr.GetType().Name);
+
+                var url = attr.URL;
                 if (!string.IsNullOrEmpty(attr.m_DispatchingFieldName))
                 {
                     var field = obj.GetType().GetField(attr.m_DispatchingFieldName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);

@@ -4,7 +4,7 @@
 
 using System;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [Flags]
     internal enum PackageType

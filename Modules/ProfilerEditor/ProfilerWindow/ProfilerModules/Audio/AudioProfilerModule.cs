@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Profiling;
+using UnityEditor.Profiling;
 
 namespace UnityEditorInternal.Profiling
 {
@@ -15,7 +16,8 @@ namespace UnityEditorInternal.Profiling
     {
         const string k_IconName = "Profiler.Audio";
         const int k_DefaultOrderIndex = 4;
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("Audio");
+        static readonly string k_UnLocalizedName = "Audio";
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
 
         Vector2 m_PaneScroll_AudioChannels = Vector2.zero;
         Vector2 m_PaneScroll_AudioDSPLeft = Vector2.zero;
@@ -58,7 +60,7 @@ namespace UnityEditorInternal.Profiling
         const string k_AudioProfilerGroupTreeViewStateSettingsKey = "Profiler.MemoryProfilerModule.AudioProfilerGroupTreeViewState";
         const string k_AudioProfilerClipTreeViewStateSettingsKey = "Profiler.MemoryProfilerModule.AudioProfilerClipTreeViewState";
 
-        public AudioProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName) {}
+        public AudioProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName) {}
 
         public override ProfilerArea area => ProfilerArea.Audio;
 
@@ -261,6 +263,12 @@ namespace UnityEditorInternal.Profiling
                                     m_AudioProfilerGroupView = new AudioProfilerGroupView(m_ProfilerWindow as EditorWindow, m_AudioProfilerGroupTreeViewState);
                                     m_AudioProfilerGroupView.Init(treeRect, m_AudioProfilerGroupViewBackend);
                                 }
+                            }
+                            else
+                            {
+                                var items = new List<AudioProfilerGroupInfoWrapper>();
+                                m_AudioProfilerGroupViewBackend.SetData(items);
+                                m_AudioProfilerGroupView = null;
                             }
                         }
                         if (m_AudioProfilerGroupView != null)

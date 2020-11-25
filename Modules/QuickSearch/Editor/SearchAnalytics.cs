@@ -7,7 +7,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Analytics;
@@ -159,6 +158,9 @@ namespace UnityEditor.Search
             public int indexCount;
             public float maxIndexSize;
             public int savedSearchesCount;
+            public int sessionQueryCount;
+            public int sessionQuerySearchExecutionCount;
+            public int sessionSearchOpenWindow;
             public bool trackSelection;
             public bool fetchPreview;
             public bool wantsMore;
@@ -167,6 +169,9 @@ namespace UnityEditor.Search
             public bool showPackageIndexes;
             public int debounceMs;
             public string savedSearchesSortOrder;
+            public string sceneSearchEngine;
+            public string projectSearchEngine;
+            public string objectSelectorEngine;
         }
 
         enum EventName
@@ -225,14 +230,35 @@ namespace UnityEditor.Search
             QuickSearchAutoCompleteInsertSuggestion,
             QuickSearchSavedSearchesSorted,
             QuickSearchSavedSearchesExecuted,
-            QuickSearchOpenToggleToggleSidePanel
+            QuickSearchOpenToggleToggleSidePanel,
+
+            QuickSearchJumpToSearch,
+            QuickSearchSyncViewButton,
+            QuickSearchSwitchTab
         }
 
         public static readonly string Package = "com.unity.quicksearch";
         public static string PackageVersion;
         private static bool s_Registered;
         private static readonly HashSet<int> s_OnceHashCodes = new HashSet<int>();
-        private static Delayer m_Debouncer;
+
+        public static int sessionQueryCount
+        {
+            get => SessionState.GetInt($"Search.{nameof(sessionQueryCount)}", 0);
+            set => SessionState.SetInt($"Search.{nameof(sessionQueryCount)}", value);
+        }
+
+        public static int sessionSearchOpenWindow
+        {
+            get => SessionState.GetInt($"Search.{nameof(sessionSearchOpenWindow)}", 0);
+            set => SessionState.SetInt($"Search.{nameof(sessionSearchOpenWindow)}", value);
+        }
+
+        public static int sessionQuerySearchExecutionCount
+        {
+            get => SessionState.GetInt($"Search.{nameof(sessionQuerySearchExecutionCount)}", 0);
+            set => SessionState.SetInt($"Search.{nameof(sessionQuerySearchExecutionCount)}", value);
+        }
 
         static SearchAnalytics()
         {
@@ -257,7 +283,6 @@ namespace UnityEditor.Search
 
 
             EditorApplication.quitting += UnityQuit;
-            m_Debouncer = Delayer.Debounce(SendEventFromEventCreator);
         }
 
         public static void SendExceptionOnce(string name, Exception ex)
@@ -295,11 +320,23 @@ namespace UnityEditor.Search
             e.message = message;
             e.description = description;
             e.duration = durationInMs;
-            Send(EventName.quickSearchGeneric, e);
+            SendEvent(e);
         }
 
         public static void SendEvent(GenericEvent evt)
         {
+            switch ((GenericEventType)evt.categoryId)
+            {
+                case GenericEventType.SearchQueryExecute:
+                case GenericEventType.SearchQueryOpen:
+                case GenericEventType.QuickSearchSavedSearchesExecuted:
+                    sessionQuerySearchExecutionCount++;
+                    break;
+                case GenericEventType.QuickSearchOpen:
+                    sessionSearchOpenWindow++;
+                    break;
+            }
+
             Send(EventName.quickSearchGeneric, evt);
         }
 
@@ -309,10 +346,6 @@ namespace UnityEditor.Search
             Send(EventName.quickSearchUsageReport, report);
         }
 
-        public static void DebounceSendEvent(Func<GenericEvent> evtCreator)
-        {
-            m_Debouncer.Execute(evtCreator);
-        }
 
         public static void SendSearchEvent(SearchEvent evt, SearchContext searchContext)
         {
@@ -334,6 +367,9 @@ namespace UnityEditor.Search
                 custom = ""
             }).ToArray();
 
+            if (evt.success)
+                sessionQueryCount++;
+
             Send(EventName.quickSearch, evt);
         }
 
@@ -354,6 +390,9 @@ namespace UnityEditor.Search
             report.debounceMs = SearchSettings.debounceMs;
             report.savedSearchesSortOrder = SearchSettings.savedSearchesSortOrder.ToString();
             report.savedSearchesCount = SearchQuery.savedQueries.Count();
+            report.sessionQueryCount = sessionQueryCount;
+            report.sessionQuerySearchExecutionCount = sessionQuerySearchExecutionCount;
+            report.sessionSearchOpenWindow = sessionSearchOpenWindow;
 
             var allIndexes = SearchDatabase.Enumerate(SearchDatabase.IndexLocation.assets).ToArray();
             report.indexCount = allIndexes.Length;

@@ -14,9 +14,10 @@ namespace UnityEditorInternal.Profiling
     {
         const string k_IconName = "Profiler.Physics";
         const int k_DefaultOrderIndex = 6;
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("Physics");
+        static readonly string k_UnLocalizedName = "Physics";
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
 
-        public PhysicsProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName) {}
+        public PhysicsProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName) {}
 
         public override ProfilerArea area => ProfilerArea.Physics;
 

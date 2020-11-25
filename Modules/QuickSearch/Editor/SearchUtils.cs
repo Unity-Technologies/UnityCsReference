@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using UnityEditor;
 using UnityEditor.Experimental.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -55,6 +54,31 @@ namespace UnityEditor.Search
         public static string[] SplitCamelCase(string source)
         {
             return Regex.Split(source, @"(?<!^)(?=[A-Z0-9])");
+        }
+
+        internal static string UppercaseFirst(string s)
+        {
+            // Check for empty string.
+            if (string.IsNullOrEmpty(s))
+            {
+                return string.Empty;
+            }
+            // Return char and concat substring.
+            return char.ToUpper(s[0]) + s.Substring(1);
+        }
+
+        internal static string ToPascalWithSpaces(string s)
+        {
+            // Check for empty string.
+            if (string.IsNullOrEmpty(s))
+            {
+                return string.Empty;
+            }
+
+            var tokens = Regex.Split(s, @"-+|_+|\s+|(?<!^)(?=[A-Z0-9])")
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(UppercaseFirst);
+            return string.Join(" ", tokens);
         }
 
         /// <summary>
@@ -198,8 +222,9 @@ namespace UnityEditor.Search
         /// Select and ping multiple objects in the Project Browser.
         /// </summary>
         /// <param name="items">Search Items to select and ping.</param>
-        /// <param name="focusProjectBrowser">If true, will focus the project browser before pining the objects.</param>
-        public static void SelectMultipleItems(IEnumerable<SearchItem> items, bool focusProjectBrowser = false)
+        /// <param name="focusProjectBrowser">If true, will focus the project browser before pinging the objects.</param>
+        /// <param name="pingSelection">If true, will ping the selected objects.</param>
+        public static void SelectMultipleItems(IEnumerable<SearchItem> items, bool focusProjectBrowser = false, bool pingSelection = true)
         {
             Selection.objects = items.Select(i => i.provider.toObject(i, typeof(UnityEngine.Object))).Where(o => o).ToArray();
             if (Selection.objects.Length == 0)
@@ -212,8 +237,9 @@ namespace UnityEditor.Search
             EditorApplication.delayCall += () =>
             {
                 if (focusProjectBrowser)
-                    EditorWindow.FocusWindowIfItsOpen(typeof(ProjectBrowser));
-                EditorApplication.delayCall += () => EditorGUIUtility.PingObject(Selection.objects.LastOrDefault());
+                    EditorWindow.FocusWindowIfItsOpen(Utils.GetProjectBrowserWindowType());
+                if (pingSelection)
+                    EditorApplication.delayCall += () => EditorGUIUtility.PingObject(Selection.objects.LastOrDefault());
             };
         }
 

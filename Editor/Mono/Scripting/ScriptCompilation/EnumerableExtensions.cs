@@ -12,4 +12,15 @@ static class EnumerableExtensions
     {
         return string.Join(separator, values);
     }
+
+    public static (List<T> True, List<T> False) SplitBy<T>(this ICollection<T> collection, Func<T, bool> predicate)
+    {
+        (List<T> True, List<T> False)result = (new List<T>(collection.Count), new List<T>(collection.Count));
+        foreach (var item in collection)
+            if (predicate(item))
+                result.True.Add(item);
+            else
+                result.False.Add(item);
+        return result;
+    }
 }

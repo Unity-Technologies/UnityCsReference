@@ -76,7 +76,7 @@ namespace UnityEditor
 
         private bool multipleEditing { get { return targets.Length > 1; } }
 
-        void UpdateZoneVec3PropertyField(Rect rect, SerializedProperty prop, GUIContent label, bool as2D)
+        void UpdateZoneVec3PropertyField(Rect rect, SerializedProperty prop, GUIContent label, bool as2D, bool setWideMode)
         {
             EditorGUI.BeginProperty(rect, label, prop);
             if (!as2D)
@@ -85,7 +85,7 @@ namespace UnityEditor
             }
             else
             {
-                Vector2 newValue = EditorGUI.Vector2Field(rect, label, new Vector2(prop.vector3Value.x, prop.vector3Value.y));
+                Vector2 newValue = EditorGUI.Vector2Field(rect, label, new Vector2(prop.vector3Value.x, prop.vector3Value.y), setWideMode);
                 prop.vector3Value = new Vector3(newValue.x, newValue.y, prop.vector3Value.z);
             }
             EditorGUI.EndProperty();
@@ -105,11 +105,11 @@ namespace UnityEditor
             EditorGUI.LabelField(rect, string.Format("Update Zone {0}", index));
             rect.y += lineHeight;
             SerializedProperty centerProp = element.FindPropertyRelative("updateZoneCenter");
-            UpdateZoneVec3PropertyField(rect, centerProp, styles.updateZoneCenter, !is3DTexture);
+            UpdateZoneVec3PropertyField(rect, centerProp, styles.updateZoneCenter, !is3DTexture, true);
 
             rect.y += lineHeight + EditorGUIUtility.standardVerticalSpacing;
             SerializedProperty sizeProp = element.FindPropertyRelative("updateZoneSize");
-            UpdateZoneVec3PropertyField(rect, sizeProp, styles.updateZoneSize, !is3DTexture);
+            UpdateZoneVec3PropertyField(rect, sizeProp, styles.updateZoneSize, !is3DTexture, true);
 
             if (!is3DTexture)
             {

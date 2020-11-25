@@ -4,7 +4,7 @@
 
 using UnityEngine.UIElements;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [InitializeOnLoad]
     internal class PackageManagerUXMLFactories

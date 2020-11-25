@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-//#define QUICKSEARCH_DEBUG
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +15,7 @@ namespace UnityEditor.Search
     [AttributeUsage(AttributeTargets.Method)]
     public class SearchItemProviderAttribute : Attribute
     {
-        [RequiredSignature] static SearchProvider CreateProvider() { return null; }
+        [RequiredSignature] internal static SearchProvider CreateProvider() { return null; }
     }
 
     /// <summary>
@@ -26,7 +24,7 @@ namespace UnityEditor.Search
     [AttributeUsage(AttributeTargets.Method)]
     public class SearchActionsProviderAttribute : Attribute
     {
-        [RequiredSignature] static IEnumerable<SearchAction> CreateActionHandlers() { return null; }
+        [RequiredSignature] internal static IEnumerable<SearchAction> CreateActionHandlers() { return null; }
     }
 
     /// <summary>
@@ -34,13 +32,7 @@ namespace UnityEditor.Search
     /// </summary>
     public static class SearchService
     {
-        internal const string prefKey = "quicksearch";
-
-        const string k_ActionQueryToken = ">";
-
         private const int k_MaxFetchTimeMs = 50;
-
-        internal static Dictionary<string, List<string>> ActionIdToProviders { get; private set; }
 
         /// <summary>
         /// Returns the list of all providers (active or not)
@@ -61,6 +53,28 @@ namespace UnityEditor.Search
         static SearchService()
         {
             Refresh();
+            SetupSearchFirstUse();
+        }
+
+        private static void SetupSearchFirstUse()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                return;
+
+            if (SearchSettings.onBoardingDoNotAskAgain || Utils.IsRunningTests())
+                return;
+
+            if (!Utils.IsMainProcess())
+                return;
+
+            EditorApplication.delayCall += () =>
+            {
+                if (SearchDatabase.EnumeratePaths(SearchDatabase.IndexLocation.assets).Count() == 0)
+                    SearchDatabase.CreateDefaultIndex();
+
+                SearchSettings.onBoardingDoNotAskAgain = true;
+                SearchSettings.Save();
+            };
         }
 
         /// <summary>
@@ -205,7 +219,7 @@ namespace UnityEditor.Search
                 }
                 catch (Exception ex)
                 {
-                    UnityEngine.Debug.LogException(new Exception($"Failed to get fetch {provider.name} provider items.", ex));
+                    Debug.LogException(new Exception($"Failed to get fetch {provider.name} provider items.", ex));
                 }
             }
 
@@ -284,44 +298,48 @@ namespace UnityEditor.Search
             po = item1.score.CompareTo(item2.score);
             if (po != 0)
                 return po;
-            return String.Compare(item1.id, item2.id, StringComparison.Ordinal);
+            return string.Compare(item1.id, item2.id, StringComparison.Ordinal);
         }
 
         private static void RefreshProviders()
         {
-            Providers = TypeCache.GetMethodsWithAttribute<SearchItemProviderAttribute>().Select(methodInfo =>
+            Providers = TypeCache.GetMethodsWithAttribute<SearchItemProviderAttribute>()
+                .Select(LoadProvider)
+                .Where(provider => provider != null)
+                .ToList();
+        }
+
+        private static SearchProvider LoadProvider(System.Reflection.MethodInfo methodInfo)
+        {
+            try
             {
-                try
+                SearchProvider fetchedProvider = null;
+                using (var fetchLoadTimer = new DebugTimer(null))
                 {
-                    SearchProvider fetchedProvider = null;
-                    using (var fetchLoadTimer = new DebugTimer(null))
+                    fetchedProvider = methodInfo.Invoke(null, null) as SearchProvider;
+                    if (fetchedProvider == null)
+                        return null;
+
+                    fetchedProvider.loadTime = fetchLoadTimer.timeMs;
+
+                    // Load per provider user settings
+                    if (SearchSettings.TryGetProviderSettings(fetchedProvider.id, out var providerSettings))
                     {
-                        fetchedProvider = methodInfo.Invoke(null, null) as SearchProvider;
-                        if (fetchedProvider == null)
-                            return null;
-
-                        fetchedProvider.loadTime = fetchLoadTimer.timeMs;
-
-                        // Load per provider user settings
-                        if (SearchSettings.TryGetProviderSettings(fetchedProvider.id, out var providerSettings))
-                        {
-                            fetchedProvider.active = providerSettings.active;
-                            fetchedProvider.priority = providerSettings.priority;
-                        }
+                        fetchedProvider.active = providerSettings.active;
+                        fetchedProvider.priority = providerSettings.priority;
                     }
-                    return fetchedProvider;
                 }
-                catch (Exception ex)
-                {
-                    UnityEngine.Debug.LogException(ex);
-                    return null;
-                }
-            }).Where(provider => provider != null).ToList();
+                return fetchedProvider;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return null;
+            }
         }
 
         private static void RefreshProviderActions()
         {
-            ActionIdToProviders = new Dictionary<string, List<string>>();
             foreach (var action in TypeCache.GetMethodsWithAttribute<SearchActionsProviderAttribute>()
                      .SelectMany(methodInfo => methodInfo.Invoke(null, null) as IEnumerable<object>)
                      .Where(a => a != null).Cast<SearchAction>())
@@ -330,12 +348,6 @@ namespace UnityEditor.Search
                 if (provider == null)
                     continue;
                 provider.actions.Add(action);
-                if (!ActionIdToProviders.TryGetValue(action.id, out var providerIds))
-                {
-                    providerIds = new List<string>();
-                    ActionIdToProviders[action.id] = providerIds;
-                }
-                providerIds.Add(provider.id);
             }
             SearchSettings.SortActionsPriority();
         }

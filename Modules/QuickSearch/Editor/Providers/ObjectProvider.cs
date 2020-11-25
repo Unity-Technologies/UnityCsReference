@@ -66,7 +66,7 @@ namespace UnityEditor.Search.Providers
 
         private static string FetchLabel(SearchItem item)
         {
-            return (item.label = ((SearchDocument)item.data).metadata);
+            return (item.label = ((SearchDocument)item.data).path);
         }
 
         private static string FetchDescription(SearchItem item)
@@ -178,7 +178,7 @@ namespace UnityEditor.Search.Providers
             while (!index.IsReady())
                 yield return null;
 
-            yield return index.Search(searchQuery.ToLowerInvariant()).Select(e =>
+            yield return index.Search(searchQuery.ToLowerInvariant(), context, provider).Select(e =>
             {
                 var itemScore = e.score + scoreModifier;
                 return provider.CreateItem(context, e.id, itemScore, null, null, null, index.GetDocument(e.index));
@@ -203,7 +203,7 @@ namespace UnityEditor.Search.Providers
                 return;
             EditorApplication.delayCall += () =>
             {
-                EditorWindow.FocusWindowIfItsOpen(typeof(ProjectBrowser));
+                EditorWindow.FocusWindowIfItsOpen(Utils.GetProjectBrowserWindowType());
                 EditorApplication.delayCall += () => EditorGUIUtility.PingObject(Selection.instanceIDs.LastOrDefault());
             };
         }

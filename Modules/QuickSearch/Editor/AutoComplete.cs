@@ -147,6 +147,11 @@ namespace UnityEditor.Search
             return GetTokenAtCursorPosition(txt, cursorIndex, out var _, out var _, ch => char.IsWhiteSpace(ch));
         }
 
+        internal static void GetTokenBoundariesAtCursorPosition(string txt, int cursorIndex, out int startPos, out int endPos)
+        {
+            GetTokenAtCursorPosition(txt, cursorIndex, out startPos, out endPos, ch => char.IsWhiteSpace(ch));
+        }
+
         private static string GetTokenAtCursorPosition(string txt, int cursorIndex, out int startPos, out int endPos, Func<char, bool> check)
         {
             if (txt.Length > 0 && (cursorIndex == txt.Length || char.IsWhiteSpace(txt[cursorIndex])))
@@ -371,7 +376,7 @@ namespace UnityEditor.Search
             {
                 if (queryEmpty)
                 {
-                    propositions.Add(new SearchProposition($"{p.filterId} ({p.id})", $"{p.filterId} ", p.name, p.priority));
+                    propositions.Add(new SearchProposition($"{p.filterId}", $"{p.filterId} ", p.name, p.priority));
                 }
                 else
                 {
@@ -394,9 +399,9 @@ namespace UnityEditor.Search
                 {
                     var helpText = sq.description;
                     if (string.IsNullOrEmpty(helpText))
-                        helpText = sq.searchQuery;
+                        helpText = sq.text;
                     helpText = $"<i>{helpText}</i> (Saved Query)";
-                    propositions.Add(new SearchProposition(item.GetLabel(context, true), sq.searchQuery, helpText, priority: builtPriority, moveCursor: TextCursorPlacement.MoveLineEnd));
+                    propositions.Add(new SearchProposition(item.GetLabel(context, true), sq.text, helpText, priority: builtPriority, moveCursor: TextCursorPlacement.MoveLineEnd));
                     builtPriority += 10;
                 }
             }

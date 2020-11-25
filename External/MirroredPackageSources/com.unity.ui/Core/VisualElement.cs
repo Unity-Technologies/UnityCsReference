@@ -115,6 +115,11 @@ namespace UnityEngine.UIElements
         }
     }
 
+    internal class StringListPool : ObjectListPool<string>
+    {
+    }
+
+
     internal class StringObjectListPool : ObjectListPool<string>
     {
     }
@@ -877,6 +882,9 @@ namespace UnityEngine.UIElements
                 if (m_PseudoStates != value)
                 {
                     m_PseudoStates = value;
+
+                    if ((m_PseudoStates & PseudoStates.Root) == PseudoStates.Root)
+                        isRootVisualContainer = true;
 
                     if ((triggerPseudoMask & m_PseudoStates) != 0
                         || (dependencyPseudoMask & ~m_PseudoStates) != 0)

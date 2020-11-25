@@ -322,6 +322,9 @@ namespace UnityEditor
             if (SceneView.lastActiveSceneView && SceneView.lastActiveSceneView.camera)
                 camera = SceneView.lastActiveSceneView.camera;
 
+            if (camera == null)
+                return;
+
             var count = GetMaxLODCountForMultiSelection();
 
             for (int i = 0; i < count; i++)
@@ -339,7 +342,10 @@ namespace UnityEditor
             var lod0TriCount = m_PrimitiveCounts[0].Sum();
             var triCountChange = lod0TriCount != 0 ? (float)totalTriCount / lod0TriCount * 100 : 0;
             var triangleChangeLabel = lodGroupIndex > 0 && lod0TriCount != 0 ? $"({triCountChange.ToString("f2")}% LOD0)" : "";
-            var submeshCountLabel = $"- {m_SubmeshCounts[lodGroupIndex]} Sub Mesh(es)";
+
+            var wideInspector = Screen.width >= 350;
+            triangleChangeLabel = wideInspector ? triangleChangeLabel : "";
+            var submeshCountLabel = wideInspector ? $"- {m_SubmeshCounts[lodGroupIndex]} Sub Mesh(es)" : "";
 
             LODGroupGUI.DrawRoundedBoxAroundLODDFoldout(lodGroupIndex, activeLOD);
 

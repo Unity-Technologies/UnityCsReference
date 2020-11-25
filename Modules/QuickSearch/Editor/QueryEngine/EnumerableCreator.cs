@@ -5,20 +5,21 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.PlayerLoop;
 
 namespace UnityEditor.Search
 {
     interface IQueryEnumerable<T> : IEnumerable<T>
     {
         void SetPayload(IEnumerable<T> payload);
+
+        bool fastYielding { get; }
+        IEnumerator<T> FastYieldingEnumerator();
     }
 
     interface IQueryEnumerableFactory
     {
-        IQueryEnumerable<T> Create<T>(IQueryNode root, QueryEngine<T> engine, ICollection<QueryError> errors);
+        IQueryEnumerable<T> Create<T>(IQueryNode root, QueryEngine<T> engine, ICollection<QueryError> errors, bool fastYielding);
     }
 
     [AttributeUsage(AttributeTargets.Class)]
@@ -61,9 +62,9 @@ namespace UnityEditor.Search
             }
         }
 
-        public static IQueryEnumerable<T> Create<T>(IQueryNode root, QueryEngine<T> engine, ICollection<QueryError> errors)
+        public static IQueryEnumerable<T> Create<T>(IQueryNode root, QueryEngine<T> engine, ICollection<QueryError> errors, bool fastYielding)
         {
-            return s_EnumerableFactories.TryGetValue(root.type, out var factory) ? factory.Create<T>(root, engine, errors) : null;
+            return s_EnumerableFactories.TryGetValue(root.type, out var factory) ? factory.Create<T>(root, engine, errors, fastYielding) : null;
         }
     }
 }

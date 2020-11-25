@@ -44,6 +44,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var movedFromExtractorPath = EditorApplication.applicationContentsPath + $"/Tools/ScriptUpdater/ApiUpdater.MovedFromExtractor.exe";
             var netcorerunPath = EditorApplication.applicationContentsPath + $"/Tools/netcorerun/netcorerun{ExecutableExtension}";
 
+            var localization = "en-US";
+            if (LocalizationDatabase.currentEditorLanguage != SystemLanguage.English && EditorPrefs.GetBool("Editor.kEnableCompilerMessagesLocalization", false))
+                localization = LocalizationDatabase.GetCulture(LocalizationDatabase.currentEditorLanguage);
+
             beeDriver.DataForBuildProgram.Add(new ScriptCompilationData
             {
                 outputdirectory = outputDirectory,
@@ -54,6 +58,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 codegenAssemblies = codeGenAssemblies,
                 debug = debug,
                 buildTarget = buildTarget.ToString(),
+                localization = localization,
                 packages = PackageManager.PackageInfo.GetAll().Select(p =>
                 {
                     NPath resolvedPath = new NPath(p.resolvedPath);

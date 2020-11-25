@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 using UnityEditor.PackageManager.Requests;
 using System.Linq;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class AddPackageByNameDropdown : DropdownContent
     {

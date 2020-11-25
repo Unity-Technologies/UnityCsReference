@@ -12,34 +12,34 @@ namespace UnityEditor
     // Derive from this class to create an editor wizard.
     public class ScriptableWizard : EditorWindow
     {
-        private GenericInspector m_Inspector;
-        private string m_HelpString = "";
-        private string m_ErrorString = "";
-        private bool m_IsValid = true;
-        private Vector2 m_ScrollPosition;
-        private string m_CreateButton = "Create";
-        private string m_OtherButton = "";
+        GenericInspector m_Inspector;
+        string m_HelpString = "";
+        string m_ErrorString = "";
+        bool m_IsValid = true;
+        Vector2 m_ScrollPosition;
+        string m_CreateButton = "Create";
+        string m_OtherButton = "";
 
-        private void OnDestroy()
+        void OnDestroy()
         {
             DestroyImmediate(m_Inspector);
         }
 
-        private void InvokeWizardUpdate()
+        void InvokeWizardUpdate()
         {
             const BindingFlags kInstanceInvokeFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy;
-            MethodInfo method = GetType().GetMethod("OnWizardUpdate", kInstanceInvokeFlags);
+            var method = GetType().GetMethod("OnWizardUpdate", kInstanceInvokeFlags);
             if (method != null)
                 method.Invoke(this, null);
         }
 
-        private class Styles
+        static class Styles
         {
-            public static string errorText = "Wizard Error";
+            public const string errorText = "Wizard Error";
         }
 
         //@TODO: Force repaint if scripts recompile
-        private void OnGUI()
+        void OnGUI()
         {
             EditorGUIUtility.labelWidth = 150;
             GUILayout.Label(m_HelpString, EditorStyles.wordWrappedLabel, GUILayout.ExpandHeight(true));
@@ -106,19 +106,16 @@ namespace UnityEditor
             return m_Inspector.DrawDefaultInspector();
         }
 
-        // Creates a wizard.
         public static T DisplayWizard<T>(string title) where T : ScriptableWizard
         {
             return DisplayWizard<T>(title, "Create", "");
         }
 
-        ///*listonly*
         public static T DisplayWizard<T>(string title, string createButtonName) where T : ScriptableWizard
         {
             return DisplayWizard<T>(title, createButtonName, "");
         }
 
-        ///*listonly*
         public static T DisplayWizard<T>(string title, string createButtonName, string otherButtonName) where T : ScriptableWizard
         {
             return (T)DisplayWizard(title, typeof(T), createButtonName, otherButtonName);
@@ -127,30 +124,25 @@ namespace UnityEditor
         [uei.ExcludeFromDocsAttribute]
         public static ScriptableWizard DisplayWizard(string title, Type klass, string createButtonName)
         {
-            string otherButtonName = "";
-            return DisplayWizard(title, klass, createButtonName, otherButtonName);
+            return DisplayWizard(title, klass, createButtonName, "");
         }
 
         [uei.ExcludeFromDocsAttribute]
         public static ScriptableWizard DisplayWizard(string title, Type klass)
         {
-            string otherButtonName = "";
-            string createButtonName = "Create";
-            return DisplayWizard(title, klass, createButtonName, otherButtonName);
+            return DisplayWizard(title, klass, "Create", "");
         }
 
-        // Creates a wizard.
         public static ScriptableWizard DisplayWizard(string title, Type klass, [uei.DefaultValueAttribute("\"Create\"")]  string createButtonName , [uei.DefaultValueAttribute("\"\"")]  string otherButtonName)
         {
-            ScriptableWizard wizard = CreateInstance(klass) as ScriptableWizard;
+            var wizard = CreateInstance(klass) as ScriptableWizard;
+            if (wizard == null)
+                return null;
             wizard.m_CreateButton = createButtonName;
             wizard.m_OtherButton = otherButtonName;
             wizard.titleContent = new GUIContent(title);
-            if (wizard != null)
-            {
-                wizard.InvokeWizardUpdate();
-                wizard.ShowUtility();
-            }
+            wizard.InvokeWizardUpdate();
+            wizard.ShowUtility();
             return wizard;
         }
 
@@ -165,7 +157,7 @@ namespace UnityEditor
         // Allows you to set the help text of the wizard.
         public string helpString
         {
-            get { return m_HelpString; }
+            get => m_HelpString;
             set
             {
                 var newString = value ?? string.Empty;
@@ -180,7 +172,7 @@ namespace UnityEditor
         // Allows you to set the error text of the wizard.
         public string errorString
         {
-            get { return m_ErrorString; }
+            get => m_ErrorString;
             set
             {
                 var newString = value ?? string.Empty;
@@ -195,7 +187,7 @@ namespace UnityEditor
         // Allows you to set the create button text of the wizard.
         public string createButtonName
         {
-            get { return m_CreateButton; }
+            get => m_CreateButton;
             set
             {
                 var newString = value ?? string.Empty;
@@ -210,7 +202,7 @@ namespace UnityEditor
         // Allows you to set the other button text of the wizard.
         public string otherButtonName
         {
-            get { return m_OtherButton; }
+            get => m_OtherButton;
             set
             {
                 var newString = value ?? string.Empty;
@@ -225,8 +217,8 @@ namespace UnityEditor
         // Allows you to enable and disable the wizard create button, so that the user can not click it.
         public bool isValid
         {
-            get { return m_IsValid; }
-            set { m_IsValid = value; }
+            get => m_IsValid;
+            set => m_IsValid = value;
         }
     }
 }

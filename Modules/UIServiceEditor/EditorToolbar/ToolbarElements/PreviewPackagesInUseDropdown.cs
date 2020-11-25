@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.UI;
+using UnityEditor.PackageManager.UI.Internal;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;

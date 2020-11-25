@@ -405,10 +405,7 @@ namespace UnityEditor.Search
 
     class TransactionReader : TransactionHandler, ITransactionReader
     {
-        FileSystemWatcher m_FileWatcher;
         DateTime m_LastTransaction = DateTime.MinValue;
-
-        public event Action<DateTime> transactionsAdded;
 
         public TransactionReader(string fileName, int headerSize)
             : base(fileName, headerSize)
@@ -424,82 +421,13 @@ namespace UnityEditor.Search
                 var totalTransactions = GetTotalReadableTransactions(m_Fs);
                 if (totalTransactions > 0)
                     m_LastTransaction = ReadDateTime(m_Fs, totalTransactions - 1);
-
-                var fileInfo = new FileInfo(m_FileName);
-
-                m_FileWatcher = new FileSystemWatcher
-                {
-                    Path = fileInfo.DirectoryName,
-                    Filter = fileInfo.Name,
-                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName
-                };
-                m_FileWatcher.Changed += OnTransactionDatabaseChanged;
-                m_FileWatcher.Created += OnTransactionDatabaseChanged;
-                m_FileWatcher.Error += OnFileWatcherError;
-                m_FileWatcher.EnableRaisingEvents = !Application.isBatchMode;
             }
 
-            return m_Fs != null && m_FileWatcher != null;
-        }
-
-        void OnFileWatcherError(object sender, ErrorEventArgs e)
-        {
-            throw new Exception($"FileWatcherException: {e.GetException()}");
-        }
-
-        private void OnTransactionDatabaseChanged(object sender, FileSystemEventArgs e)
-        {
-            if (m_Fs == null || m_FileWatcher == null)
-                return;
-
-            if (Monitor.TryEnter(m_FileWatcher, 100))
-            {
-                try
-                {
-                    var allDates = ReadAllDateTimes();
-
-                    foreach (var newDate in allDates)
-                    {
-                        if (newDate > m_LastTransaction)
-                        {
-                            transactionsAdded?.Invoke(newDate);
-                            break;
-                        }
-                    }
-
-                    if (allDates.Length > 0)
-                        m_LastTransaction = allDates.Last();
-                    else
-                        m_LastTransaction = DateTime.MinValue;
-                }
-                catch (Exception exception)
-                {
-                    Debug.Log(exception);
-                }
-                finally
-                {
-                    Monitor.Exit(m_FileWatcher);
-                }
-            }
+            return m_Fs != null;
         }
 
         public override void Close()
         {
-            transactionsAdded = null;
-
-            if (m_FileWatcher != null)
-            {
-                lock (m_FileWatcher)
-                {
-                    m_FileWatcher.EnableRaisingEvents = false;
-                    m_FileWatcher.Changed -= OnTransactionDatabaseChanged;
-                    m_FileWatcher.Created -= OnTransactionDatabaseChanged;
-                    m_FileWatcher.Error -= OnFileWatcherError;
-                }
-                m_FileWatcher.Dispose();
-                m_FileWatcher = null;
-            }
-
             base.Close();
         }
 
@@ -510,7 +438,7 @@ namespace UnityEditor.Search
             m_Fs.Seek(0, SeekOrigin.Begin);
             var bytes = new byte[m_HeaderSize];
             ReadWholeArray(m_Fs, bytes);
-            var fileHeader = TransactionUtils.Deserialize<int>(bytes);
+            var fileHeader = BitConverter.ToInt32(bytes, 0);
             return fileHeader;
         }
 
@@ -808,10 +736,7 @@ namespace UnityEditor.Search
 
         protected virtual bool OpenReader()
         {
-            var opened = m_Reader.Open();
-            if (opened)
-                m_Reader.transactionsAdded += HandleTransactionsAdded;
-            return opened;
+            return m_Reader.Open();
         }
     }
 

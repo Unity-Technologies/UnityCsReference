@@ -69,7 +69,7 @@ namespace UnityEditor.Search
                 case QueryNodeType.Union:
                 case QueryNodeType.NestedQuery:
                 {
-                    errors.Add(new QueryError(node.token.position, "Nested queries are not supported."));
+                    errors.Add(new QueryError(node.token.position, node.token.length, "Nested queries are not supported."));
                     break;
                 }
             }
@@ -190,6 +190,11 @@ namespace UnityEditor.Search
                 return new List<T>();
             else
                 return root.results.Distinct();
+        }
+
+        public bool Eval(T element)
+        {
+            throw new System.NotSupportedException();
         }
 
         internal static Instruction BuildInstruction(IQueryNode node, EvalHandler eval, object payload, bool not)

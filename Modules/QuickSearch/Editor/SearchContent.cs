@@ -46,7 +46,7 @@ namespace UnityEditor.Search
             {
                 if (item.options.HasFlag(SearchItemOptions.Ellipsis))
                 {
-                    int maxCharLength = Styles.itemDescription.GetNumCharactersThatFitWithinWidth(truncatedDesc + "...", availableSpace);
+                    int maxCharLength = Utils.GetNumCharactersThatFitWithinWidth(Styles.itemDescription, truncatedDesc + "...", availableSpace);
                     if (maxCharLength < 0)
                         maxCharLength = truncatedDesc.Length;
                     truncated = desc.Length > maxCharLength;

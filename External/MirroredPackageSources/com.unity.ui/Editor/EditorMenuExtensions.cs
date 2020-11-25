@@ -5,11 +5,11 @@ namespace UnityEditor.UIElements
 {
     static class EditorMenuExtensions
     {
-        static GenericMenu PrepareMenu(DropdownMenu menu, EventBase triggerEvent)
+        static IGenericMenu PrepareMenu(DropdownMenu menu, EventBase triggerEvent)
         {
             menu.PrepareForDisplay(triggerEvent);
 
-            var genericMenu = new GenericMenu();
+            var genericMenu = new GenericOSMenu();
             foreach (var item in menu.MenuItems())
             {
                 var action = item as DropdownMenuAction;
@@ -26,11 +26,11 @@ namespace UnityEditor.UIElements
 
                     if ((action.status & DropdownMenuAction.Status.Disabled) == DropdownMenuAction.Status.Disabled)
                     {
-                        genericMenu.AddDisabledItem(new GUIContent(action.name), isChecked);
+                        genericMenu.AddDisabledItem(action.name, isChecked);
                     }
                     else
                     {
-                        genericMenu.AddItem(new GUIContent(action.name), isChecked, () =>
+                        genericMenu.AddItem(action.name, isChecked, () =>
                         {
                             action.Execute();
                         });
@@ -56,7 +56,7 @@ namespace UnityEditor.UIElements
 
         public static void DoDisplayEditorMenu(this DropdownMenu menu, EventBase triggerEvent)
         {
-            GenericMenu genericMenu = PrepareMenu(menu, triggerEvent);
+            var genericMenu = PrepareMenu(menu, triggerEvent);
 
             Vector2 position = Vector2.zero;
             if (triggerEvent is IMouseEvent)
@@ -73,6 +73,47 @@ namespace UnityEditor.UIElements
             }
 
             genericMenu.DropDown(new Rect(position, Vector2.zero));
+        }
+    }
+
+    internal class GenericOSMenu : IGenericMenu
+    {
+        GenericMenu m_GenericMenu;
+
+        public GenericOSMenu()
+        {
+            m_GenericMenu = new GenericMenu();
+        }
+
+        public void AddItem(string itemName, bool isChecked, System.Action action)
+        {
+            if (action == null)
+                m_GenericMenu.AddItem(new GUIContent(itemName), isChecked, null);
+            else
+                m_GenericMenu.AddItem(new GUIContent(itemName), isChecked, action.Invoke);
+        }
+
+        public void AddItem(string itemName, bool isChecked, System.Action<object> action, object data)
+        {
+            if (action == null)
+                m_GenericMenu.AddItem(new GUIContent(itemName), isChecked, null, data);
+            else
+                m_GenericMenu.AddItem(new GUIContent(itemName), isChecked, action.Invoke, data);
+        }
+
+        public void AddDisabledItem(string itemName, bool isChecked)
+        {
+            m_GenericMenu.AddDisabledItem(new GUIContent(itemName), isChecked);
+        }
+
+        public void AddSeparator(string path)
+        {
+            m_GenericMenu.AddSeparator(path);
+        }
+
+        public void DropDown(Rect position, VisualElement targetElement = null, bool anchored = false)
+        {
+            m_GenericMenu.DropDown(position);
         }
     }
 }

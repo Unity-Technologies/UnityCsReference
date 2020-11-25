@@ -178,19 +178,19 @@ namespace UnityEditor.UIElements.Debugger
             All
         }
 
-        internal override void AddMenuItems(GenericMenu menu)
+        internal override void AddMenuItems(IGenericMenu menu)
         {
-            menu.AddItem(new GUIContent("Select all"), false, () => SelectAllTypes(true));
-            menu.AddItem(new GUIContent("Select all mouse events (basic)"), false, () => SelectAllTypes(true, EventTypeSelection.Mouse));
-            menu.AddItem(new GUIContent("Select all drag events"), false, () => SelectAllTypes(true, EventTypeSelection.Drag));
-            menu.AddItem(new GUIContent("Select all keyboard events"), false, () => SelectAllTypes(true, EventTypeSelection.Keyboard));
-            menu.AddItem(new GUIContent("Select all command events"), false, () => SelectAllTypes(true, EventTypeSelection.Command));
+            menu.AddItem("Select all", false, () => SelectAllTypes(true));
+            menu.AddItem("Select all mouse events (basic)", false, () => SelectAllTypes(true, EventTypeSelection.Mouse));
+            menu.AddItem("Select all drag events", false, () => SelectAllTypes(true, EventTypeSelection.Drag));
+            menu.AddItem("Select all keyboard events", false, () => SelectAllTypes(true, EventTypeSelection.Keyboard));
+            menu.AddItem("Select all command events", false, () => SelectAllTypes(true, EventTypeSelection.Command));
             menu.AddSeparator(String.Empty);
-            menu.AddItem(new GUIContent("Unselect all"), false, () => SelectAllTypes(false));
+            menu.AddItem("Unselect all", false, () => SelectAllTypes(false));
             menu.AddSeparator(String.Empty);
             foreach (var item in m_Choices)
             {
-                menu.AddItem(new GUIContent(item.s), m_State[item.v], () => ChangeValueFromMenu(item));
+                menu.AddItem(item.s, m_State[item.v], () => ChangeValueFromMenu(item));
             }
         }
 

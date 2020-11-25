@@ -179,7 +179,7 @@ namespace UnityEditor
             LightmapFullHDR,
             GUITextureClipVertically,
         }
-        internal static extern Material CreatePreviewMaterial(PreviewType type);
+        internal static extern Material GetPreviewMaterial(PreviewType type);
     }
 
     [NativeHeader("Editor/Src/InspectorExpandedState.h"),

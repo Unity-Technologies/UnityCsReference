@@ -25,7 +25,8 @@ namespace UnityEditorInternal.Profiling
 
         const string k_IconName = "Profiler.Memory";
         const int k_DefaultOrderIndex = 3;
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("Memory");
+        static readonly string k_UnLocalizedName = "Memory";
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
 
         static readonly float[] k_SplitterMinSizes = new[] { 450f, 50f };
         static readonly string[] k_DefaultMemoryAreaCounterNames =
@@ -61,7 +62,7 @@ namespace UnityEditorInternal.Profiling
         MemoryTreeListClickable m_MemoryListView;
         bool m_GatherObjectReferences = true;
 
-        public MemoryProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName) {}
+        public MemoryProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName) {}
 
         protected override int defaultOrderIndex => k_DefaultOrderIndex;
         protected override string legacyPreferenceKey => "ProfilerChartMemory";

@@ -588,7 +588,7 @@ namespace UnityEditor
             var staticRect = GUILayoutUtility.GetRect(Styles.staticContent, EditorStyles.toggle, GUILayout.ExpandWidth(false));
 
             staticRect.height = Math.Max(EditorGUIUtility.singleLineHeight, staticRect.height);
-            staticRect.width += 2; //offset for the bold text when displaying prefab instances.
+            staticRect.width += 3; //offset for the bold text when displaying prefab instances.
             EditorGUI.BeginProperty(staticRect, GUIContent.none, m_StaticEditorFlags);
             EditorGUI.BeginChangeCheck();
             var toggleRect = staticRect;

@@ -18,7 +18,8 @@ namespace UnityEditorInternal.Profiling
 
         const string k_IconName = "Profiler.VirtualTexturing";
         const int k_DefaultOrderIndex = 13;
-        static readonly string k_Name = "Virtual Texturing";
+        static readonly string k_UnLocalizedName = "Virtual Texturing";
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
         static readonly string k_VTCountersCategoryName = ProfilerCategory.VirtualTexturing.Name;
 
         static readonly string[] k_VirtualTexturingCounterNames =
@@ -30,7 +31,7 @@ namespace UnityEditorInternal.Profiling
             "Missing Disk Data"
         };
 
-        public VirtualTexturingProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName, Chart.ChartType.Line) {}
+        public VirtualTexturingProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName, Chart.ChartType.Line) {}
 
         protected override int defaultOrderIndex => k_DefaultOrderIndex;
 

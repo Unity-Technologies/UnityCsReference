@@ -61,8 +61,14 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\Button.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\Button.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\DropdownField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\DropdownField.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\Foldout.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\Foldout.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\GenericDropdownMenu.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\GenericDropdownMenu.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\HelpBox.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\HelpBox.cs</Link>
@@ -141,6 +147,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Cursor.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Cursor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\DefaultEventSystem.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\DefaultEventSystem.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Delegates\TextDelegates.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Delegates\TextDelegates.cs</Link>
@@ -327,6 +336,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\InteractionEnums.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\InteractionEnums.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\KeyboardNavigationManipulator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\KeyboardNavigationManipulator.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ManipulatorActivationFilter.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\ManipulatorActivationFilter.cs</Link>
@@ -906,6 +918,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Animation\Managed\Animator.deprecated.cs">
       <Link>Modules\Animation\Managed\Animator.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\Managed\DiscreteEvaluationAttribute.cs">
+      <Link>Modules\Animation\Managed\DiscreteEvaluationAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Animation\Managed\IAnimationClipSource.cs">
       <Link>Modules\Animation\Managed\IAnimationClipSource.cs</Link>
@@ -2637,6 +2652,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\CustomYieldInstruction.cs">
       <Link>Runtime\Export\Scripting\CustomYieldInstruction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\EnumDataUtility.cs">
+      <Link>Runtime\Export\Scripting\EnumDataUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\EnumInfo.cs">
       <Link>Runtime\Export\Scripting\EnumInfo.cs</Link>

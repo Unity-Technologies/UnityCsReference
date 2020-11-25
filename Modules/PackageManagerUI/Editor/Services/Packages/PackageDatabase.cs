@@ -10,13 +10,19 @@ using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.PackageManager.UI
 {
-    [Serializable]
-    internal class PackageDatabase : ISerializationCallbackReceiver
+    internal static class PackageDatabase
     {
         // This instance reference is kept for compatibility reasons, as it is internal visible to the Upm Develop package
         // To be addressed further in https://jira.unity3d.com/browse/PAX-1317
-        internal static PackageDatabase instance => ServicesContainer.instance.Resolve<PackageDatabase>();
+        internal static Internal.PackageDatabase instance => Internal.ServicesContainer.instance.Resolve<Internal.PackageDatabase>();
+    }
+}
 
+namespace UnityEditor.PackageManager.UI.Internal
+{
+    [Serializable]
+    internal class PackageDatabase : ISerializationCallbackReceiver
+    {
         public virtual event Action<IPackage, IPackageVersion> onInstallSuccess = delegate {};
         public virtual event Action<IPackage> onUninstallSuccess = delegate {};
         public virtual event Action<IPackage> onPackageProgressUpdate = delegate {};

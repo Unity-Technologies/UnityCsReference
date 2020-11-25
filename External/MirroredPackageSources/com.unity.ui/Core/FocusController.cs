@@ -316,8 +316,6 @@ namespace UnityEngine.UIElements
         {
             if (m_LastFocusedElement != null && !(m_LastFocusedElement is IMGUIContainer))
                 m_LastFocusedElement.Focus();
-
-            m_LastFocusedElement = null;
         }
 
         internal void BlurLastFocusedElement()

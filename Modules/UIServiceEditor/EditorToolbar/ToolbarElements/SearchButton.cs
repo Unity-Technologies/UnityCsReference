@@ -6,7 +6,6 @@ using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.Toolbars;
 using UnityEngine;
-using System;
 
 namespace UnityEditor.Search
 {
@@ -17,9 +16,7 @@ namespace UnityEditor.Search
 
         public SearchButton()
         {
-            tooltip = GetTooltipText();
             clicked += () => CommandService.Execute(k_CommandName);
-            style.display = CommandService.Exists(k_CommandName) ? DisplayStyle.Flex : DisplayStyle.None;
 
             var icon = new VisualElement();
             icon.style.backgroundImage = new StyleBackground(EditorGUIUtility.FindTexture("Search Icon"));
@@ -32,7 +29,7 @@ namespace UnityEditor.Search
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
-            ShortcutManagement.ShortcutManager.instance.shortcutBindingChanged += UpdateTooltip;
+            EditorApplication.delayCall += DelayInitialization;
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -40,9 +37,21 @@ namespace UnityEditor.Search
             ShortcutManagement.ShortcutManager.instance.shortcutBindingChanged -= UpdateTooltip;
         }
 
-        private void UpdateTooltip(ShortcutManagement.ShortcutBindingChangedEventArgs obj)
+        private void DelayInitialization()
+        {
+            UpdateTooltip();
+            style.display = CommandService.Exists(k_CommandName) ? DisplayStyle.Flex : DisplayStyle.None;
+            ShortcutManagement.ShortcutManager.instance.shortcutBindingChanged += UpdateTooltip;
+        }
+
+        private void UpdateTooltip()
         {
             tooltip = GetTooltipText();
+        }
+
+        private void UpdateTooltip(ShortcutManagement.ShortcutBindingChangedEventArgs obj)
+        {
+            UpdateTooltip();
         }
 
         private string GetTooltipText()

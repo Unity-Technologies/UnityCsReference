@@ -71,7 +71,9 @@ namespace UnityEditor
             {
                 var handler = ScriptAttributeUtility.GetHandler(property);
                 var hasPropertyDrawer = handler.propertyDrawer != null;
-                height += handler.GetHeight(property, null, hasPropertyDrawer) + EditorGUI.kControlVerticalSpacing;
+                var propertyHeight = handler.GetHeight(property, null, hasPropertyDrawer);
+                if (propertyHeight > 0)
+                    height += propertyHeight + EditorGUI.kControlVerticalSpacing;
                 childrenAreExpanded = !hasPropertyDrawer && property.isExpanded && EditorGUI.HasVisibleChildFields(property);
             }
 
@@ -116,7 +118,8 @@ namespace UnityEditor
                             childrenAreExpanded &= handler.OnGUI(contentRect, property, null, false, visibleRect);
                     }
 
-                    contentRect.y += contentRect.height + EditorGUI.kControlVerticalSpacing;
+                    if (contentRect.height > 0)
+                        contentRect.y += contentRect.height + EditorGUI.kControlVerticalSpacing;
                 }
             }
 

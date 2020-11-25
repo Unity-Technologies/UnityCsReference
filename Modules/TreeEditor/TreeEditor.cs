@@ -324,6 +324,42 @@ namespace TreeEditor
             Undo.RegisterCreatedObjectUndo(prefabInstance, "Create Tree");
         }
 
+        public static void ResetTree(Tree tree)
+        {
+            TreeData data = GetTreeData(tree);
+            data.DeleteAll();
+
+            Material materialSolidAsset = new Material(TreeEditorHelper.DefaultOptimizedBarkShader);
+            materialSolidAsset.name = "Optimized Bark Material";
+            materialSolidAsset.hideFlags = HideFlags.NotEditable | HideFlags.HideInInspector;
+
+            Material materialCutoutAsset = new Material(TreeEditorHelper.DefaultOptimizedLeafShader);
+            materialCutoutAsset.name = "Optimized Leaf Material";
+            materialCutoutAsset.hideFlags = HideFlags.NotEditable | HideFlags.HideInInspector;
+
+            data.Initialize();
+            data.optimizedSolidMaterial.CopyPropertiesFromMaterial(materialSolidAsset);
+            data.optimizedCutoutMaterial.CopyPropertiesFromMaterial(materialCutoutAsset);
+            data.mesh.Clear();
+
+            DestroyImmediate(materialSolidAsset);
+            DestroyImmediate(materialCutoutAsset);
+
+            UpdateMesh(tree, false);
+
+            s_SelectedGroup = data.root;
+            s_SelectedNode = null;
+            s_SelectedPoint = -1;
+
+            Renderer treeRenderer = tree.GetComponent<Renderer>();
+            var hidden = !(s_SelectedGroup is TreeGroupRoot);
+            EditorUtility.SetSelectedRenderState(
+                treeRenderer,
+                hidden
+                ? EditorSelectedRenderState.Hidden
+                : EditorSelectedRenderState.Wireframe | EditorSelectedRenderState.Highlight);
+        }
+
         static TreeData GetTreeData(Tree tree)
         {
             if (tree == null)
@@ -1995,7 +2031,6 @@ namespace TreeEditor
             group.aoDensity = GUISlider(PropertyType.Normal, aoDensityString, group.aoDensity, 0.0f, 1.0f, false);
             GUI.enabled = true;
             EndSettingsSection();
-
 
             //
             // Material props

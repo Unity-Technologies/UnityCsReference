@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 
@@ -24,7 +23,7 @@ namespace UnityEditor.Search.Providers
 
         private static string[] shortcutIds;
         private static QueryEngine<MenuData> queryEngine = null;
-        private static readonly List<MenuData> menus = new List<MenuData>();
+        private static List<MenuData> menus;
 
         [SearchItemProvider]
         internal static SearchProvider CreateProvider()
@@ -33,19 +32,11 @@ namespace UnityEditor.Search.Providers
             List<string> shortcuts = new List<string>();
             GetMenuInfo(itemNames, shortcuts);
 
-            for (int i = 0; i < itemNames.Count; ++i)
-            {
-                var menuItem = itemNames[i];
-                menus.Add(new MenuData()
-                {
-                    path = menuItem,
-                    words = SplitMenuPath(menuItem).Concat(new string[] { menuItem }).Select(w => w.ToLowerInvariant()).ToArray()
-                });
-            }
+            System.Threading.Tasks.Task.Run(() => BuildMenus(itemNames));
 
             queryEngine = new QueryEngine<MenuData>();
             queryEngine.AddFilter("id", m => m.path);
-            queryEngine.SetSearchDataCallback(m => m.words, s => s.ToLowerInvariant(), StringComparison.Ordinal);
+            queryEngine.SetSearchDataCallback(m => m.words, s => Utils.FastToLower(s), StringComparison.Ordinal);
 
             queryEngine.SetNestedQueryHandler((q, f) => q.Split(',').Select(w => w.Trim()));
             queryEngine.SetFilterNestedQueryTransformer<string, string>("id", s => s);
@@ -56,34 +47,16 @@ namespace UnityEditor.Search.Providers
                 filterId = "m:",
                 showDetailsOptions = ShowDetailsOptions.ListView | ShowDetailsOptions.Actions,
 
-                onEnable = () =>
-                {
-                    shortcutIds = ShortcutManager.instance.GetAvailableShortcutIds().ToArray();
-                },
+                onEnable = () => shortcutIds = ShortcutManager.instance.GetAvailableShortcutIds().ToArray(),
+                onDisable = () => shortcutIds = new string[0],
 
-                onDisable = () =>
-                {
-                    shortcutIds = new string[0];
-                },
+                fetchItems = FetchItems,
 
-                fetchItems = (context, items, provider) =>
-                {
-                    if (string.IsNullOrEmpty(context.searchQuery))
-                        return null;
-                    var query = queryEngine.Parse(context.searchQuery);
-                    if (!query.valid)
-                        return null;
-                    return query.Apply(menus).Select(m => provider.CreateItem(context, m.path));
-                },
-
-                fetchLabel = (item, context) =>
-                {
-                    return item.label ?? (item.label = Utils.GetNameFromPath(item.id));
-                },
+                fetchLabel = (item, context) => item.label ?? (item.label = Utils.GetNameFromPath(item.id)),
 
                 fetchDescription = (item, context) =>
                 {
-                    if (String.IsNullOrEmpty(item.description))
+                    if (string.IsNullOrEmpty(item.description))
                         item.description = GetMenuDescription(item.id);
                     return item.description;
                 },
@@ -92,9 +65,45 @@ namespace UnityEditor.Search.Providers
             };
         }
 
+        private static void BuildMenus(List<string> itemNames)
+        {
+            var localMenus = new List<MenuData>();
+            for (int i = 0; i < itemNames.Count; ++i)
+            {
+                var menuItem = itemNames[i];
+                localMenus.Add(new MenuData()
+                {
+                    path = menuItem,
+                    words = SplitMenuPath(menuItem).Select(w => Utils.FastToLower(w)).ToArray()
+                });
+            }
+
+            menus = localMenus;
+        }
+
+        private static IEnumerable<SearchItem> FetchItems(SearchContext context, List<SearchItem> items, SearchProvider provider)
+        {
+            if (string.IsNullOrEmpty(context.searchQuery))
+                yield break;
+            var query = queryEngine.Parse(context.searchQuery);
+            if (!query.valid)
+            {
+                context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e.index, e.length, e.reason, context, provider)));
+                yield break;
+            }
+
+            while (menus == null)
+                yield return null;
+
+            foreach (var m in query.Apply(menus))
+                yield return provider.CreateItem(context, m.path);
+        }
+
         private static IEnumerable<string> SplitMenuPath(string menuPath)
         {
-            return menuPath.Split(new char[] { '/', ' ' }, StringSplitOptions.RemoveEmptyEntries).Reverse();
+            yield return menuPath;
+            foreach (var m in menuPath.Split(new char[] { '/', ' ' }, StringSplitOptions.RemoveEmptyEntries).Reverse())
+                yield return m;
         }
 
         private static string GetMenuDescription(string menuName)
@@ -142,7 +151,7 @@ namespace UnityEditor.Search.Providers
 
         private static void GetMenuInfo(List<string> outItemNames, List<string> outItemDefaultShortcuts)
         {
-            Menu.GetMenuItemDefaultShortcuts(outItemNames, outItemDefaultShortcuts);
+            Utils.GetMenuItemDefaultShortcuts(outItemNames, outItemDefaultShortcuts);
         }
     }
 }

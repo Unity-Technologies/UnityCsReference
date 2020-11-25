@@ -34,6 +34,7 @@ namespace UnityEditor
         public SerializedProperty m_RandomizeRotationDirection;
         public SerializedMinMaxCurve m_GravityModifier;
         public SerializedProperty m_EmitterVelocity;
+        public SerializedProperty m_EmitterVelocityMode;
         public SerializedProperty m_MaxNumParticles;
         public SerializedProperty m_AutoRandomSeed;
         public SerializedProperty m_RandomSeed;
@@ -67,7 +68,8 @@ namespace UnityEditor
             public GUIContent deltaTime = EditorGUIUtility.TrTextContent("Delta Time", "Use either the Delta Time or the Unscaled Delta Time. Useful for playing effects whilst paused.");
             public GUIContent autoRandomSeed = EditorGUIUtility.TrTextContent("Auto Random Seed", "Simulate differently each time the effect is played.");
             public GUIContent randomSeed = EditorGUIUtility.TrTextContent("Random Seed", "Randomize the look of the Particle System. Using the same seed will make the Particle System play identically each time. After changing this value, restart the Particle System to see the changes, or check the Resimulate box.");
-            public GUIContent emitterVelocity = EditorGUIUtility.TrTextContent("Emitter Velocity", "When the Particle System is moving, should we use its Transform, or Rigidbody Component, to calculate its velocity?");
+            public GUIContent emitterVelocity = EditorGUIUtility.TrTextContent("Custom Velocity", "An extra velocity value added to emitted particles when the Emitter Velocity Mode is Custom.");
+            public GUIContent emitterVelocityMode = EditorGUIUtility.TrTextContent("Emitter Velocity Mode", "How to determine the extra velocity imparted to particles by the Particle System. Use the Transform option to add the velocity calculated from the system's Transform. Use Rigidbody to add the velocity of the system's Rigidbody. Use Custom to add the velocity specified in the Custom Velocity property.");
             public GUIContent stopAction = EditorGUIUtility.TrTextContent("Stop Action", "When the Particle System is stopped and all particles have died, should the GameObject automatically disable/destroy itself?");
             public GUIContent cullingMode = EditorGUIUtility.TrTextContent("Culling Mode", "Choose whether to continue simulating the Particle System when offscreen. Catch-up mode pauses offscreen simulations but performs a large simulation step when they become visible, giving the appearance that they were never paused. Automatic uses Pause mode for looping systems, and AlwaysSimulate if not looping.");
             public GUIContent ringBufferMode = EditorGUIUtility.TrTextContent("Ring Buffer Mode", "Rather than dying when their lifetime has elapsed, particles will remain alive until the Max Particles buffer is full, at which point new particles will replace the oldest.");
@@ -111,6 +113,13 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Disabled"),
                 EditorGUIUtility.TrTextContent("Pause Until Replaced"),
                 EditorGUIUtility.TrTextContent("Loop Until Replaced")
+            };
+
+            public GUIContent[] emitterVelocityModes = new GUIContent[]
+            {
+                EditorGUIUtility.TrTextContent("Transform"),
+                EditorGUIUtility.TrTextContent("Rigidbody"),
+                EditorGUIUtility.TrTextContent("Custom")
             };
         }
         private static Texts s_Texts;
@@ -158,7 +167,7 @@ namespace UnityEditor
             m_SimulationSpeed = GetProperty0("simulationSpeed");
             m_UseUnscaledTime = GetProperty0("useUnscaledTime");
             m_ScalingMode = GetProperty0("scalingMode");
-            m_EmitterVelocity = GetProperty0("useRigidbodyForVelocity");
+            m_EmitterVelocityMode = GetProperty0("emitterVelocityMode");
             m_AutoRandomSeed = GetProperty0("autoRandomSeed");
             m_RandomSeed = GetProperty0("randomSeed");
             m_StopAction = GetProperty0("stopAction");
@@ -167,6 +176,7 @@ namespace UnityEditor
             m_RingBufferLoopRange = GetProperty0("ringBufferLoopRange");
 
             // module properties
+            m_EmitterVelocity = GetProperty("customEmitterVelocity");
             m_LifeTime = new SerializedMinMaxCurve(this, s_Texts.lifetime, "startLifetime");
             m_Speed = new SerializedMinMaxCurve(this, s_Texts.speed, "startSpeed", kUseSignedRange);
             m_Color = new SerializedMinMaxGradient(this, "startColor");
@@ -291,12 +301,19 @@ namespace UnityEditor
             GUIBoolAsPopup(s_Texts.deltaTime, m_UseUnscaledTime, new string[] { "Scaled", "Unscaled" });
             GUIPopup(s_Texts.scalingMode, m_ScalingMode, s_Texts.scalingModes);
 
-            bool oldPlayOnAwake = m_PlayOnAwake.boolValue;
+            EditorGUI.BeginChangeCheck();
             bool newPlayOnAwake = GUIToggle(s_Texts.autoplay, m_PlayOnAwake);
-            if (oldPlayOnAwake != newPlayOnAwake)
+            if (EditorGUI.EndChangeCheck())
+            {
                 m_ParticleSystemUI.m_ParticleEffectUI.PlayOnAwakeChanged(newPlayOnAwake);
+            }
 
-            GUIBoolAsPopup(s_Texts.emitterVelocity, m_EmitterVelocity, new string[] { "Transform", "Rigidbody" });
+            GUIPopup(s_Texts.emitterVelocityMode, m_EmitterVelocityMode, s_Texts.emitterVelocityModes);
+
+            if (!m_EmitterVelocityMode.hasMultipleDifferentValues && m_EmitterVelocityMode.intValue == (int)ParticleSystemEmitterVelocityMode.Custom)
+            {
+                GUIVector3Field(s_Texts.emitterVelocity, m_EmitterVelocity);
+            }
 
             GUIInt(s_Texts.maxParticles, m_MaxNumParticles);
 

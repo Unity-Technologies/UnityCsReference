@@ -29,6 +29,7 @@ namespace UnityEngine
     [RequireComponent(typeof(RectTransform)),
      NativeClass("UI::Canvas"),
      NativeHeader("Modules/UI/Canvas.h"),
+     NativeHeader("Modules/UI/CanvasManager.h"),
      NativeHeader("Modules/UI/UIStructs.h")]
     public sealed class Canvas : Behaviour
     {
@@ -52,6 +53,13 @@ namespace UnityEngine
         public extern AdditionalCanvasShaderChannels additionalShaderChannels { get; set; }
         public extern string sortingLayerName { get; set; }
         public extern Canvas rootCanvas { get; }
+
+
+        internal static Action<int> externBeginRenderOverlays { get; set; }
+        internal static Action<int, int> externRenderOverlaysBefore { get; set; }
+        internal static Action<int> externEndRenderOverlays { get; set; }
+
+        [FreeFunction("UI::CanvasManager::SetExternalCanvasEnabled")] internal static extern void SetExternalCanvasEnabled(bool enabled);
 
         [NativeProperty("Camera", false, TargetType.Function)] public extern Camera worldCamera { get; set; }
         [NativeProperty("SortingBucketNormalizedSize", false, TargetType.Function)] public extern float normalizedSortingGridSize { get; set; }
@@ -78,6 +86,24 @@ namespace UnityEngine
         private static void SendWillRenderCanvases()
         {
             willRenderCanvases?.Invoke();
+        }
+
+        [RequiredByNativeCode]
+        private static void BeginRenderExtraOverlays(int displayIndex)
+        {
+            externBeginRenderOverlays?.Invoke(displayIndex);
+        }
+
+        [RequiredByNativeCode]
+        private static void RenderExtraOverlaysBefore(int displayIndex, int sortingOrder)
+        {
+            externRenderOverlaysBefore?.Invoke(displayIndex, sortingOrder);
+        }
+
+        [RequiredByNativeCode]
+        private static void EndRenderExtraOverlays(int displayIndex)
+        {
+            externEndRenderOverlays?.Invoke(displayIndex);
         }
     }
 

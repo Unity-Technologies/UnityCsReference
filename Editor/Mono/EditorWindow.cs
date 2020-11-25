@@ -1217,7 +1217,7 @@ namespace UnityEditor
 
         private static VisualElement CreateRoot()
         {
-            var name = "rootVisualContainer";
+            var name = VisualElement.k_RootVisualContainerName;
             var root = new VisualElement()
             {
                 name = VisualElementUtils.GetUniqueName(name),

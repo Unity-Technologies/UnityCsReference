@@ -18,9 +18,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 ? new[] {new UnityScriptUpdater(editorCompilation.projectDirectory)}
             : Array.Empty<SourceFileUpdaterBase>();
 
-            var processSourceFileUpdatersResult = new UnitySourceFileUpdatersResultHandler(editorCompilation.projectDirectory);
+            var processSourceFileUpdatersResult = new UnitySourceFileUpdatersResultHandler();
 
-            var result = new BeeDriver(buildProgram, editorCompilation.projectDirectory, dagName, dagDirectory, sourceFileUpdaters, processSourceFileUpdatersResult, new UnityProgressAPI(), UnityBeeBackendProgram());
+            var result = new BeeDriver(buildProgram, editorCompilation.projectDirectory, dagName, dagDirectory ?? "Library/Bee", sourceFileUpdaters, processSourceFileUpdatersResult, new UnityProgressAPI("ScriptCompilation"), UnityBeeBackendProgram());
             result.DataForBuildProgram.Add(new ConfigurationData
             {
                 editorContentsPath = EditorApplication.applicationContentsPath,

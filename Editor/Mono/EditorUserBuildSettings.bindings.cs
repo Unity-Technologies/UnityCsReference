@@ -96,6 +96,13 @@ namespace UnityEditor
         ASTC = -1,
     }
 
+    public enum AndroidCreateSymbols
+    {
+        Disabled,
+        Public,
+        Debugging
+    }
+
     // Target texture build platform.
     [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
     public enum MobileTextureSubtarget
@@ -407,7 +414,14 @@ namespace UnityEditor
         [Obsolete("androidUseLegacySdkTools has been deprecated. It does not have any effect.")]
         public static extern bool androidUseLegacySdkTools { get; set; }
 
-        public static extern bool androidCreateSymbolsZip { get; set; }
+        [Obsolete("androidCreateSymbolsZip has been deprecated. Use androidCreateSymbols property")]
+        public static bool androidCreateSymbolsZip
+        {
+            get => androidCreateSymbols != AndroidCreateSymbols.Disabled;
+            set => androidCreateSymbols = value ? AndroidCreateSymbols.Public : AndroidCreateSymbols.Disabled;
+        }
+
+        public static extern AndroidCreateSymbols androidCreateSymbols { get; set; }
 
         // *undocumented*
         // NOTE: This setting should probably not be a part of the public API as is. Atm it is used by playmode tests

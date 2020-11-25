@@ -14,14 +14,15 @@ namespace UnityEditorInternal.Profiling
     {
         const string k_IconName = "Profiler.UI";
         const int k_DefaultOrderIndex = 10;
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString("UI");
+        static readonly string k_UnLocalizedName = "UI";
+        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
 
         protected static WeakReference instance;
         [SerializeField]
         UISystemProfiler m_UISystemProfiler;
 
-        public UIProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_Name, k_IconName, Chart.ChartType.StackedFill) {}
-        protected UIProfilerModule(IProfilerWindowController profilerWindow, string name, string iconName, Chart.ChartType chartType) : base(profilerWindow, name, iconName, chartType) {}  // Used by UIDetailsProfilerModule
+        public UIProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName, Chart.ChartType.StackedFill) {}
+        protected UIProfilerModule(IProfilerWindowController profilerWindow, string name, string localizedName, string iconName, Chart.ChartType chartType) : base(profilerWindow, name, localizedName, iconName, chartType) {}  // Used by UIDetailsProfilerModule
 
         static UISystemProfiler sharedUISystemProfiler
         {

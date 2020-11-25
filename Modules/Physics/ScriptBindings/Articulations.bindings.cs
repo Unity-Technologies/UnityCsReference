@@ -169,6 +169,7 @@ namespace UnityEngine
         extern public Quaternion anchorRotation { get; set; }
         extern public Quaternion parentAnchorRotation { get; set; }
         extern public bool isRoot { get; }
+        extern public bool computeParentAnchor { get; set; }
 
         extern public ArticulationDofLock linearLockX { get; set; }
         extern public ArticulationDofLock linearLockY { get; set; }
@@ -248,6 +249,23 @@ namespace UnityEngine
         extern public int GetDriveTargetVelocities(List<float> targetVelocities);
         extern public void SetDriveTargetVelocities(List<float> targetVelocities);
         extern public int GetDofStartIndices(List<int> dofStartIndices);
+
+        public void SnapAnchorToClosestContact()
+        {
+            if (!transform.parent)
+                return;
+
+            ArticulationBody parentBody = transform.parent.GetComponentInParent<ArticulationBody>();
+
+            if (!parentBody)
+                return;
+
+            Vector3 com = parentBody.worldCenterOfMass;
+            Vector3 closestOnSurface = GetClosestPoint(com);
+
+            anchorPosition = transform.InverseTransformPoint(closestOnSurface);
+            anchorRotation = Quaternion.FromToRotation(Vector3.right, transform.InverseTransformDirection(com - closestOnSurface).normalized);
+        }
     }
 }
 

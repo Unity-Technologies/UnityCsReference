@@ -12,7 +12,13 @@ namespace UnityEditor.PackageManager.UI
         string uniqueId { get; }
 
         string name { get; }
+    }
+}
 
+namespace UnityEditor.PackageManager.UI.Internal
+{
+    internal interface IPackage : UI.IPackage
+    {
         string displayName { get; }
 
         DateTime? purchasedTime { get; }

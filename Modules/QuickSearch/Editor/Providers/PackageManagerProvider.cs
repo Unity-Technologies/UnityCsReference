@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using UnityEditor;
 using UnityEngine;
 
 namespace UnityEditor.Search.Providers
@@ -16,8 +15,8 @@ namespace UnityEditor.Search.Providers
         internal static string type = "packages";
         internal static string displayName = "Packages";
 
-        private static UnityEditor.PackageManager.Requests.ListRequest s_ListRequest = null;
-        private static UnityEditor.PackageManager.Requests.SearchRequest s_SearchRequest = null;
+        private static PackageManager.Requests.ListRequest s_ListRequest = null;
+        private static PackageManager.Requests.SearchRequest s_SearchRequest = null;
 
         [SearchItemProvider]
         internal static SearchProvider CreateProvider()
@@ -30,8 +29,6 @@ namespace UnityEditor.Search.Providers
 
                 onEnable = () =>
                 {
-                    s_ListRequest = UnityEditor.PackageManager.Client.List(true);
-                    s_SearchRequest = UnityEditor.PackageManager.Client.SearchAll();
                 },
 
                 onDisable = () =>
@@ -50,6 +47,9 @@ namespace UnityEditor.Search.Providers
         {
             if (string.IsNullOrEmpty(context.searchQuery))
                 yield break;
+
+            s_ListRequest = s_ListRequest ?? PackageManager.Client.List(true);
+            s_SearchRequest = s_SearchRequest ?? PackageManager.Client.SearchAll();
 
             if (s_SearchRequest == null || s_ListRequest == null)
                 yield break;

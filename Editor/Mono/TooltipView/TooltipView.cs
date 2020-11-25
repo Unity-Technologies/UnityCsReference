@@ -23,6 +23,10 @@ namespace UnityEditor
 
         protected override void OnEnable()
         {
+            wantsMouseMove = false;
+            wantsMouseEnterLeaveWindow = true;
+            m_EventInterests.wantsLessLayoutEvents = true;
+
             base.OnEnable();
             s_guiView = this;
         }
@@ -41,6 +45,10 @@ namespace UnityEditor
                 GUI.color = Color.white;
                 GUI.Box(new Rect(0, 0, m_optimalSize.x, m_optimalSize.y) , m_tooltip, m_Style);
                 GUI.color = prevColor;
+
+                // Check some events that should disposed of the tooltip window
+                if (Event.current.type == EventType.MouseEnterWindow)
+                    Close();
             }
         }
 

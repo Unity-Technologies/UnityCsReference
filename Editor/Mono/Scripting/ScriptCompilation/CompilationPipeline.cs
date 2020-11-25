@@ -327,12 +327,18 @@ namespace UnityEditor.Compilation
                     throw new ArgumentOutOfRangeException(nameof(assembliesType));
             }
 
+            return GetScriptAssemblies(editorCompilation, options);
+        }
+
+        //Danger danger: this method is used by BurstAotCompiler.cs
+        internal static ScriptAssembly[] GetScriptAssemblies(EditorCompilation editorCompilation, EditorScriptCompilationOptions options)
+        {
             var group = EditorUserBuildSettings.activeBuildTargetGroup;
             var target = EditorUserBuildSettings.activeBuildTarget;
             var buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) != 0;
 
-            var unityAssemblies = InternalEditorUtility.GetUnityAssemblies(buildingForEditor, group, target);
-            var precompiledAssemblies = editorCompilation.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(buildingForEditor, group, target);
+            var unityAssemblies = InternalEditorUtility.GetUnityAssemblies(buildingForEditor, @group, target);
+            var precompiledAssemblies = editorCompilation.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(buildingForEditor, @group, target);
             return editorCompilation.GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies, null);
         }
 
@@ -409,7 +415,7 @@ namespace UnityEditor.Compilation
                     CompilationOptions = EditorScriptCompilationOptions.BuildingForEditor
                 };
 
-                return EditorCompilation.GetTargetAssemblyDefines(assembly, scriptAssemblySettings);
+                return editorCompilation.GetTargetAssemblyDefines(assembly, scriptAssemblySettings);
             }
             catch (ArgumentException)
             {

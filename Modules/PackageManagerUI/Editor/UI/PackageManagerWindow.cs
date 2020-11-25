@@ -7,6 +7,8 @@ using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEditor.UIElements;
 
+using UnityEditor.PackageManager.UI.Internal;
+
 namespace UnityEditor.PackageManager.UI
 {
     /// <summary>
@@ -59,7 +61,7 @@ namespace UnityEditor.PackageManager.UI
             var selection = container.Resolve<SelectionProxy>();
             var packageFiltering = container.Resolve<PackageFiltering>();
             var packageManagerPrefs = container.Resolve<PackageManagerPrefs>();
-            var packageDatabase = container.Resolve<PackageDatabase>();
+            var packageDatabase = container.Resolve<Internal.PackageDatabase>();
             var pageManager = container.Resolve<PageManager>();
             var settingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             var unityConnectProxy = container.Resolve<UnityConnectProxy>();
@@ -126,9 +128,9 @@ namespace UnityEditor.PackageManager.UI
                 string packageId = null;
                 if (!string.IsNullOrEmpty(packageToSelect))
                 {
-                    var packageDatabase = ServicesContainer.instance.Resolve<PackageDatabase>();
-                    IPackageVersion version;
-                    IPackage package;
+                    var packageDatabase = ServicesContainer.instance.Resolve<Internal.PackageDatabase>();
+                    Internal.IPackageVersion version;
+                    Internal.IPackage package;
                     packageDatabase.GetPackageAndVersionByIdOrName(packageToSelect, out package, out version);
 
                     packageId = version?.uniqueId ?? package?.versions.primary.uniqueId ?? string.Format("{0}@primary", packageToSelect);
@@ -140,7 +142,7 @@ namespace UnityEditor.PackageManager.UI
         [UsedByNativeCode]
         internal static void OnPackageManagerResolve()
         {
-            var packageDatabase = ServicesContainer.instance.Resolve<PackageDatabase>();
+            var packageDatabase = ServicesContainer.instance.Resolve<Internal.PackageDatabase>();
             packageDatabase?.ClearSamplesCache();
 
             var applicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();

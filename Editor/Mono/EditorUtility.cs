@@ -706,5 +706,10 @@ namespace UnityEditor
             if (forceEnableCustomTool)
                 PreferencesProvider.ForceEnableCustomTool();
         }
+
+        public static void OpenPropertyEditor(Object obj)
+        {
+            PropertyEditor.OpenPropertyEditor(obj);
+        }
     }
 }

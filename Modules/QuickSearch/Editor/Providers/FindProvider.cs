@@ -33,56 +33,14 @@ namespace UnityEditor.Search.Providers
         AllFiles = 1 << 31
     }
 
-    readonly struct FindResult : IEquatable<FindResult>, IComparable<FindResult>
+    class FindFilesQueryFactory : SearchQueryEvaluatorFactory<SearchDocument>
     {
-        public FindResult(string path, int score)
-        {
-            this.path = path;
-            this.score = score;
-        }
-
-        public readonly string path;
-        public readonly int score;
-
-        public bool valid => path != null && score != int.MaxValue;
-
-        public static FindResult none = new FindResult(null, int.MaxValue);
-
-        public bool Equals(FindResult other)
-        {
-            return string.Equals(path, other.path, StringComparison.Ordinal);
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                return path.GetHashCode();
-            }
-        }
-
-        public override bool Equals(object other)
-        {
-            return other is FindResult l && Equals(l);
-        }
-
-        public int CompareTo(FindResult other)
-        {
-            var c = other.score.CompareTo(other.score);
-            if (c == 0)
-                return string.CompareOrdinal(path, other.path);
-            return c;
-        }
-    }
-
-    class FindFilesQueryFactory : SearchQueryEvaluatorFactory<FindResult>
-    {
-        public FindFilesQueryFactory(SearchQueryEvaluator<FindResult>.EvalHandler handler)
+        public FindFilesQueryFactory(SearchQueryEvaluator<SearchDocument>.EvalHandler handler)
             : base(handler)
         {}
     }
 
-    class FindFilesQuery : SearchQueryEvaluator<FindResult>
+    class FindFilesQuery : SearchQueryEvaluator<SearchDocument>
     {
         public FindFilesQuery(QueryGraph graph, EvalHandler handler)
             : base(graph, handler)
@@ -98,7 +56,7 @@ namespace UnityEditor.Search.Providers
         private static readonly ConcurrentDictionary<string, ConcurrentDictionary<string, byte>> s_RootFilePaths = new ConcurrentDictionary<string, ConcurrentDictionary<string, byte>>();
 
         private static readonly string[] s_SubsetRoots = new string[] { "<subset>" };
-        private static readonly QueryEngine<FindResult> s_QueryEngine = new QueryEngine<FindResult>(validateFilters: false);
+        private static readonly QueryEngine<SearchDocument> s_QueryEngine = new QueryEngine<SearchDocument>(validateFilters: false);
 
         static IEnumerable<SearchItem> FetchItems(SearchContext context, SearchProvider provider)
         {
@@ -106,7 +64,7 @@ namespace UnityEditor.Search.Providers
             if (context.wantsMore)
                 options |= FindOptions.Packages | FindOptions.Fuzzy;
 
-            foreach (var e in Search(context, options))
+            foreach (var e in Search(context, provider, options))
             {
                 yield return provider.CreateItem(context, e.path, e.score,
                     null,
@@ -114,11 +72,11 @@ namespace UnityEditor.Search.Providers
             }
         }
 
-        public static IEnumerable<FindResult> Search(SearchContext context, FindOptions options)
+        public static IEnumerable<SearchDocument> Search(SearchContext context, SearchProvider provider, FindOptions options)
         {
             var searchQuery = context.searchQuery;
             if (string.IsNullOrEmpty(searchQuery) || searchQuery.Length < 2)
-                return Enumerable.Empty<FindResult>();
+                return Enumerable.Empty<SearchDocument>();
 
             var tokens = searchQuery.ToLowerInvariant().Split(' ').ToArray();
             var args = tokens.Where(t => t.Length > 1 && t[0] == '+').ToArray();
@@ -135,10 +93,10 @@ namespace UnityEditor.Search.Providers
                 searchQuery = searchQuery.Replace("+packages", "");
             }
 
-            return Search(searchQuery.Trim(), words, GetRoots(options), options);
+            return Search(searchQuery, words, GetRoots(options), context, provider, options);
         }
 
-        public static IEnumerable<FindResult> Search(string searchQuery, string[] words, IEnumerable<string> roots, FindOptions options)
+        public static IEnumerable<SearchDocument> Search(string searchQuery, string[] words, IEnumerable<string> roots, SearchContext context, SearchProvider provider, FindOptions options)
         {
             {
                 var query = s_QueryEngine.Parse(searchQuery, new FindFilesQueryFactory(args =>
@@ -146,20 +104,19 @@ namespace UnityEditor.Search.Providers
                     if (args.op == SearchIndexOperator.None)
                         return FindFilesQuery.EvalResult.None;
 
-                    ConcurrentDictionary<string, byte> subset = null;
-                    if (args.andSet != null)
-                        subset = new ConcurrentDictionary<string, byte>(args.andSet.Distinct().Select(e => new KeyValuePair<string, byte>(e.path, 0)));
-
+                    IEnumerable<SearchDocument> subset = args.andSet ??
+                        roots.SelectMany(root => GetRootPaths(root, options))
+                            .Select(p => new SearchDocument(-1, p.Key));
                     if (args.op == SearchIndexOperator.Equal)
                     {
                         options &= ~FindOptions.Fuzzy;
                         options |= FindOptions.Exact;
                     }
 
-                    IEnumerable<FindResult> results = new List<FindResult>();
+                    IEnumerable<SearchDocument> results = new List<SearchDocument>();
                     if (args.name == null && args.value is string word && word.Length > 0)
                     {
-                        results = SearchWord(args.exclude, word, subset != null ? s_SubsetRoots : roots, options, subset);
+                        results = SearchWord(args.exclude, word, options, subset);
                     }
 
                     if (args.orSet != null)
@@ -169,12 +126,32 @@ namespace UnityEditor.Search.Providers
                 }));
 
                 if (!query.valid)
-                    return Enumerable.Empty<FindResult>();
+                {
+                    context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e.index, e.length, e.reason, context, provider)));
+                    return Enumerable.Empty<SearchDocument>();
+                }
                 return query.Apply(null).OrderBy(e => e.score).Distinct();
             }
         }
 
-        private static void SearchWord(bool exclude, string word, IEnumerable<string> roots, FindOptions options, ConcurrentDictionary<string, byte> subset, ConcurrentBag<FindResult> results)
+        private static ConcurrentDictionary<string, byte> GetRootPaths(string root, FindOptions options)
+        {
+            var isPackage = options.HasFlag(FindOptions.Packages) && root.StartsWith("Packages/", StringComparison.Ordinal);
+            if (!options.HasFlag(FindOptions.Packages) && isPackage)
+                return new ConcurrentDictionary<string, byte>();
+
+            if (!s_RootFilePaths.TryGetValue(root, out var files))
+            {
+                files = new ConcurrentDictionary<string, byte>(Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
+                    .Where(p => !p.EndsWith(".meta", StringComparison.Ordinal))
+                    .Select(p => p.Replace("\\", "/")).ToDictionary(p => p, p => (byte)0));
+                s_RootFilePaths.TryAdd(root, files);
+            }
+
+            return files;
+        }
+
+        private static void SearchWord(bool exclude, string word, FindOptions options, IEnumerable<SearchDocument> documents, ConcurrentBag<SearchDocument> results)
         {
             Regex globRx = null, rxm = null;
             if (options.HasFlag(FindOptions.Regex) && !ParseRx(word, options.HasFlag(FindOptions.Exact), out rxm))
@@ -184,71 +161,70 @@ namespace UnityEditor.Search.Providers
             if (exclude)
                 options &= ~FindOptions.Fuzzy;
 
-            Parallel.ForEach(roots, r =>
+            Parallel.ForEach(documents, doc =>
             {
-                var isPackage = options.HasFlag(FindOptions.Packages) && r.StartsWith("Packages/", StringComparison.Ordinal);
-                if (!options.HasFlag(FindOptions.Packages) && isPackage)
-                    return;
-
-                ConcurrentDictionary<string, byte> files = subset;
-                if (files == null && !s_RootFilePaths.TryGetValue(r, out files))
+                try
                 {
-                    files = new ConcurrentDictionary<string, byte>(Directory.EnumerateFiles(r, "*", SearchOption.AllDirectories)
-                        .Where(p => !p.EndsWith(".meta", StringComparison.Ordinal))
-                        .Select(p => p.Replace("\\", "/")).ToDictionary(p => p, p => (byte)0));
-                    s_RootFilePaths.TryAdd(r, files);
+                    var match = SearchFile(doc.path, word, options, rxm, globRx, out var score);
+                    if (!exclude && match)
+                        results.Add(new SearchDocument(doc, score));
+                    else if (exclude && !match)
+                        results.Add(new SearchDocument(doc, score));
                 }
-
-                Parallel.ForEach(files, kvp =>
+                catch
                 {
-                    try
-                    {
-                        var result = SearchFile(kvp.Key, word, isPackage, options, rxm, globRx);
-                        if (!exclude && result.valid)
-                            results.Add(result);
-                        else if (exclude && !result.valid)
-                            results.Add(new FindResult(kvp.Key, (int)FindOptions.AllFiles));
-                    }
-                    catch
-                    {
-                        // ignore
-                    }
-                });
+                    // ignore
+                }
             });
         }
 
-        private static FindResult SearchFile(string f, string word, bool isPackage, FindOptions options, Regex rxm, Regex globRx)
+        private static bool SearchFile(string f, string word, FindOptions options, Regex rxm, Regex globRx, out int score)
         {
-            int score = isPackage ? (int)FindOptions.Packages : 0;
+            score = 0;
 
             if (options.HasFlag(FindOptions.Words))
             {
                 if (options.HasFlag(FindOptions.Exact))
                 {
                     if (string.Equals(word, f))
-                        return new FindResult(f, score | (int)FindOptions.Words);
+                    {
+                        score |= (int)FindOptions.Words;
+                        return true;
+                    }
                 }
                 else if (f.IndexOf(word, StringComparison.OrdinalIgnoreCase) != -1)
-                    return new FindResult(f, score | (int)FindOptions.Words);
+                {
+                    score |= (int)FindOptions.Words;
+                    return true;
+                }
             }
 
             if (options.HasFlag(FindOptions.Regex) && rxm.IsMatch(f))
-                return new FindResult(f, score | (int)FindOptions.Regex);
+            {
+                score |= (int)FindOptions.Regex;
+                return true;
+            }
 
             if (options.HasFlag(FindOptions.Glob) && globRx.IsMatch(f))
-                return new FindResult(f, score | (int)FindOptions.Glob);
+            {
+                score |= (int)FindOptions.Glob;
+                return true;
+            }
 
             long fuzzyScore = 0;
-            if (options.HasFlag(FindOptions.Fuzzy) && FuzzySearch.FuzzyMatch(word, f, ref fuzzyScore))
-                return new FindResult(f, ComputeFuzzyScore(score, fuzzyScore));
+            if (options.HasFlag(FindOptions.Fuzzy) && FuzzySearch.FuzzyMatch(word, Path.GetFileName(f), ref fuzzyScore))
+            {
+                score = ComputeFuzzyScore(score, fuzzyScore);
+                return true;
+            }
 
-            return FindResult.none;
+            return false;
         }
 
-        private static IEnumerable<FindResult> SearchWord(bool exclude, string word, IEnumerable<string> roots, FindOptions options, ConcurrentDictionary<string, byte> files)
+        public static IEnumerable<SearchDocument> SearchWord(bool exclude, string word, FindOptions options, IEnumerable<SearchDocument> documents)
         {
-            var results = new ConcurrentBag<FindResult>();
-            var searchTask = Task.Run(() => SearchWord(exclude, word, roots, options, files, results));
+            var results = new ConcurrentBag<SearchDocument>();
+            var searchTask = Task.Run(() => SearchWord(exclude, word, options, documents, results));
 
             while (results.Count > 0 || !searchTask.Wait(1) || results.Count > 0)
             {
@@ -262,13 +238,13 @@ namespace UnityEditor.Search.Providers
             {
                 foreach (var kvp in s_RootFilePaths)
                 {
-                    foreach (var u in updated)
+                    foreach (var u in updated.Concat(moved))
                     {
                         if (u.StartsWith(kvp.Key, StringComparison.Ordinal))
                             kvp.Value.TryAdd(u, 0);
                     }
 
-                    foreach (var u in deleted.Concat(moved))
+                    foreach (var u in deleted)
                     {
                         if (u.StartsWith(kvp.Key, StringComparison.Ordinal))
                             kvp.Value.TryRemove(u, out var _);
@@ -331,7 +307,7 @@ namespace UnityEditor.Search.Providers
             if (s_Roots != null)
                 return s_Roots;
 
-            var listRequest = UnityEditor.PackageManager.Client.List(offlineMode: true);
+            var listRequest = PackageManager.Client.List(offlineMode: true);
             while (!listRequest.IsCompleted)
                 ;
             return (s_Roots = projectRoots.Concat(listRequest.Result.Select(r => r.assetPath)).ToList());

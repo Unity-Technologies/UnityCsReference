@@ -173,7 +173,7 @@ namespace UnityEditor.Experimental.GraphView
                 selectedElement = null;
                 m_PrevDropTarget = null;
                 m_Active = false;
-                if (snapEnabled  && m_GraphView.selection.Any())
+                if (snapEnabled)
                 {
                     m_Snapper.EndSnap(m_GraphView);
                 }
@@ -578,7 +578,7 @@ namespace UnityEditor.Experimental.GraphView
                         }
                     }
 
-                    if (snapEnabled && selection.Any())
+                    if (snapEnabled)
                         m_Snapper.EndSnap(m_GraphView);
 
                     target.ReleaseMouse();

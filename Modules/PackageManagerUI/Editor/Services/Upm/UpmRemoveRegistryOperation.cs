@@ -6,7 +6,7 @@ using System;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
     internal class UpmRemoveRegistryOperation : UpmBaseOperation<RemoveScopedRegistryRequest>

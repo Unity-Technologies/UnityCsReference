@@ -6,7 +6,7 @@ using System;
 using System.Linq;
 using System.Text;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
     internal class PageCapability

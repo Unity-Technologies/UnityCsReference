@@ -13,13 +13,23 @@ namespace UnityEditor
 {
     internal class PropertyHandler
     {
-        private PropertyDrawer m_PropertyDrawer = null;
-
+        private List<PropertyDrawer> m_PropertyDrawers = null;
         private List<DecoratorDrawer> m_DecoratorDrawers = null;
         public string tooltip = null;
 
         public bool hasPropertyDrawer { get { return propertyDrawer != null; } }
-        internal PropertyDrawer propertyDrawer { get { return isCurrentlyNested ? null : m_PropertyDrawer; } }
+        internal PropertyDrawer propertyDrawer
+        {
+            get
+            {
+                if (m_PropertyDrawers == null || m_NestingLevel >= m_PropertyDrawers.Count)
+                    return null;
+                return m_PropertyDrawers[m_NestingLevel];
+            }
+        }
+        private int m_NestingLevel;
+
+        private bool isCurrentlyNested { get { return m_NestingLevel > 0; } }
 
         internal static Dictionary<string, ReorderableListWrapper> s_reorderableLists = new Dictionary<string, ReorderableListWrapper>();
         private static int s_LastInspectionTarget;
@@ -48,16 +58,6 @@ namespace UnityEditor
             }
         }
 
-        private bool isCurrentlyNested
-        {
-            get
-            {
-                return (m_PropertyDrawer != null
-                    && ScriptAttributeUtility.s_DrawerStack.Count > 0
-                    && m_PropertyDrawer == ScriptAttributeUtility.s_DrawerStack.Peek());
-            }
-        }
-
         public List<ContextMenuItemAttribute> contextMenuItems = null;
 
         public bool empty
@@ -66,7 +66,7 @@ namespace UnityEditor
             {
                 return m_DecoratorDrawers == null
                     && tooltip == null
-                    && propertyDrawer == null
+                    && m_PropertyDrawers == null
                     && contextMenuItems == null;
             }
         }
@@ -109,11 +109,15 @@ namespace UnityEditor
                     if (propertyType != null && propertyType.IsArrayOrList())
                         return;
 
-                    m_PropertyDrawer = (PropertyDrawer)System.Activator.CreateInstance(drawerType);
-                    m_PropertyDrawer.m_FieldInfo = field;
+                    var propertyDrawerForType = (PropertyDrawer)System.Activator.CreateInstance(drawerType);
+                    propertyDrawerForType.m_FieldInfo = field;
 
                     // Will be null by design if default type drawer!
-                    m_PropertyDrawer.m_Attribute = attribute;
+                    propertyDrawerForType.m_Attribute = attribute;
+
+                    if (m_PropertyDrawers == null)
+                        m_PropertyDrawers = new List<PropertyDrawer>();
+                    m_PropertyDrawers.Add(propertyDrawerForType);
                 }
                 else if (typeof(DecoratorDrawer).IsAssignableFrom(drawerType))
                 {
@@ -121,12 +125,12 @@ namespace UnityEditor
                     if (field != null && field.FieldType.IsArrayOrList() && !propertyType.IsArrayOrList())
                         return;
 
-                    DecoratorDrawer decorator = (DecoratorDrawer)System.Activator.CreateInstance(drawerType);
-                    decorator.m_Attribute = attribute;
+                    DecoratorDrawer decoratorDrawerForType = (DecoratorDrawer)System.Activator.CreateInstance(drawerType);
+                    decoratorDrawerForType.m_Attribute = attribute;
 
                     if (m_DecoratorDrawers == null)
                         m_DecoratorDrawers = new List<DecoratorDrawer>();
-                    m_DecoratorDrawers.Add(decorator);
+                    m_DecoratorDrawers.Add(decoratorDrawerForType);
                 }
             }
         }
@@ -169,8 +173,19 @@ namespace UnityEditor
                 // Remember widths
                 oldLabelWidth = EditorGUIUtility.labelWidth;
                 oldFieldWidth = EditorGUIUtility.fieldWidth;
-                // Draw with custom drawer
-                propertyDrawer.OnGUISafe(position, property.Copy(), label ?? EditorGUIUtility.TempContent(property.localizedDisplayName));
+                // Draw with custom drawer - retrieve it BEFORE increasing nesting.
+                PropertyDrawer drawer = propertyDrawer;
+
+                try
+                {
+                    m_NestingLevel++;
+                    drawer.OnGUISafe(position, property.Copy(), label ?? EditorGUIUtility.TempContent(property.localizedDisplayName));
+                }
+                finally
+                {
+                    m_NestingLevel--;
+                }
+
                 // Restore widths
                 EditorGUIUtility.labelWidth = oldLabelWidth;
                 EditorGUIUtility.fieldWidth = oldFieldWidth;
@@ -286,7 +301,17 @@ namespace UnityEditor
 
             if (propertyDrawer != null)
             {
-                height += propertyDrawer.GetPropertyHeightSafe(property.Copy(), label ?? EditorGUIUtility.TempContent(property.displayName));
+                // Retrieve drawer BEFORE increasing nesting.
+                PropertyDrawer drawer = propertyDrawer;
+                try
+                {
+                    m_NestingLevel++;
+                    height += drawer.GetPropertyHeightSafe(property.Copy(), label ?? EditorGUIUtility.TempContent(property.displayName));
+                }
+                finally
+                {
+                    m_NestingLevel--;
+                }
             }
             else if (!includeChildren)
             {
@@ -325,7 +350,20 @@ namespace UnityEditor
                 return false;
 
             if (propertyDrawer != null)
-                return propertyDrawer.CanCacheInspectorGUISafe(property.Copy());
+            {
+                // Retrieve drawer BEFORE increasing nesting.
+                PropertyDrawer drawer = propertyDrawer;
+                try
+                {
+                    m_NestingLevel++;
+                    bool canCache = drawer.CanCacheInspectorGUISafe(property.Copy());
+                    return canCache;
+                }
+                finally
+                {
+                    m_NestingLevel--;
+                }
+            }
 
             property = property.Copy();
 

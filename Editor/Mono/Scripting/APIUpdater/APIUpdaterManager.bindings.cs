@@ -515,12 +515,6 @@ namespace UnityEditorInternal.APIUpdating
                 return assemblyPathInAssetsFolder;
             }
 
-            //TODO: In order to support *pre-built* assemblies referencing assemblies (PA) built out of
-            //      packages deployed as source code we need to find PA which is located in Library/ScriptAssemblies folder
-            //      In this case, we need to look at the mono islands (editorComp.GetAllMonoIslands(EditorScriptCompilationOptions.BuildingForEditor))
-            //      and consider the ones which have its source in packages:
-            //      var isInPackage = i._files.Any(path => editorComp.IsPathInPackageDirectory(path));
-
             return null;
         }
 

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -24,17 +25,17 @@ namespace UnityEditor.DeviceSimulation
             set => m_DeviceView.OverlayTexture = value;
         }
 
-        private int m_RotationDegree;
+        private int m_Rotation;
         private int Rotation
         {
-            get => m_RotationDegree;
+            get => m_Rotation;
             set
             {
-                m_RotationDegree = value % 360;
-                m_DeviceView.Rotation = m_RotationDegree;
+                m_Rotation = value % 360;
+                m_DeviceView.Rotation = m_Rotation;
 
                 if (m_ScreenSimulation != null)
-                    m_ScreenSimulation.DeviceRotation = m_RotationDegree;
+                    m_ScreenSimulation.DeviceRotation = m_Rotation;
 
                 SetScrollViewTopPadding();
 
@@ -77,17 +78,24 @@ namespace UnityEditor.DeviceSimulation
         private Label m_ScaleValueLabel;
         private ToolbarToggle m_FitToScreenToggle;
         private ToolbarToggle m_HighlightSafeAreaToggle;
+        private ToolbarToggle m_ControlPanelToggle;
 
         // Controls for inactive message.
         private VisualElement m_InactiveMsgContainer;
 
         // Controls for preview.
-        private VisualElement m_ScrollViewContainer;
+        private TwoPaneSplitView m_SplitView;
+        private VisualElement m_PreviewPanel;
         private VisualElement m_ScrollView;
         private VisualElement m_DeviceViewContainer;
         private DeviceView m_DeviceView;
 
-        public UserInterfaceController(DeviceSimulatorMain deviceSimulatorMain, VisualElement rootVisualElement, TouchEventManipulator touchEventManipulator)
+        // Control Panel
+        private float m_ControlPanelWidth;
+        private readonly Dictionary<string, Foldout> m_PluginFoldouts = new Dictionary<string, Foldout>();
+        private VisualElement m_ControlPanel;
+
+        public UserInterfaceController(DeviceSimulatorMain deviceSimulatorMain, VisualElement rootVisualElement, SimulatorState serializedState, IEnumerable<DeviceSimulatorPlugin> plugins, TouchEventManipulator touchEventManipulator)
         {
             m_Main = deviceSimulatorMain;
 
@@ -105,7 +113,8 @@ namespace UnityEditor.DeviceSimulation
             m_ScaleSlider = rootVisualElement.Q<SliderInt>("scale-slider");
             m_ScaleSlider.lowValue = kScaleMin;
             m_ScaleSlider.highValue = kScaleMax;
-            m_ScaleSlider.SetValueWithoutNotify(Scale);
+            m_Scale = serializedState.scale;
+            m_ScaleSlider.SetValueWithoutNotify(m_Scale);
             m_ScaleSlider.RegisterCallback<ChangeEvent<int>>(SetScale);
             m_ScaleValueLabel = rootVisualElement.Q<Label>("scale-value-label");
             m_ScaleValueLabel.text = Scale.ToString();
@@ -113,9 +122,11 @@ namespace UnityEditor.DeviceSimulation
             // Fit to Screen button set up
             m_FitToScreenToggle = rootVisualElement.Q<ToolbarToggle>("fit-to-screen");
             m_FitToScreenToggle.RegisterValueChangedCallback(FitToScreen);
+            m_FitToScreenEnabled = serializedState.fitToScreenEnabled;
             m_FitToScreenToggle.SetValueWithoutNotify(m_FitToScreenEnabled);
 
             // Rotate button set up
+            m_Rotation = serializedState.rotationDegree;
             var namePostfix = EditorGUIUtility.isProSkin ? "_dark" : "_light";
             rootVisualElement.Q<Image>("rotate-cw-image").image = EditorGUIUtility.Load($"DeviceSimulator/Icons/rotate_cw{namePostfix}.png") as Texture;
             rootVisualElement.Q<VisualElement>("rotate-cw").AddManipulator(new Clickable(() => { Rotation += 90; }));
@@ -127,6 +138,7 @@ namespace UnityEditor.DeviceSimulation
             m_HighlightSafeAreaToggle.RegisterValueChangedCallback((evt) => {
                 HighlightSafeArea = evt.newValue;
             });
+            m_HighlightSafeArea = serializedState.highlightSafeAreaEnabled;
             m_HighlightSafeAreaToggle.SetValueWithoutNotify(HighlightSafeArea);
 
             // Inactive message set up
@@ -137,17 +149,66 @@ namespace UnityEditor.DeviceSimulation
             SetInactiveMsgState(false);
 
             // Device view set up
-            m_ScrollViewContainer = rootVisualElement.Q<VisualElement>("scrollview-container");
-            m_ScrollViewContainer.RegisterCallback<WheelEvent>(OnScrollWheel, TrickleDown.TrickleDown);
-            m_ScrollViewContainer.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            m_PreviewPanel = rootVisualElement.Q<VisualElement>("preview-panel");
+            m_PreviewPanel.RegisterCallback<WheelEvent>(OnScrollWheel, TrickleDown.TrickleDown);
+            m_PreviewPanel.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             m_ScrollView = rootVisualElement.Q<ScrollView>("preview-scroll-view");
-            m_DeviceView = new DeviceView(Quaternion.Euler(0, 0, 360 - Rotation), Scale / 100f) {ShowSafeArea = HighlightSafeArea};
+            m_DeviceView = new DeviceView(Quaternion.Euler(0, 0, Rotation), Scale / 100f) {ShowSafeArea = HighlightSafeArea};
             m_DeviceView.AddManipulator(touchEventManipulator);
-            m_DeviceView.OnViewToScreenChanged += () => { touchEventManipulator.PreviewImageRendererSpaceToScreenSpace = m_DeviceView.ViewToScreen; };
+            m_DeviceView.OnViewToScreenChanged += () => { touchEventManipulator.previewImageRendererSpaceToScreenSpace = m_DeviceView.ViewToScreen; };
             m_DeviceViewContainer = rootVisualElement.Q<VisualElement>("preview-container");
             m_DeviceViewContainer.Add(m_DeviceView);
             m_DeviceView.SafeAreaColor = new Color(0.95f, 1f, 0f);
             m_DeviceView.SafeAreaLineWidth = 5;
+
+            // Control Panel set up
+            m_SplitView = rootVisualElement.Q<TwoPaneSplitView>("split-view");
+            m_ControlPanelToggle = rootVisualElement.Q<ToolbarToggle>("control-panel-toggle");
+            m_ControlPanel = rootVisualElement.Q<VisualElement>("control-panel");
+            m_ControlPanelToggle.RegisterValueChangedCallback((evt) => { SetControlPanelVisibility(evt.newValue); });
+            m_ControlPanelWidth = serializedState.controlPanelWidth;
+            m_ControlPanelToggle.SetValueWithoutNotify(serializedState.controlPanelVisible);
+
+            if (!serializedState.controlPanelVisible)
+            {
+                m_SplitView.fixedPaneInitialDimension = 0;
+                m_SplitView.CollapseChild(0);
+            }
+            else
+            {
+                ControlPanelWidthFix();
+                m_SplitView.fixedPaneInitialDimension = m_ControlPanelWidth;
+            }
+
+            InitPluginUI(plugins, serializedState);
+        }
+
+        private void InitPluginUI(IEnumerable<DeviceSimulatorPlugin> plugins, SimulatorState serializedState)
+        {
+            foreach (var plugin in plugins)
+            {
+                var pluginUI = plugin.OnCreateUI();
+                if (pluginUI != null)
+                {
+                    if (pluginUI != null)
+                    {
+                        var foldout = new Foldout()
+                        {
+                            text = plugin.title,
+                            value = false
+                        };
+                        foldout.AddToClassList("unity-device-simulator__control-panel_foldout");
+                        foldout.Add(pluginUI);
+
+                        m_ControlPanel.Add(foldout);
+                        m_PluginFoldouts.Add(plugin.GetType().ToString(), foldout);
+                    }
+                }
+            }
+
+            foreach (var foldout in m_PluginFoldouts)
+                if (serializedState.controlPanelFoldouts.TryGetValue(foldout.Key, out var state))
+                    foldout.Value.value = state;
         }
 
         public void OnSimulationStart(ScreenSimulation screenSimulation)
@@ -155,9 +216,9 @@ namespace UnityEditor.DeviceSimulation
             m_ScreenSimulation = screenSimulation;
             m_ScreenSimulation.DeviceRotation = Rotation;
 
-            m_SelectedDeviceName.text = m_Main.Devices[m_Main.DeviceIndex].friendlyName;
+            m_SelectedDeviceName.text = m_Main.currentDevice.deviceInfo.friendlyName;
 
-            var screen = m_Main.Devices[m_Main.DeviceIndex].screens[0];
+            var screen = m_Main.currentDevice.deviceInfo.screens[0];
             m_DeviceView.SetDevice(screen.width, screen.height, screen.presentation.borderSize);
             m_DeviceView.ScreenOrientation = m_ScreenSimulation.orientation;
             m_DeviceView.ScreenInsets = m_ScreenSimulation.Insets;
@@ -173,27 +234,17 @@ namespace UnityEditor.DeviceSimulation
                 FitToScreenScale();
         }
 
-        public void StoreSerializedStates(ref SimulatorSerializationStates states)
+        public void StoreSerializedStates(ref SimulatorState states)
         {
             states.scale = Scale;
             states.fitToScreenEnabled = m_FitToScreenEnabled;
             states.rotationDegree = Rotation;
             states.highlightSafeAreaEnabled = m_HighlightSafeArea;
-        }
+            states.controlPanelVisible = m_ControlPanelToggle.value;
+            states.controlPanelWidth = m_SplitView.fixedPane.worldBound.width;
 
-        public void ApplySerializedStates(SimulatorSerializationStates states)
-        {
-            if (states != null)
-            {
-                Scale = states.scale;
-                m_FitToScreenEnabled = states.fitToScreenEnabled;
-                Rotation = states.rotationDegree;
-                HighlightSafeArea = states.highlightSafeAreaEnabled;
-                m_ScaleSlider.SetValueWithoutNotify(Scale);
-                m_ScaleValueLabel.text = Scale.ToString();
-                m_FitToScreenToggle.SetValueWithoutNotify(m_FitToScreenEnabled);
-                m_HighlightSafeAreaToggle.SetValueWithoutNotify(HighlightSafeArea);
-            }
+            foreach (var foldout in m_PluginFoldouts)
+                states.controlPanelFoldouts.Add(foldout.Key, foldout.Value.value);
         }
 
         private void SetScale(ChangeEvent<int> e)
@@ -213,7 +264,7 @@ namespace UnityEditor.DeviceSimulation
 
         private void FitToScreenScale()
         {
-            Vector2 screenSize = m_ScrollViewContainer.worldBound.size;
+            Vector2 screenSize = m_PreviewPanel.worldBound.size;
             var x = screenSize.x / m_DeviceView.style.width.value.value;
             var y = screenSize.y / m_DeviceView.style.height.value.value;
 
@@ -228,6 +279,30 @@ namespace UnityEditor.DeviceSimulation
             m_ScaleSlider.SetValueWithoutNotify(newScale);
 
             SetScrollViewTopPadding();
+        }
+
+        private void SetControlPanelVisibility(bool visible)
+        {
+            if (visible)
+            {
+                ControlPanelWidthFix();
+                m_SplitView.UnCollapse();
+                m_SplitView.fixedPaneInitialDimension = m_ControlPanelWidth;
+            }
+            else
+            {
+                m_ControlPanelWidth = m_SplitView.fixedPane.worldBound.width;
+                m_SplitView.CollapseChild(0);
+            }
+        }
+
+        // We should restore the Control Panel size to the same one that it was before hiding, to keep it the way the user prefers.
+        // But if the window is resized we could end up with control panel larger than the window itself.
+        // The window min width is 200 so defaulting to half of that.
+        private void ControlPanelWidthFix()
+        {
+            if (m_ControlPanelWidth <= 0 || m_ControlPanelWidth >= m_SplitView.worldBound.width)
+                m_ControlPanelWidth = 100;
         }
 
         private void CloseInactiveMsg()
@@ -266,7 +341,7 @@ namespace UnityEditor.DeviceSimulation
             var rect = new Rect(m_DeviceListMenu.worldBound.position + new Vector2(1, m_DeviceListMenu.worldBound.height), new Vector2());
             var maximumVisibleDeviceCount = 10;
 
-            var deviceListPopup = new DeviceListPopup(m_Main.Devices, m_Main.DeviceIndex, maximumVisibleDeviceCount, m_DeviceSearchContent);
+            var deviceListPopup = new DeviceListPopup(m_Main.devices, m_Main.deviceIndex, maximumVisibleDeviceCount, m_DeviceSearchContent);
             deviceListPopup.OnDeviceSelected += OnDeviceSelected;
             deviceListPopup.OnSearchInput += OnSearchInput;
 
@@ -275,9 +350,9 @@ namespace UnityEditor.DeviceSimulation
 
         private void OnDeviceSelected(int selectedDeviceIndex)
         {
-            if (m_Main.DeviceIndex == selectedDeviceIndex)
+            if (m_Main.deviceIndex == selectedDeviceIndex)
                 return;
-            m_Main.DeviceIndex = selectedDeviceIndex;
+            m_Main.deviceIndex = selectedDeviceIndex;
         }
 
         private void OnSearchInput(string searchContent)

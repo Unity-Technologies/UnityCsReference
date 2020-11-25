@@ -2965,6 +2965,9 @@
     <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\PropertyHandler.cs">
       <Link>Editor\Mono\ScriptAttributeGUI\PropertyHandler.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\PropertyTrait.cs">
+      <Link>Editor\Mono\ScriptAttributeGUI\PropertyTrait.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\ScriptAttributeUtility.cs">
       <Link>Editor\Mono\ScriptAttributeGUI\ScriptAttributeUtility.cs</Link>
     </Compile>
@@ -3130,6 +3133,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\GUIDReference.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\GUIDReference.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\IVersion.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\IVersion.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\MonoLibraryHelpers.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\MonoLibraryHelpers.cs</Link>
     </Compile>
@@ -3151,15 +3157,6 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\SemVersion.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\SemVersion.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\SemVersionRanges.cs">
-      <Link>Editor\Mono\Scripting\ScriptCompilation\SemVersionRanges.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\SemVersionRangesEvaluators.cs">
-      <Link>Editor\Mono\Scripting\ScriptCompilation\SemVersionRangesEvaluators.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\SemVersionRangesFactory.cs">
-      <Link>Editor\Mono\Scripting\ScriptCompilation\SemVersionRangesFactory.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\TargetAssembly.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\TargetAssembly.cs</Link>
     </Compile>
@@ -3172,11 +3169,23 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\UnitySpecificCompilerMessageProcessor.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\UnitySpecificCompilerMessageProcessor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\UnityVersion.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\UnityVersion.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\Utility.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\Utility.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\VersionDefineExpression.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\VersionDefineExpression.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\VersionRanges.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\VersionRanges.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\VersionRangesEvaluators.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\VersionRangesEvaluators.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\VersionRangesFactory.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\VersionRangesFactory.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilers.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilers.cs</Link>
@@ -3192,6 +3201,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Search\ObjectSelectorSearch.cs">
       <Link>Editor\Mono\Search\ObjectSelectorSearch.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Search\OpenSearchHelper.cs">
+      <Link>Editor\Mono\Search\OpenSearchHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Search\Project.Deprecated.cs">
       <Link>Editor\Mono\Search\Project.Deprecated.cs</Link>
@@ -4576,11 +4588,26 @@
     <Compile Include="..\..\Modules\DeviceSimulatorEditor\Input\TouchEventManipulator.cs">
       <Link>Modules\DeviceSimulatorEditor\Input\TouchEventManipulator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\DeviceSimulatorEditor\Plugins\DeviceSimulator.cs">
+      <Link>Modules\DeviceSimulatorEditor\Plugins\DeviceSimulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DeviceSimulatorEditor\Plugins\DeviceSimulatorPlugin.cs">
+      <Link>Modules\DeviceSimulatorEditor\Plugins\DeviceSimulatorPlugin.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DeviceSimulatorEditor\Plugins\PluginController.cs">
+      <Link>Modules\DeviceSimulatorEditor\Plugins\PluginController.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\DeviceSimulatorEditor\Shims\ScreenSimulation.cs">
       <Link>Modules\DeviceSimulatorEditor\Shims\ScreenSimulation.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\DeviceSimulatorEditor\Shims\SystemInfoSimulation.cs">
+      <Link>Modules\DeviceSimulatorEditor\Shims\SystemInfoSimulation.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\DeviceSimulatorEditor\SimulatorPlayerSettings.cs">
       <Link>Modules\DeviceSimulatorEditor\SimulatorPlayerSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DeviceSimulatorEditor\SimulatorState.cs">
+      <Link>Modules\DeviceSimulatorEditor\SimulatorState.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\DeviceSimulatorEditor\SimulatorUtilities.cs">
       <Link>Modules\DeviceSimulatorEditor\SimulatorUtilities.cs</Link>
@@ -5608,6 +5635,9 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerDetailedView.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerDetailedView.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerEditorUtility.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerEditorUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerFrameDataTreeView.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerFrameDataTreeView.cs</Link>
     </Compile>
@@ -5980,9 +6010,6 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchContext.cs">
       <Link>Modules\QuickSearch\Editor\SearchContext.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchEngines.cs">
-      <Link>Modules\QuickSearch\Editor\SearchEngines.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchField.cs">
       <Link>Modules\QuickSearch\Editor\SearchField.cs</Link>
     </Compile>
@@ -5995,8 +6022,17 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchProvider.cs">
       <Link>Modules\QuickSearch\Editor\SearchProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQueryError.cs">
+      <Link>Modules\QuickSearch\Editor\SearchQueryError.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQuery\SearchQuery.cs">
       <Link>Modules\QuickSearch\Editor\SearchQuery\SearchQuery.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQuery\SearchQueryEditor.cs">
+      <Link>Modules\QuickSearch\Editor\SearchQuery\SearchQueryEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQuery\SearchResultView.cs">
+      <Link>Modules\QuickSearch\Editor\SearchQuery\SearchResultView.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchSelection.cs">
       <Link>Modules\QuickSearch\Editor\SearchSelection.cs</Link>
@@ -6036,15 +6072,6 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\TryConvert.cs">
       <Link>Modules\QuickSearch\Editor\TryConvert.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\DropdownWindow.cs">
-      <Link>Modules\QuickSearch\Editor\UI\DropdownWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SimpleListSelectionWindow.cs">
-      <Link>Modules\QuickSearch\Editor\UI\SimpleListSelectionWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SimpleListView.cs">
-      <Link>Modules\QuickSearch\Editor\UI\SimpleListView.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\UI\VisualSplitter.cs">
       <Link>Modules\QuickSearch\Editor\UI\VisualSplitter.cs</Link>
@@ -6833,7 +6860,7 @@
       <HintPath>..\..\External\il2cpp\builds\build\BeeSettings\offline\Unity.IL2CPP.BeeSettings.dll</HintPath>
     </Reference>
     <Reference Include="Bee.BeeDriver">
-      <HintPath>..\..\artifacts\Stevedore\bee-libraries_8418\Bee.BeeDriver.dll</HintPath>
+      <HintPath>..\..\artifacts\Stevedore\bee-libraries_6595\Bee.BeeDriver.dll</HintPath>
     </Reference>
     <ProjectReference Include="UnityEngine.csproj">
       <Project>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</Project>

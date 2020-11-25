@@ -145,7 +145,7 @@ namespace UnityEditor.Profiling.ModuleEditor
                 break;
             }
 
-            var module = new ModuleData(moduleName, true, true);
+            var module = new ModuleData(moduleName, moduleName, true, true);
             m_Modules.Add(module);
             m_CreatedModules.Add(module);
 

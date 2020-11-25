@@ -124,8 +124,6 @@ namespace UnityEditor
 
         internal void OnDisable()
         {
-            m_TreeView.currentProvider?.OnDeactivate();
-
             if (m_Splitter != null && m_Splitter.childCount >= 1)
             {
                 var splitLeft = m_Splitter.Children().First();
@@ -134,7 +132,10 @@ namespace UnityEditor
             }
 
             if (m_TreeView != null && m_TreeView.currentProvider != null)
+            {
+                m_TreeView.currentProvider.OnDeactivate();
                 EditorPrefs.SetString(GetPrefKeyName(titleContent.text + "_current_provider"), m_TreeView.currentProvider.settingsPath);
+            }
 
             SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
             SettingsService.repaintAllSettingsWindow -= OnRepaintAllWindows;

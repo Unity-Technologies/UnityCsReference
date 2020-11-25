@@ -188,14 +188,9 @@ namespace UnityEditor
 
                 if (GUILayout.Button("Snap anchor to closest contact"))
                 {
-                    ArticulationBody parentBody = body.transform.parent.GetComponentInParent<ArticulationBody>();
-
                     Undo.RecordObject(body, "Changing anchor position/rotation to match closest contact.");
-                    Vector3 com = parentBody.worldCenterOfMass;
-                    Vector3 closestOnSurface = body.GetClosestPoint(com);
-                    body.anchorPosition = body.transform.InverseTransformPoint(closestOnSurface);
-                    body.anchorRotation = Quaternion.FromToRotation(Vector3.right,
-                        body.transform.InverseTransformDirection(com - closestOnSurface).normalized);
+
+                    body.SnapAnchorToClosestContact();
                 }
 
                 EditorGUILayout.PropertyField(m_ArticulationJointType); // the tooltip for this is still in the header

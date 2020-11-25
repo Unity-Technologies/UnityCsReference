@@ -9,10 +9,13 @@ using UnityEngine;
 using UnityAssetStoreUtils = UnityEditor.AssetStoreUtils;
 using UnityAssetStorePackageInfo = UnityEditor.PackageInfo;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class AssetStoreUtils
     {
+        public static string k_InvalidJSONErrorMessage = "Server response is not a valid JSON";
+        public static string k_ServerErrorMessage = "Server response is";
+
         [NonSerialized]
         private UnityConnectProxy m_UnityConnect;
         public void ResolveDependencies(UnityConnectProxy unityConnect)
@@ -20,36 +23,38 @@ namespace UnityEditor.PackageManager.UI
             m_UnityConnect = unityConnect;
         }
 
-        public static Dictionary<string, object> ParseResponseAsDictionary(IAsyncHTTPClient request, Action<string> errorMessageCallback)
+        public static Dictionary<string, object> ParseResponseAsDictionary(IAsyncHTTPClient request)
         {
             string errorMessage;
             if (request.IsSuccess() && request.responseCode == 200)
             {
+                if (string.IsNullOrEmpty(request.text))
+                    return null;
+
                 try
                 {
                     var response = Json.Deserialize(request.text) as Dictionary<string, object>;
                     if (response != null)
                         return response;
 
-                    errorMessage = L10n.Tr("Failed to parse JSON.");
+                    errorMessage = L10n.Tr(k_InvalidJSONErrorMessage);
                 }
                 catch (Exception e)
                 {
-                    errorMessage = string.Format(L10n.Tr("Failed to parse JSON: {0}"), e.Message);
+                    errorMessage = $"{L10n.Tr(k_InvalidJSONErrorMessage)} {e.Message}";
                 }
             }
             else
             {
-                if (request.responseCode == 0 && string.IsNullOrEmpty(request.text))
-                    errorMessage = L10n.Tr("Failed to parse response.");
-                else
-                {
-                    var text = request.text.Length <= 128 ? request.text : request.text.Substring(0, 128) + "...";
-                    errorMessage = string.Format(L10n.Tr("Failed to parse response: Code {0} \"{1}\""), request.responseCode, text);
-                }
+                if (request.responseCode == 0 &&
+                    (string.IsNullOrEmpty(request.text) || request.text.ToLower().Contains("timeout")))
+                    return null;
+
+                var text = request.text.Length <= 128 ? request.text : request.text.Substring(0, 128) + "...";
+                errorMessage = $"{L10n.Tr(k_ServerErrorMessage)} \"{text}\" [Code {request.responseCode}]";
             }
-            errorMessageCallback?.Invoke(errorMessage);
-            return null;
+
+            return string.IsNullOrEmpty(errorMessage) ? null : new Dictionary<string, object> { ["errorMessage"] = errorMessage };
         }
 
         public virtual string BuildBaseDownloadPath(string publisher, string category)

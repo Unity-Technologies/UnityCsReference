@@ -22,6 +22,7 @@ namespace UnityEditor
         public int mode;
         public int instanceID;
         public int identifier;
+        public int globalLineIndex;
         internal static extern void RemoveLogEntriesByMode(int mode);
     }
 
@@ -68,5 +69,7 @@ namespace UnityEditor
         public static extern void ClickStatusBar(int count);
 
         public static extern void AddMessageWithDoubleClickCallback(LogEntry outputEntry);
+
+        internal static extern int GetEntryRowIndex(int globalIndex);
     }
 }

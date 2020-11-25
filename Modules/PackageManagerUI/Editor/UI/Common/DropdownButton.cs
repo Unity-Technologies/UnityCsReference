@@ -6,7 +6,7 @@ using UnityEngine.UIElements;
 using UnityEngine;
 using System.Collections.Generic;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     enum DropdownStatus { None = 0, Success, Error, Refresh }
 

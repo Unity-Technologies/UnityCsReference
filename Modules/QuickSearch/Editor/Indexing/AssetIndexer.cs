@@ -47,7 +47,7 @@ namespace UnityEditor.Search
         internal override Hash128 GetDocumentHash(string path)
         {
             var guid = AssetDatabase.AssetPathToGUID(path);
-            return AssetDatabase.GetSourceAssetFileHash(guid);
+            return Utils.GetSourceAssetFileHash(guid);
         }
 
         public override void IndexDocument(string path, bool checkIfDocumentExists)
@@ -56,7 +56,7 @@ namespace UnityEditor.Search
             if (documentIndex < 0)
                 return;
 
-            AddDocumentHash(path, GetDocumentHash(path));
+            AddSourceDocument(path, GetDocumentHash(path));
             IndexWordComponents(documentIndex, path);
 
             try
@@ -100,8 +100,9 @@ namespace UnityEditor.Search
                     {
                         if (at == typeof(GameObject))
                             IndexProperty(documentIndex, "t", "prefab", saveKeyword: true);
-                        else
-                            IndexProperty(documentIndex, "t", at.Name, saveKeyword: true);
+                        if (at == typeof(MonoScript))
+                            IndexProperty(documentIndex, "t", "script", saveKeyword: true);
+                        IndexProperty(documentIndex, "t", at.Name, saveKeyword: true);
                         at = at.BaseType;
                     }
                 }
@@ -110,10 +111,6 @@ namespace UnityEditor.Search
                     IndexProperty(documentIndex, "t", at.Name, saveKeyword: true);
                 }
 
-                var guid = AssetDatabase.GUIDFromAssetPath(path);
-                var labels = AssetDatabase.GetLabels(guid);
-                foreach (var label in labels)
-                    IndexProperty(documentIndex, "l", label, saveKeyword: true);
 
                 if (settings.options.properties || settings.options.extended)
                 {
@@ -123,6 +120,10 @@ namespace UnityEditor.Search
                     var mainAsset = isPrefab ? PrefabUtility.LoadPrefabContents(path) : AssetDatabase.LoadMainAssetAtPath(path);
                     if (!mainAsset)
                         return;
+
+                    var labels = AssetDatabase.GetLabels(mainAsset);
+                    foreach (var label in labels)
+                        IndexProperty(documentIndex, "l", label, saveKeyword: true);
 
                     if (hasCustomIndexers)
                         IndexCustomProperties(path, documentIndex, mainAsset);

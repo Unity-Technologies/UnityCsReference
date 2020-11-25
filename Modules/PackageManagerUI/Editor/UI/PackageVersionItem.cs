@@ -5,7 +5,7 @@
 using System.Linq;
 using UnityEngine.UIElements;
 
-namespace UnityEditor.PackageManager.UI
+namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageVersionItem : VisualElement, ISelectableItem
     {

@@ -173,6 +173,11 @@ namespace UnityEditor
             get { return EditorGUIUtility.TrTextContentWithIcon("Transform Tool", "Transform Tool", "TransformTool"); }
         }
 
+        public override bool gridSnapEnabled
+        {
+            get { return Tools.pivotRotation == PivotRotation.Global; }
+        }
+
         protected override bool ShouldToolGUIBeDisabled(out GUIContent disabledLabel)
         {
             if (IsDisabledByPrefabPropertyPatching("m_LocalPosition", out disabledLabel))
@@ -268,6 +273,11 @@ namespace UnityEditor
         public override GUIContent toolbarIcon
         {
             get { return EditorGUIUtility.TrTextContentWithIcon("Move Tool", "Move Tool", "MoveTool"); }
+        }
+
+        public override bool gridSnapEnabled
+        {
+            get { return Tools.pivotRotation == PivotRotation.Global; }
         }
 
         protected override bool ShouldToolGUIBeDisabled(out GUIContent disabledLabel)

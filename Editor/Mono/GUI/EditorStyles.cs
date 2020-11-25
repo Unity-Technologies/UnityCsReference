@@ -271,11 +271,32 @@ namespace UnityEditor
         internal static GUIStyle toolbarSearchFieldPopup { get { return s_Current.m_ToolbarSearchFieldPopup; } }
         private GUIStyle m_ToolbarSearchFieldPopup;
 
+        internal static GUIStyle toolbarSearchFieldWithJumpSynced { get { return s_Current.m_ToolbarSearchFieldWithJumpSynced; } }
+        private GUIStyle m_ToolbarSearchFieldWithJumpSynced;
+
+        internal static GUIStyle toolbarSearchFieldWithJumpPopupSynced { get { return s_Current.m_ToolbarSearchFieldWithJumpPopupSynced; } }
+        private GUIStyle m_ToolbarSearchFieldWithJumpPopupSynced;
+
+        internal static GUIStyle toolbarSearchFieldWithJump { get { return s_Current.m_ToolbarSearchFieldWithJump; } }
+        private GUIStyle m_ToolbarSearchFieldWithJump;
+
+        internal static GUIStyle toolbarSearchFieldWithJumpPopup { get { return s_Current.m_ToolbarSearchFieldWithJumpPopup; } }
+        private GUIStyle m_ToolbarSearchFieldWithJumpPopup;
+
+        internal static GUIStyle toolbarSearchFieldJumpButton { get { return s_Current.m_ToolbarSearchFieldJumpButton; } }
+        private GUIStyle m_ToolbarSearchFieldJumpButton;
+
         internal static GUIStyle toolbarSearchFieldCancelButton { get { return s_Current.m_ToolbarSearchFieldCancelButton; } }
         private GUIStyle m_ToolbarSearchFieldCancelButton;
 
         internal static GUIStyle toolbarSearchFieldCancelButtonEmpty { get { return s_Current.m_ToolbarSearchFieldCancelButtonEmpty; } }
         private GUIStyle m_ToolbarSearchFieldCancelButtonEmpty;
+
+        internal static GUIStyle toolbarSearchFieldCancelButtonWithJump { get { return s_Current.m_ToolbarSearchFieldCancelButtonWithJump; } }
+        private GUIStyle m_ToolbarSearchFieldCancelButtonWithJump;
+
+        internal static GUIStyle toolbarSearchFieldCancelButtonWithJumpEmpty { get { return s_Current.m_ToolbarSearchFieldCancelButtonWithJumpEmpty; } }
+        private GUIStyle m_ToolbarSearchFieldCancelButtonWithJumpEmpty;
 
         internal static GUIStyle colorPickerBox { get { return s_Current.m_ColorPickerBox; } }
         private GUIStyle m_ColorPickerBox;
@@ -448,8 +469,15 @@ namespace UnityEditor
             m_ToolbarLabel = GetStyle("ToolbarLabel");
             m_ToolbarSearchField = GetStyle("ToolbarSeachTextField");
             m_ToolbarSearchFieldPopup = GetStyle("ToolbarSeachTextFieldPopup");
+            m_ToolbarSearchFieldWithJump = GetStyle("ToolbarSearchTextFieldWithJump");
+            m_ToolbarSearchFieldWithJumpPopup = GetStyle("ToolbarSearchTextFieldWithJumpPopup");
+            m_ToolbarSearchFieldJumpButton = GetStyle("ToolbarSearchTextFieldJumpButton");
             m_ToolbarSearchFieldCancelButton = GetStyle("ToolbarSeachCancelButton");
             m_ToolbarSearchFieldCancelButtonEmpty = GetStyle("ToolbarSeachCancelButtonEmpty");
+            m_ToolbarSearchFieldCancelButtonWithJump = GetStyle("ToolbarSearchCancelButtonWithJump");
+            m_ToolbarSearchFieldCancelButtonWithJumpEmpty = GetStyle("ToolbarSearchCancelButtonWithJumpEmpty");
+            m_ToolbarSearchFieldWithJumpSynced = GetStyle("ToolbarSearchTextFieldWithJumpSynced");
+            m_ToolbarSearchFieldWithJumpPopupSynced = GetStyle("ToolbarSearchTextFieldWithJumpPopupSynced");
             m_SearchField = GetStyle("SearchTextField");
             m_SearchFieldCancelButton = GetStyle("SearchCancelButton");
             m_SearchFieldCancelButtonEmpty = GetStyle("SearchCancelButtonEmpty");

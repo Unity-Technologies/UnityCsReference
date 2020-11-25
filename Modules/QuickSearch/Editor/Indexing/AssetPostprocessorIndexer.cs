@@ -48,7 +48,7 @@ namespace UnityEditor.Search
         private static readonly HashSet<string> s_RemovedItems = new HashSet<string>();
         private static readonly HashSet<string> s_MovedItems = new HashSet<string>();
 
-        const string k_TransactionDatabasePath = "Library/QuickSearch/transactions.db";
+        const string k_TransactionDatabasePath = "Library/Search/transactions.db";
         private static TransactionManager transactionManager;
 
         private static readonly object s_ContentRefreshedLock = new object();
@@ -81,7 +81,7 @@ namespace UnityEditor.Search
 
         static AssetPostprocessorIndexer()
         {
-            if (!IsMainProcess())
+            if (!Utils.IsMainProcess())
                 return;
 
             transactionManager = new TransactionManager(k_TransactionDatabasePath);
@@ -96,23 +96,9 @@ namespace UnityEditor.Search
             transactionManager?.Shutdown();
         }
 
-        public static bool IsMainProcess()
-        {
-            if (EditorUtility.isInSafeMode)
-                return false;
-
-            if (AssetDatabaseAPI.IsAssetImportWorkerProcess())
-                return false;
-
-            if (MPE.ProcessService.level != MPE.ProcessLevel.Main)
-                return false;
-
-            return true;
-        }
-
         public static void Enable()
         {
-            if (!IsMainProcess())
+            if (!Utils.IsMainProcess())
                 return;
             s_Enabled = true;
         }
@@ -186,14 +172,13 @@ namespace UnityEditor.Search
             if (s_UpdatedItems.Count > 0 || s_RemovedItems.Count > 0 || s_MovedItems.Count > 0)
             {
                 s_BatchStartTime = EditorApplication.timeSinceStartup;
-                EditorApplication.tick -= RaiseContentRefreshed;
-                EditorApplication.tick += RaiseContentRefreshed;
+                Utils.tick += RaiseContentRefreshed;
             }
         }
 
         private static void RaiseContentRefreshed()
         {
-            EditorApplication.tick -= RaiseContentRefreshed;
+            Utils.tick -= RaiseContentRefreshed;
             var currentTime = EditorApplication.timeSinceStartup;
             if (currentTime - s_BatchStartTime > 0.5)
             {
@@ -207,7 +192,7 @@ namespace UnityEditor.Search
             }
             else
             {
-                EditorApplication.tick += RaiseContentRefreshed;
+                Utils.tick += RaiseContentRefreshed;
             }
         }
     }
