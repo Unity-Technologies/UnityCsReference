@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.Experimental.U2D;
 using UnityEditor.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements;
@@ -108,12 +109,135 @@ namespace UnityEditor
             mainView.UnregisterCallback<SpriteSelectionChangeEvent>(SelectionChange);
         }
 
-        private void UpdatePositionField(Rect rect)
+        protected void UpdatePositionField(FocusOutEvent evt)
         {
-            m_PositionFieldX.SetValueWithoutNotify((long)selectedSpriteRect.x);
-            m_PositionFieldY.SetValueWithoutNotify((long)selectedSpriteRect.y);
-            m_PositionFieldW.SetValueWithoutNotify((long)selectedSpriteRect.width);
-            m_PositionFieldH.SetValueWithoutNotify((long)selectedSpriteRect.height);
+            if (hasSelected)
+            {
+                m_PositionFieldX.SetValueWithoutNotify((int)selectedSpriteRect.x);
+                m_PositionFieldY.SetValueWithoutNotify((int)selectedSpriteRect.y);
+                m_PositionFieldW.SetValueWithoutNotify((int)selectedSpriteRect.width);
+                m_PositionFieldH.SetValueWithoutNotify((int)selectedSpriteRect.height);
+            }
+        }
+
+        private void UpdateBorderField(FocusOutEvent evt)
+        {
+            if (hasSelected)
+            {
+                m_BorderFieldL.SetValueWithoutNotify((int)selectedSpriteBorder.x);
+                m_BorderFieldB.SetValueWithoutNotify((int)selectedSpriteBorder.y);
+                m_BorderFieldR.SetValueWithoutNotify((int)selectedSpriteBorder.z);
+                m_BorderFieldT.SetValueWithoutNotify((int)selectedSpriteBorder.w);
+            }
+        }
+
+        void SetupIntegerField(PropertyControl<long> field, EventCallback<FocusOutEvent> onFocusOutEvent, EventCallback<ChangeEvent<long>> onChangeEvent)
+        {
+            field.RegisterCallback(onFocusOutEvent);
+            field.OnValueChanged(onChangeEvent);
+        }
+
+        void SetDragFieldLimit(PropertyControl<long> field, int value)
+        {
+            // The only way to know if value change is due to dragger or text input
+            var t = field.Q<LongField>();
+            if (t.focusController.focusedElement != t)
+            {
+                // Value changed due to drag. We set back the field so to show the drag limit
+                field.SetValueWithoutNotify(value);
+            }
+        }
+
+        void OnPositionIntXChange(ChangeEvent<long> evt)
+        {
+            if (hasSelected)
+            {
+                var rect = selectedSpriteRect;
+                rect.x = evt.newValue;
+                selectedSpriteRect = rect;
+                SetDragFieldLimit(m_PositionFieldX, (int)selectedSpriteRect.x);
+                m_PositionFieldW.SetValueWithoutNotify((long)selectedSpriteRect.width);
+            }
+        }
+
+        void OnPositionIntYChange(ChangeEvent<long> evt)
+        {
+            if (hasSelected)
+            {
+                var rect = selectedSpriteRect;
+                rect.y = evt.newValue;
+                selectedSpriteRect = rect;
+                SetDragFieldLimit(m_PositionFieldY, (int)selectedSpriteRect.y);
+                m_PositionFieldH.SetValueWithoutNotify((long)selectedSpriteRect.height);
+            }
+        }
+
+        void OnPositionIntWChange(ChangeEvent<long> evt)
+        {
+            if (hasSelected)
+            {
+                var rect = selectedSpriteRect;
+                rect.width = evt.newValue;
+                selectedSpriteRect = rect;
+                SetDragFieldLimit(m_PositionFieldW, (int)selectedSpriteRect.width);
+                m_PositionFieldX.SetValueWithoutNotify((long)selectedSpriteRect.x);
+            }
+        }
+
+        void OnPositionIntHChange(ChangeEvent<long> evt)
+        {
+            if (hasSelected)
+            {
+                var rect = selectedSpriteRect;
+                rect.height = evt.newValue;
+                selectedSpriteRect = rect;
+                SetDragFieldLimit(m_PositionFieldH, (int)selectedSpriteRect.height);
+                m_PositionFieldY.SetValueWithoutNotify((long)selectedSpriteRect.y);
+            }
+        }
+
+        void OnBorderIntLChange(ChangeEvent<long> evt)
+        {
+            if (hasSelected)
+            {
+                var border = selectedSpriteBorder;
+                border.x = evt.newValue;
+                selectedSpriteBorder = border;
+                SetDragFieldLimit(m_BorderFieldL, (int)selectedSpriteBorder.x);
+            }
+        }
+
+        void OnBorderIntBChange(ChangeEvent<long> evt)
+        {
+            if (hasSelected)
+            {
+                var border = selectedSpriteBorder;
+                border.y = evt.newValue;
+                selectedSpriteBorder = border;
+                SetDragFieldLimit(m_BorderFieldB, (int)selectedSpriteBorder.y);
+            }
+        }
+
+        void OnBorderIntRChange(ChangeEvent<long> evt)
+        {
+            if (hasSelected)
+            {
+                var border = selectedSpriteBorder;
+                border.z = (evt.newValue + border.x) <= selectedSpriteRect.width ? evt.newValue : selectedSpriteRect.width - border.x;
+                selectedSpriteBorder = border;
+                SetDragFieldLimit(m_BorderFieldR, (int)selectedSpriteBorder.z);
+            }
+        }
+
+        void OnBorderIntTChange(ChangeEvent<long> evt)
+        {
+            if (hasSelected)
+            {
+                var border = selectedSpriteBorder;
+                border.w = (evt.newValue + border.y) <= selectedSpriteRect.height ? evt.newValue : selectedSpriteRect.height - border.y;
+                selectedSpriteBorder = border;
+                SetDragFieldLimit(m_BorderFieldT, (int)selectedSpriteBorder.w);
+            }
         }
 
         private void AddMainUI(VisualElement mainView)
@@ -142,102 +266,29 @@ namespace UnityEditor
 
             m_PositionElement = m_SelectedFrameInspector.Q("position");
             m_PositionFieldX = m_PositionElement.Q<PropertyControl<long>>("positionX");
-            m_PositionFieldX.OnValueChanged((evt) =>
-            {
-                if (hasSelected)
-                {
-                    var rect = selectedSpriteRect;
-                    rect.x = evt.newValue;
-                    selectedSpriteRect = rect;
-                    UpdatePositionField(selectedSpriteRect);
-                }
-            });
+            SetupIntegerField(m_PositionFieldX, UpdatePositionField, OnPositionIntXChange);
 
             m_PositionFieldY = m_PositionElement.Q<PropertyControl<long>>("positionY");
-            m_PositionFieldY.OnValueChanged((evt) =>
-            {
-                if (hasSelected)
-                {
-                    var rect = selectedSpriteRect;
-                    rect.y = evt.newValue;
-                    selectedSpriteRect = rect;
-                    UpdatePositionField(selectedSpriteRect);
-                }
-            });
+            SetupIntegerField(m_PositionFieldY, UpdatePositionField, OnPositionIntYChange);
 
             m_PositionFieldW = m_PositionElement.Q<PropertyControl<long>>("positionW");
-            m_PositionFieldW.OnValueChanged((evt) =>
-            {
-                if (hasSelected)
-                {
-                    var rect = selectedSpriteRect;
-                    rect.width = evt.newValue;
-                    selectedSpriteRect = rect;
-                    UpdatePositionField(selectedSpriteRect);
-                }
-            });
+            SetupIntegerField(m_PositionFieldW, UpdatePositionField, OnPositionIntWChange);
 
             m_PositionFieldH = m_PositionElement.Q<PropertyControl<long>>("positionH");
-            m_PositionFieldH.OnValueChanged((evt) =>
-            {
-                if (hasSelected)
-                {
-                    var rect = selectedSpriteRect;
-                    rect.height = evt.newValue;
-                    selectedSpriteRect = rect;
-                    UpdatePositionField(selectedSpriteRect);
-                }
-            });
+            SetupIntegerField(m_PositionFieldH, UpdatePositionField, OnPositionIntHChange);
 
             var borderElement = m_SelectedFrameInspector.Q("border");
             m_BorderFieldL = borderElement.Q<PropertyControl<long>>("borderL");
-            m_BorderFieldL.OnValueChanged((evt) =>
-            {
-                if (hasSelected)
-                {
-                    var border = selectedSpriteBorder;
-                    border.x = evt.newValue;
-                    selectedSpriteBorder = border;
-                    m_BorderFieldL.SetValueWithoutNotify((long)selectedSpriteBorder.x);
-                }
-            });
+            SetupIntegerField(m_BorderFieldL, UpdateBorderField, OnBorderIntLChange);
 
             m_BorderFieldT = borderElement.Q<PropertyControl<long>>("borderT");
-            m_BorderFieldT.OnValueChanged((evt) =>
-            {
-                if (hasSelected)
-                {
-                    var border = selectedSpriteBorder;
-                    border.w = evt.newValue;
-                    selectedSpriteBorder = border;
-                    m_BorderFieldT.SetValueWithoutNotify((long)selectedSpriteBorder.w);
-                    evt.StopPropagation();
-                }
-            });
+            SetupIntegerField(m_BorderFieldT, UpdateBorderField, OnBorderIntTChange);
 
             m_BorderFieldR = borderElement.Q<PropertyControl<long>>("borderR");
-            m_BorderFieldR.OnValueChanged((evt) =>
-            {
-                if (hasSelected)
-                {
-                    var border = selectedSpriteBorder;
-                    border.z = evt.newValue;
-                    selectedSpriteBorder = border;
-                    m_BorderFieldR.SetValueWithoutNotify((long)selectedSpriteBorder.z);
-                }
-            });
+            SetupIntegerField(m_BorderFieldR, UpdateBorderField, OnBorderIntRChange);
 
             m_BorderFieldB = borderElement.Q<PropertyControl<long>>("borderB");
-            m_BorderFieldB.OnValueChanged((evt) =>
-            {
-                if (hasSelected)
-                {
-                    var border = selectedSpriteBorder;
-                    border.y = evt.newValue;
-                    selectedSpriteBorder = border;
-                    m_BorderFieldB.SetValueWithoutNotify((long)selectedSpriteBorder.y);
-                }
-            });
+            SetupIntegerField(m_BorderFieldB, UpdateBorderField, OnBorderIntBChange);
 
             m_PivotField = m_SelectedFrameInspector.Q<EnumField>("pivotField");
             m_PivotField.Init(SpriteAlignment.Center);
