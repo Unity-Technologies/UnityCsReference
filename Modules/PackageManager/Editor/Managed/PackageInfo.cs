@@ -156,6 +156,8 @@ namespace UnityEditor.PackageManager
         public AuthorInfo author { get { return m_Author;  } }
         internal bool hideInEditor { get { return m_HideInEditor;  } }
         internal EntitlementsInfo entitlements { get { return m_Entitlements; } }
+
+        [System.Obsolete("isAssetStorePackage is obsolete, use entitlements.licenseType instead.", false)]
         internal bool isAssetStorePackage { get { return m_IsAssetStorePackage;  } }
         public string documentationUrl { get { return m_DocumentationUrl; } }
 

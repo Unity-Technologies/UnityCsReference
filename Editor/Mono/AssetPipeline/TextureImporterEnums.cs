@@ -311,6 +311,7 @@ namespace UnityEditor
         Advanced = 5,
         SingleChannel = 10,
         Shadowmask = 11,
+        DirectionalLightmap = 12,
     }
 
     public enum TextureImporterCompression
