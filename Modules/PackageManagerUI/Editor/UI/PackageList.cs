@@ -594,7 +594,7 @@ namespace UnityEditor.PackageManager.UI
 
         internal int CalculateNumberOfPackagesToDisplay()
         {
-            return ApplicationUtil.instance.CalculateNumberOfElementsInsideContainerToDisplay(this, 38);
+            return ApplicationUtil.instance.CalculateNumberOfElementsInsideContainerToDisplay(this, PackageItem.k_MainItemHeight);
         }
 
         private VisualElementCache cache { get; set; }

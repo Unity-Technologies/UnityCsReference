@@ -4573,6 +4573,9 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\DependencyInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\DependencyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\EntitlementLicenseType.cs">
+      <Link>Modules\PackageManager\Editor\Managed\EntitlementLicenseType.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\EntitlementsInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\EntitlementsInfo.cs</Link>
     </Compile>

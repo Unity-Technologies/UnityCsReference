@@ -339,7 +339,9 @@ namespace UnityEditor.Compilation
                     CompilationOptions = EditorScriptCompilationOptions.BuildingForEditor
                 };
 
-                return EditorCompilation.GetTargetAssemblyDefines(assembly, scriptAssemblySettings);
+                var assetPathVersionMetaDatas = editorCompilation.GetAssetPathsMetaDatas();
+
+                return editorCompilation.GetTargetAssemblyDefines(assembly, assetPathVersionMetaDatas, scriptAssemblySettings);
             }
             catch (ArgumentException)
             {
