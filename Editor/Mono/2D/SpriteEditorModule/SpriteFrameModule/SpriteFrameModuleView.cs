@@ -167,7 +167,10 @@ namespace UnityEditor
                 Rect newRect = SpriteEditorUtility.ClampedRect(SpriteEditorUtility.RoundedRect(SpriteEditorHandles.SliderRect(oldRect)), textureBounds, true);
 
                 if (EditorGUI.EndChangeCheck())
+                {
                     selectedSpriteRect = newRect;
+                    UpdatePositionField(null);
+                }
             }
         }
 
