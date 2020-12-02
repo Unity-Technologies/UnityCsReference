@@ -497,7 +497,7 @@ namespace UnityEditor.PackageManager.UI
                 {
                     startIndex = 0,
                     limit = pageSize,
-                    searchText = string.Empty
+                    searchText = m_PackageFiltering.currentSearchText
                 };
 
                 IPage page;

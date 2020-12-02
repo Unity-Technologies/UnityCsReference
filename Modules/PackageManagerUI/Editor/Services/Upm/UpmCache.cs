@@ -65,8 +65,8 @@ namespace UnityEditor.PackageManager.UI
                 p1.source != p2.source ||
                 p1.resolvedPath != p2.resolvedPath ||
                 p1.status != p2.status ||
-                p1.isAssetStorePackage != p2.isAssetStorePackage ||
                 p1.entitlements.isAllowed != p2.entitlements.isAllowed ||
+                p1.entitlements.licenseType != p2.entitlements.licenseType ||
                 p1.registry?.id != p2.registry?.id ||
                 p1.registry?.name != p2.registry?.name ||
                 p1.registry?.url != p2.registry?.url ||

@@ -65,8 +65,7 @@ namespace UnityEditor
         internal static void RevertPrefabPropertyOverride(object userData)
         {
             SerializedProperty[] properties = (SerializedProperty[])userData;
-            for (int i = 0; i < properties.Length; i++)
-                PrefabUtility.RevertPropertyOverride(properties[i], InteractionMode.UserAction);
+            PrefabUtility.RevertPropertyOverrides(properties, InteractionMode.UserAction);
             EditorUtility.ForceReloadInspectors();
         }
 

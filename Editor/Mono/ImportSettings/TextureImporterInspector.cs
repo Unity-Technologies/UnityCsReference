@@ -177,6 +177,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Cursor", "Texture is used for a cursor."),
                 EditorGUIUtility.TrTextContent("Cookie", "Texture is a cookie you put on a light."),
                 EditorGUIUtility.TrTextContent("Lightmap", "Texture is a lightmap."),
+                EditorGUIUtility.TrTextContent("Directional Lightmap", "Texture is a directional lightmap."),
                 EditorGUIUtility.TrTextContent("Shadowmask", "Texture is a shadowmask texture."),
                 EditorGUIUtility.TrTextContent("Single Channel", "Texture is a one component texture."),
             };
@@ -189,6 +190,7 @@ namespace UnityEditor
                 (int)TextureImporterType.Cursor,
                 (int)TextureImporterType.Cookie,
                 (int)TextureImporterType.Lightmap,
+                (int)TextureImporterType.DirectionalLightmap,
                 (int)TextureImporterType.Shadowmask,
                 (int)TextureImporterType.SingleChannel,
             };
@@ -561,6 +563,10 @@ namespace UnityEditor
                 TextureImporterShape.Texture2D);
             m_TextureTypeGUIElements[(int)TextureImporterType.Lightmap]     = new TextureInspectorTypeGUIProperties(0,
                 TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.MipMaps
+                | TextureInspectorGUIElement.StreamingMipmaps
+                , TextureImporterShape.Texture2D);
+            m_TextureTypeGUIElements[(int)TextureImporterType.DirectionalLightmap] = new TextureInspectorTypeGUIProperties(0,
+                TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
                 | TextureInspectorGUIElement.StreamingMipmaps
                 , TextureImporterShape.Texture2D);
             m_TextureTypeGUIElements[(int)TextureImporterType.Shadowmask]   = new TextureInspectorTypeGUIProperties(0,
