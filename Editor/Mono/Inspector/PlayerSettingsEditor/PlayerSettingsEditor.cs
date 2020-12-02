@@ -616,6 +616,9 @@ namespace UnityEditor
             serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(targetGroup);
             serializedAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(targetGroup);
             serializedUseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
+
+            InitReorderableScriptingDefineSymbolsList(targetGroup);
+            InitReorderableAdditionalCompilerArgumentsList(targetGroup);
         }
 
         void OnDisable()
@@ -745,20 +748,6 @@ namespace UnityEditor
             {
                 serializedAllowUnsafeCode = m_AllowUnsafeCode.boolValue;
                 scriptRecompileRequired = true;
-            }
-
-            // Active input handler
-            if (serializedActiveInputHandler != m_ActiveInputHandler.intValue)
-            {
-                // Give the user a chance to change mind and revert changes.
-                if (ShouldRestartEditorToApplySetting())
-                {
-                    serializedActiveInputHandler = m_ActiveInputHandler.intValue;
-                    m_ActiveInputHandler.serializedObject.ApplyModifiedProperties();
-                    EditorApplication.RestartEditorAndRecompileScripts();
-                }
-                else
-                    m_ActiveInputHandler.intValue = serializedActiveInputHandler;
             }
 
             // Stack trace log type
@@ -2191,17 +2180,23 @@ namespace UnityEditor
         internal static void ShowApplicationIdentifierUI(SerializedProperty prop, BuildTargetGroup targetGroup, bool overrideDefaultID, string defaultID, string label, string tooltip)
         {
             var oldIdentifier = "";
-            string currentIdentifier = defaultID;
+            string currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(defaultID, targetGroup);
+            var buildTargetGroup = (targetGroup == BuildTargetGroup.iOS) ? "iPhone" : targetGroup.ToString();
 
             if (!prop.serializedObject.isEditingMultipleObjects)
             {
-                prop.TryGetMapEntry(targetGroup.ToString(), out var entry);
+                prop.TryGetMapEntry(buildTargetGroup, out var entry);
 
                 if (entry != null)
                     oldIdentifier = entry.FindPropertyRelative("second").stringValue;
 
-                if (overrideDefaultID && currentIdentifier != oldIdentifier)
-                    currentIdentifier = oldIdentifier;
+                if (currentIdentifier != oldIdentifier)
+                {
+                    if (overrideDefaultID)
+                        currentIdentifier = oldIdentifier;
+                    else
+                        prop.SetMapValue(buildTargetGroup, currentIdentifier);
+                }
 
                 EditorGUI.BeginChangeCheck();
 
@@ -2211,25 +2206,21 @@ namespace UnityEditor
                     currentIdentifier = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent(label, tooltip), currentIdentifier);
                 }
 
-                if (!overrideDefaultID && currentIdentifier != oldIdentifier)
-                {
-                    currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
-                    prop.SetMapValue(targetGroup.ToString(), currentIdentifier);
-                }
-
                 if (EditorGUI.EndChangeCheck())
                 {
                     currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
-                    prop.SetMapValue(targetGroup.ToString(), currentIdentifier);
+                    prop.SetMapValue(buildTargetGroup, currentIdentifier);
                 }
             }
         }
 
         internal static void ShowBuildNumberUI(SerializedProperty prop, BuildTargetGroup targetGroup, string label, string tooltip)
         {
+            var buildTargetGroup = (targetGroup == BuildTargetGroup.iOS) ? "iPhone" : targetGroup.ToString();
+
             if (!prop.serializedObject.isEditingMultipleObjects)
             {
-                prop.TryGetMapEntry(targetGroup.ToString(), out var entry);
+                prop.TryGetMapEntry(buildTargetGroup, out var entry);
 
                 if (entry != null)
                 {
@@ -2467,9 +2458,23 @@ namespace UnityEditor
             // Active input handling
             using (var vertical = new EditorGUILayout.VerticalScope())
             {
+                var currValue = m_ActiveInputHandler.intValue;
+
                 using (var propertyScope = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_ActiveInputHandler))
                 {
                     m_ActiveInputHandler.intValue = EditorGUILayout.Popup(SettingsContent.activeInputHandling, m_ActiveInputHandler.intValue, SettingsContent.activeInputHandlingOptions);
+                }
+
+                if (m_ActiveInputHandler.intValue != currValue)
+                {
+                    // Give the user a chance to change mind and revert changes.
+                    if (ShouldRestartEditorToApplySetting())
+                    {
+                        m_ActiveInputHandler.serializedObject.ApplyModifiedProperties();
+                        EditorApplication.RestartEditorAndRecompileScripts();
+                    }
+                    else
+                        m_ActiveInputHandler.intValue = currValue;
                 }
             }
 

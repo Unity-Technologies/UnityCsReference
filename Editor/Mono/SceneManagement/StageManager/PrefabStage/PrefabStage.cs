@@ -108,7 +108,15 @@ namespace UnityEditor.Experimental.SceneManagement
         internal static PrefabStage CreatePrefabStage(string prefabAssetPath, GameObject openedFromInstanceObject, PrefabStage.Mode prefabStageMode, Stage contextStage)
         {
             PrefabStage prefabStage = CreateInstance<PrefabStage>();
-            prefabStage.OneTimeInitialize(prefabAssetPath, openedFromInstanceObject, prefabStageMode, contextStage);
+            try
+            {
+                prefabStage.OneTimeInitialize(prefabAssetPath, openedFromInstanceObject, prefabStageMode, contextStage);
+            }
+            catch
+            {
+                DestroyImmediate(prefabStage);
+                throw;
+            }
             return prefabStage;
         }
 
@@ -138,15 +146,42 @@ namespace UnityEditor.Experimental.SceneManagement
             return m_OpenedFromInstanceObject != null && PrefabUtility.IsPartOfPrefabInstance(m_OpenedFromInstanceObject);
         }
 
+        static GameObject FindPrefabInstanceRootThatMatchesPrefabAssetPath(GameObject prefabInstanceObject, string prefabAssetPath)
+        {
+            if (prefabInstanceObject == null)
+                throw new ArgumentNullException(nameof(prefabInstanceObject));
+
+            if (string.IsNullOrEmpty(prefabAssetPath))
+                throw new ArgumentNullException(nameof(prefabAssetPath));
+
+            if (PrefabUtility.GetCorrespondingObjectFromSourceAtPath(prefabInstanceObject, prefabAssetPath) == null)
+                throw new ArgumentException($"'{nameof(prefabInstanceObject)}' is not related to the Prefab at path: '{prefabAssetPath}'");
+
+            Transform transform = prefabInstanceObject.transform;
+            while (transform != null)
+            {
+                var assetObject = PrefabUtility.GetCorrespondingObjectFromSourceAtPath(transform, prefabAssetPath);
+                if (assetObject != null && assetObject.parent == null)
+                    return transform.gameObject;
+
+                transform = transform.parent;
+            }
+
+            return null;
+        }
+
         void SetOpenedFromInstanceObject(GameObject go)
         {
             if (go != null)
             {
                 if (!PrefabUtility.IsPartOfPrefabInstance(go))
-                    throw new ArgumentException("GameObject must be part of a Prefab instance, or null.", nameof(go));
+                    throw new ArgumentException("Prefab Mode: GameObject must be part of a Prefab instance, or null.", nameof(go));
 
                 m_OpenedFromInstanceObject = go;
-                m_OpenedFromInstanceRoot = PrefabUtility.GetNearestPrefabInstanceRoot(go);
+                m_OpenedFromInstanceRoot = FindPrefabInstanceRootThatMatchesPrefabAssetPath(go, m_PrefabAssetPath);
+                if (m_OpenedFromInstanceRoot == null)
+                    throw new ArgumentException($"Prefab Mode: The 'openedFromInstance' GameObject '{go.name}' is unrelated to the Prefab Asset '{m_PrefabAssetPath}'.");
+
                 m_FileIdForOpenedFromInstanceObject = Unsupported.GetOrGenerateFileIDHint(go);
             }
             else
