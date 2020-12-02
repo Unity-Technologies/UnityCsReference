@@ -10,7 +10,7 @@ namespace UnityEditor.PackageManager.UI
 {
     internal interface IAssetStoreClient
     {
-        event Action<ProductList, bool> onProductListFetched;
+        event Action<ProductList> onProductListFetched;
 
         event Action<long> onProductFetched;
 
@@ -27,9 +27,11 @@ namespace UnityEditor.PackageManager.UI
 
         event Action<Error> onOperationError;
 
-        void List(int offset, int limit, string searchText = "", bool fetchDetails = true);
+        void List(int offset, int limit, string searchText = "");
 
         void Fetch(long productId);
+
+        void FetchDetail(long productId, Action doneCallbackAction = null);
 
         void FetchDetails(IEnumerable<long> packageIds);
 

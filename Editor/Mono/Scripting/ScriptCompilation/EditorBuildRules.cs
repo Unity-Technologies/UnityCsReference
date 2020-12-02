@@ -676,13 +676,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 scriptAssembly.Files = dirtyTargetAssembly.SourceFiles.ToArray();
 
                 if (targetAssembly.Type == TargetAssemblyType.Predefined)
-                    scriptAssembly.CompilerOptions = settings.PredefinedAssembliesCompilerOptions;
+                    scriptAssembly.CompilerOptions = new ScriptCompilerOptions(settings.PredefinedAssembliesCompilerOptions);
                 else
                     scriptAssembly.CompilerOptions = targetAssembly.CompilerOptions;
 
                 var editorOnlyTargetAssembly = (targetAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
 
-                if (editorOnlyTargetAssembly || buildingForEditor && settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6)
+                if (editorOnlyTargetAssembly)
                     scriptAssembly.CompilerOptions.ApiCompatibilityLevel = ApiCompatibilityLevel.NET_4_6;
                 else
                     scriptAssembly.CompilerOptions.ApiCompatibilityLevel = settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel;

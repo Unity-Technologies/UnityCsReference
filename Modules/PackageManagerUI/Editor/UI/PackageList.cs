@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -14,6 +13,7 @@ namespace UnityEditor.PackageManager.UI
     internal class PackageList : VisualElement
     {
         private const string k_UnityPackageGroupDisplayName = "Unity Technologies";
+        private const double k_DelayBeforeCheck = 0.5;
 
         internal new class UxmlFactory : UxmlFactory<PackageList> {}
 
@@ -26,6 +26,9 @@ namespace UnityEditor.PackageManager.UI
 
         private IEnumerable<PackageItem> packageItems => packageGroups.SelectMany(group => group.packageItems);
         private IEnumerable<PackageGroup> packageGroups => itemsList.Children().Cast<PackageGroup>();
+
+        [NonSerialized]
+        private double m_Timestamp;
 
         public PackageList()
         {
@@ -75,6 +78,9 @@ namespace UnityEditor.PackageManager.UI
             // manually build the items on initialization to refresh the UI
             OnPageRebuild(PageManager.instance.GetCurrentPage());
             OnSelectionChanged(PageManager.instance.GetSelectedVersion());
+
+            scrollView.RegisterCallback<GeometryChangedEvent>(OnScrollViewGeometryChanged);
+            scrollView.verticalScroller.valueChanged += OnScrollViewVerticalScrollerValueChanged;
         }
 
         public void OnDisable()
@@ -95,6 +101,47 @@ namespace UnityEditor.PackageManager.UI
             ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
 
             PackageFiltering.instance.onFilterTabChanged -= OnFilterTabChanged;
+
+            scrollView.UnregisterCallback<GeometryChangedEvent>(OnScrollViewGeometryChanged);
+            scrollView.verticalScroller.valueChanged -= OnScrollViewVerticalScrollerValueChanged;
+        }
+
+        private void OnScrollViewVerticalScrollerValueChanged(float value)
+        {
+            StartDelayedCheckPackagesItemBecomeVisible();
+        }
+
+        private void OnScrollViewGeometryChanged(GeometryChangedEvent evt)
+        {
+            StartDelayedCheckPackagesItemBecomeVisible();
+        }
+
+        private void StartDelayedCheckPackagesItemBecomeVisible()
+        {
+            if (PackageFiltering.instance.currentFilterTab != PackageFilterTab.AssetStore)
+                return;
+
+            m_Timestamp = EditorApplication.timeSinceStartup;
+            EditorApplication.update -= DelayedCheckPackageItemsBecomeVisible;
+            EditorApplication.update += DelayedCheckPackageItemsBecomeVisible;
+        }
+
+        private void DelayedCheckPackageItemsBecomeVisible()
+        {
+            if (EditorApplication.timeSinceStartup - m_Timestamp <= k_DelayBeforeCheck)
+                return;
+
+            EditorApplication.update -= DelayedCheckPackageItemsBecomeVisible;
+            CheckPackageItemsBecomeVisible();
+        }
+
+        private void CheckPackageItemsBecomeVisible()
+        {
+            foreach (var item in packageItems.Where(item => item?.package is PlaceholderPackage))
+            {
+                if (scrollView.worldBound.Contains(item.worldBound.min) || scrollView.worldBound.Contains(item.worldBound.max))
+                    item.BecomesVisible();
+            }
         }
 
         private PackageItem GetPackageItem(string packageUniqueId)
@@ -223,22 +270,22 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        private void ScrollIfNeeded(ScrollView container = null, VisualElement target = null)
+        private void ScrollIfNeeded(ScrollView scrollView = null, VisualElement target = null)
         {
-            container = container ?? scrollView;
-            target = target ?? GetSelectedItem()?.element;
-            if (container == null || target == null)
+            var container = scrollView ?? this.scrollView;
+            var elt = target ?? GetSelectedItem()?.element;
+            if (container == null || elt == null)
                 return;
 
-            if (float.IsNaN(target.layout.height))
+            if (float.IsNaN(elt.layout.height))
             {
-                EditorApplication.delayCall += () => ScrollIfNeeded(container, target);
+                EditorApplication.delayCall += () => ScrollIfNeeded(scrollView, target);
                 return;
             }
 
-            var scrollViews = UIUtils.GetParentsOfType<ScrollView>(target);
+            var scrollViews = UIUtils.GetParentsOfType<ScrollView>(elt);
             foreach (var scrollview in scrollViews)
-                UIUtils.ScrollIfNeeded(scrollview, target);
+                UIUtils.ScrollIfNeeded(scrollview, elt);
         }
 
         private void SetSelectedItemExpanded(bool value)
@@ -423,12 +470,15 @@ namespace UnityEditor.PackageManager.UI
                 }
 
                 ReorderGroups();
+
+                if (addedOrUpdated.OfType<PlaceholderPackage>().Any())
+                    StartDelayedCheckPackagesItemBecomeVisible();
             }
 
             foreach (var group in packageGroups)
                 group.RefreshHeaderVisibility();
 
-            ShowResults();
+            ShowResults(removed.Any());
         }
 
         internal void OnSelectionChanged(IPackageVersion newSelection)
@@ -556,12 +606,12 @@ namespace UnityEditor.PackageManager.UI
             SetEmptyAreaDisplay(false);
         }
 
-        private void ShowResults()
+        private void ShowResults(bool scrollIfNeeded = true)
         {
-            var showEmptyResults = !packageItems.Where(item => item.visualState.visible).Any();
+            var showEmptyResults = !packageItems.Any(item => item.visualState.visible);
             ShowEmptyResults(showEmptyResults);
 
-            if (!showEmptyResults)
+            if (scrollIfNeeded && !showEmptyResults)
                 ScrollIfNeeded();
         }
 

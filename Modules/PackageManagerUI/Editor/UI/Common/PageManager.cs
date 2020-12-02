@@ -170,7 +170,7 @@ namespace UnityEditor.PackageManager.UI
                 if (!string.IsNullOrEmpty(searchText))
                 {
                     if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
-                        AssetStore.AssetStoreClient.instance.List(0, k_DefaultPageSize, searchText, false);
+                        AssetStore.AssetStoreClient.instance.List(0, k_DefaultPageSize, searchText);
                 }
                 GetPageFromFilterTab().FilterBySearchText(searchText);
             }
@@ -198,9 +198,9 @@ namespace UnityEditor.PackageManager.UI
                 GetPageFromFilterTab().OnPackagesChanged(added, removed, preUpdate, postUpdate);
             }
 
-            private void OnProductListFetched(ProductList productList, bool fetchDetailsCalled)
+            private void OnProductListFetched(ProductList productList)
             {
-                GetPageFromFilterTab(PackageFilterTab.AssetStore).OnProductListFetched(productList, fetchDetailsCalled);
+                GetPageFromFilterTab(PackageFilterTab.AssetStore).OnProductListFetched(productList);
             }
 
             private void OnProductFetched(long productId)

@@ -43,11 +43,30 @@ namespace UnityEngine
     }
 
     [NativeHeader("Editor/Src/Animation/AnimationModeSnapshot.h")]
+    [NativeHeader("Editor/Src/Undo/PropertyDiffUndoRecorder.h")]
     public struct DrivenRectTransformTracker
     {
         private List<RectTransform> m_Tracked;
-        [FreeFunction("!GetAnimationModeSnapshot().IsInAnimationMode")]
-        internal static extern bool CanRecordModifications();
+
+        internal static bool CanRecordModifications()
+        {
+            // The DrivenRectTransformTracker should not record undo by itself but always
+            // as part of another undoable action. We therefore prevent recording undo if there
+            // is no undo recordings yet. This fixes many situations where the main scene is
+            // marked as dirty without user interaction as a side effect the Add() and Clear()
+            // below being called either when rebuilding auto layouted during ui rendering or when
+            // layoutgroup is being disabled when merging Prefab instances. Fixes case 1268783.
+            return !IsInAnimationMode() && (IsUndoingOrRedoing() || HasUndoRecordObjects());
+        }
+
+        [FreeFunction("GetAnimationModeSnapshot().IsInAnimationMode")]
+        static extern bool IsInAnimationMode();
+
+        [FreeFunction("GetPropertyDiffUndoRecorder().HasRecordings")]
+        static extern bool HasUndoRecordObjects();
+
+        [FreeFunction("GetPropertyDiffUndoRecorder().IsUndoingOrRedoing")]
+        static extern bool IsUndoingOrRedoing();
 
         private static bool s_BlockUndo;
 

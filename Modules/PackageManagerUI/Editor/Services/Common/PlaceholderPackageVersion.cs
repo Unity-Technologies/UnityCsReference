@@ -21,7 +21,9 @@ namespace UnityEditor.PackageManager.UI
         public string uniqueId => m_UniqueId;
         public string name => string.Empty;
 
-        public string displayName => string.Empty;
+        [SerializeField]
+        private string m_DisplayName;
+        public string displayName => m_DisplayName;
 
         public string author => string.Empty;
 
@@ -84,10 +86,11 @@ namespace UnityEditor.PackageManager.UI
             return (m_Tag & tag) != 0;
         }
 
-        public PlaceholderPackageVersion(string packageUniqueId, string uniqueId, PackageTag tag = PackageTag.None, PackageSource source = PackageSource.Unknown)
+        public PlaceholderPackageVersion(string packageUniqueId, string uniqueId, string displayName, PackageTag tag = PackageTag.None, PackageSource source = PackageSource.Unknown)
         {
             m_PackageUniqueId = packageUniqueId;
             m_UniqueId = uniqueId;
+            m_DisplayName = displayName;
             m_Tag = tag;
         }
     }
