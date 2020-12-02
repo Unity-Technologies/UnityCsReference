@@ -30,7 +30,12 @@ namespace Unity.CodeEditor
         [RequiredByNativeCode]
         static bool OpenProject(string path, int line, int column)
         {
-            return Editor.Current.OpenProject(path, line, column);
+            var didOpenProject = Editor.Current.OpenProject(path, line, column);
+            if (didOpenProject)
+            {
+                CodeEditorAnalytics.SendCodeEditorUsage(CodeEditor.Editor.Current);
+            }
+            return didOpenProject;
         }
 
         [OnOpenAsset]
@@ -51,7 +56,12 @@ namespace Unity.CodeEditor
             }
 
             var assetFilePath = Path.GetFullPath(assetPath);
-            return Editor.Current.OpenProject(assetFilePath, line, column);
+            var didOpenProject = Editor.Current.OpenProject(assetFilePath, line, column);
+            if (didOpenProject)
+            {
+                CodeEditorAnalytics.SendCodeEditorUsage(CodeEditor.Editor.Current);
+            }
+            return didOpenProject;
         }
 
         internal Installation EditorInstallation

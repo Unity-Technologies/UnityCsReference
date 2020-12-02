@@ -12,6 +12,7 @@ using System.Linq;
 using Math = System.Math;
 using IndexOutOfRangeException = System.IndexOutOfRangeException;
 using AssetReference = UnityEditorInternal.InternalEditorUtility.AssetReference;
+using System;
 
 namespace UnityEditor
 {
@@ -38,6 +39,8 @@ namespace UnityEditor
 
             List<int> m_DragSelection = new List<int>();                // Temp instanceID state while dragging (not serialized)
             int m_DropTargetControlID = 0;
+
+            private List<Type> m_AssetPreviewIgnoreList = new List<Type>();
 
             // Type name if resource is the key
             Dictionary<string, BuiltinResource[]> m_BuiltinResourceMap;
@@ -85,6 +88,33 @@ namespace UnityEditor
                 InitBuiltinResources();
                 ItemsWantedShown = int.MaxValue;
                 m_Collapsable = false;
+                InitAssetPreviewIgnoreList();
+            }
+
+            //Initialize the list with known asset types that has no Preview Image and should use icons instead like Text, Folder, Scene etc.
+            //This will prevent the AssetPreview generation for asset types that has no asset previews.
+            //This has been added to handle projects with a large number of assets that has no preview,
+            //as preview generation for all those assets is consuming significant amount of CPU,
+            //it feels like Unity is frozen for repaint event in ProjectBrowse/ObjectSelector.
+            private void InitAssetPreviewIgnoreList()
+            {
+                m_AssetPreviewIgnoreList.Add(typeof(DefaultAsset));                                                 //DLLs, corrupted files, pdf, Folder etc.
+                m_AssetPreviewIgnoreList.Add(typeof(MonoScript));                                                   //Monobehaviour scripts
+                m_AssetPreviewIgnoreList.Add(typeof(SceneAsset));
+                m_AssetPreviewIgnoreList.Add(typeof(AnimationClip));
+                m_AssetPreviewIgnoreList.Add(typeof(Animations.AnimatorController));
+                m_AssetPreviewIgnoreList.Add(typeof(TextAsset));
+                m_AssetPreviewIgnoreList.Add(typeof(Shader));
+            }
+
+            //Use this to add the specific types that needs to ignored for AssetPreview image generation.
+            //External packages can use these to add support for their specific asset types.
+            public void AddTypetoAssetPreviewIgnoreList(Type assetType)
+            {
+                if (m_AssetPreviewIgnoreList.Contains(assetType))
+                    return;
+
+                m_AssetPreviewIgnoreList.Add(assetType);
             }
 
             public override void UpdateAssets()
@@ -782,10 +812,14 @@ namespace UnityEditor
                         {
                             // Check for asset preview
                             Texture image = null;
-                            if (assetReference.instanceID != 0)
-                                image = AssetPreview.GetAssetPreview(assetReference.instanceID, m_Owner.GetAssetPreviewManagerID());
-                            else if (!string.IsNullOrEmpty(assetReference.guid))
-                                image = AssetPreview.GetAssetPreviewFromGUID(assetReference.guid, m_Owner.GetAssetPreviewManagerID());
+                            bool shouldGetAssetPreview = ShouldGetAssetPreview(assetReference.instanceID);
+                            if (shouldGetAssetPreview)
+                            {
+                                if (assetReference.instanceID != 0)
+                                    image = AssetPreview.GetAssetPreview(assetReference.instanceID, m_Owner.GetAssetPreviewManagerID());
+                                else if (!string.IsNullOrEmpty(assetReference.guid))
+                                    image = AssetPreview.GetAssetPreviewFromGUID(assetReference.guid, m_Owner.GetAssetPreviewManagerID());
+                            }
 
                             m_Content.image = image;
                             if (m_Content.image != null)
@@ -965,6 +999,15 @@ namespace UnityEditor
                     result.Add(new KeyValuePair<string, int>(m_ActiveBuiltinList[i].m_Name, m_ActiveBuiltinList[i].m_InstanceID));
 
                 return result;
+            }
+
+            private bool ShouldGetAssetPreview(int instanceId)
+            {
+                string path = AssetDatabase.GetAssetPath(instanceId);
+                Type assetDataType = AssetDatabase.GetMainAssetTypeAtPath(path);
+                if (m_AssetPreviewIgnoreList.Contains(assetDataType))
+                    return false;
+                return true;
             }
 
             private void BeginPing(int instanceID)

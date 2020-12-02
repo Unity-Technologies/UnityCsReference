@@ -9,6 +9,8 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
 {
+    using AssetStore;
+
     internal class PackageItem : VisualElement, ISelectableItem
     {
         private string m_CurrentStateClass;
@@ -18,6 +20,9 @@ namespace UnityEditor.PackageManager.UI
 
         public IPackageVersion targetVersion { get { return package?.primaryVersion; } }
         public VisualElement element { get { return this; } }
+
+        [NonSerialized]
+        private bool m_FetchingDetail;
 
         internal PackageGroup packageGroup { get; set; }
 
@@ -49,6 +54,19 @@ namespace UnityEditor.PackageManager.UI
             UpdateVisualState(state);
         }
 
+        public void BecomesVisible()
+        {
+            if (m_FetchingDetail || !(package is PlaceholderPackage) || !package.Is(PackageType.AssetStore))
+                return;
+
+            long productId;
+            if (long.TryParse(package.uniqueId, out productId))
+            {
+                m_FetchingDetail = true;
+                AssetStoreClient.instance.FetchDetail(productId, () => { m_FetchingDetail = false; });
+            }
+        }
+
         public void UpdateVisualState(VisualState newVisualState)
         {
             var seeAllVersionsOld = visualState?.seeAllVersions ?? false;
@@ -71,6 +89,8 @@ namespace UnityEditor.PackageManager.UI
 
         internal void SetPackage(IPackage package)
         {
+            m_FetchingDetail = false;
+
             var displayVersion = package?.primaryVersion;
             if (displayVersion == null)
                 return;

@@ -4421,36 +4421,23 @@ namespace UnityEditor
             var wasEnabled = GUI.enabled;
             var eventType = GetEventTypeForControlAllowDisabledContextMenuPaste(evt, id);
 
-            if (showEyedropper)
-                hovered ^= hoveredEyedropper;
-
             switch (eventType)
             {
                 case EventType.MouseDown:
                     if (showEyedropper)
                     {
-                        if (hoveredEyedropper && wasEnabled)
-                        {
-                            GUIUtility.keyboardControl = id;
-                            EyeDropper.Start(GUIView.current);
-                            s_ColorPickID = id;
-                            evt.Use();
-                            GUIUtility.ExitGUI();
-                        }
+                        hovered ^= hoveredEyedropper;
                     }
-                    break;
 
-                case EventType.MouseUp:
                     if (hovered)
                     {
-                        var currentView = GUIView.current;
                         switch (evt.button)
                         {
                             case 0:
                                 // Left click: Show the ColorPicker
                                 GUIUtility.keyboardControl = id;
                                 showMixedValue = false;
-                                ColorPicker.Show(currentView, value, showAlpha, hdr);
+                                ColorPicker.Show(GUIView.current, value, showAlpha, hdr);
                                 GUIUtility.ExitGUI();
                                 break;
 
@@ -4461,6 +4448,7 @@ namespace UnityEditor
 
                                 var names = new[] { L10n.Tr("Copy"), L10n.Tr("Paste") };
                                 var enabled = new[] {true, wasEnabled && ColorClipboard.HasColor()};
+                                var currentView = GUIView.current;
 
                                 EditorUtility.DisplayCustomMenu(
                                     position,
@@ -4483,6 +4471,17 @@ namespace UnityEditor
                                     null);
                                 evt.Use();
                                 return origColor;
+                        }
+                    }
+
+                    if (showEyedropper)
+                    {
+                        if (hoveredEyedropper && wasEnabled)
+                        {
+                            GUIUtility.keyboardControl = id;
+                            EyeDropper.Start(GUIView.current);
+                            s_ColorPickID = id;
+                            GUIUtility.ExitGUI();
                         }
                     }
                     break;

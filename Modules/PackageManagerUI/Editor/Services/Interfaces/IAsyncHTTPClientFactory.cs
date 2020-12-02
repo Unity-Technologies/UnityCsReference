@@ -9,5 +9,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
         IAsyncHTTPClient GetASyncHTTPClient(string url);
 
         IAsyncHTTPClient GetASyncHTTPClient(string url, string method);
+
+        void AbortASyncHTTPClientByTag(string tag);
     }
 }

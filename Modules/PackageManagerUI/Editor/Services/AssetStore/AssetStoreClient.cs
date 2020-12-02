@@ -27,7 +27,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             public event Action onListOperationFinish = delegate {};
             public event Action<Error> onOperationError = delegate {};
 
-            public event Action<ProductList, bool> onProductListFetched = delegate {};
+            public event Action<ProductList> onProductListFetched = delegate {};
             public event Action<long> onProductFetched = delegate {};
 
             public event Action onFetchDetailsStart = delegate {};
@@ -82,18 +82,18 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
                 // create a placeholder before fetching data from the cloud for the first time
                 if (!m_FetchedInfos.ContainsKey(productId.ToString()))
-                    onPackagesChanged?.Invoke(new[] { new PlaceholderPackage(productId.ToString(), PackageType.AssetStore) });
+                    onPackagesChanged?.Invoke(new[] { new PlaceholderPackage(productId.ToString(), string.Empty, PackageType.AssetStore) });
 
                 FetchDetails(new[] { productId });
                 onProductFetched?.Invoke(productId);
             }
 
-            public void List(int offset, int limit, string searchText = "", bool fetchDetails = true)
+            public void List(int offset, int limit, string searchText = "")
             {
                 // patch fix to avoid User Not Logged In error when first opening the application with My Assets open
                 if (!ApplicationUtil.instance.isUserInfoReady)
                 {
-                    EditorApplication.delayCall += () => List(offset, limit, searchText, fetchDetails);
+                    EditorApplication.delayCall += () => List(offset, limit, searchText);
                     return;
                 }
                 if (!ApplicationUtil.instance.isUserLoggedIn)
@@ -127,7 +127,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                         productList.list.Clear();
                     }
 
-                    onProductListFetched?.Invoke(productList, fetchDetails);
+                    onProductListFetched?.Invoke(productList);
 
                     if (productList.list.Count == 0)
                     {
@@ -137,20 +137,51 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
                     var placeholderPackages = new List<IPackage>();
 
-                    foreach (var productId in productList.list)
+                    foreach (var product in productList.list)
                     {
                         // create a placeholder before fetching data from the cloud for the first time
-                        if (!m_FetchedInfos.ContainsKey(productId.ToString()))
-                            placeholderPackages.Add(new PlaceholderPackage(productId.ToString(), PackageType.AssetStore, PackageTag.None, PackageProgress.Refreshing));
+                        if (!m_FetchedInfos.ContainsKey(product.productId.ToString()))
+                            placeholderPackages.Add(new PlaceholderPackage(product.productId.ToString(), product.displayName, PackageType.AssetStore, PackageTag.None, PackageProgress.Refreshing));
                     }
 
                     if (placeholderPackages.Any())
                         onPackagesChanged?.Invoke(placeholderPackages);
 
                     onListOperationFinish?.Invoke();
+                });
+            }
 
-                    if (fetchDetails)
-                        FetchDetails(productList.list);
+            public void FetchDetail(long productId, Action doneCallbackAction = null)
+            {
+                AssetStoreRestAPI.instance.GetProductDetail(productId, productDetail =>
+                {
+                    AssetStorePackage package = null;
+                    var error = productDetail.GetString("errorMessage");
+                    if (string.IsNullOrEmpty(error))
+                    {
+                        var fetchedInfo = FetchedInfo.ParseFetchedInfo(productId.ToString(), productDetail);
+                        if (fetchedInfo == null)
+                            package = new AssetStorePackage(productId.ToString(), new Error(NativeErrorCode.Unknown, "Error parsing product details."));
+                        else
+                        {
+                            var oldFetchedInfo = m_FetchedInfos.Get(fetchedInfo.id);
+                            if (oldFetchedInfo == null || oldFetchedInfo.versionId != fetchedInfo.versionId || oldFetchedInfo.versionString != fetchedInfo.versionString)
+                            {
+                                if (string.IsNullOrEmpty(fetchedInfo.packageName))
+                                    package = new AssetStorePackage(fetchedInfo, m_LocalInfos.Get(fetchedInfo.id));
+                                else
+                                    UpmClient.instance.FetchForProduct(fetchedInfo.id, fetchedInfo.packageName);
+                                m_FetchedInfos[fetchedInfo.id] = fetchedInfo;
+                            }
+                        }
+                    }
+                    else
+                        package = new AssetStorePackage(productId.ToString(), new Error(NativeErrorCode.Unknown, error));
+
+                    if (package != null)
+                        onPackagesChanged?.Invoke(new[] {package});
+
+                    doneCallbackAction?.Invoke();
                 });
             }
 
@@ -164,34 +195,8 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
                 foreach (var id in packageIds)
                 {
-                    AssetStoreRestAPI.instance.GetProductDetail(id, productDetail =>
+                    FetchDetail(id, () =>
                     {
-                        AssetStorePackage package =  null;
-                        var error = productDetail.GetString("errorMessage");
-                        if (string.IsNullOrEmpty(error))
-                        {
-                            var fetchedInfo = FetchedInfo.ParseFetchedInfo(id.ToString(), productDetail);
-                            if (fetchedInfo == null)
-                                package = new AssetStorePackage(id.ToString(), new Error(NativeErrorCode.Unknown, "Error parsing product details."));
-                            else
-                            {
-                                var oldFetchedInfo = m_FetchedInfos.Get(fetchedInfo.id);
-                                if (oldFetchedInfo == null || oldFetchedInfo.versionId != fetchedInfo.versionId || oldFetchedInfo.versionString != fetchedInfo.versionString)
-                                {
-                                    if (string.IsNullOrEmpty(fetchedInfo.packageName))
-                                        package = new AssetStorePackage(fetchedInfo, m_LocalInfos.Get(fetchedInfo.id));
-                                    else
-                                        UpmClient.instance.FetchForProduct(fetchedInfo.id, fetchedInfo.packageName);
-                                    m_FetchedInfos[fetchedInfo.id] = fetchedInfo;
-                                }
-                            }
-                        }
-                        else
-                            package = new AssetStorePackage(id.ToString(), new Error(NativeErrorCode.Unknown, error));
-
-                        if (package != null)
-                            onPackagesChanged?.Invoke(new[] { package });
-
                         countProduct--;
                         if (countProduct == 0)
                             onFetchDetailsFinish?.Invoke();

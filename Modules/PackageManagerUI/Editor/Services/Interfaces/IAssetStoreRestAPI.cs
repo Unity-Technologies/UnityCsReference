@@ -20,6 +20,13 @@ namespace UnityEditor.PackageManager.UI
     }
 
     [Serializable]
+    internal class ProductInfo
+    {
+        public long productId;
+        public string displayName;
+    }
+
+    [Serializable]
     internal class ProductList
     {
         public long total;
@@ -27,7 +34,7 @@ namespace UnityEditor.PackageManager.UI
         public bool isValid;
         public string searchText;
         public string errorMessage;
-        public List<long> list = new List<long>();
+        public List<ProductInfo> list = new List<ProductInfo>();
     }
 
     internal interface IAssetStoreRestAPI
@@ -39,5 +46,7 @@ namespace UnityEditor.PackageManager.UI
         void GetDownloadDetail(long productID, Action<DownloadInformation> doneCallbackAction);
 
         void GetProductUpdateDetail(IEnumerable<AssetStore.LocalInfo> localInfos, Action<Dictionary<string, object>> doneCallbackAction);
+
+        void HandleHttpRequest(IAsyncHTTPClient httpRequest, Action<Dictionary<string, object>> doneCallbackAction, Action<string> errorCallbackAction);
     }
 }

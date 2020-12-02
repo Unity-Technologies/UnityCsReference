@@ -26,11 +26,19 @@ namespace UnityEditor.Compilation
         public bool AllowUnsafeCode { get; set; }
         public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
         public string[] ResponseFiles { get; set; }
+
         public ScriptCompilerOptions()
         {
             AllowUnsafeCode = false;
             ApiCompatibilityLevel = ApiCompatibilityLevel.NET_4_6;
             ResponseFiles = new string[0];
+        }
+
+        internal ScriptCompilerOptions(ScriptCompilerOptions scriptCompilerOptions)
+        {
+            AllowUnsafeCode = scriptCompilerOptions.AllowUnsafeCode;
+            ApiCompatibilityLevel = scriptCompilerOptions.ApiCompatibilityLevel;
+            ResponseFiles = new List<string>(scriptCompilerOptions.ResponseFiles).ToArray();
         }
     }
 

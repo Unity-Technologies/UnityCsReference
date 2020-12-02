@@ -423,5 +423,8 @@ namespace UnityEditor
         // This is pure backward compatibility codepath. It can be removed when we decide that the time has come
         internal extern bool ShouldShowRemoveMatteOption();
         internal extern bool removeMatte { get; set; }
+
+        // This is for remapping Sprite that are renamed.
+        extern internal bool GetNameFromInternalIDMap(long id, ref string name);
     }
 }
