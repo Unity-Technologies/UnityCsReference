@@ -68,6 +68,7 @@ namespace UnityEngine
         [FreeFunction(Name = "ShaderScripting::FindPassTagValue", HasExplicitThis = true)] extern private int Internal_FindPassTagValue(int passIndex, int tagName);
 
         [NativeProperty("CustomEditorName")] extern internal string customEditor { get; }
+        [FreeFunction(Name = "ShaderScripting::GetCustomEditorForRenderPipeline", HasExplicitThis = true)] extern internal void Internal_GetCustomEditorForRenderPipeline(string renderPipelineType, out string customEditor);
     }
 
     public sealed partial class Shader : Object

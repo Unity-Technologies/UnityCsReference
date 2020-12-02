@@ -55,6 +55,12 @@ namespace UnityEngine.UIElements
             // If and when we have control, set value from drag element
             if (dragDirection == DragDirection.Free)
             {
+                if (evt.eventTypeId == PointerMoveEvent.TypeId())
+                {
+                    var pointerMoveEvent = (PointerMoveEvent)evt;
+                    pointerMoveEvent.isHandledByDraggable = true;
+                }
+
                 dragging?.Invoke();
             }
         }

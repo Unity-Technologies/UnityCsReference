@@ -48,6 +48,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"height", "<length> | <percentage> | auto"},
             {"justify-content", "flex-start | flex-end | center | space-between | space-around"},
             {"left", "<length> | <percentage> | auto"},
+            {"letter-spacing", "<length>"},
             {"margin", "[ <length> | <percentage> | auto ]{1,4}"},
             {"margin-bottom", "<length> | <percentage> | auto"},
             {"margin-left", "<length> | <percentage> | auto"},
@@ -67,21 +68,28 @@ namespace UnityEngine.UIElements.StyleSheets
             {"position", "relative | absolute"},
             {"right", "<length> | <percentage> | auto"},
             {"text-overflow", "clip | ellipsis"},
+            {"text-shadow", "<length>{2,3} && <color>?"},
             {"top", "<length> | <percentage> | auto"},
             {"-unity-background-image-tint-color", "<color>"},
             {"-unity-background-scale-mode", "stretch-to-fill | scale-and-crop | scale-to-fit"},
             {"-unity-font", "<resource> | <url>"},
+            {"-unity-font-definition", "<resource> | <url>"},
             {"-unity-font-style", "normal | italic | bold | bold-and-italic"},
             {"-unity-overflow-clip-box", "padding-box | content-box"},
+            {"-unity-paragraph-spacing", "<length>"},
             {"-unity-slice-bottom", "<integer>"},
             {"-unity-slice-left", "<integer>"},
             {"-unity-slice-right", "<integer>"},
             {"-unity-slice-top", "<integer>"},
             {"-unity-text-align", "upper-left | middle-left | lower-left | upper-center | middle-center | lower-center | upper-right | middle-right | lower-right"},
+            {"-unity-text-outline", "<length> || <color>"},
+            {"-unity-text-outline-color", "<color>"},
+            {"-unity-text-outline-width", "<length>"},
             {"-unity-text-overflow-position", "start | middle | end"},
             {"visibility", "visible | hidden"},
             {"white-space", "normal | nowrap"},
-            {"width", "<length> | <percentage> | auto"}
+            {"width", "<length> | <percentage> | auto"},
+            {"word-spacing", "<length>"}
         };
     }
 }

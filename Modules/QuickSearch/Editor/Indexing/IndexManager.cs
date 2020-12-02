@@ -211,9 +211,6 @@ namespace UnityEditor.Search
 
         internal void OnDisable()
         {
-            if (hasUnsavedChanges && EditorUtility.DisplayDialog(L10n.Tr("Unsaved Changes Detected"),
-                L10n.Tr("There are unsaved changes."), L10n.Tr("Save"), L10n.Tr("Discard")))
-                SaveChanges();
 
             m_ListViewIndexSettings.ListView.onSelectionChange -= OnSelectedIndexChanged;
 
@@ -663,8 +660,7 @@ namespace UnityEditor.Search
             }
         }
 
-        private bool hasUnsavedChanges;
-        private void SaveChanges()
+        public override void SaveChanges()
         {
             if (hasUnsavedChanges)
             {

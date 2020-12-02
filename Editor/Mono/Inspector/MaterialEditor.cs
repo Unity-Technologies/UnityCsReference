@@ -460,7 +460,7 @@ namespace UnityEditor
         {
             var material = target as Material;
             bool shaderChanged = material && material.shader != m_Shader;
-            bool customEditorChanged = material && material.shader && m_CustomEditorClassName != material.shader.customEditor;
+            bool customEditorChanged = material && material.shader && m_CustomEditorClassName != ShaderUtil.GetCurrentCustomEditor(material.shader);
             if (shaderChanged || customEditorChanged)
             {
                 CreateCustomShaderEditorIfNeeded(material.shader);
@@ -545,9 +545,9 @@ namespace UnityEditor
                 return;
 
             m_CheckSetup = false;
-            if (m_CustomShaderGUI == null && !IsMaterialEditor(m_Shader.customEditor))
+            if (m_CustomShaderGUI == null && !IsMaterialEditor(ShaderUtil.GetCurrentCustomEditor(m_Shader)))
             {
-                Debug.LogWarningFormat("Could not create a custom UI for the shader '{0}'. The shader has the following: 'CustomEditor = {1}'. Does the custom editor specified include its namespace? And does the class either derive from ShaderGUI or MaterialEditor?", m_Shader.name, m_Shader.customEditor);
+                Debug.LogWarningFormat("Could not create a custom UI for the shader '{0}'. The shader has the following: 'CustomEditor = {1}'. Does the custom editor specified include its namespace? And does the class either derive from ShaderGUI or MaterialEditor?", m_Shader.name, ShaderUtil.GetCurrentCustomEditor(m_Shader));
             }
         }
 
@@ -1724,16 +1724,16 @@ namespace UnityEditor
 
         void CreateCustomShaderEditorIfNeeded(Shader shader)
         {
-            if (shader == null || string.IsNullOrEmpty(shader.customEditor))
+            if (shader == null || string.IsNullOrEmpty(ShaderUtil.GetCurrentCustomEditor(shader)))
             {
                 m_CustomEditorClassName = "";
                 m_CustomShaderGUI = null;
                 return;
             }
-            if (m_CustomEditorClassName == shader.customEditor)
+            if (m_CustomEditorClassName == ShaderUtil.GetCurrentCustomEditor(shader))
                 return;
 
-            m_CustomEditorClassName = shader.customEditor;
+            m_CustomEditorClassName = ShaderUtil.GetCurrentCustomEditor(shader);
             m_CustomShaderGUI = ShaderGUIUtility.CreateShaderGUI(m_CustomEditorClassName);
             // We need to delay checking setup because we need all loaded editor assemblies which is not ready
             // during package import. During package import we create an Editor to generate a asset preview. (case 707328)

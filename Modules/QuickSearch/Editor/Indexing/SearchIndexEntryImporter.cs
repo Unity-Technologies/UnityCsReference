@@ -68,7 +68,7 @@ namespace UnityEditor.Search
                 using (var fileStream = new FileStream(indexArtifactPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read))
                     indexer.Write(fileStream);
 
-                Console.WriteLine($"Generated {type} ({GetType().Name}) {indexArtifactPath} for {ctx.assetPath} with {options}");
+                Console.WriteLine($"\r\n[QS] Generated {type} artifact ({GetType().Name}) {indexArtifactPath} for {ctx.assetPath} with {options}");
 
                 ctx.DependsOnSourceAsset(Path.GetDirectoryName(ctx.assetPath).Replace("\\", "/"));
                 ctx.DependsOnCustomDependency(GetType().GUID.ToString("N"));

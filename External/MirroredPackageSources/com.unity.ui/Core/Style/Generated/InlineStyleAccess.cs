@@ -500,6 +500,22 @@ namespace UnityEngine.UIElements
             }
         }
 
+        StyleLength IStyle.letterSpacing
+        {
+            get
+            {
+                return GetStyleLength(StylePropertyId.LetterSpacing);
+            }
+
+            set
+            {
+                if (SetStyleValue(StylePropertyId.LetterSpacing, value, ve.sharedStyle.letterSpacing))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint | VersionChangeType.Layout);
+                }
+            }
+        }
+
         StyleLength IStyle.marginBottom
         {
             get
@@ -857,6 +873,22 @@ namespace UnityEngine.UIElements
             }
         }
 
+        StyleFontDefinition IStyle.unityFontDefinition
+        {
+            get
+            {
+                return GetStyleFontDefinition(StylePropertyId.UnityFontDefinition);
+            }
+
+            set
+            {
+                if (SetStyleValue(StylePropertyId.UnityFontDefinition, value, ve.sharedStyle.unityFontDefinition))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint | VersionChangeType.Layout);
+                }
+            }
+        }
+
         StyleEnum<FontStyle> IStyle.unityFontStyleAndWeight
         {
             get
@@ -887,6 +919,22 @@ namespace UnityEngine.UIElements
                 if (SetStyleValue(StylePropertyId.UnityOverflowClipBox, value, ve.sharedStyle.unityOverflowClipBox))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+                }
+            }
+        }
+
+        StyleLength IStyle.unityParagraphSpacing
+        {
+            get
+            {
+                return GetStyleLength(StylePropertyId.UnityParagraphSpacing);
+            }
+
+            set
+            {
+                if (SetStyleValue(StylePropertyId.UnityParagraphSpacing, value, ve.sharedStyle.unityParagraphSpacing))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint | VersionChangeType.Layout);
                 }
             }
         }
@@ -972,6 +1020,38 @@ namespace UnityEngine.UIElements
             }
         }
 
+        StyleColor IStyle.unityTextOutlineColor
+        {
+            get
+            {
+                return GetStyleColor(StylePropertyId.UnityTextOutlineColor);
+            }
+
+            set
+            {
+                if (SetStyleValue(StylePropertyId.UnityTextOutlineColor, value, ve.sharedStyle.unityTextOutlineColor))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint);
+                }
+            }
+        }
+
+        StyleFloat IStyle.unityTextOutlineWidth
+        {
+            get
+            {
+                return GetStyleFloat(StylePropertyId.UnityTextOutlineWidth);
+            }
+
+            set
+            {
+                if (SetStyleValue(StylePropertyId.UnityTextOutlineWidth, value, ve.sharedStyle.unityTextOutlineWidth))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint);
+                }
+            }
+        }
+
         StyleEnum<TextOverflowPosition> IStyle.unityTextOverflowPosition
         {
             get
@@ -1036,6 +1116,22 @@ namespace UnityEngine.UIElements
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.Width = ve.computedStyle.width.ToYogaValue();
+                }
+            }
+        }
+
+        StyleLength IStyle.wordSpacing
+        {
+            get
+            {
+                return GetStyleLength(StylePropertyId.WordSpacing);
+            }
+
+            set
+            {
+                if (SetStyleValue(StylePropertyId.WordSpacing, value, ve.sharedStyle.wordSpacing))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint | VersionChangeType.Layout);
                 }
             }
         }

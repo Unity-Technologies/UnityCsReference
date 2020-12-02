@@ -10,10 +10,14 @@ namespace UnityEngine.UIElements
     // The rest of the code is ready to work with just these (internal) classes moving.                                 //
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    internal delegate T LoadAssetAtPathMethod<T>(string asset) where T : UnityEngine.Object;
+
     internal static class AssetOperationsAccess
     {
         internal static Func<Object, string> GetAssetPath;
         internal static Func<Object, int> GetAssetDirtyCount;
+        internal static LoadAssetAtPathMethod<StyleSheet> LoadStyleSheetAtPath;
+        internal static LoadAssetAtPathMethod<ThemeStyleSheet> LoadThemeAtPath;
     }
 
     class AssetTracking<T> where T : ScriptableObject

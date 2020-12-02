@@ -1326,9 +1326,14 @@ namespace UnityEditor
                                     key.inTangent = tangentDirection.y / tangentDirection.x;
                                     key.inWeight = Mathf.Clamp(Mathf.Abs(tangentDirection.x / dx), 0f, 1f);
                                 }
-                                else
+                                else if (tangentDirection.y > 0)
                                 {
                                     key.inTangent = Mathf.Infinity;
+                                    key.inWeight = 0f;
+                                }
+                                else
+                                {
+                                    key.inTangent = -Mathf.Infinity;
                                     key.inWeight = 0f;
                                 }
                                 AnimationUtility.SetKeyLeftTangentMode(ref key, TangentMode.Free);
@@ -1350,9 +1355,14 @@ namespace UnityEditor
                                     key.outTangent = tangentDirection.y / tangentDirection.x;
                                     key.outWeight = Mathf.Clamp(Mathf.Abs(tangentDirection.x / dx), 0f, 1f);
                                 }
-                                else
+                                else if (tangentDirection.y > 0)
                                 {
                                     key.outTangent = Mathf.Infinity;
+                                    key.outWeight = 0f;
+                                }
+                                else
+                                {
+                                    key.outTangent = -Mathf.Infinity;
                                     key.outWeight = 0f;
                                 }
                                 AnimationUtility.SetKeyRightTangentMode(ref key, TangentMode.Free);
@@ -3112,6 +3122,7 @@ namespace UnityEditor
             {
                 Vector2 dir = new Vector2(1.0F, key.inTangent);
                 if (key.inTangent == Mathf.Infinity) dir = new Vector2(0, -1);
+                else if (key.inTangent == -Mathf.Infinity) dir = new Vector2(0, 1);
 
                 Vector2 viewDir = NormalizeInViewSpace(dir);
 
@@ -3135,6 +3146,7 @@ namespace UnityEditor
             {
                 Vector2 dir = new Vector2(1.0F, key.outTangent);
                 if (key.outTangent == Mathf.Infinity) dir = new Vector2(0, -1);
+                else if (key.outTangent == -Mathf.Infinity) dir = new Vector2(0, 1);
 
                 Vector2 viewDir = NormalizeInViewSpace(dir);
 

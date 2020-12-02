@@ -174,6 +174,15 @@ namespace UnityEditor
             }
         }
 
+        //This has been added to accomodate the test in PR for case 991291.
+        internal void SetTargetDisplay(int id)
+        {
+            if (id < 0 || id > 7)
+                return;
+            targetDisplay = id;
+            SetDisplayViewSize(id, targetSize);
+        }
+
         static GameViewSizeGroupType currentSizeGroupType => GameViewSizes.instance.currentGroupType;
 
         GameViewSize currentGameViewSize => GameViewSizes.instance.currentGroup.GetGameViewSize(selectedSizeIndex);
@@ -778,7 +787,7 @@ namespace UnityEditor
         void RepaintIfNeeded()
         {
             UnityEngine.VFX.VFXManager.RequestRepaint();
-            if (LODUtility.IsLODAnimating(null))
+            if (LODUtility.IsLODAnimatingOnDisplay(targetDisplay))
                 Repaint();
         }
 

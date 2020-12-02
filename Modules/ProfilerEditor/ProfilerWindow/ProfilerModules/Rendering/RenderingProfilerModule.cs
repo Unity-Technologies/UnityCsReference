@@ -53,6 +53,7 @@ namespace UnityEditorInternal.Profiling
 
         public RenderingProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName) {}
 
+        public override ProfilerArea area => ProfilerArea.Rendering;
         protected override int defaultOrderIndex => k_DefaultOrderIndex;
         protected override string legacyPreferenceKey => "ProfilerChartRendering";
 

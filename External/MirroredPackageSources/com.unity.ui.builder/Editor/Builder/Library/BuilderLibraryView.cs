@@ -1,11 +1,12 @@
 using System.Linq;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
     abstract class BuilderLibraryView : VisualElement
     {
-        VisualElement m_DocumentElement;
+        VisualElement m_DocumentRootElement;
         BuilderSelection m_Selection;
         BuilderLibraryDragger m_Dragger;
         BuilderTooltipPreview m_TooltipPreview;
@@ -23,7 +24,7 @@ namespace Unity.UI.Builder
             m_TooltipPreview = tooltipPreview;
             m_BuilderPaneContent = builderPaneContent;
             m_PaneWindow = builderPaneWindow;
-            m_DocumentElement = documentElement;
+            m_DocumentRootElement = documentElement;
             m_Selection = selection;
         }
 
@@ -65,7 +66,13 @@ namespace Unity.UI.Builder
             if (newElement == null)
                 return;
 
-            m_DocumentElement.Add(newElement);
+            var activeVTARootElement = m_DocumentRootElement.Query().Where(e => e.GetVisualTreeAsset() == m_PaneWindow.document.visualTreeAsset).First();
+            if (activeVTARootElement == null)
+            {
+                Debug.LogError("UI Builder has a bug. Could not find document root element for currently active open UXML document.");
+                return;
+            }
+            activeVTARootElement.Add(newElement);
 
             if (item.makeElementAssetCallback == null)
                 BuilderAssetUtilities.AddElementToAsset(m_PaneWindow.document, newElement);

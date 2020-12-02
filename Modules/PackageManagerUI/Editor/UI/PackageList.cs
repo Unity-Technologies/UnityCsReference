@@ -26,6 +26,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
+        private ApplicationProxy m_ApplicationProxy;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
@@ -36,6 +37,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
+            m_ApplicationProxy = container.Resolve<ApplicationProxy>();
         }
 
         internal IEnumerable<PackageItem> packageItems => packageGroups.SelectMany(group => group.packageItems);
@@ -429,7 +431,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var hidden = string.IsNullOrEmpty(groupName);
             var expanded = m_PageManager.IsGroupExpanded(groupName);
-            group = new PackageGroup(m_ResourceLoader, m_PageManager, m_SettingsProxy, groupName, GetGroupDisplayName(groupName), expanded, hidden);
+            group = new PackageGroup(m_ResourceLoader, m_PageManager, m_SettingsProxy, groupName, GetGroupDisplayName(groupName), m_ApplicationProxy.isDeveloperBuild, expanded, hidden);
             if (!hidden)
             {
                 group.onGroupToggle += value =>

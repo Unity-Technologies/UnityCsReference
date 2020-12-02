@@ -63,17 +63,6 @@ namespace Unity.UI.Builder
         {
             m_PendingNotifications = 0;
 
-            // Handle the missing UI Toolkit package case.
-            var uitkPackageInfo = PackageInfo.FindForAssetPath("Packages/" + BuilderConstants.UIToolkitPackageName);
-            if (uitkPackageInfo == null)
-            {
-                m_PendingNotifications++;
-                if (!BuilderProjectSettings.hideNotificationAboutMissingUITKPackage)
-                    AddNotification(
-                        BuilderConstants.NoUIToolkitPackageInstalledNotification,
-                        "https://forum.unity.com/threads/ui-toolkit-1-0-preview-available.927822/",
-                        () => BuilderProjectSettings.hideNotificationAboutMissingUITKPackage = true);
-            }
         }
     }
 }

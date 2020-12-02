@@ -48,6 +48,11 @@ namespace Unity.UI.Builder
 
         }
 
+        protected virtual VisualElement ExplorerGetDragPreviewFromTarget(VisualElement target, Vector2 mousePosition)
+        {
+            return target.GetProperty(BuilderConstants.ExplorerItemElementLinkVEPropertyName) as VisualElement;
+        }
+
         protected virtual void ResetDragPreviewElement()
         {
             if (m_DragPreviewLastParent == null)
@@ -72,7 +77,7 @@ namespace Unity.UI.Builder
             // Create list of elements to reparent.
             foreach (var selectedElement in selection.selection)
             {
-                if (!selectedElement.IsPartOfCurrentDocument())
+                if (!ExplorerCanStartDrag(selectedElement))
                     continue;
 
                 var elementToReparent = new ElementToReparent()
@@ -86,17 +91,14 @@ namespace Unity.UI.Builder
             }
 
             // We still need a primary element that is "being dragged" for visualization purporses.
-            m_TargetElementToReparent = target.GetProperty(BuilderConstants.ExplorerItemElementLinkVEPropertyName) as VisualElement;
-            if (!ExplorerCanStartDrag(m_TargetElementToReparent))
+            m_TargetElementToReparent = ExplorerGetDragPreviewFromTarget(target, mousePosition);
+            if (m_TargetElementToReparent == null || !ExplorerCanStartDrag(m_TargetElementToReparent))
                 return false;
 
             // We use the primary target element for our pill info.
             var pillLabel = pill.Q<Label>();
             pillLabel.text = ExplorerGetDraggedPillText(m_TargetElementToReparent);
-
-            // Remove the yellow text color from pill if dragger element does not represent a VisualElementAsset.
-            if (m_TargetElementToReparent.GetVisualElementAsset() != null)
-                pillLabel.RemoveFromClassList(BuilderConstants.ElementClassNameClassName);
+            pillLabel.RemoveFromClassList(BuilderConstants.ElementClassNameClassName);
 
             return true;
         }
@@ -122,8 +124,11 @@ namespace Unity.UI.Builder
             FixElementSizeAndPosition(m_DragPreviewLastParent);
 
             ExplorerPerformDrag();
+        }
 
-            Reparent(pickedElement, index);
+        protected override void PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
+        {
+            Reparent(destination, index);
         }
 
         void Reparent(VisualElement newParent, int index)
@@ -177,12 +182,6 @@ namespace Unity.UI.Builder
                 return;
 
             ResetDragPreviewElement();
-
-            foreach (var elementToReparent in m_ElementsToReparent)
-                ReparentIndividualElement(
-                    elementToReparent.element,
-                    elementToReparent.oldParent,
-                    elementToReparent.oldIndex);
         }
     }
 }

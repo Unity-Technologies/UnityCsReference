@@ -39,6 +39,8 @@ namespace NiceIO
 
         private static bool CalculateIsWindows() => Environment.OSVersion.Platform == PlatformID.Win32Windows || Environment.OSVersion.Platform == PlatformID.Win32NT;
 
+        private static bool CalculateIsWindows10() => Environment.OSVersion.Platform == PlatformID.Win32NT && Environment.OSVersion.Version.Major >= 10;
+
         static readonly StringComparison PathStringComparison =
             k_IsCaseSensitiveFileSystem ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
@@ -1666,7 +1668,7 @@ namespace NiceIO
                 if (path._path.Length < Win32Native.MAX_PATH_LEN)
                     return base.File_GetSize(path);
 
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
                 Win32Native.FIND_DATA findData;
                 IntPtr findHandle = Win32Native.FindFirstFile(longPath, out findData);
                 if (findHandle == new IntPtr(-1))
@@ -1697,7 +1699,7 @@ namespace NiceIO
                     return base.File_Exists(path);
 
                 // If the path is long, fall back to querying with P/Invoke directly
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
                 var attributes = Win32Native.GetFileAttributes(longPath);
                 return attributes != Win32Native.INVALID_FILE_ATTRIBUTES && ((attributes & (uint)Win32Native.FileAttributes.Directory) == 0);
             }
@@ -1717,7 +1719,7 @@ namespace NiceIO
             {
                 // Cleaning up symlinks requires slightly special handling on Windows
                 // Windows .NET implementation of File.Delete() does not handle paths longer than MAX_PATH correctly
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
                 if (!Win32Native.DeleteFile(longPath))
                 {
                     // try MoveFile
@@ -1734,8 +1736,8 @@ namespace NiceIO
                     return;
                 }
                 
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
-                var longDestPath = @"\\?\" + destinationPath.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
+                var longDestPath = MakeLongPath(destinationPath).TrimEnd('\\');
                 if (!Win32Native.CopyFile(longPath, longDestPath, !overWrite))
                     throw new IOException($"Cannot copy file {path} to {destinationPath}.", new Win32Exception(Marshal.GetLastWin32Error()));
             }
@@ -1748,8 +1750,8 @@ namespace NiceIO
                     return;
                 }
 
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
-                var longDestPath = @"\\?\" + destinationPath.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
+                var longDestPath = MakeLongPath(destinationPath).TrimEnd('\\');
                 if (!Win32Native.MoveFile(longPath, longDestPath))
                 {
                     var lastWin32Error = Marshal.GetLastWin32Error();
@@ -1769,7 +1771,7 @@ namespace NiceIO
                     return base.Directory_Exists(path);
 
                 // If the path is long, fall back to querying with P/Invoke directly
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
                 var attributes = Win32Native.GetFileAttributes(longPath);
                 return attributes != Win32Native.INVALID_FILE_ATTRIBUTES && 
                     ((attributes & (uint)Win32Native.FileAttributes.Directory) != 0 || (attributes & (uint)Win32Native.FileAttributes.ReparsePoint) != 0);
@@ -1799,7 +1801,7 @@ namespace NiceIO
                 if (pos > 2)
                     InternalCreateDirectory(new NPath(path.Substring(0, pos)));
 
-                var longPath = @"\\?\" + path;
+                var longPath = MakeLongPath(path, Win32Native.MAX_PATH_LEN - 12);
                 if (!Win32Native.CreateDirectory(longPath, IntPtr.Zero))
                 {
                     var lastError = Marshal.GetLastWin32Error();
@@ -1837,7 +1839,7 @@ namespace NiceIO
                     }
                 }
 
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
                 if (!Win32Native.RemoveDirectory(longPath))
                     throw new IOException($"Cannot delete directory {path}.", new Win32Exception(Marshal.GetLastWin32Error()));
             }
@@ -1850,8 +1852,8 @@ namespace NiceIO
                     return;
                 }
 
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
-                var longDestPath = @"\\?\" + destinationPath.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
+                var longDestPath = MakeLongPath(destinationPath).TrimEnd('\\');
 
                 if (!Win32Native.MoveFileEx(longPath, longDestPath, Win32Native.MoveFileExFlags.CopyAllowed | Win32Native.MoveFileExFlags.WriteThrough))
                 {
@@ -1883,7 +1885,7 @@ namespace NiceIO
             {
                 // Retrieve the reparse tag, using FindFirstFile
                 Win32Native.FIND_DATA findData;
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
                 IntPtr findHandle = Win32Native.FindFirstFile(longPath, out findData);
                 if (findHandle == new IntPtr(-1))
                     throw new FileNotFoundException($"The path {path} does not exist.", path.ToString());
@@ -1898,12 +1900,14 @@ namespace NiceIO
 
             public override void CreateSymbolicLink(NPath fromPath, NPath targetPath, bool targetIsFile)
             {
-                var flags = Win32Native.SymbolicLinkFlags.AllowUnprivilegedCreate;
+                var flags = Win32Native.SymbolicLinkFlags.File;
+                if (CalculateIsWindows10())
+                    flags |= Win32Native.SymbolicLinkFlags.AllowUnprivilegedCreate;
                 if (!targetIsFile)
                     flags |= Win32Native.SymbolicLinkFlags.Directory;
 
-                var path = fromPath.ToString(SlashMode.Native).TrimEnd('\\');
-                var destPath = targetPath.ToString(SlashMode.Native).TrimEnd('\\');
+                var path = MakeLongPath(fromPath).TrimEnd('\\');
+                var destPath = MakeLongPath(targetPath).TrimEnd('\\');
                 if (!Win32Native.CreateSymbolicLink(path, destPath, flags))
                     throw new IOException($"Cannot create symbolic link {path} from {targetPath}.", new Win32Exception(Marshal.GetLastWin32Error()));
              }
@@ -1915,7 +1919,7 @@ namespace NiceIO
                     return base.File_GetAttributes(path);
 
                 // If the path is long, fall back to querying with P/Invoke directly
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
                 return (FileAttributes)(Win32Native.GetFileAttributes(longPath) & 0x0000FFFF);
             }
 
@@ -1928,7 +1932,7 @@ namespace NiceIO
                 }
 
                 // If the path is long, fall back to querying with P/Invoke directly
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
                 Win32Native.SetFileAttributes(longPath, (uint) value);
             }
 
@@ -1939,9 +1943,7 @@ namespace NiceIO
 
                 var results = new List<NPath>();
                 Win32Native.FIND_DATA findData;
-                var longPath = path.ToString(SlashMode.Native).TrimEnd('\\') + "\\" + filter;
-                if (longPath.Length >= Win32Native.MAX_PATH_LEN)
-                    longPath = @"\\?\" + longPath;
+                var longPath = MakeLongPath(path, Win32Native.MAX_PATH_LEN - filter.Length - 1).TrimEnd('\\') + "\\" + filter;
                 IntPtr findHandle = Win32Native.FindFirstFile(longPath, out findData);
                 if (findHandle != new IntPtr(-1))
                 {
@@ -1981,9 +1983,7 @@ namespace NiceIO
             {
                 var results = new List<NPath>();
                 Win32Native.FIND_DATA findData;
-                var longPath = path.ToString(SlashMode.Native).TrimEnd('\\') + "\\" + filter;
-                if (longPath.Length >= Win32Native.MAX_PATH_LEN)
-                    longPath = @"\\?\" + longPath;
+                var longPath = MakeLongPath(path, Win32Native.MAX_PATH_LEN - filter.Length - 1).TrimEnd('\\') + "\\" + filter;
                 IntPtr findHandle = Win32Native.FindFirstFile(longPath, out findData);
                 if (findHandle != new IntPtr(-1))
                 {
@@ -2028,7 +2028,7 @@ namespace NiceIO
                     return;
                 }
 
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
                 using (var handle = CreateFileHandle(path, longPath,
                     Win32Native.CreationDisposition.CreateAlways,
                     Win32Native.FileAccess.GenericWrite,
@@ -2060,7 +2060,7 @@ namespace NiceIO
                 if (!path.Parent.Exists())
                     path.Parent.CreateDirectory();
 
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
                 using (var handle = CreateFileHandle(path, longPath,
                     Win32Native.CreationDisposition.CreateAlways,
                     Win32Native.FileAccess.GenericWrite,
@@ -2078,7 +2078,7 @@ namespace NiceIO
                 if (path._path.Length < Win32Native.MAX_PATH_LEN)
                     return base.File_ReadAllText(path);
 
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
                 string contents;
                 using (var handle = CreateFileHandle(path, longPath,
                     Win32Native.CreationDisposition.OpenExisting,
@@ -2102,7 +2102,7 @@ namespace NiceIO
                     return base.File_ReadAllLines(path);
 
                 var lines = new List<string>();
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
                 using (var handle = CreateFileHandle(path, longPath,
                     Win32Native.CreationDisposition.OpenExisting,
                     Win32Native.FileAccess.GenericRead,
@@ -2127,7 +2127,7 @@ namespace NiceIO
                     return base.File_ReadAllBytes(path);
 
                 byte[] buffer = null;
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
                 using (var handle = CreateFileHandle(path, longPath,
                     Win32Native.CreationDisposition.OpenExisting,
                     Win32Native.FileAccess.GenericRead,
@@ -2150,7 +2150,7 @@ namespace NiceIO
                     return;
                 }
 
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
                 using (var handle = CreateFileHandle(path, longPath,
                     Win32Native.CreationDisposition.OpenExisting,
                     Win32Native.FileAccess.FileWriteAttributes,
@@ -2168,7 +2168,7 @@ namespace NiceIO
                     return base.File_GetLastWriteTimeUtc(path);
 
                 Win32Native.FIND_DATA findData;
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
                 IntPtr findHandle = Win32Native.FindFirstFile(longPath, out findData);
                 if (findHandle == new IntPtr(-1))
                     return DateTime.MinValue;
@@ -2211,7 +2211,7 @@ namespace NiceIO
 
             private static string GetShortName(NPath path)
             {
-                var longPath = @"\\?\" + path.ToString(SlashMode.Native).TrimEnd('\\');
+                var longPath = MakeLongPath(path).TrimEnd('\\');
                 char[] shortPathChars = new char[Win32Native.MAX_PATH_LEN];
                 var length = Win32Native.GetShortPathName(longPath, shortPathChars, (uint)shortPathChars.Length);
                 if (length <= 0)
@@ -2257,6 +2257,22 @@ namespace NiceIO
                 }
 
                 return fileHandle;
+            }
+
+            private static string MakeLongPath(NPath path, int maxLength = Win32Native.MAX_PATH_LEN)
+            {
+                NPath localPath = path._path;
+                if (localPath.IsRelative)
+                    localPath = localPath.MakeAbsolute();
+
+                var longPath = localPath.ToString(SlashMode.Native);
+                if (string.IsNullOrEmpty(longPath) || longPath.StartsWith(@"\\?\"))
+                    return longPath;
+
+                if (longPath.Length >= maxLength)
+                    return @"\\?\" + longPath;
+
+                return longPath;
             }
 
             static class Win32Native
@@ -2339,10 +2355,10 @@ namespace NiceIO
                     FailIfNotTrackable = 0x20
                 }
 
-                [DllImport(@"kernel32.dll", SetLastError = true)]
+                [DllImport(@"kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
                 public static extern bool CreateSymbolicLink(string lpSymlinkFileName, string lpTargetFileName, SymbolicLinkFlags dwFlags);
 
-                [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+                [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
                 public struct FIND_DATA
                 {
                     public FileAttributes dwFileAttributes;

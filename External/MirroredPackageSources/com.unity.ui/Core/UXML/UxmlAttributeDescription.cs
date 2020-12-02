@@ -795,5 +795,4 @@ namespace UnityEngine.UIElements
             return TryGetValueFromBag(bag, cc, (s, i) => i = Hash128.Parse(s), defaultValue, ref value);
         }
     }
-
 }

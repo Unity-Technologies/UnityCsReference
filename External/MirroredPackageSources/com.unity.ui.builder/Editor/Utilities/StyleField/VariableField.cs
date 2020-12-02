@@ -17,6 +17,7 @@ namespace Unity.UI.Builder
 
         string m_Value;
 
+        public TextField textField => m_Field;
         public bool isReadOnly
         {
             get { return m_Field.isReadOnly; }

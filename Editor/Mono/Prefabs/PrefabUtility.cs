@@ -834,7 +834,7 @@ namespace UnityEditor
                 assetPath,
                 action,
                 startTime,
-                IsObjectOverrideAllDefaultOverridesComparedToAnySource(instanceComponentOrGameObject)
+                IsObjectOverrideAllDefaultOverridesComparedToOriginalSource(instanceComponentOrGameObject)
             );
         }
 
@@ -1236,9 +1236,9 @@ namespace UnityEditor
             Object instanceObject,
             Action<GUIContent, Object> addApplyMenuItemAction,
             Action<GUIContent> addRevertMenuItemAction,
-            bool defaultOverrideComparedToSomeSources = false)
+            bool isAllDefaultOverridesComparedToOriginalSource = false)
         {
-            HandleApplyMenuItems(thingThatChanged, instanceObject, addApplyMenuItemAction, defaultOverrideComparedToSomeSources);
+            HandleApplyMenuItems(thingThatChanged, instanceObject, addApplyMenuItemAction, isAllDefaultOverridesComparedToOriginalSource);
             HandleRevertMenuItem(thingThatChanged, addRevertMenuItemAction);
         }
 
@@ -1246,7 +1246,7 @@ namespace UnityEditor
             string thingThatChanged,
             Object instanceOrAssetObject,
             Action<GUIContent, Object> addApplyMenuItemAction,
-            bool defaultOverrideComparedToSomeSources = false,
+            bool isAllDefaultOverridesComparedToOriginalSource = false,
             bool includeSelfAsTarget = false)
         {
             // If thingThatChanged word is empty, apply menu items directly into menu.
@@ -1256,7 +1256,7 @@ namespace UnityEditor
             if (thingThatChanged != String.Empty)
                 thingThatChanged += "/";
 
-            List<Object> applyTargets = GetApplyTargets(instanceOrAssetObject, defaultOverrideComparedToSomeSources, includeSelfAsTarget);
+            List<Object> applyTargets = GetApplyTargets(instanceOrAssetObject, isAllDefaultOverridesComparedToOriginalSource, includeSelfAsTarget);
             if (applyTargets == null || applyTargets.Count == 0)
                 return;
 
@@ -1993,7 +1993,7 @@ namespace UnityEditor
 
         // Same as IsPropertyOverrideDefaultOverrideComparedToAnySource, but checks if it's the case for all overrides
         // on the object.
-        internal static bool IsObjectOverrideAllDefaultOverridesComparedToAnySource(Object componentOrGameObject)
+        internal static bool IsObjectOverrideAllDefaultOverridesComparedToOriginalSource(Object componentOrGameObject)
         {
             // Only Transform, RectTransform (derived from Transform) and GameObject can have default overrides.
             if (!(componentOrGameObject is Transform || componentOrGameObject is GameObject))
@@ -2043,7 +2043,7 @@ namespace UnityEditor
             return goInAsset.transform.root == goInAsset.transform;
         }
 
-        internal static List<Object> GetApplyTargets(Object instanceOrAssetObject, bool defaultOverrideComparedToSomeSources, bool includeSelfAsTarget = false)
+        internal static List<Object> GetApplyTargets(Object instanceOrAssetObject, bool isAllDefaultOverridesComparedToOriginalSource, bool includeSelfAsTarget = false)
         {
             List<Object> applyTargets = new List<Object>();
 
@@ -2059,15 +2059,21 @@ namespace UnityEditor
 
             while (source != null)
             {
-                if (defaultOverrideComparedToSomeSources)
+                if (isAllDefaultOverridesComparedToOriginalSource)
                 {
-                    // If we're dealing with an override that's a default override compared to some sources,
-                    // then we need to check if the source object is or is on the root GameObject in that Prefab.
-                    // If it is, the overrides will be default overrides compared to that Prefab,
-                    // and so it shouldn't be possible to apply to it.
+                    // Default overrides properties are select properties on the root GameObject (like name)
+                    // and root Transform (like position and rotation, but not scale).
+                    // If we're dealing with an override that's a default override compared to the original
+                    // source, it will also be a default override compared to any Prefab Variants of the
+                    // original source that might be in the chain of corresponding objects. It will however
+                    // not be a default override compared to Prefabs that use the original source as a nested
+                    // Prefab, because those Prefabs have a different root GameObject.
+                    // So for each corresponding object we need to check if it's the Prefab root GameObject
+                    // or Transform. If it is, the overrides will be default overrides compared to that Prefab,
+                    // and so it shouldn't be possible to apply to it, so we don't add it as an apply target.
                     // Note that for changed components that have some overrides that can be default overrides,
-                    // and some not, we do allow applying, but only the properties
-                    // that are not default overrides will be applied.
+                    // and some not, we do allow applying, but only the properties that are not default
+                    // overrides will be applied.
                     GameObject sourceGo = GetGameObject(source);
                     if (sourceGo.transform.root == sourceGo.transform)
                         break;

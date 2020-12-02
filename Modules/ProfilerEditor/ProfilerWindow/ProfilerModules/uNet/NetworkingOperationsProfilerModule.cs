@@ -44,6 +44,7 @@ namespace UnityEditorInternal.Profiling
         }
 
         public override ProfilerArea area => ProfilerArea.NetworkOperations;
+        public override bool usesCounters => false;
 
         protected override int defaultOrderIndex => k_DefaultOrderIndex;
         protected override string legacyPreferenceKey => "ProfilerChartNetworkOperations";

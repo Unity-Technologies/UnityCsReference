@@ -18,6 +18,7 @@ namespace UnityEngine.UIElements
             target.RegisterCallback<PointerDownEvent>(OnPointerDown);
             target.RegisterCallback<PointerMoveEvent>(OnPointerMove);
             target.RegisterCallback<PointerUpEvent>(OnPointerUp);
+            target.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
             base.RegisterCallbacksOnTarget();
         }
 
@@ -26,6 +27,7 @@ namespace UnityEngine.UIElements
             target.UnregisterCallback<PointerDownEvent>(OnPointerDown);
             target.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
             target.UnregisterCallback<PointerUpEvent>(OnPointerUp);
+            target.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
             base.UnregisterCallbacksFromTarget();
         }
 
@@ -33,7 +35,7 @@ namespace UnityEngine.UIElements
         {
             if (!CanStartManipulation(evt)) return;
 
-            if (evt.pointerId != PointerId.mousePointerId)
+            if (IsNotMouseEvent(evt))
             {
                 ProcessDownEvent(evt, evt.localPosition, evt.pointerId);
                 evt.PreventDefault();
@@ -46,7 +48,7 @@ namespace UnityEngine.UIElements
 
         protected void OnPointerMove(PointerMoveEvent evt)
         {
-            if (evt.pointerId != PointerId.mousePointerId && active)
+            if (IsNotMouseEvent(evt) && active)
             {
                 ProcessMoveEvent(evt, evt.localPosition);
             }
@@ -54,10 +56,24 @@ namespace UnityEngine.UIElements
 
         protected void OnPointerUp(PointerUpEvent evt)
         {
-            if (evt.pointerId != PointerId.mousePointerId && active && CanStopManipulation(evt))
+            if (IsNotMouseEvent(evt) && active && CanStopManipulation(evt))
             {
                 ProcessUpEvent(evt, evt.localPosition, evt.pointerId);
             }
+        }
+
+        protected void OnPointerCancel(PointerCancelEvent evt)
+        {
+            if (IsNotMouseEvent(evt) && CanStopManipulation(evt))
+            {
+                ProcessCancelEvent(evt, evt.pointerId);
+            }
+        }
+
+        static bool IsNotMouseEvent<T>(T evt) where T : PointerEventBase<T>, new()
+        {
+            // We need to ignore temporarily mouse callback on mobile because they are sent with the wrong type.
+            return evt.pointerId != PointerId.mousePointerId;
         }
     }
 }

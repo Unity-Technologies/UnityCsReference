@@ -47,6 +47,7 @@ namespace UnityEditorInternal.Profiling
         public CPUProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnlocalizedName, k_Name, k_IconName) {}
 
         public override ProfilerArea area => ProfilerArea.CPU;
+        public override bool usesCounters => false;
 
         protected override int defaultOrderIndex => k_DefaultOrderIndex;
         protected override string legacyPreferenceKey => "ProfilerChartCPU";

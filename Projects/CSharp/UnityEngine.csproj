@@ -46,6 +46,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ContextualMenuManipulator.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\ContextualMenuManipulator.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\BaseBoolField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\BaseBoolField.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\BaseField.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\BaseField.cs</Link>
     </Compile>
@@ -69,6 +72,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\GenericDropdownMenu.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\GenericDropdownMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\GroupBox.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\GroupBox.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\HelpBox.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\HelpBox.cs</Link>
@@ -99,6 +105,12 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\ProgressBar.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\ProgressBar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\RadioButton.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\RadioButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\RadioButtonGroup.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\RadioButtonGroup.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\RepeatButton.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\RepeatButton.cs</Link>
@@ -310,11 +322,20 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\FocusController.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\FocusController.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\GroupBoxUtility.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\GroupBoxUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\HierarchyTraversal.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\HierarchyTraversal.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\IDataWatchService.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\IDataWatchService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\IGroupBox.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\IGroupBox.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\IGroupManager.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\IGroupManager.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ILiveReloadAssetTracker.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\ILiveReloadAssetTracker.cs</Link>
@@ -417,6 +438,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTessellation.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTessellation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTextCoreSettings.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTextCoreSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTextureBlitter.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTextureBlitter.cs</Link>
@@ -565,6 +589,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\CustomStyle.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\CustomStyle.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\FontDefinition.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\FontDefinition.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\ComputedStyle.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\ComputedStyle.cs</Link>
     </Compile>
@@ -628,11 +655,17 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleFont.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleFont.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleFontDefinition.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleFontDefinition.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleInt.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleInt.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleLength.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleLength.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleTextShadow.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleTextShadow.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleTypes.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleTypes.cs</Link>
@@ -642,6 +675,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\TextElement.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\TextElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\TextShadow.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\TextShadow.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Text\TextHandle.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Text\TextHandle.cs</Link>

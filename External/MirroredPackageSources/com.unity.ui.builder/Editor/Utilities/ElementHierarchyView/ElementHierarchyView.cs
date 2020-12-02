@@ -451,7 +451,6 @@ namespace Unity.UI.Builder
             if (m_TreeView != null)
                 wasTreeFocused = m_TreeView.Q<ListView>().IsFocused();
 
-
             m_CurrentPanelDebug = rootVisualElement.panel;
 
             int nextId = 1;
@@ -461,12 +460,15 @@ namespace Unity.UI.Builder
                 m_TreeRootItems = GetTreeItemsFromVisualTree(rootVisualElement, ref nextId);
 
             // Clear selection which would otherwise persist via view data persistence.
-            m_TreeView?.ClearSelection();
-            m_TreeView.rootItems = m_TreeRootItems;
+            if (m_TreeView != null)
+            {
+                m_TreeView.ClearSelection();
+                m_TreeView.rootItems = m_TreeRootItems;
 
-            // Restore focus state.
-            if (wasTreeFocused)
-                m_TreeView.Q<ListView>()?.Focus();
+                // Restore focus state.
+                if (wasTreeFocused)
+                    m_TreeView.Q<ListView>()?.Focus();
+            }
 
             hierarchyHasChanged = false;
         }

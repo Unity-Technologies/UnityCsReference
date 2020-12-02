@@ -26,8 +26,9 @@ namespace UnityEngine.UIElements.UIR
     internal struct State
     {
         public Material material;
+        public Texture custom, font;
+        public float fontTexSDFScale;
         public TextureId texture;
-        public Texture font;
     }
 
     internal enum CommandType
@@ -35,7 +36,10 @@ namespace UnityEngine.UIElements.UIR
         Draw,
         ImmediateCull, Immediate,
         PushView, PopView,
-        PushScissor, PopScissor
+        PushScissor, PopScissor,
+        PushRenderTexture, PopRenderTexture,
+        BlitToPreviousRT, //From Active target to previous on RT stack
+        PushDefaultMaterial, PopDefaultMaterial,
     }
 
     internal struct ViewTransform
@@ -56,10 +60,20 @@ namespace UnityEngine.UIElements.UIR
             view.Push(new ViewTransform { transform = Matrix4x4.identity, clipRect = UIRUtility.ToVector4(k_FullNormalizedRect) });
             scissor.Clear();
             scissor.Push(k_UnlimitedRect);
+            renderTexture.Clear();
+            defaultMaterial.Clear();
         }
 
         internal readonly Stack<ViewTransform> view = new Stack<ViewTransform>(8);
         internal readonly Stack<Rect> scissor = new Stack<Rect>(8);
+
+        // Using list instead of stack to allow access to all elements in previson for the blit of any RT into any RT.
+        // Right now, because blit change the active RT, pop use this to release the temporary RT before removing it from the stack.
+        // The workaround would be that blit restore the active RT=> may have a performance impact.
+        internal readonly List<RenderTexture> renderTexture = new List<RenderTexture>(8);
+
+
+        internal readonly List<Material> defaultMaterial = new List<Material>(8);
     }
 
     internal class RenderChainCommand : LinkedPoolItem<RenderChainCommand>
@@ -74,6 +88,7 @@ namespace UnityEngine.UIElements.UIR
         internal MeshHandle mesh;
         internal int indexOffset, indexCount;
         internal Action callback; // Immediate render command only
+        private static readonly int k_ID_MainTex = Shader.PropertyToID("_MainTex");
 
         internal void Reset()
         {
@@ -150,7 +165,91 @@ namespace UnityEngine.UIElements.UIR
                         Utility.DisableScissor();
                     else Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(prevRect, pixelsPerPoint));
                     break;
+
+                case CommandType.PushRenderTexture:
+                {
+                    RectInt viewport = Utility.GetActiveViewport();
+                    RenderTexture rt = RenderTexture.GetTemporary(viewport.width, viewport.height, 24, RenderTextureFormat.ARGBHalf);
+                    RenderTexture.active = rt;
+                    GL.Clear(true, true, new Color(0, 0, 0, 0), UIRUtility.k_ClearZ);
+                    drawParams.renderTexture.Add(RenderTexture.active);
+                    break;
+                }
+
+                case CommandType.PopRenderTexture:
+                {
+                    int index = drawParams.renderTexture.Count - 1;
+                    Debug.Assert(index > 0);    //Check that we have something to pop, We should never pop the last(original)one
+
+                    // Only supported use case for now is to do a blit befor the pop.
+                    // This should set the active RenderTexture to index-1 and we should not have this warning.
+                    Debug.Assert(drawParams.renderTexture[index - 1] == RenderTexture.active, "Content of previous render texture was probably not blitted");
+
+                    var rt = drawParams.renderTexture[index];
+                    if (rt != null)
+                        RenderTexture.ReleaseTemporary(rt);
+                    drawParams.renderTexture.RemoveAt(index);
+                }
+                break;
+
+                case CommandType.BlitToPreviousRT:
+                {
+                    // Currently the command only blit to the previous RT, but this could be expanded if we use
+                    // indexCount and indexOffset to point to specific indices in the renderTextureBuffer.
+                    // The main difficulty is to memorize the current renderTexture depth to get the indices in the RenderChain
+                    // as we can edit the stack in the middle and that would requires rewriting previous/ subsequent commands
+
+                    //Also, there is currently no way to have a permanently assigned rt to be used as cache.
+
+                    var source = drawParams.renderTexture[drawParams.renderTexture.Count - 1];
+                    var destination = drawParams.renderTexture[drawParams.renderTexture.Count - 2];
+
+
+                    // Note: Graphics.Blit set the arctive RT => RT is not restored and it is expected to be chaged before PopRenderTexture
+                    //TODO check blit code for other side effect
+                    Debug.Assert(source == RenderTexture.active, "Unexpected render target change: Current renderTarget is not the one on the top of the stack");
+
+                    //The following lines are equivalent to
+                    //Graphics.Blit(source, destination, state.material);
+                    //except the vertex are at the specified depth
+                    var flipped = (indexOffset != 0);
+                    Blit(source, destination, UIRUtility.k_MeshPosZ, flipped);
+                }
+                break;
+
+//Logic of both command is entirely in UIRenderDevice as it need access to the local variable defaultMat
+                case CommandType.PushDefaultMaterial:
+                    break;
+
+                case CommandType.PopDefaultMaterial:
+                    break;
             }
+        }
+
+        private void Blit(Texture source, RenderTexture destination, float depth, bool flip = false)
+        {
+            GL.PushMatrix();
+            GL.LoadOrtho();
+            RenderTexture.active = destination;
+            state.material.SetTexture(k_ID_MainTex, source);
+            state.material.SetPass(0);
+            GL.Begin(GL.QUADS);
+            if (!flip)
+            {
+                GL.TexCoord2(0f, 0f); GL.Vertex3(0f, 0f, depth);
+                GL.TexCoord2(0f, 1f); GL.Vertex3(0f, 1f, depth);
+                GL.TexCoord2(1f, 1f); GL.Vertex3(1f, 1f, depth);
+                GL.TexCoord2(1f, 0f); GL.Vertex3(1f, 0f, depth);
+            }
+            else
+            {
+                GL.TexCoord2(0f, 0f); GL.Vertex3(0f, 0f, depth);
+                GL.TexCoord2(1f, 0f); GL.Vertex3(1f, 0f, depth);
+                GL.TexCoord2(1f, 1f); GL.Vertex3(1f, 1f, depth);
+                GL.TexCoord2(0f, 1f); GL.Vertex3(0f, 1f, depth);
+            }
+            GL.End();
+            GL.PopMatrix();
         }
 
         static Vector4 RectToClipSpace(Rect rc)

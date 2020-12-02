@@ -38,7 +38,7 @@ namespace UnityEditor
         static internal bool linuxEditor => Application.platform == RuntimePlatform.LinuxEditor;
 
         static internal bool s_Modal = false;
-        private static bool hasMainWindow = false;
+        private static ContainerWindow s_MainWindow;
 
         private static class Styles
         {
@@ -137,7 +137,7 @@ namespace UnityEditor
         // Show the editor window.
         public void Show(ShowMode showMode, bool loadPosition, bool displayImmediately, bool setFocus)
         {
-            if (hasMainWindow && showMode == ShowMode.MainWindow)
+            if (showMode == ShowMode.MainWindow && s_MainWindow && s_MainWindow != this)
                 throw new InvalidOperationException("Trying to create a second main window from layout when one already exists.");
 
             bool useMousePos = showMode == ShowMode.AuxWindow;
@@ -173,7 +173,7 @@ namespace UnityEditor
                 return;
 
             if (showMode == ShowMode.MainWindow)
-                hasMainWindow = true;
+                s_MainWindow = this;
 
             // Fit window to screen - needs to be done after bringing the window live
             position = FitWindowRectToScreen(m_PixelRect, true, useMousePos);
@@ -290,8 +290,8 @@ namespace UnityEditor
         {
             Save();
 
-            if (m_ShowMode == (int)ShowMode.MainWindow)
-                hasMainWindow = false;
+            if (m_ShowMode == (int)ShowMode.MainWindow && s_MainWindow == this)
+                s_MainWindow = null;
 
             if (m_RootView)
             {

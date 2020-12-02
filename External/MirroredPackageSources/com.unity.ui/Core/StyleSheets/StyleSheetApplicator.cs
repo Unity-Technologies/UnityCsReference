@@ -215,5 +215,21 @@ namespace UnityEngine.UIElements.StyleSheets
                 }
             }
         }
+
+        private static void CompileTextOutline(StylePropertyReader reader, out Color outlineColor, out float outlineWidth)
+        {
+            outlineColor = Color.clear;
+            outlineWidth = 0.0f;
+
+            var valueCount = reader.valueCount;
+            for (int i = 0; i < valueCount; i++)
+            {
+                var valueType = reader.GetValueType(i);
+                if (valueType == StyleValueType.Dimension)
+                    outlineWidth = reader.ReadFloat(i);
+                else if (valueType == StyleValueType.Enum || valueType == StyleValueType.Color)
+                    outlineColor = reader.ReadColor(i);
+            }
+        }
     }
 }

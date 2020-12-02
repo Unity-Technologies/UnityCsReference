@@ -38,8 +38,9 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public Vector2 uv;
         internal Color32 xformClipPages; // Top-left of xform and clip pages: XY,XY
-        internal Color32 idsFlags; //XYZ (xform,clip,opacity) (W flags)
-        internal Color32 opacityPageSVGSettingIndex; //XY (ZW SVG setting index)
+        internal Color32 ids; //XYZW (xform,clip,opacity,textcore)
+        internal Color32 flags; //X (flags) Y (textcore-dilate) ZW (unused)
+        internal Color32 opacityPageSettingIndex; //XY (ZW SVG setting index)
         internal float textureId;
 
         // Winding order of vertices matters. CCW is for clipped meshes.
@@ -608,7 +609,11 @@ namespace UnityEngine.UIElements
             public Rect rect;
             public string text;
             public Font font;
+            public FontDefinition fontDefinition;
             public int fontSize;
+            public Length letterSpacing;
+            public Length wordSpacing;
+            public Length paragraphSpacing;
             public FontStyle fontStyle;
             public Color fontColor;
             public TextAnchor anchor;
@@ -620,6 +625,7 @@ namespace UnityEngine.UIElements
             public TextOverflow textOverflow;
             public TextOverflowPosition textOverflowPosition;
             public OverflowInternal overflow;
+            public IPanel panel;
 
             public override int GetHashCode()
             {
@@ -641,13 +647,17 @@ namespace UnityEngine.UIElements
                 return hashCode;
             }
 
+            // TODO remove TextParams once TextNative is stripped
             internal static TextParams MakeStyleBased(VisualElement ve, string text)
             {
                 var style = ve.computedStyle;
+                var textElement = ve as TextElement;
+                var isTextElement = textElement == null;
                 return new TextParams
                 {
                     rect = ve.contentRect,
                     text = text,
+                    fontDefinition = style.unityFontDefinition,
                     font = style.unityFont,
                     fontSize = (int)style.fontSize.value,
                     fontStyle = style.unityFontStyleAndWeight,
@@ -655,11 +665,15 @@ namespace UnityEngine.UIElements
                     anchor = style.unityTextAlign,
                     wordWrap = style.whiteSpace == WhiteSpace.Normal,
                     wordWrapWidth = style.whiteSpace == WhiteSpace.Normal ? ve.contentRect.width : 0.0f,
-                    richText = false,
+                    richText = textElement?.enableRichText ?? false,
                     playmodeTintColor = ve.panel?.contextType == ContextType.Editor ? UIElementsUtility.editorPlayModeTintColor : Color.white,
                     textOverflow = style.textOverflow,
                     textOverflowPosition = style.unityTextOverflowPosition,
-                    overflow = style.overflow
+                    overflow = style.overflow,
+                    letterSpacing = isTextElement ? 0 : style.letterSpacing,
+                    wordSpacing = isTextElement ? 0 : style.wordSpacing,
+                    paragraphSpacing = isTextElement ? 0 : style.unityParagraphSpacing,
+                    panel = ve.panel,
                 };
             }
 
@@ -697,7 +711,7 @@ namespace UnityEngine.UIElements
 
         public static void Text(this MeshGenerationContext mgc, TextParams textParams, ITextHandle handle, float pixelsPerPoint)
         {
-            if (textParams.font != null)
+            if (textParams.font != null || !textParams.fontDefinition.IsEmpty())
                 mgc.painter.DrawText(textParams, handle, pixelsPerPoint);
         }
 

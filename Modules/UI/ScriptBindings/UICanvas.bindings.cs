@@ -53,6 +53,7 @@ namespace UnityEngine
         public extern AdditionalCanvasShaderChannels additionalShaderChannels { get; set; }
         public extern string sortingLayerName { get; set; }
         public extern Canvas rootCanvas { get; }
+        public extern Vector2 displaySize { get; }
 
 
         internal static Action<int> externBeginRenderOverlays { get; set; }

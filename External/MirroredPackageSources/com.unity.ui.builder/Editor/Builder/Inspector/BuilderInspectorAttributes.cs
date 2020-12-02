@@ -212,9 +212,8 @@ namespace Unity.UI.Builder
 
         object GetCustomValueAbstract(string attributeName)
         {
-            if (currentVisualElement is ScrollView)
+            if (currentVisualElement is ScrollView scrollView)
             {
-                var scrollView = currentVisualElement as ScrollView;
                 if (attributeName == "mode")
                 {
                     if (scrollView.ClassListContains(ScrollView.verticalVariantUssClassName))
@@ -232,6 +231,11 @@ namespace Unity.UI.Builder
                 {
                     return scrollView.verticalScrollerVisibility == ScrollerVisibility.AlwaysVisible;
                 }
+            }
+            else if (currentVisualElement is ListView listView)
+            {
+                if (attributeName == "horizontal-scrolling")
+                    return listView.horizontalScrollingEnabled;
             }
 
             return null;

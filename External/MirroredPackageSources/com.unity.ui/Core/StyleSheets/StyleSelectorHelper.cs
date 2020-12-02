@@ -212,14 +212,44 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public static void FindMatches(StyleMatchingContext context, List<SelectorMatchRecord> matchedSelectors)
         {
+            // To support having the root pseudo states set for style sheets added onto an element
+            // we need to find which sheets belongs to the element itself.
+            VisualElement element = context.currentElement;
+            int parentSheetIndex =  context.styleSheetStack.Count - 1;
+            if (element.styleSheetList != null)
+            {
+                // The number of style sheet for an element is the count of the styleSheetList + all imported style sheet
+                int elementSheetCount = element.styleSheetList.Count;
+                for (var i = 0; i < element.styleSheetList.Count; i++)
+                {
+                    var elementSheet = element.styleSheetList[i];
+                    if (elementSheet.flattenedRecursiveImports != null)
+                        elementSheetCount += elementSheet.flattenedRecursiveImports.Count;
+                }
+
+                parentSheetIndex -= elementSheetCount;
+            }
+
+            FindMatches(context, matchedSelectors, parentSheetIndex);
+        }
+
+        public static void FindMatches(StyleMatchingContext context, List<SelectorMatchRecord> matchedSelectors, int parentSheetIndex)
+        {
             Debug.Assert(matchedSelectors.Count == 0);
 
             Debug.Assert(context.currentElement != null, "context.currentElement != null");
 
             VisualElement element = context.currentElement;
-
+            bool toggledRoot = false;
             for (int i = 0; i < context.styleSheetStack.Count; i++)
             {
+                // If the sheet is added on the element consider it as :root
+                if (!toggledRoot && i > parentSheetIndex)
+                {
+                    element.pseudoStates |= PseudoStates.Root;
+                    toggledRoot = true;
+                }
+
                 StyleSheet styleSheet = context.styleSheetStack[i];
                 SelectorMatchRecord record = new SelectorMatchRecord(styleSheet, i);
 
@@ -236,6 +266,9 @@ namespace UnityEngine.UIElements.StyleSheets
                     FastLookup(styleSheet.orderedClassSelectors, matchedSelectors, context, @class, ref record);
                 }
             }
+
+            if (toggledRoot)
+                element.pseudoStates &= ~PseudoStates.Root;
         }
     }
 }

@@ -5,6 +5,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class ContextualMenuManager
     {
+        // Case 1268159 - Work around for events registered on mouse down, that want to modify the UI. GenericMenu freezes
+        // the editor UI when shown, hence latest changes are not displayed if they occured on the frame. So we need to
+        // allow to work in 2 steps on Mac. On windows it can already work because menu is displayed on mouse up.
+        internal bool displayMenuHandledOSX { get; set; }
+
         /// <summary>
         /// Checks if the event triggers the display of the contextual menu. This method also displays the menu.
         /// </summary>
@@ -27,6 +32,11 @@ namespace UnityEngine.UIElements
             using (ContextualMenuPopulateEvent cme = ContextualMenuPopulateEvent.GetPooled(triggerEvent, menu, target, this))
             {
                 target?.SendEvent(cme);
+            }
+
+            if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
+            {
+                displayMenuHandledOSX = true;
             }
         }
 

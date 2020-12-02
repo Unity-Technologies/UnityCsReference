@@ -52,9 +52,6 @@ namespace UnityEditorInternal.Profiling
             m_DetailCounters = CollectDefaultDetailCounters();
         }
 
-        /// <summary>
-        /// Area is only defined by modules that use legacy stats instead of Profiler Counters.
-        /// </summary>
         public virtual ProfilerArea area => unchecked((ProfilerArea)Profiler.invalidProfilerArea);
         public ReadOnlyCollection<ProfilerCounterData> chartCounters => m_ChartCounters.AsReadOnly();
         public ProfilerChart chart => m_Chart;
@@ -100,7 +97,9 @@ namespace UnityEditorInternal.Profiling
             get => EditorPrefs.GetInt(orderIndexPreferenceKey, defaultOrderIndex);
             set => EditorPrefs.SetInt(orderIndexPreferenceKey, value);
         }
-        public bool usesCounters => ((uint)area == Profiler.invalidProfilerArea);
+
+        // Modules that use legacy stats override `usesCounters` to use the legacy GetGraphStatisticsPropertiesForArea functionality instead of Profiler Counters.
+        public virtual bool usesCounters => true;
 
         protected virtual int defaultOrderIndex => k_InvalidIndex;
         // Built-in modules override this to maintain the user's existing preferences, which used the ProfilerArea in the key.

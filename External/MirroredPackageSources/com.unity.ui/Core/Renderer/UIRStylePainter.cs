@@ -12,8 +12,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
             public NativeSlice<Vertex> vertices;
             public NativeSlice<UInt16> indices;
             public Material material; // Responsible for enabling immediate clipping
+            public Texture custom, font;
+            public float fontTexSDFScale;
             public TextureId texture;
-            public Texture font;
             public RenderChainCommand customCommand;
             public BMPAlloc clipRectID;
             public VertexFlags addFlags;
@@ -28,10 +29,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
             public bool needsClosing;
             public bool popViewMatrix;
             public bool popScissorClip;
+            public bool blitAndPopRenderTexture;
+            public bool PopDefaultMaterial;
             public RenderChainCommand clipUnregisterDrawCommand;
             public NativeSlice<Vertex> clipperRegisterVertices;
             public NativeSlice<UInt16> clipperRegisterIndices;
             public int clipperRegisterIndexOffset;
+            public bool RestoreStencilClip; // Used when blitAndPopRenderTexture as the clipping is not propagated through the other render texture
         }
 
         internal struct TempDataAlloc<T> : IDisposable where T : struct
@@ -98,7 +102,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
         VectorImageManager m_VectorImageManager;
         Entry m_CurrentEntry;
         ClosingInfo m_ClosingInfo;
-        bool m_StencilClip = false;
+        internal bool m_StencilClip = false;
         BMPAlloc m_ClipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
         int m_SVGBackgroundEntryIndex = -1;
         TempDataAlloc<Vertex> m_VertsPool = new TempDataAlloc<Vertex>(8192);
@@ -216,6 +220,27 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 m_StencilClip = false;
                 m_ClipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
             }
+
+            if (ve.subRenderTargetMode != VisualElement.RenderTargetMode.None)
+            {
+                var cmd = m_Owner.AllocCommand();
+                cmd.owner = currentElement;
+                cmd.type = CommandType.PushRenderTexture;
+                m_Entries.Add(new Entry() { customCommand = cmd });
+                m_ClosingInfo.needsClosing = m_ClosingInfo.blitAndPopRenderTexture = true;
+                m_ClosingInfo.RestoreStencilClip = m_StencilClip;
+                m_StencilClip = false;
+            }
+
+            if (ve.defaultMaterial != null)
+            {
+                var cmd = m_Owner.AllocCommand();
+                cmd.owner = currentElement;
+                cmd.type = CommandType.PushDefaultMaterial;
+                cmd.state.material = ve.defaultMaterial;
+                m_Entries.Add(new Entry() { customCommand = cmd });
+                m_ClosingInfo.needsClosing = m_ClosingInfo.PopDefaultMaterial = true;
+            }
         }
 
         public void LandClipUnregisterMeshDrawCommand(RenderChainCommand cmd)
@@ -316,7 +341,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void DrawText(MeshGenerationContextUtils.TextParams textParams, ITextHandle handle, float pixelsPerPoint)
         {
-            if (textParams.font == null)
+            if (textParams.font == null && textParams.fontDefinition.IsEmpty())
                 return;
 
             if (currentElement.panel.contextType == ContextType.Editor)
@@ -356,12 +381,38 @@ namespace UnityEngine.UIElements.UIR.Implementation
             for (int i = 0; i < textInfo.materialCount; i++)
             {
                 if (textInfo.meshInfos[i].vertexCount == 0)
-                    return;
-                m_CurrentEntry.isTextEntry = true;
-                m_CurrentEntry.clipRectID = m_ClipRectID;
-                m_CurrentEntry.isStencilClipped = m_StencilClip;
-                MeshBuilder.MakeText(textInfo.meshInfos[i], textParams.rect.min,  new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate });
-                m_CurrentEntry.font = textInfo.meshInfos[i].material.mainTexture;
+                    continue;
+
+                if (textInfo.meshInfos[i].material.name.Contains("Sprite"))
+                {
+                    // Assume a sprite asset
+                    m_CurrentEntry.clipRectID = m_ClipRectID;
+                    m_CurrentEntry.isStencilClipped = m_StencilClip;
+
+                    var texture = textInfo.meshInfos[i].material.mainTexture;
+                    TextureId id = TextureRegistry.instance.Acquire(texture);
+                    m_CurrentEntry.texture = id;
+                    m_Owner.AppendTexture(currentElement, texture, id, false);
+
+                    MeshBuilder.MakeText(
+                        textInfo.meshInfos[i],
+                        textParams.rect.min,
+                        new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate },
+                        VertexFlags.IsTextured);
+                }
+                else
+                {
+                    m_CurrentEntry.isTextEntry = true;
+                    m_CurrentEntry.clipRectID = m_ClipRectID;
+                    m_CurrentEntry.isStencilClipped = m_StencilClip;
+                    m_CurrentEntry.fontTexSDFScale = textInfo.meshInfos[i].material.GetFloat(TextDelegates.GetIDGradientScaleSafe());
+                    m_CurrentEntry.font = textInfo.meshInfos[i].material.mainTexture;
+
+                    MeshBuilder.MakeText(
+                        textInfo.meshInfos[i],
+                        textParams.rect.min,
+                        new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate });
+                }
                 m_Entries.Add(m_CurrentEntry);
                 totalVertices += m_CurrentEntry.vertices.Length;
                 totalIndices += m_CurrentEntry.indices.Length;
@@ -856,7 +907,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
         NativeArray<Vertex> m_DudVerts;
         NativeArray<UInt16> m_DudIndices;
         NativeSlice<Vertex> m_MeshDataVerts;
-        Color32 m_XFormClipPages, m_IDsFlags, m_OpacityPagesSettingsIndex;
+        Color32 m_XFormClipPages, m_IDs, m_Flags, m_OpacityPagesSettingsIndex;
 
         public MeshGenerationContext meshGenerationContext { get; }
 
@@ -882,8 +933,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
             // we must NOT use the "first vertex" but rather the "first vertex of the first text entry".
             int first = firstTextEntry.firstVertex;
             m_XFormClipPages = oldVertexData[first].xformClipPages;
-            m_IDsFlags = oldVertexData[first].idsFlags;
-            m_OpacityPagesSettingsIndex = oldVertexData[first].opacityPageSVGSettingIndex;
+            m_IDs = oldVertexData[first].ids;
+            m_Flags = oldVertexData[first].flags;
+            m_OpacityPagesSettingsIndex = oldVertexData[first].opacityPageSettingIndex;
         }
 
         public void End()
@@ -926,7 +978,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void DrawText(MeshGenerationContextUtils.TextParams textParams, ITextHandle handle, float pixelsPerPoint)
         {
-            if (textParams.font == null)
+            if (textParams.font == null && textParams.fontDefinition.IsEmpty())
                 return;
 
             if (m_CurrentElement.panel.contextType == ContextType.Editor)
@@ -941,7 +993,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                 Vector2 localOffset = TextNative.GetOffset(textSettings, textParams.rect);
                 MeshBuilder.UpdateText(textVertices, localOffset, m_CurrentElement.renderChainData.verticesSpace,
-                    m_XFormClipPages, m_IDsFlags, m_OpacityPagesSettingsIndex,
+                    m_XFormClipPages, m_IDs, m_Flags, m_OpacityPagesSettingsIndex,
                     m_MeshDataVerts.Slice(textEntry.firstVertex, textEntry.vertexCount));
                 textEntry.command.state.font = textParams.font.material.mainTexture;
             }

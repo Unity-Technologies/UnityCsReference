@@ -84,7 +84,6 @@ namespace UnityEditor.UIElements
         {
             bindingImpl.HandleStyleUpdate(element);
         }
-        
         /// <summary>
         /// Checks the property values for changes every frame. Executes the callback when the property value changes.
         /// If no callback is specified, a SerializedPropertyChangeEvent is sent to the target element. 

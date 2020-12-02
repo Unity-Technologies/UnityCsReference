@@ -282,9 +282,6 @@ namespace Unity.UI.Builder
             var allElements = documentRootElement.Query().Where((e) => true);
             var matchedElements = new List<VisualElement>();
 
-            if (allElements == null)
-                return matchedElements;
-
             // TODO: Seems we are calling this before the DefaultCommon stylesheet has been fully initialized
             // (during OnEnable()). Need to fix this at some point. But for now, you just won't have the matching
             // selectors highlight properly after initial load.

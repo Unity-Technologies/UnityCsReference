@@ -36,6 +36,8 @@ namespace UnityEditor.DeviceSimulation
         {
         }
 
+        internal ApplicationSimulation applicationSimulation;
+
         public event Action<TouchEvent> touchScreenInput;
 
         internal void OnTouchScreenInput(TouchEvent touchEvent)

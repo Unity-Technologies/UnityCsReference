@@ -848,7 +848,9 @@ namespace UnityEditor.Experimental.GraphView
 
             float halfWidth = edgeWidth * 0.5f;
             float currentLength = 0;
-            Color32 flags = new Color32(0, 0, 0, (byte)VertexFlags.IsGraphViewEdge);
+            Color32 ids = new Color32(0, 0, 0, 0);
+            Color32 flags = new Color32((byte)VertexFlags.IsGraphViewEdge, 0, 0, 0);
+
 
             Vector2 unitPreviousSegment = Vector2.zero;
             for (int i = 0; i < cpt; ++i)
@@ -882,8 +884,8 @@ namespace UnityEditor.Experimental.GraphView
                 Vector2 uv = new Vector2(dir.y * halfWidth, -dir.x * halfWidth); // Normal scaled by half width
                 Color32 tint = Color.LerpUnclamped(outColor, inColor, currentLength / polyLineLength);
 
-                md.SetNextVertex(new Vertex() { position = new Vector3(pos.x, pos.y, 1), uv = uv, tint = tint, idsFlags = flags });
-                md.SetNextVertex(new Vertex() { position = new Vector3(pos.x, pos.y, -1), uv = uv, tint = tint, idsFlags = flags });
+                md.SetNextVertex(new Vertex() { position = new Vector3(pos.x, pos.y, 1), uv = uv, tint = tint, ids = ids, flags = flags });
+                md.SetNextVertex(new Vertex() { position = new Vector3(pos.x, pos.y, -1), uv = uv, tint = tint, ids = ids, flags = flags });
 
                 if (i < cpt - 2)
                 {

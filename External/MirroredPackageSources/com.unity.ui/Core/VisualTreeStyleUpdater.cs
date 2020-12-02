@@ -231,7 +231,7 @@ namespace UnityEngine.UIElements
             {
                 m_StyleMatchingContext.currentElement = element;
 
-                StyleSelectorHelper.FindMatches(m_StyleMatchingContext, m_TempMatchResults);
+                StyleSelectorHelper.FindMatches(m_StyleMatchingContext, m_TempMatchResults, originalStyleSheetCount - 1);
 
                 ProcessMatchedRules(element, m_TempMatchResults);
 

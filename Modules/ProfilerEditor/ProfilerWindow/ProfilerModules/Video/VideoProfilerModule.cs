@@ -20,6 +20,7 @@ namespace UnityEditorInternal.Profiling
         public VideoProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName) {}
 
         public override ProfilerArea area => ProfilerArea.Video;
+        public override bool usesCounters => false;
 
         protected override int defaultOrderIndex => k_DefaultOrderIndex;
         protected override string legacyPreferenceKey => "ProfilerChartVideo";

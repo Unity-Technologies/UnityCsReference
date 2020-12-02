@@ -37,16 +37,20 @@ namespace Unity.UI.Builder
 
         VisualElement m_DraggedElement;
         VisualElement m_LastHoverElement;
+        int m_LastHoverElementChildIndex;
         VisualElement m_LastRowHoverElement;
 
         BuilderParentTracker m_ParentTracker;
+        BuilderPlacementIndicator m_PlacementIndicator;
 
         public VisualElement builderHierarchyRoot { get; set; }
 
         protected BuilderPaneWindow paneWindow { get { return m_PaneWindow; } }
         protected BuilderSelection selection { get { return m_Selection; } }
+        protected VisualElement documentRootElement => m_Canvas;
 
-        protected BuilderViewport viewport { get; set; }
+        protected BuilderViewport viewport { get; private set; }
+        protected BuilderPlacementIndicator placementIndicator => m_PlacementIndicator;
 
         List<ManipulatorActivationFilter> activators { get; set; }
         ManipulatorActivationFilter m_CurrentActivator;
@@ -62,6 +66,9 @@ namespace Unity.UI.Builder
             m_Canvas = viewport?.documentRootElement;
             m_Selection = selection;
             m_ParentTracker = parentTracker;
+            m_PlacementIndicator = viewport?.placementIndicator;
+            if (m_PlacementIndicator != null)
+                m_PlacementIndicator.documentRootElement = m_Canvas;
 
             activators = new List<ManipulatorActivationFilter>();
             activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
@@ -89,7 +96,7 @@ namespace Unity.UI.Builder
 
         }
 
-        protected virtual void PerformAction(VisualElement destination, DestinationPane pane, int index = -1)
+        protected virtual void PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
         {
 
         }
@@ -142,6 +149,11 @@ namespace Unity.UI.Builder
         }
 
         protected virtual bool SupportsDragInEmptySpace()
+        {
+            return true;
+        }
+
+        protected virtual bool SupportsPlacementIndicator()
         {
             return true;
         }
@@ -209,27 +221,41 @@ namespace Unity.UI.Builder
             var localMouse = m_Canvas.WorldToLocal(mousePosition);
             if (!m_Canvas.ContainsPoint(localMouse))
             {
-                m_ParentTracker.Deactivate();
+                m_ParentTracker?.Deactivate();
+                m_PlacementIndicator?.Deactivate();
                 return false;
             }
 
             var pickedElement = Panel.PickAllWithoutValidatingLayout(m_Canvas, mousePosition);
 
-            // Don't allow selection of elements inside template instances.
+            // Don't allow selection of elements inside template instances or outside current active document.
             pickedElement = pickedElement.GetClosestElementPartOfCurrentDocument();
+            if (pickedElement != null && !pickedElement.IsPartOfActiveVisualTreeAsset(m_PaneWindow.document))
+                pickedElement = null;
 
             // Get Closest valid element.
             pickedElement = pickedElement.GetClosestElementThatIsValid(IsPickedElementValid);
 
             if (pickedElement == null)
             {
-                m_ParentTracker.Deactivate();
+                m_ParentTracker?.Deactivate();
+                m_PlacementIndicator?.Deactivate();
+                m_LastHoverElement = null;
                 return false;
             }
 
-            m_LastHoverElement = pickedElement;
+            // The placement indicator might decide to change the parent.
+            if (SupportsPlacementIndicator() && m_PlacementIndicator != null)
+            {
+                m_PlacementIndicator.Activate(pickedElement, mousePosition);
+                pickedElement = m_PlacementIndicator.parentElement;
+            }
 
             m_ParentTracker.Activate(pickedElement);
+
+            m_LastHoverElement = pickedElement;
+            if (SupportsPlacementIndicator() && m_PlacementIndicator != null)
+                m_LastHoverElementChildIndex = m_PlacementIndicator.indexWithinParent;
 
             return true;
         }
@@ -330,7 +356,7 @@ namespace Unity.UI.Builder
                 m_LastRowHoverElement.AddToClassList(s_TreeItemHoverHoverClassName);
 
             if (supportsDragBetweenElements)
-                m_LastRowHoverElement.AddToClassList(s_TreeItemHoverWithDragBetweenElementsSupportClassName);
+                explorerItemReorderZone.AddToClassList(s_TreeItemHoverWithDragBetweenElementsSupportClassName);
 
             return true;
         }
@@ -342,7 +368,7 @@ namespace Unity.UI.Builder
             m_DraggedElement.style.top = mousePosition.y;
 
             m_LastRowHoverElement?.RemoveFromClassList(s_TreeItemHoverHoverClassName);
-            m_LastRowHoverElement?.RemoveFromClassList(s_TreeItemHoverWithDragBetweenElementsSupportClassName);
+            m_LastRowHoverElement?.Query(className: BuilderConstants.ExplorerItemReorderZoneClassName).ForEach(e => e.RemoveFromClassList(s_TreeItemHoverWithDragBetweenElementsSupportClassName));
 
             // Note: It's important for the Hierarchy pane to be checked first because
             // this check does not account for which element is on top of which other element
@@ -355,6 +381,9 @@ namespace Unity.UI.Builder
                 int index;
                 GetPickedElementFromHoverElement(out pickedElement, out index);
 
+                // Mirror final drag destination in the viewport using the placement indicator.
+                m_PlacementIndicator?.Activate(pickedElement, index);
+
                 PerformDrag(target, pickedElement, index);
                 return;
             }
@@ -362,10 +391,11 @@ namespace Unity.UI.Builder
             validHover = TryToPickInCanvas(mousePosition);
             if (validHover)
             {
-                PerformDrag(target, m_LastHoverElement);
+                PerformDrag(target, m_LastHoverElement, m_LastHoverElementChildIndex);
                 return;
             }
 
+            m_PlacementIndicator?.Deactivate();
             PerformDrag(target, null);
         }
 
@@ -374,9 +404,10 @@ namespace Unity.UI.Builder
             EndDrag();
 
             m_LastRowHoverElement?.RemoveFromClassList(s_TreeItemHoverHoverClassName);
-            m_LastRowHoverElement?.RemoveFromClassList(s_TreeItemHoverWithDragBetweenElementsSupportClassName);
+            m_LastRowHoverElement?.Query(className: BuilderConstants.ExplorerItemReorderZoneClassName).ForEach(e => e.RemoveFromClassList(s_TreeItemHoverWithDragBetweenElementsSupportClassName));
             m_DraggedElement.RemoveFromClassList(s_DraggedPreviewClassName);
             m_ParentTracker?.Deactivate();
+            m_PlacementIndicator?.Deactivate();
         }
 
         void OnMouseDown(MouseDownEvent evt)
@@ -524,19 +555,19 @@ namespace Unity.UI.Builder
                 if (m_LastHoverElement != null)
                 {
                     var localCanvasMouse = viewport != null ? m_Canvas.WorldToLocal(currentMouse) : Vector2.zero;
-                    var localHierarchyMouse = builderHierarchyRoot.WorldToLocal(currentMouse);
+                    var localHierarchyMouse = builderHierarchyRoot != null ? builderHierarchyRoot.WorldToLocal(currentMouse) : Vector2.zero;
 
                     if (viewport != null && m_Canvas.ContainsPoint(localCanvasMouse))
                     {
-                        PerformAction(m_LastHoverElement, DestinationPane.Viewport);
+                        PerformAction(m_LastHoverElement, DestinationPane.Viewport, localCanvasMouse, m_LastHoverElementChildIndex);
                     }
-                    else if (builderHierarchyRoot.ContainsPoint(localHierarchyMouse))
+                    else if (builderHierarchyRoot != null && builderHierarchyRoot.ContainsPoint(localHierarchyMouse))
                     {
                         VisualElement newParent;
                         int index;
                         GetPickedElementFromHoverElement(out newParent, out index);
 
-                        PerformAction(newParent, DestinationPane.Hierarchy, index);
+                        PerformAction(newParent, DestinationPane.Hierarchy, localHierarchyMouse, index);
                     }
                 }
 

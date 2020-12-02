@@ -14,6 +14,8 @@ namespace UnityEditor.ScriptUpdater
     {
         public UnitySourceFileUpdatersResultHandler.ScriptUpdaterConsentType AskFor(NPath[] filesToOverWrite)
         {
+            APIUpdaterManager.numberOfTimesAsked = APIUpdaterManager.numberOfTimesAsked + 1;
+
             if (APIUpdaterManager.isInProjectCreation)
             {
                 Console.WriteLine("Skipping ScriptUpdater consent dialog because we are in project creation mode.");

@@ -243,6 +243,60 @@ namespace UnityEditor.Search
             return settings;
         }
 
+        static void DrawSearchServiceSettings()
+        {
+            EditorGUILayout.LabelField("Search Engines", EditorStyles.largeLabel);
+            var orderedApis = UnityEditor.SearchService.SearchService.searchApis.OrderBy(api => api.displayName);
+            foreach (var api in orderedApis)
+            {
+                var searchContextName = api.displayName;
+                var searchEngines = OrderSearchEngines(api.engines);
+                if (searchEngines.Count == 0)
+                    continue;
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    try
+                    {
+                        var items = searchEngines.Select(se => new GUIContent(se.name,
+                            searchEngines.Count == 1 ?
+                            $"Search engine for {searchContextName}" :
+                            $"Set search engine for {searchContextName}")).ToArray();
+                        var activeEngine = api.GetActiveSearchEngine();
+                        var activeEngineIndex = Math.Max(searchEngines.FindIndex(engine => engine.name == activeEngine?.name), 0);
+
+                        GUILayout.Space(20);
+                        GUILayout.Label(new GUIContent(searchContextName), GUILayout.Width(175));
+                        GUILayout.Space(20);
+
+                        using (var scope = new EditorGUI.ChangeCheckScope())
+                        {
+                            var newSearchEngine = EditorGUILayout.Popup(activeEngineIndex, items, GUILayout.ExpandWidth(true));
+                            if (scope.changed)
+                            {
+                                api.SetActiveSearchEngine(searchEngines[newSearchEngine].name);
+                                GUI.changed = true;
+                            }
+                            GUILayout.Space(10);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogException(ex);
+                    }
+                }
+            }
+        }
+
+        static List<UnityEditor.SearchService.ISearchEngineBase> OrderSearchEngines(IEnumerable<UnityEditor.SearchService.ISearchEngineBase> engines)
+        {
+            var defaultEngine = engines.First(engine => engine is UnityEditor.SearchService.LegacySearchEngineBase);
+            var overrides = engines.Where(engine => !(engine is UnityEditor.SearchService.LegacySearchEngineBase));
+            var orderedSearchEngines = new List<UnityEditor.SearchService.ISearchEngineBase> { defaultEngine };
+            orderedSearchEngines.AddRange(overrides);
+            return orderedSearchEngines;
+        }
+
 
         private static void DrawSearchSettings(string searchContext)
         {
@@ -272,6 +326,7 @@ namespace UnityEditor.Search
                     }
 
                     GUILayout.Space(10);
+                    DrawSearchServiceSettings();
                 }
                 GUILayout.EndVertical();
             }

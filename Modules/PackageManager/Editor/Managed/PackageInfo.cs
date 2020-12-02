@@ -31,6 +31,10 @@ namespace UnityEditor.PackageManager
         private bool m_IsDirectDependency = false;
 
         [SerializeField]
+        [NativeName("projectDependenciesEntry")]
+        private string m_ProjectDependenciesEntry = "";
+
+        [SerializeField]
         [NativeName("version")]
         private string m_Version = "";
 
@@ -181,6 +185,7 @@ namespace UnityEditor.PackageManager
         public string changelogUrl { get { return m_ChangelogUrl; } }
         public string licensesUrl { get { return m_LicensesUrl; } }
         internal UnityLifecycleInfo unityLifecycle { get { return m_UnityLifecycle; } }
+        internal string projectDependenciesEntry { get { return m_ProjectDependenciesEntry; } }
         internal string upmReserved { get { return m_UpmReserved; } }
 
         public RegistryInfo registry

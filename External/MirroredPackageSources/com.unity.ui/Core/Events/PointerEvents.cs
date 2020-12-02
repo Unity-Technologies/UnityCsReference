@@ -867,6 +867,11 @@ namespace UnityEngine.UIElements
     public sealed class PointerMoveEvent : PointerEventBase<PointerMoveEvent>
     {
         /// <summary>
+        /// Set this variable if the target should have priority when used in a touch enabled scroll view.
+        /// </summary>
+        internal bool isHandledByDraggable { get; set; }
+
+        /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
         protected override void Init()
@@ -878,6 +883,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             ((IPointerEventInternal)this).recomputeTopElementUnderPointer = true;
+            isHandledByDraggable = false;
         }
 
         /// <summary>

@@ -47,7 +47,7 @@ namespace UnityEditor.UIElements.Bindings
 
         private bool ShouldDelayBind()
         {
-            if (!m_DelayBind && ! VisualTreeBindingsUpdater.disableBindingsThrottling)
+            if (!m_DelayBind && !VisualTreeBindingsUpdater.disableBindingsThrottling)
             {
                 m_DelayBind = (Panel.TimeSinceStartupMs() - m_BindingOperationStartTimeMs) > k_MaxBindingTimeMs;
             }
@@ -1440,6 +1440,7 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override bool SyncFieldValueToProperty()
         {
+            SerializedPropertyHelper.ForceSync(boundProperty);
             if (!propCompareValues(lastFieldValue, boundProperty, propGetValue))
             {
                 propSetValue(boundProperty, lastFieldValue);

@@ -39,8 +39,10 @@ namespace Unity.UI.Builder
             m_TargetElementToReparent.AddToClassList(s_DragPreviewElementClassName);
         }
 
-        protected override void PerformAction(VisualElement destination, DestinationPane pane, int index = -1)
+        protected override void PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
         {
+            base.PerformAction(destination, pane, localMousePosition, index);
+
             m_TargetElementToReparent.RemoveFromClassList(s_DragPreviewElementClassName);
 
             // Remove temporary min-size element.
@@ -71,6 +73,8 @@ namespace Unity.UI.Builder
             BuilderAssetUtilities.SortElementsByTheirVisualElementInAsset(newParent);
 
             selection.NotifyOfHierarchyChange(null);
+            selection.NotifyOfStylingChange(null);
+            selection.ForceReselection(null);
         }
 
         protected override bool IsPickedElementValid(VisualElement element)

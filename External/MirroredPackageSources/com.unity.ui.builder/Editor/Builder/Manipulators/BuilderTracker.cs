@@ -49,7 +49,7 @@ namespace Unity.UI.Builder
             else
             {
                 SetStylesFromTargetStyles();
-                ResizeSelfFromTarget(m_Target.rect);
+                ResizeSelfFromTarget();
             }
         }
 
@@ -80,7 +80,7 @@ namespace Unity.UI.Builder
 
         void OnExternalTargetResize(GeometryChangedEvent evt)
         {
-            ResizeSelfFromTarget(m_Target.rect);
+            ResizeSelfFromTarget();
         }
 
         void OnCanvasResize(GeometryChangedEvent evt)
@@ -88,7 +88,7 @@ namespace Unity.UI.Builder
             if (m_Target == null)
                 return;
 
-            ResizeSelfFromTarget(m_Target.rect);
+            ResizeSelfFromTarget();
         }
 
         void OnTargetDeletion(DetachFromPanelEvent evt)
@@ -96,19 +96,26 @@ namespace Unity.UI.Builder
             Deactivate();
         }
 
-        protected void ResizeSelfFromTarget(Rect targetRect)
+        public static Rect GetRelativeRectFromTargetElement(VisualElement target, VisualElement relativeTo)
         {
-            var targetMarginTop = m_Target.resolvedStyle.marginTop;
-            var targetMarginLeft = m_Target.resolvedStyle.marginLeft;
-            var targetMarginRight = m_Target.resolvedStyle.marginRight;
-            var targetMarginBottom = m_Target.resolvedStyle.marginBottom;
+            var targetMarginTop = target.resolvedStyle.marginTop;
+            var targetMarginLeft = target.resolvedStyle.marginLeft;
+            var targetMarginRight = target.resolvedStyle.marginRight;
+            var targetMarginBottom = target.resolvedStyle.marginBottom;
 
+            Rect targetRect = target.rect;
             targetRect.y -= targetMarginTop;
             targetRect.x -= targetMarginLeft;
             targetRect.width = targetRect.width + (targetMarginLeft + targetMarginRight);
             targetRect.height = targetRect.height + (targetMarginTop + targetMarginBottom);
 
-            var selfRect = m_Target.ChangeCoordinatesTo(this.hierarchy.parent, targetRect);
+            var relativeRect = target.ChangeCoordinatesTo(relativeTo, targetRect);
+            return relativeRect;
+        }
+
+        void ResizeSelfFromTarget()
+        {
+            var selfRect = GetRelativeRectFromTargetElement(m_Target, this.hierarchy.parent);
 
             var top = selfRect.y;
             var left = selfRect.x;
@@ -135,7 +142,7 @@ namespace Unity.UI.Builder
                 return;
 
             SetStylesFromTargetStyles();
-            ResizeSelfFromTarget(m_Target.rect);
+            ResizeSelfFromTarget();
         }
 
         public virtual void StylingChanged(List<string> styles, BuilderStylingChangeType changeType)
@@ -144,7 +151,7 @@ namespace Unity.UI.Builder
                 return;
 
             SetStylesFromTargetStyles();
-            ResizeSelfFromTarget(m_Target.rect);
+            ResizeSelfFromTarget();
         }
     }
 }

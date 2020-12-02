@@ -56,8 +56,15 @@ namespace UnityEditor.Search
 
         private string GetTooltipText()
         {
-            var searchShortcut = ShortcutManagement.ShortcutManager.instance.GetShortcutBinding("Main Menu/Edit/Search All...");
-            return L10n.Tr($"Global Search ({searchShortcut})");
+            try
+            {
+                var searchShortcut = ShortcutManagement.ShortcutManager.instance.GetShortcutBinding("Main Menu/Edit/Search All...");
+                return L10n.Tr($"Global Search ({searchShortcut})");
+            }
+            catch
+            {
+                return L10n.Tr($"Global Search");
+            }
         }
     }
 }

@@ -28,6 +28,13 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Profiler", icon = "UnityEditor.ProfilerWindow")]
     public sealed class ProfilerWindow : EditorWindow, IHasCustomMenu, IProfilerWindowController, ProfilerModulesDropdownWindow.IResponder
     {
+        static class Markers
+        {
+            public static readonly ProfilerMarker updateModulesCharts = new ProfilerMarker("ProfilerWindow.UpdateModules");
+            public static readonly ProfilerMarker drawCharts = new ProfilerMarker("ProfilerWindow.DrawCharts");
+            public static readonly ProfilerMarker drawDetailsView = new ProfilerMarker("ProfilerWindow.DrawDetailsView");
+        }
+
         internal static class Styles
         {
             public static readonly GUIContent addArea = EditorGUIUtility.TrTextContent("Profiler Modules", "Add and remove profiler modules");
@@ -112,6 +119,12 @@ namespace UnityEditor
         [SerializeField]
         SplitterState m_VertSplit;
 
+        internal SplitterState ChartsDetailedViewSplitterState
+        {
+            get => m_VertSplit;
+            set => m_VertSplit = value;
+        }
+
         [NonSerialized]
         float m_FrameCountLabelMinWidth = 0;
 
@@ -155,6 +168,9 @@ namespace UnityEditor
 
         [SerializeReference]
         List<ProfilerModuleBase> m_Modules;
+
+        internal IEnumerable<ProfilerModuleBase> Modules => m_Modules;
+
         // Used by ProfilerEditorTests/ProfilerAreaReferenceCounterTests through reflection.
         ProfilerAreaReferenceCounter m_AreaReferenceCounter;
         [SerializeReference]
@@ -928,9 +944,12 @@ namespace UnityEditor
 
         void UpdateModules()
         {
-            foreach (var module in m_Modules)
+            using (Markers.updateModulesCharts.Auto())
             {
-                module.Update();
+                foreach (var module in m_Modules)
+                {
+                    module.Update();
+                }
             }
         }
 
@@ -1327,14 +1346,18 @@ namespace UnityEditor
         int DrawModuleChartViews(int currentFrame, out bool hasNoActiveModules)
         {
             hasNoActiveModules = true;
-            for (int i = 0; i < m_Modules.Count; i++)
+
+            using (Markers.drawCharts.Auto())
             {
-                var module = m_Modules[i];
-                if (module.active)
+                for (int i = 0; i < m_Modules.Count; i++)
                 {
-                    hasNoActiveModules = false;
-                    bool isSelected = (m_SelectedModuleIndex == i);
-                    currentFrame = module.DrawChartView(currentFrame, isSelected);
+                    var module = m_Modules[i];
+                    if (module.active)
+                    {
+                        hasNoActiveModules = false;
+                        bool isSelected = (m_SelectedModuleIndex == i);
+                        currentFrame = module.DrawChartView(currentFrame, isSelected);
+                    }
                 }
             }
 
@@ -1343,17 +1366,20 @@ namespace UnityEditor
 
         void DrawDetailsViewForModule(ProfilerModuleBase module)
         {
-            var detailViewPosition = new Rect(0, m_VertSplit.realSizes[0] + EditorGUI.kWindowToolbarHeight, position.width, m_VertSplit.realSizes[1]);
-            var detailViewToolbar = detailViewPosition;
-            detailViewToolbar.height = EditorStyles.contentToolbar.CalcHeight(GUIContent.none, 10.0f);
-            module.DrawToolbar(detailViewPosition);
+            using (Markers.drawDetailsView.Auto())
+            {
+                var detailViewPosition = new Rect(0, m_VertSplit.realSizes[0] + EditorGUI.kWindowToolbarHeight, position.width, m_VertSplit.realSizes[1]);
+                var detailViewToolbar = detailViewPosition;
+                detailViewToolbar.height = EditorStyles.contentToolbar.CalcHeight(GUIContent.none, 10.0f);
+                module.DrawToolbar(detailViewPosition);
 
-            detailViewPosition.yMin += detailViewToolbar.height;
-            module.DrawDetailsView(detailViewPosition);
+                detailViewPosition.yMin += detailViewToolbar.height;
+                module.DrawDetailsView(detailViewPosition);
 
-            // Draw separator
-            var lineRect = new Rect(0, m_VertSplit.realSizes[0] + EditorGUI.kWindowToolbarHeight - 1, position.width, 1);
-            EditorGUI.DrawRect(lineRect, Styles.borderColor);
+                // Draw separator
+                var lineRect = new Rect(0, m_VertSplit.realSizes[0] + EditorGUI.kWindowToolbarHeight - 1, position.width, 1);
+                EditorGUI.DrawRect(lineRect, Styles.borderColor);
+            }
         }
 
         void ProfilerModulesDropdownWindow.IResponder.OnModuleActiveStateChanged()

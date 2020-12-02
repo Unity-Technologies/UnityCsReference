@@ -75,6 +75,17 @@ namespace UnityEngine.UIElements
             return StyleKeyword.Null;
         }
 
+        public StyleFontDefinition GetStyleFontDefinition(StylePropertyId id)
+        {
+            var inline = new StyleValue();
+            if (TryGetStyleValue(id, ref inline))
+            {
+                var font = inline.resource.IsAllocated ? inline.resource.Target as object : null;
+                return new StyleFontDefinition(font, inline.keyword);
+            }
+            return StyleKeyword.Null;
+        }
+
         public bool TryGetStyleValue(StylePropertyId id, ref StyleValue value)
         {
             value.id = StylePropertyId.Unknown;
@@ -119,6 +130,9 @@ namespace UnityEngine.UIElements
 
         private bool m_HasInlineCursor;
         private StyleCursor m_InlineCursor;
+
+        private bool m_HasInlineTextShadow;
+        private StyleTextShadow m_InlineTextShadow;
 
         private InlineRule m_InlineRule;
         public InlineRule inlineRule => m_InlineRule;
@@ -209,6 +223,24 @@ namespace UnityEngine.UIElements
                 if (SetInlineCursor(value, ve.sharedStyle.cursor))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles);
+                }
+            }
+        }
+
+        StyleTextShadow IStyle.textShadow
+        {
+            get
+            {
+                var inlineTextShadow = new StyleTextShadow();
+                if (TryGetInlineTextShadow(ref inlineTextShadow))
+                    return inlineTextShadow;
+                return StyleKeyword.Null;
+            }
+            set
+            {
+                if (SetInlineTextShadow(value, ve.sharedStyle.textShadow))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
                 }
             }
         }
@@ -410,6 +442,50 @@ namespace UnityEngine.UIElements
             return true;
         }
 
+        private bool SetStyleValue(StylePropertyId id, StyleFontDefinition inlineValue, FontDefinition sharedValue)
+        {
+            var sv = new StyleValue();
+            if (TryGetStyleValue(id, ref sv))
+            {
+                var font = sv.resource.IsAllocated ? sv.resource.Target as Font : null;
+                var obj = sv.resource.Target as Object;
+                var fontAsset = sv.resource.IsAllocated && TextDelegates.IsFontAssetSafe(obj) ? obj : null;
+                if ((font == inlineValue.value.font && fontAsset == inlineValue.value.fontAsset) && sv.keyword == inlineValue.keyword)
+                    return false;
+
+                if (sv.resource.IsAllocated)
+                    sv.resource.Free();
+            }
+            else if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                return false;
+            }
+
+            sv.id = id;
+            sv.keyword = inlineValue.keyword;
+            if (inlineValue.value.font != null)
+                sv.resource = GCHandle.Alloc(inlineValue.value.font);
+            else if (inlineValue.value.fontAsset != null)
+                sv.resource = GCHandle.Alloc(inlineValue.value.fontAsset);
+            else
+                sv.resource = new GCHandle();
+
+            SetStyleValue(sv);
+
+            if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                if (sharedValue.font != null)
+                    sv.resource = GCHandle.Alloc(sharedValue.font);
+                else if (sharedValue.fontAsset != null)
+                    sv.resource = GCHandle.Alloc(sharedValue.fontAsset);
+                else
+                    sv.resource = new GCHandle();
+            }
+
+            ApplyStyleValue(sv);
+            return true;
+        }
+
         private bool SetStyleValue(StylePropertyId id, StyleFont inlineValue, Font sharedValue)
         {
             var sv = new StyleValue();
@@ -472,6 +548,34 @@ namespace UnityEngine.UIElements
             return true;
         }
 
+        private bool SetInlineTextShadow(StyleTextShadow inlineValue, StyleTextShadow sharedValue)
+        {
+            var styleTextShadow = new StyleTextShadow();
+            if (TryGetInlineTextShadow(ref styleTextShadow))
+            {
+                if (styleTextShadow.value == inlineValue.value && styleTextShadow.keyword == inlineValue.keyword)
+                    return false;
+            }
+            else if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                return false;
+            }
+
+            styleTextShadow.value = inlineValue.value;
+            styleTextShadow.keyword = inlineValue.keyword;
+
+            SetInlineTextShadow(styleTextShadow);
+
+            if (styleTextShadow.keyword == StyleKeyword.Null)
+            {
+                styleTextShadow.keyword = sharedValue.keyword;
+                styleTextShadow.value = sharedValue.value;
+            }
+
+            ve.computedStyle.ApplyStyleTextShadow(styleTextShadow.value);
+            return true;
+        }
+
         private void ApplyStyleValue(StyleValue value)
         {
             var parentStyle = ve.hierarchy.parent?.computedStyle;
@@ -492,6 +596,22 @@ namespace UnityEngine.UIElements
         {
             m_InlineCursor = value;
             m_HasInlineCursor = true;
+        }
+
+        public bool TryGetInlineTextShadow(ref StyleTextShadow value)
+        {
+            if (m_HasInlineTextShadow)
+            {
+                value = m_InlineTextShadow;
+                return true;
+            }
+            return false;
+        }
+
+        public void SetInlineTextShadow(StyleTextShadow value)
+        {
+            m_InlineTextShadow = value;
+            m_HasInlineTextShadow = true;
         }
     }
 }

@@ -3,6 +3,8 @@ namespace UnityEngine.UIElements
     internal class TouchScreenTextEditorEventHandler : TextEditorEventHandler
     {
         private IVisualElementScheduledItem m_TouchKeyboardPoller = null;
+        private VisualElement m_LastPointerDownTarget;
+
 
         public TouchScreenTextEditorEventHandler(TextEditorEngine editorEngine, ITextInputField textInputField)
             : base(editorEngine, textInputField)
@@ -55,10 +57,16 @@ namespace UnityEngine.UIElements
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
-            long mouseEventType = MouseDownEvent.TypeId();
-
-            if (!textInputField.isReadOnly && evt.eventTypeId == mouseEventType && editorEngine.keyboardOnScreen == null)
+            if (!textInputField.isReadOnly && evt.eventTypeId == PointerDownEvent.TypeId() && editorEngine.keyboardOnScreen == null)
             {
+                m_LastPointerDownTarget = evt.target as VisualElement;
+            }
+            else if (!textInputField.isReadOnly && evt.eventTypeId == PointerUpEvent.TypeId() && editorEngine.keyboardOnScreen == null)
+            {
+                var pointerUpEvent = evt as PointerUpEvent;
+                if (m_LastPointerDownTarget == null || !m_LastPointerDownTarget.worldBound.Contains(pointerUpEvent.position))
+                    return;
+
                 textInputField.SyncTextEngine();
                 textInputField.UpdateText(editorEngine.text);
 
@@ -67,6 +75,7 @@ namespace UnityEngine.UIElements
                     true,     // autocorrection
                     editorEngine.multiline,
                     textInputField.isPasswordField);
+
 
                 if (editorEngine.keyboardOnScreen != null)
                 {

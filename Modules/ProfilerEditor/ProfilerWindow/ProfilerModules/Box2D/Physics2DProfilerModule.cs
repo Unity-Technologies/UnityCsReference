@@ -20,6 +20,7 @@ namespace UnityEditorInternal.Profiling
         public Physics2DProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName) {}
 
         public override ProfilerArea area => ProfilerArea.Physics2D;
+        public override bool usesCounters => false;
 
         protected override int defaultOrderIndex => k_DefaultOrderIndex;
         protected override string legacyPreferenceKey => "ProfilerChartPhysics2D";

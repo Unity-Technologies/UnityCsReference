@@ -32,25 +32,15 @@ namespace UnityEditor.UIElements
 
             internal override void OnVisualTreeAssetChanged(bool inMemoryChange)
             {
-                if ((inMemoryChange && !m_Owner.m_LiveReloadEnabled) || !m_Owner.m_WindowRegistered)
+                if ((inMemoryChange && !m_Owner.panel.enableAssetReload) || !m_Owner.m_WindowRegistered)
                     return;
 
-                var rootVisualElement = m_Owner.editorWindowModel.window.rootVisualElement;
-
-                if (rootVisualElement.panel is BaseVisualElementPanel panel)
-                {
-                    var view = panel.ownerObject as HostView;
-                    if (view != null && view.actualView != null)
-                    {
-                        view.Reload(view.actualView);
-                    }
-                }
+                m_Owner.RecreateWindow();
             }
         }
 
         private EditorWindowVisualTreeAssetTracker m_LiveReloadVisualTreeAssetTracker = null;
 
-        private bool m_LiveReloadEnabled = false;
         private string m_LiveReloadPreferenceKey;
 
         public override void OnCreate(IWindowModel model)
@@ -126,7 +116,7 @@ namespace UnityEditor.UIElements
 
                 // Live Reload is off by default for all Editor Windows, except for the Game View
                 m_LiveReloadPreferenceKey = GetWindowLiveReloadPreferenceKey(editorWindowModel.window.GetType());
-                m_LiveReloadEnabled = EditorPrefs.GetBool(m_LiveReloadPreferenceKey, editorWindowModel.window is GameView);
+                m_Panel.enableAssetReload = EditorPrefs.GetBool(m_LiveReloadPreferenceKey, editorWindowModel.window is GameView);
             }
 
             var root = window.rootVisualElement;
@@ -143,7 +133,7 @@ namespace UnityEditor.UIElements
 
             UpdateStyleMargins();
             m_WindowRegistered = true;
-            
+
             SendInitializeIfNecessary();
         }
 
@@ -297,7 +287,7 @@ namespace UnityEditor.UIElements
         {
             if (editorWindowModel == null)
                 return;
-            
+
             var window = editorWindowModel.window;
 
 
@@ -361,14 +351,19 @@ namespace UnityEditor.UIElements
         private void AddLiveReloadOptionToMenu(GenericMenu menu)
         {
             // Live Reload is off by default for all Editor Windows, except for the Game View
-            m_LiveReloadEnabled = EditorPrefs.GetBool(m_LiveReloadPreferenceKey, editorWindowModel.window is GameView);
-            menu.AddItem(EditorGUIUtility.TextContent(k_LiveReloadMenuText), m_LiveReloadEnabled, ToggleLiveReloadForWindowType, editorWindowModel.window);
+            panel.enableAssetReload = EditorPrefs.GetBool(m_LiveReloadPreferenceKey, editorWindowModel.window is GameView);
+            menu.AddItem(EditorGUIUtility.TextContent(k_LiveReloadMenuText), panel.enableAssetReload, ToggleLiveReloadForWindowType, editorWindowModel.window);
         }
 
         private void ToggleLiveReloadForWindowType(object userData)
         {
-            m_LiveReloadEnabled = !m_LiveReloadEnabled;
-            EditorPrefs.SetBool(m_LiveReloadPreferenceKey, m_LiveReloadEnabled);
+            panel.enableAssetReload = !panel.enableAssetReload;
+            EditorPrefs.SetBool(m_LiveReloadPreferenceKey, panel.enableAssetReload);
+
+            if (panel.enableAssetReload)
+            {
+                RecreateWindow();
+            }
         }
 
         private void AddUIElementsDebuggerToMenu(GenericMenu menu)
@@ -406,6 +401,18 @@ namespace UnityEditor.UIElements
                 return;
 
             updater.PollElementsWithBindings((e, b) => BindingExtensions.HandleStyleUpdate(e));
+        }
+
+        private void RecreateWindow()
+        {
+            if (editorWindowModel.window.rootVisualElement.panel is BaseVisualElementPanel panel)
+            {
+                var view = panel.ownerObject as HostView;
+                if (view != null && view.actualView != null)
+                {
+                    view.Reload(view.actualView);
+                }
+            }
         }
 
         private static string GetWindowLiveReloadPreferenceKey(Type windowType)

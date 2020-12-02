@@ -970,7 +970,7 @@ namespace UnityEditor.StyleSheets
                         }
                         break;
                     case StyleValueType.ScalableImage:
-                        helper.builder.AddValue(value.AsScalableImage().normalImage);
+                        helper.builder.AddValue(value.AsScalableImage());
                         break;
                     case StyleValueType.AssetReference:
                         helper.builder.AddValue(value.AsAssetReference());

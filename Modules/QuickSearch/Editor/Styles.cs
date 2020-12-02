@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 
+using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor.Search
 {
@@ -22,6 +23,9 @@ namespace UnityEditor.Search
             for (int i = 0; i < 12; i++)
                 statusWheel[i] = EditorGUIUtility.IconContent("WaitSpin" + i.ToString("00"));
 
+            var syncShortcut = ShortcutManager.instance.GetShortcutBinding(QuickSearch.k_TogleSyncShortcutName);
+            var tooltip = $"Synchronize search fields ({syncShortcut})";
+            syncSearchButtonContent = new GUIContent(string.Empty, EditorGUIUtility.LoadIcon("preAudioLoopOff"), tooltip);
         }
 
         private const int itemRowPadding = 4;
@@ -338,6 +342,9 @@ namespace UnityEditor.Search
 
         public static readonly GUIContent saveQueryButtonContent = new GUIContent(string.Empty, EditorGUIUtility.FindTexture("SaveAs"), "Save search query as an asset.");
 
+        public static readonly GUIContent syncSearchButtonContent = new GUIContent(string.Empty, EditorGUIUtility.LoadIcon("preAudioLoopOff"), "Synchronize search fields (Ctrl + K)");
+        public static readonly GUIContent syncSearchProviderNotSupportedContent = new GUIContent(string.Empty, EditorGUIUtility.LoadIcon("preAudioLoopOff"), "Search provider doesn't support synchronization");
+        public static readonly GUIContent syncSearchViewNotEnabledContent = new GUIContent(string.Empty, EditorGUIUtility.LoadIcon("preAudioLoopOff"), "Search provider uses a search engine\nthat cannot be synchronized.\nSee Preferences -> Search.");
 
         public static readonly GUIStyle toolbarButton = new GUIStyle("IconButton")
         {

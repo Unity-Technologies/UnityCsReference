@@ -6,15 +6,45 @@ namespace UnityEngine.UIElements
 {
     internal class VisualTreeAssetChangeTrackerUpdater : BaseVisualTreeUpdater
     {
-        private static readonly string s_Description = "VisualTreeAssetTracker";
+        private static readonly string s_Description = "Update UI Assets (Editor)";
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
+
+        // HashSet is for faster removals when elements go away from a panel
+        private HashSet<TextElement> m_TextElements = new HashSet<TextElement>();
+
+        private bool m_HasAnyTextAssetChanged;
+
+        public VisualTreeAssetChangeTrackerUpdater()
+        {
+            TextDelegates.OnTextAssetChange += OnTextAssetChange;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                TextDelegates.OnTextAssetChange -= OnTextAssetChange;
+
+                m_TextElements.Clear();
+            }
+        }
+
+        void OnTextAssetChange(Object asset)
+        {
+            // Note: due to Rich Text Tags, it's very difficult to predict if a text asset is actually in use
+            // Therefore we will invalidate ALL text objects but only for panels which have Live Reload enabled
+            if (panel.enableAssetReload)
+            {
+                m_HasAnyTextAssetChanged = true;
+                panel.RequestUpdateAfterExternalEvent(this);
+            }
+        }
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
             // Nothing to be done, we only need the Update
         }
-
 
         internal static Func<bool> IsEditorPlaying;
 
@@ -92,6 +122,8 @@ namespace UnityEngine.UIElements
 
         public override void Update()
         {
+            UpdateTextElements();
+
             // Early out: no tracker found for panel.
             if (m_LiveReloadVisualTreeAssetTrackers.Count == 0 && m_LiveReloadStyleSheetAssetTracker == null)
             {
@@ -131,5 +163,38 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public void RegisterTextElement(TextElement element)
+        {
+            if (panel.enableAssetReload)
+            {
+                m_TextElements.Add(element);
+            }
+        }
+
+        public void UnregisterTextElement(TextElement element)
+        {
+            if (panel.enableAssetReload)
+            {
+                m_TextElements.Remove(element);
+            }
+        }
+
+        private void UpdateTextElements()
+        {
+            if (!m_HasAnyTextAssetChanged)
+                return;
+
+            try
+            {
+                foreach (var textElement in m_TextElements)
+                {
+                    textElement.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
+                }
+            }
+            finally
+            {
+                m_HasAnyTextAssetChanged = false;
+            }
+        }
     }
 }

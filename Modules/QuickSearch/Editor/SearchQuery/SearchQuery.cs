@@ -42,9 +42,16 @@ namespace UnityEditor.Search
 
         private static IEnumerable<SearchQuery> EnumerateAll()
         {
-            return AssetDatabase.FindAssets($"t:{nameof(SearchQuery)}")
-                .Select(AssetDatabase.GUIDToAssetPath)
-                .Select(path => AssetDatabase.LoadAssetAtPath<SearchQuery>(path));
+            var savedQueriesItr = AssetDatabase.EnumerateAllAssets(new SearchFilter
+            {
+                searchArea = SearchFilter.SearchArea.InAssetsOnly,
+                classNames = new[] { nameof(SearchQuery) },
+                showAllHits = false
+            });
+
+            s_SavedQueries = new List<SearchQuery>();
+            while (savedQueriesItr.MoveNext())
+                yield return savedQueriesItr.Current.pptrValue as SearchQuery;
         }
 
         public static SearchQuery Create(SearchContext context, string description = null, Texture2D icon = null)

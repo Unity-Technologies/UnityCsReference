@@ -41,7 +41,7 @@ namespace Unity.UI.Builder
         public ImageStyleField(string label) : base(label)
         {
             AddType(typeof(Texture2D), "Texture");
-
+            
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(k_UssPath));
             var fieldContainer = new VisualElement {name = k_ImageStyleFieldContainerName};
             fieldContainer.AddToClassList(k_ImageStyleFieldContainerClassName);

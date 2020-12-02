@@ -7,6 +7,7 @@ namespace Unity.UI.Builder
     {
         const string k_EditorExtensionsModeToggleName = "editor-extensions-mode-toggle";
         const string k_DisableMouseWheelZoomingToggleName = "disable-mouse-wheel-zooming";
+        const string k_EnableAbsolutePositionPlacementToggleName = "enable-absolute-position-placement";
 
         [SettingsProvider]
         public static SettingsProvider PreferenceSettingsProvider()
@@ -43,6 +44,15 @@ namespace Unity.UI.Builder
             {
                 BuilderProjectSettings.disableMouseWheelZooming = e.newValue;
             });
+
+            var absolutePlacementToggle = rootElement.Q<Toggle>(k_EnableAbsolutePositionPlacementToggleName);
+            absolutePlacementToggle.SetValueWithoutNotify(BuilderProjectSettings.enableAbsolutePositionPlacement);
+            absolutePlacementToggle.RegisterValueChangedCallback(e =>
+            {
+                BuilderProjectSettings.enableAbsolutePositionPlacement = e.newValue;
+            });
+            if (!Unsupported.IsDeveloperMode())
+                absolutePlacementToggle.style.display = DisplayStyle.None;
 
             base.OnActivate(searchContext, rootElement);
         }

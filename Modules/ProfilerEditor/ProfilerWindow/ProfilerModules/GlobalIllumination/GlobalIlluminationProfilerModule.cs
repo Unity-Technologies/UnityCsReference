@@ -20,6 +20,7 @@ namespace UnityEditorInternal.Profiling
         public GlobalIlluminationProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName, Chart.ChartType.StackedFill) {}
 
         public override ProfilerArea area => ProfilerArea.GlobalIllumination;
+        public override bool usesCounters => false;
 
         protected override int defaultOrderIndex => k_DefaultOrderIndex;
         protected override string legacyPreferenceKey => "ProfilerChartGlobalIllumination";

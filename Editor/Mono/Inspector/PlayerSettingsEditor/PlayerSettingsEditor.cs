@@ -751,20 +751,6 @@ namespace UnityEditor
                 scriptRecompileRequired = true;
             }
 
-            // Active input handler
-            if (serializedActiveInputHandler != m_ActiveInputHandler.intValue)
-            {
-                // Give the user a chance to change mind and revert changes.
-                if (ShouldRestartEditorToApplySetting())
-                {
-                    serializedActiveInputHandler = m_ActiveInputHandler.intValue;
-                    m_ActiveInputHandler.serializedObject.ApplyModifiedProperties();
-                    EditorApplication.RestartEditorAndRecompileScripts();
-                }
-                else
-                    m_ActiveInputHandler.intValue = serializedActiveInputHandler;
-            }
-
             // Stack trace log type
             foreach (LogType logType in Enum.GetValues(typeof(LogType)))
             {
@@ -2452,9 +2438,23 @@ namespace UnityEditor
             // Active input handling
             using (var vertical = new EditorGUILayout.VerticalScope())
             {
+                var currValue = m_ActiveInputHandler.intValue;
+
                 using (var propertyScope = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_ActiveInputHandler))
                 {
                     m_ActiveInputHandler.intValue = EditorGUILayout.Popup(SettingsContent.activeInputHandling, m_ActiveInputHandler.intValue, SettingsContent.activeInputHandlingOptions);
+                }
+
+                if (m_ActiveInputHandler.intValue != currValue)
+                {
+                    // Give the user a chance to change mind and revert changes.
+                    if (ShouldRestartEditorToApplySetting())
+                    {
+                        m_ActiveInputHandler.serializedObject.ApplyModifiedProperties();
+                        EditorApplication.RestartEditorAndRecompileScripts();
+                    }
+                    else
+                        m_ActiveInputHandler.intValue = currValue;
                 }
             }
 

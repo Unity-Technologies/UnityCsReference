@@ -62,9 +62,13 @@ namespace UnityEditor.SceneManagement
 
         internal void HandleApplyMenuItems(GenericMenu menu, GenericMenu.MenuFunction2 applyAction)
         {
+            bool isObjectOverride = this is ObjectOverride;
+            Object obj = isObjectOverride ? GetObject() : GetAssetObject();
+            bool isObjectOverrideAllDefaultOverridesComparedToOriginalSource =
+                isObjectOverride ? PrefabUtility.IsObjectOverrideAllDefaultOverridesComparedToOriginalSource(obj) : false;
             PrefabUtility.HandleApplyMenuItems(
                 null,
-                GetAssetObject(),
+                obj,
                 (menuItemContent, sourceObject) =>
                 {
                     string prefabAssetPath = AssetDatabase.GetAssetPath(sourceObject);
@@ -74,8 +78,8 @@ namespace UnityEditor.SceneManagement
                     else
                         menu.AddItem(menuItemContent, false, applyAction, prefabAssetPath);
                 },
-                false,
-                true);
+                isObjectOverrideAllDefaultOverridesComparedToOriginalSource,
+                !isObjectOverride);
         }
     }
 

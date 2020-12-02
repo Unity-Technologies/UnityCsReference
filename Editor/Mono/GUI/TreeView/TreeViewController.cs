@@ -1350,7 +1350,7 @@ namespace UnityEditor.IMGUI.Controls
 
                 if (topPixelOfRow >= 0f && row >= 0 && row < data.rowCount)
                 {
-                    TreeViewItem item = data.GetItem(row);
+                    TreeViewItem item = data.GetRows()[row];
                     float scrollBarOffset = GetContentSize().y > m_TotalRect.height ? -kSpaceForScrollBar : 0f;
                     gui.BeginPingItem(item, topPixelOfRow, m_TotalRect.width + scrollBarOffset);
                 }

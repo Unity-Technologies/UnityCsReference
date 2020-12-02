@@ -36,7 +36,7 @@ namespace Unity.UI.Builder
             return true;
         }
 
-        protected override void PerformAction(VisualElement destination, DestinationPane pane, int index = -1)
+        protected override void PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
         {
             if (BuilderSharedStyles.IsDocumentElement(destination))
                 return;
@@ -70,6 +70,11 @@ namespace Unity.UI.Builder
                 return false;
 
             return true;
+        }
+
+        protected override bool SupportsPlacementIndicator()
+        {
+            return false;
         }
     }
 }

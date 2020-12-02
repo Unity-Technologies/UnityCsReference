@@ -970,7 +970,7 @@ namespace UnityEngine.UIElements.UIR
         internal MeshHandle data, closingData;
         internal Matrix4x4 verticesSpace; // Transform describing the space which the vertices in 'data' are relative to
         internal int displacementUVStart, displacementUVEnd;
-        internal BMPAlloc transformID, clipRectID, opacityID;
+        internal BMPAlloc transformID, clipRectID, opacityID, textCoreSettingsID;
         internal float compositeOpacity;
 
         // Text update acceleration

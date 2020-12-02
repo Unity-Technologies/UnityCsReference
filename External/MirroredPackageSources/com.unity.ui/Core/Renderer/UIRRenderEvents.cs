@@ -109,6 +109,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             ve.renderChainData.transformID = UIRVEShaderInfoAllocator.identityTransform;
             ve.renderChainData.clipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
             ve.renderChainData.opacityID = UIRVEShaderInfoAllocator.fullOpacity;
+            ve.renderChainData.textCoreSettingsID = UIRVEShaderInfoAllocator.defaultTextCoreSettings;
             ve.renderChainData.compositeOpacity = float.MaxValue; // Any unreasonable value will do to trip the opacity composer to work
 
             if (parent != null)
@@ -196,6 +197,11 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 if (ve.renderChainData.prev != null)
                     ve.renderChainData.prev.renderChainData.next = ve.renderChainData.next;
 
+                if (RenderChainVEData.AllocatesID(ve.renderChainData.textCoreSettingsID))
+                {
+                    renderChain.shaderInfoAllocator.FreeTextCoreSettings(ve.renderChainData.textCoreSettingsID);
+                    ve.renderChainData.textCoreSettingsID = UIRVEShaderInfoAllocator.defaultTextCoreSettings;
+                }
                 if (RenderChainVEData.AllocatesID(ve.renderChainData.opacityID))
                 {
                     renderChain.shaderInfoAllocator.FreeOpacity(ve.renderChainData.opacityID);
@@ -542,6 +548,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
             Debug.Assert(ve.renderChainData.clipMethod != ClipMethod.Undetermined);
             Debug.Assert(RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || ve.hierarchy.parent == null || ve.renderChainData.transformID.Equals(ve.hierarchy.parent.renderChainData.transformID) || (ve.renderHints & RenderHints.GroupTransform) != 0);
 
+            if (ve is ITextElement)
+                RenderEvents.UpdateTextCoreSettings(renderChain, ve, dirtyID, ref stats);
+
             UIRStylePainter.ClosingInfo closingInfo = PaintElement(renderChain, ve, ref stats);
 
             if (hierarchical)
@@ -556,6 +565,28 @@ namespace UnityEngine.UIElements.UIR.Implementation
             // at a time that would maintain continuity in the index buffer
             if (closingInfo.needsClosing)
                 ClosePaintElement(ve, closingInfo, renderChain, ref stats);
+        }
+
+        static void UpdateTextCoreSettings(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
+        {
+            if (ve == null || ve.computedStyle.unityFontDefinition.IsEmpty())
+                return;
+
+            bool allocatesID = RenderChainVEData.AllocatesID(ve.renderChainData.textCoreSettingsID);
+
+            var settings = TextDelegates.GetTextCoreSettingsForElementSafe(ve);
+            if (settings.outlineWidth == 0.0f && settings.underlayOffset == Vector2.zero && settings.underlaySoftness == 0.0f && !allocatesID)
+            {
+                // Use default TextCore settings
+                ve.renderChainData.textCoreSettingsID = UIRVEShaderInfoAllocator.defaultTextCoreSettings;
+                return;
+            }
+
+            if (!allocatesID)
+                ve.renderChainData.textCoreSettingsID = renderChain.shaderInfoAllocator.AllocTextCoreSettings(settings);
+
+            if (RenderChainVEData.AllocatesID(ve.renderChainData.textCoreSettingsID))
+                renderChain.shaderInfoAllocator.SetTextCoreSettingValue(ve.renderChainData.textCoreSettingsID, settings);
         }
 
         static bool IsElementHierarchyHidden(VisualElement ve)
@@ -744,8 +775,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 bool vertexDataComputed = false;
                 Matrix4x4 transform = Matrix4x4.identity;
                 Color32 xformClipPages = new Color32(0, 0, 0, 0);
-                Color32 idsAddFlags = new Color32(0, 0, 0, 0);
+                Color32 ids = new Color32(0, 0, 0, 0);
+                Color32 addFlags = new Color32(0, 0, 0, 0);
                 Color32 opacityPage = new Color32(0, 0, 0, 0);
+                Color32 textCoreSettingsPage = new Color32(0, 0, 0, 0);
 
                 int firstDisplacementUV = -1, lastDisplacementUVPlus1 = -1;
                 foreach (var entry in painter.entries)
@@ -760,19 +793,29 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                             Color32 transformData = renderChain.shaderInfoAllocator.TransformAllocToVertexData(ve.renderChainData.transformID);
                             Color32 opacityData = renderChain.shaderInfoAllocator.OpacityAllocToVertexData(ve.renderChainData.opacityID);
+                            Color32 textCoreSettingsData = renderChain.shaderInfoAllocator.TextCoreSettingsToVertexData(ve.renderChainData.textCoreSettingsID);
                             xformClipPages.r = transformData.r;
                             xformClipPages.g = transformData.g;
-                            idsAddFlags.r = transformData.b;
+                            ids.r = transformData.b;
                             opacityPage.r = opacityData.r;
                             opacityPage.g = opacityData.g;
-                            idsAddFlags.b = opacityData.b;
+                            ids.b = opacityData.b;
+                            if (entry.isTextEntry)
+                            {
+                                // It's important to avoid writing these values when the vertices aren't for text,
+                                // as these settings are shared with the vector graphics gradients.
+                                // The same applies to the CopyTransformVertsPos* methods below.
+                                textCoreSettingsPage.r = textCoreSettingsData.r;
+                                textCoreSettingsPage.g = textCoreSettingsData.g;
+                            }
+                            ids.a = textCoreSettingsData.b;
                         }
 
                         Color32 clipRectData = renderChain.shaderInfoAllocator.ClipRectAllocToVertexData(entry.clipRectID);
                         xformClipPages.b = clipRectData.r;
                         xformClipPages.a = clipRectData.g;
-                        idsAddFlags.g = clipRectData.b;
-                        idsAddFlags.a = (byte)entry.addFlags;
+                        ids.g = clipRectData.b;
+                        addFlags.r = (byte)entry.addFlags;
 
                         float textureId = entry.texture.ConvertToGpu();
 
@@ -790,9 +833,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
                                 lastDisplacementUVPlus1 += entry.vertices.Length;
                             else ve.renderChainData.disableNudging = true; // Disjoint displacement UV entries, we can't keep track of them, so disable nudging optimization altogether
 
-                            CopyTransformVertsPosAndVec(entry.vertices, targetVerticesSlice, transform, xformClipPages, idsAddFlags, opacityPage, textureId);
+                            CopyTransformVertsPosAndVec(entry.vertices, targetVerticesSlice, transform, xformClipPages, ids, addFlags, opacityPage, textCoreSettingsPage, entry.isTextEntry, textureId);
                         }
-                        else CopyTransformVertsPos(entry.vertices, targetVerticesSlice, transform, xformClipPages, idsAddFlags, opacityPage, textureId);
+                        else CopyTransformVertsPos(entry.vertices, targetVerticesSlice, transform, xformClipPages, ids, addFlags, opacityPage, textCoreSettingsPage, entry.isTextEntry, textureId);
 
                         // Copy indices
                         int entryIndexCount = entry.indices.Length;
@@ -812,6 +855,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
                                 ve.renderChainData.textEntries = new List<RenderChainTextEntry>(1);
                             ve.renderChainData.textEntries.Add(new RenderChainTextEntry() { command = cmd, firstVertex = vertsFilled, vertexCount = entry.vertices.Length });
                         }
+                        else if (entry.isTextEntry)
+                        {
+                            // Set font atlas texture gradient scale
+                            cmd.state.fontTexSDFScale = entry.fontTexSDFScale;
+                        }
+
 
                         vertsFilled += entry.vertices.Length;
                         indicesFilled += entryIndexCount;
@@ -860,6 +909,39 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 else if (cmdPrev == null && cmdNext == null)
                     FindClosingCommandInsertionPoint(ve, out cmdPrev, out cmdNext);
 
+                if (painter.closingInfo.PopDefaultMaterial)
+                {
+                    var cmd = renderChain.AllocCommand();
+                    cmd.type = CommandType.PopDefaultMaterial;
+                    cmd.closing = true;
+                    cmd.owner = ve;
+                    InjectClosingCommandInBetween(renderChain, cmd, ref cmdPrev, ref cmdNext);
+                }
+
+                if (painter.closingInfo.blitAndPopRenderTexture)
+                {
+                    {
+                        var cmd = renderChain.AllocCommand();
+                        cmd.type = CommandType.BlitToPreviousRT;
+                        cmd.closing = true;
+                        cmd.owner = ve;
+                        cmd.state.material = GetBlitMaterial(ve.subRenderTargetMode);
+                        cmd.indexOffset = painter.closingInfo.RestoreStencilClip ? 1 : 0;
+                        Debug.Assert(cmd.state.material != null);
+                        InjectClosingCommandInBetween(renderChain, cmd, ref cmdPrev, ref cmdNext);
+                    }
+
+                    {
+                        var cmd = renderChain.AllocCommand();
+                        cmd.type = CommandType.PopRenderTexture;
+                        cmd.closing = true;
+                        cmd.owner = ve;
+                        InjectClosingCommandInBetween(renderChain, cmd, ref cmdPrev, ref cmdNext);
+                    }
+                    painter.m_StencilClip = painter.closingInfo.RestoreStencilClip;
+                }
+
+
                 if (painter.closingInfo.clipperRegisterIndices.Length > 0)
                     painter.LandClipUnregisterMeshDrawCommand(InjectClosingMeshDrawCommand(renderChain, ve, ref cmdPrev, ref cmdNext, null, 0, 0, null, TextureId.invalid, null)); // Placeholder command that will be filled actually later
                 if (painter.closingInfo.popViewMatrix)
@@ -883,6 +965,49 @@ namespace UnityEngine.UIElements.UIR.Implementation
             var closingInfo = painter.closingInfo;
             painter.Reset();
             return closingInfo;
+        }
+
+        static private Material s_blitMaterial_LinearToGamma;
+        static private Material s_blitMaterial_GammaToLinear;
+        static private Material s_blitMaterial_NoChange;
+        static private Shader s_blitShader;
+
+
+        private static Material CreateBlitShader(float colorConversion)
+        {
+            if (s_blitShader == null)
+                s_blitShader = Shader.Find("Hidden/UIE-ColorConversionBlit");
+
+            Debug.Assert(s_blitShader != null, "UI Tollkit Render Event: Shader Not found");
+            var blitMaterial = new Material(s_blitShader);
+            blitMaterial.hideFlags |= HideFlags.DontSaveInEditor;
+            blitMaterial.SetFloat("_ColorConversion", colorConversion);
+            return blitMaterial;
+        }
+
+        private static Material GetBlitMaterial(VisualElement.RenderTargetMode mode)
+        {
+            switch (mode)
+            {
+                case VisualElement.RenderTargetMode.GammaToLinear:
+                    if (s_blitMaterial_GammaToLinear == null)
+                        s_blitMaterial_GammaToLinear = CreateBlitShader(-1);
+                    return s_blitMaterial_GammaToLinear;
+
+                case VisualElement.RenderTargetMode.LinearToGamma:
+                    if (s_blitMaterial_LinearToGamma == null)
+                        s_blitMaterial_LinearToGamma = CreateBlitShader(1);
+                    return s_blitMaterial_LinearToGamma;
+
+                case VisualElement.RenderTargetMode.NoColorConversion:
+                    if (s_blitMaterial_NoChange == null)
+                        s_blitMaterial_NoChange = CreateBlitShader(0);
+                    return s_blitMaterial_NoChange;
+
+                default:
+                    Debug.LogError($"No Shader for Unsupported RenderTargetMode: { mode}");
+                    return null;
+            }
         }
 
         static void ClosePaintElement(VisualElement ve, UIRStylePainter.ClosingInfo closingInfo, RenderChain renderChain, ref ChainBuilderStats stats)
@@ -930,7 +1055,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             }
         }
 
-        static void CopyTransformVertsPos(NativeSlice<Vertex> source, NativeSlice<Vertex> target, Matrix4x4 mat, Color32 xformClipPages, Color32 idsAddFlags, Color32 opacityPage, float textureId)
+        static void CopyTransformVertsPos(NativeSlice<Vertex> source, NativeSlice<Vertex> target, Matrix4x4 mat, Color32 xformClipPages, Color32 ids, Color32 addFlags, Color32 opacityPage, Color32 textCoreSettingsPage, bool isText, float textureId)
         {
             int count = source.Length;
             for (int i = 0; i < count; i++)
@@ -938,18 +1063,21 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 Vertex v = source[i];
                 v.position = mat.MultiplyPoint3x4(v.position);
                 v.xformClipPages = xformClipPages;
-                v.idsFlags.r = idsAddFlags.r;
-                v.idsFlags.g = idsAddFlags.g;
-                v.idsFlags.b = idsAddFlags.b;
-                v.idsFlags.a += idsAddFlags.a;
-                v.opacityPageSVGSettingIndex.r = opacityPage.r;
-                v.opacityPageSVGSettingIndex.g = opacityPage.g;
+                v.ids = ids;
+                v.flags.r += addFlags.r;
+                v.opacityPageSettingIndex.r = opacityPage.r;
+                v.opacityPageSettingIndex.g = opacityPage.g;
+                if (isText)
+                {
+                    v.opacityPageSettingIndex.b = textCoreSettingsPage.r;
+                    v.opacityPageSettingIndex.a = textCoreSettingsPage.g;
+                }
                 v.textureId = textureId;
                 target[i] = v;
             }
         }
 
-        static void CopyTransformVertsPosAndVec(NativeSlice<Vertex> source, NativeSlice<Vertex> target, Matrix4x4 mat, Color32 xformClipPages, Color32 idsAddFlags, Color32 opacityPage, float textureId)
+        static void CopyTransformVertsPosAndVec(NativeSlice<Vertex> source, NativeSlice<Vertex> target, Matrix4x4 mat, Color32 xformClipPages, Color32 ids, Color32 addFlags, Color32 opacityPage, Color32 textCoreSettingsPage, bool isText, float textureId)
         {
             int count = source.Length;
             Vector3 vec = new Vector3(0, 0, UIRUtility.k_MeshPosZ);
@@ -962,12 +1090,15 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 vec.y = v.uv.y;
                 v.uv = mat.MultiplyVector(vec);
                 v.xformClipPages = xformClipPages;
-                v.idsFlags.r = idsAddFlags.r;
-                v.idsFlags.g = idsAddFlags.g;
-                v.idsFlags.b = idsAddFlags.b;
-                v.idsFlags.a += idsAddFlags.a;
-                v.opacityPageSVGSettingIndex.r = opacityPage.r;
-                v.opacityPageSVGSettingIndex.g = opacityPage.g;
+                v.ids = ids;
+                v.flags.r += addFlags.r;
+                v.opacityPageSettingIndex.r = opacityPage.r;
+                v.opacityPageSettingIndex.g = opacityPage.g;
+                if (isText)
+                {
+                    v.opacityPageSettingIndex.b = textCoreSettingsPage.r;
+                    v.opacityPageSettingIndex.a = textCoreSettingsPage.g;
+                }
                 v.textureId = textureId;
                 target[i] = v;
             }

@@ -247,7 +247,7 @@ namespace UnityEngine.UIElements
         {
             throw new NotImplementedException();
         }
-        
+
         /// <summary>
         /// Selects all the text.
         /// </summary>
@@ -286,13 +286,19 @@ namespace UnityEngine.UIElements
             m_TextInputBase.maskChar = maskChar;
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<CustomStyleResolvedEvent>(OnFieldCustomStyleResolved);
         }
 
         private void OnAttachToPanel(AttachToPanelEvent e)
         {
             iTextHandle = e.destinationPanel.contextType == ContextType.Editor
-                ? TextHandleFactory.GetEditorHandle()
+                ? TextNativeHandle.New()
                 : TextHandleFactory.GetRuntimeHandle();
+        }
+
+        private void OnFieldCustomStyleResolved(CustomStyleResolvedEvent e)
+        {
+            m_TextInputBase.OnInputCustomStyleResolved(e);
         }
 
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
@@ -355,7 +361,7 @@ namespace UnityEngine.UIElements
             {
                 if (showMixedValue)
                     m_TextInputBase.ResetValueAndText();
-                
+
                 if (evt.leafTarget == this || evt.leafTarget == labelElement)
                 {
                     m_VisualInputTabIndex = visualInput.tabIndex;
@@ -380,7 +386,7 @@ namespace UnityEngine.UIElements
                 }
             }
         }
-        
+
         protected override void UpdateMixedValueContent()
         {
             if (showMixedValue)
@@ -395,7 +401,6 @@ namespace UnityEngine.UIElements
                 RemoveFromClassList(mixedValueLabelUssClassName);
             }
         }
-
 
         /// <summary>
         /// This is the input text base class visual representation.
@@ -594,7 +599,7 @@ namespace UnityEngine.UIElements
                 // Make the editor style unique across all textfields
                 editorEngine.style = new GUIStyle(editorEngine.style);
 
-                RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+                RegisterCallback<CustomStyleResolvedEvent>(OnInputCustomStyleResolved);
                 RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
                 generateVisualContent += OnGenerateVisualContent;
             }
@@ -633,7 +638,7 @@ namespace UnityEngine.UIElements
                 ProcessMenuCommand(EventCommandNames.Paste);
             }
 
-            private void OnCustomStyleResolved(CustomStyleResolvedEvent e)
+            internal void OnInputCustomStyleResolved(CustomStyleResolvedEvent e)
             {
                 Color selectionValue = Color.clear;
                 Color cursorValue = Color.clear;
@@ -716,17 +721,12 @@ namespace UnityEngine.UIElements
 
                 int cursorIndex = editorEngine.cursorIndex;
                 int selectIndex = editorEngine.selectIndex;
-                Rect localPosition = editorEngine.localPosition;
                 var scrollOffset = editorEngine.scrollOffset;
 
                 float textScaling = TextUtilities.ComputeTextScaling(worldTransform, pixelsPerPoint);
 
-                var textParams = MeshGenerationContextUtils.TextParams.MakeStyleBased(this, text);
-                textParams.text = " ";
-                textParams.wordWrapWidth = 0.0f;
-                textParams.wordWrap = false;
-
-                float lineHeight = m_TextHandle.ComputeTextHeight(textParams, textScaling);
+                var textParams = MeshGenerationContextUtils.TextParams.MakeStyleBased(this, " ");
+                float lineHeight = m_TextHandle.GetLineHeight(0, textParams, textScaling, pixelsPerPoint);
 
                 float wordWrapWidth = 0.0f;
 
@@ -739,8 +739,6 @@ namespace UnityEngine.UIElements
                 Vector2 pos = editorEngine.graphicalCursorPos - scrollOffset;
                 pos.y += lineHeight;
                 GUIUtility.compositionCursorPos = this.LocalToWorld(pos);
-
-                Color drawCursorColor = cursorColor;
 
                 int selectionEndIndex = string.IsNullOrEmpty(GUIUtility.compositionString)
                     ? selectIndex
@@ -766,6 +764,8 @@ namespace UnityEngine.UIElements
 
                     minPos -= scrollOffset;
                     maxPos -= scrollOffset;
+
+                    lineHeight = m_TextHandle.GetLineHeight(cursorIndex, textParams, textScaling, pixelsPerPoint);
 
                     if (Mathf.Approximately(minPos.y, maxPos.y))
                     {
@@ -814,7 +814,6 @@ namespace UnityEngine.UIElements
                 // Draw the text with the scroll offset
                 if (!string.IsNullOrEmpty(editorEngine.text) && contentRect.width > 0.0f && contentRect.height > 0.0f)
                 {
-                    textParams = MeshGenerationContextUtils.TextParams.MakeStyleBased(this, text);
                     textParams.rect = new Rect(contentRect.x - scrollOffset.x, contentRect.y - scrollOffset.y, contentRect.width + scrollOffset.x, contentRect.height + scrollOffset.y);
                     textParams.text = editorEngine.text;
 
@@ -824,7 +823,7 @@ namespace UnityEngine.UIElements
                 // Draw the cursor
                 if (!isReadOnly && !isDragging)
                 {
-                    if (cursorIndex == selectionEndIndex && computedStyle.unityFont != null)
+                    if (cursorIndex == selectionEndIndex && (computedStyle.unityFont != null || !computedStyle.unityFontDefinition.IsEmpty()))
                     {
                         cursorParams = CursorPositionStylePainterParameters.GetDefault(this, text);
                         cursorParams.text = editorEngine.text;
@@ -836,7 +835,7 @@ namespace UnityEngine.UIElements
                         mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams
                         {
                             rect = new Rect(cursorPosition.x, cursorPosition.y, 1f, lineHeight),
-                            color = drawCursorColor,
+                            color = cursorColor,
                             playmodeTintColor = playmodeTintColor
                         });
                     }
@@ -854,7 +853,7 @@ namespace UnityEngine.UIElements
                         mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams
                         {
                             rect = new Rect(altCursorPosition.x, altCursorPosition.y, 1f, lineHeight),
-                            color = drawCursorColor,
+                            color = cursorColor,
                             playmodeTintColor = playmodeTintColor
                         });
                     }
@@ -922,10 +921,7 @@ namespace UnityEngine.UIElements
             {
                 base.ExecuteDefaultActionAtTarget(evt);
 
-                if (elementPanel != null && elementPanel.contextualMenuManager != null)
-                {
-                    elementPanel.contextualMenuManager.DisplayMenuIfEventMatches(evt, this);
-                }
+                elementPanel?.contextualMenuManager?.DisplayMenuIfEventMatches(evt, this);
 
                 if (evt?.eventTypeId == ContextualMenuPopulateEvent.TypeId())
                 {
@@ -1024,10 +1020,9 @@ namespace UnityEngine.UIElements
                 style.wordWrap = computedStyle.whiteSpace == WhiteSpace.Normal;
                 bool overflowVisible = computedStyle.overflow == OverflowInternal.Visible;
                 style.clipping = overflowVisible ? TextClipping.Overflow : TextClipping.Clip;
+
                 if (computedStyle.unityFont != null)
-                {
                     style.font = computedStyle.unityFont;
-                }
 
                 style.fontSize = (int)computedStyle.fontSize.value;
                 style.fontStyle = computedStyle.unityFontStyleAndWeight;

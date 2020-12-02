@@ -11,9 +11,6 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class Foldout : BindableElement, INotifyValueChanged<bool>
     {
-        internal static readonly string ussFoldoutDepthClassName = "unity-foldout--depth-";
-        internal static readonly int ussFoldoutMaxDepth = 4;
-
         /// <summary>
         /// Instantiates a <see cref="Foldout"/> using the data from a UXML file.
         /// </summary>
@@ -152,6 +149,9 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public static readonly string contentUssClassName = ussClassName + "__content";
 
+        internal static readonly string ussFoldoutDepthClassName = ussClassName + "--depth-";
+        internal static readonly int ussFoldoutMaxDepth = 4;
+
         internal override void OnViewDataReady()
         {
             base.OnViewDataReady();
@@ -195,7 +195,6 @@ namespace UnityEngine.UIElements
 
         void OnAttachToPanel(AttachToPanelEvent evt)
         {
-            var depth = 0;
             // Remove from all the depth classes...
             for (int i = 0; i <= ussFoldoutMaxDepth; i++)
             {
@@ -204,18 +203,7 @@ namespace UnityEngine.UIElements
             RemoveFromClassList(ussFoldoutDepthClassName + "max");
 
             // Figure out the real depth of this actual Foldout...
-            if (parent != null)
-            {
-                var curParent = parent;
-                while (curParent != null)
-                {
-                    if (curParent.GetType() == typeof(Foldout))
-                    {
-                        depth++;
-                    }
-                    curParent = curParent.parent;
-                }
-            }
+            var depth = this.GetFoldoutDepth();
 
             // Add the class name corresponding to that depth
             if (depth > ussFoldoutMaxDepth)

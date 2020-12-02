@@ -135,6 +135,7 @@ namespace Unity.UI.Builder
             return styleSheet.strings[valueHandle.valueIndex];
         }
 
+
         public static Object GetAsset(this StyleSheet styleSheet, StyleValueHandle valueHandle)
         {
             switch (valueHandle.valueType)

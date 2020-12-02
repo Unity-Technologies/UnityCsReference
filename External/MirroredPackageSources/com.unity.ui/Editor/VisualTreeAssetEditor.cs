@@ -162,7 +162,6 @@ namespace UnityEditor.UIElements
             {
                 m_Panel = UIElementsUtility.FindOrCreateEditorPanel(m_LastTree);
                 var visualTree = m_Panel.visualTree;
-                visualTree.pseudoStates |= PseudoStates.Root;
                 UIElementsEditorUtility.AddDefaultEditorStyleSheets(visualTree);
                 dirty = true;
             }

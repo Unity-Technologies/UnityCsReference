@@ -241,6 +241,7 @@ namespace UnityEditor.Search
         public static string PackageVersion;
         private static bool s_Registered;
         private static readonly HashSet<int> s_OnceHashCodes = new HashSet<int>();
+        private static Delayer m_Debouncer;
 
         public static int sessionQueryCount
         {
@@ -283,6 +284,7 @@ namespace UnityEditor.Search
 
 
             EditorApplication.quitting += UnityQuit;
+            m_Debouncer = Delayer.Debounce(SendEventFromEventCreator);
         }
 
         public static void SendExceptionOnce(string name, Exception ex)
@@ -346,6 +348,11 @@ namespace UnityEditor.Search
             Send(EventName.quickSearchUsageReport, report);
         }
 
+        public static void DebounceSendEvent(Func<GenericEvent> evtCreator)
+        {
+            m_Debouncer.Execute(evtCreator);
+        }
+
 
         public static void SendSearchEvent(SearchEvent evt, SearchContext searchContext)
         {
@@ -393,6 +400,9 @@ namespace UnityEditor.Search
             report.sessionQueryCount = sessionQueryCount;
             report.sessionQuerySearchExecutionCount = sessionQuerySearchExecutionCount;
             report.sessionSearchOpenWindow = sessionSearchOpenWindow;
+            report.sceneSearchEngine = UnityEditor.SearchService.SceneSearch.GetActiveSearchEngine().GetType().FullName;
+            report.projectSearchEngine = UnityEditor.SearchService.ProjectSearch.GetActiveSearchEngine().GetType().FullName;
+            report.objectSelectorEngine = UnityEditor.SearchService.ObjectSelectorSearch.GetActiveSearchEngine().GetType().FullName;
 
             var allIndexes = SearchDatabase.Enumerate(SearchDatabase.IndexLocation.assets).ToArray();
             report.indexCount = allIndexes.Length;

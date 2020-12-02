@@ -210,6 +210,10 @@ namespace UnityEditor.Search
                     return;
 
                 m_SyncSearch = value;
+                if (value)
+                    NotifySyncSearch(m_FilteredItems.currentGroup, UnityEditor.SearchService.SearchService.SyncSearchEvent.StartSession);
+                else
+                    NotifySyncSearch(m_FilteredItems.currentGroup, UnityEditor.SearchService.SearchService.SyncSearchEvent.EndSession);
             }
         }
 
@@ -248,6 +252,8 @@ namespace UnityEditor.Search
 
             SetItems(filterCallback == null ? foundItems : foundItems.Where(item => filterCallback(item)));
 
+            if (syncSearch)
+                NotifySyncSearch(m_FilteredItems.currentGroup, UnityEditor.SearchService.SearchService.SyncSearchEvent.SyncSearch);
 
             Utils.tick += UpdateAsyncResults;
         }
@@ -639,6 +645,21 @@ namespace UnityEditor.Search
             }
 
             UpdateFocusControlState(evt);
+        }
+
+        private void NotifySyncSearch(string groupId, UnityEditor.SearchService.SearchService.SyncSearchEvent evt)
+        {
+            var syncViewId = groupId;
+            switch (groupId)
+            {
+                case "asset":
+                    syncViewId = typeof(UnityEditor.Search.ProjectSearchEngine).FullName;
+                    break;
+                case "scene":
+                    syncViewId = typeof(UnityEditor.Search.SceneSearchEngine).FullName;
+                    break;
+            }
+            UnityEditor.SearchService.SearchService.NotifySyncSearchChanged(evt, syncViewId, context.searchText);
         }
 
 
@@ -1166,6 +1187,7 @@ namespace UnityEditor.Search
             static ComputedValues()
             {
                 tabButtonsWidth = Styles.tabMoreButton.CalcSize(Styles.moreProviderFiltersContent).x
+                    + Styles.syncButton.CalcSize(Styles.syncSearchButtonContent).x
                     + 8f;
             }
         }
@@ -1214,6 +1236,7 @@ namespace UnityEditor.Search
 
                 GUILayout.FlexibleSpace();
 
+                DrawSyncSearchButton();
 
                 if (EditorGUILayout.DropdownButton(Styles.moreProviderFiltersContent, FocusType.Keyboard, Styles.tabMoreButton))
                     ShowFilters();
@@ -1269,6 +1292,8 @@ namespace UnityEditor.Search
             SearchAnalytics.SendEvent(evt);
 
             m_FilteredItems.currentGroup = groupId;
+            if (syncSearch)
+                NotifySyncSearch(m_FilteredItems.currentGroup, UnityEditor.SearchService.SearchService.SyncSearchEvent.SyncSearch);
             m_ResultView?.Refresh();
         }
 
@@ -1608,12 +1633,83 @@ namespace UnityEditor.Search
             SearchAnalytics.SendEvent(m_WindowId, category, name, message, description);
         }
 
-        [MenuItem("Edit/Search All... %k", priority = 145)]
+        [MenuItem("Edit/Search All... %k", priority = 161)]
         private static QuickSearch OpenDefaultQuickSearch()
         {
             var window = Open(flags: SearchFlags.OpenGlobal);
             SearchAnalytics.SendEvent(window.m_WindowId, SearchAnalytics.GenericEventType.QuickSearchOpen, "Default");
             return window;
+        }
+
+
+        private SearchProvider GetProviderById(string providerId)
+        {
+            return context.providers.FirstOrDefault(p => p.active && p.id == providerId);
+        }
+
+        [Shortcut(k_TogleSyncShortcutName, typeof(QuickSearch), KeyCode.L, ShortcutModifiers.Action | ShortcutModifiers.Shift)]
+        static void ToggleSyncSearchView(ShortcutArguments args)
+        {
+            var window = args.context as QuickSearch;
+            if (window == null)
+                return;
+            window.SetSyncSearchView(!window.syncSearch);
+        }
+
+        void SetSyncSearchView(bool sync)
+        {
+            var providerSupportsSync = GetProviderById(m_FilteredItems.currentGroup)?.supportsSyncViewSearch ?? false;
+            var searchViewSyncEnabled = providerSupportsSync && SearchViewSyncEnabled(m_FilteredItems.currentGroup);
+            var supportsSync = providerSupportsSync && searchViewSyncEnabled;
+            if (!supportsSync)
+                return;
+
+            syncSearch = sync;
+            if (syncSearch)
+                SendEvent(SearchAnalytics.GenericEventType.QuickSearchSyncViewButton, m_FilteredItems.currentGroup);
+            Refresh();
+        }
+
+        private void DrawSyncSearchButton()
+        {
+            var providerSupportsSync = GetProviderById(m_FilteredItems.currentGroup)?.supportsSyncViewSearch ?? false;
+            var searchViewSyncEnabled = providerSupportsSync && SearchViewSyncEnabled(m_FilteredItems.currentGroup);
+            var supportsSync = providerSupportsSync && searchViewSyncEnabled;
+            using (new EditorGUI.DisabledScope(!supportsSync))
+            {
+                EditorGUI.BeginChangeCheck();
+                var syncButtonContent = !providerSupportsSync ? Styles.syncSearchProviderNotSupportedContent : !searchViewSyncEnabled ? Styles.syncSearchViewNotEnabledContent : Styles.syncSearchButtonContent;
+                var sync = GUILayout.Toggle(syncSearch, syncButtonContent, Styles.syncButton);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    SetSyncSearchView(sync);
+                }
+            }
+        }
+
+        private static bool SearchViewSyncEnabled(string groupId)
+        {
+            switch (groupId)
+            {
+                case "asset":
+                    return UnityEditor.SearchService.ProjectSearch.HasEngineOverride();
+                case "scene":
+                    return UnityEditor.SearchService.SceneSearch.HasEngineOverride();
+                default:
+                    return false;
+            }
+        }
+
+        [CommandHandler("OpenQuickSearchInContext")]
+        static void OpenQuickSearchInContextCommand(CommandExecuteContext c)
+        {
+            var query = c.GetArgument<string>(0);
+            var sourceContext = c.GetArgument<string>(1);
+            var qsWindow = Open(flags: SearchFlags.OpenContextual | SearchFlags.ReuseExistingWindow);
+            qsWindow.syncSearch = true;
+            qsWindow.SendEvent(SearchAnalytics.GenericEventType.QuickSearchJumpToSearch, qsWindow.m_FilteredItems.currentGroup, sourceContext);
+            qsWindow?.SetSearchText(query);
+            c.result = qsWindow != null;
         }
 
 
@@ -1642,6 +1738,22 @@ namespace UnityEditor.Search
         private void ClearCurrentErrors()
         {
             context.ClearErrors();
+        }
+
+        [WindowAction]
+        internal static WindowAction CreateSearchHelpWindowAction()
+        {
+            // Developer-mode render doc button to enable capturing any HostView content/panels
+            var action = WindowAction.CreateWindowActionButton("HelpSearch", OpenSearchHelp, null, ContainerWindow.kButtonWidth + 1, Icons.help);
+            action.validateHandler = (window, _) => window.GetType() == typeof(QuickSearch);
+            return action;
+        }
+
+        private static void OpenSearchHelp(EditorWindow window, WindowAction action)
+        {
+            var windowId = (window as QuickSearch)?.windowId ?? null;
+            SearchAnalytics.SendEvent(windowId, SearchAnalytics.GenericEventType.QuickSearchOpenDocLink);
+            EditorUtility.OpenWithDefaultApp("https://docs.unity3d.com/Packages/com.unity.quicksearch@3.0/manual/index.html");
         }
 
     }

@@ -210,6 +210,37 @@ namespace UnityEditor.Search.Providers
             }
         }
 
+        private static void DeleteAssets(IEnumerable<SearchItem> items)
+        {
+            var oldSelection = Selection.objects;
+            SearchUtils.SelectMultipleItems(items, pingSelection: false);
+            // We call ProjectBrowser.DeleteSelectedAssets for the confirmation popup.
+            ProjectBrowser.DeleteSelectedAssets(true);
+            Selection.objects = oldSelection;
+        }
+
+        // We have our own OpenPropertyEditorsOnSelection so we don't have to worry about global selection
+        private static void OpenPropertyEditorsOnSelection(IEnumerable<SearchItem> items)
+        {
+            var objs = items.Select(i => i.provider.toObject(i, typeof(UnityEngine.Object))).Where(o => o).ToArray();
+            if (Selection.objects.Length == 1)
+            {
+                PropertyEditor.OpenPropertyEditor(objs[0]);
+            }
+            else
+            {
+                var firstPropertyEditor = PropertyEditor.OpenPropertyEditor(objs[0]);
+                EditorApplication.delayCall += () =>
+                {
+                    var dock = firstPropertyEditor.m_Parent as DockArea;
+                    if (dock == null)
+                        return;
+                    for (var i = 1; i < objs.Length; ++i)
+                        dock.AddTab(PropertyEditor.OpenPropertyEditor(objs[i], false));
+                };
+            }
+        }
+
 
         [SearchActionsProvider]
         internal static IEnumerable<SearchAction> CreateActionHandlers()
@@ -232,6 +263,20 @@ namespace UnityEditor.Search.Providers
                             EditorUtility.OpenWithDefaultApp(item.id);
                     }
                 },
+                new SearchAction(type, "delete", null, "Delete")
+                {
+                    handler = (item) => DeleteAssets(new[] { item }),
+                    execute = DeleteAssets
+                },
+                new SearchAction(type, "copy_path", null, "Copy Path")
+                {
+                    enabled = items => items.Count == 1,
+                    handler = item =>
+                    {
+                        var selectedPath = item.id;
+                        Clipboard.stringValue = selectedPath;
+                    }
+                },
                 new SearchAction(type, "reimport", null, "Reimport")
                 {
                     handler = item =>
@@ -250,6 +295,11 @@ namespace UnityEditor.Search.Providers
                 {
                     handler = (item) => EditorUtility.RevealInFinder(item.id)
                 },
+                new SearchAction(type, "properties", null, "Properties")
+                {
+                    handler = item => OpenPropertyEditorsOnSelection(new[] { item }),
+                    execute = OpenPropertyEditorsOnSelection
+                }
             };
         }
 

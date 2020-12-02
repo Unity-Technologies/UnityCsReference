@@ -64,6 +64,7 @@ namespace UnityEditorInternal.Profiling
 
         public MemoryProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName) {}
 
+        public override ProfilerArea area => ProfilerArea.Memory;
         protected override int defaultOrderIndex => k_DefaultOrderIndex;
         protected override string legacyPreferenceKey => "ProfilerChartMemory";
 

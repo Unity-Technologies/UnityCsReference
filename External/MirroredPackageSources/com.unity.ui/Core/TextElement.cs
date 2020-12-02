@@ -24,6 +24,7 @@ namespace UnityEngine.UIElements
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
+            UxmlBoolAttributeDescription m_EnableRichText = new UxmlBoolAttributeDescription { name = "enable-rich-text", defaultValue = true };
 
             UxmlBoolAttributeDescription m_DisplayTooltipWhenElided = new UxmlBoolAttributeDescription { name = "display-tooltip-when-elided" };
 
@@ -44,8 +45,10 @@ namespace UnityEngine.UIElements
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
+
                 var textElement = (TextElement)ve;
                 textElement.text = m_Text.GetValueFromBag(bag, cc);
+                textElement.enableRichText = m_EnableRichText.GetValueFromBag(bag, cc);
                 textElement.displayTooltipWhenElided = m_DisplayTooltipWhenElided.GetValueFromBag(bag, cc);
             }
         }
@@ -60,7 +63,6 @@ namespace UnityEngine.UIElements
             requireMeasureFunction = true;
             AddToClassList(ussClassName);
             generateVisualContent += OnGenerateVisualContent;
-            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
@@ -75,11 +77,20 @@ namespace UnityEngine.UIElements
 
         internal static int maxTextVertices = MeshBuilder.s_MaxTextMeshVertices;
 
-        private void OnAttachToPanel(AttachToPanelEvent e)
+        public override void HandleEvent(EventBase evt)
         {
-            textHandle = e.destinationPanel.contextType == ContextType.Editor
-                ? TextHandleFactory.GetEditorHandle()
-                : TextHandleFactory.GetRuntimeHandle();
+            if (evt.eventTypeId == AttachToPanelEvent.TypeId() && evt is AttachToPanelEvent attachEvent)
+            {
+                textHandle = attachEvent.destinationPanel.contextType == ContextType.Editor
+                    ? TextHandleFactory.GetEditorHandle()
+                    : TextHandleFactory.GetRuntimeHandle();
+                (attachEvent.destinationPanel as BaseVisualElementPanel)?.OnTextElementAdded(this);
+            }
+            else if (evt.eventTypeId == DetachFromPanelEvent.TypeId() && evt is DetachFromPanelEvent detachEvent)
+            {
+                (detachEvent.originPanel as BaseVisualElementPanel)?.OnTextElementRemoved(this);
+            }
+            base.HandleEvent(evt);
         }
 
         private void OnGeometryChanged(GeometryChangedEvent e)
@@ -95,6 +106,22 @@ namespace UnityEngine.UIElements
             set
             {
                 ((INotifyValueChanged<string>) this).value = value;
+            }
+        }
+
+        private bool m_EnableRichText = true;
+
+        /// <summary>
+        /// When false, rich text tags will not be parsed.
+        /// </summary>
+        public bool enableRichText
+        {
+            get { return m_EnableRichText; }
+            set
+            {
+                if (m_EnableRichText == value) return;
+                m_EnableRichText = value;
+                MarkDirtyRepaint();
             }
         }
 
@@ -305,6 +332,8 @@ namespace UnityEngine.UIElements
         {
             return MeasureTextSize(text, desiredWidth, widthMode, desiredHeight, heightMode);
 		}
+
+        // Used in tests
         internal int VerticesCount(string text)
         {
             var textParams = m_TextParams;

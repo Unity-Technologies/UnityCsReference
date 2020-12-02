@@ -49,10 +49,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override void UpdateFilters(PageFilters filters)
         {
-            if (this.filters.Equals(filters))
+            if ((m_Filters == null && filters == null) || (m_Filters?.Equals(filters) ?? false))
                 return;
 
-            m_Filters = filters.Clone();
+            m_Filters = filters?.Clone();
             var queryArgs = BuildQueryFromFilter(0, m_PackageManagerPrefs.numItemsPerPage ?? PageManager.k_DefaultPageSize);
             m_AssetStoreClient.ListPurchases(queryArgs);
 

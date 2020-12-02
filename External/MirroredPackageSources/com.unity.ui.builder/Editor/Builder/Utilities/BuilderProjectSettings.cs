@@ -8,6 +8,7 @@ namespace Unity.UI.Builder
         const string k_EditorExtensionModeKey = "UIBuilder.EditorExtensionModeKey";
         const string k_HideNotificationAboutMissingUITKPackage = "UIBuilder.HideNotificationAboutMissingUITKPackage";
         const string k_DisableMouseWheelZooming = "UIBuilder.DisableMouseWheelZooming";
+        const string k_EnableAbsolutePositionPlacement = "UIBuilder.EnableAbsolutePositionPlacement";
 
         public static bool enableEditorExtensionModeByDefault
         {
@@ -27,9 +28,15 @@ namespace Unity.UI.Builder
             set => SetBool(k_HideNotificationAboutMissingUITKPackage, value);
         }
 
+        public static bool enableAbsolutePositionPlacement
+        {
+            get => Unsupported.IsDeveloperMode() && GetBool(k_EnableAbsolutePositionPlacement);
+            set => SetBool(k_EnableAbsolutePositionPlacement, value);
+        }
+
         static bool GetBool(string name)
         {
-            var value = EditorUserSettings.GetConfigValue(k_EditorExtensionModeKey);
+            var value = EditorUserSettings.GetConfigValue(name);
             if (string.IsNullOrEmpty(value))
                 return false;
 
@@ -38,13 +45,14 @@ namespace Unity.UI.Builder
 
         static void SetBool(string name, bool value)
         {
-            EditorUserSettings.SetConfigValue(k_EditorExtensionModeKey, value.ToString());
+            EditorUserSettings.SetConfigValue(name, value.ToString());
         }
 
         internal static void Reset()
         {
             EditorUserSettings.SetConfigValue(k_EditorExtensionModeKey, null);
             EditorUserSettings.SetConfigValue(k_HideNotificationAboutMissingUITKPackage, null);
+            EditorUserSettings.SetConfigValue(k_EnableAbsolutePositionPlacement, null);
         }
     }
 }

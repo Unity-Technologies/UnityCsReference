@@ -193,10 +193,17 @@ namespace Unity.UI.Builder
 
         public static bool IsPartOfActiveVisualTreeAsset(this VisualElement element, BuilderDocument builderDocument)
         {
+            var isSubDocument = builderDocument != null && builderDocument.activeOpenUXMLFile.isChildSubDocument;
+            var elementVTA = element.GetVisualTreeAsset();
+            var activeVTA = builderDocument == null ? elementVTA : builderDocument.activeOpenUXMLFile.visualTreeAsset;
+
             var belongsToActiveVisualTreeAsset = (VisualTreeAsset) element.GetProperty(BuilderConstants.ElementLinkedBelongingVisualTreeAssetVEPropertyName) == builderDocument?.visualTreeAsset;
             var hasAssetLink = element.GetVisualElementAsset() != null && belongsToActiveVisualTreeAsset;
-            var hasVTALink = element.GetVisualTreeAsset() != null && !(element is TemplateContainer);
-            return hasAssetLink || hasVTALink || BuilderSharedStyles.IsDocumentElement(element);
+            var hasVTALink = elementVTA != null && elementVTA == activeVTA && !(element is TemplateContainer);
+
+            var isDocumentRootElement = !isSubDocument && BuilderSharedStyles.IsDocumentElement(element);
+
+            return hasAssetLink || hasVTALink || isDocumentRootElement;
         }
 
         public static bool IsSelector(this VisualElement element)

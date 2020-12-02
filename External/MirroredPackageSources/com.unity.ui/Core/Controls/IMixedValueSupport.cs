@@ -1,4 +1,4 @@
-﻿namespace UnityEngine.UIElements
+namespace UnityEngine.UIElements
 {
     public interface IMixedValueSupport
     {

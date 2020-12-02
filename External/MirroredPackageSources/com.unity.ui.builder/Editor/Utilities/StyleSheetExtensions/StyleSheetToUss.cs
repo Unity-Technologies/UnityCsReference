@@ -104,6 +104,9 @@ namespace Unity.UI.Builder
                 case StyleValueType.String:
                     str = $"\"{sheet.ReadString(handle)}\"";
                     break;
+                case StyleValueType.MissingAssetReference:
+                    str = $"url('{sheet.ReadMissingAssetReferenceUrl(handle)}')";
+                    break;
                 case StyleValueType.AssetReference:
                     var assetRef = sheet.ReadAssetReference(handle);
                     var assetPath = AssetDatabase.GetAssetPath(assetRef);
@@ -185,7 +188,7 @@ namespace Unity.UI.Builder
 
         public static void ToUssString(StyleSheet sheet, UssExportOptions options, StyleProperty property, StringBuilder sb)
         {
-                if (property.name == "cursor" && property.values.Length > 1)
+                if (property.name == "cursor" && property.values.Length > 1 && !property.IsVariable())
                 {
                     int i;
                     string propertyValueStr;

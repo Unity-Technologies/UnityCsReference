@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -28,16 +29,23 @@ namespace Unity.UI.Builder
         VisualElement m_HighlightOverlay;
         BuilderParentTracker m_BuilderParentTracker;
         BuilderSelectionIndicator m_BuilderSelectionIndicator;
+        BuilderPlacementIndicator m_BuilderPlacementIndicator;
         BuilderResizer m_BuilderResizer;
         BuilderMover m_BuilderMover;
         BuilderZoomer m_BuilderZoomer;
         BuilderPanner m_BuilderPanner;
         BuilderAnchorer m_BuilderAnchorer;
+        BuilderViewportDragger m_BuilderViewportDragger;
         CheckerboardBackground m_CheckerboardBackground;
         BuilderNotifications m_Notifications;
 
         BuilderSelection m_Selection;
         BuilderElementContextMenu m_ContextMenuManipulator;
+
+        List<VisualElement> m_PickedElements = new List<VisualElement>();
+        Vector2 m_PreviousPickMousePosition;
+        double m_PreviousPickMouseTime;
+        int m_SameLocationPickCount;
 
         List<VisualElement> m_MatchingExplorerItems = new List<VisualElement>();
 
@@ -108,9 +116,11 @@ namespace Unity.UI.Builder
 
         public BuilderParentTracker parentTracker => m_BuilderParentTracker;
         public BuilderSelectionIndicator selectionIndicator => m_BuilderSelectionIndicator;
+        public BuilderPlacementIndicator placementIndicator => m_BuilderPlacementIndicator;
         public BuilderResizer resizer => m_BuilderResizer;
         public BuilderMover mover => m_BuilderMover;
         public BuilderAnchorer anchorer => m_BuilderAnchorer;
+        public BuilderViewportDragger viewportDragger => m_BuilderViewportDragger;
         public BuilderZoomer zoomer => m_BuilderZoomer;
 
         public VisualElement sharedStylesAndDocumentElement => m_SharedStylesAndDocumentElement;
@@ -145,7 +155,7 @@ namespace Unity.UI.Builder
             m_SharedStylesAndDocumentElement.pseudoStates |= PseudoStates.Root; // To apply variables of the active theme that are defined in the :root selector
             m_StyleSelectorElementContainer = this.Q(BuilderConstants.StyleSelectorElementContainerName);
             m_DocumentRootElement = this.Q("document");
-            m_Canvas.documentElement = m_DocumentRootElement;
+            m_Canvas.documentRootElement = m_DocumentRootElement;
             m_EditorLayer = this.Q("__unity-editor-layer");
             m_EditorLayer.AddToClassList(BuilderConstants.HiddenStyleClassName);
             m_TextEditor = this.Q<TextField>("__unity-text-editor");
@@ -154,6 +164,7 @@ namespace Unity.UI.Builder
             m_HighlightOverlay = this.Q("highlight-overlay");
             m_BuilderParentTracker = this.Q<BuilderParentTracker>("parent-tracker");
             m_BuilderSelectionIndicator = this.Q<BuilderSelectionIndicator>("selection-indicator");
+            m_BuilderPlacementIndicator = this.Q<BuilderPlacementIndicator>("placement-indicator");
             m_BuilderResizer = this.Q<BuilderResizer>("resizer");
             m_BuilderMover = this.Q<BuilderMover>("mover");
             m_BuilderAnchorer = this.Q<BuilderAnchorer>("anchorer");
@@ -162,11 +173,14 @@ namespace Unity.UI.Builder
 
             m_Notifications = this.Q<BuilderNotifications>("notifications");
 
+            m_BuilderViewportDragger = new BuilderViewportDragger(paneWindow, paneWindow.rootVisualElement, selection, this, m_BuilderParentTracker);
+
             m_BuilderMover.parentTracker = m_BuilderParentTracker;
 
             m_PickOverlay.RegisterCallback<MouseDownEvent>(OnPick);
             m_PickOverlay.RegisterCallback<MouseMoveEvent>(OnHover);
             m_PickOverlay.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
+            m_BuilderViewportDragger.RegisterCallbacksOnTarget(m_PickOverlay);
             m_Viewport.RegisterCallback<MouseDownEvent>(OnMissPick);
             m_Viewport.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
@@ -272,9 +286,10 @@ namespace Unity.UI.Builder
             contentOffset = new Vector2((m_Viewport.resolvedStyle.width - m_Canvas.width) / 2, (m_Viewport.resolvedStyle.height - m_Canvas.height) / 2);
         }
 
-        VisualElement PickElement(Vector2 mousePosition)
+        public VisualElement PickElement(Vector2 mousePosition, List<VisualElement> pickedElements = null)
         {
-            var pickedElement = Panel.PickAllWithoutValidatingLayout(m_DocumentRootElement, mousePosition);
+            var pickAllFunc = typeof(Panel).GetMethod("PickAll", BindingFlags.Static | BindingFlags.NonPublic);
+            var pickedElement = pickAllFunc.Invoke(obj: null, parameters: new object[] { m_DocumentRootElement, mousePosition, pickedElements }) as VisualElement;
 
             if (pickedElement == null)
                 return null;
@@ -294,10 +309,46 @@ namespace Unity.UI.Builder
             if (evt.button == 2 || (evt.ctrlKey && evt.altKey || (evt.button == (int)MouseButton.RightMouse && evt.altKey)))
                 return;
 
-            var pickedElement = PickElement(evt.mousePosition);
+            m_PickedElements.Clear();
+            var pickedElement = PickElement(evt.mousePosition, m_PickedElements);
 
             if (pickedElement != null)
             {
+                var timeSinceStartup = EditorApplication.timeSinceStartup;
+                var previousMouseRect = new Rect(
+                    m_PreviousPickMousePosition.x - BuilderConstants.PickSelectionRepeatRectHalfSize,
+                    m_PreviousPickMousePosition.y - BuilderConstants.PickSelectionRepeatRectHalfSize,
+                    BuilderConstants.PickSelectionRepeatRectSize,
+                    BuilderConstants.PickSelectionRepeatRectSize);
+                if (timeSinceStartup - m_PreviousPickMouseTime > BuilderConstants.PickSelectionRepeatMinTimeDelay && previousMouseRect.Contains(evt.mousePosition))
+                {
+                    m_SameLocationPickCount++;
+                    var offset = 0;
+
+                    var index = m_PickedElements.IndexOf(pickedElement);
+                    // For compound controls, we don't seem to have the actual field root element
+                    // in the pickedElements list. So we get index == -1 here. We need to do
+                    // some magic to select the proper parent element from the list then.
+                    if (index < 0)
+                    {
+                        index = m_PickedElements.IndexOf(pickedElement.parent);
+                        offset = 1;
+                    }
+
+                    var maxIndex = m_PickedElements.Count - 1;
+                    var newIndex = index + m_SameLocationPickCount - offset;
+                    if (newIndex > maxIndex)
+                        m_SameLocationPickCount = 0;
+                    else
+                        pickedElement = m_PickedElements[newIndex];
+                }
+                else
+                {
+                    m_SameLocationPickCount = 0;
+                }
+                m_PreviousPickMousePosition = evt.mousePosition;
+                m_PreviousPickMouseTime = EditorApplication.timeSinceStartup;
+
                 m_Selection.Select(this, pickedElement);
                 SetInnerSelection(pickedElement);
 
@@ -442,7 +493,7 @@ namespace Unity.UI.Builder
             {
                 case BuilderSelectionType.Element:
                 case BuilderSelectionType.ElementInTemplateInstance:
-                    m_BuilderSelectionIndicator.Activate(selectedElement);
+                    m_BuilderSelectionIndicator.Activate(m_Selection, m_PaneWindow.document.visualTreeAsset, selectedElement);
                     break;
                 case BuilderSelectionType.VisualTreeAsset:
                     m_Canvas.SetHighlighted(true);
@@ -490,6 +541,8 @@ namespace Unity.UI.Builder
             {
                 SetInnerSelection(m_Selection.selection.First());
             }
+
+            m_BuilderSelectionIndicator.canvasStyleControls.UpdateButtonIcons(styles);
         }
     }
 }

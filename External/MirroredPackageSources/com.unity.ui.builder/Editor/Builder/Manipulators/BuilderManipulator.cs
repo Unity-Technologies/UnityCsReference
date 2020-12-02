@@ -245,33 +245,7 @@ namespace Unity.UI.Builder
             // Remove temporary min-size element.
             m_Target.RemoveMinSizeSpecialElement();
 
-            var vea = m_Target.GetVisualElementAsset();
-            var rule = m_VisualTreeAsset.GetOrCreateInlineStyleRule(vea);
-            var styleSheet = m_VisualTreeAsset.inlineSheet;
-
-            var styleProperty = styleSheet.FindProperty(rule, styleName);
-            if (styleProperty == null)
-                styleProperty = styleSheet.AddProperty(rule, styleName);
-
-            var isNewValue = styleProperty.values.Length == 0;
-
-            // If the current style property is saved as a float instead of a dimension,
-            // it means it's a user file where they left out the unit. We need to resave
-            // it here as a dimension to create final proper uss.
-            if (!isNewValue && styleProperty.values[0].valueType != StyleValueType.Dimension)
-            {
-                styleProperty.values = new StyleValueHandle[0];
-                isNewValue = true;
-            }
-
-            var dimension = new Dimension();
-            dimension.unit = Dimension.Unit.Pixel;
-            dimension.value = value;
-
-            if (isNewValue)
-                styleSheet.AddValue(styleProperty, dimension);
-            else // TODO: Assume only one value.
-                styleSheet.SetValue(styleProperty.values[0], dimension);
+            BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, styleName, value);
         }
 
         protected void RemoveStyleSheetValue(string styleName)

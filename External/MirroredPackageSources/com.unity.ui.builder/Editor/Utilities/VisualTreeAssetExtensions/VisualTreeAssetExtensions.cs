@@ -426,6 +426,13 @@ namespace Unity.UI.Builder
             VisualTreeAssetUtilities.ReparentElementInDocument(vta, elementToReparent, newParent, index);
         }
 
+        public static StyleSheet GetOrCreateInlineStyleSheet(this VisualTreeAsset vta)
+        {
+            if (vta.inlineSheet == null)
+                vta.inlineSheet = StyleSheetUtilities.CreateInstance();
+            return vta.inlineSheet;
+        }
+
         public static StyleRule GetOrCreateInlineStyleRule(this VisualTreeAsset vta, VisualElementAsset vea)
         {
             bool wasCreated;
@@ -437,13 +444,8 @@ namespace Unity.UI.Builder
             wasCreated = vea.ruleIndex < 0;
             if (wasCreated)
             {
-                if (vta.inlineSheet == null)
-                {
-                    var newSheet = StyleSheetUtilities.CreateInstance();
-                    vta.inlineSheet = newSheet;
-                }
-
-                vea.ruleIndex = vta.inlineSheet.AddRule();
+                var inlineSheet = vta.GetOrCreateInlineStyleSheet();
+                vea.ruleIndex = inlineSheet.AddRule();
             }
 
             return vta.inlineSheet.GetRule(vea.ruleIndex);

@@ -218,11 +218,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             scopedRegistryInfoBox.Q<Button>().clickable.clicked += OnInfoBoxClickMore;
             detailScrollView.verticalScroller.valueChanged += OnDetailScroll;
 
-            root.Query<TextField>().ForEach(t =>
-            {
-                t.isReadOnly = true;
-            });
-
             RefreshContent();
         }
 
@@ -369,6 +364,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             });
         }
 
+        private static bool IsUsingDifferentVersionThanInstalled(IPackageVersion packageVersion)
+        {
+            return !string.IsNullOrEmpty(packageVersion?.packageInfo?.projectDependenciesEntry) && packageVersion.isInstalled &&
+                !packageVersion.HasTag(PackageTag.Git | PackageTag.Local | PackageTag.Custom) &&
+                packageVersion.packageInfo.projectDependenciesEntry != packageVersion.versionString;
+        }
+
+        private static string GetVersionInfoIconTooltip(IPackageVersion packageVersion)
+        {
+            var tooltip = L10n.Tr("At least one other package depends on this version, therefore the version currently used is {0} instead of {1}.");
+            return string.Format(tooltip, packageVersion.versionString, packageVersion.packageInfo.projectDependenciesEntry);
+        }
+
         private void RefreshContent()
         {
             detailScrollView.scrollOffset = new Vector2(0, m_PackageManagerPrefs.packageDetailVerticalScrollOffset);
@@ -390,16 +398,29 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 var versionString = displayVersion.versionString;
                 var releaseDateString = displayVersion.publishedDate?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US"));
+                var isUsingDifferentVersionThanInstalled = IsUsingDifferentVersionThanInstalled(displayVersion);
+                var versionLabelText = isUsingDifferentVersionThanInstalled ? $"{L10n.Tr("Using version")} {versionString}" : $"{L10n.Tr("Version")} {versionString}";
                 if (string.IsNullOrEmpty(releaseDateString))
-                    detailVersion.SetValueWithoutNotify(string.Format(L10n.Tr("Version {0}"), versionString));
+                    detailVersion.SetValueWithoutNotify(versionLabelText);
                 else
-                    detailVersion.SetValueWithoutNotify(string.Format(L10n.Tr("Version {0} - {1}"), versionString, releaseDateString));
+                    detailVersion.SetValueWithoutNotify($"{versionLabelText} - {releaseDateString}");
                 UIUtils.SetElementDisplay(detailVersion, !package.Is(PackageType.BuiltIn) && !string.IsNullOrEmpty(versionString));
+
+                UIUtils.SetElementDisplay(versionInfoIcon, isUsingDifferentVersionThanInstalled);
+                if (isUsingDifferentVersionThanInstalled)
+                    versionInfoIcon.tooltip = GetVersionInfoIconTooltip(displayVersion);
 
                 UIUtils.SetElementDisplay(disabledInfoBox, displayVersion.HasTag(PackageTag.Disabled));
 
                 foreach (var tag in k_VisibleTags)
                     UIUtils.SetElementDisplay(GetTagLabel(tag.ToString()), displayVersion.HasTag(tag));
+
+                // if not developer build, hide the Release Candidate tag and show Pre-Release instead
+                if (!m_Application.isDeveloperBuild && displayVersion.HasTag(PackageTag.ReleaseCandidate))
+                {
+                    UIUtils.SetElementDisplay(GetTagLabel(PackageTag.ReleaseCandidate.ToString()), false);
+                    UIUtils.SetElementDisplay(GetTagLabel(PackageTag.PreRelease.ToString()), true);
+                }
 
                 var scopedRegistryTagLabel = GetTagLabel("ScopedRegistry");
                 if ((displayVersion as UpmPackageVersion)?.isUnityPackage == false && !string.IsNullOrEmpty(displayVersion.version?.Prerelease))
@@ -564,10 +585,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 if (!string.IsNullOrEmpty(labels))
                 {
-                    var textField = new TextField();
-                    textField.SetValueWithoutNotify(labels);
-                    textField.isReadOnly = true;
-                    detailLabels.Add(textField);
+                    var label = new SelectableLabel();
+                    label.SetValueWithoutNotify(labels);
+                    detailLabels.Add(label);
                 }
             }
 
@@ -693,11 +713,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (sizeInfo != null)
             {
-                var textField = new TextField();
-                textField.style.whiteSpace = WhiteSpace.Normal;
-                textField.SetValueWithoutNotify(string.Format(L10n.Tr("Size: {0} (Number of files: {1})"), UIUtils.ConvertToHumanReadableSize(sizeInfo.downloadSize), sizeInfo.assetCount));
-                textField.isReadOnly = true;
-                detailSizes.Add(textField);
+                var label = new SelectableLabel();
+                label.style.whiteSpace = WhiteSpace.Normal;
+                label.SetValueWithoutNotify(string.Format(L10n.Tr("Size: {0} (Number of files: {1})"), UIUtils.ConvertToHumanReadableSize(sizeInfo.downloadSize), sizeInfo.assetCount));
+                detailSizes.Add(label);
             }
 
             return showSizes;
@@ -887,7 +906,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var currentPackageRemoveInProgress = m_PackageDatabase.IsUninstallInProgress(package);
                 removeButton.text = GetButtonText(action, currentPackageRemoveInProgress);
 
-                RefreshButtonStatusAndTooltip(removeButton, action, disableIfInstallOrUninstallInProgress, disableIfCompiling);
+                var disableIfUsedByOthers = new ButtonDisableCondition(IsUsingDifferentVersionThanInstalled(installed), L10n.Tr("You cannot remove this package because at least one other installed package depends on it. See dependencies for more details."));
+                RefreshButtonStatusAndTooltip(removeButton, action, disableIfUsedByOthers, disableIfInstallOrUninstallInProgress, disableIfCompiling);
             }
             UIUtils.SetElementDisplay(removeButton, visibleFlag);
         }
@@ -1289,20 +1309,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElementCache cache { get; set; }
 
         private InProgressView inProgressView => cache.Get<InProgressView>("inProgressView");
-        private TextField detailDesc { get { return cache.Get<TextField>("detailDesc"); } }
+        private SelectableLabel detailDesc { get { return cache.Get<SelectableLabel>("detailDesc"); } }
         private Button detailDescMore { get { return cache.Get<Button>("detailDescMore"); } }
         private Button detailDescLess { get { return cache.Get<Button>("detailDescLess"); } }
         private VisualElement detailLinksContainer => cache.Get<VisualElement>("detailLinksContainer");
         internal override IAlert detailError { get { return cache.Get<Alert>("detailError"); } }
         private ScrollView detailScrollView { get { return cache.Get<ScrollView>("detailScrollView"); } }
         private VisualElement detailContainer { get { return cache.Get<VisualElement>("detail"); } }
-        private TextField detailTitle { get { return cache.Get<TextField>("detailTitle"); } }
-        private TextField detailVersion { get { return cache.Get<TextField>("detailVersion"); } }
+        private SelectableLabel detailTitle { get { return cache.Get<SelectableLabel>("detailTitle"); } }
+        private SelectableLabel detailVersion { get { return cache.Get<SelectableLabel>("detailVersion"); } }
+        private VisualElement versionInfoIcon => cache.Get<VisualElement>("versionInfoIcon");
         private HelpBox disabledInfoBox { get { return cache.Get<HelpBox>("disabledInfoBox"); } }
         private VisualElement detailPurchasedDateContainer { get { return cache.Get<VisualElement>("detailPurchasedDateContainer"); } }
-        private TextField detailPurchasedDate { get { return cache.Get<TextField>("detailPurchasedDate"); } }
+        private SelectableLabel detailPurchasedDate { get { return cache.Get<SelectableLabel>("detailPurchasedDate"); } }
         private VisualElement detailAuthorContainer { get { return cache.Get<VisualElement>("detailAuthorContainer"); } }
-        private TextField detailAuthorText { get { return cache.Get<TextField>("detailAuthorText"); } }
+        private SelectableLabel detailAuthorText { get { return cache.Get<SelectableLabel>("detailAuthorText"); } }
         private Button detailAuthorLink { get { return cache.Get<Button>("detailAuthorLink"); } }
         private VisualElement detailRegistryContainer { get { return cache.Get<VisualElement>("detailRegistryContainer"); } }
         private HelpBox scopedRegistryInfoBox { get { return cache.Get<HelpBox>("scopedRegistryInfoBox"); } }
@@ -1323,7 +1344,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ProgressBar downloadProgress { get { return cache.Get<ProgressBar>("downloadProgress"); } }
         private VisualElement detailSizesAndSupportedVersionsContainer { get { return cache.Get<VisualElement>("detailSizesAndSupportedVersionsContainer"); } }
         private VisualElement detailUnityVersionsContainer { get { return cache.Get<VisualElement>("detailUnityVersionsContainer"); } }
-        private TextField detailUnityVersions { get { return cache.Get<TextField>("detailUnityVersions"); } }
+        private SelectableLabel detailUnityVersions { get { return cache.Get<SelectableLabel>("detailUnityVersions"); } }
         private VisualElement detailSizesContainer { get { return cache.Get<VisualElement>("detailSizesContainer"); } }
         private VisualElement detailSizes { get { return cache.Get<VisualElement>("detailSizes"); } }
         private VisualElement detailImagesContainer { get { return cache.Get<VisualElement>("detailImagesContainer"); } }
@@ -1334,7 +1355,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElement detailLabelsContainer { get { return cache.Get<VisualElement>("detailLabelsContainer"); } }
         private VisualElement detailLabels { get { return cache.Get<VisualElement>("detailLabels"); } }
         private VisualElement detailSourcePathContainer { get { return cache.Get<VisualElement>("detailSourcePathContainer"); } }
-        private TextField detailSourcePath { get { return cache.Get<TextField>("detailSourcePath"); } }
+        private SelectableLabel detailSourcePath { get { return cache.Get<SelectableLabel>("detailSourcePath"); } }
         internal PackageTagLabel GetTagLabel(string tag) { return cache.Get<PackageTagLabel>("tag" + tag); }
         internal VisualElement packageToolbarErrorContainer { get { return cache.Get<VisualElement>("toolbarErrorContainer"); } }
         private Label errorMessage { get { return cache.Get<Label>("message"); } }

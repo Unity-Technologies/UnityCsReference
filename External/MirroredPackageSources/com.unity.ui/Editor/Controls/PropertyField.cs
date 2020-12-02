@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -63,7 +64,8 @@ namespace UnityEditor.UIElements
 
         private SerializedProperty m_SerializedProperty;
         private PropertyField m_ParentPropertyField;
-        
+        private int m_FoldoutDepth;
+
         private float m_LabelWidthRatio;
         private float m_LabelExtraPadding;
 
@@ -110,10 +112,20 @@ namespace UnityEditor.UIElements
             AddToClassList(ussClassName);
             this.label = label;
 
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+
             if (property == null)
                 return;
 
             bindingPath = property.propertyPath;
+        }
+
+        void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            if (evt.destinationPanel == null)
+                return;
+
+            m_FoldoutDepth = this.GetFoldoutDepth();
         }
 
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
@@ -157,6 +169,8 @@ namespace UnityEditor.UIElements
                             EditorGUI.BeginChangeCheck();
                             m_SerializedProperty.serializedObject.Update();
 
+                            if (m_FoldoutDepth > 0)
+                                EditorGUI.indentLevel += m_FoldoutDepth;
                             if (customLabel == null)
                             {
                                 EditorGUILayout.PropertyField(m_SerializedProperty, true);
@@ -165,6 +179,9 @@ namespace UnityEditor.UIElements
                             {
                                 EditorGUILayout.PropertyField(m_SerializedProperty, customLabel, true);
                             }
+
+                            if (m_FoldoutDepth > 0)
+                                EditorGUI.indentLevel -= m_FoldoutDepth;
 
                             m_SerializedProperty.serializedObject.ApplyModifiedProperties();
                             if (EditorGUI.EndChangeCheck())
@@ -207,41 +224,97 @@ namespace UnityEditor.UIElements
             PropertyField targetPropertyField,
             PropertyField parentPropertyField)
         {
-            if (targetPropertyField == null || targetPropertyField.m_SerializedProperty == null || targetPropertyField.m_SerializedProperty.intValue == changeEvent.newValue)
+            var propertyIntValue = targetPropertyField.m_SerializedProperty.intValue;
+
+            if (targetPropertyField == null || targetPropertyField.m_SerializedProperty == null || parentPropertyField == null && targetPropertyField.m_SerializedProperty.intValue == changeEvent.newValue)
                 return;
 
-            // We need to unbind *first* before we change the array size property value.
-            // If we don't, the binding system could try to sync properties that no longer
-            // exist - if the array shrunk.
             var parentSerializedObject = parentPropertyField?.m_SerializedProperty?.serializedObject;
-            if (parentSerializedObject != null)
-                parentPropertyField.Unbind();
 
-            // We're forcefully updating the SerializedProperty value here, even
-            // though we have a binding on it, because the very next step is to
-            // Rebind() it. The Rebind() will regenerate the field (this field) and
-            // bind it to another copy of this property. We need the value to be correct
-            // on that copy of this property.
-            var serialiedObject = targetPropertyField.m_SerializedProperty.serializedObject;
-            serialiedObject.UpdateIfRequiredOrScript();
-            targetPropertyField.m_SerializedProperty.intValue = changeEvent.newValue;
-            serialiedObject.ApplyModifiedProperties();
+            if (propertyIntValue != changeEvent.newValue)
+            {
+                var serialiedObject = targetPropertyField.m_SerializedProperty.serializedObject;
+                serialiedObject.UpdateIfRequiredOrScript();
+                targetPropertyField.m_SerializedProperty.intValue = changeEvent.newValue;
+                serialiedObject.ApplyModifiedProperties();
+            }
 
-            // We rebind the parent property field (which should be the foldout expanded field)
-            // so that it regenerates (and rebinds) all array property fields (the new
-            // number of them).
-            if (parentSerializedObject != null)
-                parentPropertyField.Bind(parentSerializedObject);
+            if (parentPropertyField != null)
+            {
+                parentPropertyField.RefreshChildrenProperties(parentPropertyField.m_SerializedProperty.Copy(), true);
+                return;
+            }
+        }
 
-            // Very important that we stop immediate propagation here. If we don't,
-            // the next handler will be FieldValueChanged() in the IBinding which
-            // will be operating on a stale [this target] field
-            // (we just killed it in our Unbind()/Bind() above).
-            // In turn, because we share the IBinding, this event handling will
-            // essentially call Unbind() one more time on the array size field
-            // [this.target] and the array size field will no longer work.
-            // See: case 1141787
-            changeEvent.StopImmediatePropagation();
+        private List<PropertyField> m_ChildrenProperties;
+        private VisualElement m_ChildrenContainer;
+
+        void TrimChildrenContainerSize(int targetSize)
+        {
+            if (m_ChildrenProperties != null)
+            {
+                while (m_ChildrenProperties.Count > targetSize)
+                {
+                    var c = m_ChildrenProperties.Count - 1;
+                    var pf = m_ChildrenProperties[c];
+                    pf.Unbind();
+                    pf.RemoveFromHierarchy();
+                    m_ChildrenProperties.RemoveAt(c);
+                }
+            }
+        }
+
+        void RefreshChildrenProperties(SerializedProperty property, bool bindNewFields)
+        {
+            if (m_ChildrenContainer == null)
+            {
+                return;
+            }
+
+            var endProperty = property.GetEndProperty();
+            int propCount = 0;
+
+            if (m_ChildrenProperties == null)
+            {
+                m_ChildrenProperties = new List<PropertyField>();
+            }
+
+            property.NextVisible(true); // Expand the first child.
+            do
+            {
+                if (SerializedProperty.EqualContents(property, endProperty))
+                    break;
+
+                PropertyField field = null;
+                var propPath = property.propertyPath;
+                if (propCount < m_ChildrenProperties.Count)
+                {
+                    field = m_ChildrenProperties[propCount];
+                    if (field.bindingPath != propPath)
+                    {
+                        field.bindingPath = property.propertyPath;
+                        field.Bind(property.serializedObject);
+                    }
+                }
+                else
+                {
+                    field = new PropertyField(property);
+                    field.m_ParentPropertyField = this;
+                    m_ChildrenProperties.Add(field);
+
+                    if (bindNewFields)
+                        field.Bind(property.serializedObject);
+                }
+                field.name = "unity-property-field-" + property.propertyPath;
+
+                // Not yet knowing what type of field we are dealing with, we defer the showMixedValue value setting
+                // to be automatically done via the next Reset call
+                m_ChildrenContainer.Add(field);
+                propCount++;
+            }
+            while (property.NextVisible(false)); // Never expand children.
+
+            TrimChildrenContainerSize(propCount);
         }
 
         private VisualElement CreateFoldout(SerializedProperty property)
@@ -267,21 +340,9 @@ namespace UnityEditor.UIElements
                 foldoutLabel.SetProperty(foldoutTitleBoundLabelProperty, true);
             }
 
-            var endProperty = property.GetEndProperty();
-            property.NextVisible(true); // Expand the first child.
-            do
-            {
-                if (SerializedProperty.EqualContents(property, endProperty))
-                    break;
+            m_ChildrenContainer = foldout;
 
-                var field = new PropertyField(property);
-                field.m_ParentPropertyField = this;
-                field.name = "unity-property-field-" + property.propertyPath;
-                // Not yet knowing what type of field we are dealing with, we defer the showMixedValue value setting
-                // to be automatically done via the next Reset call
-                foldout.Add(field);
-            }
-            while (property.NextVisible(false)); // Never expand children.
+            RefreshChildrenProperties(property, false);
 
             return foldout;
         }
@@ -322,23 +383,23 @@ namespace UnityEditor.UIElements
 
                 // Calculate all extra padding from the containing element's contents
                 var totalPadding = resolvedStyle.paddingLeft + resolvedStyle.paddingRight +
-                                   resolvedStyle.marginLeft + resolvedStyle.marginRight;
+                    resolvedStyle.marginLeft + resolvedStyle.marginRight;
 
                 // Get inspector element padding next
                 totalPadding += inspectorElement.resolvedStyle.paddingLeft +
-                                inspectorElement.resolvedStyle.paddingRight +
-                                inspectorElement.resolvedStyle.marginLeft +
-                                inspectorElement.resolvedStyle.marginRight;
+                    inspectorElement.resolvedStyle.paddingRight +
+                    inspectorElement.resolvedStyle.marginLeft +
+                    inspectorElement.resolvedStyle.marginRight;
 
                 var labelElement = baseField.labelElement;
 
                 // Then get label padding
                 totalPadding += labelElement.resolvedStyle.paddingLeft + labelElement.resolvedStyle.paddingRight +
-                                labelElement.resolvedStyle.marginLeft + labelElement.resolvedStyle.marginRight;
+                    labelElement.resolvedStyle.marginLeft + labelElement.resolvedStyle.marginRight;
 
                 // Then get base field padding
                 totalPadding += field.resolvedStyle.paddingLeft + field.resolvedStyle.paddingRight +
-                                field.resolvedStyle.marginLeft + field.resolvedStyle.marginRight;
+                    field.resolvedStyle.marginLeft + field.resolvedStyle.marginRight;
 
                 // Not all visual input controls have the same padding so we can't base our total padding on
                 // that information.  Instead we add a flat value to totalPadding to best match the hard coded
@@ -373,6 +434,9 @@ namespace UnityEditor.UIElements
 
             if (EditorGUI.HasVisibleChildFields(property, true))
                 return CreateFoldout(property);
+
+            TrimChildrenContainerSize(0);
+            m_ChildrenContainer = null;
 
             switch (propertyType)
             {
@@ -486,15 +550,13 @@ namespace UnityEditor.UIElements
 
                 case SerializedPropertyType.BoundsInt:
                     return ConfigureField<BoundsIntField, BoundsInt>(new BoundsIntField(), property);
-                
-                case SerializedPropertyType.Hash128:
-                    return ConfigureField<Hash128Field, Hash128>(new Hash128Field(), property);
+
 
                 case SerializedPropertyType.Generic:
                 default:
                     return null;
             }
-       }
+        }
 
         private void RegisterPropertyChangesOnCustomDrawerElement(VisualElement customPropertyDrawer)
         {

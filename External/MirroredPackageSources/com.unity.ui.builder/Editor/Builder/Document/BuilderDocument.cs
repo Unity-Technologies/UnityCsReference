@@ -5,6 +5,7 @@ using UnityEditor;
 using System;
 using System.IO;
 
+
 namespace Unity.UI.Builder
 {
     class BuilderDocument : ScriptableObject, IBuilderSelectionNotifier, ISerializationCallbackReceiver, IBuilderPerFileAssetPostprocessor
@@ -18,7 +19,8 @@ namespace Unity.UI.Builder
             Default,
             Dark,
             Light,
-            Runtime
+            Runtime,
+            Custom
         }
 
         //
@@ -27,6 +29,13 @@ namespace Unity.UI.Builder
 
         [SerializeField]
         CanvasTheme m_CurrentCanvasTheme;
+
+        //
+        // Serialized Data
+        //
+
+        [SerializeField]
+        ThemeStyleSheet m_CurrentCanvasThemeStyleSheet;
 
         [SerializeField]
         bool m_CodePreviewVisible = true;
@@ -123,10 +132,12 @@ namespace Unity.UI.Builder
         }
 
         public CanvasTheme currentCanvasTheme => m_CurrentCanvasTheme;
+        public ThemeStyleSheet currentCanvasThemeStyleSheet => m_CurrentCanvasThemeStyleSheet;
 
-        public void ChangeDocumentTheme(VisualElement documentElement, CanvasTheme canvasTheme)
+        public void ChangeDocumentTheme(VisualElement documentElement, CanvasTheme canvasTheme, ThemeStyleSheet themeSheet)
         {
             m_CurrentCanvasTheme = canvasTheme;
+            m_CurrentCanvasThemeStyleSheet = themeSheet;
             RefreshStyle(documentElement);
         }
 
@@ -288,7 +299,7 @@ namespace Unity.UI.Builder
             var activeVTA = activeOpenUXMLFile.visualTreeAsset;
             if (activeVTA.TemplateExists(vtaCheck))
                 return false;
-            
+
             // Crawl up hierarchy if there are open subdocuments
             int parentInd = activeOpenUXMLFile.openSubDocumentParentIndex;
             while (parentInd > -1)
@@ -301,7 +312,7 @@ namespace Unity.UI.Builder
             }
             return true;
         }
-        
+
 
         //
         // Sub Document
@@ -314,7 +325,7 @@ namespace Unity.UI.Builder
 
             newUXMLFile.openSubDocumentParentSourceTemplateAssetIndex = templateAssetIndex;
             newUXMLFile.openSubDocumentParentIndex = m_ActiveOpenUXMLFileIndex;
-            
+
             m_OpenUXMLFiles.Add(newUXMLFile);
             int newIndex = m_OpenUXMLFiles.Count - 1;
             m_ActiveOpenUXMLFileIndex = newIndex;
@@ -326,7 +337,7 @@ namespace Unity.UI.Builder
             {
                 int scrapIndex = m_ActiveOpenUXMLFileIndex;
                 m_ActiveOpenUXMLFileIndex = activeOpenUXMLFile.openSubDocumentParentIndex;
-                m_OpenUXMLFiles.RemoveAt(scrapIndex); 
+                m_OpenUXMLFiles.RemoveAt(scrapIndex);
             }
         }
 

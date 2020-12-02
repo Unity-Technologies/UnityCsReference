@@ -742,9 +742,20 @@ namespace UnityEditor
             brushSize = EditorPrefs.GetFloat("TerrainBrushSize", 25.0f);
             int selected = EditorPrefs.GetInt("TerrainSelectedBrush", 0);
 
-            m_ActivePaintToolIndex = EditorPrefs.GetInt("TerrainActivePaintToolIndex", 0);      // TODO: this should be stored by name
-            if (m_ActivePaintToolIndex > m_Tools.Length)
-                m_ActivePaintToolIndex = 0;
+            m_ActivePaintToolIndex = 0;
+            var toolName = EditorPrefs.GetString("TerrainActivePaintToolName", "");
+
+            if (!string.IsNullOrEmpty(toolName))
+            {
+                for (int i = 0; i < m_ToolNames.Length; ++i)
+                {
+                    if (m_ToolNames[i] == toolName)
+                    {
+                        m_ActivePaintToolIndex = i;
+                        break;
+                    }
+                }
+            }
 
             brushList.UpdateSelection(selected);
         }
@@ -756,7 +767,7 @@ namespace UnityEditor
             EditorPrefs.SetFloat("TerrainBrushSize", brushSize);
             EditorPrefs.SetFloat("TerrainBrushStrength", m_Strength);
 
-            EditorPrefs.SetInt("TerrainActivePaintToolIndex", m_ActivePaintToolIndex);
+            EditorPrefs.SetString("TerrainActivePaintToolName", m_ToolNames[m_ActivePaintToolIndex]);
         }
 
         static bool ShouldShowCreateMaterialButton(Material material)

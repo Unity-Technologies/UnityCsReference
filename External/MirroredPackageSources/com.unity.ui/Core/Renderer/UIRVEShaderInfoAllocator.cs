@@ -150,7 +150,7 @@ namespace UnityEngine.UIElements.UIR
     internal struct UIRVEShaderInfoAllocator
     {
         DynamicAtlasCore m_Atlas;
-        BitmapAllocator32 m_TransformAllocator, m_ClipRectAllocator, m_OpacityAllocator; // All allocators take pages from the same atlas
+        BitmapAllocator32 m_TransformAllocator, m_ClipRectAllocator, m_OpacityAllocator, m_TextSettingsAllocator; // All allocators take pages from the same atlas
         bool m_AtlasReallyCreated;
 
         // Support for absence of vertex texturing
@@ -166,16 +166,25 @@ namespace UnityEngine.UIElements.UIR
         internal static readonly Vector2Int identityTransformTexel = new Vector2Int(0, 0);
         internal static readonly Vector2Int infiniteClipRectTexel = new Vector2Int(0, 32);
         internal static readonly Vector2Int fullOpacityTexel = new Vector2Int(32, 32);
+        internal static readonly Vector2Int defaultTextCoreSettingsTexel = new Vector2Int(32, 0);
 
-        internal static readonly Vector4 identityTransformRow0Value = new Vector4(1, 0, 0, 0);
-        internal static readonly Vector4 identityTransformRow1Value = new Vector4(0, 1, 0, 0);
-        internal static readonly Vector4 identityTransformRow2Value = new Vector4(0, 0, 1, 0);
+        internal static readonly Matrix4x4 identityTransformValue = Matrix4x4.identity;
+        internal static readonly Vector4 identityTransformRow0Value = identityTransformValue.GetRow(0);
+        internal static readonly Vector4 identityTransformRow1Value = identityTransformValue.GetRow(1);
+        internal static readonly Vector4 identityTransformRow2Value = identityTransformValue.GetRow(2);
         internal static readonly Vector4 infiniteClipRectValue = new Vector4(-float.MaxValue, -float.MaxValue, float.MaxValue, float.MaxValue);
         internal static readonly Vector4 fullOpacityValue = new Vector4(1, 1, 1, 1);
+        internal static readonly TextCoreSettings defaultTextCoreSettingsValue = new TextCoreSettings() {
+            outlineColor = Color.clear,
+            outlineWidth = 0.0f,
+            underlayColor = Color.clear,
+            underlayOffset = Vector2.zero,
+            underlaySoftness = 0.0f
+        };
 
         // Default allocations. All their members are 0 including "owned"
 #pragma warning disable 649
-        public static readonly BMPAlloc identityTransform, infiniteClipRect, fullOpacity;
+        public static readonly BMPAlloc identityTransform, infiniteClipRect, fullOpacity, defaultTextCoreSettings;
 #pragma warning restore 649
 
         static Vector2Int AllocToTexelCoord(ref BitmapAllocator32 allocator, BMPAlloc alloc)
@@ -218,16 +227,18 @@ namespace UnityEngine.UIElements.UIR
 
         public void Construct()
         {
-            // The default allocs refer to three startup pages to be allocated as below from the atlas
+            // The default allocs refer to four startup pages to be allocated as below from the atlas
             // once the atlas is used for the first time. The page coordinates correspond to the atlas's
             // internal algorithm's results. If that algorithm changes, the new results must be put here to match
-            m_OpacityAllocator = m_ClipRectAllocator = m_TransformAllocator = new BitmapAllocator32();
+            m_OpacityAllocator = m_ClipRectAllocator = m_TransformAllocator = m_TextSettingsAllocator = new BitmapAllocator32();
             m_TransformAllocator.Construct(pageHeight, 1, 3);
             m_TransformAllocator.ForceFirstAlloc((ushort)identityTransformTexel.x, (ushort)identityTransformTexel.y);
             m_ClipRectAllocator.Construct(pageHeight);
             m_ClipRectAllocator.ForceFirstAlloc((ushort)infiniteClipRectTexel.x, (ushort)infiniteClipRectTexel.y);
             m_OpacityAllocator.Construct(pageHeight);
             m_OpacityAllocator.ForceFirstAlloc((ushort)fullOpacityTexel.x, (ushort)fullOpacityTexel.y);
+            m_TextSettingsAllocator.Construct(pageHeight, 1, 3);
+            m_TextSettingsAllocator.ForceFirstAlloc((ushort)defaultTextCoreSettingsTexel.x, (ushort)defaultTextCoreSettingsTexel.y);
 
             m_VertexTexturingEnabled = UIRenderDevice.vertexTexturingIsAvailable;
             if (!m_VertexTexturingEnabled)
@@ -249,13 +260,14 @@ namespace UnityEngine.UIElements.UIR
                 m_VertexTexturingEnabled ? RenderTextureFormat.ARGBFloat : RenderTextureFormat.ARGB32, // If no vertex texturing, only store opacity in ARGB32
                 FilterMode.Point, // Filtering is never needed for this texture
                 Math.Max(pageWidth, pageHeight * 3), // Each transform row is stored vertically
-                64); // Because we want predictable placement of first pages, 64 will fit all three default allocs
+                64); // Because we want predictable placement of first pages, 64 will fit all default allocs
 
             // The order of allocation from the atlas below is important. See the comment at the beginning of Construct().
-            RectInt rcTransform, rcClipRect, rcOpacity;
+            RectInt rcTransform, rcClipRect, rcOpacity, rcTextCoreSettings;
             m_Atlas.AllocateRect(pageWidth * m_TransformAllocator.entryWidth, pageHeight * m_TransformAllocator.entryHeight, out rcTransform);
             m_Atlas.AllocateRect(pageWidth * m_ClipRectAllocator.entryWidth, pageHeight * m_ClipRectAllocator.entryHeight, out rcClipRect);
             m_Atlas.AllocateRect(pageWidth * m_OpacityAllocator.entryWidth, pageHeight * m_OpacityAllocator.entryHeight, out rcOpacity);
+            m_Atlas.AllocateRect(pageWidth * m_TextSettingsAllocator.entryWidth, pageHeight * m_TextSettingsAllocator.entryHeight, out rcTextCoreSettings);
 
             if (!AtlasRectMatchesPage(ref m_TransformAllocator, identityTransform, rcTransform))
                 throw new Exception("Atlas identity transform allocation failed unexpectedly");
@@ -266,20 +278,18 @@ namespace UnityEngine.UIElements.UIR
             if (!AtlasRectMatchesPage(ref m_OpacityAllocator, fullOpacity, rcOpacity))
                 throw new Exception("Atlas full opacity allocation failed unexpectedly");
 
+            if (!AtlasRectMatchesPage(ref m_TextSettingsAllocator, defaultTextCoreSettings, rcTextCoreSettings))
+                throw new Exception("Atlas text setting allocation failed unexpectedly");
+
             var whiteTexel = UIRenderDevice.whiteTexel;
             if (m_VertexTexturingEnabled)
             {
-                var allocXY = AllocToTexelCoord(ref m_TransformAllocator, identityTransform);
-                m_Atlas.EnqueueBlit(whiteTexel, allocXY.x, allocXY.y + 0, false, identityTransformRow0Value);
-                m_Atlas.EnqueueBlit(whiteTexel, allocXY.x, allocXY.y + 1, false, identityTransformRow1Value);
-                m_Atlas.EnqueueBlit(whiteTexel, allocXY.x, allocXY.y + 2, false, identityTransformRow2Value);
-
-                allocXY = AllocToTexelCoord(ref m_ClipRectAllocator, infiniteClipRect);
-                m_Atlas.EnqueueBlit(whiteTexel, allocXY.x, allocXY.y, false, infiniteClipRectValue);
+                SetTransformValue(identityTransform, identityTransformValue);
+                SetClipRectValue(infiniteClipRect, infiniteClipRectValue);
             }
             {
-                var allocXY = AllocToTexelCoord(ref m_OpacityAllocator, fullOpacity);
-                m_Atlas.EnqueueBlit(whiteTexel, allocXY.x, allocXY.y, false, fullOpacityValue);
+                SetOpacityValue(fullOpacity, fullOpacityValue.w);
+                SetTextCoreSettingValue(defaultTextCoreSettings, defaultTextCoreSettingsValue);
             }
 
             m_AtlasReallyCreated = true;
@@ -344,6 +354,14 @@ namespace UnityEngine.UIElements.UIR
             return m_OpacityAllocator.Allocate(m_Atlas);
         }
 
+        public BMPAlloc AllocTextCoreSettings(TextCoreSettings settings)
+        {
+            if (!m_AtlasReallyCreated)
+                ReallyCreateAtlas();
+
+            return m_TextSettingsAllocator.Allocate(m_Atlas);
+        }
+
         public void SetTransformValue(BMPAlloc alloc, Matrix4x4 xform)
         {
             Debug.Assert(alloc.IsValid());
@@ -381,6 +399,17 @@ namespace UnityEngine.UIElements.UIR
             m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, allocXY.x, allocXY.y, false, new Color(1, 1, 1, opacity));
         }
 
+        public void SetTextCoreSettingValue(BMPAlloc alloc, TextCoreSettings settings)
+        {
+            Debug.Assert(alloc.IsValid());
+
+            var allocXY = AllocToTexelCoord(ref m_TextSettingsAllocator, alloc);
+            var settingValues = new Color(-settings.underlayOffset.x, settings.underlayOffset.y, settings.underlaySoftness, settings.outlineWidth);
+            m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, allocXY.x, allocXY.y + 0, false, settings.outlineColor);
+            m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, allocXY.x, allocXY.y + 1, false, settings.underlayColor);
+            m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, allocXY.x, allocXY.y + 2, false, settingValues);
+        }
+
         public void FreeTransform(BMPAlloc alloc)
         {
             Debug.Assert(alloc.IsValid());
@@ -397,6 +426,12 @@ namespace UnityEngine.UIElements.UIR
         {
             Debug.Assert(alloc.IsValid());
             m_OpacityAllocator.Free(alloc);
+        }
+
+        public void FreeTextCoreSettings(BMPAlloc alloc)
+        {
+            Debug.Assert(alloc.IsValid());
+            m_TextSettingsAllocator.Free(alloc);
         }
 
         public Color32 TransformAllocToVertexData(BMPAlloc alloc)
@@ -422,6 +457,14 @@ namespace UnityEngine.UIElements.UIR
             Debug.Assert(pageWidth == 32 && pageHeight == 8); // Match the bit-shift values below for fast integer division
             UInt16 x, y;
             m_OpacityAllocator.GetAllocPageAtlasLocation(alloc.page, out x, out y);
+            return new Color32((byte)(x >> 5), (byte)(y >> 3), (byte)(alloc.pageLine * pageWidth + alloc.bitIndex), 0);
+        }
+
+        public Color32 TextCoreSettingsToVertexData(BMPAlloc alloc)
+        {
+            Debug.Assert(pageWidth == 32 && pageHeight == 8); // Match the bit-shift values below for fast integer division
+            UInt16 x, y;
+            m_TextSettingsAllocator.GetAllocPageAtlasLocation(alloc.page, out x, out y);
             return new Color32((byte)(x >> 5), (byte)(y >> 3), (byte)(alloc.pageLine * pageWidth + alloc.bitIndex), 0);
         }
     }

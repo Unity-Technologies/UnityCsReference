@@ -9,7 +9,6 @@ namespace UnityEditor.DeviceSimulation
     public abstract class DeviceSimulatorPlugin
     {
         public DeviceSimulator deviceSimulator { get; internal set; }
-
         public abstract string title { get; }
 
         public virtual void OnCreate()

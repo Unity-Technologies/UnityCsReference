@@ -10,18 +10,18 @@ namespace UnityEditor.UIElements
         // This property to alleviate the fact we have to cast all the time
         Hash128Input integerInput => (Hash128Input)textInputBase;
 
-        public new class UxmlFactory : UxmlFactory<Hash128Field, UxmlTraits> { }
-        public new class UxmlTraits : TextValueFieldTraits<Hash128, UxmlHash128AttributeDescription> { }
+        public new class UxmlFactory : UxmlFactory<Hash128Field, UxmlTraits> {}
+        public new class UxmlTraits : TextValueFieldTraits<Hash128, UxmlHash128AttributeDescription> {}
 
         public new static readonly string ussClassName = "unity-hash128-field";
         public new static readonly string labelUssClassName = ussClassName + "__label";
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
         public Hash128Field()
-            : this((string)null) { }
+            : this((string)null) {}
 
         public Hash128Field(int maxLength)
-            : this(null, maxLength) { }
+            : this(null, maxLength) {}
 
         public Hash128Field(string label, int maxLength = kMaxLengthNone)
             : base(label, maxLength, Char.MinValue, new Hash128Input())
@@ -84,7 +84,7 @@ namespace UnityEditor.UIElements
                 // Hash128.Parse does not accept strings of Length == 1, but works well with Length in the range [2, 32]
                 if (str.Length == 1 && ulong.TryParse(str, out var val))
                     return new Hash128(val, 0L);
-                
+
                 return Hash128.Parse(str);
             }
 

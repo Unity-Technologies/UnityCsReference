@@ -95,7 +95,7 @@ namespace UnityEditor.UIElements
         void InitCulled()
         {
             PopulateCache();
-            
+
             var container = inspectorWindow.CreateIMGUIContainer(() =>
             {
                 if (editor != null)
@@ -160,7 +160,7 @@ namespace UnityEditor.UIElements
                 InitCulled();
                 return;
             }
-            
+
             PopulateCache();
         }
 
@@ -173,7 +173,7 @@ namespace UnityEditor.UIElements
                 Init();
                 return;
             }
-            
+
             PopulateCache();
             Object editorTarget = editor.targets[0];
             string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);

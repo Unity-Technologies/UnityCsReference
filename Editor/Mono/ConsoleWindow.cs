@@ -639,7 +639,7 @@ namespace UnityEditor
 
                         if (string.IsNullOrEmpty(m_SearchText))
                             errorModeStyle.Draw(textRect, tempContent, id, m_ListView.row == el.row);
-                        else
+                        else if (text != null)
                         {
                             //the whole text contains the searchtext, we have to know where it is
                             int startIndex = text.IndexOf(m_SearchText, StringComparison.OrdinalIgnoreCase);

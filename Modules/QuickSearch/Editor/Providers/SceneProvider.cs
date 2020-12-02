@@ -32,7 +32,10 @@ namespace UnityEditor.Search.Providers
                 Utils.IsFocusedWindowTypeName("SceneView") ||
                 Utils.IsFocusedWindowTypeName("SceneHierarchyWindow");
 
-            EditorApplication.hierarchyChanged += () => m_HierarchyChanged = true;
+            EditorSceneManager.activeSceneChangedInEditMode += (_, __) => InvalidateScene();
+            PrefabStage.prefabStageOpened += _ => InvalidateScene();
+            PrefabStage.prefabStageClosing += _ => InvalidateScene();
+            ObjectChangeEvents.changesPublished += OnObjectChanged;
 
             supportsSyncViewSearch = true;
 
@@ -114,6 +117,77 @@ namespace UnityEditor.Search.Providers
             };
 
             trackSelection = (item, context) => PingItem(item);
+        }
+
+        private void InvalidateScene()
+        {
+            m_HierarchyChanged = true;
+            m_LastSearchView?.Refresh();
+        }
+
+        private void InvalidateObject(int instanceId)
+        {
+            if (m_SceneQueryEngine.InvalidateObject(instanceId))
+                m_LastSearchView?.Refresh();
+            else if (UnityEngine.Object.FindObjectFromInstanceID(instanceId) is Component c)
+                InvalidateObject(c.gameObject.GetInstanceID());
+        }
+
+        private void OnObjectChanged(ref ObjectChangeEventStream stream)
+        {
+            if (m_SceneQueryEngine == null)
+                return;
+
+            for (int i = 0; i < stream.length; ++i)
+            {
+                var eventType = stream.GetEventType(i);
+                switch (eventType)
+                {
+                    case ObjectChangeKind.None:
+                    case ObjectChangeKind.CreateAssetObject:
+                    case ObjectChangeKind.DestroyAssetObject:
+                    case ObjectChangeKind.ChangeAssetObjectProperties:
+                        break;
+
+                    case ObjectChangeKind.ChangeScene:
+                    case ObjectChangeKind.CreateGameObjectHierarchy:
+                    case ObjectChangeKind.DestroyGameObjectHierarchy:
+                        InvalidateScene();
+                        break;
+
+                    case ObjectChangeKind.ChangeGameObjectStructureHierarchy:
+                    {
+                        stream.GetChangeGameObjectStructureHierarchyEvent(i, out var e);
+                        InvalidateObject(e.instanceId);
+                    }
+                    break;
+                    case ObjectChangeKind.ChangeGameObjectStructure:
+                    {
+                        stream.GetChangeGameObjectStructureEvent(i, out var e);
+                        InvalidateObject(e.instanceId);
+                    }
+                    break;
+                    case ObjectChangeKind.ChangeGameObjectParent:
+                    {
+                        stream.GetChangeGameObjectParentEvent(i, out var e);
+                        InvalidateObject(e.instanceId);
+                    }
+                    break;
+                    case ObjectChangeKind.ChangeGameObjectOrComponentProperties:
+                    {
+                        stream.GetChangeGameObjectOrComponentPropertiesEvent(i, out var e);
+                        InvalidateObject(e.instanceId);
+                    }
+                    break;
+                    case ObjectChangeKind.UpdatePrefabInstances:
+                    {
+                        stream.GetUpdatePrefabInstancesEvent(i, out var e);
+                        for (int idIndex = 0; idIndex < e.instanceIds.Length; ++idIndex)
+                            InvalidateObject(e.instanceIds[idIndex]);
+                    }
+                    break;
+                }
+            }
         }
 
 

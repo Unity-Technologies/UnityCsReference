@@ -7,6 +7,8 @@ namespace Unity.UI.Builder
 {
     internal class FoldoutField : PersistedFoldout
     {
+        public new class UxmlFactory : UxmlFactory<FoldoutField, UxmlTraits> { }
+
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };

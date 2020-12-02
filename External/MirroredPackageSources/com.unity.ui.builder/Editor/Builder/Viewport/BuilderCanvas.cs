@@ -62,7 +62,7 @@ namespace Unity.UI.Builder
             m_Selection = selection;
         }
 
-        public VisualElement documentElement { get; set; }
+        public VisualElement documentRootElement { get; set; }
         public VisualElement editorLayer { get; set; }
 
         private float m_X;
@@ -219,11 +219,11 @@ namespace Unity.UI.Builder
             style.width = newWidth;
             style.height = newHeight;
 
-            if (documentElement != null)
+            if (documentRootElement != null)
             {
-                documentElement.transform.scale = new Vector3(m_ZoomScale, m_ZoomScale, 1);
-                documentElement.style.right = -(m_Width - newWidth);
-                documentElement.style.bottom = -(m_Height - newHeight);
+                documentRootElement.transform.scale = new Vector3(m_ZoomScale, m_ZoomScale, 1);
+                documentRootElement.style.right = -(m_Width - newWidth);
+                documentRootElement.style.bottom = -(m_Height - newHeight);
             }
 
             if (editorLayer != null)

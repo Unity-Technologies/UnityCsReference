@@ -54,7 +54,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// USS class name of elements that show mixed values
         /// </summary>
-        public static readonly string mixedValueLabelUssClassName = labelUssClassName + "--mixed-value"; 
+        public static readonly string mixedValueLabelUssClassName = labelUssClassName + "--mixed-value";
 
         protected static readonly string mixedValueString = "\u2014";
 
@@ -182,7 +182,7 @@ namespace UnityEngine.UIElements
                 if (value == m_ShowMixedValue) return;
 
                 m_ShowMixedValue = value;
-                
+
                 // Once value has been set, update the field's appearance
                 UpdateMixedValueContent();
             }

@@ -93,6 +93,8 @@ namespace UnityEngine.UIElements.UIR
         private static bool m_SynchronousFree; // This is set on domain unload or app quit, so it is irreversible
 
         static readonly int s_FontTexPropID = Shader.PropertyToID("_FontTex");
+        static readonly int s_FontTexSDFScaleID = Shader.PropertyToID("_FontTexSDFScale");
+        static readonly int s_CustomTexPropID = Shader.PropertyToID("_CustomTex");
         static readonly int s_PixelClipInvViewPropID = Shader.PropertyToID("_PixelClipInvView");
         static readonly int s_GradientSettingsTexID = Shader.PropertyToID("_GradientSettingsTex");
         static readonly int s_ShaderInfoTexID = Shader.PropertyToID("_ShaderInfoTex");
@@ -185,6 +187,7 @@ namespace UnityEngine.UIElements.UIR
                 if (s_DefaultShaderInfoTexFloat == null)
                 {
                     s_DefaultShaderInfoTexFloat = new Texture2D(64, 64, TextureFormat.RGBAFloat, false); // No mips
+                    s_DefaultShaderInfoTexFloat.name = "DefaultShaderInfoTexFloat";
                     s_DefaultShaderInfoTexFloat.hideFlags = HideFlags.HideAndDontSave;
                     s_DefaultShaderInfoTexFloat.filterMode = FilterMode.Point;
                     s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.identityTransformTexel.x, UIRVEShaderInfoAllocator.identityTransformTexel.y + 0, UIRVEShaderInfoAllocator.identityTransformRow0Value);
@@ -192,6 +195,9 @@ namespace UnityEngine.UIElements.UIR
                     s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.identityTransformTexel.x, UIRVEShaderInfoAllocator.identityTransformTexel.y + 2, UIRVEShaderInfoAllocator.identityTransformRow2Value);
                     s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.infiniteClipRectTexel.x, UIRVEShaderInfoAllocator.infiniteClipRectTexel.y, UIRVEShaderInfoAllocator.infiniteClipRectValue);
                     s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.fullOpacityTexel.x, UIRVEShaderInfoAllocator.fullOpacityTexel.y, UIRVEShaderInfoAllocator.fullOpacityValue);
+                    s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.x, UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.y + 0, Color.clear);
+                    s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.x, UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.y + 1, Color.clear);
+                    s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.x, UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.y + 2, Color.clear);
                     s_DefaultShaderInfoTexFloat.Apply(false, true);
                 }
                 return s_DefaultShaderInfoTexFloat;
@@ -204,9 +210,13 @@ namespace UnityEngine.UIElements.UIR
                 if (s_DefaultShaderInfoTexARGB8 == null)
                 {
                     s_DefaultShaderInfoTexARGB8 = new Texture2D(64, 64, TextureFormat.RGBA32, false); // No mips
+                    s_DefaultShaderInfoTexARGB8.name = "DefaultShaderInfoTexARGB8";
                     s_DefaultShaderInfoTexARGB8.hideFlags = HideFlags.HideAndDontSave;
                     s_DefaultShaderInfoTexARGB8.filterMode = FilterMode.Point;
                     s_DefaultShaderInfoTexARGB8.SetPixel(UIRVEShaderInfoAllocator.fullOpacityTexel.x, UIRVEShaderInfoAllocator.fullOpacityTexel.y, UIRVEShaderInfoAllocator.fullOpacityValue);
+                    s_DefaultShaderInfoTexARGB8.SetPixel(UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.x, UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.y + 0, Color.clear);
+                    s_DefaultShaderInfoTexARGB8.SetPixel(UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.x, UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.y + 1, Color.clear);
+                    s_DefaultShaderInfoTexARGB8.SetPixel(UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.x, UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.y + 2, Color.clear);
                     s_DefaultShaderInfoTexARGB8.Apply(false, true);
                 }
                 return s_DefaultShaderInfoTexARGB8;
@@ -266,16 +276,19 @@ namespace UnityEngine.UIElements.UIR
                 // TransformID page coordinate (XY), ClipRectID page coordinate (ZW), packed into a Color32
                 new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.UNorm8, 4),
 
-                // In-page index for (TransformID, ClipRectID, OpacityID), Flags (vertex type), all packed into a Color32
+                // In-page index for (TransformID, ClipRectID, OpacityID, TextCoreID)
                 new VertexAttributeDescriptor(VertexAttribute.TexCoord2, VertexAttributeFormat.UNorm8, 4),
 
-                // OpacityID page coordinate (XY), SVG SettingIndex (16-bit encoded in ZW), packed into a Color32
+                // Flags (vertex type), all packed into a Color32
                 new VertexAttributeDescriptor(VertexAttribute.TexCoord3, VertexAttributeFormat.UNorm8, 4),
+
+                // OpacityID page coordinate (XY), SVG/TextCore SettingIndex (16-bit encoded in ZW), packed into a Color32
+                new VertexAttributeDescriptor(VertexAttribute.TexCoord4, VertexAttributeFormat.UNorm8, 4),
 
                 // TextureID, to represent integers from 0 to 2048
                 // Float32 is overkill for the time being but it avoids conversion issues on GLES2 and metal. We should
                 // use a Float16 instead but this isn't a trivial because C# doesn't have a native "half" datatype.
-                new VertexAttributeDescriptor(VertexAttribute.TexCoord4, VertexAttributeFormat.Float32, 1),
+                new VertexAttributeDescriptor(VertexAttribute.TexCoord5, VertexAttributeFormat.Float32, 1)
             };
             m_VertexDecl = Utility.GetVertexDeclaration(vertexDecl);
         }
@@ -701,6 +714,9 @@ namespace UnityEngine.UIElements.UIR
                 st.stateChanges = true;
                 st.curState.font = cmd.state.font;
                 st.stateMatProps.SetTexture(s_FontTexPropID, cmd.state.font);
+
+                st.curState.fontTexSDFScale = cmd.state.fontTexSDFScale;
+                st.stateMatProps.SetFloat(s_FontTexSDFScaleID, st.curState.fontTexSDFScale);
             }
         }
 
@@ -753,11 +769,14 @@ namespace UnityEngine.UIElements.UIR
 
             var drawParams = m_DrawParams;
             drawParams.Reset();
+            drawParams.renderTexture.Add(RenderTexture.active);
             stateMatProps.Clear();
             m_TextureSlotManager.Reset();
 
             if (fullyCreated)
             {
+                if (head != null && head.state.fontTexSDFScale != 0)
+                    m_StandardMatProps.SetFloat(s_FontTexSDFScaleID, head.state.fontTexSDFScale);
                 if (gradientSettings != null)
                     m_StandardMatProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
                 if (shaderInfo != null)
@@ -846,14 +865,10 @@ namespace UnityEngine.UIElements.UIR
                         kickRanges = true;
                     }
 
-
                     if (stashRange && isLastRange)
                     {
-                        // The range we'll close is the last that we can store.
-                        // TODO: This only works since ranges are serialized and will break once the ranges are
-                        //       truly processed in a multi-threaded fashion without copies. When this happens, a new
-                        //       mechanism will need to be implemented to handle the "ranges-buffer-full" condition. For
-                        //       the time being, calling KickRanges will make the whole buffer available.
+                        // mechanism will need to be implemented to handle the "ranges-buffer-full" condition. For
+                        // the time being, calling KickRanges will make the whole buffer available.
                         kickRanges = true;
                     }
                 }
@@ -914,11 +929,23 @@ namespace UnityEngine.UIElements.UIR
                     {
                         if (!m_MockDevice)
                             head.ExecuteNonDrawMesh(drawParams, pixelsPerPoint, ref immediateException);
-                        if (head.type == CommandType.Immediate || head.type == CommandType.ImmediateCull)
+                        if (head.type == CommandType.Immediate || head.type == CommandType.ImmediateCull || head.type == CommandType.BlitToPreviousRT || head.type == CommandType.PushRenderTexture || head.type == CommandType.PopDefaultMaterial || head.type == CommandType.PushDefaultMaterial)
                         {
                             st.curState.material = null; // A value that is unique to force material reset on next draw command
                             st.materialChanges = false;
                             m_DrawStats.immediateDraws++;
+
+                            if (head.type == CommandType.PopDefaultMaterial)
+                            {
+                                int index = drawParams.defaultMaterial.Count - 1;
+                                defaultMat = drawParams.defaultMaterial[index];
+                                drawParams.defaultMaterial.RemoveAt(index);
+                            }
+                            if (head.type == CommandType.PushDefaultMaterial)
+                            {
+                                drawParams.defaultMaterial.Add(defaultMat);
+                                defaultMat = head.state.material;
+                            }
                         }
                     }
 

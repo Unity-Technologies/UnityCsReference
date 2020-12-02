@@ -19,6 +19,7 @@ namespace UnityEditorInternal.Profiling
         public UIDetailsProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName, Chart.ChartType.Line) {}
 
         public override ProfilerArea area => ProfilerArea.UIDetails;
+        public override bool usesCounters => false;
 
         protected override int defaultOrderIndex => k_DefaultOrderIndex;
         protected override string legacyPreferenceKey => "ProfilerChartUIDetails";

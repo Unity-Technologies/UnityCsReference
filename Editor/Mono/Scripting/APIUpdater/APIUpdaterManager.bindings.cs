@@ -47,9 +47,11 @@ namespace UnityEditorInternal.APIUpdating
         private static HashSet<AssemblyUpdateCandidate> s_AssembliesToUpdate;
 
         internal static extern bool WaitForVCSServerConnection(bool reportTimeout);
+        [NativeName("NumberOfTimesAsked")]
         public static extern int numberOfTimesAsked
         {
-            [NativeName("NumberOfTimesAsked")] get;
+            get;
+            set;
         }
 
 

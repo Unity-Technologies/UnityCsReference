@@ -22,7 +22,8 @@ namespace UnityEngine.UIElements
                 editorEngine.OnFocus();
 
                 // Make sure to select all text, OnFocus() does not call SelectAll for multiline text field.
-                // However, in IMGUI it will be call later by the OnMouseUp event.
+                // If focused from the mouse, it will be called later by the OnMouseUp event.
+                // This is needed when focus is obtained through a keyboard event (i.e. Tab).
                 editorEngine.SelectAll();
             }
             else if (evt.eventTypeId == BlurEvent.TypeId())

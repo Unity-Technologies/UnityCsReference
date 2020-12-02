@@ -28,7 +28,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static HashSet<string> ignoreAssemblies = new HashSet<string>(new[]
         {
             "UnityEngine.TestRunner.dll",
-            "UnityEditor.TestRunner.dll"
+            "UnityEditor.TestRunner.dll",
+            "UnityEngine.UIElementsModule.dll",
+            "UnityEditor.UIElementsModule.dll"
         },
             StringComparer.Ordinal);
 

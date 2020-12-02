@@ -216,10 +216,12 @@ namespace UnityEditor.Connect
                     var payload = "{\"service_flags\":{\"" + serviceFlagName + "\":" + enable.ToString().ToLower() + "}}";
                     var uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(payload));
                     var serviceFlagRequest = new UnityWebRequest(currentProjectServiceFlagsApiUrl,
-                        UnityWebRequest.kHttpVerbPUT) { downloadHandler = new DownloadHandlerBuffer(), uploadHandler = uploadHandler };
+                        UnityWebRequest.kHttpVerbPUT, null, uploadHandler);
                     serviceFlagRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
                     serviceFlagRequest.SetRequestHeader("Content-Type", "application/json;charset=UTF-8");
-                    serviceFlagRequest.SendWebRequest();
+                    serviceFlagRequest.SendWebRequest().completed += (op) => {
+                        ((UnityWebRequestAsyncOperation)op).webRequest.Dispose();
+                    };
                 });
             }
         }

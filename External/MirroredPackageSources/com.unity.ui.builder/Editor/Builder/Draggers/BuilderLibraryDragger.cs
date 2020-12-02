@@ -98,25 +98,10 @@ namespace Unity.UI.Builder
                 as BuilderLibraryTreeItem;
             m_DragPreviewElement = item.makeVisualElementCallback();
             m_DragPreviewElement.AddToClassList(s_DragPreviewElementClassName);
-
-            if (index < 0)
-                m_DragPreviewLastParent.Add(m_DragPreviewElement);
-            else
-                m_DragPreviewLastParent.Insert(index, m_DragPreviewElement);
         }
 
-        protected override void PerformAction(VisualElement destination, DestinationPane pane, int index = -1)
+        protected override void PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
         {
-            m_DragPreviewElement.RemoveFromClassList(s_DragPreviewElementClassName);
-
-            destination.RemoveMinSizeSpecialElement();
-
-            // We already have the correct index from the preview element that is
-            // already inserted in the hierarchy. The index we get from the arguments
-            // is actually incorrect (off by one) because it will count the
-            // preview element.
-            index = m_DragPreviewLastParent.IndexOf(m_DragPreviewElement);
-
             // We should have an item reference here if the OnDragStart() worked.
             var item = m_LibraryItem;
             var itemVTA = item.sourceAsset;
@@ -128,6 +113,20 @@ namespace Unity.UI.Builder
                 return;
             }
 
+            destination.RemoveMinSizeSpecialElement();
+
+            // Determine if it applies and use Absolute Island insertion.
+            if (BuilderProjectSettings.enableAbsolutePositionPlacement && pane == DestinationPane.Viewport && m_DragPreviewLastParent == documentRootElement && index < 0)
+                m_DragPreviewLastParent = BuilderPlacementUtilities.CreateAbsoluteIsland(paneWindow, documentRootElement, localMousePosition);
+
+            // Add VisualElement to Canvas.
+            m_DragPreviewElement.RemoveFromClassList(s_DragPreviewElementClassName);
+            if (index < 0)
+                m_DragPreviewLastParent.Add(m_DragPreviewElement);
+            else
+                m_DragPreviewLastParent.Insert(index, m_DragPreviewElement);
+
+            // Create equivalent VisualElementAsset.
             if (item.makeElementAssetCallback == null)
                 BuilderAssetUtilities.AddElementToAsset(
                     paneWindow.document, m_DragPreviewElement, index);

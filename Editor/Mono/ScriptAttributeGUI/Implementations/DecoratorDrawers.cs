@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor
@@ -29,7 +30,12 @@ namespace UnityEditor
 
         public override float GetHeight()
         {
-            return EditorGUIUtility.singleLineHeight * 1.5f;
+            float fullTextHeight = EditorStyles.boldLabel.CalcHeight(GUIContent.Temp((attribute as HeaderAttribute).header), 1.0f);
+            int lines = 1;
+            if ((attribute as HeaderAttribute).header != null)
+                lines = (attribute as HeaderAttribute).header.Count(a => a == '\n') + 1;
+            float eachLineHeight = fullTextHeight / lines;
+            return EditorGUIUtility.singleLineHeight * 1.5f + (eachLineHeight * (lines - 1));
         }
     }
 }

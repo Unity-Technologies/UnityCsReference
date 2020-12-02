@@ -8,6 +8,7 @@ using UnityEngine.UIElements.StyleSheets;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.Debugger;
+using UnityEngine.Assertions;
 using Cursor = UnityEngine.UIElements.Cursor;
 using Toolbar = UnityEditor.UIElements.Toolbar;
 
@@ -272,9 +273,29 @@ namespace UnityEditor.UIElements.Debugger
             // Note: val may be null in case of reference type like "Font"
             else if (m_PropertyInfo.type == typeof(StyleFont))
             {
-                ObjectField field = GetOrCreateObjectField<Font>();
+                ObjectField field;
+                field = GetOrCreateObjectField<Font>();
                 if (!IsFocused(field))
                     field.SetValueWithoutNotify(val as Font);
+            }
+            else if (val is FontDefinition fontDefinition)
+            {
+                ObjectField field;
+                if (fontDefinition.fontAsset != null)
+                {
+                    if (childCount == 0)
+                    {
+                        field = TextEditorDelegates.GetObjectFieldOfTypeFontAsset();
+                        SetField(field);
+                    }
+                    else
+                        field = (ObjectField)ElementAt(0);
+                }
+                else
+                    field = GetOrCreateObjectField<Font>();
+
+                if (!IsFocused(field))
+                    field.SetValueWithoutNotify(fontDefinition.fontAsset != null ? fontDefinition.fontAsset : fontDefinition.font);
             }
             else if (val is Background bgValue)
             {
@@ -335,6 +356,23 @@ namespace UnityEditor.UIElements.Debugger
                 Add(m_SpecificityLabel);
                 SetSpecificity(specificity);
             }
+            else if (val is TextShadow textShadow)
+            {
+                ColorField colorFieldfield = GetOrCreateFields<ColorField, Color>(m_PropertyName, 0);
+                if (!IsFocused(colorFieldfield))
+                    colorFieldfield.SetValueWithoutNotify(textShadow.color);
+
+                Vector2Field vector2Field = GetOrCreateFields<Vector2Field, Vector2>("offset", 1);
+                if (!IsFocused(vector2Field))
+                    vector2Field.SetValueWithoutNotify(textShadow.offset);
+
+                FloatField floatField = GetOrCreateFields<FloatField, float>("blur", 2);
+                if (!IsFocused(floatField))
+                    floatField.SetValueWithoutNotify(textShadow.blurRadius);
+
+                if (childCount == 3)
+                    Add(m_SpecificityLabel);
+            }
             else
             {
                 // Enum
@@ -371,6 +409,28 @@ namespace UnityEditor.UIElements.Debugger
             return field;
         }
 
+        // This method has been temporarily added for TextShadow. It should be removed once we add a TextShadowField.
+        // Make sure this is called in the right order (index = 0, index = 1, index = 2...)
+        private T GetOrCreateFields<T, U>(string propertyName, int index = 0) where T : BaseField<U>, new()
+        {
+            Assert.IsFalse(index > (childCount + 1), "It seems GetOrCreateFields is called in the wrong order.");
+            T field = null;
+            if (childCount == index)
+            {
+                field = new T();
+                field.label = propertyName;
+                field.RegisterValueChangedCallback(e =>
+                    SetPropertyValue(e.newValue));
+                Add(field);
+            }
+            else
+            {
+                field = (T)ElementAt(index);
+            }
+
+            return field;
+        }
+
         private T GetOrCreateField<T, U>() where T : BaseField<U>, new()
         {
             T field = null;
@@ -388,6 +448,14 @@ namespace UnityEditor.UIElements.Debugger
             }
 
             return field;
+        }
+
+        private void SetField(ObjectField field)
+        {
+            field.label = m_PropertyName;
+            field.RegisterValueChangedCallback(e => SetPropertyValue(e.newValue));
+            Add(field);
+            Add(m_SpecificityLabel);
         }
 
         private void SetSpecificity(int specificity)
@@ -437,6 +505,21 @@ namespace UnityEditor.UIElements.Debugger
                 if (type == typeof(StyleBackground))
                 {
                     val = new StyleBackground(newValue as Texture2D);
+                }
+                else if (type == typeof(StyleFontDefinition))
+                {
+                    val = new StyleFontDefinition(newValue);
+                }
+                else if (val is TextShadow textShadow)
+                {
+                    if (newValue is Color newColor)
+                        textShadow.color = newColor;
+                    if (newValue is Vector2 newOffset)
+                        textShadow.offset = newOffset;
+                    if (newValue is float newBlur)
+                        textShadow.blurRadius = newBlur;
+
+                    val = new StyleTextShadow(textShadow);
                 }
                 else if (type == typeof(StyleEnum<Overflow>) && newValue is OverflowInternal)
                 {

@@ -292,5 +292,24 @@ namespace UnityEditor
         }
 
         extern private static void ApplyMaterialPropertyToMaterialPropertyBlockImpl(System.Object materialProperty, int propertyMask, System.Object propertyBlock);
+
+        public static string GetCustomEditorForRenderPipeline(Shader shader, string renderPipelineType)
+        {
+            if (shader == null)
+                return null;
+
+            shader.Internal_GetCustomEditorForRenderPipeline(renderPipelineType, out var rpEditor);
+            return String.IsNullOrEmpty(rpEditor) ? null : rpEditor;
+        }
+
+        public static string GetCustomEditorForRenderPipeline(Shader shader, Type renderPipelineType) => GetCustomEditorForRenderPipeline(shader, renderPipelineType?.FullName);
+        public static string GetCurrentCustomEditor(Shader shader)
+        {
+            if (shader == null)
+                return null;
+
+            var rpEditor = GetCustomEditorForRenderPipeline(shader, GraphicsSettings.renderPipelineAsset?.GetType());
+            return String.IsNullOrEmpty(rpEditor) ? shader.customEditor : rpEditor;
+        }
     }
 }

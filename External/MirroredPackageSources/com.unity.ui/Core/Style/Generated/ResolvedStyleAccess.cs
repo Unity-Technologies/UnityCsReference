@@ -43,6 +43,7 @@ namespace UnityEngine.UIElements
         float IResolvedStyle.height => yogaNode.LayoutHeight;
         Justify IResolvedStyle.justifyContent => computedStyle.justifyContent;
         float IResolvedStyle.left => yogaNode.LayoutX;
+        float IResolvedStyle.letterSpacing => computedStyle.letterSpacing.value;
         float IResolvedStyle.marginBottom => yogaNode.LayoutMarginBottom;
         float IResolvedStyle.marginLeft => yogaNode.LayoutMarginLeft;
         float IResolvedStyle.marginRight => yogaNode.LayoutMarginRight;
@@ -63,15 +64,20 @@ namespace UnityEngine.UIElements
         Color IResolvedStyle.unityBackgroundImageTintColor => computedStyle.unityBackgroundImageTintColor;
         ScaleMode IResolvedStyle.unityBackgroundScaleMode => computedStyle.unityBackgroundScaleMode;
         Font IResolvedStyle.unityFont => computedStyle.unityFont;
+        FontDefinition IResolvedStyle.unityFontDefinition => computedStyle.unityFontDefinition;
         FontStyle IResolvedStyle.unityFontStyleAndWeight => computedStyle.unityFontStyleAndWeight;
+        float IResolvedStyle.unityParagraphSpacing => computedStyle.unityParagraphSpacing.value;
         int IResolvedStyle.unitySliceBottom => computedStyle.unitySliceBottom;
         int IResolvedStyle.unitySliceLeft => computedStyle.unitySliceLeft;
         int IResolvedStyle.unitySliceRight => computedStyle.unitySliceRight;
         int IResolvedStyle.unitySliceTop => computedStyle.unitySliceTop;
         TextAnchor IResolvedStyle.unityTextAlign => computedStyle.unityTextAlign;
+        Color IResolvedStyle.unityTextOutlineColor => computedStyle.unityTextOutlineColor;
+        float IResolvedStyle.unityTextOutlineWidth => computedStyle.unityTextOutlineWidth;
         TextOverflowPosition IResolvedStyle.unityTextOverflowPosition => computedStyle.unityTextOverflowPosition;
         Visibility IResolvedStyle.visibility => computedStyle.visibility;
         WhiteSpace IResolvedStyle.whiteSpace => computedStyle.whiteSpace;
         float IResolvedStyle.width => yogaNode.LayoutWidth;
+        float IResolvedStyle.wordSpacing => computedStyle.wordSpacing.value;
     }
 }

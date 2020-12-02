@@ -67,5 +67,13 @@ namespace UnityEngine.UIElements.StyleSheets
             computedStyle.nonInheritedData.paddingBottom = paddingBottom;
             computedStyle.nonInheritedData.paddingLeft = paddingLeft;
         }
+
+        public static void ApplyUnityTextOutline(StylePropertyReader reader, ComputedStyle computedStyle)
+        {
+            CompileTextOutline(reader, out Color unityTextOutlineColor, out float unityTextOutlineWidth);
+
+            computedStyle.inheritedData.unityTextOutlineColor = unityTextOutlineColor;
+            computedStyle.inheritedData.unityTextOutlineWidth = unityTextOutlineWidth;
+        }
     }
 }

@@ -36,10 +36,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override void UpdateFilters(PageFilters filters)
         {
-            if (this.filters.Equals(filters))
+            if ((m_Filters == null && filters == null) || (m_Filters?.Equals(filters) ?? false))
                 return;
 
-            m_Filters = filters.Clone();
+            m_Filters = filters?.Clone();
             Rebuild();
         }
 
@@ -78,9 +78,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 .Where(p => m_PackageFiltering.FilterByCurrentTab(p));
 
             IOrderedEnumerable<IPackage> orderedPackages;
-            if (m_Filters.orderBy == "name")
+            if (m_Filters?.orderBy == "name")
                 orderedPackages = packages.OrderBy(p => p.name);
-            else if (m_Filters.orderBy == "publishedDate")
+            else if (m_Filters?.orderBy == "publishedDate")
                 orderedPackages = packages.OrderBy(p => p.versions.primary?.publishedDate ?? new DateTime(1, 1, 1));
             else // displayName
                 orderedPackages = packages.OrderBy(p => p.versions.primary?.displayName ?? p.name);

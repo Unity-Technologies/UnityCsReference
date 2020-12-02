@@ -879,12 +879,19 @@ namespace UnityEngine.UIElements
             get { return m_PseudoStates; }
             set
             {
-                if (m_PseudoStates != value)
+                PseudoStates diff = m_PseudoStates ^ value;
+                if ((int)diff > 0)
                 {
                     m_PseudoStates = value;
 
                     if ((m_PseudoStates & PseudoStates.Root) == PseudoStates.Root)
                         isRootVisualContainer = true;
+
+
+                    // If only the root changed do not trigger a new style update since the root
+                    // pseudo state change base on the current style sheet when selectors are matched.
+                    if (diff == PseudoStates.Root)
+                        return;
 
                     if ((triggerPseudoMask & m_PseudoStates) != 0
                         || (dependencyPseudoMask & ~m_PseudoStates) != 0)
@@ -1865,6 +1872,68 @@ namespace UnityEngine.UIElements
                 }
             }
         }
+
+        internal enum RenderTargetMode
+        {
+            None,
+            NoColorConversion,
+            LinearToGamma,
+            GammaToLinear
+        }
+
+        RenderTargetMode m_SubRenderTargetMode = RenderTargetMode.None;
+        internal RenderTargetMode subRenderTargetMode
+        {
+            get { return m_SubRenderTargetMode; }
+            set
+            {
+                if (m_SubRenderTargetMode == value)
+                    return;
+
+                Debug.Assert(Application.isEditor, "subRenderTargetMode is not supported on runtime yet"); //See UIRREnderEvents. blitMaterial_LinearToGamma initialisation line 900
+                m_SubRenderTargetMode = value;
+                IncrementVersion(VersionChangeType.Repaint);
+            }
+        }
+
+        static Material s_runtimeMaterial;
+        Material getRuntimeMaterial()
+        {
+            if (s_runtimeMaterial != null)
+                return s_runtimeMaterial;
+
+            Shader shader = Shader.Find(UIRUtility.k_DefaultShaderName);
+            Debug.Assert(shader != null, "Failed to load UIElements default shader");
+            if (shader != null)
+            {
+                shader.hideFlags |= HideFlags.DontSaveInEditor;
+                Material mat = new Material(shader);
+                mat.hideFlags |= HideFlags.DontSaveInEditor;
+                return s_runtimeMaterial = mat;
+            }
+            return null;
+        }
+
+        Material m_defaultMaterial;
+        internal Material defaultMaterial
+        {
+            get { return m_defaultMaterial; }
+            private set
+            {
+                if (m_defaultMaterial == value)
+                    return;
+                m_defaultMaterial = value;
+                IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout);
+            }
+        }
+
+        internal void ApplyPlayerRenderingToEditorElement()
+        {
+            bool isLinear = QualitySettings.activeColorSpace == ColorSpace.Linear;
+            subRenderTargetMode = isLinear ? RenderTargetMode.LinearToGamma : RenderTargetMode.None;
+            defaultMaterial = isLinear ? getRuntimeMaterial() : null;
+        }
+
     }
 
     /// <summary>

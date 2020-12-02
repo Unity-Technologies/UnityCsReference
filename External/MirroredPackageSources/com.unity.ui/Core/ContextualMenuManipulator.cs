@@ -30,7 +30,8 @@ namespace UnityEngine.UIElements
         {
             if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
             {
-                target.RegisterCallback<MouseDownEvent>(OnMouseUpDownEvent);
+                target.RegisterCallback<MouseDownEvent>(OnMouseDownEventOSX);
+                target.RegisterCallback<MouseUpEvent>(OnMouseUpEventOSX);
             }
             else
             {
@@ -47,7 +48,8 @@ namespace UnityEngine.UIElements
         {
             if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
             {
-                target.UnregisterCallback<MouseDownEvent>(OnMouseUpDownEvent);
+                target.UnregisterCallback<MouseDownEvent>(OnMouseDownEventOSX);
+                target.UnregisterCallback<MouseUpEvent>(OnMouseUpEventOSX);
             }
             else
             {
@@ -62,35 +64,52 @@ namespace UnityEngine.UIElements
         {
             if (CanStartManipulation(evt))
             {
-                if (target.elementPanel != null && target.elementPanel.contextualMenuManager != null)
-                {
-                    EventBase e = evt as EventBase;
-                    target.elementPanel.contextualMenuManager.DisplayMenu(e, target);
-                    e.StopPropagation();
-                    e.PreventDefault();
-                }
+                DoDisplayMenu(evt as EventBase);
             }
+        }
+
+        void OnMouseDownEventOSX(MouseDownEvent evt)
+        {
+            if (target.elementPanel?.contextualMenuManager != null)
+                target.elementPanel.contextualMenuManager.displayMenuHandledOSX = false;
+
+            var eventBase = evt as EventBase;
+            if (eventBase.isDefaultPrevented)
+                return;
+
+            OnMouseUpDownEvent(evt);
+        }
+
+        void OnMouseUpEventOSX(MouseUpEvent evt)
+        {
+            if (target.elementPanel?.contextualMenuManager != null &&
+                target.elementPanel.contextualMenuManager.displayMenuHandledOSX)
+                return;
+
+            OnMouseUpDownEvent(evt);
         }
 
         void OnKeyUpEvent(KeyUpEvent evt)
         {
             if (evt.keyCode == KeyCode.Menu)
             {
-                if (target.elementPanel != null && target.elementPanel.contextualMenuManager != null)
-                {
-                    target.elementPanel.contextualMenuManager.DisplayMenu(evt, target);
-                    evt.StopPropagation();
-                    evt.PreventDefault();
-                }
+                DoDisplayMenu(evt);
+            }
+        }
+
+        void DoDisplayMenu(EventBase evt)
+        {
+            if (target.elementPanel?.contextualMenuManager != null)
+            {
+                target.elementPanel.contextualMenuManager.DisplayMenu(evt, target);
+                evt.StopPropagation();
+                evt.PreventDefault();
             }
         }
 
         void OnContextualMenuEvent(ContextualMenuPopulateEvent evt)
         {
-            if (m_MenuBuilder != null)
-            {
-                m_MenuBuilder(evt);
-            }
+            m_MenuBuilder?.Invoke(evt);
         }
     }
 }

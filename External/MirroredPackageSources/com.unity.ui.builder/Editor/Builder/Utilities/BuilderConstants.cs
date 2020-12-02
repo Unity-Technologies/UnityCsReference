@@ -34,6 +34,9 @@ namespace Unity.UI.Builder
         public static readonly float OpacityFadeOutFactor = 0.5f;
         public const int MaxTextMeshVertices = 48 * 1024; // Max 48k vertices. We leave room for masking, borders, background, etc. see UIRMeshBuilder.cs
         public const int MaxTextPrintableCharCount = (int)((2 / 3.0) * MaxTextMeshVertices / 4 /* = vertices per quad*/);
+        public static readonly float PickSelectionRepeatRectSize = 2f;
+        public static readonly float PickSelectionRepeatRectHalfSize = PickSelectionRepeatRectSize / 2;
+        public static readonly double PickSelectionRepeatMinTimeDelay = 0.5;
 
         // Paths
         public const string UIBuilderPackageRootPath = "UIBuilderPackageResources";
@@ -133,6 +136,7 @@ namespace Unity.UI.Builder
         public static readonly string ContextMenuUnsetMessage = "Unset";
         public static readonly string ContextMenuUnsetAllMessage = "Unset All";
         public static readonly string ContextMenuViewVariableMessage = "View Variable";
+        public static readonly string ContextMenuEditVariableMessage = "Edit Variable";
         public static readonly string FontCannotBeNoneMessage = "UI Builder: Font cannot be set to none.";
         public static readonly string InspectorClassPillDoubleClickToCreate = "Double-click to create new USS selector.";
         public static readonly string InspectorClassPillDoubleClickToSelect = "Double-click to select and edit USS selector.";
@@ -140,6 +144,8 @@ namespace Unity.UI.Builder
         public static readonly string InspectorLocalStylesSectionTitleForElement = "Inlined Styles";
         public static readonly string MultiSelectionNotSupportedMessage = "Multi-selection editing is not supported.";
         public static readonly string InspectorEditorExtensionAuthoringActivated = "You can now use Editor-only controls in this document.";
+        public static readonly string VariableNotSupportedInInlineStyleMessage = "Setting variables in inline style is not yet supported.";
+        public static readonly string VariableDescriptionsCouldNotBeLoadedMessage = "Could not load the variable descriptions file.";
 
         //
         // Explorer
@@ -344,6 +350,7 @@ namespace Unity.UI.Builder
         public static readonly string Uss = "uss";
         public static readonly string UxmlExtension = ".uxml";
         public static readonly string UssExtension = ".uss";
+        public static readonly string TssExtension = ".tss";
 
         // UXML
         public static readonly string UxmlHeader = "<ui:UXML xmlns:ui=\"UnityEngine.UIElements\" xmlns:uie=\"UnityEditor.UIElements\"";

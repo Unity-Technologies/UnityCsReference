@@ -76,6 +76,8 @@ namespace UnityEngine.UIElements
                     return new StyleEnum<Justify>((Justify)computedStyle.justifyContent);
                 case StylePropertyId.Left:
                     return new StyleLength(computedStyle.left);
+                case StylePropertyId.LetterSpacing:
+                    return new StyleLength(computedStyle.letterSpacing);
                 case StylePropertyId.MarginBottom:
                     return new StyleLength(computedStyle.marginBottom);
                 case StylePropertyId.MarginLeft:
@@ -110,6 +112,8 @@ namespace UnityEngine.UIElements
                     return new StyleLength(computedStyle.right);
                 case StylePropertyId.TextOverflow:
                     return new StyleEnum<TextOverflow>((TextOverflow)computedStyle.textOverflow);
+                case StylePropertyId.TextShadow:
+                    return new StyleTextShadow(computedStyle.textShadow);
                 case StylePropertyId.Top:
                     return new StyleLength(computedStyle.top);
                 case StylePropertyId.UnityBackgroundImageTintColor:
@@ -118,10 +122,14 @@ namespace UnityEngine.UIElements
                     return new StyleEnum<ScaleMode>((ScaleMode)computedStyle.unityBackgroundScaleMode);
                 case StylePropertyId.UnityFont:
                     return new StyleFont(computedStyle.unityFont);
+                case StylePropertyId.UnityFontDefinition:
+                    return new StyleFontDefinition(computedStyle.unityFontDefinition);
                 case StylePropertyId.UnityFontStyleAndWeight:
                     return new StyleEnum<FontStyle>((FontStyle)computedStyle.unityFontStyleAndWeight);
                 case StylePropertyId.UnityOverflowClipBox:
                     return new StyleEnum<OverflowClipBox>((OverflowClipBox)computedStyle.unityOverflowClipBox);
+                case StylePropertyId.UnityParagraphSpacing:
+                    return new StyleLength(computedStyle.unityParagraphSpacing);
                 case StylePropertyId.UnitySliceBottom:
                     return new StyleInt(computedStyle.unitySliceBottom);
                 case StylePropertyId.UnitySliceLeft:
@@ -132,6 +140,10 @@ namespace UnityEngine.UIElements
                     return new StyleInt(computedStyle.unitySliceTop);
                 case StylePropertyId.UnityTextAlign:
                     return new StyleEnum<TextAnchor>((TextAnchor)computedStyle.unityTextAlign);
+                case StylePropertyId.UnityTextOutlineColor:
+                    return new StyleColor(computedStyle.unityTextOutlineColor);
+                case StylePropertyId.UnityTextOutlineWidth:
+                    return new StyleFloat(computedStyle.unityTextOutlineWidth);
                 case StylePropertyId.UnityTextOverflowPosition:
                     return new StyleEnum<TextOverflowPosition>((TextOverflowPosition)computedStyle.unityTextOverflowPosition);
                 case StylePropertyId.Visibility:
@@ -140,6 +152,8 @@ namespace UnityEngine.UIElements
                     return new StyleEnum<WhiteSpace>((WhiteSpace)computedStyle.whiteSpace);
                 case StylePropertyId.Width:
                     return new StyleLength(computedStyle.width);
+                case StylePropertyId.WordSpacing:
+                    return new StyleLength(computedStyle.wordSpacing);
                 default:
                 {
                     Debug.LogAssertion($"Cannot get computed style value for property id {id}");
@@ -212,6 +226,8 @@ namespace UnityEngine.UIElements
                     return computedStyle.justifyContent;
                 case StylePropertyId.Left:
                     return computedStyle.left;
+                case StylePropertyId.LetterSpacing:
+                    return computedStyle.letterSpacing;
                 case StylePropertyId.MarginBottom:
                     return computedStyle.marginBottom;
                 case StylePropertyId.MarginLeft:
@@ -246,6 +262,8 @@ namespace UnityEngine.UIElements
                     return computedStyle.right;
                 case StylePropertyId.TextOverflow:
                     return computedStyle.textOverflow;
+                case StylePropertyId.TextShadow:
+                    return computedStyle.textShadow;
                 case StylePropertyId.Top:
                     return computedStyle.top;
                 case StylePropertyId.UnityBackgroundImageTintColor:
@@ -254,10 +272,14 @@ namespace UnityEngine.UIElements
                     return computedStyle.unityBackgroundScaleMode;
                 case StylePropertyId.UnityFont:
                     return computedStyle.unityFont;
+                case StylePropertyId.UnityFontDefinition:
+                    return computedStyle.unityFontDefinition;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     return computedStyle.unityFontStyleAndWeight;
                 case StylePropertyId.UnityOverflowClipBox:
                     return computedStyle.unityOverflowClipBox;
+                case StylePropertyId.UnityParagraphSpacing:
+                    return computedStyle.unityParagraphSpacing;
                 case StylePropertyId.UnitySliceBottom:
                     return computedStyle.unitySliceBottom;
                 case StylePropertyId.UnitySliceLeft:
@@ -268,6 +290,10 @@ namespace UnityEngine.UIElements
                     return computedStyle.unitySliceTop;
                 case StylePropertyId.UnityTextAlign:
                     return computedStyle.unityTextAlign;
+                case StylePropertyId.UnityTextOutlineColor:
+                    return computedStyle.unityTextOutlineColor;
+                case StylePropertyId.UnityTextOutlineWidth:
+                    return computedStyle.unityTextOutlineWidth;
                 case StylePropertyId.UnityTextOverflowPosition:
                     return computedStyle.unityTextOverflowPosition;
                 case StylePropertyId.Visibility:
@@ -276,6 +302,8 @@ namespace UnityEngine.UIElements
                     return computedStyle.whiteSpace;
                 case StylePropertyId.Width:
                     return computedStyle.width;
+                case StylePropertyId.WordSpacing:
+                    return computedStyle.wordSpacing;
                 default:
                 {
                     Debug.LogAssertion($"Cannot get computed style value for property id {id}");
@@ -348,6 +376,8 @@ namespace UnityEngine.UIElements
                     return style.justifyContent;
                 case StylePropertyId.Left:
                     return style.left;
+                case StylePropertyId.LetterSpacing:
+                    return style.letterSpacing;
                 case StylePropertyId.MarginBottom:
                     return style.marginBottom;
                 case StylePropertyId.MarginLeft:
@@ -382,6 +412,8 @@ namespace UnityEngine.UIElements
                     return style.right;
                 case StylePropertyId.TextOverflow:
                     return style.textOverflow;
+                case StylePropertyId.TextShadow:
+                    return style.textShadow;
                 case StylePropertyId.Top:
                     return style.top;
                 case StylePropertyId.UnityBackgroundImageTintColor:
@@ -390,10 +422,14 @@ namespace UnityEngine.UIElements
                     return style.unityBackgroundScaleMode;
                 case StylePropertyId.UnityFont:
                     return style.unityFont;
+                case StylePropertyId.UnityFontDefinition:
+                    return style.unityFontDefinition;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     return style.unityFontStyleAndWeight;
                 case StylePropertyId.UnityOverflowClipBox:
                     return style.unityOverflowClipBox;
+                case StylePropertyId.UnityParagraphSpacing:
+                    return style.unityParagraphSpacing;
                 case StylePropertyId.UnitySliceBottom:
                     return style.unitySliceBottom;
                 case StylePropertyId.UnitySliceLeft:
@@ -404,6 +440,10 @@ namespace UnityEngine.UIElements
                     return style.unitySliceTop;
                 case StylePropertyId.UnityTextAlign:
                     return style.unityTextAlign;
+                case StylePropertyId.UnityTextOutlineColor:
+                    return style.unityTextOutlineColor;
+                case StylePropertyId.UnityTextOutlineWidth:
+                    return style.unityTextOutlineWidth;
                 case StylePropertyId.UnityTextOverflowPosition:
                     return style.unityTextOverflowPosition;
                 case StylePropertyId.Visibility:
@@ -412,6 +452,8 @@ namespace UnityEngine.UIElements
                     return style.whiteSpace;
                 case StylePropertyId.Width:
                     return style.width;
+                case StylePropertyId.WordSpacing:
+                    return style.wordSpacing;
                 default:
                 {
                     Debug.LogAssertion($"Cannot get inline style value for property id {id}");
@@ -514,6 +556,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Left:
                     style.left = (StyleLength)value;
                     break;
+                case StylePropertyId.LetterSpacing:
+                    style.letterSpacing = (StyleLength)value;
+                    break;
                 case StylePropertyId.MarginBottom:
                     style.marginBottom = (StyleLength)value;
                     break;
@@ -565,6 +610,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.TextOverflow:
                     style.textOverflow = (StyleEnum<TextOverflow>)value;
                     break;
+                case StylePropertyId.TextShadow:
+                    style.textShadow = (StyleTextShadow)value;
+                    break;
                 case StylePropertyId.Top:
                     style.top = (StyleLength)value;
                     break;
@@ -577,11 +625,17 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityFont:
                     style.unityFont = (StyleFont)value;
                     break;
+                case StylePropertyId.UnityFontDefinition:
+                    style.unityFontDefinition = (StyleFontDefinition)value;
+                    break;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     style.unityFontStyleAndWeight = (StyleEnum<FontStyle>)value;
                     break;
                 case StylePropertyId.UnityOverflowClipBox:
                     style.unityOverflowClipBox = (StyleEnum<OverflowClipBox>)value;
+                    break;
+                case StylePropertyId.UnityParagraphSpacing:
+                    style.unityParagraphSpacing = (StyleLength)value;
                     break;
                 case StylePropertyId.UnitySliceBottom:
                     style.unitySliceBottom = (StyleInt)value;
@@ -598,6 +652,12 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityTextAlign:
                     style.unityTextAlign = (StyleEnum<TextAnchor>)value;
                     break;
+                case StylePropertyId.UnityTextOutlineColor:
+                    style.unityTextOutlineColor = (StyleColor)value;
+                    break;
+                case StylePropertyId.UnityTextOutlineWidth:
+                    style.unityTextOutlineWidth = (StyleFloat)value;
+                    break;
                 case StylePropertyId.UnityTextOverflowPosition:
                     style.unityTextOverflowPosition = (StyleEnum<TextOverflowPosition>)value;
                     break;
@@ -609,6 +669,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.Width:
                     style.width = (StyleLength)value;
+                    break;
+                case StylePropertyId.WordSpacing:
+                    style.wordSpacing = (StyleLength)value;
                     break;
                 default:
                     Debug.LogAssertion($"Cannot set inline style value for property id {id}");
@@ -680,6 +743,8 @@ namespace UnityEngine.UIElements
                     return typeof(StyleEnum<Justify>);
                 case StylePropertyId.Left:
                     return typeof(StyleLength);
+                case StylePropertyId.LetterSpacing:
+                    return typeof(StyleLength);
                 case StylePropertyId.MarginBottom:
                     return typeof(StyleLength);
                 case StylePropertyId.MarginLeft:
@@ -714,6 +779,8 @@ namespace UnityEngine.UIElements
                     return typeof(StyleLength);
                 case StylePropertyId.TextOverflow:
                     return typeof(StyleEnum<TextOverflow>);
+                case StylePropertyId.TextShadow:
+                    return typeof(StyleTextShadow);
                 case StylePropertyId.Top:
                     return typeof(StyleLength);
                 case StylePropertyId.UnityBackgroundImageTintColor:
@@ -722,10 +789,14 @@ namespace UnityEngine.UIElements
                     return typeof(StyleEnum<ScaleMode>);
                 case StylePropertyId.UnityFont:
                     return typeof(StyleFont);
+                case StylePropertyId.UnityFontDefinition:
+                    return typeof(StyleFontDefinition);
                 case StylePropertyId.UnityFontStyleAndWeight:
                     return typeof(StyleEnum<FontStyle>);
                 case StylePropertyId.UnityOverflowClipBox:
                     return typeof(StyleEnum<OverflowClipBox>);
+                case StylePropertyId.UnityParagraphSpacing:
+                    return typeof(StyleLength);
                 case StylePropertyId.UnitySliceBottom:
                     return typeof(StyleInt);
                 case StylePropertyId.UnitySliceLeft:
@@ -736,6 +807,10 @@ namespace UnityEngine.UIElements
                     return typeof(StyleInt);
                 case StylePropertyId.UnityTextAlign:
                     return typeof(StyleEnum<TextAnchor>);
+                case StylePropertyId.UnityTextOutlineColor:
+                    return typeof(StyleColor);
+                case StylePropertyId.UnityTextOutlineWidth:
+                    return typeof(StyleFloat);
                 case StylePropertyId.UnityTextOverflowPosition:
                     return typeof(StyleEnum<TextOverflowPosition>);
                 case StylePropertyId.Visibility:
@@ -743,6 +818,8 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.WhiteSpace:
                     return typeof(StyleEnum<WhiteSpace>);
                 case StylePropertyId.Width:
+                    return typeof(StyleLength);
+                case StylePropertyId.WordSpacing:
                     return typeof(StyleLength);
                 default:
                 {
@@ -768,6 +845,8 @@ namespace UnityEngine.UIElements
                     return new string[] {"margin-top", "margin-right", "margin-bottom", "margin-left"};
                 case StylePropertyId.Padding:
                     return new string[] {"padding-top", "padding-right", "padding-bottom", "padding-left"};
+                case StylePropertyId.UnityTextOutline:
+                    return new string[] {"-unity-text-outline-color", "-unity-text-outline-width"};
                 default:
                 {
                     Debug.LogAssertion($"Cannot get longhand property names for property id {id}");
@@ -792,6 +871,8 @@ namespace UnityEngine.UIElements
                     return true;
                 case StylePropertyId.Padding:
                     return true;
+                case StylePropertyId.UnityTextOutline:
+                    return true;
                 default:
                     return false;
             }
@@ -805,15 +886,29 @@ namespace UnityEngine.UIElements
                     return true;
                 case StylePropertyId.FontSize:
                     return true;
+                case StylePropertyId.LetterSpacing:
+                    return true;
+                case StylePropertyId.TextShadow:
+                    return true;
                 case StylePropertyId.UnityFont:
+                    return true;
+                case StylePropertyId.UnityFontDefinition:
                     return true;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     return true;
+                case StylePropertyId.UnityParagraphSpacing:
+                    return true;
                 case StylePropertyId.UnityTextAlign:
+                    return true;
+                case StylePropertyId.UnityTextOutlineColor:
+                    return true;
+                case StylePropertyId.UnityTextOutlineWidth:
                     return true;
                 case StylePropertyId.Visibility:
                     return true;
                 case StylePropertyId.WhiteSpace:
+                    return true;
+                case StylePropertyId.WordSpacing:
                     return true;
                 default:
                     return false;
@@ -822,7 +917,7 @@ namespace UnityEngine.UIElements
 
         public static StylePropertyId[] GetInheritedProperties()
         {
-            return new[] {StylePropertyId.Color, StylePropertyId.FontSize, StylePropertyId.UnityFont, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityTextAlign, StylePropertyId.Visibility, StylePropertyId.WhiteSpace};
+            return new[] {StylePropertyId.Color, StylePropertyId.FontSize, StylePropertyId.LetterSpacing, StylePropertyId.TextShadow, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.WordSpacing};
         }
     }
 }

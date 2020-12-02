@@ -15,59 +15,28 @@ using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
 
+using UnityEditor.Connect;
+using UnityEditor.StyleSheets;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("com.unity.quicksearch.tests")]
 
 namespace UnityEditor.Search
 {
-    internal sealed class RequiredSignatureAttribute : Attribute
-    {
-    }
 
     /// <summary>
     /// This utility class mainly contains proxy to internal API that are shared between the version in trunk and the package version.
     /// </summary>
     static class Utils
     {
-        const string packageName = "com.unity.quicksearch";
-        public static readonly string packageFolderName = $"Packages/{packageName}";
-
-        internal struct InspectorWindowUtils_LayoutGroupChecker : IDisposable
-        {
-            public void Dispose()
-            {
-            }
-        }
 
         internal static readonly bool isDeveloperBuild = false;
 
         private static UnityEngine.Object[] s_LastDraggedObjects;
 
-        static UnityEngine.Object s_MainWindow = null;
-        private static MethodInfo s_GetNumCharactersThatFitWithinWidthMethod;
-        private static MethodInfo s_GetMainAssetInstanceID;
-        private static MethodInfo s_FindTextureMethod;
-        private static MethodInfo s_GetIconForObject;
-        private static MethodInfo s_CallDelayed;
-        private static MethodInfo s_FromUSSMethod;
-        private static MethodInfo s_HasCurrentWindowKeyFocusMethod;
-        private static Action<string> s_OpenPackageManager;
-        private static MethodInfo s_GetSourceAssetFileHash;
-
-        internal static string GetPackagePath(string relativePath)
-        {
-            return Path.Combine(packageFolderName, relativePath).Replace("\\", "/");
-        }
-
-        private static Type[] GetAllEditorWindowTypes()
-        {
-            return TypeCache.GetTypesDerivedFrom<EditorWindow>().ToArray();
-        }
-
 
         static Utils()
         {
-            isDeveloperBuild = File.Exists($"{packageFolderName}/.dev");
+            isDeveloperBuild = Unsupported.IsSourceBuild();
         }
 
         internal static void OpenInBrowser(string baseUrl, List<Tuple<string, string>> query = null)
@@ -94,9 +63,7 @@ namespace UnityEditor.Search
 
         internal static SettingsProvider[] FetchSettingsProviders()
         {
-            var type = typeof(SettingsService);
-            var method = type.GetMethod("FetchSettingsProviders", BindingFlags.NonPublic | BindingFlags.Static);
-            return (SettingsProvider[])method.Invoke(null, null);
+            return SettingsService.FetchSettingsProviders();
         }
 
         internal static string GetNameFromPath(string path)
@@ -110,15 +77,7 @@ namespace UnityEditor.Search
 
         internal static Hash128 GetSourceAssetFileHash(string guid)
         {
-            if (s_GetSourceAssetFileHash == null)
-            {
-                var type = typeof(UnityEditor.AssetDatabase);
-                s_GetSourceAssetFileHash = type.GetMethod("GetSourceAssetFileHash", BindingFlags.NonPublic | BindingFlags.Static);
-                if (s_GetSourceAssetFileHash == null)
-                    return default;
-            }
-            object[] parameters = new object[] { guid };
-            return (Hash128)s_GetSourceAssetFileHash.Invoke(null, parameters);
+            return AssetDatabase.GetSourceAssetFileHash(guid);
         }
 
         internal static Texture2D GetAssetThumbnailFromPath(string path)
@@ -132,7 +91,7 @@ namespace UnityEditor.Search
 
         private static Texture2D GetAssetPreviewFromGUID(string guid)
         {
-            return null;
+            return AssetPreview.GetAssetPreviewFromGUID(guid);
         }
 
         internal static Texture2D GetAssetPreviewFromPath(string path, FetchPreviewOptions previewOptions)
@@ -171,21 +130,19 @@ namespace UnityEditor.Search
             if (obj == null)
                 return null;
 
+            if (previewOptions.HasFlag(FetchPreviewOptions.Large))
+            {
+                var tex = AssetPreviewUpdater.CreatePreview(obj, null, path, (int)previewSize.x, (int)previewSize.y);
+                if (tex)
+                    return tex;
+            }
 
             return GetAssetPreview(obj, previewOptions) ?? AssetDatabase.GetCachedIcon(path) as Texture2D;
         }
 
         internal static int GetMainAssetInstanceID(string assetPath)
         {
-            if (s_GetMainAssetInstanceID == null)
-            {
-                var type = typeof(UnityEditor.AssetDatabase);
-                s_GetMainAssetInstanceID = type.GetMethod("GetMainAssetInstanceID", BindingFlags.NonPublic | BindingFlags.Static);
-                if (s_GetMainAssetInstanceID == null)
-                    return default;
-            }
-            object[] parameters = new object[] { assetPath };
-            return (int)s_GetMainAssetInstanceID.Invoke(null, parameters);
+            return AssetDatabase.GetMainAssetInstanceID(assetPath);
         }
 
         internal static Texture2D GetAssetPreview(UnityEngine.Object obj, FetchPreviewOptions previewOptions)
@@ -202,8 +159,7 @@ namespace UnityEditor.Search
 
         internal static bool IsEditorValid(Editor e)
         {
-            return e && e.serializedObject != null &&
-                (bool)typeof(SerializedObject).GetProperty("isValid", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(e.serializedObject);
+            return e && e.serializedObject != null && e.serializedObject.isValid;
         }
 
         internal static int Wrap(int index, int n)
@@ -264,9 +220,7 @@ namespace UnityEditor.Search
 
         internal static void GetMenuItemDefaultShortcuts(List<string> outItemNames, List<string> outItemDefaultShortcuts)
         {
-            var method = typeof(Menu).GetMethod("GetMenuItemDefaultShortcuts", BindingFlags.NonPublic | BindingFlags.Static);
-            var arguments = new object[] { outItemNames, outItemDefaultShortcuts };
-            method.Invoke(null, arguments);
+            Menu.GetMenuItemDefaultShortcuts(outItemNames, outItemDefaultShortcuts);
         }
 
         internal static string FormatProviderList(IEnumerable<SearchProvider> providers, bool fullTimingInfo = false, bool showFetchTime = true)
@@ -317,33 +271,14 @@ namespace UnityEditor.Search
 
         internal static Rect GetEditorMainWindowPos()
         {
-            if (s_MainWindow == null)
+            var windows = Resources.FindObjectsOfTypeAll<ContainerWindow>();
+            foreach (var win in windows)
             {
-                var containerWinType = typeof(EditorWindow).Assembly.GetType("UnityEditor.ContainerWindow");
-                if (containerWinType == null)
-                    throw new MissingMemberException("Can't find internal type ContainerWindow. Maybe something has changed inside Unity");
-                var showModeField = containerWinType.GetField("m_ShowMode", BindingFlags.NonPublic | BindingFlags.Instance);
-                if (showModeField == null)
-                    throw new MissingFieldException("Can't find internal fields 'm_ShowMode'. Maybe something has changed inside Unity");
-                var windows = Resources.FindObjectsOfTypeAll(containerWinType);
-                foreach (var win in windows)
-                {
-                    var showMode = (int)showModeField.GetValue(win);
-                    if (showMode == 4) // main window
-                    {
-                        s_MainWindow = win;
-                        break;
-                    }
-                }
+                if (win.showMode == ShowMode.MainWindow)
+                    return win.position;
             }
 
-            if (s_MainWindow == null)
-                return new Rect(0, 0, 800, 600);
-
-            var positionProperty = s_MainWindow.GetType().GetProperty("position", BindingFlags.Public | BindingFlags.Instance);
-            if (positionProperty == null)
-                throw new MissingFieldException("Can't find internal fields 'position'. Maybe something has changed inside Unity.");
-            return (Rect)positionProperty.GetValue(s_MainWindow, null);
+            return new Rect(0, 0, 800, 600);
         }
 
         internal static Rect GetCenteredWindowPosition(Rect parentWindowPosition, Vector2 size)
@@ -363,7 +298,7 @@ namespace UnityEditor.Search
 
         internal static Type GetProjectBrowserWindowType()
         {
-            return GetAllEditorWindowTypes().FirstOrDefault(t => t.Name == "ProjectBrowser");
+            return typeof(ProjectBrowser);
         }
 
         internal static Rect GetMainWindowCenteredPosition(Vector2 size)
@@ -378,54 +313,24 @@ namespace UnityEditor.Search
             window.position = GetMainWindowCenteredPosition(size);
             window.ShowPopup();
 
-            Assembly assembly = typeof(EditorWindow).Assembly;
-
-            var editorWindowType = typeof(EditorWindow);
-            var hostViewType = assembly.GetType("UnityEditor.HostView");
-            var containerWindowType = assembly.GetType("UnityEditor.ContainerWindow");
-
-            var parentViewField = editorWindowType.GetField("m_Parent", BindingFlags.Instance | BindingFlags.NonPublic);
-            var parentViewValue = parentViewField.GetValue(window);
-
-            hostViewType.InvokeMember("AddToAuxWindowList", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.InvokeMethod, null, parentViewValue, null);
-
-            // Dropdown windows should not be saved to layout
-            var containerWindowProperty = hostViewType.GetProperty("window", BindingFlags.Instance | BindingFlags.Public);
-            var parentContainerWindowValue = containerWindowProperty.GetValue(parentViewValue);
-            var dontSaveToLayoutField = containerWindowType.GetField("m_DontSaveToLayout", BindingFlags.Instance | BindingFlags.NonPublic);
-            dontSaveToLayoutField.SetValue(parentContainerWindowValue, true);
-            UnityEngine.Debug.Assert((bool)dontSaveToLayoutField.GetValue(parentContainerWindowValue));
+            var parentView = window.m_Parent;
+            parentView.AddToAuxWindowList();
+            parentView.window.m_DontSaveToLayout = true;
         }
 
         internal static string JsonSerialize(object obj)
         {
-            var assembly = typeof(Selection).Assembly;
-            var managerType = assembly.GetTypes().First(t => t.Name == "Json");
-            var method = managerType.GetMethod("Serialize", BindingFlags.Public | BindingFlags.Static);
-            var jsonString = "";
-            var arguments = new object[] { obj, false, "  " };
-            jsonString = method.Invoke(null, arguments) as string;
-            return jsonString;
+            return Json.Serialize(obj);
         }
 
         internal static object JsonDeserialize(string json)
         {
-            Assembly assembly = typeof(Selection).Assembly;
-            var managerType = assembly.GetTypes().First(t => t.Name == "Json");
-            var method = managerType.GetMethod("Deserialize", BindingFlags.Public | BindingFlags.Static);
-            var arguments = new object[] { json };
-            return method.Invoke(null, arguments);
+            return Json.Deserialize(json);
         }
 
         internal static int GetNumCharactersThatFitWithinWidth(GUIStyle style, string text, float width)
         {
-            if (s_GetNumCharactersThatFitWithinWidthMethod == null)
-            {
-                var kType = typeof(GUIStyle);
-                s_GetNumCharactersThatFitWithinWidthMethod = kType.GetMethod("Internal_GetNumCharactersThatFitWithinWidth", BindingFlags.NonPublic | BindingFlags.Instance);
-            }
-            var arguments = new object[] { text, width };
-            return (int)s_GetNumCharactersThatFitWithinWidthMethod.Invoke(style, arguments);
+            return style.GetNumCharactersThatFitWithinWidth(text, width);
         }
 
         internal static string GetNextWord(string src, ref int index)
@@ -517,33 +422,17 @@ namespace UnityEditor.Search
 
         internal static Texture2D FindTextureForType(Type type)
         {
-            if (s_FindTextureMethod == null)
-            {
-                var t = typeof(EditorGUIUtility);
-                s_FindTextureMethod = t.GetMethod("FindTexture", BindingFlags.NonPublic | BindingFlags.Static);
-            }
-            return (Texture2D)s_FindTextureMethod.Invoke(null, new object[] {type});
+            return EditorGUIUtility.FindTexture(type);
         }
 
         internal static Texture2D GetIconForObject(UnityEngine.Object obj)
         {
-            if (s_GetIconForObject == null)
-            {
-                var t = typeof(EditorGUIUtility);
-                s_GetIconForObject = t.GetMethod("GetIconForObject", BindingFlags.NonPublic | BindingFlags.Static);
-            }
-            return (Texture2D)s_GetIconForObject.Invoke(null, new object[] { obj });
+            return EditorGUIUtility.GetIconForObject(obj);
         }
 
         internal static void PingAsset(string assetPath)
         {
-            var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(assetPath);
-            if (asset != null)
-            {
-                EditorGUIUtility.PingObject(asset);
-                if (!(asset is GameObject))
-                    Resources.UnloadAsset(asset);
-            }
+            EditorGUIUtility.PingObject(AssetDatabase.GetMainAssetInstanceID(assetPath));
         }
 
         internal static T ConvertValue<T>(string value)
@@ -708,6 +597,11 @@ namespace UnityEditor.Search
             if (AssetDatabaseAPI.IsAssetImportWorkerProcess())
                 return false;
 
+            if (EditorUtility.isInSafeMode)
+                return false;
+
+            if (MPE.ProcessService.level != MPE.ProcessLevel.Main)
+                return false;
 
             return true;
         }
@@ -716,120 +610,65 @@ namespace UnityEditor.Search
         {
             add
             {
-                EditorApplication.update -= value;
-                EditorApplication.update += value;
+                EditorApplication.tick -= value;
+                EditorApplication.tick += value;
             }
             remove
             {
-                EditorApplication.update -= value;
+                EditorApplication.tick -= value;
             }
         }
 
         internal static void CallDelayed(EditorApplication.CallbackFunction callback, double seconds = 0)
         {
-            if (s_CallDelayed == null)
-            {
-                var type = typeof(EditorApplication);
-                s_CallDelayed = type.GetMethod("CallDelayed", BindingFlags.NonPublic | BindingFlags.Static);
-                if (s_CallDelayed == null)
-                    return;
-            }
-            object[] parameters = new object[] { callback, seconds };
-            s_CallDelayed.Invoke(null, parameters);
+            EditorApplication.CallDelayed(callback, seconds);
         }
 
         internal static void SetFirstInspectedEditor(Editor editor)
         {
-            var firstInspectedEditorProperty = editor.GetType().GetProperty("firstInspectedEditor", BindingFlags.NonPublic | BindingFlags.Instance);
-            firstInspectedEditorProperty.SetValue(editor, true);
+            editor.firstInspectedEditor = true;
         }
 
         internal static GUIStyle FromUSS(string name)
         {
-            return FromUSS(GUIStyle.none, name);
+            return GUIStyleExtensions.FromUSS(GUIStyle.none, name);
         }
 
         internal static GUIStyle FromUSS(GUIStyle @base, string name)
         {
-            if (s_FromUSSMethod == null)
-            {
-                Assembly assembly = typeof(UnityEditor.EditorStyles).Assembly;
-                var type = assembly.GetTypes().First(t => t.FullName == "UnityEditor.StyleSheets.GUIStyleExtensions");
-                s_FromUSSMethod = type.GetMethod("FromUSS", BindingFlags.NonPublic | BindingFlags.Static, null, new Type[] { typeof(GUIStyle), typeof(string), typeof(string), typeof(GUISkin) }, null);
-            }
-            string ussInPlaceStyleOverride = null;
-            GUISkin srcSkin = null;
-            return (GUIStyle)s_FromUSSMethod.Invoke(null, new object[] { @base, name, ussInPlaceStyleOverride, srcSkin });
+            return GUIStyleExtensions.FromUSS(@base, name);
         }
 
         internal static bool HasCurrentWindowKeyFocus()
         {
-            if (s_HasCurrentWindowKeyFocusMethod == null)
-            {
-                var type = typeof(EditorGUIUtility);
-                s_HasCurrentWindowKeyFocusMethod = type.GetMethod("HasCurrentWindowKeyFocus", BindingFlags.NonPublic | BindingFlags.Static);
-                UnityEngine.Debug.Assert(s_HasCurrentWindowKeyFocusMethod != null);
-            }
-            return (bool)s_HasCurrentWindowKeyFocusMethod.Invoke(null, null);
+            return EditorGUIUtility.HasCurrentWindowKeyFocus();
         }
 
         internal static void AddStyleSheet(VisualElement rootVisualElement, string ussFileName)
         {
-            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(GetPackagePath($"Editor/StyleSheets/{ussFileName}"));
-            rootVisualElement.styleSheets.Add(styleSheet);
+            rootVisualElement.AddStyleSheetPath($"StyleSheets/QuickSearch/{ussFileName}");
         }
 
-        internal static InspectorWindowUtils_LayoutGroupChecker LayoutGroupChecker()
+        internal static InspectorWindowUtils.LayoutGroupChecker LayoutGroupChecker()
         {
-            return new InspectorWindowUtils_LayoutGroupChecker();
+            return new InspectorWindowUtils.LayoutGroupChecker();
         }
 
-
-        static object s_UnityConnectInstance = null;
-        static Type s_CloudConfigUrlEnum = null;
-        static object GetUnityConnectInstance()
-        {
-            if (s_UnityConnectInstance != null)
-                return s_UnityConnectInstance;
-            var assembly = typeof(Connect.UnityOAuth).Assembly;
-            var managerType = assembly.GetTypes().First(t => t.Name == "UnityConnect");
-            var instanceAccessor = managerType.GetProperty("instance", BindingFlags.Public | BindingFlags.Static);
-            s_UnityConnectInstance = instanceAccessor.GetValue(null);
-            s_CloudConfigUrlEnum = assembly.GetTypes().First(t => t.Name == "CloudConfigUrl");
-            return s_UnityConnectInstance;
-        }
 
 
         internal static string GetConnectAccessToken()
         {
-            var instance = GetUnityConnectInstance();
-            var method = instance.GetType().GetMethod("GetAccessToken");
-            return (string)method.Invoke(instance, null);
+            return UnityConnect.instance.GetAccessToken();
         }
 
         internal static string GetPackagesKey()
         {
-            var instance = GetUnityConnectInstance();
-            var getConfigUrl = instance.GetType().GetMethod("GetConfigurationURL");
-            var packmanKey = s_CloudConfigUrlEnum.GetEnumValues().GetValue(12);
-            var packageKey = (string)getConfigUrl.Invoke(instance, new[] { packmanKey });
-            return packageKey;
+            return UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPackagesKey);
         }
 
         internal static void OpenPackageManager(string packageName)
         {
-            if (s_OpenPackageManager == null)
-            {
-                // UnityEditor.PackageManager.UI.PackageManagerWindow.SelectPackageAndFilter
-                var assembly = typeof(PackageManager.UI.Window).Assembly;
-                var managerType = assembly.GetTypes().First(t => t.Name == "PackageManagerWindow");
-                var methodInfo = managerType.GetMethod("SelectPackageAndFilter", BindingFlags.Static | BindingFlags.NonPublic);
-                var cloudConfigUrlEnum = assembly.GetTypes().First(t => t.Name == "PackageFilterTab");
-                var assetStoreTab = cloudConfigUrlEnum.GetEnumValues().GetValue(3);
-                s_OpenPackageManager = pkg => methodInfo.Invoke(null, new[] { pkg, assetStoreTab, false, "" });
-            }
-
-            s_OpenPackageManager(packageName);
+            PackageManager.UI.PackageManagerWindow.SelectPackageAndFilterStatic(packageName, PackageManager.UI.Internal.PackageFilterTab.AssetStore);
         }
 
         internal static char FastToLower(char c)

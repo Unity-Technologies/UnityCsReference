@@ -79,7 +79,7 @@ namespace Unity.UI.Builder
             }
         }
 
-        PropertyInfo FindStylePropertyInfo(string styleName)
+        public PropertyInfo FindStylePropertyInfo(string styleName)
         {
             if (string.IsNullOrEmpty(styleName))
                 return null;
@@ -905,10 +905,10 @@ namespace Unity.UI.Builder
         }
         public void RefreshStyleField(FoldoutField foldoutElement)
         {
-            if (foldoutElement is FoldoutNumberField)
-                RefreshStyleFoldoutNumberField(foldoutElement as FoldoutNumberField);
-            else if (foldoutElement is FoldoutColorField)
-                RefreshStyleFoldoutColorField(foldoutElement as FoldoutColorField);
+            if (foldoutElement is FoldoutNumberField foldoutNumberField)
+                RefreshStyleFoldoutNumberField(foldoutNumberField);
+            else if (foldoutElement is FoldoutColorField foldoutColorField)
+                RefreshStyleFoldoutColorField(foldoutColorField);
         }
 
         void RefreshStyleFoldoutNumberField(FoldoutNumberField foldoutElement)
@@ -991,7 +991,7 @@ namespace Unity.UI.Builder
 
             evt.menu.AppendSeparator();
             evt.menu.AppendAction(
-                BuilderConstants.ContextMenuViewVariableMessage,
+                BuilderSharedStyles.IsSelectorElement(currentVisualElement) ? BuilderConstants.ContextMenuEditVariableMessage : BuilderConstants.ContextMenuViewVariableMessage,
                 ViewVariableViaContextMenu,
                 VariableActionStatus,
                 evt.target);
@@ -1027,12 +1027,17 @@ namespace Unity.UI.Builder
 
         public void OnFieldVariableChange(string newValue, VisualElement target, string styleName)
         {
+            if (newValue.Length <= BuilderConstants.UssVariablePrefix.Length)
+                return;
             bool isNewValue = OnFieldVariableChangeImplInBatch(newValue, styleName);
             PostStyleFieldSteps(target, styleName, isNewValue, true);
         }
 
         public DropdownMenuAction.Status UnsetAllActionStatus(DropdownMenuAction action)
         {
+            if (currentRule == null)
+                return DropdownMenuAction.Status.Disabled;
+
             if (currentRule.properties.Length == 0)
                 return DropdownMenuAction.Status.Disabled;
 
@@ -1735,6 +1740,7 @@ namespace Unity.UI.Builder
             PostStyleFieldSteps(field, styleName, isNewValue);
         }
 
+
         void OnFieldValueChange(ChangeEvent<Enum> e, string styleName)
         {
             var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
@@ -1827,6 +1833,7 @@ namespace Unity.UI.Builder
             return val is StyleFont || val is Font || styleName == "-unity-font";
         }
 
+        
         static public bool IsComputedStyleBackground(object val)
         {
             return val is StyleBackground || val is Background;
@@ -1856,6 +1863,7 @@ namespace Unity.UI.Builder
             return style.value;
         }
 
+        
         static public int GetComputedStyleIntValue(object val)
         {
             if (val is int)
@@ -1885,13 +1893,14 @@ namespace Unity.UI.Builder
 
         static public Font GetComputedStyleFontValue(object val)
         {
-            if (val is Font)
-                return val as Font;
+            if (val is Font font)
+                return font;
 
             var style = (StyleFont)val;
             return style.value;
         }
 
+        
         static public Background GetComputedStyleBackgroundValue(object val)
         {
             if (val is Background)

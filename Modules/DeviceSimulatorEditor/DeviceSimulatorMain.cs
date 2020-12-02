@@ -13,6 +13,7 @@ namespace UnityEditor.DeviceSimulation
         private ScreenSimulation m_ScreenSimulation;
         private SystemInfoSimulation m_SystemInfoSimulation;
         private readonly DeviceSimulator m_DeviceSimulator;
+        private readonly ApplicationSimulation m_ApplicationSimulation;
         private readonly UserInterfaceController m_UserInterface;
         private readonly PluginController m_PluginController;
         private readonly TouchEventManipulator m_TouchInput;
@@ -52,7 +53,8 @@ namespace UnityEditor.DeviceSimulation
                 serializedState = new SimulatorState();
             m_Devices = DeviceLoader.LoadDevices();
             InitDeviceIndex(serializedState);
-            m_DeviceSimulator = new DeviceSimulator();
+            m_ApplicationSimulation = new ApplicationSimulation(serializedState, currentDevice.deviceInfo);
+            m_DeviceSimulator = new DeviceSimulator {applicationSimulation = m_ApplicationSimulation};
             m_PluginController = new PluginController(serializedState, m_DeviceSimulator);
             m_TouchInput = new TouchEventManipulator(m_DeviceSimulator);
             m_UserInterface = new UserInterfaceController(this, rootVisualElement, serializedState, m_PluginController.Plugins, m_TouchInput);
@@ -63,6 +65,7 @@ namespace UnityEditor.DeviceSimulation
         {
             m_TouchInput.Dispose();
             m_ScreenSimulation.Dispose();
+            m_ApplicationSimulation.Dispose();
             m_SystemInfoSimulation.Dispose();
             DeviceLoader.UnloadOverlays(currentDevice);
             m_PluginController.Dispose();
@@ -71,6 +74,7 @@ namespace UnityEditor.DeviceSimulation
         public void Enable()
         {
             m_ScreenSimulation.Enable();
+            m_ApplicationSimulation.Enable();
             m_SystemInfoSimulation.Enable();
             m_UserInterface.OnSimulationStateChanged(SimulationState.Enabled);
         }
@@ -78,6 +82,7 @@ namespace UnityEditor.DeviceSimulation
         public void Disable()
         {
             m_ScreenSimulation.Disable();
+            m_ApplicationSimulation.Disable();
             m_SystemInfoSimulation.Disable();
             m_UserInterface.OnSimulationStateChanged(SimulationState.Disabled);
         }
@@ -119,6 +124,7 @@ namespace UnityEditor.DeviceSimulation
             };
             m_UserInterface.StoreSerializedStates(ref serializedState);
             m_PluginController.StoreSerializationStates(ref serializedState);
+            m_ApplicationSimulation.StoreSerializationStates(ref serializedState);
 
             return serializedState;
         }

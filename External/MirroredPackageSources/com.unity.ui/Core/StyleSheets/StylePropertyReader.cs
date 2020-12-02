@@ -170,8 +170,9 @@ namespace UnityEngine.UIElements.StyleSheets
             return StylePropertyUtil.GetEnumIntValue(enumType, enumString);
         }
 
-        public Font ReadFont(int index)
+        public FontDefinition ReadFontDefinition(int index)
         {
+            Object fontAsset = null;
             Font font = null;
             var value = m_Values[m_CurrentValueIndex + index];
             switch (value.handle.valueType)
@@ -182,12 +183,57 @@ namespace UnityEngine.UIElements.StyleSheets
                     if (!string.IsNullOrEmpty(path))
                     {
                         font = Panel.LoadResource(path, typeof(Font), dpiScaling) as Font;
+                        if (font == null)
+                            fontAsset = Panel.LoadResource(path, typeof(Object), dpiScaling);
                     }
 
-                    if (font == null)
-                    {
+                    if (fontAsset == null && font == null)
                         Debug.LogWarning(string.Format("Font not found for path: {0}", path));
-                    }
+
+                    break;
+                }
+
+                case StyleValueType.AssetReference:
+                {
+                    font = value.sheet.ReadAssetReference(value.handle) as Font;
+                    if (font == null)
+                        fontAsset = value.sheet.ReadAssetReference(value.handle);
+
+                    if (fontAsset == null && font == null)
+                        Debug.LogWarning("Invalid font reference");
+
+                    break;
+                }
+
+                default:
+                    Debug.LogWarning("Invalid value for font " + value.handle.valueType);
+                    break;
+            }
+
+            FontDefinition sfd;
+            if (font != null)
+                sfd = FontDefinition.FromFont(font);
+            else if (fontAsset != null)
+                sfd = FontDefinition.FromSDFFont(fontAsset);
+            else
+                sfd = new FontDefinition();
+            return sfd;
+        }
+
+        public Font ReadFont(int index)
+        {
+            Font font = null;
+            var value = m_Values[m_CurrentValueIndex + index];
+            switch (value.handle.valueType)
+            {
+                case StyleValueType.ResourcePath:
+                {
+                    string path = value.sheet.ReadResourcePath(value.handle);
+                    if (!string.IsNullOrEmpty(path))
+                        font = Panel.LoadResource(path, typeof(Font), dpiScaling) as Font;
+
+                    if (font == null)
+                        Debug.LogWarning(string.Format("Font not found for path: {0}", path));
                     break;
                 }
 
@@ -196,9 +242,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     font = value.sheet.ReadAssetReference(value.handle) as Font;
 
                     if (font == null)
-                    {
                         Debug.LogWarning("Invalid font reference");
-                    }
                     break;
                 }
 
@@ -296,6 +340,68 @@ namespace UnityEngine.UIElements.StyleSheets
             }
 
             return new Cursor() { texture = texture, hotspot = new Vector2(hotspotX, hotspotY), defaultCursorId = cursorId };
+        }
+
+        public TextShadow ReadTextShadow(int index)
+        {
+            float offsetX = 0.0f;
+            float offsetY = 0.0f;
+            float blurRadius = 0.0f;
+            var color = Color.clear;
+
+            if (valueCount >= 2)
+            {
+                int i = index;
+                var valueType = GetValueType(i);
+                bool isColorRead = false;
+                if (valueType == StyleValueType.Color || valueType == StyleValueType.Enum)
+                {
+                    color = ReadColor(i++);
+                    isColorRead = true;
+                }
+
+                if ((i + 1) < valueCount)
+                {
+                    valueType = GetValueType(i);
+                    var valueType2 = GetValueType(i + 1);
+                    if (valueType == StyleValueType.Dimension && valueType2 == StyleValueType.Dimension)
+                    {
+                        var valueX = GetValue(i++);
+                        var valueY = GetValue(i++);
+
+                        offsetX = valueX.sheet.ReadDimension(valueX.handle).value;
+                        offsetY = valueY.sheet.ReadDimension(valueY.handle).value;
+                    }
+                }
+
+                if (i < valueCount)
+                {
+                    valueType = GetValueType(i);
+                    if (valueType == StyleValueType.Dimension)
+                    {
+                        var valueBlur = GetValue(i++);
+                        blurRadius = valueBlur.sheet.ReadDimension(valueBlur.handle).value;
+                    }
+                    else if (valueType == StyleValueType.Color || valueType == StyleValueType.Enum)
+                    {
+                        if (!isColorRead)
+                            color = ReadColor(i);
+                    }
+                }
+
+                if (i < valueCount)
+                {
+                    valueType = GetValueType(i);
+                    if (valueType == StyleValueType.Color || valueType == StyleValueType.Enum)
+                    {
+                        if (!isColorRead)
+                            color = ReadColor(i);
+                    }
+                }
+            }
+
+            var textShadow = new TextShadow() { offset = new Vector2(offsetX, offsetY), blurRadius = blurRadius, color = color };
+            return textShadow;
         }
 
         private void LoadProperties()

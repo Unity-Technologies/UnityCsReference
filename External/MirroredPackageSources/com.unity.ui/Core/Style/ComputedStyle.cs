@@ -175,8 +175,7 @@ namespace UnityEngine.UIElements
 
         public bool TryGetValue(CustomStyleProperty<float> property, out float value)
         {
-            StylePropertyValue customProp;
-            if (TryGetValue(property.name, StyleValueType.Float, out customProp))
+            if (TryGetValue(property.name, StyleValueType.Float, out var customProp))
             {
                 if (customProp.sheet.TryReadFloat(customProp.handle, out value))
                     return true;
@@ -188,8 +187,7 @@ namespace UnityEngine.UIElements
 
         public bool TryGetValue(CustomStyleProperty<int> property, out int value)
         {
-            StylePropertyValue customProp;
-            if (TryGetValue(property.name, StyleValueType.Float, out customProp))
+            if (TryGetValue(property.name, StyleValueType.Float, out var customProp))
             {
                 float tmp = 0f;
                 if (customProp.sheet.TryReadFloat(customProp.handle, out tmp))
@@ -205,8 +203,7 @@ namespace UnityEngine.UIElements
 
         public bool TryGetValue(CustomStyleProperty<bool> property, out bool value)
         {
-            StylePropertyValue customProp;
-            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out customProp))
+            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
             {
                 value = customProp.sheet.ReadKeyword(customProp.handle) == StyleValueKeyword.True;
                 return true;
@@ -218,11 +215,26 @@ namespace UnityEngine.UIElements
 
         public bool TryGetValue(CustomStyleProperty<Color> property, out Color value)
         {
-            StylePropertyValue customProp;
-            if (TryGetValue(property.name, StyleValueType.Color, out customProp))
+            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
             {
-                if (customProp.sheet.TryReadColor(customProp.handle, out value))
-                    return true;
+                var handle = customProp.handle;
+                switch (handle.valueType)
+                {
+                    case StyleValueType.Enum:
+                    {
+                        var colorName = customProp.sheet.ReadAsString(handle);
+                        return StyleSheetColor.TryGetColor(colorName.ToLower(), out value);
+                    }
+                    case StyleValueType.Color:
+                    {
+                        if (customProp.sheet.TryReadColor(customProp.handle, out value))
+                            return true;
+                        break;
+                    }
+                    default:
+                        LogCustomPropertyWarning(property.name, StyleValueType.Color, customProp);
+                        break;
+                }
             }
 
             value = Color.clear;
@@ -231,8 +243,7 @@ namespace UnityEngine.UIElements
 
         public bool TryGetValue(CustomStyleProperty<Texture2D> property, out Texture2D value)
         {
-            StylePropertyValue customProp;
-            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out customProp))
+            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
             {
                 var source = new ImageSource();
                 if (StylePropertyReader.TryGetImageSourceFromValue(customProp, dpiScaling, out source) && source.texture != null)
@@ -248,8 +259,7 @@ namespace UnityEngine.UIElements
 
         public bool TryGetValue(CustomStyleProperty<Sprite> property, out Sprite value)
         {
-            StylePropertyValue customProp;
-            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out customProp))
+            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
             {
                 var source = new ImageSource();
                 if (StylePropertyReader.TryGetImageSourceFromValue(customProp, dpiScaling, out source) && source.sprite != null)
@@ -265,8 +275,7 @@ namespace UnityEngine.UIElements
 
         public bool TryGetValue(CustomStyleProperty<VectorImage> property, out VectorImage value)
         {
-            StylePropertyValue customProp;
-            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out customProp))
+            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
             {
                 var source = new ImageSource();
                 if (StylePropertyReader.TryGetImageSourceFromValue(customProp, dpiScaling, out source) && source.vectorImage != null)
@@ -282,8 +291,7 @@ namespace UnityEngine.UIElements
 
         public bool TryGetValue(CustomStyleProperty<string> property, out string value)
         {
-            StylePropertyValue customProp;
-            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out customProp))
+            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
             {
                 value = customProp.sheet.ReadAsString(customProp.handle);
                 return true;
@@ -302,7 +310,7 @@ namespace UnityEngine.UIElements
                 var handle = customProp.handle;
                 if (handle.valueType != valueType)
                 {
-                    Debug.LogWarning(string.Format("Trying to read value as {0} while parsed type is {1}", valueType, handle.valueType));
+                    LogCustomPropertyWarning(propertyName, valueType, customProp);
                     return false;
                 }
 
@@ -310,6 +318,11 @@ namespace UnityEngine.UIElements
             }
 
             return false;
+        }
+
+        private static void LogCustomPropertyWarning(string propertyName, StyleValueType valueType, StylePropertyValue customProp)
+        {
+            Debug.LogWarning($"Trying to read custom property {propertyName} value as {valueType} while parsed type is {customProp.handle.valueType}");
         }
     }
 }

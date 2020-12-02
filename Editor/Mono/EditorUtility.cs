@@ -552,8 +552,8 @@ namespace UnityEditor
                     // Handle modified component.
                     if (hasPrefabOverride)
                     {
-                        bool defaultOverrides =
-                            PrefabUtility.IsObjectOverrideAllDefaultOverridesComparedToAnySource(targetObject);
+                        bool isObjectOverrideAllDefaultOverridesComparedToOriginalSource =
+                            PrefabUtility.IsObjectOverrideAllDefaultOverridesComparedToOriginalSource(targetObject);
 
                         PrefabUtility.HandleApplyRevertMenuItems(
                             "Modified Component",
@@ -573,7 +573,7 @@ namespace UnityEditor
                             {
                                 pm.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabObjectOverride, targetObject);
                             },
-                            defaultOverrides
+                            isObjectOverrideAllDefaultOverridesComparedToOriginalSource
                         );
                     }
                 }

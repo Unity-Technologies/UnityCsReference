@@ -29,6 +29,9 @@ namespace UnityEditor
         [FreeFunction("LODUtilityBindings::CalculateVisualizationData")]
         extern internal static LODVisualizationInformation CalculateVisualizationData(Camera camera, LODGroup group, int lodLevel);
 
+        [FreeFunction("LODUtilityBindings::IsLODAnimatingOnDisplay")]
+        extern internal static bool IsLODAnimatingOnDisplay(int displayId);
+
         [FreeFunction("LODUtilityBindings::IsLODAnimating")]
         extern internal static bool IsLODAnimating(Camera camera);
 

@@ -64,7 +64,7 @@ namespace UnityEditorInternal
 
         private SerializedObject m_SerializedObject;
         private SerializedProperty m_Elements;
-        private string m_PropertyPath;
+        private string m_PropertyPath = string.Empty;
         private IList m_ElementList;
         private bool m_Draggable;
         private float m_DraggedY;
@@ -74,6 +74,8 @@ namespace UnityEditorInternal
         private bool m_DisplayHeader;
         public bool displayAdd;
         public bool displayRemove;
+
+        bool scheduleRemove;
 
         internal bool m_IsEditable;
         internal bool m_HasPropertyDrawer;
@@ -202,7 +204,7 @@ namespace UnityEditorInternal
                         || (list.onCanRemoveCallback != null && !list.onCanRemoveCallback(list))
                         || list.isOverMaxMultiEditLimit))
                     {
-                        if (GUI.Button(removeRect, iconToolbarMinus, preButton))
+                        if (GUI.Button(removeRect, iconToolbarMinus, preButton) || GUI.enabled && list.scheduleRemove)
                         {
                             if (list.onRemoveCallback == null)
                             {
@@ -213,9 +215,12 @@ namespace UnityEditorInternal
 
                             list.onChangedCallback?.Invoke(list);
                             list.ClearCacheRecursive();
+                            GUI.changed = true;
                         }
                     }
                 }
+
+                list.scheduleRemove = false;
             }
 
             // default add button behavior
@@ -460,7 +465,7 @@ namespace UnityEditorInternal
         public int index
         {
             get { return m_Selection.Count > 0 ? m_Selection[0] : count - 1; }
-            set { Select(value < 0 ? count - 1 : value); }
+            set { Select(value > count - 1 ? 0 : value < 0 ? count - 1 : value); }
         }
 
         public ReadOnlyCollection<int> selectedIndices => new ReadOnlyCollection<int>(m_Selection);
@@ -973,6 +978,7 @@ namespace UnityEditorInternal
                             index = i;
                             handlingInput = false;
                         }
+
                         // Element drawing could be changed from distant properties or controls
                         // so if we detect any change in the way the property is drawn, clear cache
                         int currentControlCount = EditorGUI.s_PropertyCount - initialProperties;
@@ -982,6 +988,11 @@ namespace UnityEditorInternal
                             GUI.changed = true;
                         }
                         m_PropertyCache[i].lastControlCount = currentControlCount;
+
+                        // If an event was consumed in the course of running this for loop, then there is
+                        // a good chance the array data has changed and it is dangerous for us to continue
+                        // rendering it in this frame.
+                        if (Event.current.type == EventType.Used) break;
                     }
                 }
 
@@ -1035,6 +1046,12 @@ namespace UnityEditorInternal
 
         private void DoListHeader(Rect headerRect)
         {
+            // Ensure there's proper Prefab and context menu handling for the list as a whole.
+            // This ensures a deleted element in the list is displayed as an override and can
+            // be handled by the user via the context menu. Case 1292522
+            if (m_Elements != null)
+                EditorGUI.BeginProperty(headerRect, GUIContent.none, m_Elements);
+
             recursionCounter = 0;
             // draw the background on repaint
             if (showDefaultBackground && Event.current.type == EventType.Repaint)
@@ -1051,6 +1068,9 @@ namespace UnityEditorInternal
                 drawHeaderCallback(headerRect);
             else if (m_DisplayHeader)
                 defaultBehaviours.DrawHeader(headerRect, m_SerializedObject, m_Elements, m_ElementList);
+
+            if (m_Elements != null)
+                EditorGUI.EndProperty();
         }
 
         private void DoListFooter(Rect footerRect)
@@ -1070,7 +1090,7 @@ namespace UnityEditorInternal
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.KeyDown:
-                    if (GUIUtility.keyboardControl != id)
+                    if (GUIUtility.keyboardControl != id || m_Dragging || clicked)
                         return;
                     // if we have keyboard focus, arrow through the list
                     if (evt.keyCode == KeyCode.DownArrow)
@@ -1083,6 +1103,42 @@ namespace UnityEditorInternal
                         index -= 1;
                         evt.Use();
                     }
+                    if (evt.keyCode == KeyCode.LeftArrow)
+                    {
+                        if (m_Elements != null)
+                        {
+                            foreach (var index in m_Selection)
+                            {
+                                if (index < 0) continue;
+
+                                m_Elements.GetArrayElementAtIndex(index).isExpanded = false;
+                            }
+                        }
+                        InvalidateParentCaches(m_PropertyPath);
+                        GUI.changed = true;
+                        evt.Use();
+                    }
+                    if (evt.keyCode == KeyCode.RightArrow)
+                    {
+                        if (m_Elements != null)
+                        {
+                            foreach (var index in selectedIndices)
+                            {
+                                if (index < 0) continue;
+
+                                m_Elements.GetArrayElementAtIndex(index).isExpanded = true;
+                            }
+                        }
+                        InvalidateParentCaches(m_PropertyPath);
+                        GUI.changed = true;
+                        evt.Use();
+                    }
+                    if (evt.keyCode == KeyCode.Delete)
+                    {
+                        scheduleRemove = true;
+                        InvalidateParentCaches(m_PropertyPath);
+                        evt.Use();
+                    }
                     if (evt.keyCode == KeyCode.Escape && GUIUtility.hotControl == id)
                     {
                         GUIUtility.hotControl = 0;
@@ -1092,7 +1148,7 @@ namespace UnityEditorInternal
                     if (evt.type == EventType.Used)
                     {
                         // don't allow arrowing through the ends of the list
-                        index = Mathf.Clamp(index, 0, (m_Elements != null) ? m_Elements.arraySize - 1 : m_ElementList.Count - 1);
+                        m_Selection = m_Selection.Where(i => i >= 0 && i < (m_Elements != null ? m_Elements.arraySize : m_ElementList.Count)).ToList();
                     }
                     break;
 
@@ -1172,6 +1228,7 @@ namespace UnityEditorInternal
                     break;
 
                 case EventType.MouseUp:
+                    clicked = false;
                     if (!m_Draggable)
                     {
                         // if mouse up was on the same index as mouse down we fire a mouse up callback (useful if for beginning renaming on mouseup)

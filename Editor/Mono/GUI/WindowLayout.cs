@@ -519,7 +519,7 @@ namespace UnityEditor
                 foreach (var layoutPath in layoutPaths)
                 {
                     var name = Path.GetFileNameWithoutExtension(layoutPath);
-                    Menu.AddMenuItem("Window/Layouts/" + name, "", false, layoutMenuItemPriority++, () => LoadWindowLayout(layoutPath, false), null);
+                    Menu.AddMenuItem("Window/Layouts/" + name, "", false, layoutMenuItemPriority++, () => LoadWindowLayout(layoutPath, false, true, true), null);
                 }
 
                 layoutMenuItemPriority += 500;
@@ -1093,25 +1093,19 @@ namespace UnityEditor
                     }
                     else
                     {
-                        ContainerWindow cw = o as ContainerWindow;
-                        if (cw != null && cw.rootView == null)
+                        if (o is ContainerWindow cw && cw.rootView == null)
                         {
                             cw.Close();
                             UnityObject.DestroyImmediate(cw, true);
                             continue;
                         }
-
-                        DockArea dockArea = o as DockArea;
-                        if (dockArea != null && dockArea.m_Panes.Count == 0)
+                        else if (o is DockArea dockArea && dockArea.m_Panes.Count == 0)
                         {
                             dockArea.Close(null);
                             UnityObject.DestroyImmediate(dockArea, true);
                             continue;
                         }
-
-                        // Host views that do not hold any containers are not desirable at this stage
-                        HostView hostview = o as HostView;
-                        if (hostview != null && hostview.actualView == null)
+                        else if (o is HostView hostview && hostview.actualView == null)
                         {
                             UnityObject.DestroyImmediate(hostview, true);
                             continue;
@@ -1304,11 +1298,11 @@ namespace UnityEditor
                 string output = "";
                 foreach (EditorWindow killme in oldWindows)
                 {
-                    output += "\n" + killme.GetType().Name;
+                    output += $"{killme.GetType().Name} {killme.name} {killme.titleContent.text} [{killme.GetInstanceID()}]\r\n";
                     UnityObject.DestroyImmediate(killme, true);
                 }
 
-                Debug.LogError("Failed to destroy editor windows: #" + oldWindows.Length + output);
+                Debug.LogWarning($"Failed to destroy editor windows: #{oldWindows.Length}\r\n{output}");
             }
 
             UnityObject[] oldViews = Resources.FindObjectsOfTypeAll(typeof(View));
@@ -1419,7 +1413,7 @@ namespace UnityEditor
             // Reset mode settings
             ModeService.ChangeModeById("default");
 
-            LoadCurrentModeLayout(true);
+            LoadCurrentModeLayout(false);
             ReloadWindowLayoutMenu();
             EditorUtility.Internal_UpdateAllMenus();
             ShortcutIntegration.instance.RebuildShortcuts();

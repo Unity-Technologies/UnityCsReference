@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements
         bool m_Dragged;
         bool m_DragToPosition;
         bool m_PostponeMove;
-        bool m_SelectAllOnMouseUp = true;
+        bool m_SelectAllOnMouseUp = false;
 
         string m_PreDrawCursorText;
 
@@ -63,6 +63,11 @@ namespace UnityEngine.UIElements
         {
             GUIUtility.imeCompositionMode = IMECompositionMode.On;
             m_DragToPosition = false;
+
+            // If focus was given to this element from a mouse click or a Panel.Focus call, allow select on mouse up.
+            if (PointerDeviceState.GetPressedButtons(PointerId.mousePointerId) != 0 ||
+                (textInputField as VisualElement)?.panel.contextType == ContextType.Editor && Event.current == null)
+                m_SelectAllOnMouseUp = true;
         }
 
         void OnBlur(BlurEvent _)
@@ -108,7 +113,6 @@ namespace UnityEngine.UIElements
                 else
                 {
                     editorEngine.MoveCursorToPosition_Internal(evt.localMousePosition, evt.shiftKey);
-                    m_SelectAllOnMouseUp = false;
                 }
 
                 textInputField.CaptureMouse();
@@ -153,6 +157,7 @@ namespace UnityEngine.UIElements
             }
             else if (m_SelectAllOnMouseUp)
             {
+                editorEngine.SelectAll();
                 m_SelectAllOnMouseUp = false;
             }
 

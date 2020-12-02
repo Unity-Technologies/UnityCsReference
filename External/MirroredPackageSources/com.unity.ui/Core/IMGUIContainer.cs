@@ -152,6 +152,19 @@ namespace UnityEngine.UIElements
         /// </summary>
         public static readonly string ussClassName = "unity-imgui-container";
 
+        internal static readonly string ussFoldoutChildDepthClassName = $"{Foldout.ussClassName}__{ussClassName}--depth-";
+        internal static readonly List<string> ussFoldoutChildDepthClassNames;
+
+        static IMGUIContainer()
+        {
+            ussFoldoutChildDepthClassNames = new List<string>(Foldout.ussFoldoutMaxDepth + 1);
+            for (int i = 0; i <= Foldout.ussFoldoutMaxDepth; i++)
+            {
+                ussFoldoutChildDepthClassNames.Add(ussFoldoutChildDepthClassName + i);
+            }
+            ussFoldoutChildDepthClassNames.Add(ussFoldoutChildDepthClassName + "max");
+        }
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -738,8 +751,30 @@ namespace UnityEngine.UIElements
                 if (elementPanel != null)
                 {
                     elementPanel.IMGUIContainersCount++;
+
+                    // Set class names for foldout depth.
+                    SetFoldoutDepthClass();
                 }
             }
+        }
+
+        void SetFoldoutDepthClass()
+        {
+            // Remove from all the depth classes...
+            for (var i = 0; i < ussFoldoutChildDepthClassNames.Count; i++)
+            {
+                RemoveFromClassList(ussFoldoutChildDepthClassNames[i]);
+            }
+
+            // Figure out the real depth of this actual Foldout...
+            var depth = this.GetFoldoutDepth();
+
+            if (depth == 0)
+                return;
+
+            // Add the class name corresponding to that depth
+            depth = Mathf.Min(depth, ussFoldoutChildDepthClassNames.Count - 1);
+            AddToClassList(ussFoldoutChildDepthClassNames[depth]);
         }
 
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)

@@ -520,6 +520,20 @@ namespace Unity.UI.Builder
 
             m_VisualTreeAssetBackup = visualTreeAsset.DeepCopy();
             m_VisualTreeAsset = visualTreeAsset;
+
+            PostLoadDocumentStyleSheetCleanup();
+
+            hasUnsavedChanges = false;
+
+            m_OpenendVisualTreeAssetOldPath = AssetDatabase.GetAssetPath(m_VisualTreeAsset);
+
+            m_Settings = BuilderDocumentSettings.CreateOrLoadSettingsObject(m_Settings, uxmlPath);
+
+            ReloadDocumentToCanvas(documentElement);
+        }
+
+        public void PostLoadDocumentStyleSheetCleanup()
+        {
             m_VisualTreeAsset.ConvertAllAssetReferencesToPaths();
 
             // Load styles.
@@ -531,13 +545,7 @@ namespace Unity.UI.Builder
             // existing root element stylesheets.
             RemoveLegacyStyleSheetsFromRootAssets();
 
-            m_OpenendVisualTreeAssetOldPath = AssetDatabase.GetAssetPath(m_VisualTreeAsset);
-
             hasUnsavedChanges = false;
-
-            m_Settings = BuilderDocumentSettings.CreateOrLoadSettingsObject(m_Settings, uxmlPath);
-
-            ReloadDocumentToCanvas(documentElement);
         }
 
         //
@@ -671,11 +679,13 @@ namespace Unity.UI.Builder
 
         void RestoreAssetsFromBackup()
         {
+            foreach (var openUSSFile in m_OpenUSSFiles)
+                openUSSFile.RestoreFromBackup();
+
             if (m_VisualTreeAsset != null && m_VisualTreeAssetBackup != null)
                 m_VisualTreeAssetBackup.DeepOverwrite(m_VisualTreeAsset);
 
-            foreach (var openUSSFile in m_OpenUSSFiles)
-                openUSSFile.RestoreFromBackup();
+            hasUnsavedChanges = false;
         }
 
         void ClearBackups()

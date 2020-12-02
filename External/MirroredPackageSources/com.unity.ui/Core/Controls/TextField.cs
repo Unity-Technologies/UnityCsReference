@@ -143,8 +143,9 @@ namespace UnityEngine.UIElements
             // Here we must make sure the value is restored on screen from the saved value !
             text = rawValue;
         }
+
         protected override string ValueToString(string value) => value;
-        
+
         protected override string StringToValue(string str) => str;
         class TextInput : TextInputBase
         {

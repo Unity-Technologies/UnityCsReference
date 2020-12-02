@@ -815,10 +815,9 @@ namespace UnityEditor.Search
             return m_Documents.FindIndex(d => d.valid && d.id.Equals(id, StringComparison.Ordinal));
         }
 
-        internal void Merge(string[] removeDocuments, SearchIndexer si, int baseScore = 0, Action<int, SearchIndexer> documentIndexing = null)
+        internal void Merge(string[] removeDocuments, SearchIndexer si, int baseScore = 0,
+            Action<int, SearchIndexer, int> documentIndexing = null)
         {
-            var progressId = Progress.Start("Merging indexes");
-
             int[] removeDocIndexes = null;
             int[] updatedDocIndexes = null;
             List<SearchIndexEntry> indexes = null;
@@ -838,11 +837,10 @@ namespace UnityEditor.Search
                 var sourceIndexes = new List<SearchIndexEntry>(si.m_Indexes);
                 int sourceIndex = 0;
                 var wiec = new SearchIndexComparer();
-                var count = (float)si.documentCount;
+                var count = si.documentCount;
                 foreach (var doc in si.m_Documents)
                 {
-                    Progress.SetDescription(progressId, doc.id);
-                    documentIndexing?.Invoke(sourceIndex, si);
+                    documentIndexing?.Invoke(sourceIndex, si, count);
 
                     var di = updatedDocIndexes[sourceIndex];
                     if (di == -1)
@@ -859,8 +857,6 @@ namespace UnityEditor.Search
                     sourceIndexes.RemoveAll(e => e.index == sourceIndex);
                     si.m_BatchIndexes.Clear();
                     sourceIndex++;
-
-                    Progress.Report(progressId, sourceIndex / count);
                 }
             }
 
@@ -879,8 +875,6 @@ namespace UnityEditor.Search
 
                 BuildDocumentIndexTable();
             }
-
-            Progress.Finish(progressId, Progress.Status.Succeeded);
         }
 
         private void BuildDocumentIndexTable()

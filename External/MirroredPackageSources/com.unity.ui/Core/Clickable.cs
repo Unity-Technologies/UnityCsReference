@@ -231,5 +231,25 @@ namespace UnityEngine.UIElements
 
             evt.StopPropagation();
         }
+
+        /// <summary>
+        /// This method processes the up cancel sent to the target Element.
+        /// </summary>
+        protected virtual void ProcessCancelEvent(EventBase evt, int pointerId)
+        {
+            active = false;
+            target.ReleasePointer(pointerId);
+            if (!(evt is IPointerEvent))
+                target.panel.ProcessPointerCapture(PointerId.mousePointerId);
+
+            target.pseudoStates &= ~PseudoStates.Active;
+
+            if (IsRepeatable())
+            {
+                m_Repeater?.Pause();
+            }
+
+            evt.StopPropagation();
+        }
     }
 }

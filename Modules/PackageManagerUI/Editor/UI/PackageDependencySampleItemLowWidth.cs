@@ -31,7 +31,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             itemSizeOrVersion.value = version;
             itemSizeOrVersion.tooltip = version;
-            itemSizeOrVersion.isReadOnly = true;
 
             if (installStatus != null && !string.IsNullOrEmpty(installStatus.text))
                 item.Add(installStatus);
@@ -58,7 +57,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             itemSizeOrVersion.value = size;
             itemSizeOrVersion.tooltip = size;
-            itemSizeOrVersion.isReadOnly = true;
 
             item.Add(sampleItem.importButton);
         }
@@ -66,7 +64,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElement itemStatusNameContainer { get { return cache.Get<VisualElement>("itemStatusNameContainer"); } }
         private VisualElement sampleStatus { get { return cache.Get<VisualElement>("sampleStatus"); } }
         private Label itemName { get { return cache.Get<Label>("itemName"); } }
-        private TextField itemSizeOrVersion { get { return cache.Get<TextField>("itemSizeOrVersion"); } }
+        private SelectableLabel itemSizeOrVersion { get { return cache.Get<SelectableLabel>("itemSizeOrVersion"); } }
         private VisualElement item { get { return cache.Get<VisualElement>("dependencySampleItemLowWidth"); } }
     }
 }

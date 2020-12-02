@@ -616,20 +616,32 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             SerializedProperty property = externalObjectCache.property;
+            var previousMaterial = property.objectReferenceValue as Material;
             EditorGUILayout.ObjectField(property, typeof(Material), nameLabel);
             Material material = property.objectReferenceValue as Material;
 
             if (EditorGUI.EndChangeCheck())
             {
                 if (material == null)
+                {
                     m_ExternalObjects.DeleteArrayElementAtIndex(externalObjectCache.propertyIdx);
+                    BuildExternalObjectsCache();
+                }
                 else
                 {
-                    var pair = m_ExternalObjects.GetArrayElementAtIndex(externalObjectCache.propertyIdx);
-                    pair.FindPropertyRelative("second").objectReferenceValue = material;
+                    var importer = target as ModelImporter;
+                    if (AssetDatabase.GetAssetPath(material) == importer.assetPath)
+                    {
+                        Debug.LogError(string.Format("{0} is a sub-asset of {1} and cannot be used as an external material.", material.name, Path.GetFileName(importer.assetPath)));
+                        property.objectReferenceValue = previousMaterial;
+                    }
+                    else
+                    {
+                        var pair = m_ExternalObjects.GetArrayElementAtIndex(externalObjectCache.propertyIdx);
+                        pair.FindPropertyRelative("second").objectReferenceValue = material;
+                        BuildExternalObjectsCache();
+                    }
                 }
-
-                BuildExternalObjectsCache();
             }
         }
 
@@ -642,19 +654,27 @@ namespace UnityEditor
             Material material = ObjectFieldWithPPtrHashID(nameLabel, null, typeof(Material), false) as Material;
             if (EditorGUI.EndChangeCheck() && material != null)
             {
-                m_ExternalObjects.arraySize++;
-                var pair = m_ExternalObjects.GetArrayElementAtIndex(m_ExternalObjects.arraySize - 1);
-                pair.FindPropertyRelative("first.name").stringValue = materialCache.name;
-                pair.FindPropertyRelative("first.type").stringValue = materialCache.type;
-                pair.FindPropertyRelative("first.assembly").stringValue = materialCache.assembly;
-                pair.FindPropertyRelative("second").objectReferenceValue = material;
+                var importer = target as ModelImporter;
+                if (AssetDatabase.GetAssetPath(material) == importer.assetPath)
+                {
+                    Debug.LogError(string.Format("{0} is a sub-asset of {1} and cannot be used as an external material.", material.name, Path.GetFileName(importer.assetPath)));
+                }
+                else
+                {
+                    m_ExternalObjects.arraySize++;
+                    var pair = m_ExternalObjects.GetArrayElementAtIndex(m_ExternalObjects.arraySize - 1);
+                    pair.FindPropertyRelative("first.name").stringValue = materialCache.name;
+                    pair.FindPropertyRelative("first.type").stringValue = materialCache.type;
+                    pair.FindPropertyRelative("first.assembly").stringValue = materialCache.assembly;
+                    pair.FindPropertyRelative("second").objectReferenceValue = material;
 
-                // ExternalObjects is serialized as a map, so items are reordered when deserializing.
-                // We need to update the serializedObject to trigger the reordering before rebuilding the cache.
-                serializedObject.ApplyModifiedProperties();
-                serializedObject.Update();
+                    // ExternalObjects is serialized as a map, so items are reordered when deserializing.
+                    // We need to update the serializedObject to trigger the reordering before rebuilding the cache.
+                    serializedObject.ApplyModifiedProperties();
+                    serializedObject.Update();
 
-                BuildExternalObjectsCache();
+                    BuildExternalObjectsCache();
+                }
             }
         }
 

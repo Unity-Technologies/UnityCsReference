@@ -8,6 +8,8 @@ using Unity.Profiling;
 using UnityEngine;
 using UnityEditor.Profiling;
 using UnityEditor;
+using UnityEngine.Profiling;
+
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
@@ -33,6 +35,7 @@ namespace UnityEditorInternal.Profiling
 
         public VirtualTexturingProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName, Chart.ChartType.Line) {}
 
+        public override ProfilerArea area => ProfilerArea.VirtualTexturing;
         protected override int defaultOrderIndex => k_DefaultOrderIndex;
 
         public override void OnEnable()

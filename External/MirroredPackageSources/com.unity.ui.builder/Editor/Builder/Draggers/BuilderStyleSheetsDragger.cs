@@ -16,39 +16,6 @@ namespace Unity.UI.Builder
 
         }
 
-        protected override bool StartDrag(VisualElement target, Vector2 mousePosition, VisualElement pill)
-        {
-            m_ElementsToReparent.Clear();
-
-            // Create list of elements to reparent.
-            foreach (var selectedElement in selection.selection)
-            {
-                var elementToReparent = new ElementToReparent()
-                {
-                    element = selectedElement,
-                    oldParent = selectedElement.parent,
-                    oldIndex = selectedElement.parent.IndexOf(selectedElement)
-                };
-
-                m_ElementsToReparent.Add(elementToReparent);
-            }
-
-            // We still need a primary element that is "being dragged" for visualization purporses.
-            m_TargetElementToReparent = target.GetProperty(BuilderConstants.ExplorerItemElementLinkVEPropertyName) as VisualElement;
-            if (!ExplorerCanStartDrag(m_TargetElementToReparent))
-                return false;
-
-            // We use the primary target element for our pill info.
-            var pillLabel = pill.Q<Label>();
-            pillLabel.text = m_TargetElementToReparent.IsSelector()
-                ? StyleSheetToUss.ToUssSelector(m_TargetElementToReparent.GetStyleComplexSelector())
-                : m_TargetElementToReparent.GetStyleSheet().name + BuilderConstants.UssExtension;
-
-            pillLabel.RemoveFromClassList(BuilderConstants.ElementClassNameClassName);
-
-            return true;
-        }
-
         protected override bool ExplorerCanStartDrag(VisualElement targetElement)
         {
             bool readyForDrag = (targetElement.IsSelector() || targetElement.IsStyleSheet()) && !targetElement.IsParentSelector();
@@ -62,8 +29,10 @@ namespace Unity.UI.Builder
                 : targetElement.GetStyleSheet().name + BuilderConstants.UssExtension;
         }
 
-        protected override void PerformAction(VisualElement destination, DestinationPane pane, int index = -1)
+        protected override void PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
         {
+            base.PerformAction(destination, pane, localMousePosition, index);
+
             if (m_TargetElementToReparent.IsSelector())
                 PerformActionForSelector(destination, pane, index);
             else if (m_TargetElementToReparent.IsStyleSheet())
@@ -165,6 +134,11 @@ namespace Unity.UI.Builder
                 return false;
 
             return true;
+        }
+
+        protected override bool SupportsPlacementIndicator()
+        {
+            return false;
         }
 
         protected override VisualElement GetDefaultTargetElement()

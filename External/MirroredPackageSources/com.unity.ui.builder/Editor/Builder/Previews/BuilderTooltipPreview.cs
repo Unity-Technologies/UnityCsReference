@@ -64,15 +64,22 @@ namespace Unity.UI.Builder
             this.style.display = DisplayStyle.None;
         }
 
+        public virtual Vector2 GetAdjustedPosition()
+        {
+            const float PopupAndWindowEdgesMargin = 10f;
+
+            return new Vector2(Mathf.Min(style.left.value.value, parent.layout.width - resolvedStyle.width - PopupAndWindowEdgesMargin),
+                Mathf.Min(style.top.value.value, parent.layout.height - resolvedStyle.height - PopupAndWindowEdgesMargin));
+        }
+
         public void EnsureVisibilityInParent()
         {
             if (parent != null && !float.IsNaN(layout.width) && !float.IsNaN(layout.height))
             {
-                float left = Mathf.Min(style.left.value.value, parent.layout.width - resolvedStyle.width - 10f);
-                float top = Mathf.Min(style.top.value.value, parent.layout.height - resolvedStyle.height - 10f);
+                var pos = GetAdjustedPosition();
 
-                style.left = left;
-                style.top = top;
+                style.left = pos.x;
+                style.top = pos.y;
             }
         }
     }

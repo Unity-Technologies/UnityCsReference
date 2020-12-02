@@ -23,11 +23,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
         }
 
-        public static PackageTagLabel CreateTagLabel(IPackageVersion version, bool isVersionItem = false)
+        public static PackageTagLabel CreateTagLabel(IPackageVersion version, bool isDeveloperBuild, bool isVersionItem = false)
         {
             // check with version.packageInfo.UnityLifecycle
             if (version != null)
             {
+                var applicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
                 if (version.HasTag(PackageTag.Custom))
                     return new PackageTagLabel(L10n.Tr("Custom"), L10n.Tr("Custom"), PackageTag.Custom);
                 if (version.HasTag(PackageTag.PreRelease))
@@ -36,8 +37,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                     return new PackageTagLabel(L10n.Tr("R"), L10n.Tr("Release"), PackageTag.Release);
                 if (version.HasTag(PackageTag.Experimental))
                     return new PackageTagLabel(L10n.Tr("Exp"), L10n.Tr("Experimental"), PackageTag.Experimental);
-                if (isVersionItem && version.HasTag(PackageTag.ReleaseCandidate))
-                    return new PackageTagLabel(L10n.Tr("RC"), L10n.Tr("Release Candidate"), PackageTag.ReleaseCandidate);
+                if (version.HasTag(PackageTag.ReleaseCandidate))
+                {
+                    if (isDeveloperBuild && isVersionItem)
+                        return new PackageTagLabel(L10n.Tr("RC"), L10n.Tr("Release Candidate"), PackageTag.ReleaseCandidate);
+                    else
+                        return new PackageTagLabel(L10n.Tr("Pre"), L10n.Tr("Pre-release"), PackageTag.PreRelease);
+                }
             }
             return null;
         }

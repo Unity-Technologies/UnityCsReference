@@ -28,6 +28,9 @@ namespace UnityEditor.DeviceSimulation
         public bool highlightSafeAreaEnabled;
         public string friendlyName = string.Empty;
 
+        public NetworkReachability networkReachability = NetworkReachability.ReachableViaCarrierDataNetwork;
+        public SystemLanguage systemLanguage = SystemLanguage.English;
+
         public void OnBeforeSerialize()
         {
             foreach (var plugin in plugins)

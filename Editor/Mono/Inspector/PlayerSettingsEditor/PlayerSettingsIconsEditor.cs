@@ -569,7 +569,7 @@ namespace UnityEditor
 
                         Rect rectKindLabel = GUILayoutUtility.GetRect(kSlotSize, labelHeight);
                         rectKindLabel.x += 2;
-                        key.m_State = EditorGUI.Foldout(rectKindLabel, key.m_State, kindName, EditorStyles.foldout);
+                        key.m_State = EditorGUI.Foldout(rectKindLabel, key.m_State, kindName, true, EditorStyles.foldout);
                     }
                     else
                         key.m_State = true;
@@ -590,7 +590,7 @@ namespace UnityEditor
                                 Rect rectSubKindLabel = GUILayoutUtility.GetRect(kSlotSize, labelHeight);
                                 rectSubKindLabel.x += 8;
 
-                                subKindGroup.Key.m_State = EditorGUI.Foldout(rectSubKindLabel, subKindGroup.Key.m_State, subKindName, EditorStyles.foldout);
+                                subKindGroup.Key.m_State = EditorGUI.Foldout(rectSubKindLabel, subKindGroup.Key.m_State, subKindName, true, EditorStyles.foldout);
                             }
                             else
                                 subKindGroup.Key.m_State = true;

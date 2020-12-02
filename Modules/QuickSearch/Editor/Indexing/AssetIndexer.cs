@@ -111,6 +111,10 @@ namespace UnityEditor.Search
                     IndexProperty(documentIndex, "t", at.Name, saveKeyword: true);
                 }
 
+                var guid = AssetDatabase.GUIDFromAssetPath(path);
+                var labels = AssetDatabase.GetLabels(guid);
+                foreach (var label in labels)
+                    IndexProperty(documentIndex, "l", label, saveKeyword: true);
 
                 if (settings.options.properties || settings.options.extended)
                 {
@@ -121,9 +125,6 @@ namespace UnityEditor.Search
                     if (!mainAsset)
                         return;
 
-                    var labels = AssetDatabase.GetLabels(mainAsset);
-                    foreach (var label in labels)
-                        IndexProperty(documentIndex, "l", label, saveKeyword: true);
 
                     if (hasCustomIndexers)
                         IndexCustomProperties(path, documentIndex, mainAsset);

@@ -282,6 +282,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return Instance.GetTargetAssembly(scriptPath);
         }
 
+        public static EditorScriptCompilationOptions GetAdditionalEditorScriptCompilationOptions(
+            AssembliesType assembliesType)
+        {
+            var options = GetAdditionalEditorScriptCompilationOptions();
+            if (EditorUserBuildSettings.development && (assembliesType == AssembliesType.Player || assembliesType == AssembliesType.PlayerWithoutTestAssemblies))
+                options |= EditorScriptCompilationOptions.BuildingDevelopmentBuild;
+            return options;
+        }
+
         public static EditorScriptCompilationOptions GetAdditionalEditorScriptCompilationOptions()
         {
             var options = EditorScriptCompilationOptions.BuildingEmpty;

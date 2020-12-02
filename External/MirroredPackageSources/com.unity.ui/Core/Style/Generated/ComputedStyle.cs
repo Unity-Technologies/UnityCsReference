@@ -44,6 +44,7 @@ namespace UnityEngine.UIElements
         public Length height => nonInheritedData.height;
         public Justify justifyContent => nonInheritedData.justifyContent;
         public Length left => nonInheritedData.left;
+        public Length letterSpacing => inheritedData.letterSpacing;
         public Length marginBottom => nonInheritedData.marginBottom;
         public Length marginLeft => nonInheritedData.marginLeft;
         public Length marginRight => nonInheritedData.marginRight;
@@ -61,21 +62,27 @@ namespace UnityEngine.UIElements
         public Position position => nonInheritedData.position;
         public Length right => nonInheritedData.right;
         public TextOverflow textOverflow => nonInheritedData.textOverflow;
+        public TextShadow textShadow => inheritedData.textShadow;
         public Length top => nonInheritedData.top;
         public Color unityBackgroundImageTintColor => nonInheritedData.unityBackgroundImageTintColor;
         public ScaleMode unityBackgroundScaleMode => nonInheritedData.unityBackgroundScaleMode;
         public Font unityFont => inheritedData.unityFont;
+        public FontDefinition unityFontDefinition => inheritedData.unityFontDefinition;
         public FontStyle unityFontStyleAndWeight => inheritedData.unityFontStyleAndWeight;
         public OverflowClipBox unityOverflowClipBox => nonInheritedData.unityOverflowClipBox;
+        public Length unityParagraphSpacing => inheritedData.unityParagraphSpacing;
         public int unitySliceBottom => nonInheritedData.unitySliceBottom;
         public int unitySliceLeft => nonInheritedData.unitySliceLeft;
         public int unitySliceRight => nonInheritedData.unitySliceRight;
         public int unitySliceTop => nonInheritedData.unitySliceTop;
         public TextAnchor unityTextAlign => inheritedData.unityTextAlign;
+        public Color unityTextOutlineColor => inheritedData.unityTextOutlineColor;
+        public float unityTextOutlineWidth => inheritedData.unityTextOutlineWidth;
         public TextOverflowPosition unityTextOverflowPosition => nonInheritedData.unityTextOverflowPosition;
         public Visibility visibility => inheritedData.visibility;
         public WhiteSpace whiteSpace => inheritedData.whiteSpace;
         public Length width => nonInheritedData.width;
+        public Length wordSpacing => inheritedData.wordSpacing;
 
         public void CopyFrom(ComputedStyle other)
         {
@@ -193,6 +200,9 @@ namespace UnityEngine.UIElements
                     case StylePropertyId.Left:
                         nonInheritedData.left = reader.ReadLength(0);
                         break;
+                    case StylePropertyId.LetterSpacing:
+                        inheritedData.letterSpacing = reader.ReadLength(0);
+                        break;
                     case StylePropertyId.Margin:
                         ShorthandApplicator.ApplyMargin(reader, this);
                         break;
@@ -250,6 +260,9 @@ namespace UnityEngine.UIElements
                     case StylePropertyId.TextOverflow:
                         nonInheritedData.textOverflow = (TextOverflow)reader.ReadEnum(StyleEnumType.TextOverflow, 0);
                         break;
+                    case StylePropertyId.TextShadow:
+                        inheritedData.textShadow = reader.ReadTextShadow(0);
+                        break;
                     case StylePropertyId.Top:
                         nonInheritedData.top = reader.ReadLength(0);
                         break;
@@ -262,11 +275,17 @@ namespace UnityEngine.UIElements
                     case StylePropertyId.UnityFont:
                         inheritedData.unityFont = reader.ReadFont(0);
                         break;
+                    case StylePropertyId.UnityFontDefinition:
+                        inheritedData.unityFontDefinition = reader.ReadFontDefinition(0);
+                        break;
                     case StylePropertyId.UnityFontStyleAndWeight:
                         inheritedData.unityFontStyleAndWeight = (FontStyle)reader.ReadEnum(StyleEnumType.FontStyle, 0);
                         break;
                     case StylePropertyId.UnityOverflowClipBox:
                         nonInheritedData.unityOverflowClipBox = (OverflowClipBox)reader.ReadEnum(StyleEnumType.OverflowClipBox, 0);
+                        break;
+                    case StylePropertyId.UnityParagraphSpacing:
+                        inheritedData.unityParagraphSpacing = reader.ReadLength(0);
                         break;
                     case StylePropertyId.UnitySliceBottom:
                         nonInheritedData.unitySliceBottom = reader.ReadInt(0);
@@ -283,6 +302,15 @@ namespace UnityEngine.UIElements
                     case StylePropertyId.UnityTextAlign:
                         inheritedData.unityTextAlign = (TextAnchor)reader.ReadEnum(StyleEnumType.TextAnchor, 0);
                         break;
+                    case StylePropertyId.UnityTextOutline:
+                        ShorthandApplicator.ApplyUnityTextOutline(reader, this);
+                        break;
+                    case StylePropertyId.UnityTextOutlineColor:
+                        inheritedData.unityTextOutlineColor = reader.ReadColor(0);
+                        break;
+                    case StylePropertyId.UnityTextOutlineWidth:
+                        inheritedData.unityTextOutlineWidth = reader.ReadFloat(0);
+                        break;
                     case StylePropertyId.UnityTextOverflowPosition:
                         nonInheritedData.unityTextOverflowPosition = (TextOverflowPosition)reader.ReadEnum(StyleEnumType.TextOverflowPosition, 0);
                         break;
@@ -294,6 +322,9 @@ namespace UnityEngine.UIElements
                         break;
                     case StylePropertyId.Width:
                         nonInheritedData.width = reader.ReadLength(0);
+                        break;
+                    case StylePropertyId.WordSpacing:
+                        inheritedData.wordSpacing = reader.ReadLength(0);
                         break;
                     case StylePropertyId.Custom:
                         ApplyCustomStyleProperty(reader);
@@ -406,6 +437,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Left:
                     nonInheritedData.left = sv.length;
                     break;
+                case StylePropertyId.LetterSpacing:
+                    inheritedData.letterSpacing = sv.length;
+                    break;
                 case StylePropertyId.MarginBottom:
                     nonInheritedData.marginBottom = sv.length;
                     break;
@@ -469,11 +503,17 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityFont:
                     inheritedData.unityFont = sv.resource.IsAllocated ? sv.resource.Target as Font : null;
                     break;
+                case StylePropertyId.UnityFontDefinition:
+                    inheritedData.unityFontDefinition = sv.resource.IsAllocated ? FontDefinition.FromObject(sv.resource.Target) : new FontDefinition();
+                    break;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     inheritedData.unityFontStyleAndWeight = (FontStyle)sv.number;
                     break;
                 case StylePropertyId.UnityOverflowClipBox:
                     nonInheritedData.unityOverflowClipBox = (OverflowClipBox)sv.number;
+                    break;
+                case StylePropertyId.UnityParagraphSpacing:
+                    inheritedData.unityParagraphSpacing = sv.length;
                     break;
                 case StylePropertyId.UnitySliceBottom:
                     nonInheritedData.unitySliceBottom = (int)sv.number;
@@ -490,6 +530,12 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityTextAlign:
                     inheritedData.unityTextAlign = (TextAnchor)sv.number;
                     break;
+                case StylePropertyId.UnityTextOutlineColor:
+                    inheritedData.unityTextOutlineColor = sv.color;
+                    break;
+                case StylePropertyId.UnityTextOutlineWidth:
+                    inheritedData.unityTextOutlineWidth = sv.number;
+                    break;
                 case StylePropertyId.UnityTextOverflowPosition:
                     nonInheritedData.unityTextOverflowPosition = (TextOverflowPosition)sv.number;
                     break;
@@ -502,6 +548,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Width:
                     nonInheritedData.width = sv.length;
                     break;
+                case StylePropertyId.WordSpacing:
+                    inheritedData.wordSpacing = sv.length;
+                    break;
                 default:
                     Debug.LogAssertion($"Unexpected property id {sv.id}");
                     break;
@@ -511,6 +560,11 @@ namespace UnityEngine.UIElements
         public void ApplyStyleCursor(Cursor cursor)
         {
             nonInheritedData.cursor = cursor;
+        }
+
+        public void ApplyStyleTextShadow(TextShadow st)
+        {
+            inheritedData.textShadow = st;
         }
 
         public void ApplyInitialValue(StylePropertyReader reader)
@@ -643,6 +697,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Left:
                     nonInheritedData.left = InitialStyle.left;
                     break;
+                case StylePropertyId.LetterSpacing:
+                    inheritedData.letterSpacing = InitialStyle.letterSpacing;
+                    break;
                 case StylePropertyId.Margin:
                     nonInheritedData.marginTop = InitialStyle.marginTop;
                     nonInheritedData.marginRight = InitialStyle.marginRight;
@@ -706,6 +763,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.TextOverflow:
                     nonInheritedData.textOverflow = InitialStyle.textOverflow;
                     break;
+                case StylePropertyId.TextShadow:
+                    inheritedData.textShadow = InitialStyle.textShadow;
+                    break;
                 case StylePropertyId.Top:
                     nonInheritedData.top = InitialStyle.top;
                     break;
@@ -718,11 +778,17 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityFont:
                     inheritedData.unityFont = InitialStyle.unityFont;
                     break;
+                case StylePropertyId.UnityFontDefinition:
+                    inheritedData.unityFontDefinition = InitialStyle.unityFontDefinition;
+                    break;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     inheritedData.unityFontStyleAndWeight = InitialStyle.unityFontStyleAndWeight;
                     break;
                 case StylePropertyId.UnityOverflowClipBox:
                     nonInheritedData.unityOverflowClipBox = InitialStyle.unityOverflowClipBox;
+                    break;
+                case StylePropertyId.UnityParagraphSpacing:
+                    inheritedData.unityParagraphSpacing = InitialStyle.unityParagraphSpacing;
                     break;
                 case StylePropertyId.UnitySliceBottom:
                     nonInheritedData.unitySliceBottom = InitialStyle.unitySliceBottom;
@@ -739,6 +805,16 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityTextAlign:
                     inheritedData.unityTextAlign = InitialStyle.unityTextAlign;
                     break;
+                case StylePropertyId.UnityTextOutline:
+                    inheritedData.unityTextOutlineColor = InitialStyle.unityTextOutlineColor;
+                    inheritedData.unityTextOutlineWidth = InitialStyle.unityTextOutlineWidth;
+                    break;
+                case StylePropertyId.UnityTextOutlineColor:
+                    inheritedData.unityTextOutlineColor = InitialStyle.unityTextOutlineColor;
+                    break;
+                case StylePropertyId.UnityTextOutlineWidth:
+                    inheritedData.unityTextOutlineWidth = InitialStyle.unityTextOutlineWidth;
+                    break;
                 case StylePropertyId.UnityTextOverflowPosition:
                     nonInheritedData.unityTextOverflowPosition = InitialStyle.unityTextOverflowPosition;
                     break;
@@ -750,6 +826,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.Width:
                     nonInheritedData.width = InitialStyle.width;
+                    break;
+                case StylePropertyId.WordSpacing:
+                    inheritedData.wordSpacing = InitialStyle.wordSpacing;
                     break;
                 default:
                     Debug.LogAssertion($"Unexpected property id {id}");
@@ -780,20 +859,41 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.FontSize:
                     inheritedData.fontSize = parentStyle.fontSize;
                     break;
+                case StylePropertyId.LetterSpacing:
+                    inheritedData.letterSpacing = parentStyle.letterSpacing;
+                    break;
+                case StylePropertyId.TextShadow:
+                    inheritedData.textShadow = parentStyle.textShadow;
+                    break;
                 case StylePropertyId.UnityFont:
                     inheritedData.unityFont = parentStyle.unityFont;
+                    break;
+                case StylePropertyId.UnityFontDefinition:
+                    inheritedData.unityFontDefinition = parentStyle.unityFontDefinition;
                     break;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     inheritedData.unityFontStyleAndWeight = parentStyle.unityFontStyleAndWeight;
                     break;
+                case StylePropertyId.UnityParagraphSpacing:
+                    inheritedData.unityParagraphSpacing = parentStyle.unityParagraphSpacing;
+                    break;
                 case StylePropertyId.UnityTextAlign:
                     inheritedData.unityTextAlign = parentStyle.unityTextAlign;
+                    break;
+                case StylePropertyId.UnityTextOutlineColor:
+                    inheritedData.unityTextOutlineColor = parentStyle.unityTextOutlineColor;
+                    break;
+                case StylePropertyId.UnityTextOutlineWidth:
+                    inheritedData.unityTextOutlineWidth = parentStyle.unityTextOutlineWidth;
                     break;
                 case StylePropertyId.Visibility:
                     inheritedData.visibility = parentStyle.visibility;
                     break;
                 case StylePropertyId.WhiteSpace:
                     inheritedData.whiteSpace = parentStyle.whiteSpace;
+                    break;
+                case StylePropertyId.WordSpacing:
+                    inheritedData.wordSpacing = parentStyle.wordSpacing;
                     break;
                 default:
                     ApplyInitialValue(id);

@@ -58,6 +58,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        public virtual bool isDeveloperBuild => Unsupported.IsDeveloperBuild();
+
         public void OnEnable()
         {
             m_IsInternetReachable = Application.internetReachability == NetworkReachability.ReachableViaLocalAreaNetwork;

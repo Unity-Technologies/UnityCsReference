@@ -56,6 +56,7 @@ namespace UnityEditorInternal.Profiling
         public GPUProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnlocalizedName, k_Name, k_IconName) {}
 
         public override ProfilerArea area => ProfilerArea.GPU;
+        public override bool usesCounters => false;
 
         protected override int defaultOrderIndex => k_DefaultOrderIndex;
         protected override string legacyPreferenceKey => "ProfilerChartGPU";

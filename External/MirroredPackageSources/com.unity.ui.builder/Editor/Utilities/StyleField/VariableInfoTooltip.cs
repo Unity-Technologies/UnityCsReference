@@ -6,94 +6,50 @@ using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    class VariableInfoTooltip : BuilderTooltipPreview
+    class VariableInfoTooltip : StyleFieldPopup
     {
         static readonly string s_UssClassName = "unity-builder-inspector__varinfo-tooltip";
+        static readonly string s_WarningUssClassName = s_UssClassName + "__warning";
 
         VariableEditingHandler m_CurrentHandler;
-        Label m_VarNameLabel;
-        Label m_SelectorSourceLabel;
-        bool m_Showing = true;
+        VariableInfoView m_View;
 
         public VariableEditingHandler currentHandler => m_CurrentHandler;
+
+        public void SetInfo(VariableInfo info)
+        {
+            m_View.SetInfo(info);
+        }
 
         public VariableInfoTooltip()
         {
             AddToClassList(s_UssClassName);
+            m_View = new VariableInfoView();
 
-            VisualElement content = new VisualElement();
+            VisualElement warningContainer = new VisualElement();
 
-            // Load Template
-            var template = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(
-                BuilderConstants.UIBuilderPackagePath + "/Inspector/VariableInfo.uxml");
-            template.CloneTree(content);
+            warningContainer.AddToClassList(s_WarningUssClassName);
 
-            Add(content);
+            var warningIcon = new Image();
+            var warningLabel = new Label(BuilderConstants.VariableNotSupportedInInlineStyleMessage);
 
-            m_VarNameLabel = this.Q<Label>("inspector-varinfo-name-label");
+            warningContainer.Add(warningIcon);
+            warningContainer.Add(warningLabel);
 
-            m_SelectorSourceLabel = this.Q<Label>("inspector-varinfo-source");
+            m_View.Add(warningContainer);
 
+            Add(m_View);
 
-// TODO: Will need to bring this back once we can also do the dragger at the same time.
-
-            this.RegisterCallback<GeometryChangedEvent>(e => {
-                if (m_Showing)
-                {
-                    m_Showing = false;
-                    AdjustXPosition();
-                }
-            });
-
+            // TODO: Will need to bring this back once we can also do the dragger at the same time.
             focusable = true;
         }
 
-        public void Show(VariableEditingHandler handler, string variableName, StyleSheet varStyleSheetOrigin, StyleComplexSelector varSelectorOrigin)
+        public void Show(VariableEditingHandler handler, VariableInfo info)
         {
             m_CurrentHandler = handler;
-            m_VarNameLabel.text = !string.IsNullOrEmpty(variableName) ? variableName : "None";
-
-            if (!string.IsNullOrEmpty(variableName) && varSelectorOrigin != null)
-            {
-                var fullPath = AssetDatabase.GetAssetPath(varStyleSheetOrigin);
-                string displayPath = null;
-
-                if (string.IsNullOrEmpty(fullPath))
-                {
-                    displayPath = varStyleSheetOrigin.name;
-                }
-                else
-                {
-                    if (fullPath == "Library/unity editor resources")
-                        displayPath = varStyleSheetOrigin.name;
-                    else
-                        displayPath = Path.GetFileName(fullPath);
-                }
-
-                m_SelectorSourceLabel.text = $"{StyleSheetToUss.ToUssSelector(varSelectorOrigin)} ({displayPath})";
-            }
-            else
-            {
-                m_SelectorSourceLabel.text = "None";
-            }
-
-            var pos = handler.labelElement.ChangeCoordinatesTo(parent, Vector2.zero);
-
-            pos.x = parent.layout.width - (style.minWidth.value.value + handler.inspector.resolvedStyle.width + BuilderConstants.TooltipPreviewYOffset);
-            style.left = pos.x;
-            style.top = pos.y;
-            m_Showing = true;
+            m_View.SetInfo(info);
+            anchoredControl = handler.variableField;
             Show();
-            // TODO: Will need to bring this back once we can also do the dragger at the same time.
-            //Focus();
-        }
-
-        void AdjustXPosition()
-        {
-            if (m_CurrentHandler == null || parent == null)
-                return;
-
-            style.left = parent.layout.width - (resolvedStyle.width + m_CurrentHandler.inspector.pane.resolvedStyle.width + BuilderConstants.TooltipPreviewYOffset);
         }
     }
 }

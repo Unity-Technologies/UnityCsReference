@@ -820,7 +820,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Finds the lowest commont ancestor between two VisualElements inside the VisualTree hierarchy
+        /// Finds the lowest common ancestor between two VisualElements inside the VisualTree hierarchy
         /// </summary>
         public VisualElement FindCommonAncestor(VisualElement other)
         {

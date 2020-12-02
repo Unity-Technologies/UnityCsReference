@@ -24,9 +24,9 @@ namespace UnityEditor.Search
 
         private readonly string name;
         private readonly string title;
-        private readonly int progressId = k_NoProgress;
+        private int progressId = k_NoProgress;
         private EventWaitHandle cancelEvent;
-        private readonly ResolveHandler finished;
+        private readonly ResolveHandler resolver;
         private readonly System.Diagnostics.Stopwatch sw;
         private string status = null;
         private volatile bool disposed = false;
@@ -36,7 +36,7 @@ namespace UnityEditor.Search
         public bool canceled { get; private set; }
         public Exception error { get; private set; }
 
-        public bool async => finished != null;
+        public bool async => resolver != null;
         public long elapsedTime => sw.ElapsedMilliseconds;
 
         private SearchTask(string name, string title, ITaskReporter reporter)
@@ -61,11 +61,11 @@ namespace UnityEditor.Search
         /// <summary>
         /// Create async or threaded task
         /// </summary>
-        public SearchTask(string name, string title, ResolveHandler finished, int total, ITaskReporter reporter)
+        public SearchTask(string name, string title, ResolveHandler resolver, int total, ITaskReporter reporter)
             : this(name, title, reporter)
         {
             this.total = total;
-            this.finished = finished;
+            this.resolver = resolver;
             progressId = StartReport(title);
             cancelEvent = new EventWaitHandle(false, EventResetMode.ManualReset);
 
@@ -73,8 +73,8 @@ namespace UnityEditor.Search
                 Progress.RegisterCancelCallback(progressId, () => cancelEvent.Set());
         }
 
-        public SearchTask(string name, string title, ResolveHandler finished, ITaskReporter reporter)
-            : this(name, title, finished, 1, reporter)
+        public SearchTask(string name, string title, ResolveHandler resolver, ITaskReporter reporter)
+            : this(name, title, resolver, 1, reporter)
         {
         }
 
@@ -85,16 +85,22 @@ namespace UnityEditor.Search
                 if (disposing)
                     Resolve();
 
+                cancelEvent?.Dispose();
+                cancelEvent = null;
+                if (Progress.Exists(progressId))
+                    Progress.Remove(progressId);
+                progressId = k_NoProgress;
                 disposed = true;
             }
         }
 
         public void Dispose()
         {
-            cancelEvent?.Dispose();
-            cancelEvent = null;
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
+
+        ~SearchTask() => Dispose(false);
 
         public bool RunThread(Action routine, Action finalize = null)
         {
@@ -124,10 +130,7 @@ namespace UnityEditor.Search
 
         public void Report(string status)
         {
-            if (disposed)
-                return;
-
-            if (progressId == k_NoProgress)
+            if (!IsValid())
                 return;
 
             this.status = status;
@@ -150,10 +153,7 @@ namespace UnityEditor.Search
 
         public void Report(int current, int total)
         {
-            if (disposed)
-                return;
-
-            if (progressId == k_NoProgress)
+            if (!IsValid())
                 return;
 
             if (progressId == k_BlockingProgress)
@@ -179,6 +179,9 @@ namespace UnityEditor.Search
 
         public bool Canceled()
         {
+            if (!IsValid())
+                return true;
+
             if (cancelEvent == null)
                 return false;
 
@@ -186,45 +189,48 @@ namespace UnityEditor.Search
                 return false;
 
             canceled = true;
-            ClearReport(progressId);
+            ClearReport();
 
-            if (finished != null)
-                Dispatcher.Enqueue(() => finished.Invoke(this, null));
+            if (resolver != null)
+                Dispatcher.Enqueue(() => resolver.Invoke(this, null));
             return true;
         }
 
-        public void Resolve(T data)
+        public void Resolve(T data, bool completed = true)
         {
-            if (disposed)
+            if (!IsValid())
                 return;
+
             if (Canceled())
                 return;
-            finished?.Invoke(this, data);
-            Dispose();
+            resolver?.Invoke(this, data);
+            if (completed)
+                Dispose();
         }
 
         private void Resolve()
         {
-            if (disposed)
-                return;
-            FinishReport(progressId);
+            FinishReport();
         }
 
-        internal void Resolve(Exception err)
+        public void Resolve(Exception err)
         {
-            if (disposed)
+            Console.WriteLine($"Search task exception: {err}");
+
+            if (!IsValid())
                 return;
+
             error = err;
             canceled = true;
 
             if (err != null)
             {
-                ReportError(progressId, err);
-                if (finished == null)
+                ReportError(err);
+                if (resolver == null)
                     Debug.LogException(err);
             }
 
-            finished?.Invoke(this, null);
+            resolver?.Invoke(this, null);
         }
 
         private int StartBlockingReport(string title)
@@ -241,62 +247,78 @@ namespace UnityEditor.Search
             return progressId;
         }
 
-        private void ReportError(int progressId, Exception err)
+        private void ReportError(Exception err)
         {
-            if (progressId == k_NoProgress)
+            if (!IsValid())
                 return;
 
             if (progressId == k_BlockingProgress)
             {
                 Debug.LogException(err);
                 EditorUtility.ClearProgressBar();
-                return;
             }
-
-            if (IsProgressRunning(progressId))
+            else if (IsProgressRunning(progressId))
             {
                 Progress.SetDescription(progressId, err.Message);
                 Progress.Finish(progressId, Progress.Status.Failed);
             }
 
+            progressId = k_NoProgress;
             status = null;
         }
 
-        private void FinishReport(int progressId)
+        private bool IsValid()
         {
+            if (disposed)
+                return false;
+
+            if (progressId == k_NoProgress)
+                return false;
+
+            return true;
+        }
+
+        private void FinishReport()
+        {
+            error = null;
             status = null;
+            canceled = false;
+
+            if (!IsValid())
+                return;
 
             reporter?.Report(name, $"took {elapsedTime} ms");
 
             if (progressId == k_BlockingProgress)
-            {
                 EditorUtility.ClearProgressBar();
-                return;
-            }
-
-            if (IsProgressRunning(progressId))
+            else if (IsProgressRunning(progressId))
                 Progress.Finish(progressId, Progress.Status.Succeeded);
+
+            progressId = k_NoProgress;
         }
 
-        private void ClearReport(int progressId)
+        private void ClearReport()
         {
             status = null;
 
-            if (progressId == k_BlockingProgress)
-            {
-                EditorUtility.ClearProgressBar();
+            if (!IsValid())
                 return;
-            }
 
-            if (IsProgressRunning(progressId))
+            if (progressId == k_BlockingProgress)
+                EditorUtility.ClearProgressBar();
+            else if (IsProgressRunning(progressId))
                 Progress.Remove(progressId);
+
+            progressId = k_NoProgress;
         }
 
         private static bool IsProgressRunning(int progressId)
         {
             if (progressId == k_NoProgress)
                 return false;
-            return Progress.Exists(progressId) && Progress.GetStatus(progressId) == Progress.Status.Running;
+            if (!Progress.Exists(progressId))
+                return false;
+            return Progress.GetStatus(progressId) == Progress.Status.Running;
         }
     }
 }

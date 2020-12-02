@@ -8,10 +8,13 @@ namespace Unity.UI.Builder
     class BuilderSelectionIndicator : BuilderTracker
     {
         static readonly string s_UssClassName = "unity-builder-selection-indicator";
-        private VisualElement m_Header;
-        private Label m_HeaderLabel;
+        VisualElement m_Header;
+        Label m_HeaderLabel;
+        BuilderCanvasStyleControls m_CanvasStyleControls;
 
         public new class UxmlFactory : UxmlFactory<BuilderSelectionIndicator, UxmlTraits> { }
+
+        public BuilderCanvasStyleControls canvasStyleControls => m_CanvasStyleControls;
 
         public BuilderSelectionIndicator()
         {
@@ -21,13 +24,23 @@ namespace Unity.UI.Builder
 
             AddToClassList(s_UssClassName);
             m_Header = this.Q("header");
-            m_HeaderLabel = this.Q<Label>("header-label");
+            m_HeaderLabel = m_Header.Q<Label>("header-label");
+            m_CanvasStyleControls = m_Header.Q<BuilderCanvasStyleControls>();
         }
 
-        public override void Activate(VisualElement element)
+        public void Activate(BuilderSelection selection, VisualTreeAsset visualTreeAsset, VisualElement element)
         {
             base.Activate(element);
+
             UpdateLabel();
+
+            m_CanvasStyleControls.Activate(selection, visualTreeAsset, element);
+        }
+
+        public override void Deactivate()
+        {
+            base.Deactivate();
+            m_CanvasStyleControls.Deactivate();
         }
 
         public void OnHierarchyChanged(VisualElement element)
@@ -41,13 +54,9 @@ namespace Unity.UI.Builder
                 return;
 
             if (string.IsNullOrEmpty(m_Target.name))
-            {
                 m_HeaderLabel.text = m_Target.typeName;
-            }
             else
-            {
                 m_HeaderLabel.text = BuilderConstants.UssSelectorNameSymbol + m_Target.name;
-            }
         }
     }
 }

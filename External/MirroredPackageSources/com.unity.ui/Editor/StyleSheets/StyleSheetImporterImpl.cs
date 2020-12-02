@@ -19,14 +19,14 @@ namespace UnityEditor.UIElements.StyleSheets
         const string k_ResourcePathFunctionName = "resource";
         const string k_VariableFunctionName = "var";
 
-        protected readonly AssetImportContext m_Context;
+        protected readonly UnityEditor.AssetImporters.AssetImportContext m_Context;
         protected readonly Parser m_Parser;
         protected readonly StyleSheetBuilder m_Builder;
         protected readonly StyleSheetImportErrors m_Errors;
         protected readonly StyleValidator m_Validator;
         protected string m_AssetPath;
 
-        public StyleValueImporter(AssetImportContext context)
+        public StyleValueImporter(UnityEditor.AssetImporters.AssetImportContext context)
         {
             if (context == null)
                 throw new ArgumentNullException(nameof(context));
@@ -67,7 +67,7 @@ namespace UnityEditor.UIElements.StyleSheets
             m_Context?.DependsOnSourceAsset(path);
 
             if (string.IsNullOrEmpty(subAssetPath))
-                return AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
+                return AssetDatabase.LoadMainAssetAtPath(path);
 
             var mainAsset = AssetDatabase.LoadMainAssetAtPath(path);
             foreach (var o in AssetDatabase.LoadAllAssetsAtPath(path))
@@ -172,7 +172,7 @@ namespace UnityEditor.UIElements.StyleSheets
                 }
                 else
                 {
-                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURIProjectAssetType, string.Format("Invalid asset type {0}, only Font, FontAsset, Texture2D, Sprite and VectorImage are supported", asset.GetType().Name));
+                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURIProjectAssetType, string.Format("Invalid asset type {0}, only Font, FontAssets, Sprite, Texture2D and VectorImage are supported", asset.GetType().Name));
                 }
             }
         }
