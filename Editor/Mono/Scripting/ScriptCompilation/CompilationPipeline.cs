@@ -30,11 +30,21 @@ namespace UnityEditor.Compilation
         public CodeOptimization CodeOptimization { get; set; }
         public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
         public string[] ResponseFiles { get; set; }
+
         public ScriptCompilerOptions()
         {
             AllowUnsafeCode = false;
             ApiCompatibilityLevel = ApiCompatibilityLevel.NET_4_6;
             ResponseFiles = new string[0];
+        }
+
+        internal ScriptCompilerOptions(ScriptCompilerOptions scriptCompilerOptions)
+        {
+            AllowUnsafeCode = scriptCompilerOptions.AllowUnsafeCode;
+            UseDeterministicCompilation = scriptCompilerOptions.UseDeterministicCompilation;
+            CodeOptimization = scriptCompilerOptions.CodeOptimization;
+            ApiCompatibilityLevel = scriptCompilerOptions.ApiCompatibilityLevel;
+            ResponseFiles = new List<string>(scriptCompilerOptions.ResponseFiles).ToArray();
         }
     }
 

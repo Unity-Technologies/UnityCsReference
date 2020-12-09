@@ -586,6 +586,11 @@ namespace UnityEngine
             get { return SupportsConservativeRaster(); }
         }
 
+        public static bool supportsMultiview
+        {
+            get { return SupportsMultiview(); }
+        }
+
         [Obsolete("Vertex program support is required in Unity 5.0+")]
         public static bool supportsVertexPrograms { get { return true; } }
 
@@ -851,6 +856,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsConservativeRaster")]
         static extern bool SupportsConservativeRaster();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsMultiview")]
+        static extern bool SupportsMultiview();
     }
 
 
@@ -940,6 +948,8 @@ namespace UnityEngine
         public static bool supportsComputeShaders => ShimManager.systemInfoShim.supportsComputeShaders;
 
         public static bool supportsConservativeRaster => ShimManager.systemInfoShim.supportsConservativeRaster;
+
+        public static bool supportsMultiview => ShimManager.systemInfoShim.supportsMultiview;
 
         public static bool supportsGeometryShaders => ShimManager.systemInfoShim.supportsGeometryShaders;
 
