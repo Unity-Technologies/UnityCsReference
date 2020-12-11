@@ -235,8 +235,8 @@ namespace Unity.UI.Builder
         }
 
         public static void SwallowStyleRule(
-           StyleSheet toStyleSheet, StyleRule toRule,
-           StyleSheet fromStyleSheet, StyleRule fromRule)
+            StyleSheet toStyleSheet, StyleRule toRule,
+            StyleSheet fromStyleSheet, StyleRule fromRule)
         {
             // Add property values to sheet.
             foreach (var fromProperty in fromRule.properties)

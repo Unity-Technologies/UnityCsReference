@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    internal class SceneViewOverlay
+    class SceneViewOverlay
     {
         // This enum is for better overview of the ordering of our builtin overlays
         public enum Ordering
@@ -35,13 +35,12 @@ namespace UnityEditor
         }
 
         public delegate void WindowFunction(Object target, SceneView sceneView);
-
         static List<OverlayWindow> s_Windows;
-
         readonly SceneView m_SceneView;
 
         const float k_WindowPadding = 9f;
 
+        Rect m_LastRect;
         GUIStyle m_TitleStyle;
 
         public SceneViewOverlay(SceneView sceneView)
@@ -73,16 +72,12 @@ namespace UnityEditor
         public void End()
         {
             s_Windows.Sort();
-
             if (s_Windows.Count > 0)
-                WindowTrampoline("SceneViewOverlay".GetHashCode());
-
+                WindowTrampoline();
             m_SceneView.EndWindows();
         }
 
-        float m_LastWidth;
-
-        void WindowTrampoline(int id)
+        void WindowTrampoline()
         {
             GUILayout.BeginHorizontal(Styles.sceneViewOverlayTransparentBackground);
             GUILayout.FlexibleSpace();
@@ -120,21 +115,18 @@ namespace UnityEditor
 
             GUILayout.EndVertical();
 
-            var inputEaterRect = GUILayoutUtility.GetLastRect();
-            EatMouseInput(inputEaterRect);
-
-            if (Event.current.type == EventType.Repaint)
-                m_LastWidth = inputEaterRect.width;
+            HandleEvent(GUILayoutUtility.GetLastRect());
 
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
         }
 
-        static void EatMouseInput(Rect position)
+        void HandleEvent(Rect position)
         {
             SceneView.AddCursorRect(position, MouseCursor.Arrow);
 
             var id = GUIUtility.GetControlID("SceneViewOverlay".GetHashCode(), FocusType.Passive, position);
+
             switch (Event.current.GetTypeForControl(id))
             {
                 case EventType.MouseDown:
@@ -158,6 +150,13 @@ namespace UnityEditor
                 case EventType.ScrollWheel:
                     if (position.Contains(Event.current.mousePosition))
                         Event.current.Use();
+                    break;
+                case EventType.Layout:
+                    HandleUtility.AddControl(id, m_LastRect.Contains(Event.current.mousePosition) ? 0f : float.PositiveInfinity);
+                    break;
+                case EventType.Repaint:
+                    // Getting the last rect from a layout pass is only valid on repaint
+                    m_LastRect = position;
                     break;
             }
         }

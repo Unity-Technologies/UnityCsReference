@@ -73,7 +73,7 @@ namespace Unity.UI.Builder
 
             if (!CanStopManipulation(evt))
                 return;
-            
+
             DisplayContextMenu(evt, target);
 
             target.ReleaseMouse();
@@ -127,11 +127,11 @@ namespace Unity.UI.Builder
             var linkedOpenVTA = documentElement?.GetProperty(BuilderConstants.ElementLinkedVisualTreeAssetVEPropertyName) as VisualTreeAsset;
 
             var isValidTarget = documentElement != null && !linkedOpenVTA &&
-                                (documentElement.IsPartOfActiveVisualTreeAsset(paneWindow.document) ||
-                                 documentElement.GetStyleComplexSelector() != null);
+                (documentElement.IsPartOfActiveVisualTreeAsset(paneWindow.document) ||
+                    documentElement.GetStyleComplexSelector() != null);
             var isValidCopyTarget = documentElement != null && !linkedOpenVTA &&
-                                    (documentElement.IsPartOfCurrentDocument() ||
-                                     documentElement.GetStyleComplexSelector() != null);
+                (documentElement.IsPartOfCurrentDocument() ||
+                    documentElement.GetStyleComplexSelector() != null);
             evt.StopImmediatePropagation();
 
             evt.menu.AppendAction(
@@ -143,8 +143,8 @@ namespace Unity.UI.Builder
                         m_PaneWindow.commandHandler.CopySelection();
                 },
                 isValidCopyTarget
-                    ? DropdownMenuAction.Status.Normal
-                    : DropdownMenuAction.Status.Disabled);
+                ? DropdownMenuAction.Status.Normal
+                : DropdownMenuAction.Status.Disabled);
 
             evt.menu.AppendAction(
                 "Paste",
@@ -153,8 +153,8 @@ namespace Unity.UI.Builder
                     m_PaneWindow.commandHandler.Paste();
                 },
                 string.IsNullOrEmpty(BuilderEditorUtility.systemCopyBuffer)
-                    ? DropdownMenuAction.Status.Disabled
-                    : DropdownMenuAction.Status.Normal);
+                ? DropdownMenuAction.Status.Disabled
+                : DropdownMenuAction.Status.Normal);
 
             evt.menu.AppendSeparator();
 
@@ -168,11 +168,10 @@ namespace Unity.UI.Builder
                         return;
 
                     explorerItemElement.ActivateRenameElementMode();
-
                 },
                 isValidTarget
-                    ? DropdownMenuAction.Status.Normal
-                    : DropdownMenuAction.Status.Disabled);
+                ? DropdownMenuAction.Status.Normal
+                : DropdownMenuAction.Status.Disabled);
 
             evt.menu.AppendAction(
                 "Duplicate",
@@ -182,8 +181,8 @@ namespace Unity.UI.Builder
                     m_PaneWindow.commandHandler.DuplicateSelection();
                 },
                 isValidTarget
-                    ? DropdownMenuAction.Status.Normal
-                    : DropdownMenuAction.Status.Disabled);
+                ? DropdownMenuAction.Status.Normal
+                : DropdownMenuAction.Status.Disabled);
 
             evt.menu.AppendSeparator();
 
@@ -195,8 +194,8 @@ namespace Unity.UI.Builder
                     m_PaneWindow.commandHandler.DeleteSelection();
                 },
                 isValidTarget
-                    ? DropdownMenuAction.Status.Normal
-                    : DropdownMenuAction.Status.Disabled);
+                ? DropdownMenuAction.Status.Normal
+                : DropdownMenuAction.Status.Disabled);
 
             var linkedInstancedVTA = documentElement?.GetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName) as VisualTreeAsset;
             var linkedVEA = documentElement?.GetProperty(BuilderConstants.ElementLinkedVisualElementAssetVEPropertyName) as TemplateAsset;
@@ -262,7 +261,6 @@ namespace Unity.UI.Builder
                         BuilderHierarchyUtilities.OpenAsSubDocument(paneWindow, linkedInstancedVTA, linkedVEA);
                     });
             }
-
         }
     }
 }

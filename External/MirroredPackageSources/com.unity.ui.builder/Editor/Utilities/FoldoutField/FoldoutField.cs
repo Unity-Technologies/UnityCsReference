@@ -7,7 +7,7 @@ namespace Unity.UI.Builder
 {
     internal class FoldoutField : PersistedFoldout
     {
-        public new class UxmlFactory : UxmlFactory<FoldoutField, UxmlTraits> { }
+        public new class UxmlFactory : UxmlFactory<FoldoutField, UxmlTraits> {}
 
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
@@ -52,6 +52,6 @@ namespace Unity.UI.Builder
             header.AddToClassList(BuilderConstants.FoldoutFieldHeaderClassName);
         }
 
-        public virtual void UpdateFromChildFields() { }
+        public virtual void UpdateFromChildFields() {}
     }
 }

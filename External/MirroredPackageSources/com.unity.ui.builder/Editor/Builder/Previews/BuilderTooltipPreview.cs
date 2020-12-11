@@ -16,13 +16,13 @@ namespace Unity.UI.Builder
 
         public bool isShowing => m_Enabler.resolvedStyle.display == DisplayStyle.Flex;
 
-        public new class UxmlFactory : UxmlFactory<BuilderTooltipPreview, UxmlTraits> { }
+        public new class UxmlFactory : UxmlFactory<BuilderTooltipPreview, UxmlTraits> {}
 
-        public new class UxmlTraits : BindableElement.UxmlTraits { }
+        public new class UxmlTraits : BindableElement.UxmlTraits {}
 
         public override VisualElement contentContainer => m_Container == null ? this : m_Container;
 
-        public event Action onShow; 
+        public event Action onShow;
         public event Action onHide;
 
         public BuilderTooltipPreview()

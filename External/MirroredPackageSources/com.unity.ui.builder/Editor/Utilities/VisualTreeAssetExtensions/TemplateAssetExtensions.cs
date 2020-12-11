@@ -5,7 +5,6 @@ namespace Unity.UI.Builder
 {
     internal static class TemplateAssetExtensions
     {
-
         public static void SetAttributeOverride(
             this TemplateAsset ta, string elementName, string attributeName, string value)
         {
@@ -56,6 +55,5 @@ namespace Unity.UI.Builder
                 }
             }
         }
-
     }
 }

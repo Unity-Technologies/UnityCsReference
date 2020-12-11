@@ -177,6 +177,7 @@ namespace UnityEditor
         /// *undocumented*
         LocalMachine = 0,
         /// *undocumented*
+        [System.Obsolete("UnityEditor.WSABuildAndRunDeployTarget.WindowsPhone is obsolete.", true)]
         WindowsPhone = 1,
         /// *undocumented*
         DevicePortal = 2

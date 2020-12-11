@@ -128,7 +128,7 @@ namespace Unity.UI.Builder
             UnregisterCallback<DetachFromPanelEvent>(UnregisterCallbacks);
             BuilderAssetModificationProcessor.Unregister(this);
             if (m_ThemeManager != null)
-               BuilderAssetPostprocessor.Unregister(m_ThemeManager);
+                BuilderAssetPostprocessor.Unregister(m_ThemeManager);
         }
 
         public void SetToolbarBreadCrumbs()
@@ -170,7 +170,7 @@ namespace Unity.UI.Builder
             return newFileName;
         }
 
-        public void OnAssetChange() { }
+        public void OnAssetChange() {}
 
         public AssetDeleteResult OnWillDeleteAsset(string assetPath, RemoveAssetOptions option)
         {
@@ -436,31 +436,31 @@ namespace Unity.UI.Builder
             }
 
             m_CanvasThemeMenu.menu.AppendAction("Default", a =>
-                {
-                    ChangeCanvasTheme(BuilderDocument.CanvasTheme.Default, null);
-                    UpdateCanvasThemeMenuStatus();
-                },
+            {
+                ChangeCanvasTheme(BuilderDocument.CanvasTheme.Default, null);
+                UpdateCanvasThemeMenuStatus();
+            },
                 a => document.currentCanvasTheme == BuilderDocument.CanvasTheme.Default
-                    ? DropdownMenuAction.Status.Checked
-                    : DropdownMenuAction.Status.Normal);
+                ? DropdownMenuAction.Status.Checked
+                : DropdownMenuAction.Status.Normal);
 
             m_CanvasThemeMenu.menu.AppendAction("Dark", a =>
-                {
-                    ChangeCanvasTheme(BuilderDocument.CanvasTheme.Dark);
-                    UpdateCanvasThemeMenuStatus();
-                },
+            {
+                ChangeCanvasTheme(BuilderDocument.CanvasTheme.Dark);
+                UpdateCanvasThemeMenuStatus();
+            },
                 a => document.currentCanvasTheme == BuilderDocument.CanvasTheme.Dark
-                    ? DropdownMenuAction.Status.Checked
-                    : DropdownMenuAction.Status.Normal);
+                ? DropdownMenuAction.Status.Checked
+                : DropdownMenuAction.Status.Normal);
 
             m_CanvasThemeMenu.menu.AppendAction("Light", a =>
-                {
-                    ChangeCanvasTheme(BuilderDocument.CanvasTheme.Light);
-                    UpdateCanvasThemeMenuStatus();
-                },
+            {
+                ChangeCanvasTheme(BuilderDocument.CanvasTheme.Light);
+                UpdateCanvasThemeMenuStatus();
+            },
                 a => document.currentCanvasTheme == BuilderDocument.CanvasTheme.Light
-                    ? DropdownMenuAction.Status.Checked
-                    : DropdownMenuAction.Status.Normal);
+                ? DropdownMenuAction.Status.Checked
+                : DropdownMenuAction.Status.Normal);
 
             m_CanvasThemeMenu.menu.AppendAction("Runtime", a =>
             {
@@ -468,8 +468,8 @@ namespace Unity.UI.Builder
                 UpdateCanvasThemeMenuStatus();
             },
                 a => document.currentCanvasTheme == BuilderDocument.CanvasTheme.Runtime
-                    ? DropdownMenuAction.Status.Checked
-                    : DropdownMenuAction.Status.Normal);
+                ? DropdownMenuAction.Status.Checked
+                : DropdownMenuAction.Status.Normal);
 
             if (m_ThemeManager != null && m_ThemeManager.themeFiles.Count > 0)
             {
@@ -486,7 +486,7 @@ namespace Unity.UI.Builder
                         ChangeCanvasTheme(BuilderDocument.CanvasTheme.Custom, theme);
                         UpdateCanvasThemeMenuStatus();
                     },
-                    a => document.currentCanvasThemeStyleSheet != null && AssetDatabase.GetAssetPath(document.currentCanvasThemeStyleSheet) == themeFile
+                        a => document.currentCanvasThemeStyleSheet != null && AssetDatabase.GetAssetPath(document.currentCanvasThemeStyleSheet) == themeFile
                         ? DropdownMenuAction.Status.Checked
                         : DropdownMenuAction.Status.Normal);
                 }
@@ -709,7 +709,7 @@ namespace Unity.UI.Builder
             projectSettingsWindow.SelectProviderByName(BuilderSettingsProvider.name);
         }
 
-        public void SelectionChanged() { }
+        public void SelectionChanged() {}
 
         public void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
         {

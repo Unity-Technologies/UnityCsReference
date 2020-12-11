@@ -903,6 +903,7 @@ namespace Unity.UI.Builder
                 }
             }
         }
+
         public void RefreshStyleField(FoldoutField foldoutElement)
         {
             if (foldoutElement is FoldoutNumberField foldoutNumberField)
@@ -1282,8 +1283,8 @@ namespace Unity.UI.Builder
                         styleField.AddToClassList(BuilderConstants.InspectorLocalStyleOverrideClassName);
                     }
                     else if (!string.IsNullOrEmpty(styleField.bindingPath) &&
-                        bindableElement.bindingPath != styleField.bindingPath &&
-                        !styleField.ClassListContains(BuilderConstants.InspectorLocalStyleOverrideClassName))
+                             bindableElement.bindingPath != styleField.bindingPath &&
+                             !styleField.ClassListContains(BuilderConstants.InspectorLocalStyleOverrideClassName))
                     {
                         styleField.AddToClassList(BuilderConstants.InspectorLocalStyleResetClassName);
                     }
@@ -1683,7 +1684,7 @@ namespace Unity.UI.Builder
                 if (currentVisualElement.GetMinSizeSpecialElement() != null)
                 {
                     var newSize = Vector2.negativeInfinity;
-                    
+
                     if (newValue is Texture texture)
                         newSize = new Vector2(texture.width, texture.height);
                     else if (newValue is Sprite sprite)
@@ -1693,12 +1694,12 @@ namespace Unity.UI.Builder
                     {
                         var widthFieldsForName = GetFieldListForStyleName("width");
                         Assert.AreEqual(1, widthFieldsForName.Count);
-                        var widthField = (DimensionStyleField) widthFieldsForName[0];
+                        var widthField = (DimensionStyleField)widthFieldsForName[0];
                         widthField.value = $"{newSize.x}px";
 
                         var heightFieldsForName = GetFieldListForStyleName("height");
                         Assert.AreEqual(1, heightFieldsForName.Count);
-                        var heightField = (DimensionStyleField) heightFieldsForName[0];
+                        var heightField = (DimensionStyleField)heightFieldsForName[0];
                         heightField.value = $"{newSize.y}px";
                     }
                 }
@@ -1833,7 +1834,7 @@ namespace Unity.UI.Builder
             return val is StyleFont || val is Font || styleName == "-unity-font";
         }
 
-        
+
         static public bool IsComputedStyleBackground(object val)
         {
             return val is StyleBackground || val is Background;
@@ -1863,7 +1864,7 @@ namespace Unity.UI.Builder
             return style.value;
         }
 
-        
+
         static public int GetComputedStyleIntValue(object val)
         {
             if (val is int)
@@ -1900,7 +1901,7 @@ namespace Unity.UI.Builder
             return style.value;
         }
 
-        
+
         static public Background GetComputedStyleBackgroundValue(object val)
         {
             if (val is Background)

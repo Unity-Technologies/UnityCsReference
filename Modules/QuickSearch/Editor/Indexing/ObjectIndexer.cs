@@ -65,14 +65,6 @@ namespace UnityEditor.Search
         }
 
         /// <summary>
-        /// Build the index into a separate thread.
-        /// </summary>
-        public override void Build()
-        {
-            throw new NotSupportedException("Object indexer uses asset workers to produce index artifacts.");
-        }
-
-        /// <summary>
         /// Called when the index is built to see if a specified document needs to be indexed. See <see cref="SearchIndexer.skipEntryHandler"/>
         /// </summary>
         /// <param name="path">Path of a document</param>

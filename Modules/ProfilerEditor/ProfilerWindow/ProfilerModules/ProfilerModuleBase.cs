@@ -153,7 +153,12 @@ namespace UnityEditorInternal.Profiling
         public virtual void OnSelected() {}
         public virtual void OnDeselected() {}
         public virtual void OnClosed() {}
-        public virtual void Clear() {}
+
+        public virtual void Clear()
+        {
+            m_Chart?.ResetChartState();
+        }
+
         public virtual void OnNativePlatformSupportModuleChanged() {}
 
         public virtual void Rebuild()

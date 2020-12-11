@@ -936,21 +936,6 @@ namespace UnityEditor
             }
         }
 
-        bool GetIsCustomParentSelected()
-        {
-            if (m_CustomParentForNewGameObjects == null)
-                return false;
-
-            GameObject[] selected = Selection.gameObjects;
-            for (int i = 0; i < selected.Length; i++)
-            {
-                if (selected[i] == m_CustomParentForNewGameObjects.gameObject)
-                    return true;
-            }
-
-            return false;
-        }
-
         bool GetIsNotEditable()
         {
             GameObject[] selected = Selection.gameObjects;
@@ -959,6 +944,26 @@ namespace UnityEditor
                 if ((selected[i].hideFlags & HideFlags.NotEditable) != 0)
                     return true;
             }
+            return false;
+        }
+
+        static bool IsSelectedOrChildOfSelection(Transform transform)
+        {
+            if (transform == null)
+                return false;
+
+            GameObject[] selected = Selection.gameObjects;
+            for (int i = 0; i < selected.Length; i++)
+            {
+                var current = transform;
+                while (current != null)
+                {
+                    if (selected[i] == current.gameObject)
+                        return true;
+                    current = current.parent;
+                }
+            }
+
             return false;
         }
 
@@ -975,7 +980,7 @@ namespace UnityEditor
 
             if (evt.commandName == EventCommandNames.Delete || evt.commandName == EventCommandNames.SoftDelete)
             {
-                if (execute && !CutCopyPasteUtility.GetIsCustomParentSelected(m_CustomParentForNewGameObjects))
+                if (execute && !IsSelectedOrChildOfSelection(m_CustomParentForNewGameObjects))
                     DeleteGO();
                 evt.Use();
                 GUIUtility.ExitGUI();
@@ -1084,7 +1089,7 @@ namespace UnityEditor
 
             menu.AddSeparator("");
 
-            if (CutCopyPasteUtility.GetIsCustomParentSelected(m_CustomParentForNewGameObjects))
+            if (IsSelectedOrChildOfSelection(m_CustomParentForNewGameObjects))
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete GameObject"));
             else
                 menu.AddItem(EditorGUIUtility.TrTextContent("Delete GameObject"), false, DeleteGO);
@@ -1111,7 +1116,7 @@ namespace UnityEditor
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Rename"));
             menu.AddItem(EditorGUIUtility.TrTextContent("Duplicate"), false, DuplicateGO);
 
-            if (CutCopyPasteUtility.GetIsCustomParentSelected(m_CustomParentForNewGameObjects))
+            if (IsSelectedOrChildOfSelection(m_CustomParentForNewGameObjects))
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete"));
             else
                 menu.AddItem(EditorGUIUtility.TrTextContent("Delete"), false, DeleteGO);

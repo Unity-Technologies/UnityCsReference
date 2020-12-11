@@ -2,12 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-//#define QUICKSEARCH_DEBUG
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using UnityEditor;
 
 namespace UnityEditor.Search
 {
@@ -154,9 +152,9 @@ namespace UnityEditor.Search
         /// <param name="options">Options to further controlled the query.</param>
         public SearchContext(IEnumerable<SearchProvider> providers, string searchText, SearchFlags options)
         {
+            this.options = options;
             this.providers = providers.ToList();
             this.searchText = searchText;
-            this.options = options;
         }
 
         /// <summary>
@@ -457,6 +455,8 @@ namespace UnityEditor.Search
 
         private void BeginSession()
         {
+            if (options.HasFlag(SearchFlags.Debug))
+                UnityEngine.Debug.Log($"Start search session {String.Join(", ", providers.Select(p=>p.id))} -> {searchText}");
 
             foreach (var desc in m_ProviderDescs)
             {
@@ -475,6 +475,8 @@ namespace UnityEditor.Search
             foreach (var desc in m_ProviderDescs)
                 desc.provider.OnDisable();
 
+            if (options.HasFlag(SearchFlags.Debug))
+                UnityEngine.Debug.Log($"End search session {string.Join(", ", providers.Select(p => p.id))}");
         }
 
         /// <summary>

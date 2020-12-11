@@ -163,14 +163,14 @@ namespace Unity.UI.Builder
                     evt.StopPropagation();
                     break;
                 case KeyCode.Escape:
+                {
+                    if (m_CutElements.Count > 0)
                     {
-                        if (m_CutElements.Count > 0)
-                        {
-                            m_CutElements.Clear();
-                            BuilderEditorUtility.systemCopyBuffer = null;
-                        }
+                        m_CutElements.Clear();
+                        BuilderEditorUtility.systemCopyBuffer = null;
                     }
-                    break;
+                }
+                break;
             }
         }
 
@@ -286,7 +286,7 @@ namespace Unity.UI.Builder
         {
             var importer = new BuilderVisualTreeAssetImporter(); // Cannot be cached because the StyleBuilder never gets reset.
             importer.ImportXmlFromString(copyBuffer, out var pasteVta);
-            
+
             /* If the current parent element is linked to a VisualTreeAsset, it could mean
             that our parent is the TemplateContainer belonging to our parent document and the
             current open document is a sub-document opened in-place. In such a case, we don't
@@ -301,7 +301,7 @@ namespace Unity.UI.Builder
 
                 if (selectionParent?.GetVisualTreeAsset() == m_PaneWindow.document.visualTreeAsset)
                     parent = null;
-                
+
                 m_Selection.ClearSelection(null);
             }
 

@@ -294,7 +294,7 @@ namespace Unity.UI.Builder
                         matchedElements.Add(e);
                 });
             }
-            catch { }
+            catch {}
 
             return matchedElements;
         }

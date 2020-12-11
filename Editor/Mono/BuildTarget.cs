@@ -127,6 +127,9 @@ namespace UnityEditor
         GameCoreScarlett = 42,
         GameCoreXboxOne = 43,
 
+        PS5 = 44,
+
+
         // obsolete identifiers. We're using different values so that ToString() works.
         [System.Obsolete("Use iOS instead (UnityUpgradable) -> iOS", true)]
         iPhone = -1,

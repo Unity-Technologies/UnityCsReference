@@ -130,7 +130,6 @@ namespace Unity.UI.Builder
 
         public void SelectionChanged()
         {
-
         }
 
         public void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)

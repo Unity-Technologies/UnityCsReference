@@ -19,7 +19,6 @@ using UnityEditor.SceneManagement;
 using Object = UnityEngine.Object;
 using AssetImporterEditor = UnityEditor.AssetImporters.AssetImporterEditor;
 using JetBrains.Annotations;
-using System.Reflection;
 
 namespace UnityEditor
 {
@@ -108,7 +107,6 @@ namespace UnityEditor
         protected bool m_PreviousPreviewExpandedState;
         protected bool m_HasPreview;
         protected HashSet<int> m_DrawnSelection = new HashSet<int>();
-
 
         public GUIView parent => m_Parent;
         public HashSet<int> editorsWithImportedObjectLabel { get; } = new HashSet<int>();
@@ -306,6 +304,7 @@ namespace UnityEditor
             EditorApplication.focusChanged += OnFocusChanged;
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
             PrefabUtility.prefabInstanceUnpacked += OnPrefabInstanceUnpacked;
+            ObjectChangeEvents.changesPublished += OnObjectChanged;
         }
 
         [UsedImplicitly]
@@ -320,6 +319,7 @@ namespace UnityEditor
             EditorApplication.focusChanged -= OnFocusChanged;
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             PrefabUtility.prefabInstanceUnpacked -= OnPrefabInstanceUnpacked;
+            ObjectChangeEvents.changesPublished -= OnObjectChanged;
         }
 
         [UsedImplicitly]
@@ -390,6 +390,9 @@ namespace UnityEditor
                 m_lastRenderedTime = EditorApplication.timeSinceStartup;
                 Repaint();
             }
+
+            if (m_InspectedObject && !string.Equals(m_InspectedObject.name, titleContent.text))
+                UpdateWindowObjectNameTitle();
         }
 
         protected void SetMode(InspectorMode mode)
@@ -417,7 +420,7 @@ namespace UnityEditor
             else if (GlobalObjectId.TryParse(m_GlobalObjectId, out var gid))
                 titleTooltip = AssetDatabase.GUIDToAssetPath(gid.assetGUID);
 
-            titleContent = EditorGUIUtility.TrTextContentWithIcon(obj.name, titleTooltip, "UnityEditor.InspectorWindow");
+            titleContent = new GUIContent(obj.name, EditorGUIUtility.LoadIconRequired("UnityEditor.InspectorWindow"), titleTooltip);
             titleContent.image = AssetPreview.GetMiniThumbnail(obj);
         }
 
@@ -633,6 +636,32 @@ namespace UnityEditor
             ClearVersionControlBarState();
         }
 
+        private void OnObjectChanged(ChangeGameObjectOrComponentPropertiesEventArgs args)
+        {
+            if (args.instanceId != GetInspectedObject()?.GetInstanceID())
+                return;
+            UpdateWindowObjectNameTitle();
+        }
+
+        private void OnObjectChanged(ref ObjectChangeEventStream stream)
+        {
+            for (int i = 0; i < stream.length; ++i)
+            {
+                var eventType = stream.GetEventType(i);
+                if (eventType == ObjectChangeKind.ChangeGameObjectOrComponentProperties)
+                {
+                    stream.GetChangeGameObjectOrComponentPropertiesEvent(i, out var e);
+                    OnObjectChanged(e);
+                }
+            }
+        }
+
+        protected virtual void UpdateWindowObjectNameTitle()
+        {
+            titleContent.text = GetInspectedObject()?.name ?? titleContent.text;
+            Repaint();
+        }
+
         private void OnUndoRedoPerformed()
         {
             // Early out if we have no removed or suppressed components.
@@ -641,7 +670,7 @@ namespace UnityEditor
             if ((m_RemovedComponents == null || m_RemovedComponents.Count == 0) && (m_SuppressedComponents == null || m_SuppressedComponents.Count == 0))
                 return;
 
-            // Since undo could cause a removed component to become a supressed component or vice versa, we have to rebuild that info here.
+            // Since undo could cause a removed component to become a suppressed component or vice versa, we have to rebuild that info here.
             RebuildContentsContainers();
         }
 

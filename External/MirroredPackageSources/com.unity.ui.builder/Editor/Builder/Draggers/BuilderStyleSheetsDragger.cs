@@ -13,7 +13,6 @@ namespace Unity.UI.Builder
             VisualElement root, BuilderSelection selection)
             : base(paneWindow, root, selection)
         {
-
         }
 
         protected override bool ExplorerCanStartDrag(VisualElement targetElement)

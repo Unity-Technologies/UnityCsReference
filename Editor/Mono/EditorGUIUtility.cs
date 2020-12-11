@@ -1200,6 +1200,7 @@ namespace UnityEditor
             EditorGUI.ClearStacks();
             fieldWidth = 0;
             labelWidth = 0;
+            currentViewWidth = -1f;
 
             SetBoldDefaultFont(false);
             UnlockContextWidth();
@@ -1314,7 +1315,21 @@ namespace UnityEditor
             }
         }
 
-        public static float currentViewWidth => GUIView.current ? GUIView.current.position.width : 0;
+        private static float s_OverriddenViewWidth = -1f;
+        public static float currentViewWidth
+        {
+            get
+            {
+                if (s_OverriddenViewWidth > 0f)
+                    return s_OverriddenViewWidth;
+                CheckOnGUI();
+                return GUIView.current ? GUIView.current.position.width : 0;
+            }
+            internal set
+            {
+                s_OverriddenViewWidth = value;
+            }
+        }
 
         public static float labelWidth
         {

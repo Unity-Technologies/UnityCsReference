@@ -14,8 +14,8 @@ namespace Unity.UI.Builder
         public new class UxmlFactory : UxmlFactory<TextShadowStyleField, UxmlTraits> {}
 
         public TextShadowStyleField() : this(null) {}
-        
-        public TextShadowStyleField(string label) : base(label) 
+
+        public TextShadowStyleField(string label) : base(label)
         {}
     }
 }

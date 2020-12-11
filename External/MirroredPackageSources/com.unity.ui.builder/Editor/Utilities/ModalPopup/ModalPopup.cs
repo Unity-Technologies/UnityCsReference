@@ -12,7 +12,7 @@ namespace Unity.UI.Builder
         Label m_Title;
         VisualElement m_Container;
 
-        public new class UxmlFactory : UxmlFactory<ModalPopup, UxmlTraits> { }
+        public new class UxmlFactory : UxmlFactory<ModalPopup, UxmlTraits> {}
 
         public new class UxmlTraits : VisualElement.UxmlTraits
         {

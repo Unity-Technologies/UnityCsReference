@@ -786,6 +786,9 @@ namespace UnityEditor
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.MouseDown:
+                    // Handle double click
+                    if (EditorWindow.focusedWindow != null)
+                        WindowMaximizeStateOnDoubleClick(tabAreaRect);
                     if (GUIUtility.hotControl == 0)
                     {
                         int sel = GetTabAtMousePos(tabStyle, evt.mousePosition, scrollOffset, tabAreaRect);
@@ -1099,6 +1102,28 @@ namespace UnityEditor
             s_DragMode = 0;
             s_OriginalDragSource = null;
         }
+
+        internal static bool WindowMaximizeStateOnDoubleClick(Rect rect)
+        {
+            Event evt = Event.current;
+            if (EditorWindow.focusedWindow != null && rect.Contains(evt.mousePosition) && evt.button == 0 && evt.clickCount == 2)
+            {
+                Event.current.Use();
+                bool maximize = !EditorWindow.focusedWindow.maximized;
+                if (maximize)
+                {
+                    EditorApplication.delayCall += () => EditorWindow.focusedWindow.maximized = maximize;
+                    GUIUtility.ExitGUI();
+                }
+                else
+                {
+                    EditorWindow.focusedWindow.maximized = maximize;
+                    InternalEditorUtility.RepaintAllViews();
+                }
+            }
+
+            return EditorWindow.focusedWindow.maximized;
+        }
     }
 
     internal class MaximizedHostView : HostView
@@ -1122,6 +1147,10 @@ namespace UnityEditor
             maximizedViewRect = Styles.background.margin.Remove(maximizedViewRect);
 
             Rect backRect = new Rect(maximizedViewRect.x + 1, maximizedViewRect.y, maximizedViewRect.width - 2, DockArea.kTabHeight);
+            // Return if window is not maximized anymore
+            if (Event.current.type == EventType.MouseDown && EditorWindow.focusedWindow != null && !DockArea.WindowMaximizeStateOnDoubleClick(backRect))
+                return;
+
             if (Event.current.type == EventType.Repaint)
             {
                 Styles.background.Draw(maximizedViewRect, GUIContent.none, false, false, false, false);

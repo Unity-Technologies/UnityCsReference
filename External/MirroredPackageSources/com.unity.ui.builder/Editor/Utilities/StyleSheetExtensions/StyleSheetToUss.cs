@@ -70,20 +70,20 @@ namespace Unity.UI.Builder
                     str = sheet.ReadKeyword(handle).ToString().ToLower();
                     break;
                 case StyleValueType.Float:
+                {
+                    var num = sheet.ReadFloat(handle);
+                    if (num == 0)
                     {
-                        var num = sheet.ReadFloat(handle);
-                        if (num == 0)
-                        {
-                            str = "0";
-                        }
-                        else
-                        {
-                            str = num.ToString(CultureInfo.InvariantCulture.NumberFormat);
-                            if (IsLength(propertyName))
-                                str += "px";
-                        }
+                        str = "0";
                     }
-                    break;
+                    else
+                    {
+                        str = num.ToString(CultureInfo.InvariantCulture.NumberFormat);
+                        if (IsLength(propertyName))
+                            str += "px";
+                    }
+                }
+                break;
                 case StyleValueType.Dimension:
                     var dim = sheet.ReadDimension(handle);
                     if (dim.value == 0)
@@ -147,11 +147,11 @@ namespace Unity.UI.Builder
                         sb.Append(",");
                         break;
                     default:
-                        {
-                            var propertyValueStr = ValueHandleToUssString(sheet, options, propertyName, propertyValue);
-                            sb.Append(propertyValueStr);
-                            break;
-                        }
+                    {
+                        var propertyValueStr = ValueHandleToUssString(sheet, options, propertyName, propertyValue);
+                        sb.Append(propertyValueStr);
+                        break;
+                    }
                 }
 
                 if (valueIndex < values.Length && values[valueIndex].valueType != StyleValueType.FunctionSeparator && valueCount != 1)
@@ -188,26 +188,26 @@ namespace Unity.UI.Builder
 
         public static void ToUssString(StyleSheet sheet, UssExportOptions options, StyleProperty property, StringBuilder sb)
         {
-                if (property.name == "cursor" && property.values.Length > 1 && !property.IsVariable())
+            if (property.name == "cursor" && property.values.Length > 1 && !property.IsVariable())
+            {
+                int i;
+                string propertyValueStr;
+                for (i = 0; i < property.values.Length - 1; i++)
                 {
-                    int i;
-                    string propertyValueStr;
-                    for (i = 0; i < property.values.Length - 1; i++)
-                    {
-                        propertyValueStr = ValueHandleToUssString(sheet, options, property.name, property.values[i]);
-                        sb.Append(" ");
-                        sb.Append(propertyValueStr);
-                    }
-                    sb.Append(", ");
                     propertyValueStr = ValueHandleToUssString(sheet, options, property.name, property.values[i]);
+                    sb.Append(" ");
                     sb.Append(propertyValueStr);
                 }
-                else
-                {
-                    var valueIndex = 0;
-                    sb.Append(" ");
-                    ValueHandlesToUssString(sb, sheet, options, property.name, property.values, ref valueIndex);
-                }
+                sb.Append(", ");
+                propertyValueStr = ValueHandleToUssString(sheet, options, property.name, property.values[i]);
+                sb.Append(propertyValueStr);
+            }
+            else
+            {
+                var valueIndex = 0;
+                sb.Append(" ");
+                ValueHandlesToUssString(sb, sheet, options, property.name, property.values, ref valueIndex);
+            }
         }
 
         public static void ToUssString(StyleSelectorRelationship previousRelationship, StyleSelectorPart[] parts, StringBuilder sb)
@@ -294,8 +294,9 @@ namespace Unity.UI.Builder
                     if (complexSelector.selectors.Length > 0 &&
                         complexSelector.selectors[0].parts.Length > 0 &&
                         (complexSelector.selectors[0].parts[0].value == BuilderConstants.SelectedStyleSheetSelectorName
-                        || complexSelector.selectors[0].parts[0].value.StartsWith(BuilderConstants.StyleSelectorElementName)
-                        ))
+                         || complexSelector.selectors[0].parts[0].value.StartsWith(BuilderConstants.StyleSelectorElementName)
+                        )
+                    )
                         continue;
 
                     if (isFirst)

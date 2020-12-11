@@ -81,7 +81,7 @@ namespace Unity.UI.Builder
         {
             evt.menu.AppendAction(
                 BuilderConstants.ContextMenuSetMessage,
-                action => { },
+                action => {},
                 action => DropdownMenuAction.Status.Disabled,
                 evt.target);
 
@@ -100,7 +100,7 @@ namespace Unity.UI.Builder
 
         void UnsetStyleProperties(DropdownMenuAction obj)
         {
-            var foldout = (PersistedFoldout) (obj.userData as VisualElement)?.parent;
+            var foldout = (PersistedFoldout)(obj.userData as VisualElement)?.parent;
             Assert.IsNotNull(foldout);
             List<VisualElement> styleFields;
 

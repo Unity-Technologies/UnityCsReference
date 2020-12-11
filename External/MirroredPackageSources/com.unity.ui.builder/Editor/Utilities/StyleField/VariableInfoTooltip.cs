@@ -53,4 +53,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-

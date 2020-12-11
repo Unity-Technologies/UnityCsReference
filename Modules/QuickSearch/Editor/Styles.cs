@@ -41,6 +41,7 @@ namespace UnityEditor.Search
         private static readonly RectOffset defaultPadding = new RectOffset(itemRowPadding, itemRowPadding, itemRowPadding, itemRowPadding);
 
         public static readonly string highlightedTextColorFormat = isDarkTheme ? "<color=#F6B93F>{0}</color>" : "<b>{0}</b>";
+        public static readonly string tabCountTextColorFormat = isDarkTheme ? "<color=#7B7B7B>{0}</color>" : "<color=#6A6A6A>{0}</color>";
 
         public static readonly GUIStyle panelBorder = new GUIStyle("grey_border")
         {
@@ -425,6 +426,10 @@ namespace UnityEditor.Search
         public static readonly GUIStyle panelBackgroundRight = new GUIStyle() { name = "quick-search-panel-background-right" };
         public static readonly GUIStyle searchTabBackground = new GUIStyle() { name = "quick-search-tab-background" };
         public static readonly GUIStyle searchTab = Utils.FromUSS("quick-search-tab");
+        public static readonly GUIStyle searchTabMoreButton = new GUIStyle("IN Foldout")
+        {
+            margin = new RectOffset(10, 2, 0, 0)
+        };
 
         public static readonly GUIContent pressToFilterContent = new GUIContent("Press Tab \u21B9 to filter");
         public static readonly float pressToFilterContentWidth = searchFieldTabToFilterBtn.CalcSize(pressToFilterContent).x;

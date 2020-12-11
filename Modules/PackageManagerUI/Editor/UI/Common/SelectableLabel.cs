@@ -8,7 +8,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class SelectableLabel : TextField
     {
-        internal new class UxmlFactory : UxmlFactory<SelectableLabel, UxmlTraits> {}
+        internal new class UxmlFactory : UxmlFactory<SelectableLabel, UxmlTraits>
+        {
+            public override VisualElement Create(IUxmlAttributes bag, CreationContext cc)
+            {
+                var result = base.Create(bag, cc) as SelectableLabel;
+                result.isReadOnly = true;
+                return result;
+            }
+        }
 
         public SelectableLabel()
         {

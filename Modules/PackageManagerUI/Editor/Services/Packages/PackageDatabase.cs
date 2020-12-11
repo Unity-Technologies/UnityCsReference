@@ -151,12 +151,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             return version;
         }
 
-        public virtual IPackageVersion GetPackageVersion(DependencyInfo info)
+        public virtual void GetPackageAndVersion(DependencyInfo info, out IPackage package, out IPackageVersion version)
         {
-            IPackage package;
-            IPackageVersion version;
             GetUpmPackageAndVersion(info.name, info.version, out package, out version);
-            return version;
         }
 
         private void GetUpmPackageAndVersion(string name, string versionIdentifier, out IPackage package, out IPackageVersion version)

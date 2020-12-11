@@ -30,7 +30,6 @@ namespace Unity.UI.Builder
             BuilderViewport viewport = null, BuilderParentTracker parentTracker = null)
             : base(paneWindow, root, selection, viewport, parentTracker)
         {
-
         }
 
         protected virtual bool ExplorerCanStartDrag(VisualElement targetElement)
@@ -45,7 +44,6 @@ namespace Unity.UI.Builder
 
         protected virtual void ExplorerPerformDrag()
         {
-
         }
 
         protected virtual VisualElement ExplorerGetDragPreviewFromTarget(VisualElement target, Vector2 mousePosition)

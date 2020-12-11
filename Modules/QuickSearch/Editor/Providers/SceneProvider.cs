@@ -125,10 +125,10 @@ namespace UnityEditor.Search.Providers
             m_LastSearchView?.Refresh();
         }
 
-        private void InvalidateObject(int instanceId)
+        private void InvalidateObject(int instanceId, RefreshFlags flags = RefreshFlags.Default)
         {
             if (m_SceneQueryEngine.InvalidateObject(instanceId))
-                m_LastSearchView?.Refresh();
+                m_LastSearchView?.Refresh(flags);
             else if (UnityEngine.Object.FindObjectFromInstanceID(instanceId) is Component c)
                 InvalidateObject(c.gameObject.GetInstanceID());
         }
@@ -158,13 +158,13 @@ namespace UnityEditor.Search.Providers
                     case ObjectChangeKind.ChangeGameObjectStructureHierarchy:
                     {
                         stream.GetChangeGameObjectStructureHierarchyEvent(i, out var e);
-                        InvalidateObject(e.instanceId);
+                        InvalidateObject(e.instanceId, RefreshFlags.StructureChanged);
                     }
                     break;
                     case ObjectChangeKind.ChangeGameObjectStructure:
                     {
                         stream.GetChangeGameObjectStructureEvent(i, out var e);
-                        InvalidateObject(e.instanceId);
+                        InvalidateObject(e.instanceId, RefreshFlags.StructureChanged);
                     }
                     break;
                     case ObjectChangeKind.ChangeGameObjectParent:

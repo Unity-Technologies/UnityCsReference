@@ -208,6 +208,7 @@ namespace UnityEditor.Search
                 return m_CreationTime;
             }
         }
+        public string displayName { get { return string.IsNullOrEmpty(name) ? Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(this)) : name; } }
         public string description;
         public Texture2D icon;
         [FormerlySerializedAs("searchQuery")] public string text;

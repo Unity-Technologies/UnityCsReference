@@ -317,6 +317,22 @@ namespace UnityEditor
             }
         }
 
+        internal struct CursorColorScope : IDisposable
+        {
+            private Color oldCursorColor;
+
+            public CursorColorScope(Color color)
+            {
+                oldCursorColor = GUI.skin.settings.cursorColor;
+                GUI.skin.settings.cursorColor = color;
+            }
+
+            public void Dispose()
+            {
+                GUI.skin.settings.cursorColor = oldCursorColor;
+            }
+        }
+
         // Create a group of controls that can be disabled.
         internal static void BeginDisabled(bool disabled)
         {
@@ -584,14 +600,14 @@ namespace UnityEditor
             // Cut
             if (RecycledTextEditor.s_AllowContextCutOrPaste)
             {
-                if (s_RecycledEditor.hasSelection && !s_RecycledEditor.isPasswordField && enabled)
+                if (s_RecycledEditor.hasSelection && !s_RecycledEditor.isPasswordField && enabled && !EditorGUI.showMixedValue)
                     pm.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, new PopupMenuEvent(EventCommandNames.Cut, GUIView.current).SendEvent);
                 else
                     pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Cut"));
             }
 
             // Copy -- when GUI is disabled, allow Copy even with no selection (will copy everything)
-            if ((s_RecycledEditor.hasSelection || !enabled) && !s_RecycledEditor.isPasswordField)
+            if ((s_RecycledEditor.hasSelection || !enabled) && !s_RecycledEditor.isPasswordField && !EditorGUI.showMixedValue)
                 pm.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, new PopupMenuEvent(EventCommandNames.Copy, GUIView.current).SendEvent);
             else
                 pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Copy"));
@@ -1912,19 +1928,17 @@ namespace UnityEditor
                 sendEventToTextEditor = false;
             }
 
-
-            Color tempCursorColor = GUI.skin.settings.cursorColor;
-            GUI.skin.settings.cursorColor = new Color(0, 0, 0, 0);
-
-            RecycledTextEditor.s_AllowContextCutOrPaste = false;
-
-            if (sendEventToTextEditor)
+            // Its possible that DoTextField will throw so we use a scoped cursor that we can safely reset the color.
+            using (new CursorColorScope(Color.clear))
             {
-                bool dummy;
-                DoTextField(s_RecycledEditor, id, IndentedRect(position), text, style, string.Empty, out dummy, false, true, false);
-            }
+                RecycledTextEditor.s_AllowContextCutOrPaste = false;
 
-            GUI.skin.settings.cursorColor = tempCursorColor;
+                if (sendEventToTextEditor)
+                {
+                    bool dummy;
+                    DoTextField(s_RecycledEditor, id, IndentedRect(position), text, style, string.Empty, out dummy, false, true, false);
+                }
+            }
         }
 
         [Obsolete("Use PasswordField instead.")]

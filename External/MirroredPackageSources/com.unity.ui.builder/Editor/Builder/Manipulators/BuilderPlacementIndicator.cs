@@ -17,7 +17,7 @@ namespace Unity.UI.Builder
         public int indexWithinParent { get; private set; }
         public VisualElement documentRootElement { get; set; }
 
-        public new class UxmlFactory : UxmlFactory<BuilderPlacementIndicator, UxmlTraits> { }
+        public new class UxmlFactory : UxmlFactory<BuilderPlacementIndicator, UxmlTraits> {}
 
         public BuilderPlacementIndicator()
         {

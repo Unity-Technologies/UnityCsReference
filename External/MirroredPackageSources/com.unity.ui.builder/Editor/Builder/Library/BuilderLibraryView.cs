@@ -49,7 +49,7 @@ namespace Unity.UI.Builder
 
         protected BuilderLibraryTreeItem GetLibraryTreeItem(VisualElement element)
         {
-            return (BuilderLibraryTreeItem) element.GetProperty(BuilderConstants.LibraryItemLinkedManipulatorVEPropertyName);
+            return (BuilderLibraryTreeItem)element.GetProperty(BuilderConstants.LibraryItemLinkedManipulatorVEPropertyName);
         }
 
         protected void AddItemToTheDocument(BuilderLibraryTreeItem item)

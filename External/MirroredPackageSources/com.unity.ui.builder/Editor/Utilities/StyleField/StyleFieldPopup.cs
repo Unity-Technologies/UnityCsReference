@@ -90,7 +90,7 @@ namespace Unity.UI.Builder
                 var fieldBottom = fieldTopLeft.y + m_AnchoredControl.layout.height;
                 const float tolerance = 2f;
 
-                newPos.y = (fieldBottom < parent.layout.height / 2) ? (currentPos.y): (fieldTopLeft.y - resolvedStyle.height);
+                newPos.y = (fieldBottom < parent.layout.height / 2) ? (currentPos.y) : (fieldTopLeft.y - resolvedStyle.height);
 
                 if (Math.Abs(newPos.x - currentPos.x) > tolerance || Math.Abs(newPos.y - currentPos.y) > tolerance)
                     return newPos;

@@ -364,7 +364,7 @@ namespace Unity.UI.Builder
                 m_Selection.ClearSelection(this);
             }
 
-            if (evt.button == (int) MouseButton.RightMouse)
+            if (evt.button == (int)MouseButton.RightMouse)
             {
                 if (pickedElement != null && m_ContextMenuManipulator != null)
                 {
@@ -529,7 +529,6 @@ namespace Unity.UI.Builder
 
         public void StylingChanged(List<string> styles, BuilderStylingChangeType changeType)
         {
-
             m_Canvas.editorExtensionsLabel.style.display = paneWindow.document.fileSettings.editorExtensionMode
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;

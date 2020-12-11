@@ -142,8 +142,8 @@ namespace Unity.UI.Builder
                 fieldElement = uiField;
             }
             else if (attributeType.IsGenericType &&
-                !attributeType.GetGenericArguments()[0].IsEnum &&
-                attributeType.GetGenericArguments()[0] is Type)
+                     !attributeType.GetGenericArguments()[0].IsEnum &&
+                     attributeType.GetGenericArguments()[0] is Type)
             {
                 var uiField = new TextField(fieldLabel);
                 uiField.isDelayed = true;
@@ -297,18 +297,18 @@ namespace Unity.UI.Builder
                 (fieldElement as ColorField).SetValueWithoutNotify((Color)veValueAbstract);
             }
             else if (attributeType.IsGenericType &&
-                !attributeType.GetGenericArguments()[0].IsEnum &&
-                attributeType.GetGenericArguments()[0] is Type &&
-                fieldElement is TextField textField &&
-                veValueAbstract is Type veTypeValue)
+                     !attributeType.GetGenericArguments()[0].IsEnum &&
+                     attributeType.GetGenericArguments()[0] is Type &&
+                     fieldElement is TextField textField &&
+                     veValueAbstract is Type veTypeValue)
             {
                 var fullTypeName = veTypeValue.AssemblyQualifiedName;
                 var fullTypeNameSplit = fullTypeName.Split(',');
                 textField.SetValueWithoutNotify($"{fullTypeNameSplit[0]},{fullTypeNameSplit[1]}");
             }
             else if (attributeType.IsGenericType &&
-                attributeType.GetGenericArguments()[0].IsEnum &&
-                fieldElement is EnumField)
+                     attributeType.GetGenericArguments()[0].IsEnum &&
+                     fieldElement is EnumField)
             {
                 var propInfo = attributeType.GetProperty("defaultValue");
                 var enumValue = propInfo.GetValue(attribute, null) as Enum;
@@ -423,9 +423,9 @@ namespace Unity.UI.Builder
                 f.SetValueWithoutNotify(a.defaultValue);
             }
             else if (attributeType.IsGenericType &&
-                !attributeType.GetGenericArguments()[0].IsEnum &&
-                attributeType.GetGenericArguments()[0] is Type &&
-                fieldElement is TextField)
+                     !attributeType.GetGenericArguments()[0].IsEnum &&
+                     attributeType.GetGenericArguments()[0] is Type &&
+                     fieldElement is TextField)
             {
                 var a = attribute as TypedUxmlAttributeDescription<Type>;
                 var f = fieldElement as TextField;
@@ -435,8 +435,8 @@ namespace Unity.UI.Builder
                     f.SetValueWithoutNotify(a.defaultValue.ToString());
             }
             else if (attributeType.IsGenericType &&
-                attributeType.GetGenericArguments()[0].IsEnum &&
-                fieldElement is EnumField)
+                     attributeType.GetGenericArguments()[0].IsEnum &&
+                     fieldElement is EnumField)
             {
                 var propInfo = attributeType.GetProperty("defaultValue");
                 var enumValue = propInfo.GetValue(attribute, null) as Enum;
@@ -473,8 +473,8 @@ namespace Unity.UI.Builder
                     var attributeName = fieldElement.bindingPath;
                     var vea = currentVisualElement.GetVisualElementAsset();
                     return vea.HasAttribute(attributeName)
-                        ? DropdownMenuAction.Status.Normal
-                        : DropdownMenuAction.Status.Disabled;
+                    ? DropdownMenuAction.Status.Normal
+                    : DropdownMenuAction.Status.Disabled;
                 },
                 evt.target);
 
@@ -489,7 +489,7 @@ namespace Unity.UI.Builder
                         if (attribute?.name == null)
                             continue;
 
-                        if(IsAttributeOverriden(attribute))
+                        if (IsAttributeOverriden(attribute))
                             return DropdownMenuAction.Status.Normal;
                     }
 
@@ -682,8 +682,8 @@ namespace Unity.UI.Builder
                     styleField.AddToClassList(BuilderConstants.InspectorLocalStyleOverrideClassName);
                 }
                 else if (!string.IsNullOrEmpty(styleField.bindingPath) &&
-                    field.bindingPath != styleField.bindingPath &&
-                    !styleField.ClassListContains(BuilderConstants.InspectorLocalStyleOverrideClassName))
+                         field.bindingPath != styleField.bindingPath &&
+                         !styleField.ClassListContains(BuilderConstants.InspectorLocalStyleOverrideClassName))
                 {
                     styleField.AddToClassList(BuilderConstants.InspectorLocalStyleResetClassName);
                 }

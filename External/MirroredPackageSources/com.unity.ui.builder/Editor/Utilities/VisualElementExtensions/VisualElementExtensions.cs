@@ -46,7 +46,7 @@ namespace Unity.UI.Builder
             var factoryType = asm.GetType(factoryTypeName);
             if (factoryType != null)
             {
-                var factoryTypeInstance = (IUxmlFactory) Activator.CreateInstance(factoryType);
+                var factoryTypeInstance = (IUxmlFactory)Activator.CreateInstance(factoryType);
                 if (factoryTypeInstance != null)
                 {
                     uxmlQualifiedName = factoryTypeInstance.uxmlQualifiedName;
@@ -197,7 +197,7 @@ namespace Unity.UI.Builder
             var elementVTA = element.GetVisualTreeAsset();
             var activeVTA = builderDocument == null ? elementVTA : builderDocument.activeOpenUXMLFile.visualTreeAsset;
 
-            var belongsToActiveVisualTreeAsset = (VisualTreeAsset) element.GetProperty(BuilderConstants.ElementLinkedBelongingVisualTreeAssetVEPropertyName) == builderDocument?.visualTreeAsset;
+            var belongsToActiveVisualTreeAsset = (VisualTreeAsset)element.GetProperty(BuilderConstants.ElementLinkedBelongingVisualTreeAssetVEPropertyName) == builderDocument?.visualTreeAsset;
             var hasAssetLink = element.GetVisualElementAsset() != null && belongsToActiveVisualTreeAsset;
             var hasVTALink = elementVTA != null && elementVTA == activeVTA && !(element is TemplateContainer);
 

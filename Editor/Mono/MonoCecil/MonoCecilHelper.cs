@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -31,47 +30,43 @@ namespace UnityEditor
 
             if (!methodDefinition.DebugInformation.HasSequencePoints)
             {
+                // If we don't have any sequence points for this method, it could be that
+                // the method is delegating its implementation to a state machine method (e.g using yield).
+                // The state machine method will contain the debug info, not this method.
+                // In that case, the debug information of the state machine method (e.g MoveNext)
+                // will contain a StateMachineKickOffMethod that will link backward to the
+                // this original method that was containing the yield.
+                // That's the method we are looking for to extract correct sequence points after.
+                foreach (var nestedType in methodDefinition.DeclaringType.NestedTypes)
+                {
+                    foreach (var method in nestedType.Methods)
+                    {
+                        if (method.DebugInformation != null && method.DebugInformation.StateMachineKickOffMethod == methodDefinition && method.HasBody && method.Body.Instructions.Count > 0)
+                        {
+                            methodDefinition = method;
+                            goto foundKickOffMethod;
+                        }
+                    }
+                }
+
                 Debug.Log(string.Concat("No SequencePoints for MethodDefinition for ", methodDefinition.Name));
                 return null;
             }
 
-            var firstInstruction = methodDefinition.Body.Instructions.First();
-            return methodDefinition.DebugInformation.GetSequencePoint(firstInstruction);
-        }
+        foundKickOffMethod:
 
-        private static MethodDefinition GetMethodByName(TypeDefinition typeDefinition, string methodName)
-        {
-            if (typeDefinition == null)
+            foreach (var instruction in methodDefinition.Body.Instructions)
             {
-                Debug.Log("TypeDefinition cannot be null. Check whether the type exists in assembly.");
-                return null;
+                // An instruction might be attached to a hidden sequence point (or no seq point at all)
+                // so we need to skip them as they don't have any debug line info.
+                var sequencePoint = methodDefinition.DebugInformation.GetSequencePoint(instruction);
+                if (sequencePoint != null && !sequencePoint.IsHidden)
+                {
+                    return sequencePoint;
+                }
             }
 
-            if (!typeDefinition.HasMethods)
-            {
-                Debug.Log(string.Concat("TypeDefinition ", typeDefinition.Name, "has no method definitions."));
-                return null;
-            }
-
-            return typeDefinition.Methods.FirstOrDefault(m => m.Name.Equals(methodName));
-        }
-
-        private static TypeDefinition FindTypeByFullName(AssemblyDefinition assemblyDefinition, string typeFullName)
-        {
-            if (assemblyDefinition == null)
-            {
-                Debug.Log("AssemblyDefinition cannot be null. Check if it's read correctly.");
-                return null;
-            }
-
-            if (!assemblyDefinition.MainModule.HasTypes)
-            {
-                Debug.Log(string.Concat("AssemblyDefinition ", assemblyDefinition.Name));
-                return null;
-            }
-
-            var allTypes = AggregateAllTypeDefinitions(assemblyDefinition.MainModule.Types); // recursively checks for nested types and adds them to colleciton, if any
-            return allTypes.FirstOrDefault(t => t.FullName == typeFullName);
+            return null;
         }
 
         private static AssemblyDefinition ReadAssembly(string assemblyPath)
@@ -97,36 +92,14 @@ namespace UnityEditor
             }
         }
 
-        private static IEnumerable<TypeDefinition> AggregateAllTypeDefinitions(IEnumerable<TypeDefinition> types)
-        {
-            var typeDefs = types.ToList();
-            foreach (var typeDefinition in types)
-            {
-                if (typeDefinition.HasNestedTypes)
-                    typeDefs.AddRange(AggregateAllTypeDefinitions(typeDefinition.NestedTypes));
-            }
-            return typeDefs;
-        }
-
-        private static SequencePoint GetSequencePointForMethod(string assemblyPath, string typeFullName, string methodName)
-        {
-            var assemblyDefinition = ReadAssembly(assemblyPath);
-            var typeDefinition = FindTypeByFullName(assemblyDefinition, typeFullName);
-            var methodDefinition = GetMethodByName(typeDefinition, methodName);
-
-            return GetMethodFirstSequencePoint(methodDefinition);
-        }
-
         public IFileOpenInfo TryGetCecilFileOpenInfo(Type type, MethodInfo methodInfo)
         {
             var assemblyPath = type.Assembly.Location;
-            var methodName = methodInfo.Name;
 
-            // Nested types are appended to the type name in reflection, but not in Cecil
-            var typeName = type.FullName ?? string.Empty;
-            typeName = typeName.Contains("+") ? typeName.Split('+').First() : typeName;
-
-            var sequencePoint = GetSequencePointForMethod(assemblyPath, typeName, methodName);
+            // Get the sequence point directly from the method token (to avoid scanning all types/methods)
+            var assemblyDefinition = ReadAssembly(assemblyPath);
+            var methodDefinition = assemblyDefinition.MainModule.LookupToken(methodInfo.MetadataToken) as MethodDefinition;
+            var sequencePoint = GetMethodFirstSequencePoint(methodDefinition);
 
             var fileOpenInfo = new FileOpenInfo();
             if (sequencePoint != null) // Can be null in case of yield return in target method

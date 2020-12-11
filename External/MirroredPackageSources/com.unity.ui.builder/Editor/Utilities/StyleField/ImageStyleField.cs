@@ -13,10 +13,10 @@ namespace Unity.UI.Builder
         public new class UxmlFactory : UxmlFactory<ImageStyleField, UxmlTraits> {}
 
         const string k_UssPath = BuilderConstants.UtilitiesPath + "/StyleField/ImageStyleField.uss";
-        
+
         const string k_2DSpriteEditorButtonString = "Open in Sprite Editor";
         const string k_No2DSpriteEditorPackageInstalledTitle = "Package required - 2D Sprite Editor";
-        const string k_No2DSpriteEditorPackageInstalledMessage = 
+        const string k_No2DSpriteEditorPackageInstalledMessage =
             "You must install the 2D Sprite Editor package to edit Sprites.\n" +
             "If you do not install the package, you can use existing Sprites, but you cannot create or modify them.\n" +
             "Do you want to install the package now?";
@@ -30,18 +30,18 @@ namespace Unity.UI.Builder
         private const string k_2DSpriteEditorButtonTooltip_Installed =
             "Use the Sprite Editor to 9-slice the image or edit its 9-slicing values.";
 
-        private const string k_2DSpriteEditorButtonTooltip_NotInstalled = 
+        private const string k_2DSpriteEditorButtonTooltip_NotInstalled =
             k_2DSpriteEditorButtonTooltip_Installed +
             " Unity will prompt you to install the com.unity.2d.sprite package first.";
 
         string m_2DSpriteEditorButtonTooltip = k_2DSpriteEditorButtonTooltip_NotInstalled;
-        
+
         public ImageStyleField() : this(null) {}
 
         public ImageStyleField(string label) : base(label)
         {
             AddType(typeof(Texture2D), "Texture");
-            
+
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(k_UssPath));
             var fieldContainer = new VisualElement {name = k_ImageStyleFieldContainerName};
             fieldContainer.AddToClassList(k_ImageStyleFieldContainerClassName);
@@ -52,7 +52,7 @@ namespace Unity.UI.Builder
             var fieldInput = this.Q(k_FieldInputName);
             // Move visual input over to field container
             fieldContainer.Add(fieldInput);
-            
+
             var editButton = new Button(OnEditButton)
             {
                 text = k_2DSpriteEditorButtonString,
@@ -85,10 +85,10 @@ namespace Unity.UI.Builder
             if (BuilderExternalPackages.is2DSpriteEditorInstalled)
             {
                 // Open 2D Sprite Editor with current image loaded
-                BuilderExternalPackages.Open2DSpriteEditor((Object) value);
+                BuilderExternalPackages.Open2DSpriteEditor((Object)value);
                 return;
             }
-            
+
             // Handle the missing 2D Sprite Editor package case.
             if (BuilderDialogsUtility.DisplayDialog(
                 k_No2DSpriteEditorPackageInstalledTitle,
@@ -97,7 +97,8 @@ namespace Unity.UI.Builder
                 "Cancel"))
                 Application.OpenURL(k_2DSpriteEditorInstallationURL);
         }
-        
+
+
         public void TryEnableVectorGraphicTypeSupport()
         {
             AddType(typeof(VectorImage), "Vector");

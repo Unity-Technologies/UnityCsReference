@@ -93,22 +93,18 @@ namespace Unity.UI.Builder
 
         protected virtual void PerformDrag(VisualElement target, VisualElement pickedElement, int index = -1)
         {
-
         }
 
         protected virtual void PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
         {
-
         }
 
         protected virtual void FailAction(VisualElement target)
         {
-
         }
 
         protected virtual void EndDrag()
         {
-
         }
 
         protected virtual bool StopEventOnMouseDown(MouseDownEvent evt)
@@ -526,7 +522,7 @@ namespace Unity.UI.Builder
 
         void OnMouseUp(MouseUpEvent evt)
         {
-            if (evt.button != (int) MouseButton.LeftMouse)
+            if (evt.button != (int)MouseButton.LeftMouse)
             {
                 evt.StopPropagation();
                 evt.PreventDefault();

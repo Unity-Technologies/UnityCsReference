@@ -515,6 +515,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 foreach (var state in page.visualStates)
                 {
                     var packageItem = GetPackageItem(state.packageUniqueId);
+
+                    // For when user switch account and packageList gets refreshed
+                    if (packageItem == null)
+                        continue;
+
                     packageItem.packageGroup.AddPackageItem(packageItem);
                 }
 

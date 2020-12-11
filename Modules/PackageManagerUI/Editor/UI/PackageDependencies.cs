@@ -91,8 +91,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private string GetNameText(DependencyInfo dependency)
         {
-            var packageVersion = m_PackageDatabase.GetPackageVersion(dependency);
-            return packageVersion != null ? packageVersion.displayName : UpmPackageVersion.ExtractDisplayName(dependency.name);
+            m_PackageDatabase.GetPackageAndVersion(dependency, out var package, out var packageVersion);
+            return packageVersion?.displayName ?? package?.displayName ?? dependency.name;
         }
 
         private string GetStatusText(DependencyInfo dependency)

@@ -50,6 +50,27 @@ namespace UnityEditor.Search
         Default = MoveLineEnd
     }
 
+    [Flags]
+    public enum RefreshFlags
+    {
+        None = 0,
+
+        // Normal refresh
+        Default = 1 << 0,
+
+        // The structure of the current selection data has changed
+        StructureChanged = 1 << 1,
+
+        // The display mode or item size has changed
+        DisplayModeChanged = 1 << 2,
+
+        // The search item list has been updated
+        ItemsChanged = 1 << 3,
+
+        // The current item group has changed.
+        GroupChanged = 1 << 4
+    }
+
     /// <summary>
     /// Search view interface used by the search context to execute a few UI operations.
     /// </summary>
@@ -127,7 +148,7 @@ namespace UnityEditor.Search
         /// <summary>
         /// Triggers a refresh of the search view, re-fetching all the search items from enabled search providers.
         /// </summary>
-        void Refresh();
+        void Refresh(RefreshFlags reason = RefreshFlags.Default);
 
         /// <summary>
         /// Request the search view to repaint itself

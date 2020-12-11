@@ -129,6 +129,8 @@ namespace UnityEngine
         // Game Core
         GameCoreScarlett = 36,
         GameCoreXboxOne = 37,
+        // PS5
+        PS5 = 38
     }
 
     // The language the user's operating system is running in. Returned by Application.systemLanguage.

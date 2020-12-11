@@ -29,7 +29,7 @@ namespace Unity.UI.Builder
         VisualTreeAsset m_VisualTreeAsset;
         VisualElement m_Target;
 
-        public new class UxmlFactory : UxmlFactory<BuilderCanvasStyleControls, UxmlTraits> { }
+        public new class UxmlFactory : UxmlFactory<BuilderCanvasStyleControls, UxmlTraits> {}
 
         public BuilderCanvasStyleControls()
         {

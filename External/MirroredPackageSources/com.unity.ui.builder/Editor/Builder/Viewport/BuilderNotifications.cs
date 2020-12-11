@@ -13,7 +13,7 @@ namespace Unity.UI.Builder
         VisualTreeAsset m_NotificationEntryVTA;
         int m_PendingNotifications;
 
-        public new class UxmlFactory : UxmlFactory<BuilderNotifications, UxmlTraits> { }
+        public new class UxmlFactory : UxmlFactory<BuilderNotifications, UxmlTraits> {}
 
         public bool hasPendingNotifications => m_PendingNotifications > 0;
 

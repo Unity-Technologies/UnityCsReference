@@ -236,7 +236,7 @@ namespace UnityEditor.U2D
 
             m_EnableTightPacking = serializedAssetObject.FindProperty("m_ImporterData.packingSettings.enableTightPacking");
             m_EnableRotation = serializedAssetObject.FindProperty("m_ImporterData.packingSettings.enableRotation");
-            m_EnableAlphaDilation = serializedObject.FindProperty("m_EditorData.packingSettings.enableAlphaDilation");
+            m_EnableAlphaDilation = serializedAssetObject.FindProperty("m_ImporterData.packingSettings.enableAlphaDilation");
             m_Padding = serializedAssetObject.FindProperty("m_ImporterData.packingSettings.padding");
 
             m_MasterAtlas = serializedAssetObject.FindProperty("m_MasterAtlas");

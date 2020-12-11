@@ -930,8 +930,10 @@ namespace UnityEngine.UIElements
         public override void Repaint(Event e)
         {
             if (contextType == ContextType.Editor)
+            {
                 Debug.Assert(GUIClip.Internal_GetCount() == 0,
                     "UIElement is not compatible with IMGUI GUIClips, only GUIClip.ParentClipScope");
+            }
 
             m_RepaintVersion = version;
 

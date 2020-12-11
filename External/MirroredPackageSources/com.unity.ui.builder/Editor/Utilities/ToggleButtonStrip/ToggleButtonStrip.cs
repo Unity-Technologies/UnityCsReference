@@ -53,7 +53,8 @@ namespace Unity.UI.Builder
 
         public ToggleButtonStrip() : this(null, null) {}
 
-        public ToggleButtonStrip(string label, IList<string> choices) : base(label) {
+        public ToggleButtonStrip(string label, IList<string> choices) : base(label)
+        {
             AddToClassList(s_UssClassName);
 
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(s_UssPath));

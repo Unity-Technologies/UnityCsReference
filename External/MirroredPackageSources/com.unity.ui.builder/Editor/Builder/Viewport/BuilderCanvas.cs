@@ -30,7 +30,7 @@ namespace Unity.UI.Builder
 
         Dictionary<string, VisualElement> m_HandleElements;
 
-        public new class UxmlFactory : UxmlFactory<BuilderCanvas, UxmlTraits> { }
+        public new class UxmlFactory : UxmlFactory<BuilderCanvas, UxmlTraits> {}
 
         public VisualElement header => m_Header;
         public override VisualElement contentContainer => m_Container == null ? this : m_Container;

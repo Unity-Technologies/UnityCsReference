@@ -1341,6 +1341,7 @@ namespace NiceIO
             ReadContentsCallback.Invoke(this);
             return FileSystem.Active.File_ReadAllBytes(this);
         }
+
         /// <summary>
         /// Opens a text file, writes all entries of a string array as separate lines into the file, then closes the file.
         /// </summary>
@@ -1735,7 +1736,7 @@ namespace NiceIO
                     base.File_Copy(path, destinationPath, overWrite);
                     return;
                 }
-                
+
                 var longPath = MakeLongPath(path).TrimEnd('\\');
                 var longDestPath = MakeLongPath(destinationPath).TrimEnd('\\');
                 if (!Win32Native.CopyFile(longPath, longDestPath, !overWrite))
@@ -1758,7 +1759,7 @@ namespace NiceIO
                     // try copy/delete
                     if (!Win32Native.CopyFile(longPath, longDestPath, true))
                         throw new IOException($"Cannot move file {path} to {destinationPath}.", new Win32Exception(lastWin32Error));
-                    
+
                     if (!Win32Native.DeleteFile(longPath))
                         throw new IOException($"Cannot move file {path} to {destinationPath}.", new Win32Exception(lastWin32Error));
                 }
@@ -1773,14 +1774,14 @@ namespace NiceIO
                 // If the path is long, fall back to querying with P/Invoke directly
                 var longPath = MakeLongPath(path).TrimEnd('\\');
                 var attributes = Win32Native.GetFileAttributes(longPath);
-                return attributes != Win32Native.INVALID_FILE_ATTRIBUTES && 
+                return attributes != Win32Native.INVALID_FILE_ATTRIBUTES &&
                     ((attributes & (uint)Win32Native.FileAttributes.Directory) != 0 || (attributes & (uint)Win32Native.FileAttributes.ReparsePoint) != 0);
             }
 
             public override void Directory_CreateDirectory(NPath path)
             {
                 // See https://docs.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation
-                // When using an API to create a directory, the specified path cannot be so long that you cannot append an 8.3 file name 
+                // When using an API to create a directory, the specified path cannot be so long that you cannot append an 8.3 file name
                 // (that is, the directory name cannot exceed MAX_PATH minus 12)
                 if (path._path.Length < Win32Native.MAX_PATH_LEN - 12)
                 {
@@ -1910,7 +1911,7 @@ namespace NiceIO
                 var destPath = MakeLongPath(targetPath).TrimEnd('\\');
                 if (!Win32Native.CreateSymbolicLink(path, destPath, flags))
                     throw new IOException($"Cannot create symbolic link {path} from {targetPath}.", new Win32Exception(Marshal.GetLastWin32Error()));
-             }
+            }
 
             public override FileAttributes File_GetAttributes(NPath path)
             {
@@ -1933,7 +1934,7 @@ namespace NiceIO
 
                 // If the path is long, fall back to querying with P/Invoke directly
                 var longPath = MakeLongPath(path).TrimEnd('\\');
-                Win32Native.SetFileAttributes(longPath, (uint) value);
+                Win32Native.SetFileAttributes(longPath, (uint)value);
             }
 
             public override NPath[] Directory_GetFiles(NPath path, string filter, SearchOption searchOptions)
@@ -1961,7 +1962,8 @@ namespace NiceIO
 
                             // find next
                             found = Win32Native.FindNextFile(findHandle, out findData);
-                        } while (found);
+                        }
+                        while (found);
                     }
                     finally
                     {
@@ -2002,7 +2004,8 @@ namespace NiceIO
 
                             // find next
                             found = Win32Native.FindNextFile(findHandle, out findData);
-                        } while (found);
+                        }
+                        while (found);
                     }
                     finally
                     {
@@ -2195,14 +2198,14 @@ namespace NiceIO
                     return;
                 }
 
-                
+
                 var shortPath = GetShortName(path);
                 if (!Win32Native.SetCurrentDirectory(shortPath))
                     throw new IOException($"Cannot set current directory to {path}.", new Win32Exception(Marshal.GetLastWin32Error()));
             }
 
             public override NPath Directory_GetCurrentDirectory()
-			{
+            {
                 NPath path = System.IO.Directory.GetCurrentDirectory();
                 if (path._path.IndexOf('~') > 0)
                     return GetLongName(path);
@@ -2215,7 +2218,7 @@ namespace NiceIO
                 char[] shortPathChars = new char[Win32Native.MAX_PATH_LEN];
                 var length = Win32Native.GetShortPathName(longPath, shortPathChars, (uint)shortPathChars.Length);
                 if (length <= 0)
-					throw new IOException($"Cannot get short path name for {path}.", new Win32Exception(Marshal.GetLastWin32Error()));
+                    throw new IOException($"Cannot get short path name for {path}.", new Win32Exception(Marshal.GetLastWin32Error()));
 
                 var shortPath = new string(shortPathChars);
                 return shortPath.Substring(0, (int)length);
@@ -2233,7 +2236,7 @@ namespace NiceIO
                     throw new IOException($"Cannot get long path name for {path}.", new Win32Exception(Marshal.GetLastWin32Error()));
 
                 var longPath = new string(longPathChars);
-                return longPath.Substring(0, (int)length-1);
+                return longPath.Substring(0, (int)length - 1);
             }
 
             private static SafeFileHandle CreateFileHandle(
@@ -2381,7 +2384,7 @@ namespace NiceIO
                 public static extern IntPtr FindFirstFile(string fileName, out FIND_DATA findData);
 
                 [DllImport(@"kernel32.dll", CharSet = CharSet.Unicode)]
-                [return: MarshalAs(UnmanagedType.Bool)]
+                [return : MarshalAs(UnmanagedType.Bool)]
                 public static extern bool FindNextFile(IntPtr handle, out FIND_DATA findData);
 
                 [DllImport(@"kernel32.dll", CharSet = CharSet.Unicode)]
@@ -2400,29 +2403,29 @@ namespace NiceIO
                 [DllImport(@"kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
                 [return : MarshalAs(UnmanagedType.Bool)]
                 public static extern bool DeleteFile(string lpFileName);
-                
+
                 [DllImport(@"kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-                [return: MarshalAs(UnmanagedType.Bool)]
+                [return : MarshalAs(UnmanagedType.Bool)]
                 public static extern bool CopyFile(string sourceFileName, string destFileName, bool failIfExists);
 
                 [DllImport(@"kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-                [return: MarshalAs(UnmanagedType.Bool)]
+                [return : MarshalAs(UnmanagedType.Bool)]
                 public static extern bool MoveFile(string existingFileName, string newFileName);
 
                 [DllImport(@"kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-                [return: MarshalAs(UnmanagedType.Bool)]
+                [return : MarshalAs(UnmanagedType.Bool)]
                 public static extern bool MoveFileEx(string existingFileName, string newFileName, MoveFileExFlags exFlags);
 
                 [DllImport(@"kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-                [return: MarshalAs(UnmanagedType.Bool)]
+                [return : MarshalAs(UnmanagedType.Bool)]
                 public static extern bool CreateDirectory(string lpPathName, IntPtr lpSecurityAttributes);
 
                 [DllImport(@"kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-                [return: MarshalAs(UnmanagedType.Bool)]
+                [return : MarshalAs(UnmanagedType.Bool)]
                 public static extern bool RemoveDirectory(string lpPathName);
 
                 [DllImport(@"kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-                [return: MarshalAs(UnmanagedType.Bool)]
+                [return : MarshalAs(UnmanagedType.Bool)]
                 public static extern bool SetCurrentDirectory(string lpPathName);
 
                 [DllImport(@"kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
@@ -2439,7 +2442,7 @@ namespace NiceIO
                     IntPtr hTemplateFile);
 
                 [DllImport(@"kernel32.dll", EntryPoint = "SetFileTime", SetLastError = true, CharSet = CharSet.Unicode)]
-                [return: MarshalAs(UnmanagedType.Bool)]
+                [return : MarshalAs(UnmanagedType.Bool)]
                 public static extern bool SetLastWriteFileTime(
                     IntPtr hFile,
                     IntPtr lpCreationTime,

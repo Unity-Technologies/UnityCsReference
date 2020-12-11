@@ -10,7 +10,9 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.TextCore.FontEngine")]
 [assembly: InternalsVisibleTo("Unity.TextCore.FontEngine.Tools")]
 [assembly: InternalsVisibleTo("UnityEngine.TextCoreModule")]
+[assembly: InternalsVisibleTo("UnityEngine.TextCoreTextModule")]
 [assembly: InternalsVisibleTo("Unity.TextCore.Editor")]
+[assembly: InternalsVisibleTo("UnityEditor.TextCoreTextModule")]
 [assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor")]
 
 // Make internal visible for testing

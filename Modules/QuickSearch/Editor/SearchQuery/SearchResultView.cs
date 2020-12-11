@@ -52,7 +52,7 @@ namespace UnityEditor.Search
             // Not needed
         }
 
-        public void Refresh()
+        public void Refresh(RefreshFlags flags = RefreshFlags.Default)
         {
             Repaint();
         }

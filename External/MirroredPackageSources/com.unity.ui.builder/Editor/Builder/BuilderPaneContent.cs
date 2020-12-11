@@ -38,7 +38,6 @@ namespace Unity.UI.Builder
 
         public BuilderPaneContent()
         {
-
         }
 
         protected void AddFocusable(VisualElement focusable)

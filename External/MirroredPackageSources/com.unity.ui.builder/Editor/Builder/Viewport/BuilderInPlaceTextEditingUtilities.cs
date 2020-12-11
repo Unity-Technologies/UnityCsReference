@@ -14,7 +14,7 @@ namespace Unity.UI.Builder
         static readonly float s_TextEditorMinHeight = 16;
 
         static BuilderViewport s_Viewport;
- 
+
         static UxmlAttributeDescription s_EditedTextAttribute;
         static VisualElement s_EditedElement;
         static VisualElement s_EditedTextElement;

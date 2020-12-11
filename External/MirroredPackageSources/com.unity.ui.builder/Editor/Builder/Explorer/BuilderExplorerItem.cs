@@ -81,8 +81,8 @@ namespace Unity.UI.Builder
 
             renameTextfield.SetValueWithoutNotify(
                 string.IsNullOrEmpty(documentElement.name)
-                    ? documentElement.typeName
-                    : documentElement.name);
+                ? documentElement.typeName
+                : documentElement.name);
             renameTextfield.AddToClassList(BuilderConstants.HiddenStyleClassName);
 
             renameTextfield.RegisterCallback<KeyUpEvent>((e) =>

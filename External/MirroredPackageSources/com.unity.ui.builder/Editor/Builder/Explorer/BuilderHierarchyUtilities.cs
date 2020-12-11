@@ -4,7 +4,6 @@ namespace Unity.UI.Builder
 {
     internal static class BuilderHierarchyUtilities
     {
-
         public static bool OpenAsSubDocument(BuilderPaneWindow paneWindow, VisualTreeAsset vta, TemplateAsset vea = null)
         {
             bool didSaveChanges = paneWindow.document.CheckForUnsavedChanges();

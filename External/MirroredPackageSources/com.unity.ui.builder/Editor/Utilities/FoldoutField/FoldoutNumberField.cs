@@ -8,9 +8,9 @@ namespace Unity.UI.Builder
 {
     internal class FoldoutNumberField : FoldoutField
     {
-        public new class UxmlFactory : UxmlFactory<FoldoutNumberField, UxmlTraits> { }
+        public new class UxmlFactory : UxmlFactory<FoldoutNumberField, UxmlTraits> {}
 
-        public new class UxmlTraits : FoldoutField.UxmlTraits { }
+        public new class UxmlTraits : FoldoutField.UxmlTraits {}
 
         TextField m_TextField;
         IntegerField m_DraggerIntegerField;

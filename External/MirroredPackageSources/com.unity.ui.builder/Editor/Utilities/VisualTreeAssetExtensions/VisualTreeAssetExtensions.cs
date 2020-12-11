@@ -24,7 +24,7 @@ namespace Unity.UI.Builder
                 return Comparer<string>.Default.Compare(x.path, y.path);
             }
         }
-        
+
         class UsingEntryAssetComparer : IComparer<VisualTreeAsset.UsingEntry>
         {
             public int Compare(VisualTreeAsset.UsingEntry x, VisualTreeAsset.UsingEntry y)
@@ -623,5 +623,6 @@ namespace Unity.UI.Builder
                     if (asset.stylesheets[i] != null)
                         element.styleSheets.Add(asset.stylesheets[i]);
         }
+
     }
 }

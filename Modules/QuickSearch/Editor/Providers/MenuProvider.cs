@@ -142,7 +142,7 @@ namespace UnityEditor.Search.Providers
             };
         }
 
-        [Shortcut("Help/Search/Menu", KeyCode.M, ShortcutModifiers.Alt | ShortcutModifiers.Shift)]
+        [Shortcut("Help/Search/Menu")]
         internal static void OpenQuickSearch()
         {
             var qs = QuickSearch.OpenWithContextualProvider(type, Settings.type);

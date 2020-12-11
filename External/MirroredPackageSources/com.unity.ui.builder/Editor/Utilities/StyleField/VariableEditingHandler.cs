@@ -95,7 +95,7 @@ namespace Unity.UI.Builder
         {
             return new VariableCompleter(this);
         }
-  
+
         void InitVariableField()
         {
             if (variableField != null)

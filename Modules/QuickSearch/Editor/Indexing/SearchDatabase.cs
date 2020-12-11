@@ -689,7 +689,6 @@ namespace UnityEditor.Search
             catch (IOException ex)
             {
                 Debug.LogException(ex);
-                // ignore
             }
         }
 

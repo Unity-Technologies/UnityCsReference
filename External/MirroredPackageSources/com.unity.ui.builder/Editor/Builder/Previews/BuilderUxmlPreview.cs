@@ -5,11 +5,10 @@ namespace Unity.UI.Builder
 {
     internal class BuilderUxmlPreview : BuilderCodePreview, IBuilderSelectionNotifier
     {
-        public BuilderUxmlPreview(BuilderPaneWindow paneWindow):base(paneWindow)
+        public BuilderUxmlPreview(BuilderPaneWindow paneWindow) : base(paneWindow)
         {
-
         }
-        
+
         protected override void OnAttachToPanelDefaultAction()
         {
             base.OnAttachToPanelDefaultAction();

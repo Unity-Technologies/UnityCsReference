@@ -551,6 +551,9 @@ namespace UnityEditor
             m_LastFrameFromTick = FrameDataView.invalidOrCurrentFrameIndex;
             // Reset the cached data view
             m_FrameDataView = null;
+
+            foreach (var module in m_Modules)
+                module.Clear();
         }
 
         internal ProfilerModuleBase[] GetProfilerModules()

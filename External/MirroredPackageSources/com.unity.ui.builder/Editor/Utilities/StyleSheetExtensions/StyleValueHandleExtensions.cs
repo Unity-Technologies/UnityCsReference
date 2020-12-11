@@ -229,5 +229,4 @@ namespace Unity.UI.Builder
             styleSheet.strings[valueHandle.valueIndex] = strValue;
         }
     }
-
 }

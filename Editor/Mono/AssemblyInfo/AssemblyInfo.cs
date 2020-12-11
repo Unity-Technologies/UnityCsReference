@@ -39,6 +39,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.Android.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.XboxOne.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.PS4.Extensions")]
+[assembly: InternalsVisibleTo("UnityEditor.PS5.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.Switch.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.WebGL.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.LinuxStandalone.Extensions")]
@@ -121,6 +122,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.UIElements.Tests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
 [assembly: InternalsVisibleTo("UnityEditor.UIElementsGameObjectsModule")]
+[assembly: InternalsVisibleTo("UnityEditor.TextCoreTextModule")]
 
 [assembly: InternalsVisibleTo("Unity.SceneTemplate.Editor")]
 [assembly: InternalsVisibleTo("com.unity.purchasing.udp.Editor")]

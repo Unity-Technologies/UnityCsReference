@@ -57,7 +57,7 @@ namespace UnityEditor
                         changedFlags = mask ^ m_Instance.m_NewMask;
                         changedToValue = (m_Instance.m_NewMask & changedFlags) != 0;
 
-                        if (changedFlags != 0)
+                        if (changedFlags != 0 || EditorGUI.showMixedValue)
                         {
                             mask = m_Instance.m_NewMask;
                             GUI.changed = true;
@@ -258,6 +258,8 @@ namespace UnityEditor
             optionMaskValues = GetBuffer(s_OptionValues, optionCount);
             optionMaskValues[0] = 0;
             optionMaskValues[1] = int.MaxValue;
+            if (EditorGUI.showMixedValue)
+                intermediateMask = 0;
             for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)
             {
                 var optionIndex = flagIndex - flagStartIndex + 2;

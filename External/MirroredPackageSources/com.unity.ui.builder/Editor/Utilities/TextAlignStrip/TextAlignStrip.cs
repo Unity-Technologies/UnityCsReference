@@ -16,7 +16,7 @@ namespace Unity.UI.Builder
         static readonly List<string> s_HorizontalChoices = new List<string>() { "left", "center", "right" };
         static readonly List<string> s_VerticalChoices = new List<string>() { "upper", "middle", "lower" };
 
-        public new class UxmlFactory : UxmlFactory<TextAlignStrip, UxmlTraits> { }
+        public new class UxmlFactory : UxmlFactory<TextAlignStrip, UxmlTraits> {}
 
         VisualElement m_ButtonStripContainer;
         ToggleButtonStrip m_HorizontalButtonStrip;
@@ -55,7 +55,7 @@ namespace Unity.UI.Builder
 
         public Type enumType { get; set; }
 
-        public TextAlignStrip() : this(null) { }
+        public TextAlignStrip() : this(null) {}
 
         public TextAlignStrip(string label) : base(label)
         {

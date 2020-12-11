@@ -251,11 +251,5 @@ namespace UnityEditor.Search.Providers
                 new SearchAction(type, "open", null, "Open", OpenItem)
             };
         }
-
-        [UnityEditor.ShortcutManagement.Shortcut("Help/Search/Objects")]
-        internal static void OpenQuickSearch()
-        {
-            QuickSearch.OpenWithContextualProvider(type);
-        }
     }
 }

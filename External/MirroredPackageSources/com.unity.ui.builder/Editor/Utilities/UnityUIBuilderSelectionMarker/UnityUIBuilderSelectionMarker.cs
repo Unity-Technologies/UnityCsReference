@@ -11,7 +11,7 @@ namespace Unity.UI.Builder
     {
         public new class UxmlFactory : UxmlFactory<UnityUIBuilderSelectionMarker, UxmlTraits> {}
 
-        public UnityUIBuilderSelectionMarker() { }
+        public UnityUIBuilderSelectionMarker() {}
 
         protected override void ExecuteDefaultAction(EventBase evt)
         {

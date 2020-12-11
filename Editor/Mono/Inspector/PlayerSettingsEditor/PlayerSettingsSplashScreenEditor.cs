@@ -311,7 +311,7 @@ namespace UnityEditor
                 ObjectReferencePropertyField<Texture2D>(m_VirtualRealitySplashScreen, k_Texts.vrSplashScreen);
 
                 if (TargetSupportsOptionalBuiltinSplashScreen(targetGroup, settingsExtension))
-                    BuiltinCustomSplashScreenGUI();
+                    BuiltinCustomSplashScreenGUI(targetGroup, settingsExtension);
 
                 if (settingsExtension != null)
                     settingsExtension.SplashSectionGUI();
@@ -322,7 +322,7 @@ namespace UnityEditor
             m_Owner.EndSettingsBox();
         }
 
-        private void BuiltinCustomSplashScreenGUI()
+        private void BuiltinCustomSplashScreenGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
         {
             EditorGUILayout.LabelField(k_Texts.splashTitle, EditorStyles.boldLabel);
 

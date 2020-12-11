@@ -264,5 +264,10 @@ namespace UnityEditorInternal
             m_CachedSeriesCategories = new string[categories.Count];
             categories.CopyTo(m_CachedSeriesCategories);
         }
+
+        public void ResetChartState()
+        {
+            m_MaximumScaleInterpolationValue = 0;
+        }
     }
 }

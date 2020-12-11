@@ -16,7 +16,6 @@ namespace Unity.UI.Builder
             BuilderViewport viewport, BuilderParentTracker parentTracker)
             : base(paneWindow, root, selection, viewport, parentTracker)
         {
-
         }
 
         protected override bool ExplorerCanStartDrag(VisualElement targetElement)

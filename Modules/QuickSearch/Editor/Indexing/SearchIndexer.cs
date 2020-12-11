@@ -319,11 +319,6 @@ namespace UnityEditor.Search
         public Func<string, bool> skipEntryHandler { get; set; }
 
         /// <summary>
-        /// Handler used to parse and split the search query text into words. The tokens needs to be split similarly to words and properties are indexed.
-        /// </summary>
-        public Func<string, string[]> getQueryTokensHandler { get; set; }
-
-        /// <summary>
         /// Handler used to resolve a document id to some other data string.
         /// </summary>
         public Func<string, string> resolveDocumentHandler { get; set; }
@@ -333,10 +328,6 @@ namespace UnityEditor.Search
         /// </summary>
         public int minWordIndexationLength { get; set; } = 2;
 
-        /// <summary>
-        /// Is the current indexing thread aborted.
-        /// </summary>
-        protected volatile bool m_ThreadAborted = false;
         private Thread m_IndexerThread;
         private volatile bool m_IndexReady = false;
         private long m_Timestamp;
@@ -358,7 +349,7 @@ namespace UnityEditor.Search
         private Dictionary<string, Hash128> m_SourceDocuments;
         private Dictionary<string, string> m_MetaInfo;
 
-        protected Dictionary<string, int> m_IndexByDocuments;
+        internal Dictionary<string, int> m_IndexByDocuments;
 
         /// <summary>
         /// Create a new default SearchIndexer.
@@ -377,7 +368,6 @@ namespace UnityEditor.Search
             this.name = name;
 
             skipEntryHandler = e => false;
-            getQueryTokensHandler = ParseQuery;
 
             m_Keywords = new HashSet<string>();
             m_Documents = new List<SearchDocument>();
@@ -421,14 +411,6 @@ namespace UnityEditor.Search
                 results = results.Concat(args.orSet);
 
             return SearchIndexerQuery.EvalResult.Combined(results);
-        }
-
-        /// <summary>
-        /// Build custom derived indexes.
-        /// </summary>
-        public virtual void Build()
-        {
-            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -550,6 +532,16 @@ namespace UnityEditor.Search
             return m_IndexReady;
         }
 
+        public virtual IEnumerable<SearchResult> Search(string query, int maxScore = int.MaxValue, int patternMatchLimit = 2999)
+        {
+            return Search(query, null, null, maxScore, patternMatchLimit);
+        }
+
+        public virtual IEnumerable<SearchResult> Search(SearchContext context, SearchProvider provider, int maxScore = int.MaxValue, int patternMatchLimit = 2999)
+        {
+            return Search(context.searchQuery, context, provider, maxScore, patternMatchLimit);
+        }
+
         /// <summary>
         /// Run a search query in the index.
         /// </summary>
@@ -567,7 +559,8 @@ namespace UnityEditor.Search
             var parsedQuery = BuildQuery(query, maxScore, patternMatchLimit);
             if (!parsedQuery.valid)
             {
-                context.AddSearchQueryErrors(parsedQuery.errors.Select(e => new SearchQueryError(e.index, e.length, e.reason, context, provider)));
+                if (context != null && provider != null)
+                    context.AddSearchQueryErrors(parsedQuery.errors.Select(e => new SearchQueryError(e.index, e.length, e.reason, context, provider)));
                 return Enumerable.Empty<SearchResult>();
             }
             return parsedQuery.Apply(null).OrderBy(e => e.score).Distinct();
@@ -1112,7 +1105,6 @@ namespace UnityEditor.Search
             lock (this)
             {
                 m_IndexerThread = null;
-                m_ThreadAborted = false;
                 m_IndexReady = false;
                 m_BatchIndexes.Clear();
                 m_FixedRanges.Clear();
@@ -1164,7 +1156,6 @@ namespace UnityEditor.Search
 
         internal void Finish(Action<byte[]> threadCompletedCallback, string[] removedDocuments, bool saveBytes)
         {
-            m_ThreadAborted = false;
             m_IndexerThread = new Thread(() =>
             {
                 try
@@ -1184,7 +1175,6 @@ namespace UnityEditor.Search
                 }
                 catch (ThreadAbortException)
                 {
-                    m_ThreadAborted = true;
                     Thread.ResetAbort();
                 }
                 catch (Exception ex)
@@ -1297,7 +1287,7 @@ namespace UnityEditor.Search
             return SearchIndexes(BitConverter.DoubleToInt64Bits(value), key.GetHashCode(), SearchIndexEntry.Type.Number, maxScore, wiec, subset);
         }
 
-        internal IEnumerable<SearchResult> SearchTerm(
+        private IEnumerable<SearchResult> SearchTerm(
             string name, object value, SearchIndexOperator op, bool exclude,
             int maxScore = int.MaxValue, SearchResultCollection subset = null, int limit = int.MaxValue)
         {
@@ -1451,8 +1441,6 @@ namespace UnityEditor.Search
         {
             if (m_IndexReady)
                 return;
-
-            m_ThreadAborted = true;
         }
 
         private bool UpdateIndexes(List<SearchIndexEntry> entries, Action onIndexesCreated)

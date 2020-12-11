@@ -16,7 +16,7 @@ namespace Unity.UI.Builder
         static readonly string s_ItalicChocie = "italic";
         static readonly List<string> s_VisibleChoices = new List<string>() { s_BoldChoice, s_ItalicChocie };
 
-        public new class UxmlFactory : UxmlFactory<FontStyleStrip, UxmlTraits> { }
+        public new class UxmlFactory : UxmlFactory<FontStyleStrip, UxmlTraits> {}
 
         [Flags]
         enum FontStyleFlag
@@ -64,7 +64,7 @@ namespace Unity.UI.Builder
 
         public Type enumType { get; set; }
 
-        public FontStyleStrip() : this(null) { }
+        public FontStyleStrip() : this(null) {}
 
         public FontStyleStrip(string label) : base(label)
         {

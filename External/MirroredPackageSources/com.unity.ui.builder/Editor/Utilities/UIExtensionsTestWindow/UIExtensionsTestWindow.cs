@@ -214,7 +214,7 @@ namespace Unity.UI.Builder
                 // Add USS contents.
                 //var selectorStrings = m_StyleSheet.GetSelectorStrings();
                 //foreach (var selectorString in selectorStrings)
-                    //m_StyleSheetContents.Add(new Label(selectorString));
+                //m_StyleSheetContents.Add(new Label(selectorString));
 
                 // Add USS string.
                 var ussString = m_StyleSheet.GenerateUSS();

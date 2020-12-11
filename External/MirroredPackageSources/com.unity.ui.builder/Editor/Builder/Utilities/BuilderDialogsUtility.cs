@@ -9,12 +9,12 @@ namespace Unity.UI.Builder
         {
             return DisplayDialog(title, message, BuilderConstants.DialogOkOption);
         }
-        
+
         public static bool DisplayDialog(string title, string message, string ok)
         {
             return DisplayDialog(title, message, ok, string.Empty);
         }
-        
+
         public static bool DisplayDialog(string title, string message, string ok, string cancel)
         {
             if (Application.isBatchMode)
@@ -22,7 +22,7 @@ namespace Unity.UI.Builder
 
             return EditorUtility.DisplayDialog(title, message, ok, cancel);
         }
-        
+
         public static int DisplayDialogComplex(string title, string message, string ok, string cancel, string alt)
         {
             if (Application.isBatchMode)

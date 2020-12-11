@@ -12,7 +12,7 @@ namespace Unity.UI.Builder
         Label m_HeaderLabel;
         BuilderCanvasStyleControls m_CanvasStyleControls;
 
-        public new class UxmlFactory : UxmlFactory<BuilderSelectionIndicator, UxmlTraits> { }
+        public new class UxmlFactory : UxmlFactory<BuilderSelectionIndicator, UxmlTraits> {}
 
         public BuilderCanvasStyleControls canvasStyleControls => m_CanvasStyleControls;
 

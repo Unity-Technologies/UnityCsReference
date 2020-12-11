@@ -75,7 +75,7 @@ namespace Unity.UI.Builder
 
         public static void ShowWarning(string message)
         {
-            if(s_WarningContent == null)
+            if (s_WarningContent == null)
                 s_WarningContent = new GUIContent(string.Empty, EditorGUIUtility.FindTexture("console.warnicon"));
 
             s_WarningContent.text = message;

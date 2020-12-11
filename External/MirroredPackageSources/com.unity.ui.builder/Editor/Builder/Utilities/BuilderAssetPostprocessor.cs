@@ -62,8 +62,8 @@ namespace Unity.UI.Builder
         static bool IsBuilderFile(string assetPath)
         {
             if (assetPath.EndsWith(BuilderConstants.UxmlExtension)
-               || assetPath.EndsWith(BuilderConstants.UssExtension)
-               || assetPath.EndsWith(BuilderConstants.TssExtension))
+                || assetPath.EndsWith(BuilderConstants.UssExtension)
+                || assetPath.EndsWith(BuilderConstants.TssExtension))
                 return true;
 
             return false;

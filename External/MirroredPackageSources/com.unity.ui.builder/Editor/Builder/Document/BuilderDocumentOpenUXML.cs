@@ -39,7 +39,7 @@ namespace Unity.UI.Builder
 
         [SerializeField]
         int m_OpenSubDocumentParentSourceTemplateAssetIndex = -1;
-        
+
         //
         // Unserialized Data
         //
@@ -74,7 +74,7 @@ namespace Unity.UI.Builder
 
                 if (m_Document == null)
                     return null;
-                
+
                 return m_Document.openUXMLFiles;
             }
         }
@@ -150,9 +150,9 @@ namespace Unity.UI.Builder
         }
 
         public List<BuilderDocumentOpenUSS> openUSSFiles => m_OpenUSSFiles;
-        
+
         public bool isChildSubDocument => openSubDocumentParentIndex > -1;
-        
+
         public BuilderDocumentOpenUXML openSubDocumentParent => isChildSubDocument ? openUXMLFiles[openSubDocumentParentIndex] : null;
 
         //
@@ -345,6 +345,7 @@ namespace Unity.UI.Builder
                 RemoveStyleSheetsFromRootAsset(asset);
             }
         }
+
 
         public void AddStyleSheetsToAllRootElements(string newUssPath = null, int newUssIndex = 0)
         {
@@ -810,7 +811,8 @@ namespace Unity.UI.Builder
             RefreshStyle(documentRootElement);
         }
 
-        void ReloadStyleSheetElements(VisualElement documentRootElement) {
+        void ReloadStyleSheetElements(VisualElement documentRootElement)
+        {
             // Add shared styles.
 
             BuilderSharedStyles.ClearContainer(documentRootElement);

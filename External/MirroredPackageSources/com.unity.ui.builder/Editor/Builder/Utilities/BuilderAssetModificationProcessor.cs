@@ -9,7 +9,7 @@ namespace Unity.UI.Builder
         AssetMoveResult OnWillMoveAsset(string sourcePath, string destinationPath);
         AssetDeleteResult OnWillDeleteAsset(string assetPath, RemoveAssetOptions option);
     }
-    
+
     internal class BuilderAssetModificationProcessor : UnityEditor.AssetModificationProcessor
     {
         private static readonly HashSet<IBuilderAssetModificationProcessor> m_ModificationProcessors = new HashSet<IBuilderAssetModificationProcessor>();
@@ -18,7 +18,7 @@ namespace Unity.UI.Builder
         {
             m_ModificationProcessors.Add(modificationProcessor);
         }
-        
+
         public static void Unregister(IBuilderAssetModificationProcessor modificationProcessor)
         {
             m_ModificationProcessors.Remove(modificationProcessor);
@@ -60,7 +60,7 @@ namespace Unity.UI.Builder
         {
             foreach (var modificationProcessor in m_ModificationProcessors)
                 modificationProcessor.OnAssetChange();
-            
+
             foreach (var modificationProcessor in m_ModificationProcessors)
             {
                 var result = modificationProcessor.OnWillMoveAsset(sourcePath, destinationPath);

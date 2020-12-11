@@ -14,7 +14,6 @@ namespace Unity.UI.Builder
             BuilderViewport viewport = null, BuilderParentTracker parentTracker = null)
             : base(paneWindow, root, selection, viewport, parentTracker)
         {
-
         }
 
         protected override VisualElement ExplorerGetDragPreviewFromTarget(VisualElement target, Vector2 mousePosition)

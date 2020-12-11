@@ -37,7 +37,7 @@ namespace UnityEditor.Search
         int GetDisplayItemCount();
         void HandleInputEvent(Event evt, List<int> selection);
         void DrawControlLayout(float viewWidth);
-        void Refresh();
+        void Refresh(RefreshFlags flags = RefreshFlags.Default);
         ResultViewState SaveViewState(string name);
         void SetViewState(ResultViewState viewState);
     }
@@ -441,7 +441,7 @@ namespace UnityEditor.Search
                 HandleKeyEvent(evt, selection);
         }
 
-        public virtual void Refresh()
+        public virtual void Refresh(RefreshFlags flags)
         {
             // Nothing to refresh by default
         }

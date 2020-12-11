@@ -289,8 +289,9 @@ namespace Unity.UI.Builder
             activeOpenUXMLFile.LoadDocument(visualTreeAsset, documentElement);
             SaveToDisk();
         }
+
         //
-        // Circular Dependencies 
+        // Circular Dependencies
         //
 
         public bool WillCauseCircularDependency(VisualTreeAsset vtaCheck)
@@ -312,7 +313,6 @@ namespace Unity.UI.Builder
             }
             return true;
         }
-
 
         //
         // Sub Document

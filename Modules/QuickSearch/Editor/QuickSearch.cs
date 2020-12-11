@@ -132,6 +132,7 @@ namespace UnityEditor.Search
         const int k_ResetSelectionIndex = -1;
         const string k_LastSearchPrefKey = "last_search";
         const float k_DetailsViewShowMinSize = 550f;
+        const int k_MinimumGroupVisible = 1;
         private static readonly string k_CheckWindowKeyName = $"{typeof(QuickSearch).FullName}h";
         private static readonly string[] k_Dots = { ".", "..", "..." };
 
@@ -143,12 +144,14 @@ namespace UnityEditor.Search
         private readonly List<int> m_Selection = new List<int>();
         private int m_DelayedCurrentSelection = k_ResetSelectionIndex;
         private SearchSelection m_SearchItemSelection;
+        private string m_LastSelectedMoreGroup;
 
         private bool m_Disposed = false;
         private DetailView m_DetailView;
         private IResultView m_ResultView;
         private float m_PreviousItemSize = -1;
         private SearchQuery m_CurrentSearchQuery;
+        private RefreshFlags m_DebounceRefreshFlags;
         internal double m_DebounceTime = 0.0;
 
         [SerializeField] private EditorWindow m_LastFocusedWindow;
@@ -234,8 +237,9 @@ namespace UnityEditor.Search
             };
         }
 
-        public void Refresh()
+        public void Refresh(RefreshFlags flags = RefreshFlags.Default)
         {
+            m_DebounceRefreshFlags |= flags;
             DebouncedRefresh();
         }
 
@@ -274,7 +278,7 @@ namespace UnityEditor.Search
             QuickSearch qsWindow;
             if (flags.HasFlag(SearchFlags.ReuseExistingWindow) && HasOpenInstances<QuickSearch>())
             {
-                qsWindow = GetWindow<QuickSearch>();
+                qsWindow = GetWindow<QuickSearch>(false, null, false);
             }
             else
             {
@@ -729,7 +733,7 @@ namespace UnityEditor.Search
             foreach (var query in SearchQuery.GetFilteredSearchQueries(context))
             {
                 var itemStyle = query == m_CurrentSearchQuery ? Styles.savedSearchItemSelected : Styles.savedSearchItem;
-                if (EditorGUILayout.DropdownButton(new GUIContent($"{query.name}", $"{query.text}"), FocusType.Keyboard, itemStyle, maxWidth))
+                if (EditorGUILayout.DropdownButton(new GUIContent($"{query.displayName}", $"{query.text}"), FocusType.Keyboard, itemStyle, maxWidth))
                     SearchQuery.ExecuteQuery(this, query, SearchAnalytics.GenericEventType.QuickSearchSavedSearchesExecuted);
                 EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Link);
             }
@@ -751,14 +755,23 @@ namespace UnityEditor.Search
                 Repaint();
         }
 
-        internal void SetItems(IEnumerable<SearchItem> items)
+        private void SetItems(IEnumerable<SearchItem> items)
         {
             m_SearchItemSelection = null;
             m_FilteredItems.Clear();
             m_FilteredItems.AddItems(items);
-            m_ResultView?.Refresh();
             SetSelection(trackSelection: false, m_Selection.ToArray());
+        }
+
+        private void RefreshViews(RefreshFlags additionalFlags = RefreshFlags.None)
+        {
             UpdateWindowTitle();
+
+            m_ResultView?.Refresh(m_DebounceRefreshFlags | additionalFlags);
+            m_DetailView?.Refresh(m_DebounceRefreshFlags | additionalFlags);
+            m_DebounceRefreshFlags = RefreshFlags.None;
+
+            Repaint();
         }
 
         private void OnAsyncItemsReceived(SearchContext context, IEnumerable<SearchItem> items)
@@ -773,10 +786,7 @@ namespace UnityEditor.Search
         private void UpdateAsyncResults()
         {
             Utils.tick -= UpdateAsyncResults;
-
-            UpdateWindowTitle();
-            m_ResultView?.Refresh();
-            Repaint();
+            RefreshViews(RefreshFlags.ItemsChanged);
         }
 
         private void ToggleFilter(SearchContext.FilterDesc filter)
@@ -1188,50 +1198,89 @@ namespace UnityEditor.Search
             {
                 tabButtonsWidth = Styles.tabMoreButton.CalcSize(Styles.moreProviderFiltersContent).x
                     + Styles.syncButton.CalcSize(Styles.syncSearchButtonContent).x
-                    + 8f;
+                    + Styles.syncButton.margin.horizontal
+                    + Styles.tabMoreButton.margin.horizontal;
             }
         }
 
         private void DrawTabs(Event evt, float availableSpace)
         {
-            var groupCount = m_FilteredItems.GetGroupCount();
+            const float tabMarginLeft = 3f;
+            const float tabMarginRight = 3f;
             var maxBarWidth = availableSpace - ComputedValues.tabButtonsWidth;
+            var moreTabButtonSize = Styles.searchTabMoreButton.CalcSize(GUIContent.Temp(""));
+            var realTabMarginRight = Mathf.Max(tabMarginRight, Styles.searchTabMoreButton.margin.right);
+            var tabExtraSpace = tabMarginLeft + moreTabButtonSize.x + Styles.searchTabMoreButton.margin.left + realTabMarginRight;
             using (new EditorGUILayout.HorizontalScope(Styles.searchTabBackground, GUILayout.MaxWidth(availableSpace)))
             {
                 var maxTabWidth = 100f;
-                foreach (var group in m_FilteredItems.EnumerateGroups())
+                Dictionary<string, GUIContent> groupsContent = new Dictionary<string, GUIContent>();
+                var allGroups = m_FilteredItems.EnumerateGroups().ToList();
+                var currentGroupIndex = -1;
+                var lastSelectedMoreGroupIndex = -1;
+                for (var i = 0; i < allGroups.Count; ++i)
                 {
-                    var content = new GUIContent($"{group.name} ({group.count})");
-                    maxTabWidth = Mathf.Max(Styles.searchTab.CalcSize(content).x + 6f, maxTabWidth);
+                    var group = allGroups[i];
+                    var formattedCount = Utils.FormatCount((ulong)group.count);
+                    var content = new GUIContent($"{group.name} {string.Format(Styles.tabCountTextColorFormat, formattedCount)}");
+                    groupsContent.Add(group.name, content);
+                    maxTabWidth = Mathf.Max(Styles.searchTab.CalcSize(content).x + tabExtraSpace, maxTabWidth);
+                    if (group.id == m_FilteredItems.currentGroup)
+                        currentGroupIndex = i;
+                    if (group.id == m_LastSelectedMoreGroup)
+                        lastSelectedMoreGroupIndex = i;
                 }
 
-                var expandedSize = Mathf.Floor(maxBarWidth / groupCount);
-                var shrinked = maxTabWidth > expandedSize;
-                if (shrinked)
-                    maxTabWidth = expandedSize;
+                // Get the maximum visible group visible
+                var visibleGroupCount = Math.Min(Math.Max(Mathf.FloorToInt(maxBarWidth / maxTabWidth), k_MinimumGroupVisible), allGroups.Count);
+                var needTabDropdown = visibleGroupCount < allGroups.Count;
+                var availableRect = GUILayoutUtility.GetRect(
+                    maxTabWidth * visibleGroupCount,
+                    Styles.searchTab.fixedHeight,
+                    Styles.searchTab,
+                    GUILayout.MaxWidth(maxBarWidth));
 
-                foreach (var group in m_FilteredItems.EnumerateGroups())
+                var visibleGroups = new List<IGroup>(visibleGroupCount);
+                var hiddenGroups = new List<IGroup>(Math.Max(allGroups.Count - visibleGroupCount, 0));
+                GetVisibleAndHiddenGroups(allGroups, visibleGroups, hiddenGroups, visibleGroupCount, currentGroupIndex, lastSelectedMoreGroupIndex);
+
+                var groupIndex = 0;
+                var groupStartPosition = availableRect.x;
+                foreach (var group in visibleGroups)
                 {
                     var oldColor = GUI.color;
                     GUI.color = new Color(1f, 1f, 1f, group.count == 0 ? 0.5f : 1f);
                     var isCurrentGroup = m_FilteredItems.currentGroup == group.id;
-                    var content = shrinked && !isCurrentGroup ? new GUIContent(group.name) : new GUIContent($"{group.name} ({group.count})");
-                    var tabRect = GUILayoutUtility.GetRect(content, Styles.searchTab, GUILayout.MaxWidth(maxTabWidth));
+                    var content = groupsContent[group.name];
+                    var tabRect = new Rect(availableRect);
+                    tabRect.x = groupStartPosition + groupIndex * maxTabWidth;
+                    tabRect.width = maxTabWidth;
+                    var moreTabButtonRect = new Rect(tabRect);
+                    moreTabButtonRect.x = tabRect.xMax - moreTabButtonSize.x - realTabMarginRight;
+                    moreTabButtonRect.width = moreTabButtonSize.x;
                     var hovered = tabRect.Contains(evt.mousePosition);
+                    var hoveredMoreTab = moreTabButtonRect.Contains(evt.mousePosition);
+                    var showMoreTabButton = needTabDropdown && groupIndex == visibleGroupCount - 1;
                     if (evt.type == EventType.Repaint)
                     {
-                        var oldFontSize = Styles.searchTab.fontSize;
-                        if (shrinked && (Styles.searchTab.CalcSize(content).x) > tabRect.width)
-                            Styles.searchTab.fontSize -= 3;
                         Styles.searchTab.Draw(tabRect, content, hovered, isCurrentGroup, false, false);
-                        Styles.searchTab.fontSize = oldFontSize;
+
+                        if (showMoreTabButton)
+                        {
+                            Styles.searchTabMoreButton.Draw(moreTabButtonRect, hoveredMoreTab, isCurrentGroup, true, false);
+                        }
                     }
                     else if (evt.type == EventType.MouseUp && hovered)
                     {
-                        SelectGroup(group.id);
+                        if (showMoreTabButton && hoveredMoreTab)
+                            ShowHiddenGroups(hiddenGroups);
+                        else
+                            SelectGroup(group.id);
                         evt.Use();
                     }
                     GUI.color = oldColor;
+
+                    ++groupIndex;
                 }
 
                 GUILayout.FlexibleSpace();
@@ -1269,6 +1318,53 @@ namespace UnityEditor.Search
             filterMenu.ShowAsContext();
         }
 
+        private void ShowHiddenGroups(IEnumerable<IGroup> hiddenGroups)
+        {
+            var groupMenu = new GenericMenu();
+            foreach (var g in hiddenGroups)
+            {
+                var groupContent = new GUIContent($"{g.name} ({g.count})");
+                groupMenu.AddItem(groupContent, false, () => SetLastTabGroup(g.id));
+            }
+            groupMenu.ShowAsContext();
+        }
+
+        private void SetLastTabGroup(string groupId)
+        {
+            if (m_FilteredItems.currentGroup == m_LastSelectedMoreGroup)
+                m_FilteredItems.currentGroup = groupId;
+            m_LastSelectedMoreGroup = groupId;
+        }
+
+        private void GetVisibleAndHiddenGroups(List<IGroup> allGroups, List<IGroup> visibleGroups, List<IGroup> hiddenGroups, int visibleGroupCount, int currentGroupIndex, int lastSelectedMoreGroupIndex)
+        {
+            var nonEssentialGroupCount = Math.Max(visibleGroupCount - k_MinimumGroupVisible, 0);
+            if (allGroups.Count > 0)
+            {
+                var currentIndex = 0;
+                for (; currentIndex < nonEssentialGroupCount && currentIndex < allGroups.Count; ++currentIndex)
+                {
+                    visibleGroups.Add(allGroups[currentIndex]);
+                }
+
+                // For the last group, we have to determine which we should show
+                if (currentGroupIndex != -1 && currentGroupIndex >= currentIndex)
+                {
+                    m_LastSelectedMoreGroup = m_FilteredItems.currentGroup;
+                    lastSelectedMoreGroupIndex = currentGroupIndex;
+                }
+                var lastGroupIndex = lastSelectedMoreGroupIndex < currentIndex ? currentIndex : lastSelectedMoreGroupIndex;
+
+                for (var i = currentIndex; i < allGroups.Count; ++i)
+                {
+                    if (i == lastGroupIndex)
+                        visibleGroups.Add(allGroups[i]);
+                    else
+                        hiddenGroups.Add(allGroups[i]);
+                }
+            }
+        }
+
         private void SelectGroup(string groupId)
         {
             if (m_FilteredItems.currentGroup == groupId)
@@ -1294,7 +1390,8 @@ namespace UnityEditor.Search
             m_FilteredItems.currentGroup = groupId;
             if (syncSearch)
                 NotifySyncSearch(m_FilteredItems.currentGroup, UnityEditor.SearchService.SearchService.SyncSearchEvent.SyncSearch);
-            m_ResultView?.Refresh();
+
+            RefreshViews(RefreshFlags.GroupChanged);
         }
 
         private void OnWindowResized(Vector2 oldSize, Vector2 newSize)
@@ -1352,7 +1449,7 @@ namespace UnityEditor.Search
                     {
                         // Only draw errors when you are done typing, to prevent cases where
                         // the cursor moved because of changes but we did not clear the errors yet.
-                        DrawQueryErrors(searchTextRect);
+                        DrawQueryErrors();
                     }
                 }
                 GUILayout.FlexibleSpace();
@@ -1363,7 +1460,7 @@ namespace UnityEditor.Search
             return toolbarRect;
         }
 
-        private void DrawQueryErrors(Rect searchTextRect)
+        private void DrawQueryErrors()
         {
             if (context.searchInProgress)
                 return;
@@ -1542,7 +1639,7 @@ namespace UnityEditor.Search
             var contextHash = context.GetHashCode();
             if (context.options.HasFlag(SearchFlags.FocusContext))
             {
-                var contextualProvider = context.providers.FirstOrDefault(p => p.active && (p.isEnabledForContextualSearch?.Invoke() ?? false));
+                var contextualProvider = GetContextualProvider();
                 if (contextualProvider != null)
                     contextHash ^= contextualProvider.id.GetHashCode();
             }
@@ -1575,7 +1672,7 @@ namespace UnityEditor.Search
                 m_FilteredItems.currentGroup = SearchSettings.GetScopeValue(nameof(m_FilteredItems.currentGroup), m_ContextHash, ((IGroup)m_FilteredItems).id);
                 if (context.options.HasFlag(SearchFlags.FocusContext))
                 {
-                    var contextualProvider = context.providers.FirstOrDefault(p => p.active && (p.isEnabledForContextualSearch?.Invoke() ?? false));
+                    var contextualProvider = GetContextualProvider();
                     if (contextualProvider != null)
                         m_FilteredItems.currentGroup = contextualProvider.id;
                 }
@@ -1616,7 +1713,7 @@ namespace UnityEditor.Search
         private void UpdateItemSize(float value)
         {
             var oldMode = displayMode;
-            m_ItemSize = value;
+            m_ItemSize = value > (int)DisplayMode.Limit ? (int)DisplayMode.Limit : value;
             var newMode = displayMode;
             if (m_ResultView == null || oldMode != newMode)
             {
@@ -1624,7 +1721,7 @@ namespace UnityEditor.Search
                     m_ResultView = new ListView(this);
                 else if (newMode == DisplayMode.Grid)
                     m_ResultView = new GridView(this);
-                m_ResultView?.Refresh();
+                RefreshViews(RefreshFlags.DisplayModeChanged);
             }
         }
 
@@ -1648,7 +1745,7 @@ namespace UnityEditor.Search
         }
 
         [Shortcut(k_TogleSyncShortcutName, typeof(QuickSearch), KeyCode.L, ShortcutModifiers.Action | ShortcutModifiers.Shift)]
-        static void ToggleSyncSearchView(ShortcutArguments args)
+        internal static void ToggleSyncSearchView(ShortcutArguments args)
         {
             var window = args.context as QuickSearch;
             if (window == null)
@@ -1656,7 +1753,7 @@ namespace UnityEditor.Search
             window.SetSyncSearchView(!window.syncSearch);
         }
 
-        void SetSyncSearchView(bool sync)
+        private void SetSyncSearchView(bool sync)
         {
             var providerSupportsSync = GetProviderById(m_FilteredItems.currentGroup)?.supportsSyncViewSearch ?? false;
             var searchViewSyncEnabled = providerSupportsSync && SearchViewSyncEnabled(m_FilteredItems.currentGroup);
@@ -1705,15 +1802,23 @@ namespace UnityEditor.Search
         {
             var query = c.GetArgument<string>(0);
             var sourceContext = c.GetArgument<string>(1);
-            var qsWindow = Open(flags: SearchFlags.OpenContextual | SearchFlags.ReuseExistingWindow);
+            var wasReused = HasOpenInstances<QuickSearch>();
+            var flags = SearchFlags.OpenContextual | SearchFlags.ReuseExistingWindow;
+            var qsWindow = Create(flags);
+            SearchProvider contextualProvider = null;
+            if (wasReused)
+                contextualProvider = qsWindow.GetContextualProvider();
+            qsWindow.ShowWindow(flags: flags);
+            if (contextualProvider != null)
+                qsWindow.SelectGroup(contextualProvider.id);
             qsWindow.syncSearch = true;
             qsWindow.SendEvent(SearchAnalytics.GenericEventType.QuickSearchJumpToSearch, qsWindow.m_FilteredItems.currentGroup, sourceContext);
-            qsWindow?.SetSearchText(query);
-            c.result = qsWindow != null;
+            qsWindow.SetSearchText(query);
+            c.result = true;
         }
 
 
-        [Shortcut("Help/Search Contextual", KeyCode.C, ShortcutModifiers.Alt | ShortcutModifiers.Shift)]
+        [Shortcut("Help/Search Contextual")]
         internal static void OpenContextual()
         {
             Open(flags: SearchFlags.OpenContextual);
@@ -1738,6 +1843,11 @@ namespace UnityEditor.Search
         private void ClearCurrentErrors()
         {
             context.ClearErrors();
+        }
+
+        private SearchProvider GetContextualProvider()
+        {
+            return context.providers.FirstOrDefault(p => p.active && (p.isEnabledForContextualSearch?.Invoke() ?? false));
         }
 
         [WindowAction]

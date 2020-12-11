@@ -12,9 +12,9 @@ namespace Unity.UI.Builder
         static readonly string k_FieldClassName = BuilderConstants.FoldoutFieldPropertyName + "__color-field";
         static readonly string k_MixedValueLineClassName = BuilderConstants.FoldoutFieldPropertyName + "__mixed-value-line";
 
-        public new class UxmlFactory : UxmlFactory<FoldoutColorField, UxmlTraits> { }
+        public new class UxmlFactory : UxmlFactory<FoldoutColorField, UxmlTraits> {}
 
-        public new class UxmlTraits : FoldoutField.UxmlTraits { }
+        public new class UxmlTraits : FoldoutField.UxmlTraits {}
 
         ColorField m_ColorField;
         VisualElement m_MixedValueLine;

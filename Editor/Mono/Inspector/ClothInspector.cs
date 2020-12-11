@@ -5,12 +5,8 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEditorInternal;
-using UnityEditor.IMGUI.Controls;
-
 using UnityObject = UnityEngine.Object;
-using UnityEngine.Assertions;
 
 
 namespace UnityEditor
@@ -59,6 +55,7 @@ namespace UnityEditor
         Vector3 m_BrushPos;
         Vector3 m_BrushNorm;
         int m_BrushFace = -1;
+        int m_ClothToolControlID;
 
         Vector3[] m_LastVertices;
         Vector2 m_SelectStartPoint;
@@ -396,18 +393,14 @@ namespace UnityEditor
         void GenerateSelectionMesh()
         {
             if (!IsMeshValid())
-            {
                 return;
-            }
 
             m_ParticleSelection = new bool[m_NumVerts];
             m_ParticleRectSelection = new bool[m_NumVerts];
 
             m_LastVertices = new Vector3[m_NumVerts];
             for (int i = 0; i < m_NumVerts; i++)
-            {
                 m_LastVertices[i] = m_ClothParticlesInWorldSpace[i];
-            }
         }
 
         void InitSelfAndInterCollisionSelection()
@@ -459,7 +452,6 @@ namespace UnityEditor
 
         void DrawSelfAndInterCollisionParticles()
         {
-            int id = GUIUtility.GetControlID(FocusType.Passive);
             float size = state.SelfCollisionDistance;
             if (state.VisualizeSelfOrInterCollision == CollisionVisualizationMode.SelfCollision)
             {
@@ -499,7 +491,7 @@ namespace UnityEditor
                         }
                     }
 
-                    Handles.SphereHandleCap(id, m_ClothParticlesInWorldSpace[i], m_TransformOverride.rotation, size, EventType.Repaint);
+                    Handles.SphereHandleCap(-1, m_ClothParticlesInWorldSpace[i], m_TransformOverride.rotation, size, EventType.Repaint);
                 }
             }
         }
@@ -529,15 +521,8 @@ namespace UnityEditor
             m_SelfCollisionDistance = serializedObject.FindProperty("m_SelfCollisionDistance");
             m_SelfCollisionStiffness = serializedObject.FindProperty("m_SelfCollisionStiffness");
 
-            SceneView.beforeSceneGui += OnPreSceneGUICallback;
-
             m_ConstraintEditingOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Cloth Constraints"), ConstraintEditing, (int)SceneViewOverlay.Ordering.ClothConstraints, null, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
             m_SelfAndInterCollisionEditingOverlayWindow = new OverlayWindow(Styles.clothSelfCollisionAndInterCollision, SelfAndInterCollisionEditing, (int)SceneViewOverlay.Ordering.ClothSelfAndInterCollision, null, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
-        }
-
-        public void OnDestroy()
-        {
-            SceneView.beforeSceneGui -= OnPreSceneGUICallback;
         }
 
         float GetCoefficient(ClothSkinningCoefficient coefficient)
@@ -560,11 +545,6 @@ namespace UnityEditor
                 return Color.Lerp(Color.magenta, Color.yellow, (val - 0.2f) / 0.5f);
             else
                 return Color.Lerp(Color.yellow, Color.green, (val - 0.7f) / 0.3f);
-        }
-
-        void OnDisable()
-        {
-            SceneView.beforeSceneGui -= OnPreSceneGUICallback;
         }
 
         float CoefficientField(float value, float useValue, bool enabled, DrawMode mode)
@@ -918,9 +898,7 @@ namespace UnityEditor
         void CollSelectionGUI()
         {
             if (!IsMeshValid())
-            {
                 return;
-            }
 
             bool firstFound = false;
             bool mixedValue = false;
@@ -1088,7 +1066,6 @@ namespace UnityEditor
             if (SelectionMeshDirty())
                 GenerateSelectionMesh();
 
-            int id = GUIUtility.GetControlID(FocusType.Passive);
             ClothSkinningCoefficient[] coefficients = cloth.coefficients;
             int length = coefficients.Length;
             float min = 0;
@@ -1141,7 +1118,7 @@ namespace UnityEditor
                         }
                     }
 
-                    Handles.SphereHandleCap(id, m_ClothParticlesInWorldSpace[i], m_TransformOverride.rotation, state.ConstraintSize, EventType.Repaint);
+                    Handles.SphereHandleCap(-1, m_ClothParticlesInWorldSpace[i], m_TransformOverride.rotation, state.ConstraintSize, EventType.Repaint);
                 }
             }
         }
@@ -1259,7 +1236,7 @@ namespace UnityEditor
             switch (e.GetTypeForControl(id))
             {
                 case EventType.MouseDown:
-                    if (e.alt || e.control || e.command || e.button != 0)
+                    if (HandleUtility.nearestControl != id || e.alt || e.control || e.command || e.button != 0)
                         break;
                     GUIUtility.hotControl = id;
                     int found = GetMouseVertex(e);
@@ -1407,7 +1384,6 @@ namespace UnityEditor
                         }
                     }
 
-                    int id = GUIUtility.GetControlID(FocusType.Passive);
                     float size = cloth.selfCollisionDistance;
                     if (state.VisualizeSelfOrInterCollision == CollisionVisualizationMode.SelfCollision)
                     {
@@ -1419,7 +1395,8 @@ namespace UnityEditor
                     }
 
                     Handles.color = s_SelectedParticleColor;
-                    Handles.SphereHandleCap(id, m_ClothParticlesInWorldSpace[i], rotation, size, EventType.Repaint);
+                    if (Event.current.type == EventType.Repaint)
+                        Handles.SphereHandleCap(-1, m_ClothParticlesInWorldSpace[i], rotation, size, EventType.Repaint);
                     Repaint();
                 }
             }
@@ -1430,28 +1407,27 @@ namespace UnityEditor
         void PaintPreSceneGUI(int id)
         {
             if (!IsMeshValid())
-            {
                 return;
-            }
 
             Event e = Event.current;
             EventType type = e.GetTypeForControl(id);
+
             if (type == EventType.MouseDown || type == EventType.MouseDrag)
             {
                 if (GUIUtility.hotControl != id && (e.alt || e.control || e.command || e.button != 0))
                     return;
+
+                if (HandleUtility.nearestControl != id)
+                    return;
+
                 if (type == EventType.MouseDown)
                     GUIUtility.hotControl = id;
 
                 if (editingSelfAndInterCollisionParticles)
-                {
                     GetBrushedParticles(e);
-                }
-
-                if (editingConstraints)
-                {
+                else if (editingConstraints)
                     GetBrushedConstraints(e);
-                }
+
                 e.Use();
             }
             else if (type == EventType.MouseUp)
@@ -1467,10 +1443,11 @@ namespace UnityEditor
         void GradientToolPreScenGUI(int id)
         {
             Event e = Event.current;
+
             switch (e.GetTypeForControl(id))
             {
                 case EventType.MouseDown:
-                    if (e.alt || e.control || e.command || e.button != 0)
+                    if (HandleUtility.nearestControl != id || e.alt || e.control || e.command || e.button != 0)
                         break;
                     GUIUtility.hotControl = id;
                     int found = GetMouseVertex(e);
@@ -1557,24 +1534,10 @@ namespace UnityEditor
             }
         }
 
-        private void OnPreSceneGUICallback(SceneView sceneView)
-        {
-            // Multi-editing in scene not supported
-            if (targets.Length > 1)
-                return;
-
-            if (editingConstraints || editingSelfAndInterCollisionParticles)
-            {
-                OnPreSceneGUI();
-            }
-        }
-
-        void OnPreSceneGUI()
+        void DoOnPreSceneGUI()
         {
             if (!IsMeshValid())
-            {
                 return;
-            }
 
             if (state.ToolMode == (ToolMode)(-1))
                 state.ToolMode = ToolMode.Select;
@@ -1590,14 +1553,16 @@ namespace UnityEditor
                     InitInspector();
             }
 
+            m_ClothToolControlID = GUIUtility.GetControlID(FocusType.Passive);
+
             Handles.BeginGUI();
-            int id = GUIUtility.GetControlID(FocusType.Passive);
 
             Event e = Event.current;
-            switch (e.GetTypeForControl(id))
+
+            switch (e.GetTypeForControl(m_ClothToolControlID))
             {
                 case EventType.Layout:
-                    HandleUtility.AddDefaultControl(id);
+                    HandleUtility.AddDefaultControl(m_ClothToolControlID);
                     break;
 
                 case EventType.MouseMove:
@@ -1612,15 +1577,15 @@ namespace UnityEditor
                 switch (state.ToolMode)
                 {
                     case ToolMode.Select:
-                        SelectionPreSceneGUI(id);
+                        SelectionPreSceneGUI(m_ClothToolControlID);
                         break;
 
                     case ToolMode.Paint:
-                        PaintPreSceneGUI(id);
+                        PaintPreSceneGUI(m_ClothToolControlID);
                         break;
 
                     case ToolMode.GradientTool:
-                        GradientToolPreScenGUI(id);
+                        GradientToolPreScenGUI(m_ClothToolControlID);
                         break;
                 }
             }
@@ -1630,12 +1595,12 @@ namespace UnityEditor
                 switch (state.CollToolMode)
                 {
                     case CollToolMode.Select:
-                        SelectionPreSceneGUI(id);
+                        SelectionPreSceneGUI(m_ClothToolControlID);
                         break;
 
                     case CollToolMode.Paint:
                     case CollToolMode.Erase:
-                        PaintPreSceneGUI(id);
+                        PaintPreSceneGUI(m_ClothToolControlID);
                         break;
                 }
             }
@@ -1645,16 +1610,15 @@ namespace UnityEditor
 
         public void OnSceneGUI()
         {
-            if (editingConstraints)
-            {
-                OnSceneEditConstraintsGUI();
+            if (!editingConstraints && !editingSelfAndInterCollisionParticles)
                 return;
-            }
 
-            if (editingSelfAndInterCollisionParticles)
-            {
+            DoOnPreSceneGUI();
+
+            if (editingConstraints)
+                OnSceneEditConstraintsGUI();
+            else if (editingSelfAndInterCollisionParticles)
                 OnSceneEditSelfAndInterCollisionParticlesGUI();
-            }
         }
 
         void OnSceneEditConstraintsGUI()
@@ -1704,16 +1668,19 @@ namespace UnityEditor
             if (Selection.gameObjects.Length > 1)
                 return;
 
-            DrawSelfAndInterCollisionParticles();
+            var evt = Event.current;
 
-            if ((Event.current.type == EventType.Repaint) && ((state.CollToolMode == CollToolMode.Paint) || ((state.CollToolMode == CollToolMode.Erase))))
+            if (evt.type == EventType.Repaint)
+                DrawSelfAndInterCollisionParticles();
+
+            if (evt.type == EventType.Repaint && (state.CollToolMode == CollToolMode.Paint || state.CollToolMode == CollToolMode.Erase))
             {
                 UpdatePreviewBrush();
                 DrawBrush();
             }
 
             Handles.BeginGUI();
-            if (m_RectSelecting && state.CollToolMode == CollToolMode.Select && Event.current.type == EventType.Repaint)
+            if (m_RectSelecting && state.CollToolMode == CollToolMode.Select && evt.type == EventType.Repaint)
                 EditorStyles.selectionRect.Draw(EditorGUIExt.FromToRect(m_SelectStartPoint, m_SelectMousePoint), GUIContent.none, false, false, false, false);
             Handles.EndGUI();
 

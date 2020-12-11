@@ -169,6 +169,11 @@ namespace UnityEditor
                 titleContent = EditorGUIUtility.TrTextContentWithIcon("Debug", iconName);
         }
 
+        protected override void UpdateWindowObjectNameTitle()
+        {
+            // The inspector window doesn't not track the object name.
+        }
+
         protected override void CreateTracker()
         {
             if (m_Tracker != null)

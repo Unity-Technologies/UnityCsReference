@@ -94,7 +94,10 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         if (IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(target)))
             config.Set("mono-codegen", "il2cpp");
         if ((options & BuildOptions.EnableHeadlessMode) != 0)
+        {
             config.AddKey("headless");
+            config.AddKey("force-gfx-direct");
+        }
         if ((options & BuildOptions.EnableCodeCoverage) != 0)
             config.Set("enableCodeCoverage", "1");
         if (!PlayerSettings.usePlayerLog)

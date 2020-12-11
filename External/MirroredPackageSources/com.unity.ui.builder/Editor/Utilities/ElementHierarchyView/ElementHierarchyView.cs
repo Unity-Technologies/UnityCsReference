@@ -269,13 +269,13 @@ namespace Unity.UI.Builder
                 ssLabel.AddToClassList("unity-debugger-tree-item-type");
                 row.AddToClassList(BuilderConstants.ExplorerHeaderRowClassName);
                 labelCont.Add(ssLabel);
-                
+
                 // Allow reparenting.
                 explorerItem.SetProperty(BuilderConstants.ExplorerItemElementLinkVEPropertyName, documentElement);
-                
+
                 // Register right-click events for context menu actions.
                 m_ContextMenuManipulator.RegisterCallbacksOnTarget(explorerItem);
-                
+
                 return;
             }
 
@@ -480,7 +480,7 @@ namespace Unity.UI.Builder
                 foreach (var item in m_TreeView.rootItems)
                     m_TreeView.ExpandItem(item.id);
         }
-        
+
         public void ExpandAllItems()
         {
             // Auto-expand all items on load.
@@ -580,7 +580,7 @@ namespace Unity.UI.Builder
                 }
                 else if (elementStyle == BuilderElementStyle.Highlighted && !EditorGUIUtility.isProSkin)
                 {
-                        libraryIcon = BuilderLibraryContent.GetTypeDarkSkinLibraryIcon(documentElement.GetType());
+                    libraryIcon = BuilderLibraryContent.GetTypeDarkSkinLibraryIcon(documentElement.GetType());
                 }
 
                 var styleBackgroundImage = icon.style.backgroundImage;

@@ -157,6 +157,5 @@ namespace Unity.UI.Builder
                 target.RemoveFromClassList(s_ActiveHandleClassName);
             }
         }
-
     }
 }

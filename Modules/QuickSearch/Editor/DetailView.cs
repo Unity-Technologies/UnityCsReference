@@ -12,7 +12,6 @@ namespace UnityEditor.Search
     class DetailView : IDisposable
     {
         private readonly ISearchView m_SearchView;
-        private string m_LastPreviewItemId;
         private Editor[] m_Editors;
         private int m_EditorsHash = 0;
         private Vector2 m_ScrollPosition;
@@ -20,6 +19,7 @@ namespace UnityEditor.Search
         private Texture2D m_PreviewTexture;
         private bool m_DisposedValue;
 
+        static RectOffset s_RectOffsetZero = new RectOffset();
         static private Dictionary<string, bool> s_EditorCollapsed = new Dictionary<string, bool>();
 
         public DetailView(ISearchView searchView)
@@ -190,6 +190,7 @@ namespace UnityEditor.Search
             }
             m_Editors = null;
             m_EditorsHash = 0;
+            m_PreviewTexture = null;
         }
 
         private void DrawInspector(float width)
@@ -197,51 +198,52 @@ namespace UnityEditor.Search
             if (m_Editors == null)
                 return;
 
-            using (Utils.LayoutGroupChecker())
+            for (int i = 0; i < m_Editors.Length; ++i)
             {
-                for (int i = 0; i < m_Editors.Length; ++i)
+                var e = m_Editors[i];
+                if (!Utils.IsEditorValid(e))
+                    continue;
+
+                try
                 {
-                    var e = m_Editors[i];
-                    if (!Utils.IsEditorValid(e))
-                        continue;
-
-                    GUI.changed = false;
-                    EditorGUIUtility.wideMode = true;
-                    EditorGUIUtility.hierarchyMode = false;
-                    EditorGUIUtility.labelWidth = Mathf.Min(150f, (width > 175f ? 0.35f : 0.2f) * width);
-
-                    try
+                    var collapsed = IsEditorCollapsed(e);
+                    var newCollapsed = !EditorGUILayout.InspectorTitlebar(!collapsed, e);
+                    if (newCollapsed != collapsed)
+                        SetEditorCollapsed(e, newCollapsed);
+                    if (!newCollapsed)
                     {
-                        using (new EditorGUIUtility.IconSizeScope(new Vector2(16, 16)))
+                        using (new EditorGUILayout.VerticalScope(EditorStyles.inspectorFullWidthMargins))
                         {
-                            var collapsed = IsEditorCollapsed(e);
-                            var newCollapsed = !EditorGUILayout.InspectorTitlebar(!collapsed, e);
-                            if (newCollapsed != collapsed)
-                                SetEditorCollapsed(e, newCollapsed);
-                            if (!newCollapsed)
+                            if (e.HasPreviewGUI())
                             {
-                                using (new EditorGUILayout.VerticalScope(EditorStyles.inspectorFullWidthMargins))
+                                var previewRect = EditorGUILayout.GetControlRect(false, 256,
+                                    GUIStyle.none, GUILayout.MaxWidth(width), GUILayout.Height(256));
+                                if (previewRect.width > 0 && previewRect.height > 0)
                                 {
-                                    if (e.HasPreviewGUI())
-                                    {
-                                        var previewRect = EditorGUILayout.GetControlRect(false, 256,
-                                            GUIStyle.none, GUILayout.MaxWidth(width), GUILayout.Height(256));
-                                        if (previewRect.width > 0 && previewRect.height > 0)
-                                        {
-                                            previewRect = Styles.largePreview.margin.Remove(previewRect);
-                                            e.OnPreviewGUI(previewRect, Styles.largePreview);
-                                        }
-                                    }
-
-                                    e.OnInspectorGUI();
+                                    previewRect = Styles.largePreview.margin.Remove(previewRect);
+                                    e.OnInteractivePreviewGUI(previewRect, Styles.largePreview);
                                 }
                             }
+
+                            GUI.changed = false;
+                            EditorGUIUtility.currentViewWidth = width;
+                            EditorGUIUtility.wideMode = width > Editor.k_WideModeMinWidth;
+                            EditorGUIUtility.hierarchyMode = width > Editor.k_WideModeMinWidth;
+                            EditorGUIUtility.labelWidth = Mathf.Max((width > 175f ? 0.4f : 0.2f) * width, 145f);
+                            var bp = EditorStyles.inspectorDefaultMargins.padding;
+                            if (EditorGUIUtility.hierarchyMode)
+                                EditorStyles.inspectorDefaultMargins.padding = s_RectOffsetZero;
+
+                            e.OnInspectorGUI();
+                            EditorGUIUtility.currentViewWidth = -1f;
+                            if (EditorGUIUtility.hierarchyMode)
+                                EditorStyles.inspectorDefaultMargins.padding = bp;
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        EditorGUILayout.HelpBox(new GUIContent($"Failed to display inspector for {e.GetType().Name}", ex.Message));
-                    }
+                }
+                catch (Exception ex)
+                {
+                    EditorGUILayout.HelpBox(new GUIContent($"Failed to display inspector for {e.GetType().Name}", ex.Message));
                 }
             }
         }
@@ -333,29 +335,30 @@ namespace UnityEditor.Search
                 return;
 
             var now = EditorApplication.timeSinceStartup;
-            if (now - m_LastPreviewStamp > 2.5)
+            if (now - m_LastPreviewStamp > 2.5 && m_PreviewTexture?.GetInstanceID() < 0)
                 m_PreviewTexture = null;
 
-            var textureRect = EditorGUILayout.GetControlRect(false, 256,
-                GUIStyle.none, GUILayout.MaxWidth(size), GUILayout.Height(256));
-            if (Event.current.type == EventType.Repaint)
+            if (!m_PreviewTexture)
             {
-                if (!m_PreviewTexture || m_LastPreviewItemId != item.id)
-                {
-                    m_LastPreviewStamp = now;
-                    if (textureRect.width > 0 && textureRect.height > 0)
-                    {
-                        m_PreviewTexture = item.provider.fetchPreview(item, context,
-                            new Vector2(textureRect.width, textureRect.height), FetchPreviewOptions.Preview2D | FetchPreviewOptions.Large);
-                    }
-                    m_LastPreviewItemId = item.id;
-                }
-
-                if (m_PreviewTexture)
-                {
-                    GUI.Label(Styles.largePreview.margin.Remove(textureRect), m_PreviewTexture, Styles.largePreview);
-                }
+                var maxHeight = Mathf.Min(256, size);
+                var previewFlags = FetchPreviewOptions.Preview2D | FetchPreviewOptions.Large;
+                m_PreviewTexture = item.provider.fetchPreview(item, context, new Vector2(size, maxHeight), previewFlags);
+                m_LastPreviewStamp = now;
             }
+
+            if (m_PreviewTexture)
+            {
+                var previewHeight = !IsBuiltInIcon(m_PreviewTexture) ? m_PreviewTexture.height : 64f;
+                var textureRect = EditorGUILayout.GetControlRect(false, previewHeight,
+                    Styles.largePreview, GUILayout.MaxWidth(size), GUILayout.Height(previewHeight));
+                if (Event.current.type == EventType.Repaint)
+                    GUI.Label(Styles.largePreview.margin.Remove(textureRect), m_PreviewTexture, Styles.largePreview);
+            }
+        }
+
+        private static bool IsBuiltInIcon(Texture icon)
+        {
+            return AssetDatabase.GetAssetPath(icon) == "Library/unity editor resources";
         }
 
         private bool SkipGeneratedPreview()
@@ -384,6 +387,12 @@ namespace UnityEditor.Search
         {
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+        }
+
+        public void Refresh(RefreshFlags flags = RefreshFlags.Default)
+        {
+            if (flags.HasFlag(RefreshFlags.StructureChanged))
+                ResetEditors();
         }
     }
 }
