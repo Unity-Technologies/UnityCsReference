@@ -98,6 +98,7 @@ namespace UnityEditor
             Progress.added -= RefreshProgressBar;
             Progress.removed -= RefreshProgressBar;
             Progress.updated -= RefreshProgressBar;
+            EditorApplication.delayCall -= DelayRepaint;
             base.OnDisable();
         }
 
@@ -239,9 +240,15 @@ namespace UnityEditor
 
         float k_SpaceBeforeProgress = 15;
         float k_SpaceAfterProgress = 4;
+
+        private void DelayRepaint()
+        {
+            Repaint();
+        }
+
         private void DrawProgressBar()
         {
-            if (!showProgress)
+            if (!this || !showProgress)
                 return;
 
             GUILayout.Space(k_SpaceBeforeProgress);
@@ -259,7 +266,7 @@ namespace UnityEditor
                 Progress.ShowDetails();
 
             if (globalProgress == -1.0f)
-                EditorApplication.delayCall += () => Repaint();
+                EditorApplication.delayCall += DelayRepaint;
 
             EditorGUIUtility.AddCursorRect(progressRect, MouseCursor.Link);
             GUILayout.Space(k_SpaceAfterProgress);
@@ -350,6 +357,9 @@ namespace UnityEditor
 
         private void RefreshProgressBar(Progress.Item[] progressItems)
         {
+            if (!this || !showProgress)
+                return;
+
             var idleCount = Progress.EnumerateItems().Count(item => item.running && item.priority == (int)Progress.Priority.Idle);
             var taskCount = Progress.GetRunningProgressCount() - idleCount;
             if (taskCount == 0)

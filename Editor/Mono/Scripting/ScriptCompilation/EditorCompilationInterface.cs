@@ -23,61 +23,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (editorCompilation == null)
                 {
                     editorCompilation = new EditorCompilation();
-                    editorCompilation.setupErrorFlagsChanged += ClearErrors;
-
-                    // Clear the errors after creating editorCompilation,
-                    // as it is accessed in the CompilationPipeline cctor.
-                    CompilationPipeline.ClearEditorCompilationErrors(); // Clear all errors on domain reload.
                 }
 
                 return editorCompilation;
             }
         }
 
-        static void ClearErrors(EditorCompilation.CompilationSetupErrorFlags flags)
+        public static void LogException(Exception exception)
         {
-            if (flags == EditorCompilation.CompilationSetupErrorFlags.none)
-                CompilationPipeline.ClearEditorCompilationErrors();
-        }
-
-        static void LogException(Exception exception)
-        {
-            var assemblyDefinitionException = exception as AssemblyDefinitionException;
-            var precompiledAssemblyException = exception as PrecompiledAssemblyException;
-
-            if (assemblyDefinitionException != null && assemblyDefinitionException.filePaths.Length > 0)
-            {
-                foreach (var filePath in assemblyDefinitionException.filePaths)
-                {
-                    var message = string.Format("{0} ({1})", exception.Message, filePath);
-
-                    var asset = AssetDatabase.LoadAssetAtPath<TextAsset>(filePath);
-                    var instanceID = asset.GetInstanceID();
-
-                    CompilationPipeline.LogEditorCompilationError(message, instanceID);
-                }
-            }
-            else if (precompiledAssemblyException != null)
-            {
-                foreach (var filePath in precompiledAssemblyException.filePaths)
-                {
-                    var message = string.Format(exception.Message, filePath);
-                    var loadAssetAtPath = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filePath);
-
-                    if (loadAssetAtPath != null)
-                    {
-                        CompilationPipeline.LogEditorCompilationError(message, loadAssetAtPath.GetInstanceID());
-                    }
-                    else
-                    {
-                        UnityEngine.Debug.LogException(exception);
-                    }
-                }
-            }
-            else
-            {
-                UnityEngine.Debug.LogException(exception);
-            }
+            bool exceptionProcessed = Instance.CompilationSetupErrorsTracker.ProcessException(exception);
+            if (exceptionProcessed)
+                return;
+            UnityEngine.Debug.LogException(exception);
         }
 
         static void EmitExceptionAsError(Action action)
@@ -320,12 +277,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             var options = GetAdditionalEditorScriptCompilationOptions();
             return EmitExceptionAsError(() => Instance.GetTargetAssembliesWithScripts(options), new EditorCompilation.TargetAssemblyInfo[0]);
-        }
-
-        [RequiredByNativeCode]
-        public static bool HaveSetupErrors()
-        {
-            return Instance.HaveSetupErrors();
         }
 
         [RequiredByNativeCode]
