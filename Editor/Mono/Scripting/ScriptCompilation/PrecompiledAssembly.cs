@@ -181,14 +181,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             foreach (var precompiledAssemblyNameToIndexes in sameNamedPrecompiledAssemblies)
             {
-                string paths = string.Empty;
-                foreach (var precompiledPath in precompiledAssemblyNameToIndexes.Value)
-                {
-                    paths += $"{Environment.NewLine}{precompiledPath}";
-                }
-
                 throw new PrecompiledAssemblyException(
-                    $"Multiple precompiled assemblies with the same name {precompiledAssemblyNameToIndexes.Key} included or the current platform. Only one assembly with the same name is allowed per platform. Assembly paths: {paths}", paths);
+                    $"Multiple precompiled assemblies with the same name {precompiledAssemblyNameToIndexes.Key} included or the current platform. Only one assembly with the same name is allowed per platform.",
+                    precompiledAssemblyNameToIndexes.Value.ToArray());
             }
 
             return fileNameToUserPrecompiledAssemblies;
