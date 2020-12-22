@@ -240,5 +240,8 @@ namespace UnityEditor
 
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
         extern public static void RequestScriptReload();
+
+        [FreeFunction("IsRunningUnderCPUEmulation", IsThreadSafe = true)]
+        extern public static bool IsRunningUnderCPUEmulation();
     }
 }

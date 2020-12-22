@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Runtime.InteropServices;
 using Mono.Cecil;
 using UnityEditor.Scripting.ScriptCompilation;
@@ -377,6 +378,8 @@ namespace UnityEditor
                 Capacity = assemblyReferences.Length
             };
 
+            var assemblyVersionValidation = PlayerSettings.assemblyVersionValidation;
+
             foreach (var reference in assemblyReferences)
             {
                 try
@@ -385,9 +388,21 @@ namespace UnityEditor
 
                     int referenceAssemblyDefinitionIndex;
 
-                    if (assemblyDefinitionNameToIndex.TryGetValue(referenceAssemblyDefinition.Name.Name,
+                    if (assemblyVersionValidation && assemblyDefinitionNameToIndex.TryGetValue(referenceAssemblyDefinition.Name.Name,
                         out referenceAssemblyDefinitionIndex))
                     {
+                        bool isSigned = IsSigned(reference);
+                        if (isSigned)
+                        {
+                            var definition = assemblyDefinitions[referenceAssemblyDefinitionIndex];
+
+                            if (definition.Name.Version.ToString() != reference.Version.ToString() && !IsInSameFolder(assemblyDefinition, referenceAssemblyDefinition))
+                            {
+                                errors[index].Add(ErrorFlags.UnresolvableReference,
+                                    $"{assemblyDefinition.Name.Name} references strong named {reference.Name} Assembly references: {reference.Version} Found in project: {definition.Name.Version}.\nAssembly Version Validation can be disabled in Player Settings \"Assembly Version Validation\"");
+                            }
+                        }
+
                         referenceIndieces.Add(referenceAssemblyDefinitionIndex);
                     }
                 }
@@ -400,6 +415,26 @@ namespace UnityEditor
             }
 
             assemblyAndReferences[index].referenceIndicies = referenceIndieces.ToArray();
+        }
+
+        private static bool IsInSameFolder(AssemblyDefinition first, AssemblyDefinition second)
+        {
+            var firstAssemblyPath = Path.GetDirectoryName(first.MainModule.FileName);
+            var secondAssemblyPath = Path.GetDirectoryName(second.MainModule.FileName);
+            return firstAssemblyPath.Equals(secondAssemblyPath, StringComparison.Ordinal);
+        }
+
+        private static bool IsSigned(AssemblyNameReference reference)
+        {
+            //Bug in Cecil where HasPublicKey is always false
+            foreach (var publicTokenByte in reference.PublicKeyToken)
+            {
+                if (publicTokenByte != 0)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public static AssemblyNameReference[] GetAssemblyNameReferences(AssemblyDefinition assemblyDefinition)

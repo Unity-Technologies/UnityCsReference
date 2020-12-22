@@ -546,8 +546,12 @@ namespace UnityEditor
 
         void OnDestroy()
         {
+            // We're being temporary "hidden" on maximize, do nothing
+            if (WindowLayout.GetMaximizedWindow() != null)
+                return;
+
             // When window is destroyed, we disable profiling
-            if (Profiler.supported && !EditorApplication.isPlayingOrWillChangePlaymode)
+            if (Profiler.supported)
                 ProfilerDriver.enabled = false;
         }
 
@@ -716,7 +720,7 @@ namespace UnityEditor
         public HierarchyFrameDataView GetFrameDataView(string threadName, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
         {
             var frameIndex = GetActiveVisibleFrameIndex();
-            var threadIndex = 0;
+            var threadIndex = -1;
             using (var frameIterator = new ProfilerFrameDataIterator())
             {
                 var threadCount = frameIterator.GetThreadCount(frameIndex);

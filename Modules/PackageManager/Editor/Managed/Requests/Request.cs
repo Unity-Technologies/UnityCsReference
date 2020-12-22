@@ -14,6 +14,9 @@ namespace UnityEditor.PackageManager.Requests
     {
         internal const string ShimPackageType = "shim";
 
+        [NonSerialized]
+        private bool m_Serializing;
+
         /// <summary>
         /// Note: This property is there to workaround the serializer
         /// that does not know how to handle null values
@@ -120,19 +123,22 @@ namespace UnityEditor.PackageManager.Requests
 
         void ISerializationCallbackReceiver.OnBeforeSerialize()
         {
-            FetchNativeData();
+            m_Serializing = true;
         }
 
         void ISerializationCallbackReceiver.OnAfterDeserialize()
         {
+            m_Serializing = false;
         }
 
         ~Request()
         {
-            // Do our best to release the native request if it has not been already.
-            // The only limitation left is an in-progress request that has not been
-            // serialized during domain unload.
-            NativeClient.ReleaseCompletedOperation(Id);
+            if (!m_Serializing)
+            {
+                // This can be called when the request is not longer referenced (garbage-collected)
+                // or during Domain Reload. In the latter case, don't destroy the native request.
+                NativeClient.ReleaseCompletedOperation(Id);
+            }
         }
 
         /// <summary>

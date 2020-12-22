@@ -147,6 +147,7 @@ namespace UnityEditor
             public static readonly GUIContent appleDeveloperTeamID = EditorGUIUtility.TrTextContent("iOS Developer Team ID", "Developers can retrieve their Team ID by visiting the Apple Developer site under Account > Membership.");
             public static readonly GUIContent useOnDemandResources = EditorGUIUtility.TrTextContent("Use on-demand resources*");
             public static readonly GUIContent gcIncremental = EditorGUIUtility.TrTextContent("Use incremental GC", "With incremental Garbage Collection, the Garbage Collector will try to time-slice the collection task into multiple steps, to avoid long GC times preventing content from running smoothly.");
+            public static readonly GUIContent assemblyVersionValidation = EditorGUIUtility.TrTextContent("Assembly Version Validation", "When Mono Resolves types from a assembly that is Strong Named, versions have to match with the one already loaded.");
             public static readonly GUIContent accelerometerFrequency = EditorGUIUtility.TrTextContent("Accelerometer Frequency*");
             public static readonly GUIContent cameraUsageDescription = EditorGUIUtility.TrTextContent("Camera Usage Description*", "String shown to the user when requesting permission to use the device camera. Written to the NSCameraUsageDescription field in Xcode project's info.plist file");
             public static readonly GUIContent locationUsageDescription = EditorGUIUtility.TrTextContent("Location Usage Description*", "String shown to the user when requesting permission to access the device location. Written to the NSLocationWhenInUseUsageDescription field in Xcode project's info.plist file.");
@@ -289,6 +290,7 @@ namespace UnityEditor
 
         SerializedProperty m_AllowUnsafeCode;
         SerializedProperty m_GCIncremental;
+        SerializedProperty m_AssemblyVersionValidation;
 
         // General
         SerializedProperty m_CompanyName;
@@ -448,6 +450,7 @@ namespace UnityEditor
 
             m_AllowUnsafeCode               = FindPropertyAssert("allowUnsafeCode");
             m_GCIncremental                 = FindPropertyAssert("gcIncremental");
+            m_AssemblyVersionValidation = FindPropertyAssert("assemblyVersionValidation");
 
             m_DefaultScreenWidth            = FindPropertyAssert("defaultScreenWidth");
             m_DefaultScreenHeight           = FindPropertyAssert("defaultScreenHeight");
@@ -2087,6 +2090,11 @@ namespace UnityEditor
                         else
                             m_GCIncremental.boolValue = oldValue;
                     }
+                }
+
+                using (new EditorGUI.DisabledScope(PlayerSettings.GetScriptingBackend(targetGroup) != ScriptingImplementation.Mono2x))
+                {
+                    EditorGUILayout.PropertyField(m_AssemblyVersionValidation, SettingsContent.assemblyVersionValidation);
                 }
             }
 
