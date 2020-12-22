@@ -235,7 +235,12 @@ namespace UnityEditor
                 newSplats[a] = layers[a];
             for (int a = index + 1; a < alphaCount; ++a)
                 newSplats[a - 1] = layers[a];
-            terrainData.SetTerrainLayersRegisterUndo(newSplats, "Remove terrain layer");
+            Undo.SetCurrentGroupName("Remove terrain layer");
+            terrainData.SetTerrainLayersRegisterUndo(newSplats, "Remove Layer");
+            var undoObjects = new List<UnityEngine.Object>();
+            undoObjects.AddRange(terrainData.alphamapTextures);
+            Undo.RegisterCompleteObjectUndo(undoObjects.ToArray(), "Apply Modified Alphamaps");
+            Undo.CollapseUndoOperations(Undo.GetCurrentGroup());
 
             // set new alphamaps
             terrainData.SetAlphamaps(0, 0, newalphamap);

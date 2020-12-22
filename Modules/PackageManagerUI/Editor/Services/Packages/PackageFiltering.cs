@@ -24,7 +24,8 @@ namespace UnityEditor.PackageManager.UI
                 case PackageFilterTab.Other:
                     return package.Is(PackageType.Installable) && package.Is(PackageType.ScopedRegistry) && (package.isDiscoverable || (package.installedVersion?.isDirectDependency ?? false));
                 case PackageFilterTab.Local:
-                    return !package.Is(PackageType.BuiltIn) && (package.installedVersion?.isDirectDependency ?? false);
+                    return !package.Is(PackageType.BuiltIn) && package.installedVersion != null
+                        && (PackageManagerPrefs.instance.showPackageDependencies || package.installedVersion.isDirectDependency);
                 case PackageFilterTab.AssetStore:
                     return ApplicationUtil.instance.isUserLoggedIn && package.Is(PackageType.AssetStore);
                 case PackageFilterTab.Custom:

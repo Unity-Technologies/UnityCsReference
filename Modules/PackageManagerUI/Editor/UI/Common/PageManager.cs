@@ -208,6 +208,15 @@ namespace UnityEditor.PackageManager.UI
                 GetPageFromFilterTab(PackageFilterTab.AssetStore).OnProductFetched(productId);
             }
 
+            private void OnShowDependenciesChanged(bool value)
+            {
+                if (PackageFiltering.instance.currentFilterTab != PackageFilterTab.Local)
+                    return;
+                var page = GetPageFromFilterTab();
+                page.RebuildList();
+                onPageRebuild?.Invoke(page);
+            }
+
             public VisualState GetVisualState(IPackage package)
             {
                 return GetPageFromFilterTab().GetVisualState(package?.uniqueId);
@@ -288,6 +297,7 @@ namespace UnityEditor.PackageManager.UI
                 PackageFiltering.instance.onSearchTextChanged += OnSearchTextChanged;
 
                 ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
+                PackageManagerPrefs.instance.onShowDependenciesChanged += OnShowDependenciesChanged;
             }
 
             public void UnregisterEvents()
@@ -312,6 +322,7 @@ namespace UnityEditor.PackageManager.UI
                 ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
 
                 PackageDatabase.instance.UnregisterEvents();
+                PackageManagerPrefs.instance.onShowDependenciesChanged -= OnShowDependenciesChanged;
             }
 
             private void OnRegistriesModified()

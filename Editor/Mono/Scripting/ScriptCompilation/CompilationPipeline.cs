@@ -220,7 +220,7 @@ namespace UnityEditor.Compilation
 
         internal static Assembly[] GetAssemblies(EditorCompilation editorCompilation, AssembliesType assembliesType)
         {
-            var options = EditorCompilationInterface.GetAdditionalEditorScriptCompilationOptions();
+            var options = EditorCompilationInterface.GetAdditionalEditorScriptCompilationOptions(assembliesType);
 
             switch (assembliesType)
             {

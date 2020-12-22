@@ -80,6 +80,9 @@ namespace UnityEditor.PackageManager.UI
             [NonSerialized]
             private List<IOperation> m_RefreshOperationsInProgress = new List<IOperation>();
 
+            [SerializeField]
+            private List<PlaceholderPackage> m_SerializedPlaceholderPackages = new List<PlaceholderPackage>();
+
             [NonSerialized]
             private bool m_EventsRegistered;
 
@@ -186,6 +189,9 @@ namespace UnityEditor.PackageManager.UI
 
             public void OnAfterDeserialize()
             {
+                foreach (var p in m_SerializedPlaceholderPackages)
+                    m_Packages[p.uniqueId] = p;
+
                 foreach (var p in m_SerializedUpmPackages)
                     m_Packages[p.uniqueId] = p;
 
@@ -200,6 +206,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 m_SerializedUpmPackages = new List<UpmPackage>();
                 m_SerializedAssetStorePackages = new List<AssetStorePackage>();
+                m_SerializedPlaceholderPackages = new List<PlaceholderPackage>();
 
                 foreach (var package in m_Packages.Values)
                 {
@@ -207,6 +214,8 @@ namespace UnityEditor.PackageManager.UI
                         m_SerializedAssetStorePackages.Add((AssetStorePackage)package);
                     else if (package is UpmPackage)
                         m_SerializedUpmPackages.Add((UpmPackage)package);
+                    else if (package is PlaceholderPackage)
+                        m_SerializedPlaceholderPackages.Add((PlaceholderPackage)package);
                 }
 
                 m_SerializedRefreshTimestampsKeys = m_RefreshTimestamps.Keys.ToArray();
