@@ -228,7 +228,29 @@ namespace UnityEditor
             var documentPath = "";
             if (topic.StartsWith(k_AbsoluteURI))
             {
-                documentPath = GetURLPath(true, baseDocumentationUrl, topic.Substring(k_AbsoluteURI.Length));
+                //HACK version 2 (case 1300425); special cases for the redirect server which we can't currently access:
+                if (docRedirectionServer != DocRedirectionServer.None && baseDocumentationUrl.StartsWith("https://", StringComparison.Ordinal))
+                {
+                    if (topic.Equals("file:///unity/Manual/index.html", StringComparison.Ordinal))
+                    {
+                        documentPath = GetURLPath(false, baseDocumentationUrl, "?section=manual");
+                    }
+                    else if (topic.Equals("file:///unity/ScriptReference/index.html", StringComparison.Ordinal))
+                    {
+                        documentPath = GetURLPath(false, baseDocumentationUrl, "?section=api");
+                    }
+
+                    if (String.IsNullOrEmpty(documentPath) == false)
+                    {
+                        var version = InternalEditorUtility.GetUnityVersion();
+                        documentPath += $"&version={version.Major}.{version.Minor}";
+                    }
+                }
+
+                if (String.IsNullOrEmpty(documentPath))
+                {
+                    documentPath = GetURLPath(true, baseDocumentationUrl, topic.Substring(k_AbsoluteURI.Length));
+                }
             }
             else if (topic.StartsWith(k_AbsoluteFileRef))
             {

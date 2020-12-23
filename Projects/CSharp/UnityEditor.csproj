@@ -403,6 +403,9 @@
     <Compile Include="..\..\Editor\Mono\AssetStore.bindings.cs">
       <Link>Editor\Mono\AssetStore.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetStoreContext.bindings.cs">
+      <Link>Editor\Mono\AssetStoreContext.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\AssetStoreToolUtils.bindings.cs">
       <Link>Editor\Mono\AssetStoreToolUtils.bindings.cs</Link>
     </Compile>
@@ -411,6 +414,15 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreAsset.cs">
       <Link>Editor\Mono\AssetStore\AssetStoreAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreClient.cs">
+      <Link>Editor\Mono\AssetStore\AssetStoreClient.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreContext.cs">
+      <Link>Editor\Mono\AssetStore\AssetStoreContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetStore\AssetStorePreviewManager.cs">
+      <Link>Editor\Mono\AssetStore\AssetStorePreviewManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreWindow.cs">
       <Link>Editor\Mono\AssetStore\AssetStoreWindow.cs</Link>
