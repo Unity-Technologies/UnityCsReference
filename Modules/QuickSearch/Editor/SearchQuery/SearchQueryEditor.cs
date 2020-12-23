@@ -15,26 +15,21 @@ namespace UnityEditor.Search
         private SearchResultView m_ResultView;
         private SortedSearchList m_Results;
         private SearchContext m_SearchContext;
-        private List<SearchProvider> m_AllActiveProviders;
         private SerializedProperty m_DescriptionProperty;
-        private SerializedProperty m_IconProperty;
         private SerializedProperty m_TextProperty;
         private SerializedProperty m_ProvidersProperty;
         private ReorderableList m_ProvidersList;
 
         public void OnEnable()
         {
-            m_DescriptionProperty = serializedObject.FindProperty("description");
-            m_IconProperty = serializedObject.FindProperty("icon");
-            m_TextProperty = serializedObject.FindProperty("text");
-            m_ProvidersProperty = serializedObject.FindProperty("providerIds");
-
-            m_AllActiveProviders = SearchService.OrderedProviders.Where(p => p.active).ToList();
+            m_DescriptionProperty = serializedObject.FindProperty(nameof(SearchQuery.description));
+            m_TextProperty = serializedObject.FindProperty(nameof(SearchQuery.text));
+            m_ProvidersProperty = serializedObject.FindProperty(nameof(SearchQuery.providerIds));
 
             m_ProvidersList = new ReorderableList(serializedObject, m_ProvidersProperty, false, true, true, true)
             {
                 onAddCallback = AddProvider,
-                onCanAddCallback = list => m_ProvidersProperty.arraySize < m_AllActiveProviders.Count,
+                onCanAddCallback = list => m_ProvidersProperty.arraySize < SearchService.Providers.Count(p => p.active),
                 onRemoveCallback = RemoveProvider,
                 onCanRemoveCallback = list => m_ProvidersProperty.arraySize > 1,
                 drawElementCallback = DrawProviderElement,
@@ -65,12 +60,12 @@ namespace UnityEditor.Search
 
         private IEnumerable<SearchProvider> GetEnabledProviders()
         {
-            return m_AllActiveProviders.Where(p => ContainsString(m_ProvidersProperty, p.id));
+            return SearchService.OrderedProviders.Where(p => ContainsString(m_ProvidersProperty, p.id));
         }
 
         private IEnumerable<SearchProvider> GetDisabledProviders()
         {
-            return m_AllActiveProviders.Where(p => !ContainsString(m_ProvidersProperty, p.id));
+            return SearchService.OrderedProviders.Where(p => !ContainsString(m_ProvidersProperty, p.id));
         }
 
         private void SetupContext(IEnumerable<SearchProvider> providers)
@@ -135,15 +130,15 @@ namespace UnityEditor.Search
             serializedObject.UpdateIfRequiredOrScript();
             CheckContext();
 
-            EditorGUILayout.PropertyField(m_DescriptionProperty);
-            EditorGUILayout.PropertyField(m_IconProperty);
             var originalText = m_TextProperty.stringValue;
-            EditorGUILayout.DelayedTextField(m_TextProperty);
+            EditorGUILayout.DelayedTextField(m_TextProperty, new GUIContent("Search Text"));
             if (originalText != m_TextProperty.stringValue)
             {
                 m_SearchContext.searchText = m_TextProperty.stringValue;
                 RefreshResults();
             }
+
+            EditorGUILayout.PropertyField(m_DescriptionProperty);
             m_ProvidersList.DoLayoutList();
 
             if (serializedObject.hasModifiedProperties)

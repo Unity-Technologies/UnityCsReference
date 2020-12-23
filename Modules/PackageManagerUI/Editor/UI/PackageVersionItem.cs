@@ -44,6 +44,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshLabel(bool alwaysShowRecommendedLabel, bool isLatestVersion)
         {
             versionLabel.text = version.version?.ToString() ?? version.versionString;
+            versionLabel.ShowTextTooltipOnSizeChange();
+
             var primary = package.versions.primary;
             var recommended = package.versions.recommended;
             var stateText = string.Empty;

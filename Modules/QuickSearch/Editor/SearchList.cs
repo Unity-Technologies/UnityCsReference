@@ -469,6 +469,7 @@ namespace UnityEditor.Search
         private readonly List<IGroup> m_Groups = new List<IGroup>();
 
         public override int Count => UseAll() ? m_TotalCount : m_Groups[m_CurrentGroupIndex].count;
+        public int TotalCount => m_TotalCount;
 
         string IGroup.id => "all";
         string IGroup.name => "All";
@@ -582,11 +583,20 @@ namespace UnityEditor.Search
             }
         }
 
+        private void AddDefaultGroups()
+        {
+            var defaultGroups = context.providers
+                .Where(p => !p.isExplicitProvider)
+                .OrderBy(p => p.priority)
+                .Select(p => new Group(p.id, p.name, p.priority));
+            m_Groups.AddRange(defaultGroups);
+        }
+
         public override void AddItems(IEnumerable<SearchItem> items)
         {
             // Initialize groups on first results
             if (m_Groups.Count == 0 && context != null)
-                m_Groups.AddRange(context.providers.OrderBy(p => p.priority).Select(p => new Group(p.id, p.name, p.priority)));
+                AddDefaultGroups();
 
             foreach (var item in items)
             {

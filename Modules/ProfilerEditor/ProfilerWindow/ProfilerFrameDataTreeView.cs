@@ -84,6 +84,8 @@ namespace UnityEditorInternal
 
         [NonSerialized]
         protected IProfilerSampleNameProvider m_ProfilerSampleNameProvider;
+        [SerializeReference]
+        protected IProfilerWindowController m_ProfilerWindowController;
 
         // Tree of expanded nodes.
         // Each level has a set of expanded marker ids, which are equivalent to sample name.
@@ -96,6 +98,7 @@ namespace UnityEditorInternal
         [NonSerialized]
 
         bool m_ExpandDuringNextSelectionMigration;
+        bool m_SelectionNeedsMigration;
         [NonSerialized]
         List<TreeViewItem> m_RowsPool = new List<TreeViewItem>();
         [NonSerialized]
@@ -213,6 +216,7 @@ namespace UnityEditorInternal
             Assert.IsNotNull(multicolumnHeader);
             deselectOnUnhandledMouseDown = true;
             m_ProfilerSampleNameProvider = profilerSampleNameProvider;
+            m_ProfilerWindowController = profilerWindowController;
             m_MultiColumnHeader = multicolumnHeader;
             m_MultiColumnHeader.sortingChanged += OnSortingChanged;
             profilerWindowController.currentFrameChanged += FrameChanged;
@@ -286,6 +290,7 @@ namespace UnityEditorInternal
             m_LocalSelectedItemMarkerIdPath.Clear();
             m_LocalSelectedItemMarkerIdPath.AddRange(selection.markerIdPath);
             m_ExpandDuringNextSelectionMigration = expandSelection;
+            m_SelectionNeedsMigration = true;
             proxySelectionInfo = default;
         }
 
@@ -301,6 +306,7 @@ namespace UnityEditorInternal
             m_Selected = null;
             m_LocalSelectedItemMarkerIdPath.Clear();
             m_ExpandDuringNextSelectionMigration = false;
+            m_SelectionNeedsMigration = false;
             proxySelectionInfo = default;
             if (setClearedSelection)
                 SetSelection(new List<int>());
@@ -346,100 +352,102 @@ namespace UnityEditorInternal
         }
 
         static readonly ProfilerMarker k_MigrateSelectionStateMarker = new ProfilerMarker($"{nameof(ProfilerFrameDataTreeView)}.{nameof(MigrateSelectedState)}");
-        void MigrateSelectedState(bool expandIfNecessary)
+        void MigrateSelectedState(bool expandIfNecessary, bool framingAllowed)
         {
             if (m_LocalSelectedItemMarkerIdPath == null || m_Selected == null || m_LocalSelectedItemMarkerIdPath.Count != m_Selected.markerNamePath.Count)
                 return;
+
+            m_SelectionNeedsMigration = false;
 
             var markerNamePath = m_Selected.markerNamePath;
 
             expandIfNecessary |= m_ExpandDuringNextSelectionMigration;
 
-            k_MigrateSelectionStateMarker.Begin();
-            var safeFrameWithSafeMarkerIds = m_Selected.frameIndexIsSafe && m_FrameDataView.frameIndex == m_Selected.safeFrameIndex;
-            var rawHierarchyView = (m_FrameDataView.viewMode & HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName) == HierarchyFrameDataView.ViewModes.Default;
-            var allowProxySelection = !safeFrameWithSafeMarkerIds;
-
-            var finalRawSampleIndex = RawFrameDataView.invalidSampleIndex;
-
-            using (var frameData = new RawFrameDataView(m_FrameDataView.frameIndex, m_FrameDataView.threadIndex))
+            using (k_MigrateSelectionStateMarker.Auto())
             {
-                if (!safeFrameWithSafeMarkerIds)
+                var safeFrameWithSafeMarkerIds = m_Selected.frameIndexIsSafe && m_FrameDataView.frameIndex == m_Selected.safeFrameIndex;
+                var rawHierarchyView = (m_FrameDataView.viewMode & HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName) == HierarchyFrameDataView.ViewModes.Default;
+                var allowProxySelection = !safeFrameWithSafeMarkerIds;
+
+                var finalRawSampleIndex = RawFrameDataView.invalidSampleIndex;
+
+                using (var frameData = new RawFrameDataView(m_FrameDataView.frameIndex, m_FrameDataView.threadIndex))
                 {
-                    // marker names might have changed Ids between frames, update them if that is the case
-                    for (int i = 0; i < m_LocalSelectedItemMarkerIdPath.Count; i++)
+                    if (!frameData.valid)
+                        return;
+                    if (!safeFrameWithSafeMarkerIds)
                     {
-                        m_LocalSelectedItemMarkerIdPath[i] = frameData.GetMarkerId(markerNamePath[i]);
-                    }
-                }
-                else if (!allowProxySelection)
-                {
-                    for (int i = 0; i < m_LocalSelectedItemMarkerIdPath.Count; i++)
-                    {
-                        var markerIsEditorOnlyMarker = frameData.GetMarkerFlags(m_LocalSelectedItemMarkerIdPath[i]).HasFlag(Unity.Profiling.LowLevel.MarkerFlags.AvailabilityEditor);
-                        if (markerIsEditorOnlyMarker && i < m_LocalSelectedItemMarkerIdPath.Count - 1)
+                        // marker names might have changed Ids between frames, update them if that is the case
+                        for (int i = 0; i < m_LocalSelectedItemMarkerIdPath.Count; i++)
                         {
-                            // Technically, proxy selections are not supposed to be allowed when switching between views in the same frame.
-                            // However, if there are Editor Only markers in the path that are NOT the last item, Hierarchy View might have collapsed the path from this point forward,
-                            // so we need to allow Proxy Selections here.
-                            allowProxySelection = true;
-                            break;
+                            m_LocalSelectedItemMarkerIdPath[i] = frameData.GetMarkerId(markerNamePath[i]);
                         }
                     }
-                }
-                var name = m_Selected.sampleDisplayName;
-                m_CachedDeepestRawSampleIndexPath.Clear();
-                if (m_CachedDeepestRawSampleIndexPath.Capacity < markerNamePath.Count)
-                    m_CachedDeepestRawSampleIndexPath.Capacity = markerNamePath.Count;
+                    else if (!allowProxySelection)
+                    {
+                        for (int i = 0; i < m_LocalSelectedItemMarkerIdPath.Count; i++)
+                        {
+                            var markerIsEditorOnlyMarker = frameData.GetMarkerFlags(m_LocalSelectedItemMarkerIdPath[i]).HasFlag(Unity.Profiling.LowLevel.MarkerFlags.AvailabilityEditor);
+                            if (markerIsEditorOnlyMarker && i < m_LocalSelectedItemMarkerIdPath.Count - 1)
+                            {
+                                // Technically, proxy selections are not supposed to be allowed when switching between views in the same frame.
+                                // However, if there are Editor Only markers in the path that are NOT the last item, Hierarchy View might have collapsed the path from this point forward,
+                                // so we need to allow Proxy Selections here.
+                                allowProxySelection = true;
+                                break;
+                            }
+                        }
+                    }
+                    var name = m_Selected.sampleDisplayName;
+                    m_CachedDeepestRawSampleIndexPath.Clear();
+                    if (m_CachedDeepestRawSampleIndexPath.Capacity < markerNamePath.Count)
+                        m_CachedDeepestRawSampleIndexPath.Capacity = markerNamePath.Count;
 
-                if (allowProxySelection || rawHierarchyView)
-                {
-                    finalRawSampleIndex = ProfilerTimelineGUI.FindFirstSampleThroughMarkerPath(
-                        frameData, m_ProfilerSampleNameProvider,
-                        m_LocalSelectedItemMarkerIdPath, markerNamePath.Count, ref name,
-                        longestMatchingPath: m_CachedDeepestRawSampleIndexPath);
+                    if (allowProxySelection || rawHierarchyView)
+                    {
+                        finalRawSampleIndex = ProfilerTimelineGUI.FindFirstSampleThroughMarkerPath(
+                            frameData, m_ProfilerSampleNameProvider,
+                            m_LocalSelectedItemMarkerIdPath, markerNamePath.Count, ref name,
+                            longestMatchingPath: m_CachedDeepestRawSampleIndexPath);
+                    }
+                    else
+                    {
+                        finalRawSampleIndex = ProfilerTimelineGUI.FindNextSampleThroughMarkerPath(
+                            frameData, m_ProfilerSampleNameProvider,
+                            m_LocalSelectedItemMarkerIdPath, markerNamePath.Count, ref name,
+                            ref m_CachedDeepestRawSampleIndexPath);
+                    }
                 }
-                else
+                var newSelectedId = m_FrameDataView.GetRootItemID();
+                bool selectedItemsPathIsExpanded = true;
+                var proxySelection = new ProxySelection();
+                proxySelectionInfo = default;
+                var deepestPath = m_CachedDeepestRawSampleIndexPath.Count;
+
+                if (finalRawSampleIndex >= 0 || allowProxySelection && deepestPath > 0)
                 {
-                    finalRawSampleIndex = ProfilerTimelineGUI.FindNextSampleThroughMarkerPath(
-                        frameData, m_ProfilerSampleNameProvider,
-                        m_LocalSelectedItemMarkerIdPath, markerNamePath.Count, ref name,
-                        ref m_CachedDeepestRawSampleIndexPath);
+                    // if a valid raw index was found, find the corresponding HierarchyView Sample id next:
+                    newSelectedId = GetItemIdFromRawFrameDataIndexPath(m_FrameDataView, m_CachedDeepestRawSampleIndexPath, out deepestPath, out selectedItemsPathIsExpanded);
+                    if (m_LocalSelectedItemMarkerIdPath.Count > deepestPath && newSelectedId >= 0)
+                    {
+                        proxySelection.hasProxySelection = true;
+                        proxySelection.nonProxyName = m_Selected.sampleDisplayName;
+                        proxySelection.nonProxySampleStack = m_Selected.markerNamePath;
+                        proxySelection.pathLengthDifferenceForProxy = deepestPath - m_LocalSelectedItemMarkerIdPath.Count;
+                    }
                 }
+
+                var newSelection = (newSelectedId == 0) ? new List<int>() : new List<int>() { newSelectedId };
+                state.selectedIDs = newSelection;
+
+                // Framing invalidates expanded state and this is very expensive operation to perform each frame.
+                // Thus we auto frame selection only when we are not currently receiving profiler data from the Editor we are profiling, or the user opted into a "Live" view of the data
+                if (newSelectedId != 0 && isInitialized && framingAllowed && (selectedItemsPathIsExpanded || expandIfNecessary))
+                    FrameItem(newSelectedId);
+                m_ExpandDuringNextSelectionMigration = false;
+
+                proxySelectionInfo = proxySelection;
             }
-            var newSelectedId = m_FrameDataView.GetRootItemID();
-            bool selectedItemsPathIsExpanded = true;
-            var proxySelection = new ProxySelection();
-            proxySelectionInfo = default;
-            var deepestPath = m_CachedDeepestRawSampleIndexPath.Count;
-
-            if (finalRawSampleIndex >= 0 || allowProxySelection && deepestPath > 0)
-            {
-                // if a valid raw index was found, find the corresponding HierarchyView Sample id next:
-                newSelectedId = GetItemIdFromRawFrameDataIndexPath(m_FrameDataView, m_CachedDeepestRawSampleIndexPath, out deepestPath, out selectedItemsPathIsExpanded);
-                if (m_LocalSelectedItemMarkerIdPath.Count > deepestPath && newSelectedId >= 0)
-                {
-                    proxySelection.hasProxySelection = true;
-                    proxySelection.nonProxyName = m_Selected.sampleDisplayName;
-                    proxySelection.nonProxySampleStack = m_Selected.markerNamePath;
-                    proxySelection.pathLengthDifferenceForProxy = deepestPath - m_LocalSelectedItemMarkerIdPath.Count;
-                }
-            }
-
-            var newSelection = (newSelectedId == 0) ? new List<int>() : new List<int>() { newSelectedId };
-            state.selectedIDs = newSelection;
-
-            // Framing invalidates expanded state and this is very expensive operation to perform each frame.
-            // Thus we auto frame selection only when we are not profiling.
-            var collectingSamples = ProfilerDriver.enabled && (ProfilerDriver.profileEditor || EditorApplication.isPlaying);
-            var isFramingAllowed = !collectingSamples;
-            if (newSelectedId != 0 && isInitialized && isFramingAllowed && (selectedItemsPathIsExpanded || expandIfNecessary))
-                FrameItem(newSelectedId);
-            m_ExpandDuringNextSelectionMigration = false;
-
-            proxySelectionInfo = proxySelection;
-
-            k_MigrateSelectionStateMarker.End();
         }
 
         public int GetItemIDFromRawFrameDataViewIndex(HierarchyFrameDataView frameDataView, int rawSampleIndex, ReadOnlyCollection<int> markerIdPath)
@@ -616,7 +624,7 @@ namespace UnityEditorInternal
             if (!requestedDelayedSearch)
             {
                 MigrateExpandedState(newExpandedIds);
-                MigrateSelectedState(false);
+                MigrateSelectedState(false, !m_ProfilerWindowController.ProfilerWindowOverheadIsAffectingProfilingRecordingData() || m_UpdateViewLive);
             }
 
             m_PrevFrameIndex = ProfilerDriver.lastFrameIndex;
@@ -912,11 +920,18 @@ namespace UnityEditorInternal
             Reload();
         }
 
-        public override void OnGUI(Rect rect)
+        bool m_UpdateViewLive = false;
+        // Profiler UI should be calling this OnGUI over the base OnGUI
+        public void OnGUI(Rect rect, bool updateViewLive)
         {
-            if (m_ExpandDuringNextSelectionMigration)
-                MigrateSelectedState(true);
-
+            m_UpdateViewLive = updateViewLive;
+            if (m_SelectionNeedsMigration && m_Selected != null)
+            {
+                var profilingEditor = m_ProfilerWindowController.ProfilerWindowOverheadIsAffectingProfilingRecordingData();
+                if (profilingEditor)
+                    m_ExpandDuringNextSelectionMigration = false;
+                MigrateSelectedState(m_ExpandDuringNextSelectionMigration, !profilingEditor || updateViewLive);
+            }
             if (m_FrameDataView != null && m_FrameDataView.valid)
                 base.OnGUI(rect);
         }

@@ -255,7 +255,12 @@ namespace UnityEngine
             if (!transform.parent)
                 return;
 
+            // GetComponentInParent returns enabled/disabled components, need to find enabled one.
             ArticulationBody parentBody = transform.parent.GetComponentInParent<ArticulationBody>();
+            while (parentBody && !parentBody.enabled)
+            {
+                parentBody = parentBody.transform.parent.GetComponentInParent<ArticulationBody>();
+            }
 
             if (!parentBody)
                 return;

@@ -189,12 +189,10 @@ namespace UnityEditor
                 if (GUILayout.Button("Snap anchor to closest contact"))
                 {
                     Undo.RecordObject(body, "Changing anchor position/rotation to match closest contact.");
-
                     body.SnapAnchorToClosestContact();
                 }
 
                 EditorGUILayout.PropertyField(m_ArticulationJointType); // the tooltip for this is still in the header
-
                 EditorGUILayout.PropertyField(m_LinearDamping, Styles.linearDamping);
                 EditorGUILayout.PropertyField(m_AngularDamping, Styles.angularDamping);
                 EditorGUILayout.PropertyField(m_JointFriction, Styles.jointFriction);
@@ -316,7 +314,7 @@ namespace UnityEditor
             if (body.isRoot)
                 return;
 
-            ArticulationBody parentBody = body.transform.parent.GetComponentInParent<ArticulationBody>();
+            ArticulationBody parentBody = FindEnabledParentArticulationBody(body);
 
             {
                 Vector3 localAnchorT = body.anchorPosition;
@@ -362,7 +360,7 @@ namespace UnityEditor
 
         private void DisplayJointLimits(ArticulationBody body)
         {
-            ArticulationBody parentBody = body.transform.parent.GetComponentInParent<ArticulationBody>();
+            ArticulationBody parentBody = FindEnabledParentArticulationBody(body);
 
             Matrix4x4 parentAnchorSpace = Matrix4x4.TRS(parentBody.transform.TransformPoint(body.parentAnchorPosition), parentBody.transform.rotation * body.parentAnchorRotation, Vector3.one);
 
@@ -605,6 +603,16 @@ namespace UnityEditor
         public override bool RequiresConstantRepaint()
         {
             return m_RequiresConstantRepaint;
+        }
+
+        private ArticulationBody FindEnabledParentArticulationBody(ArticulationBody body)
+        {
+            ArticulationBody parent = body.transform.parent.GetComponentInParent<ArticulationBody>();
+            while (parent && !parent.enabled)
+            {
+                parent = parent.transform.parent.GetComponentInParent<ArticulationBody>();
+            }
+            return parent;
         }
     }
 }

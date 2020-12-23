@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-
 using UnityEditor.AssetImporters;
 
 namespace UnityEditor.Search

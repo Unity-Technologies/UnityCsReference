@@ -454,13 +454,9 @@ namespace UnityEditor
         {
             float size = state.SelfCollisionDistance;
             if (state.VisualizeSelfOrInterCollision == CollisionVisualizationMode.SelfCollision)
-            {
                 size = state.SelfCollisionDistance;
-            }
             else if (state.VisualizeSelfOrInterCollision == CollisionVisualizationMode.InterCollision)
-            {
                 size = state.InterCollisionDistance;
-            }
 
             int length = m_SelfAndInterCollisionSelection.Length;
             for (int i = 0; i < length; i++)
@@ -671,9 +667,7 @@ namespace UnityEditor
         void SelectionGUI()
         {
             if (m_ParticleSelection == null)
-            {
                 return;
-            }
 
             ClothSkinningCoefficient[] coefficients = cloth.coefficients;
 
@@ -776,9 +770,7 @@ namespace UnityEditor
         void GradientToolGUI()
         {
             if (m_ParticleSelection == null)
-            {
                 return;
-            }
 
             ClothSkinningCoefficient[] coefficients = cloth.coefficients;
 
@@ -1232,6 +1224,9 @@ namespace UnityEditor
 
         void SelectionPreSceneGUI(int id)
         {
+            if (m_ParticleSelection == null)
+                return;
+
             Event e = Event.current;
             switch (e.GetTypeForControl(id))
             {
@@ -1243,7 +1238,9 @@ namespace UnityEditor
                     if (found != -1)
                     {
                         if (e.shift)
+                        {
                             m_ParticleSelection[found] = !m_ParticleSelection[found];
+                        }
                         else
                         {
                             int length = m_ParticleSelection.Length;
@@ -1542,7 +1539,7 @@ namespace UnityEditor
             if (state.ToolMode == (ToolMode)(-1))
                 state.ToolMode = ToolMode.Select;
 
-            if ((m_ParticleSelection == null) || (m_LastVertices.Length != cloth.vertices.Length))
+            if (m_ParticleSelection == null || m_LastVertices.Length != cloth.vertices.Length)
             {
                 GenerateSelectionMesh();
             }

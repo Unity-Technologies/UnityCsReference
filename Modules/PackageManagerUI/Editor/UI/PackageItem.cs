@@ -130,7 +130,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             nameLabel.text = displayVersion.displayName;
+            nameLabel.ShowTextTooltipOnSizeChange();
             versionLabel.text = displayVersion.versionString;
+            versionLabel.ShowTextTooltipOnSizeChange();
 
             var expandable = !package.Is(PackageType.BuiltIn);
             UIUtils.SetElementDisplay(arrowExpander, expandable);

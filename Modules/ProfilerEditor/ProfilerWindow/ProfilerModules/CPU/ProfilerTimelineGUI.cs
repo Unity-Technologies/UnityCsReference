@@ -2215,7 +2215,7 @@ namespace UnityEditorInternal
                     GUI.enabled = false;
 
                     // Walk backwards to find how many previous frames we need to show.
-                    int maxContextFramesToShow = m_ProfilerWindow.IsRecording() ? 1 : 3;
+                    int maxContextFramesToShow = m_ProfilerWindow.ProfilerWindowOverheadIsAffectingProfilingRecordingData() ? 1 : 3;
                     int numContextFramesToShow = maxContextFramesToShow;
                     int currentFrame = frameIndex;
                     float currentTime = 0;

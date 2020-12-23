@@ -22,6 +22,7 @@ using Unity.Profiling;
 using Debug = UnityEngine.Debug;
 using System.Net;
 using UnityEditor.Collaboration;
+using UnityEditor.MPE;
 
 namespace UnityEditor
 {
@@ -161,6 +162,8 @@ namespace UnityEditor
 
         const float kNameColumnSize = 350;
 
+        const int k_MainThreadIndex = 0;
+
         HierarchyFrameDataView m_FrameDataView;
 
         public const string cpuModuleName = CPUProfilerModule.k_UnlocalizedName;
@@ -264,7 +267,7 @@ namespace UnityEditor
                 if (value < firstAvailableFrameIndex)
                     throw new ArgumentOutOfRangeException("value", $"Can't set a value smaller than {nameof(firstAvailableFrameIndex)} which is currently {firstAvailableFrameIndex}.");
                 if (value > lastAvailableFrameIndex)
-                    throw new ArgumentOutOfRangeException("value", $"Can't set a value smaller than {nameof(lastAvailableFrameIndex)} which is currently {lastAvailableFrameIndex}.");
+                    throw new ArgumentOutOfRangeException("value", $"Can't set a value greater than {nameof(lastAvailableFrameIndex)} which is currently {lastAvailableFrameIndex}.");
                 SetActiveVisibleFrameIndex((int)value);
             }
         }
@@ -300,6 +303,11 @@ namespace UnityEditor
             // Update the current frame only at fixed intervals,
             // otherwise it looks weird when it is rapidly jumping around when we have a lot of repaints
             return m_CurrentFrame == FrameDataView.invalidOrCurrentFrameIndex ? m_LastFrameFromTick : m_CurrentFrame;
+        }
+
+        internal bool ProfilerWindowOverheadIsAffectingProfilingRecordingData()
+        {
+            return ProcessService.level == ProcessLevel.Main && IsSetToRecord() && ProfilerDriver.IsConnectionEditor() && ((EditorApplication.isPlaying && !EditorApplication.isPaused) || ProfilerDriver.profileEditor);
         }
 
         internal bool IsRecording()
@@ -392,6 +400,7 @@ namespace UnityEditor
             UserAccessiblitySettings.colorBlindConditionChanged += OnSettingsChanged;
             ProfilerUserSettings.settingsChanged += OnSettingsChanged;
             ProfilerDriver.profileLoaded += OnProfileLoaded;
+            ProfilerDriver.profileCleared += OnProfileCleared;
             ProfilerDriver.profilerCaptureSaved += ProfilerWindowAnalytics.SendSaveLoadEvent;
             ProfilerDriver.profilerCaptureLoaded += ProfilerWindowAnalytics.SendSaveLoadEvent;
             ProfilerDriver.profilerConnected += ProfilerWindowAnalytics.SendConnectionEvent;
@@ -544,16 +553,49 @@ namespace UnityEditor
             Repaint();
         }
 
+        void Clear()
+        {
+            // Clear All Frames calls ProfilerDriver.profileCleared which in turn calls OnProfileCleared
+            ProfilerDriver.ClearAllFrames();
+        }
+
+        void OnProfileCleared()
+        {
+            ResetForClearedOrLoaded(true);
+        }
+
         void OnProfileLoaded()
         {
-            // Reset frame state to trigger a redraw.
+            ResetForClearedOrLoaded(false);
+        }
+
+        void ResetForClearedOrLoaded(bool cleared)
+        {
+            // Reset frame state
             m_PrevLastFrame = FrameDataView.invalidOrCurrentFrameIndex;
             m_LastFrameFromTick = FrameDataView.invalidOrCurrentFrameIndex;
+            m_FrameCountLabelMinWidth = 0;
             // Reset the cached data view
+            if (m_FrameDataView != null)
+                m_FrameDataView.Dispose();
             m_FrameDataView = null;
 
+            if (cleared)
+            {
+                m_CurrentFrame = FrameDataView.invalidOrCurrentFrameIndex;
+                m_CurrentFrameEnabled = true;
+#pragma warning disable CS0618
+                NetworkDetailStats.m_NetworkOperations.Clear();
+#pragma warning restore
+            }
+
             foreach (var module in m_Modules)
+            {
                 module.Clear();
+                module.Update();
+            }
+
+            RepaintImmediately();
         }
 
         internal ProfilerModuleBase[] GetProfilerModules()
@@ -639,6 +681,7 @@ namespace UnityEditor
             UserAccessiblitySettings.colorBlindConditionChanged -= OnSettingsChanged;
             ProfilerUserSettings.settingsChanged -= OnSettingsChanged;
             ProfilerDriver.profileLoaded -= OnProfileLoaded;
+            ProfilerDriver.profileCleared -= OnProfileCleared;
             ProfilerDriver.profilerCaptureSaved -= ProfilerWindowAnalytics.SendSaveLoadEvent;
             ProfilerDriver.profilerCaptureLoaded -= ProfilerWindowAnalytics.SendSaveLoadEvent;
             ProfilerDriver.profilerConnected -= ProfilerWindowAnalytics.SendConnectionEvent;
@@ -932,6 +975,29 @@ namespace UnityEditor
         internal HierarchyFrameDataView GetFrameDataView(int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
         {
             var frameIndex = GetActiveVisibleFrameIndex();
+
+            if (frameIndex < firstAvailableFrameIndex || frameIndex > lastAvailableFrameIndex)
+            {
+                // if the frame index is out of range, invalidate the FrameDataView
+                if (m_FrameDataView != null && m_FrameDataView.valid)
+                    m_FrameDataView.Dispose();
+            }
+            else if (frameIndex != FrameDataView.invalidOrCurrentFrameIndex)
+            {
+                // if the frame is valid but the thread index is not, fallback onto main thread
+                if (threadIndex < 0)
+                    threadIndex = k_MainThreadIndex;
+                else
+                {
+                    using (var iter = new ProfilerFrameDataIterator())
+                    {
+                        iter.SetRoot(frameIndex, k_MainThreadIndex);
+                        if (threadIndex >= iter.GetThreadCount(frameIndex))
+                            threadIndex = k_MainThreadIndex;
+                    }
+                }
+            }
+
             if (m_FrameDataView != null && m_FrameDataView.valid)
             {
                 if (m_FrameDataView.frameIndex == frameIndex && m_FrameDataView.threadIndex == threadIndex && m_FrameDataView.viewMode == viewMode)
@@ -1161,24 +1227,6 @@ namespace UnityEditor
                 selectedMemRecordMode = m_CurrentCallstackRecordMode != ProfilerMemoryRecordMode.None ? ProfilerMemoryRecordMode.None : m_CallstackRecordMode;
                 SetCallstackRecordMode(selectedMemRecordMode);
             }
-        }
-
-        void Clear()
-        {
-            foreach (var module in m_Modules)
-            {
-                module.Clear();
-            }
-
-            ProfilerDriver.ClearAllFrames();
-            m_LastFrameFromTick = FrameDataView.invalidOrCurrentFrameIndex;
-            m_FrameCountLabelMinWidth = 0;
-            m_CurrentFrame = FrameDataView.invalidOrCurrentFrameIndex;
-            m_CurrentFrameEnabled = true;
-
-#pragma warning disable CS0618
-            NetworkDetailStats.m_NetworkOperations.Clear();
-#pragma warning restore
         }
 
         void FrameNavigationControls()
@@ -1677,6 +1725,7 @@ namespace UnityEditor
         HierarchyFrameDataView IProfilerWindowController.GetFrameDataView(int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
             => GetFrameDataView(threadIndex, viewMode, profilerSortColumn, sortAscending);
         bool IProfilerWindowController.IsRecording() => IsRecording();
+        bool IProfilerWindowController.ProfilerWindowOverheadIsAffectingProfilingRecordingData() => ProfilerWindowOverheadIsAffectingProfilingRecordingData();
         string IProfilerWindowController.ConnectedTargetName { get => ConnectedTargetName; }
         bool IProfilerWindowController.ConnectedToEditor { get => ConnectedToEditor; }
         ProfilerProperty IProfilerWindowController.CreateProperty() => CreateProperty();
@@ -1751,6 +1800,11 @@ namespace UnityEditor
             bool IProfilerWindowController.IsRecording()
             {
                 return m_ProfilerWindowController.IsRecording();
+            }
+
+            bool IProfilerWindowController.ProfilerWindowOverheadIsAffectingProfilingRecordingData()
+            {
+                return m_ProfilerWindowController.ProfilerWindowOverheadIsAffectingProfilingRecordingData();
             }
 
             void IProfilerWindowController.SetAreasInUse(IEnumerable<ProfilerArea> areas, bool inUse)

@@ -104,6 +104,7 @@ namespace UnityEditor.Search.Providers
             };
         }
 
+        #region SearchLogs
         private static IEnumerable<SearchItem> SearchLogs(SearchContext context, SearchProvider provider)
         {
             lock (s_Logs)
@@ -119,6 +120,9 @@ namespace UnityEditor.Search.Providers
             }
         }
 
+        #endregion
+
+        #region SearchItemOptions
         private static SearchItem SearchLogEntry(SearchContext context, SearchProvider provider, LogEntry logEntry)
         {
             if (!SearchUtils.MatchSearchGroups(context, logEntry.msgLowerCased, true))
@@ -128,6 +132,8 @@ namespace UnityEditor.Search.Providers
             logItem.options = SearchItemOptions.Ellipsis | SearchItemOptions.RightToLeft | SearchItemOptions.Highlight;
             return logItem;
         }
+
+        #endregion
 
         [SearchActionsProvider]
         internal static IEnumerable<SearchAction> ActionHandlers()

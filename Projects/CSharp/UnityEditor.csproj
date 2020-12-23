@@ -6061,6 +6061,9 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchField.cs">
       <Link>Modules\QuickSearch\Editor\SearchField.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchFlags.cs">
+      <Link>Modules\QuickSearch\Editor\SearchFlags.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchItem.cs">
       <Link>Modules\QuickSearch\Editor\SearchItem.cs</Link>
     </Compile>

@@ -54,6 +54,14 @@ namespace UnityEngine.XR
         extern public float zFar { get; set; }
         extern public bool  sRGB { get; set; }
 
+        public enum LateLatchNode
+        {
+            Head = 0,
+            LeftHand = 1,
+            RightHand = 2,
+        }
+        extern public void MarkTransformLateLatched(Transform transform, LateLatchNode nodeType);
+
         [Flags]
         public enum TextureLayout
         {

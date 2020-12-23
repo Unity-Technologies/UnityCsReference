@@ -57,7 +57,7 @@ namespace UnityEditor.DeviceSimulation
             m_DeviceSimulator = new DeviceSimulator {applicationSimulation = m_ApplicationSimulation};
             m_PluginController = new PluginController(serializedState, m_DeviceSimulator);
             m_TouchInput = new TouchEventManipulator(m_DeviceSimulator);
-            m_UserInterface = new UserInterfaceController(this, rootVisualElement, serializedState, m_PluginController.Plugins, m_TouchInput);
+            m_UserInterface = new UserInterfaceController(this, rootVisualElement, serializedState, m_PluginController, m_TouchInput);
             InitSimulation();
         }
 

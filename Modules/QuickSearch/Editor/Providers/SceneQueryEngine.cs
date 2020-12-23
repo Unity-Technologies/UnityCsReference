@@ -559,6 +559,7 @@ namespace UnityEditor.Search.Providers
             return m_PropertyPrositions;
         }
 
+        #region search_query_error_example
         public IEnumerable<GameObject> Search(SearchContext context, SearchProvider provider, IEnumerable<GameObject> subset)
         {
             var query = m_QueryEngine.Parse(context.searchQuery, true);
@@ -571,6 +572,8 @@ namespace UnityEditor.Search.Providers
             IEnumerable<GameObject> gameObjects = subset ?? m_GameObjects;
             return query.Apply(gameObjects);
         }
+
+        #endregion
 
         public string GetId(GameObject go)
         {

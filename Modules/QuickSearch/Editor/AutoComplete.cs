@@ -370,7 +370,7 @@ namespace UnityEditor.Search
 
         private static void FillProviderPropositions(SearchContext context, SortedSet<SearchProposition> propositions)
         {
-            var providers = context.filters.Where(f => context.filterId == null ? f.enabled : context.filterId == f.provider.filterId).Select(f => f.provider).ToList();
+            var providers = context.providers.Where(p => context.filterId == null || context.filterId == p.filterId).ToList();
             var queryEmpty = string.IsNullOrWhiteSpace(context.searchText) && providers.Count(p => !p.isExplicitProvider) > 1;
             foreach (var p in providers)
             {

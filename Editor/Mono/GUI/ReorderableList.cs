@@ -11,6 +11,7 @@ using System.Collections.ObjectModel;
 using Object = UnityEngine.Object;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace UnityEditorInternal
 {
@@ -150,7 +151,9 @@ namespace UnityEditorInternal
             public const int dragHandleWidth = 20;
             internal const int propertyDrawerPadding = 8;
             internal const int minHeaderHeight = 2;
-            private static GUIContent s_ListIsEmpty = EditorGUIUtility.TrTextContent("List is Empty");
+            private int ArrayCountInPropertyPath(SerializedProperty prop) => Regex.Matches(prop.propertyPath, ".Array.data").Count;
+            private float FieldLabelSize(Rect r, SerializedProperty prop) => r.xMax * 0.45f - 35 - prop.depth * 15 - ArrayCountInPropertyPath(prop) * 10;
+            private static readonly GUIContent s_ListIsEmpty = EditorGUIUtility.TrTextContent("List is Empty");
             internal static readonly string undoAdd = "Add Element To Array";
             internal static readonly string undoRemove = "Remove Element From Array";
             internal static readonly string undoMove = "Reorder Element In Array";
@@ -375,9 +378,14 @@ namespace UnityEditorInternal
                 var prop = element ?? listItem as SerializedProperty;
                 if (editable)
                 {
+                    float oldLabelWidth = EditorGUIUtility.labelWidth;
+                    EditorGUIUtility.labelWidth = FieldLabelSize(rect, prop);
+
                     var handler = ScriptAttributeUtility.GetHandler(prop);
                     handler.OnGUI(rect, prop, null, true);
                     if (Event.current.type == EventType.MouseDown && Event.current.button == 1 && rect.Contains(Event.current.mousePosition)) Event.current.Use();
+
+                    EditorGUIUtility.labelWidth = oldLabelWidth;
                     return;
                 }
 
@@ -475,7 +483,7 @@ namespace UnityEditorInternal
         public int index
         {
             get { return m_Selection.Count > 0 ? m_Selection[0] : count - 1; }
-            set { Select(value > count - 1 ? 0 : value < 0 ? count - 1 : value); }
+            set { Select(value); }
         }
 
         public ReadOnlyCollection<int> selectedIndices => new ReadOnlyCollection<int>(m_Selection);
@@ -590,16 +598,6 @@ namespace UnityEditorInternal
             }
         }
 
-        bool CheckIfInRange(int index, bool throwIfOut = true)
-        {
-            bool outOfRange = index < 0 || index >= count;
-
-            if (outOfRange && throwIfOut)
-                throw new ArgumentException($"Index {index} is out of range for the given list");
-
-            return !outOfRange;
-        }
-
         public void ClearSelection()
         {
             m_Selection.Clear();
@@ -613,11 +611,10 @@ namespace UnityEditorInternal
                 if (!append)
                 {
                     m_Selection.Clear();
-                    if (CheckIfInRange(index, false)) m_Selection.Add(index);
+                    m_Selection.Add(index);
                 }
                 else
                 {
-                    CheckIfInRange(index);
                     m_Selection.Insert(~insertionIndex, index);
                 }
             }
@@ -630,7 +627,6 @@ namespace UnityEditorInternal
             m_Selection.Clear();
             for (int i = Mathf.Min(indexFrom, indexTo); i <= Mathf.Max(indexFrom, indexTo); ++i)
             {
-                CheckIfInRange(i);
                 m_Selection.Add(i);
             }
         }
@@ -1258,66 +1254,63 @@ namespace UnityEditorInternal
 
                     try
                     {
-                        if (m_Dragging)
+                        // What will be the index of this if we release?
+                        int targetIndex = CalculateRowIndex(listRect);
+                        if (index != targetIndex)
                         {
-                            // What will be the index of this if we release?
-                            int targetIndex = CalculateRowIndex(listRect);
-                            if (index != targetIndex)
+                            // if the target index is different than the current index...
+                            if (m_SerializedObject != null && m_Elements != null)
                             {
-                                // if the target index is different than the current index...
-                                if (m_SerializedObject != null && m_Elements != null)
-                                {
-                                    Undo.RegisterCompleteObjectUndo(m_SerializedObject.targetObjects, Defaults.undoMove);
+                                Undo.RegisterCompleteObjectUndo(m_SerializedObject.targetObjects, Defaults.undoMove);
 
-                                    // if we are working with Serialized Properties, we can handle it for you
-                                    m_Elements.MoveArrayElement(index, targetIndex);
-                                    m_SerializedObject.ApplyModifiedPropertiesWithoutUndo();
-                                }
-                                else if (m_ElementList != null)
-                                {
-                                    // we are working with the IList, which is probably of a fixed length
-                                    object tempObject = m_ElementList[index];
-                                    for (int i = 0; i < m_ElementList.Count - 1; i++)
-                                    {
-                                        if (i >= index)
-                                            m_ElementList[i] = m_ElementList[i + 1];
-                                    }
-                                    for (int i = m_ElementList.Count - 1; i > 0; i--)
-                                    {
-                                        if (i > targetIndex)
-                                            m_ElementList[i] = m_ElementList[i - 1];
-                                    }
-                                    m_ElementList[targetIndex] = tempObject;
-                                }
-
-                                var oldActiveElement = index;
-                                var newActiveElement = targetIndex;
-
-                                // Retain expanded state after reordering properties
-                                if (m_SerializedObject != null && m_Elements != null)
-                                {
-                                    SerializedProperty prop1 = m_Elements.GetArrayElementAtIndex(oldActiveElement);
-                                    SerializedProperty prop2 = m_Elements.GetArrayElementAtIndex(newActiveElement);
-                                    bool tempExpanded = prop1.isExpanded;
-                                    prop1.isExpanded = prop2.isExpanded;
-                                    prop2.isExpanded = tempExpanded;
-                                }
-
-                                // update the active element, now that we've moved it
-                                index = targetIndex;
-                                // give the user a callback
-                                if (onReorderCallbackWithDetails != null)
-                                    onReorderCallbackWithDetails(this, oldActiveElement, newActiveElement);
-                                else onReorderCallback?.Invoke(this);
-
-                                onChangedCallback?.Invoke(this);
-                                GUI.changed = true;
+                                // if we are working with Serialized Properties, we can handle it for you
+                                m_Elements.MoveArrayElement(index, targetIndex);
+                                m_SerializedObject.ApplyModifiedPropertiesWithoutUndo();
                             }
-                            else
+                            else if (m_ElementList != null)
                             {
-                                // if mouse up was on the same index as mouse down we fire a mouse up callback (useful if for beginning renaming on mouseup)
-                                onMouseUpCallback?.Invoke(this);
+                                // we are working with the IList, which is probably of a fixed length
+                                object tempObject = m_ElementList[index];
+                                for (int i = 0; i < m_ElementList.Count - 1; i++)
+                                {
+                                    if (i >= index)
+                                        m_ElementList[i] = m_ElementList[i + 1];
+                                }
+                                for (int i = m_ElementList.Count - 1; i > 0; i--)
+                                {
+                                    if (i > targetIndex)
+                                        m_ElementList[i] = m_ElementList[i - 1];
+                                }
+                                m_ElementList[targetIndex] = tempObject;
                             }
+
+                            var oldActiveElement = index;
+                            var newActiveElement = targetIndex;
+
+                            // Retain expanded state after reordering properties
+                            if (m_SerializedObject != null && m_Elements != null)
+                            {
+                                SerializedProperty prop1 = m_Elements.GetArrayElementAtIndex(oldActiveElement);
+                                SerializedProperty prop2 = m_Elements.GetArrayElementAtIndex(newActiveElement);
+                                bool tempExpanded = prop1.isExpanded;
+                                prop1.isExpanded = prop2.isExpanded;
+                                prop2.isExpanded = tempExpanded;
+                            }
+
+                            // update the active element, now that we've moved it
+                            index = targetIndex;
+                            // give the user a callback
+                            if (onReorderCallbackWithDetails != null)
+                                onReorderCallbackWithDetails(this, oldActiveElement, newActiveElement);
+                            else onReorderCallback?.Invoke(this);
+
+                            onChangedCallback?.Invoke(this);
+                            GUI.changed = true;
+                        }
+                        else
+                        {
+                            // if mouse up was on the same index as mouse down we fire a mouse up callback (useful if for beginning renaming on mouseup)
+                            onMouseUpCallback?.Invoke(this);
                         }
                     }
                     finally

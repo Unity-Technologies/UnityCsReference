@@ -87,7 +87,7 @@ namespace UnityEditorInternal.Profiling
 
         protected bool fetchData
         {
-            get { return !(m_ProfilerWindow == null || (m_ProfilerWindow.IsRecording() && (ProfilerDriver.IsConnectionEditor()))) || updateViewLive; }
+            get { return !(m_ProfilerWindow == null || m_ProfilerWindow.ProfilerWindowOverheadIsAffectingProfilingRecordingData()) || updateViewLive; }
         }
 
         protected const string k_MainThreadName = "Main Thread";
@@ -116,8 +116,7 @@ namespace UnityEditorInternal.Profiling
                     selection.frameIndexIsSafe = false;
 
                 m_Selection = value;
-                // as soon as any selection is made, the thread focus will now be driven by the selection, not by this field
-                m_FocusedThreadIndex = FrameDataView.invalidThreadIndex;
+                // as soon as any selection is made, the thread focus will now be driven by the selection
                 m_HierarchyOverruledThreadFromSelection = false;
 
                 // I'm not sure how this can happen, but it does.
@@ -169,59 +168,66 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        [NonSerialized]
-        int m_FocusedThreadIndex = FrameDataView.invalidThreadIndex;
         public int focusedThreadIndex
         {
+            // From a user's perspective:
+            // When in Timeline view, with an active selection, the thread index in which the selection resides in.
+            // Otherwise, whatever thread index (Raw) Hierarchy view is currently showing or will be showing when the view next changes to it.
+            //
+            // Actually, the shown thread in Hierarchy views is driven by the active selection, unless overruled by m_HierarchyOverruledThreadFromSelection
+            // and will otherwise just be what ever the user chose via this API or the thread selection dropdown.
+            //
+            // The effect from a user's persepective is pretty much the same but m_FrameDataHierarchyView might not yet have been set to reflect this as it does so somewhat lazyily
+            // Therefore this API does some checks to establish the effect before it will happen in a way that users shouldn't need to care about.
             get
             {
                 // if (multiple threads or a thread group is focused / shown in Hierarchy)
                 //      return FrameDataView.invalidThreadIndex;
 
-                // return in order of precedence:
-                // 1. The thread set as focused thread via focusedThreadIndex setter and not yet reset through user action or setting the selection
-                if (m_FocusedThreadIndex == FrameDataView.invalidThreadIndex)
-                {
-                    // 2. What thread a currently displayed Hierarchy view is showing, if that overrules the thread the selection was made in
-                    // 3.What thread a current selection was made in
-                    // 4.What thread the Hierarchy view was last set to if there is no active selection.
+                var hierarchyThreadIndex = m_FrameDataHierarchyView != null ? m_FrameDataHierarchyView.threadIndex : FrameDataView.invalidThreadIndex;
+                if (ViewType != ProfilerViewType.Timeline && m_HierarchyOverruledThreadFromSelection && hierarchyThreadIndex >= 0)
+                    return m_FrameDataHierarchyView.threadIndex;
 
-                    var hierarchyHasValidThreadIndex = m_FrameDataHierarchyView != null && m_FrameDataHierarchyView.threadIndex != FrameDataView.invalidThreadIndex;
-                    if (ViewType != ProfilerViewType.Timeline && m_HierarchyOverruledThreadFromSelection && hierarchyHasValidThreadIndex)
-                        return m_FrameDataHierarchyView.threadIndex;
-                    if (selection != null && CurrentFrameIndex > 0)
-                        return selection.GetThreadIndex(CurrentFrameIndex);
-                    if (hierarchyHasValidThreadIndex)
-                        return m_FrameDataHierarchyView.threadIndex;
-                }
-                return m_FocusedThreadIndex;
+                if (selection != null && m_ProfilerWindow.selectedFrameIndex >= 0)
+                    return selection.GetThreadIndex((int)m_ProfilerWindow.selectedFrameIndex);
+
+                return hierarchyThreadIndex;
             }
             set
             {
-                if (value == FrameDataView.invalidThreadIndex)
+                if (m_ProfilerWindow.selectedFrameIndex < 0)
                 {
-                    m_FocusedThreadIndex = FrameDataView.invalidThreadIndex;
-                    return;
+                    throw new InvalidOperationException($"Can't set {nameof(focusedThreadIndex)} while it is not showing any frame data {nameof(FrameDataView)}.");
                 }
+
                 if (value < 0)
-                    throw new ArgumentOutOfRangeException("value", "Thread index c");
-                if (CurrentFrameIndex < 0)
-                {
-                    m_FocusedThreadIndex = value;
-                    return;
-                }
+                    throw new ArgumentOutOfRangeException("value", $"The thread index {value} can't be set because it is negative.");
+
                 using (var iter = new ProfilerFrameDataIterator())
                 {
-                    if (value >= iter.GetThreadCount(CurrentFrameIndex))
-                        throw new ArgumentOutOfRangeException("value", $"The chose thread index is out of range of valid thread Ids in this frame (frame index: {CurrentFrameIndex})");
-                    m_FocusedThreadIndex = value;
+                    var threadCount = iter.GetThreadCount((int)m_ProfilerWindow.selectedFrameIndex);
+                    if (value >= threadCount)
+                        throw new ArgumentOutOfRangeException("value", $"The chosen thread index {value} is out of range of valid thread indices in this frame. Frame index: {m_ProfilerWindow.selectedFrameIndex}, thread count: {threadCount}.");
                     m_HierarchyOverruledThreadFromSelection = true;
+
+                    // Frame the thread. This is independent of the checks below, as it only relates to Timeline view.
+                    // For Timeline view it doesn't matter what the status on the Hierarchy view was: setting this value should trigger a one-off framing of the thread.
+                    FrameThread(value);
+
+                    // only reload frame data if the thread index to focus is different to the thread index of the currently shown frame data view.
                     if (value != m_FrameDataHierarchyView.threadIndex)
                     {
-                        FrameThread(value);
-                        using (var dataView = new RawFrameDataView(CurrentFrameIndex, value))
+                        using (var dataView = new RawFrameDataView((int)m_ProfilerWindow.selectedFrameIndex, value))
                         {
-                            m_FrameDataHierarchyView.SetFrameDataView(GetFrameDataView(dataView.threadGroupName, dataView.threadName, dataView.threadId));
+                            var frameDataView = GetFrameDataView(dataView.threadGroupName, dataView.threadName, dataView.threadId);
+
+                            // once a valid thread has been chosen, based on the thread index, the thread index should no longer be used to determine which thread to focus on going forward
+                            // because the thread index is too unstable frame over frame. The thread group name and name, as well as the thread ID are way more reliable, and will be gotten from m_FrameDataHierarchyView.
+                            // if it isn't valid m_FocusedThreadIndex will stay at its set value until it resolves to a valid one druing an OnGUI phase.
+                            if (frameDataView == null || !frameDataView.valid)
+                                throw new InvalidOperationException($"The provided thread index does not belong to a valid {nameof(FrameDataView)}.");
+
+                            m_FrameDataHierarchyView.SetFrameDataView(frameDataView);
                         }
                     }
                 }
@@ -247,31 +253,12 @@ namespace UnityEditorInternal.Profiling
             set { CPUOrGPUViewTypeChanged(value); }
         }
 
-        //// TODO: refactor and converge all usages of ProfilerViewType to FrameTimeViewType
-        //public ProfilerFrameTimeViewType frameTimeViewType
-        //{
-        //    get { return (ProfilerFrameTimeViewType)ViewType; }
-        //    set
-        //    {
-        //        // check if any of these are necessary
-
-        //        //if (m_ProfilerWindow.selectedModule != this)
-        //        //    m_ProfilerWindow.SelectModule(this);
-
-        //        //if(!isActive)
-        //        //    throw new InvalidOperationException($"The {ModuleName} module is currently not present in the Profiler Window.");
-
-        //        //if (m_ProfilerWindow.selectedModule != this)
-        //        //        throw new InvalidOperationException($"The {ModuleName} module is not currently selected in the Profiler Window.");
-        //        ViewType = (ProfilerViewType)value;
-        //    }
-        //}
-
         public override void OnEnable()
         {
             base.OnEnable();
             if (m_FrameDataHierarchyView == null)
                 m_FrameDataHierarchyView = new ProfilerFrameDataHierarchyView(HierarchyViewSettingsKeyPrefix);
+
             m_FrameDataHierarchyView.OnEnable(this, m_ProfilerWindow, false);
 
             // safety guarding against event registration leaks due to an imbalance of OnEnable/OnDisable Calls, by deregistering first
@@ -287,6 +274,8 @@ namespace UnityEditorInternal.Profiling
             m_FrameDataHierarchyView.searchChanged += SearchFilterInHierarchyViewChanged;
             ProfilerDriver.profileLoaded -= ProfileLoaded;
             ProfilerDriver.profileLoaded += ProfileLoaded;
+            ProfilerDriver.profileCleared -= ProfileCleared;
+            ProfilerDriver.profileCleared += ProfileCleared;
 
             m_ViewType = (ProfilerViewType)EditorPrefs.GetInt(ViewTypeSettingsKey, (int)DefaultViewTypeSetting);
             m_ProfilerViewFilteringOptions = SessionState.GetInt(ProfilerViewFilteringOptionsKey, m_ProfilerViewFilteringOptions);
@@ -319,14 +308,8 @@ namespace UnityEditorInternal.Profiling
                 m_FrameDataHierarchyView.selectionChanged -= SetSelectionWithoutIntegrityChecksOnSelectionChangeInDetailedView;
             }
 
-            // In Standalone Profiler, ProfilerDriver (or rather profiling.s_ProfilerSessionInstance) is dead during shutdown. Clearing the Property Path would therefore crash.
-            // So ... lets not do that.
-            // Also, Application.quitting is never fired in UMPE mode so we have no way of knowing if Standalone Profiler is qutting or getting Disabled for other reasons.
-            // Cleaning the selected Property Path is kinda secondary anyways so to avoid crashes in normal usage or native tests, let's just not clear the path out in UMPE modes.
-            if (ProcessService.level == ProcessLevel.Main)
-                ClearSelectedPropertyPath();
-
             ProfilerDriver.profileLoaded -= ProfileLoaded;
+            ProfilerDriver.profileCleared -= ProfileCleared;
             Clear();
         }
 
@@ -385,15 +368,7 @@ namespace UnityEditorInternal.Profiling
 
         HierarchyFrameDataView GetFrameDataView()
         {
-            var viewMode = HierarchyFrameDataView.ViewModes.Default;
-            if (m_ViewType == ProfilerViewType.Hierarchy)
-                viewMode |= HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName;
-
-            if (m_FocusedThreadIndex != FrameDataView.invalidThreadIndex &&
-                m_FocusedThreadIndex != m_FrameDataHierarchyView.threadIndex)
-                return m_ProfilerWindow.GetFrameDataView(m_FocusedThreadIndex, viewMode | GetFilteringMode(), m_FrameDataHierarchyView.sortedProfilerColumn, m_FrameDataHierarchyView.sortedProfilerColumnAscending);
-            else
-                return m_ProfilerWindow.GetFrameDataView(m_FrameDataHierarchyView.groupName, m_FrameDataHierarchyView.threadName, m_FrameDataHierarchyView.threadId, viewMode | GetFilteringMode(), m_FrameDataHierarchyView.sortedProfilerColumn, m_FrameDataHierarchyView.sortedProfilerColumnAscending);
+            return GetFrameDataView(m_FrameDataHierarchyView.groupName, m_FrameDataHierarchyView.threadName, m_FrameDataHierarchyView.threadId);
         }
 
         HierarchyFrameDataView GetFrameDataView(string threadGroupName, string threadName, ulong threadId)
@@ -432,7 +407,6 @@ namespace UnityEditorInternal.Profiling
             // basically, the override is in effect as long as the user sees the thread selection drop down, once that's gone, so is the override. (out of sight, out of mind)
             if (viewtype == ProfilerViewType.Timeline)
             {
-                m_FocusedThreadIndex = FrameDataView.invalidThreadIndex;
                 m_HierarchyOverruledThreadFromSelection = false;
             }
             ApplySelection(true, true);
@@ -440,8 +414,21 @@ namespace UnityEditorInternal.Profiling
 
         void ThreadSelectionInHierarchyViewChanged(string threadGroupName, string threadName, int threadIndex)
         {
-            m_FocusedThreadIndex = threadIndex;
-            m_HierarchyOverruledThreadFromSelection = true;
+            var frameDataView = (threadIndex != FrameDataView.invalidThreadIndex) ?
+                GetFrameDataView(threadIndex) :
+                GetFrameDataView(threadGroupName, threadName, FrameDataView.invalidThreadId);
+
+            m_FrameDataHierarchyView.SetFrameDataView(frameDataView);
+            if (frameDataView != null && frameDataView.valid)
+            {
+                // once a valid thread has been chosen, based on the thread index, the thread index should no longer be used to determine which thread to focus on going forward
+                // because the thread index is too unstable frame over frame. The thread group name and name, as well as the thread ID are way more reliable, and will be gotten from m_FrameDataHierarchyView.
+                // if it isn't valid m_FocusedThreadIndex will stay at its set value until it resolves to a valid one druing an OnGUI phase.
+                m_HierarchyOverruledThreadFromSelection = true;
+                return;
+            }
+            // fail save, we should actually never get here but even if, fail silently and gracefully.
+            m_HierarchyOverruledThreadFromSelection = false;
         }
 
         void SearchFilterInHierarchyViewChanged(string sampleNameSearchFiler)
@@ -453,7 +440,7 @@ namespace UnityEditorInternal.Profiling
         {
             if (selection != null)
             {
-                ApplySelection(false, !m_ProfilerWindow.IsRecording());
+                ApplySelection(false, fetchData);
             }
         }
 
@@ -463,6 +450,13 @@ namespace UnityEditorInternal.Profiling
                 selection.frameIndexIsSafe = false;
             Clear();
             TryRestoringSelection();
+        }
+
+        void ProfileCleared()
+        {
+            if (selection != null)
+                selection.frameIndexIsSafe = false;
+            Clear();
         }
 
         internal static readonly ProfilerMarker setSelectionIntegrityCheckMarker = new ProfilerMarker($"{nameof(CPUOrGPUProfilerModule)}.{nameof(CPUOrGPUProfilerModule.SetSelection)} Integrity Check");
@@ -686,20 +680,24 @@ namespace UnityEditorInternal.Profiling
                         var currentFrame = m_ProfilerWindow.selectedFrameIndex;
                         if (selection.frameIndexIsSafe && selection.safeFrameIndex == currentFrame)
                         {
-                            var frameDataView = m_HierarchyOverruledThreadFromSelection || m_FocusedThreadIndex != FrameDataView.invalidThreadIndex ? GetFrameDataView() : GetFrameDataView(selection.threadGroupName, selection.threadName, selection.threadId);
-                            // avoid Selection Migration happening twice during SetFrameDataView by clearing the old one out first
-                            m_FrameDataHierarchyView.ClearSelection();
-                            m_FrameDataHierarchyView.SetFrameDataView(frameDataView);
-                            if (!frameDataView.valid)
-                                return;
-
                             var treeViewID = ProfilerFrameDataHierarchyView.invalidTreeViewId;
-                            // GetItemIDFromRawFrameDataViewIndex is a bit expensive so only use that if showing the Raw view (where the raw id is relevant)
-                            // or when the cheaper option (setting selection via MarkerIdPath) isn't available
-                            if (ViewType == ProfilerViewType.RawHierarchy || (selection.markerPathDepth <= 0))
+                            if (fetchData)
                             {
-                                treeViewID = m_FrameDataHierarchyView.treeView.GetItemIDFromRawFrameDataViewIndex(frameDataView, selection.rawSampleIndex, selection.markerIdPath);
+                                var frameDataView = m_HierarchyOverruledThreadFromSelection ? GetFrameDataView() : GetFrameDataView(selection.threadGroupName, selection.threadName, selection.threadId);
+                                // avoid Selection Migration happening twice during SetFrameDataView by clearing the old one out first
+                                m_FrameDataHierarchyView.ClearSelection();
+                                m_FrameDataHierarchyView.SetFrameDataView(frameDataView);
+                                if (!frameDataView.valid)
+                                    return;
+
+                                // GetItemIDFromRawFrameDataViewIndex is a bit expensive so only use that if showing the Raw view (where the raw id is relevant)
+                                // or when the cheaper option (setting selection via MarkerIdPath) isn't available
+                                if (ViewType == ProfilerViewType.RawHierarchy || (selection.markerPathDepth <= 0))
+                                {
+                                    treeViewID = m_FrameDataHierarchyView.treeView.GetItemIDFromRawFrameDataViewIndex(frameDataView, selection.rawSampleIndex, selection.markerIdPath);
+                                }
                             }
+
                             if (treeViewID == ProfilerFrameDataHierarchyView.invalidTreeViewId)
                             {
                                 if (selection.markerPathDepth > 0)
@@ -718,13 +716,16 @@ namespace UnityEditorInternal.Profiling
                         }
                         else if (currentFrame >= 0 && selection.markerPathDepth > 0)
                         {
-                            var frameDataView = m_HierarchyOverruledThreadFromSelection || m_FocusedThreadIndex != FrameDataView.invalidThreadIndex ? GetFrameDataView() : GetFrameDataView(selection.threadGroupName, selection.threadName, selection.threadId);
-                            if (!frameDataView.valid)
-                                return;
-                            // avoid Selection Migration happening twice during SetFrameDataView by clearing the old one out first
-                            m_FrameDataHierarchyView.ClearSelection();
-                            m_FrameDataHierarchyView.SetFrameDataView(frameDataView);
-                            m_FrameDataHierarchyView.SetSelection(selection, (!m_ProfilerWindow.IsRecording() || !ProfilerDriver.IsConnectionEditor()) && (viewChanged || frameSelection));
+                            if (fetchData)
+                            {
+                                var frameDataView = m_HierarchyOverruledThreadFromSelection ? GetFrameDataView() : GetFrameDataView(selection.threadGroupName, selection.threadName, selection.threadId);
+                                if (!frameDataView.valid)
+                                    return;
+                                // avoid Selection Migration happening twice during SetFrameDataView by clearing the old one out first
+                                m_FrameDataHierarchyView.ClearSelection();
+                                m_FrameDataHierarchyView.SetFrameDataView(frameDataView);
+                            }
+                            m_FrameDataHierarchyView.SetSelection(selection, (viewChanged || frameSelection));
                         }
                         // else: the selection was not in the shown frame AND there was no other frame to select it in or the Selection contains no marker path.
                         // So either there is no data to apply the selection to, or the selection isn't one that can be applied to another frame because there is no path

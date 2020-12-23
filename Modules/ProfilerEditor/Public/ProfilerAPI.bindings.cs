@@ -320,6 +320,14 @@ namespace UnityEditorInternal
             profileLoaded?.Invoke();
         }
 
+        public static event Action profileCleared;
+
+        [RequiredByNativeCode]
+        static void InvokeProfileCleared()
+        {
+            profileCleared?.Invoke();
+        }
+
         internal static event Action<ProfilerAnalyticsSaveLoadData> profilerCaptureLoaded;
 
         [RequiredByNativeCode]

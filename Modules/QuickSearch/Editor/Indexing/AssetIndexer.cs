@@ -125,7 +125,6 @@ namespace UnityEditor.Search
                     if (!mainAsset)
                         return;
 
-
                     if (hasCustomIndexers)
                         IndexCustomProperties(path, documentIndex, mainAsset);
 

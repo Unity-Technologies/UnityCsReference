@@ -211,7 +211,6 @@ namespace UnityEditor.Search
 
         internal void OnDisable()
         {
-
             m_ListViewIndexSettings.ListView.onSelectionChange -= OnSelectedIndexChanged;
 
             SearchDatabase.indexLoaded -= OnIndexLoaded;

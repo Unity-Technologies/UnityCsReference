@@ -201,6 +201,8 @@ namespace UnityEngine
 
         public virtual bool supportsMultiview => UnityEngine.SystemInfo.supportsMultiview;
 
+        public virtual bool supportsStoreAndResolveAction => UnityEngine.SystemInfo.supportsStoreAndResolveAction;
+
         public virtual bool IsFormatSupported(GraphicsFormat format, FormatUsage usage)
         {
             return UnityEngine.SystemInfo.IsFormatSupported(format, usage);

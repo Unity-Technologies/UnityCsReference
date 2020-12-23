@@ -934,6 +934,9 @@ namespace UnityEditorInternal
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
         internal static extern bool IsScriptReloadRequested();
 
+        [FreeFunction("HandleProjectWindowFileDrag")]
+        internal static extern DragAndDropVisualMode HandleProjectWindowFileDrag(string newParentPath, string[] paths, bool perform, int defaultPromptAction);
+
         [FreeFunction]
         [NativeHeader("Editor/Src/Undo/DefaultParentObjectUndo.h")]
         internal static extern void RegisterSetDefaultParentObjectUndo(string sceneGUID, int instanceID, string undoName);

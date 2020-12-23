@@ -10,105 +10,6 @@ using System.Linq;
 namespace UnityEditor.Search
 {
     /// <summary>
-    /// Various search options used to fetch items.
-    /// </summary>
-    [Flags]
-    public enum SearchFlags
-    {
-        /// <summary>
-        /// No specific search options.
-        /// </summary>
-        None = 0,
-
-        /// <summary>
-        /// Search items are fetch synchronously.
-        /// </summary>
-        Synchronous = 1 << 0,
-
-        /// <summary>
-        /// Fetch items will be sorted by the search service.
-        /// </summary>
-        Sorted = 1 << 1,
-
-        /// <summary>
-        /// Send the first items asynchronously
-        /// </summary>
-        FirstBatchAsync = 1 << 2,
-
-        /// <summary>
-        /// Sets the search to search for all results.
-        /// </summary>
-        WantsMore = 1 << 3,
-
-        /// <summary>
-        /// Adding debugging info while looking for results,
-        /// </summary>
-        Debug = 1 << 4,
-
-        /// <summary>
-        /// Prevent the search to use any indexing
-        /// </summary>
-        NoIndexing = 1 << 5,
-
-        /// <summary>
-        /// Default Search Flag
-        /// </summary>
-        Default = Sorted,
-
-        /// <summary>
-        /// Always show query errors even when there are results available.
-        /// </summary>
-        ShowErrorsWithResults = 1 << 24,
-
-        /// <summary>
-        /// Search View Flags
-        /// </summary>
-        SaveFilters = 1 << 25,
-
-        /// <summary>
-        /// Open QuickSearch reusing an existing window if any.
-        /// </summary>
-        ReuseExistingWindow = 1 << 26,
-
-        /// <summary>
-        /// Specify that a QuickSearch window list view supports multi-selection.
-        /// </summary>
-        Multiselect = 1 << 27,
-
-        /// <summary>
-        /// Specify that a QuickSearch window is dockable instead of being a modal popup window.
-        /// </summary>
-        Dockable = 1 << 28,
-
-        /// <summary>
-        /// Focus the search query when opening QuickSearch.
-        /// </summary>
-        FocusContext = 1 << 29,
-
-        /// <summary>
-        /// Hide all QuickSearch side panels.
-        /// </summary>
-        HidePanels = 1 << 30,
-
-        /// <summary>
-        /// Default options when opening a QuickSearch window.
-        /// </summary>
-        OpenDefault = SaveFilters | Multiselect | Dockable,
-        /// <summary>
-        /// Default options when opening a QuickSearch using the global shortcut.
-        /// </summary>
-        OpenGlobal = OpenDefault | ReuseExistingWindow,
-        /// <summary>
-        /// Options when opening QuickSearch in contextual mode (with only a few selected providers enabled).
-        /// </summary>
-        OpenContextual = Multiselect | Dockable | FocusContext,
-        /// <summary>
-        /// Options when opening QuickSearch as an Object Picker.
-        /// </summary>
-        OpenPicker = FocusContext | HidePanels | WantsMore
-    }
-
-    /// <summary>
     /// The search context encapsulate all the states necessary to perform a query. It allows the full
     /// customization of how a query would be performed.
     /// </summary>
@@ -118,30 +19,21 @@ namespace UnityEditor.Search
         private static readonly string[] k_Empty = new string[0];
         private string m_SearchText = "";
         private string m_CachedPhrase;
-        private List<SearchQueryError> m_QueryErrors = new List<SearchQueryError>();
-
-        [DebuggerDisplay("{provider} - Enabled: {enabled}")]
-        internal class FilterDesc
-        {
-            public FilterDesc(SearchProvider provider, bool enabled)
-            {
-                this.provider = provider;
-                this.enabled = enabled;
-            }
-
-            public readonly SearchProvider provider;
-            public bool enabled;
-        }
-
-        private List<FilterDesc> m_ProviderDescs = new List<FilterDesc>();
         private bool m_Disposed = false;
-        internal IEnumerable<FilterDesc> filters => m_ProviderDescs;
+        private readonly List<SearchProvider> m_Providers;
+        private readonly List<SearchQueryError> m_QueryErrors = new List<SearchQueryError>();
 
+        /// <summary>
+        /// This special constructor is used to create dummy context for default providers.
+        /// It is normal that no session is initialized.
+        /// </summary>
+        /// <see cref="SearchProvider.defaultContext"/>
+        /// <param name="provider">Default context provider</param>
         internal SearchContext(SearchProvider provider)
         {
-            m_ProviderDescs = new List<FilterDesc>() {  new FilterDesc(provider, true) };
-            this.searchText = String.Empty;
-            this.options = SearchFlags.Default;
+            m_Providers = new List<SearchProvider>() { provider };
+            searchText = string.Empty;
+            options = SearchFlags.Default;
         }
 
         /// <summary>
@@ -152,9 +44,11 @@ namespace UnityEditor.Search
         /// <param name="options">Options to further controlled the query.</param>
         public SearchContext(IEnumerable<SearchProvider> providers, string searchText, SearchFlags options)
         {
+            m_Providers = FilterProviders(providers);
             this.options = options;
-            this.providers = providers.ToList();
             this.searchText = searchText;
+
+            BeginSession();
         }
 
         /// <summary>
@@ -172,7 +66,7 @@ namespace UnityEditor.Search
         /// </summary>
         /// <param name="providers">The list of providers used to resolve the specified query.</param>
         public SearchContext(IEnumerable<SearchProvider> providers)
-            : this(providers, String.Empty, SearchFlags.Default)
+            : this(providers, string.Empty, SearchFlags.Default)
         {
         }
 
@@ -184,15 +78,10 @@ namespace UnityEditor.Search
             Dispose(false);
         }
 
-        /// <summary>
-        /// Reset all provider filter to the specified value. This allows enabling or disabling all providers in one call.
-        /// A disabled provider won't be ask to provider items to resolve the query.
-        /// </summary>
-        /// <param name="enableAll">If true enable all providers. If false disable all providers.</param>
+        [Obsolete("ResetFilter has been deprecated and there is no replacement.", error: false)]
         public void ResetFilter(bool enableAll)
         {
-            foreach (var t in m_ProviderDescs)
-                t.enabled = enableAll;
+            throw new NotSupportedException();
         }
 
         /// <summary>
@@ -203,10 +92,16 @@ namespace UnityEditor.Search
         /// <param name="isEnabled">If true, enable the provider to perform query.</param>
         public void SetFilter(string providerId, bool isEnabled)
         {
-            var index = m_ProviderDescs.FindIndex(t => t.provider.id == providerId);
-            if (index != -1)
+            var provider = m_Providers.FirstOrDefault(p => p.id == providerId);
+            if (!isEnabled && provider != null)
             {
-                m_ProviderDescs[index].enabled = isEnabled;
+                SetProviders(m_Providers.Where(p => p != provider).ToList());
+            }
+            else if (isEnabled && provider == null)
+            {
+                provider = SearchService.GetProvider(providerId);
+                if (provider != null)
+                    SetProviders(m_Providers.Concat(new[] { provider }).ToList());
             }
         }
 
@@ -217,13 +112,7 @@ namespace UnityEditor.Search
         /// <returns></returns>
         public bool IsEnabled(string providerId)
         {
-            var index = m_ProviderDescs.FindIndex(t => t.provider.id == providerId);
-            if (index != -1)
-            {
-                return m_ProviderDescs[index].enabled;
-            }
-
-            return false;
+            return m_Providers.Any(p => p.id == providerId);
         }
 
         /// <summary>
@@ -243,7 +132,7 @@ namespace UnityEditor.Search
         /// <summary>
         /// Processed search query (no filterId, no textFilters)
         /// </summary>
-        public string searchQuery { get; private set; } = String.Empty;
+        public string searchQuery { get; private set; } = string.Empty;
 
         /// <summary>
         /// Character offset of the processed search query in the raw search text.
@@ -264,7 +153,7 @@ namespace UnityEditor.Search
             {
                 if (m_CachedPhrase == null && searchWords.Length > 0)
                     m_CachedPhrase = string.Join(" ", searchWords).Trim();
-                return m_CachedPhrase ?? String.Empty;
+                return m_CachedPhrase ?? string.Empty;
             }
         }
 
@@ -313,35 +202,38 @@ namespace UnityEditor.Search
             {
                 if (m_SearchText.Equals(value))
                     return;
-
-                m_SearchText = value ?? String.Empty;
-
-                // Reset a few values
-                filterId = null;
-                textFilters = searchWords = k_Empty;
-                searchQuery = searchText.TrimStart();
-                searchQueryOffset = 0;
-
-                if (String.IsNullOrEmpty(searchQuery))
-                    return;
-
-
-                foreach (var providerFilterId in m_ProviderDescs.Select(desc => desc.provider.filterId))
-                {
-                    if (searchQuery.StartsWith(providerFilterId, StringComparison.OrdinalIgnoreCase))
-                    {
-                        filterId = providerFilterId;
-                        searchQuery = searchQuery.Remove(0, providerFilterId.Length).TrimStart();
-                        break;
-                    }
-                }
-
-                searchQueryOffset = searchText.Length - searchQuery.Length;
-                searchQuery = searchQuery.TrimEnd();
-                var tokens = searchQuery.ToLowerInvariant().Split(' ').ToArray();
-                searchWords = tokens.Where(t => t.IndexOf(':') == -1).ToArray();
-                textFilters = tokens.Where(t => t.IndexOf(':') != -1).ToArray();
+                SetSearchText(value);
             }
+        }
+
+        private void SetSearchText(string value)
+        {
+            m_SearchText = value ?? string.Empty;
+
+            // Reset a few values
+            filterId = null;
+            textFilters = searchWords = k_Empty;
+            searchQuery = searchText.TrimStart();
+            searchQueryOffset = 0;
+
+            if (string.IsNullOrEmpty(searchQuery))
+                return;
+
+            foreach (var providerFilterId in m_Providers.Select(p => p.filterId))
+            {
+                if (searchQuery.StartsWith(providerFilterId, StringComparison.OrdinalIgnoreCase))
+                {
+                    filterId = providerFilterId;
+                    searchQuery = searchQuery.Remove(0, providerFilterId.Length).TrimStart();
+                    break;
+                }
+            }
+
+            searchQueryOffset = searchText.Length - searchQuery.Length;
+            searchQuery = searchQuery.TrimEnd();
+            var tokens = searchQuery.ToLowerInvariant().Split(' ').ToArray();
+            searchWords = tokens.Where(t => t.IndexOf(':') == -1).ToArray();
+            textFilters = tokens.Where(t => t.IndexOf(':') != -1).ToArray();
         }
 
         /// <summary>
@@ -352,26 +244,55 @@ namespace UnityEditor.Search
             get
             {
                 if (filterId != null)
-                    return m_ProviderDescs.Where(d => d.provider.filterId == filterId).Select(d => d.provider);
+                    return m_Providers.Where(p => p.filterId == filterId);
 
-                if (m_ProviderDescs.Count == 1)
-                    return m_ProviderDescs.Select(d => d.provider);
+                if (m_Providers.Count == 1)
+                    return m_Providers;
 
-                return m_ProviderDescs.Where(d => d.enabled && !d.provider.isExplicitProvider).Select(d => d.provider);
+                return m_Providers.Where(p => !p.isExplicitProvider);
             }
+        }
 
-            private set
+        internal IList<SearchProvider> GetProviders()
+        {
+            return m_Providers;
+        }
+
+        internal void AddProvider(SearchProvider provider)
+        {
+            UpdateProviders(() => m_Providers.Add(provider));
+        }
+
+        internal void RemoveProvider(SearchProvider provider)
+        {
+            UpdateProviders(() => m_Providers.Remove(provider));
+        }
+
+        internal void SetProviders(IEnumerable<SearchProvider> providers = null)
+        {
+            UpdateProviders(() =>
             {
-                if (m_ProviderDescs?.Count > 0)
-                    EndSession();
+                m_Providers.Clear();
+                if (providers != null)
+                    m_Providers.AddRange(FilterProviders(providers));
+            });
+        }
 
-                if (value != null)
-                    m_ProviderDescs = value.Select(provider => new FilterDesc(provider, true)).ToList();
-                else
-                    m_ProviderDescs?.Clear();
+        private static List<SearchProvider> FilterProviders(IEnumerable<SearchProvider> providers)
+        {
+            return providers.OrderBy(p => p.priority).Distinct().ToList();
+        }
 
-                BeginSession();
-            }
+        private void UpdateProviders(Action updateOperation)
+        {
+            if (updateOperation == null)
+                return;
+
+            if (m_Providers.Count > 0)
+                EndSession();
+            updateOperation();
+            BeginSession();
+            SetSearchText(m_SearchText);
         }
 
         /// <summary>
@@ -446,23 +367,16 @@ namespace UnityEditor.Search
             }
         }
 
-        internal void SetFilteredProviders(IEnumerable<string> providerIds)
-        {
-            ResetFilter(false);
-            foreach (var id in providerIds)
-                SetFilter(id, true);
-        }
-
         private void BeginSession()
         {
             if (options.HasFlag(SearchFlags.Debug))
                 UnityEngine.Debug.Log($"Start search session {String.Join(", ", providers.Select(p=>p.id))} -> {searchText}");
 
-            foreach (var desc in m_ProviderDescs)
+            foreach (var p in m_Providers)
             {
                 using (var enableTimer = new DebugTimer(null))
                 {
-                    desc.provider.OnEnable(enableTimer.timeMs);
+                    p.OnEnable(enableTimer.timeMs);
                 }
             }
         }
@@ -472,8 +386,8 @@ namespace UnityEditor.Search
             sessions.StopAllAsyncSearchSessions();
             sessions.Clear();
 
-            foreach (var desc in m_ProviderDescs)
-                desc.provider.OnDisable();
+            foreach (var p in m_Providers)
+                p.OnDisable();
 
             if (options.HasFlag(SearchFlags.Debug))
                 UnityEngine.Debug.Log($"End search session {string.Join(", ", providers.Select(p => p.id))}");
@@ -489,7 +403,7 @@ namespace UnityEditor.Search
             {
                 EndSession();
 
-                m_ProviderDescs = null;
+                m_Providers.Clear();
                 m_Disposed = true;
             }
         }
@@ -517,7 +431,7 @@ namespace UnityEditor.Search
         /// <returns>Returns the SearchContext unique hashcode.</returns>
         public override int GetHashCode()
         {
-            return filters.Select(d => d.provider.id.GetHashCode()).Aggregate((int)options, (h1, h2) => (h1 ^ h2).GetHashCode());
+            return m_Providers.Select(p => p.id.GetHashCode()).Aggregate((int)options, (h1, h2) => (h1 ^ h2).GetHashCode());
         }
 
         /// <summary>

@@ -145,7 +145,7 @@ namespace UnityEditor.Search.Providers
         [Shortcut("Help/Search/Menu")]
         internal static void OpenQuickSearch()
         {
-            var qs = QuickSearch.OpenWithContextualProvider(type, Settings.type);
+            var qs = QuickSearch.OpenWithContextualProvider(type, Settings.type, HelpProvider.type);
             qs.itemIconSize = 1; // Open in list view by default.
         }
 

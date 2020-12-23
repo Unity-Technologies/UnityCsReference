@@ -164,6 +164,43 @@ namespace UnityEditor.Search
         }
 
         /// <summary>
+        /// Create a search context with a single search provider.
+        /// </summary>
+        /// <param name="provider"></param>
+        /// <param name="searchText"></param>
+        /// <returns></returns>
+        public static SearchContext CreateContext(SearchProvider provider, string searchText = "")
+        {
+            return CreateContext(new[] { provider }, searchText);
+        }
+
+        /// <summary>
+        /// Create a search context for a single search provider.
+        /// </summary>
+        /// <param name="providerId">Search provider ID string (such as asset, scene, find, etc.)</param>
+        /// <param name="searchText">Initial search text to be used to evaluate the query.</param>
+        /// <param name="flags">Additional search options to be used for the query evaluation.</param>
+        /// <returns>The newly created search context. You need to call Dispose on the SearchContext when you are done using it for queries.</returns>
+        public static SearchContext CreateContext(string providerId, string searchText = "", SearchFlags flags = SearchFlags.Default)
+        {
+            return CreateContext(new[] { providerId }, searchText, flags);
+        }
+
+        /// <summary>
+        /// Create a search context with all active providers.
+        /// </summary>
+        /// <returns></returns>
+        public static SearchContext CreateContext(string searchText, SearchFlags flags)
+        {
+            return CreateContext(Providers.Where(p => p.active).ToList(), searchText, flags);
+        }
+
+        public static SearchContext CreateContext(string searchText)
+        {
+            return CreateContext(searchText, SearchFlags.Default);
+        }
+
+        /// <summary>
         /// Initiate a search and return all search items matching the search context. Other items can be found later using the asynchronous searches.
         /// </summary>
         /// <param name="context">The current search context</param>
@@ -263,26 +300,81 @@ namespace UnityEditor.Search
             return results;
         }
 
-        internal static SearchContext CreateContext(SearchProvider provider, string searchText = "")
+        /// <summary>
+        /// Run a query on all active providers.
+        /// </summary>
+        /// <param name="searchText">Search query to execute.</param>
+        /// <returns></returns>
+        public static ISearchList Request(string searchText, SearchFlags options = SearchFlags.None)
         {
-            return CreateContext(new[] { provider }, searchText);
+            var activeProviders = Providers.Where(p => p.active).ToList();
+            var context = CreateContext(activeProviders, searchText, options);
+            return Request(context, options);
         }
 
         /// <summary>
-        /// Create a search context for a single provider.
+        /// Execute a search request and callback when the search is completed.
+        /// This will create a new search context that will be Disposed when the request is finished.
         /// </summary>
-        /// <param name="providerId">Unique provider id string (i.e. asset, scene, find, etc.)</param>
-        /// <param name="searchText">Initial search text to be used to evaluate the query.</param>
-        /// <param name="flags">Additional search options to be used for the query evaluation.</param>
-        /// <returns>The newly created search context. Remember to dispose it when you do not need it anymore.</returns>
-        public static SearchContext CreateContext(string providerId, string searchText = "", SearchFlags flags = SearchFlags.Default)
+        public static void Request(string searchText, Action<SearchContext, IList<SearchItem>> onSearchCompleted, SearchFlags options = SearchFlags.None)
         {
-            return CreateContext(new[] { providerId }, searchText, flags);
+            var context = CreateContext(searchText, options);
+            Request(context, (c, items) =>
+            {
+                onSearchCompleted?.Invoke(c, items);
+                c.Dispose();
+            }, options);
         }
 
-        internal static SearchContext CreateContext(string searchText)
+        /// <summary>
+        /// Execute a search request and callback for every incoming items and when the search is completed.
+        /// This will create a new search context that will be Disposed when the request is finished.
+        /// </summary>
+        public static void Request(string searchText,
+            Action<SearchContext, IEnumerable<SearchItem>> onIncomingItems,
+            Action<SearchContext> onSearchCompleted,
+            SearchFlags options = SearchFlags.None)
         {
-            return CreateContext(Providers.Where(p => p.active), searchText);
+            var context = CreateContext(searchText, options);
+            Request(context, onIncomingItems, (c) =>
+            {
+                onSearchCompleted?.Invoke(c);
+                c.Dispose();
+            }, options);
+        }
+
+        /// <summary>
+        /// Execute a search request and callback when the search is completed.
+        /// The user is responsible for disposing of the search context.
+        /// </summary>
+        public static void Request(SearchContext context, Action<SearchContext, IList<SearchItem>> onSearchCompleted, SearchFlags options = SearchFlags.None)
+        {
+            var results = new List<SearchItem>();
+            Request(context,
+                (c, items) => results.AddRange(items),
+                (c) => onSearchCompleted?.Invoke(c, results),
+                options);
+        }
+
+        // <summary>
+        /// Execute a search request and callback for every incoming items and when the search is completed.
+        /// The user is responsible for disposing of the search context.
+        /// </summary>
+        public static void Request(SearchContext context,
+            Action<SearchContext, IEnumerable<SearchItem>> onIncomingItems,
+            Action<SearchContext> onSearchCompleted,
+            SearchFlags options = SearchFlags.None)
+        {
+            var sessionCount = 0;
+            context.asyncItemReceived += (c, items) => onIncomingItems?.Invoke(c, items.Where(e => e != null));
+            context.sessionStarted += c => ++ sessionCount;
+            context.sessionEnded += c =>
+            {
+                --sessionCount;
+                if (sessionCount == 0)
+                    onSearchCompleted?.Invoke(c);
+            };
+            GetItems(context, options | SearchFlags.FirstBatchAsync);
         }
 
         private static void OnSearchEnded(SearchContext context)
@@ -372,7 +464,10 @@ namespace UnityEditor.Search
             if (reuseExisting) flags |= SearchFlags.ReuseExistingWindow;
             if (multiselect) flags |= SearchFlags.Multiselect;
             if (dockable) flags |= SearchFlags.Dockable;
-            return QuickSearch.Create(context, topic, flags).ShowWindow(defaultWidth, defaultHeight, flags);
+            var view = QuickSearch.Create(context, topic, flags).ShowWindow(defaultWidth, defaultHeight, flags);
+            if (context != null && !string.IsNullOrEmpty(context.searchText))
+                view.Refresh();
+            return view;
         }
 
         /// <summary>

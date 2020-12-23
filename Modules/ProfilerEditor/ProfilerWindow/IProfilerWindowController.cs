@@ -33,6 +33,7 @@ namespace UnityEditorInternal
         HierarchyFrameDataView GetFrameDataView(int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending);
 
         bool IsRecording();
+        bool ProfilerWindowOverheadIsAffectingProfilingRecordingData();
 
         string ConnectedTargetName { get; }
         bool ConnectedToEditor { get; }

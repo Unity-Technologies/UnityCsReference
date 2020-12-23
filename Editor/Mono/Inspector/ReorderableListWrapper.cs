@@ -125,7 +125,7 @@ namespace UnityEditorInternal
 
         public void Draw(Rect r, Rect visibleArea)
         {
-            r.xMin += EditorGUI.indent * (EditorGUI.indentLevel - 1);
+            r.xMin += EditorGUI.indent;
             var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
             m_IsNotInPrefabContextModeWithOverrides = prefabStage == null || prefabStage.mode != PrefabStage.Mode.InContext || !PrefabStage.s_PatchAllOverriddenProperties
                 || Selection.objects.All(obj => PrefabUtility.IsPartOfAnyPrefab(obj) && !AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(obj)).Equals(AssetDatabase.AssetPathToGUID(prefabStage.assetPath)));

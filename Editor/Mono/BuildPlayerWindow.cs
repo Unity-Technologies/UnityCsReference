@@ -252,6 +252,7 @@ namespace UnityEditor
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("Player Settings..."), GUILayout.Width(Styles.kButtonWidth)))
             {
                 SettingsService.OpenProjectSettings("Project/Player");
+                GUIUtility.ExitGUI();
             }
 
             GUILayout.EndHorizontal();

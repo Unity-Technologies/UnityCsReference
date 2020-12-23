@@ -1614,12 +1614,17 @@ namespace UnityEditor
             GameObjectTreeViewGUI.UpdateActiveParentObjectValuesForScene(sceneGUID, id);
         }
 
-        internal static void SetDefaultParentObject(bool toggle)
+        internal static void SetDefaultParentObject(bool toggle, GameObject defaultParentObject = null)
         {
             UnityEngine.GameObject lastSelectedObject = null;
             int id = 0;
 
-            if (Selection.objects.Length > 0)
+            if (defaultParentObject != null)
+            {
+                lastSelectedObject = defaultParentObject;
+                id = lastSelectedObject.GetInstanceID();
+            }
+            else if (Selection.objects.Length > 0)
             {
                 lastSelectedObject = Selection.objects[Selection.objects.Length - 1] as GameObject;
                 if (lastSelectedObject != null && !PrefabStageUtility.IsGameObjectThePrefabRootInAnyPrefabStage(lastSelectedObject))
@@ -1657,15 +1662,16 @@ namespace UnityEditor
             UpdateSessionStateInfoAndActiveParentObjectValuesForScene(sceneGUID, id);
         }
 
-        internal static void ClearDefaultParentObject()
+        internal static void ClearDefaultParentObject(string sceneGUID = "")
         {
             UnityEngine.GameObject lastSelectedObject = null;
-            var sceneGUID = "";
 
-            if (Selection.objects.Length > 0)
+            if (sceneGUID == "")
             {
-                lastSelectedObject = Selection.objects[Selection.objects.Length - 1] as GameObject;
-
+                if (Selection.objects.Length > 0)
+                {
+                    lastSelectedObject = Selection.objects[Selection.objects.Length - 1] as GameObject;
+                }
                 if (lastSelectedObject)
                     sceneGUID = lastSelectedObject.scene.guid;
                 else

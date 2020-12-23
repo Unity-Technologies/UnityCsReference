@@ -203,7 +203,13 @@ namespace UnityEditorInternal
                 return;
 
             foreach (var processor in processors)
+            {
                 processor.OnBeforeRun(runInformation.BuildReport, runInformation.pipelineData);
+                var processorType = processor.GetType();
+                var onBeforeRun = processorType.GetMethod("OnBeforeRun");
+                if (onBeforeRun != null && onBeforeRun.GetMethodBody().GetILAsByteArray().Length > 2)
+                    Debug.LogWarning($"{processorType} has a non-empty OnBeforeRun method, but IUnityLinkerProcessor.OnBeforeRun is deprecated and will be removed in Unity 2021.2.");
+            }
         }
 
         static void ProcessBuildPipelineOnAfterRun(UnityLinkerRunInformation runInformation)
@@ -213,7 +219,13 @@ namespace UnityEditorInternal
                 return;
 
             foreach (var processor in processors)
+            {
                 processor.OnAfterRun(runInformation.BuildReport, runInformation.pipelineData);
+                var processorType = processor.GetType();
+                var onAfterRun = processorType.GetMethod("OnAfterRun");
+                if (onAfterRun != null && onAfterRun.GetMethodBody().GetILAsByteArray().Length > 2)
+                    Debug.LogWarning($"{processorType} has a non-empty OnAfterRun method, but IUnityLinkerProcessor.OnAfterRun is deprecated and will be removed in Unity 2021.2.");
+            }
         }
 
         internal static IEnumerable<string> GetUserBlacklistFiles()

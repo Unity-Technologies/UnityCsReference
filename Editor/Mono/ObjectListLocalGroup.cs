@@ -41,6 +41,7 @@ namespace UnityEditor
             int m_DropTargetControlID = 0;
 
             private List<Type> m_AssetPreviewIgnoreList = new List<Type>();
+            private List<string> m_AssetExtensionsPreviewIgnoreList = new List<string>();
 
             // Type name if resource is the key
             Dictionary<string, BuiltinResource[]> m_BuiltinResourceMap;
@@ -108,6 +109,8 @@ namespace UnityEditor
                 m_AssetPreviewIgnoreList.Add(typeof(TextAsset));
                 m_AssetPreviewIgnoreList.Add(typeof(Shader));
                 m_AssetPreviewIgnoreList.Add(typeof(LightingSettings));
+
+                m_AssetExtensionsPreviewIgnoreList.Add(".index");
             }
 
             //Use this to add the specific types that needs to ignored for AssetPreview image generation.
@@ -400,7 +403,9 @@ namespace UnityEditor
                         if (rect.Contains(evt.mousePosition))
                         {
                             DragAndDropVisualMode mode = DoDrag(assetReference.instanceID, perform);
-                            if (mode != DragAndDropVisualMode.None && mode != DragAndDropVisualMode.Rejected)
+                            if (mode == DragAndDropVisualMode.Rejected && perform)
+                                evt.Use();
+                            else if (mode != DragAndDropVisualMode.None)
                             {
                                 if (perform)
                                     DragAndDrop.AcceptDrag();
@@ -1190,6 +1195,8 @@ namespace UnityEditor
             private bool ShouldGetAssetPreview(int instanceId)
             {
                 string path = AssetDatabase.GetAssetPath(instanceId);
+                if (m_AssetExtensionsPreviewIgnoreList.Contains(System.IO.Path.GetExtension(path).ToLowerInvariant()))
+                    return false;
                 Type assetDataType = AssetDatabase.GetMainAssetTypeAtPath(path);
                 if (m_AssetPreviewIgnoreList.Contains(assetDataType))
                     return false;

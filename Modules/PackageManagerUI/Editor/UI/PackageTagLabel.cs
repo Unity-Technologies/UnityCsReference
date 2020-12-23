@@ -30,7 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var applicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
                 if (version.HasTag(PackageTag.Custom))
-                    return new PackageTagLabel(L10n.Tr("Custom"), L10n.Tr("Custom"), PackageTag.Custom);
+                    return new PackageTagLabel(L10n.Tr("Custom"), string.Empty, PackageTag.Custom);
                 if (version.HasTag(PackageTag.PreRelease))
                     return new PackageTagLabel(L10n.Tr("Pre"), L10n.Tr("Pre-release"), PackageTag.PreRelease);
                 if (isVersionItem && version.HasTag(PackageTag.Release))

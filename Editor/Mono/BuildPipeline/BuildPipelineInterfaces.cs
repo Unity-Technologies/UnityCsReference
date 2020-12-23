@@ -85,6 +85,7 @@ namespace UnityEditor.Build
         void OnAfterRun(BuildReport report, UnityLinker.UnityLinkerBuildPipelineData data);
     }
 
+    [Obsolete("The IIl2CppProcessor interface will be removed in Unity 2021.2. Use IPostBuildPlayerScriptDLLs if you need to access player assemblies before il2cpp runs.", false)]
     public interface IIl2CppProcessor : IOrderedCallback
     {
         void OnBeforeConvertRun(BuildReport report, Il2Cpp.Il2CppBuildPipelineData data);
@@ -111,7 +112,9 @@ namespace UnityEditor.Build
             public List<IPostBuildPlayerScriptDLLs> buildPlayerScriptDLLProcessors;
 
             public List<IUnityLinkerProcessor> unityLinkerProcessors;
+            #pragma warning disable 618 //Use of obsolete API
             public List<IIl2CppProcessor> il2cppProcessors;
+            #pragma warning restore 618
         }
 
         private static Processors m_Processors;

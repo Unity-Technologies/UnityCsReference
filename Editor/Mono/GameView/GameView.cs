@@ -279,6 +279,12 @@ namespace UnityEditor
 
         private bool showToolbar { get; set; }
 
+        internal bool drawGizmos
+        {
+            get => m_Gizmos;
+            set => m_Gizmos = value;
+        }
+
         void InitializeZoomArea()
         {
             m_ZoomArea = new ZoomableArea(true, false) {uniformScale = true, upDirection = ZoomableArea.YDirection.Negative};

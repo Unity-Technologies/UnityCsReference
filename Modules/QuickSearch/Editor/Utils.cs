@@ -712,5 +712,16 @@ namespace UnityEditor.Search
                 return (count / 1000000U).ToString(CultureInfo.InvariantCulture.NumberFormat) + "M";
             return (count / 1000000000U).ToString(CultureInfo.InvariantCulture.NumberFormat) + "G";
         }
+
+        internal static bool TryAdd<K, V>(this Dictionary<K, V> dict, K key, V value)
+        {
+            if (!dict.ContainsKey(key))
+            {
+                dict.Add(key, value);
+                return true;
+            }
+
+            return false;
+        }
     }
 }

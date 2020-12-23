@@ -707,7 +707,7 @@ namespace UnityEditor.Search
                     return new FilterNode(filterType, filterOperator, filterValue, filterParam, token) {skipped = true};
                 }
 
-                if (m_DefaultFilterHandler == null && validationOptions.validateFilters)
+                if (!HasDefaultHandler(!string.IsNullOrEmpty(filterParam)) && validationOptions.validateFilters)
                 {
                     errors.Add(new QueryError(filterTypeIndex, filterType.Length, $"Unknown filter \"{filterType}\"."));
                     return null;
@@ -814,7 +814,7 @@ namespace UnityEditor.Search
                     return new FilterNode(filterType, filterOperator, filterValue, filterParam, token) { skipped = true };
                 }
 
-                if (m_DefaultFilterHandler == null && validationOptions.validateFilters)
+                if (!HasDefaultHandler(!string.IsNullOrEmpty(filterParam)) && validationOptions.validateFilters)
                 {
                     errors.Add(new QueryError(filterTypeIndex, filterType.Length, $"Unknown filter \"{filterType}\"."));
                     return null;
@@ -849,6 +849,11 @@ namespace UnityEditor.Search
             errors.Add(new QueryError(index, token.Length, $"The filter \"{filterType}\" is incomplete."));
 
             return filterNode;
+        }
+
+        private bool HasDefaultHandler(bool useParamFilter)
+        {
+            return useParamFilter ? m_DefaultParamFilterHandler != null : m_DefaultFilterHandler != null;
         }
 
         public IParseResult ParseFilterValue(string filterValue, IFilter filter, FilterOperator op, out Type filterValueType)

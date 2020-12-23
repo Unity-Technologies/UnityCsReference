@@ -40,38 +40,43 @@ namespace UnityEditor.Search
             }
         }
 
-        private static IEnumerable<SearchQuery> EnumerateAll()
+        private static SearchFilter CreateSearchQuerySearchFilter()
         {
-            var savedQueriesItr = AssetDatabase.EnumerateAllAssets(new SearchFilter
+            return new SearchFilter
             {
                 searchArea = SearchFilter.SearchArea.InAssetsOnly,
                 classNames = new[] { nameof(SearchQuery) },
                 showAllHits = false
-            });
-
-            s_SavedQueries = new List<SearchQuery>();
-            while (savedQueriesItr.MoveNext())
-                yield return savedQueriesItr.Current.pptrValue as SearchQuery;
+            };
         }
 
-        public static SearchQuery Create(SearchContext context, string description = null, Texture2D icon = null)
+
+        private static IEnumerable<SearchQuery> EnumerateAll()
         {
-            return Create(context.searchText, context.filters.Select(f => f.provider), description, icon);
+            using (var savedQueriesItr = AssetDatabase.EnumerateAllAssets(CreateSearchQuerySearchFilter()))
+            {
+                while (savedQueriesItr.MoveNext())
+                    yield return savedQueriesItr.Current.pptrValue as SearchQuery;
+            }
         }
 
-        public static SearchQuery Create(string searchQuery, IEnumerable<string> providerIds, string description = null, Texture2D icon = null)
+        public static SearchQuery Create(SearchContext context, string description = null)
+        {
+            return Create(context.searchText, context.GetProviders(), description);
+        }
+
+        public static SearchQuery Create(string searchQuery, IEnumerable<string> providerIds, string description = null)
         {
             var queryAsset = CreateInstance<SearchQuery>();
             queryAsset.text = searchQuery;
             queryAsset.providerIds = providerIds.ToList();
             queryAsset.description = description;
-            queryAsset.icon = icon;
             return queryAsset;
         }
 
-        public static SearchQuery Create(string searchQuery, IEnumerable<SearchProvider> providers, string description = null, Texture2D icon = null)
+        public static SearchQuery Create(string searchQuery, IEnumerable<SearchProvider> providers, string description = null)
         {
-            return Create(searchQuery, providers.Select(p => p.id), description, icon);
+            return Create(searchQuery, providers.Select(p => p.id), description);
         }
 
         public static string GetQueryName(string query)
@@ -97,7 +102,7 @@ namespace UnityEditor.Search
             name += ".asset";
 
             asset.text = context.searchText;
-            asset.providerIds = new List<string>(context.filters.Select(f => f.provider.id));
+            asset.providerIds = context.GetProviders().Select(p => p.id).ToList();
 
             var createNew = string.IsNullOrEmpty(AssetDatabase.GetAssetPath(asset));
             var fullPath = Path.Combine(folder, name).Replace("\\", "/");
@@ -116,18 +121,18 @@ namespace UnityEditor.Search
 
         public static IEnumerable<SearchQuery> GetFilteredSearchQueries(SearchContext context)
         {
-            return savedQueries.Where(query => query && query.providerIds.Any(id => context.filters.Any(f => f.enabled && f.provider.id == id)));
+            return savedQueries.Where(query => query && query.providerIds.Any(id => context.IsEnabled(id)));
         }
 
         public static IEnumerable<SearchItem> GetAllSearchQueryItems(SearchContext context)
         {
+            var icon = Utils.FindTextureForType(typeof(SearchQuery));
             var queryProvider = SearchService.GetProvider(Providers.Query.type);
             return GetFilteredSearchQueries(context).Select(query =>
             {
                 var id = GlobalObjectId.GetGlobalObjectIdSlow(query).ToString();
                 var description = string.IsNullOrEmpty(query.description) ? $"{query.text}" : $"{query.description} ({query.text})";
-                var thumbnail = query.icon ? query.icon : Icons.favorite;
-                return queryProvider.CreateItem(context, id, query.name, description, thumbnail, query);
+                return queryProvider.CreateItem(context, id, query.name, description, icon, query);
             }).OrderBy(item => item.label);
         }
 
@@ -174,8 +179,8 @@ namespace UnityEditor.Search
             var query = EditorUtility.InstanceIDToObject(instanceId) as SearchQuery;
             if (query == null)
                 return null;
-            var searchWindow = QuickSearch.OpenWithContextualProvider(null, query.providerIds.ToArray(), SearchFlags.ReuseExistingWindow, "Unity");
-            ExecuteQuery(searchWindow, query, SearchAnalytics.GenericEventType.SearchQueryOpen);
+            var searchWindow = QuickSearch.OpenWithContextualProvider(query.text, query.providerIds.ToArray(), SearchFlags.ReuseExistingWindow, "Unity");
+            searchWindow.SetViewState(query.viewState);
             return searchWindow;
         }
 
@@ -183,15 +188,6 @@ namespace UnityEditor.Search
         private static bool OpenQuery(int instanceID, int line)
         {
             return Open(instanceID) != null;
-        }
-
-        public static void ExecuteQuery(ISearchView view, SearchQuery query, SearchAnalytics.GenericEventType sourceEvt = SearchAnalytics.GenericEventType.SearchQueryExecute)
-        {
-            if (view is QuickSearch qs)
-            {
-                qs.SendEvent(sourceEvt, query.text);
-                qs.ExecuteSearchQuery(query);
-            }
         }
 
         private long m_CreationTime;
@@ -208,11 +204,26 @@ namespace UnityEditor.Search
                 return m_CreationTime;
             }
         }
-        public string displayName { get { return string.IsNullOrEmpty(name) ? Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(this)) : name; } }
+
+        [FormerlySerializedAs("searchQuery")]
+        public string text;
+
+        [Multiline]
         public string description;
-        public Texture2D icon;
-        [FormerlySerializedAs("searchQuery")] public string text;
+
         public List<string> providerIds;
         public ResultViewState viewState;
+
+        public string displayName { get { return string.IsNullOrEmpty(name) ? Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(this)) : name; } }
+
+        public string tooltip
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(description))
+                    return text;
+                return $"{description}\n> {text}";
+            }
+        }
     }
 }

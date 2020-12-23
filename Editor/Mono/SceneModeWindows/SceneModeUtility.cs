@@ -189,6 +189,11 @@ namespace UnityEditor
                 if (goFlags < 0)
                     goFlags = int.MaxValue;
 
+                // MaxValue will cause issues when changing it to other values so we set it to the max possible value
+                // that Static Editor flags can have before doing anything else with it
+                if (goFlags == int.MaxValue && flagValue == false)
+                    goFlags = (int)Math.Pow(2, Enum.GetNames(typeof(StaticEditorFlags)).Length - 1) - 1;
+
                 goFlags = flagValue ?
                     goFlags | changedFlags :
                     goFlags & ~changedFlags;

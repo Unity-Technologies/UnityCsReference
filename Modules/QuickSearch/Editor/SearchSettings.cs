@@ -89,6 +89,7 @@ namespace UnityEditor.Search
         public static float itemIconSize { get; set; }
         public static bool onBoardingDoNotAskAgain { get; set; }
         public static bool showPackageIndexes { get; set; }
+        public static bool showStatusBar { get; set; }
         public static int debounceMs { get; set; }
         public static Dictionary<string, string> scopes { get; private set; }
         public static Dictionary<string, SearchProviderSettings> providers { get; private set; }
@@ -128,6 +129,7 @@ namespace UnityEditor.Search
             queryFolder = ReadSetting(settings, nameof(queryFolder), "Assets");
             onBoardingDoNotAskAgain = ReadSetting(settings, nameof(onBoardingDoNotAskAgain), false);
             showPackageIndexes = ReadSetting(settings, nameof(showPackageIndexes), false);
+            showStatusBar = ReadSetting(settings, nameof(showStatusBar), false);
             debounceMs = ReadSetting(settings, nameof(debounceMs), 250);
             savedSearchesSortOrder = (SearchQuerySortOrder)ReadSetting(settings, nameof(savedSearchesSortOrder), 0);
 
@@ -153,6 +155,7 @@ namespace UnityEditor.Search
                 [nameof(queryFolder)] = queryFolder,
                 [nameof(onBoardingDoNotAskAgain)] = onBoardingDoNotAskAgain,
                 [nameof(showPackageIndexes)] = showPackageIndexes,
+                [nameof(showStatusBar)] = showStatusBar,
                 [nameof(debounceMs)] = debounceMs,
                 [nameof(scopes)] = scopes,
                 [nameof(providers)] = providers,
@@ -464,7 +467,9 @@ namespace UnityEditor.Search
                 using (new EditorGUI.DisabledScope(p.actions.Count < 2))
                 {
                     EditorGUI.BeginChangeCheck();
-                    var items = p.actions.Select(a => new GUIContent(a.displayName, a.content.image,
+                    var items = p.actions.Select(a => new GUIContent(
+                        string.IsNullOrEmpty(a.displayName) ? a.content.text : a.displayName,
+                        a.content.image,
                         p.actions.Count == 1 ?
                         $"Default action for {p.name} (Enter)" :
                         $"Set default action for {p.name} (Enter)")).ToArray();

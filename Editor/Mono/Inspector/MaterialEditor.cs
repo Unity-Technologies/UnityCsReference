@@ -298,6 +298,7 @@ namespace UnityEditor
             {
                 var dropdown = new ShaderSelectionDropdown(m_Shader, OnSelectedShaderPopup);
                 dropdown.Show(position);
+                GUIUtility.ExitGUI();
             }
 
             EditorGUI.showMixedValue = false;
