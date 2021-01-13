@@ -145,6 +145,19 @@ namespace UnityEditor
             }
         }
 
+        internal static string GetStreamingAssetsBundleManifestPath()
+        {
+            string manifestPath = "";
+            if (Directory.Exists(StreamingAssets))
+            {
+                var tmpPath = Path.Combine(StreamingAssets, "StreamingAssets.manifest");
+                if (File.Exists(tmpPath))
+                    manifestPath = tmpPath;
+            }
+
+            return manifestPath;
+        }
+
         static public string PrepareForBuild(BuildOptions options, BuildTargetGroup targetGroup, BuildTarget target)
         {
             var postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);

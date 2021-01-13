@@ -20,6 +20,7 @@ namespace UnityEditor
     {
         protected BuildTarget buildTarget;
         protected HashSet<string> monoBaseClasses = new HashSet<string>();
+        protected Dictionary<string, HashSet<string>> serializedClassesPerAssembly = new Dictionary<string, HashSet<string>>();
         protected Dictionary<string, string[]> m_UsedTypesPerUserAssembly = new Dictionary<string, string[]>();
         protected Dictionary<int, List<string>> classScenes = new Dictionary<int, List<string>>();
         protected UnityType objectUnityType = null;
@@ -76,6 +77,21 @@ namespace UnityEditor
             monoBaseClasses.Add(className);
         }
 
+        protected void AddSerializedClass(string assemblyName, string className)
+        {
+            if (string.IsNullOrEmpty(assemblyName))
+                throw new ArgumentException(nameof(assemblyName));
+
+            if (string.IsNullOrEmpty(className))
+                throw new ArgumentException(nameof(className));
+
+            HashSet<string> types;
+            if (!serializedClassesPerAssembly.TryGetValue(assemblyName, out types))
+                serializedClassesPerAssembly[assemblyName] = types = new HashSet<string>();
+
+            types.Add(className);
+        }
+
         public void AddNativeClassFromName(string className)
         {
             if (objectUnityType == null)
@@ -122,6 +138,14 @@ namespace UnityEditor
         public List<string> GetAllManagedBaseClassesAsString()
         {
             return new List<string>(monoBaseClasses);
+        }
+
+        public IEnumerable<KeyValuePair<string, string[]>> GetAllSerializedClassesAsString()
+        {
+            foreach (var pair in serializedClassesPerAssembly)
+            {
+                yield return new KeyValuePair<string, string[]>(pair.Key, pair.Value.ToArray());
+            }
         }
 
         public static RuntimeClassRegistry Create()
