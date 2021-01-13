@@ -361,7 +361,6 @@ namespace UnityEditor
         static internal ITerrainPaintTool[] m_Tools = null;
         static internal string[] m_ToolNames = null;
         static internal ITerrainPaintTool m_CreateTool = null;
-
         static OnPaintContext onPaintEditContext = new OnPaintContext(new RaycastHit(), null, Vector2.zero, 0.0f, 0.0f);
         static OnInspectorGUIContext onInspectorGUIEditContext = new OnInspectorGUIContext();
         static OnSceneGUIContext onSceneGUIEditContext = new OnSceneGUIContext(null, new RaycastHit(), null, 0.0f, 0.0f);
@@ -437,18 +436,26 @@ namespace UnityEditor
                 var instanceProperty = toolType.GetProperty("instance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
                 var mi = instanceProperty.GetGetMethod();
                 var tool = (ITerrainPaintTool)mi.Invoke(null, null);
-
-                for (int index = 0; index < m_Tools.Length; index++)
-                {
-                    if (m_Tools[index] == tool)
-                    {
-                        // found it!
-                        SelectPaintTool(index);
-                        return;
-                    }
-                }
-                Debug.LogError("SelectPaintTool: Cannot find tool '" + tool.GetName() + "'");
+                SelectPaintTool(tool.GetName());
             }
+        }
+
+        /// <summary>
+        /// Use the PaintTool instance GetName value to select the paint tool
+        /// </summary>
+        /// <param name="toolName"></param>
+        private void SelectPaintTool(string toolName)
+        {
+            for (int index = 0; index < m_Tools.Length; index++)
+            {
+                if (m_Tools[index].GetName() == toolName)
+                {
+                    // found it!
+                    SelectPaintTool(index);
+                    return;
+                }
+            }
+            Debug.LogError("SelectPaintTool: Cannot find tool '" + toolName + "'");
         }
 
         private void SelectPaintTool(int index)
@@ -731,14 +738,13 @@ namespace UnityEditor
                     int existingIndex = arrNames.FindIndex(x => x == toolName);
                     if (existingIndex >= 0)
                     {
-                        // check if existing is builtin.
+                        // check if the tool is built in
                         if (klass.Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Length > 0)
-                            continue;
-                        else
                         {
-                            arrTools[existingIndex] = tool;
-                            arrNames[existingIndex] = toolName;
+                            continue;
                         }
+                        arrTools[existingIndex] = tool;
+                        arrNames[existingIndex] = toolName;
                     }
                     else
                     {

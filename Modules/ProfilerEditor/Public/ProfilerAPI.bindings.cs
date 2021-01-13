@@ -323,6 +323,10 @@ namespace UnityEditorInternal
         static public extern string GetConnectionIdentifier(int guid);
 
         [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
+        [NativeMethod("GetConnectionPort")]
+        internal static extern ushort GetConnectionPort(int guid);
+
+        [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
         static public extern bool IsIdentifierConnectable(int guid);
 
         [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]

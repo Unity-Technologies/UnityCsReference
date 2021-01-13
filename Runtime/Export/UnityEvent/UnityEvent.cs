@@ -364,7 +364,7 @@ namespace UnityEngine.Events
     [Serializable]
     class PersistentCall
     {
-        //keep the layout of this class in sync with MonoPersistentCall in PersistentCallCollection.cpp
+        //keep the layout of this class in sync with MonoPersistentCall in SerializedInfoCollection.cpp
         [FormerlySerializedAs("instance")]
         [SerializeField]
         private Object m_Target;
