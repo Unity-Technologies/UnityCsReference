@@ -14,6 +14,7 @@ using Unity.Profiling;
 using UnityEditor.Compilation;
 using UnityEditor.Modules;
 using UnityEditor.Scripting.Compilers;
+using UnityEditor.Utils;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -73,7 +74,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         Dictionary<string, string> allScripts = new Dictionary<string, string>();
 
         private bool m_ScriptsForEditorHaveBeenCompiledSinceLastDomainReload;
-        private bool m_IsScriptCompilationRequested;
+        private RequestScriptCompilationOptions? m_ScriptCompilationRequest = null;
         CustomScriptAssembly[] customScriptAssemblies = new CustomScriptAssembly[0];
         List<CustomScriptAssemblyReference> customScriptAssemblyReferences = new List<CustomScriptAssemblyReference>();
         Dictionary<string, TargetAssembly> customTargetAssemblies = new Dictionary<string, TargetAssembly>(); // TargetAssemblies for customScriptAssemblies.
@@ -156,13 +157,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return m_ScriptsForEditorHaveBeenCompiledSinceLastDomainReload;
         }
 
-        public void RequestScriptCompilation(string reason = null)
+        public void RequestScriptCompilation(string reason = null, RequestScriptCompilationOptions options = RequestScriptCompilationOptions.None)
         {
             if (reason != null)
                 Console.WriteLine($"[ScriptCompilation] Requested script compilation because: {reason}");
             PrecompiledAssemblyProvider.Dirty();
-            m_IsScriptCompilationRequested = true;
+            m_ScriptCompilationRequest = options;
             CancelActiveBuild();
+        }
+
+        private void CleanCache()
+        {
+            new NPath("Library/Bee").DeleteIfExists(DeleteMode.Soft);
         }
 
         public void SetAllUnityAssemblies(PrecompiledAssembly[] unityAssemblies)
@@ -877,26 +883,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public void DeleteScriptAssemblies()
         {
-            string fullEditorAssemblyPath = AssetPath.Combine(projectDirectory, GetCompileScriptsOutputDirectory());
-
-            if (!Directory.Exists(fullEditorAssemblyPath))
-                return;
-
-            foreach (var path in Directory.GetFiles(fullEditorAssemblyPath))
-                DeleteFile(path);
-        }
-
-        static void DeleteFile(string path, DeleteFileOptions fileOptions = DeleteFileOptions.LogError)
-        {
-            try
-            {
-                File.Delete(path);
-            }
-            catch (Exception)
-            {
-                if (fileOptions == DeleteFileOptions.LogError)
-                    Debug.LogErrorFormat("Could not delete file '{0}'\n", path);
-            }
+            NPath fullEditorAssemblyPath = AssetPath.Combine(projectDirectory, GetCompileScriptsOutputDirectory());
+            fullEditorAssemblyPath.DeleteIfExists(DeleteMode.Soft);
         }
 
         public CustomScriptAssembly FindCustomScriptAssemblyFromAssemblyName(string assemblyName)
@@ -983,6 +971,40 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return compilationResult;
         }
 
+        static string PDBPath(string dllPath)
+        {
+            return dllPath.Replace(".dll", ".pdb");
+        }
+
+        static string MDBPath(string dllPath)
+        {
+            return dllPath + ".mdb";
+        }
+
+        // Delete all .dll's that aren't used anymore
+        public void DeleteUnusedAssemblies(ScriptAssemblySettings settings)
+        {
+            string fullEditorAssemblyPath = AssetPath.Combine(projectDirectory, GetCompileScriptsOutputDirectory());
+
+            if (!Directory.Exists(fullEditorAssemblyPath))
+                return;
+
+            var deleteFiles = Directory.GetFiles(fullEditorAssemblyPath).Select(f => AssetPath.ReplaceSeparators(f)).ToList();
+
+            var targetAssemblies = GetTargetAssembliesWithScripts(settings);
+
+            foreach (var assembly in targetAssemblies)
+            {
+                string path = AssetPath.Combine(fullEditorAssemblyPath, assembly.Name);
+                deleteFiles.Remove(path);
+                deleteFiles.Remove(MDBPath(path));
+                deleteFiles.Remove(PDBPath(path));
+            }
+
+            foreach (var path in deleteFiles)
+                path.ToNPath().Delete(DeleteMode.Soft);
+        }
+
         private void CancelActiveBuild()
         {
             activeBeeBuild?.Driver.CancelBuild();
@@ -1028,6 +1050,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         internal CompileStatus CompileScriptsWithSettings(ScriptAssemblySettings scriptAssemblySettings)
         {
+            DeleteUnusedAssemblies(scriptAssemblySettings);
+
             IsRunningRoslynAnalysisSynchronously =
                 PlayerSettings.EnableRoslynAnalyzers &&
                 (scriptAssemblySettings.CompilationOptions & EditorScriptCompilationOptions.BuildingWithRoslynAnalysis) != 0;
@@ -1049,7 +1073,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (scriptAssemblySettings.BuildingForEditor)
                 m_ScriptsForEditorHaveBeenCompiledSinceLastDomainReload = true;
-            m_IsScriptCompilationRequested = false;
+            m_ScriptCompilationRequest = null;
 
             var debug = scriptAssemblySettings.CodeOptimization == CodeOptimization.Debug;
 
@@ -1179,7 +1203,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (setupErrorFlags != CompilationSetupErrorFlags.none)
                 return false;
 
-            return m_IsScriptCompilationRequested;
+            return m_ScriptCompilationRequest != null;
         }
 
         public bool IsAnyAssemblyBuilderCompiling()
@@ -1236,6 +1260,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (!IsCompilationTaskCompiling() && IsScriptCompilationRequested())
             {
                 Profiler.BeginSample("CompilationPipeline.CompileScripts");
+                if (m_ScriptCompilationRequest == RequestScriptCompilationOptions.CleanBuildCache)
+                    CleanCache();
                 CompileStatus compileStatus = CompileScripts(options, platformGroup, platform, extraScriptingDefines);
                 Profiler.EndSample();
                 return compileStatus;

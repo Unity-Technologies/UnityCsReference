@@ -984,20 +984,25 @@ namespace NiceIO
                 throw new NotSupportedException(
                     "Delete is not supported on a root level directory because it would be dangerous:" + ToString());
 
-            if (FileExists())
-                FileSystem.Active.File_Delete(this);
-            else if (DirectoryExists())
-                try
-                {
+            try
+            {
+                if (FileExists())
+                    FileSystem.Active.File_Delete(this);
+                else if (DirectoryExists())
                     FileSystem.Active.Directory_Delete(this, true);
-                }
-                catch (IOException)
-                {
-                    if (deleteMode == DeleteMode.Normal)
-                        throw;
-                }
-            else
-                throw new InvalidOperationException("Trying to delete a path that does not exist: " + ToString());
+                else
+                    throw new InvalidOperationException("Trying to delete a path that does not exist: " + ToString());
+            }
+            catch (IOException)
+            {
+                if (deleteMode == DeleteMode.Normal)
+                    throw;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                if (deleteMode == DeleteMode.Normal)
+                    throw;
+            }
         }
 
         /// <summary>

@@ -20,6 +20,13 @@ namespace UnityEditor.Compilation
         EditorAssembly = (1 << 0)
     }
 
+    [Flags]
+    public enum RequestScriptCompilationOptions
+    {
+        None,
+        CleanBuildCache
+    }
+
     public class ScriptCompilerOptions
     {
         public string RoslynAnalyzerRulesetPath { get; set; }
@@ -663,7 +670,8 @@ namespace UnityEditor.Compilation
             }
         }
 
-        public static void RequestScriptCompilation() => EditorCompilationInterface.RequestScriptCompilation("Requested through public api");
+        public static void RequestScriptCompilation() => RequestScriptCompilation(RequestScriptCompilationOptions.None);
+        public static void RequestScriptCompilation(RequestScriptCompilationOptions options) => EditorCompilationInterface.Instance.RequestScriptCompilation("Requested through public api", options);
 
         [RequiredByNativeCode]
         internal static void OnCodeOptimizationChanged(bool scriptDebugInfoEnabled)

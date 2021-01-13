@@ -69,6 +69,15 @@ namespace UnityEditorInternal
         public float value;
     }
 
+    // Match C++ ScriptingShaderIntInfo memory layout!
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ShaderIntInfo
+    {
+        public string name;
+        public int flags;
+        public int value;
+    }
+
     // Match C++ ScriptingShaderVectorInfo memory layout!
     [StructLayout(LayoutKind.Sequential)]
     internal struct ShaderVectorInfo
@@ -118,6 +127,7 @@ namespace UnityEditorInternal
     internal struct ShaderProperties
     {
         public ShaderFloatInfo[] floats;
+        public ShaderIntInfo[] ints;
         public ShaderVectorInfo[] vectors;
         public ShaderMatrixInfo[] matrices;
         public ShaderTextureInfo[] textures;
@@ -319,6 +329,7 @@ namespace UnityEditor
         const float kDetailsMargin = 0f;
         const float kMinPreviewSize = 64f;
 
+        const string kIntFormat = "d";
         const string kFloatFormat = "g2";
         const string kFloatDetailedFormat = "g7";
 
@@ -1193,6 +1204,43 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
         }
 
+        private void OnGUIShaderPropInts(ShaderIntInfo[] ints, int startIndex, int numValues)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(kShaderPropertiesIndention);
+
+            ShaderIntInfo t = ints[startIndex];
+
+            if (numValues == 1)
+            {
+                GUILayout.Label(t.name, EditorStyles.miniLabel, GUILayout.MinWidth(kNameFieldWidth));
+                DrawShaderPropertyFlags(t.flags);
+                GUILayout.Label(t.value.ToString(kIntFormat, CultureInfo.InvariantCulture.NumberFormat), EditorStyles.miniLabel, GUILayout.MinWidth(kValueFieldWidth));
+                ShaderPropertyCopyValueMenu(GUILayoutUtility.GetLastRect(), t.value);
+            }
+            else
+            {
+                string arrayName = String.Format("{0} [{1}]", t.name, numValues);
+                GUILayout.Label(arrayName, EditorStyles.miniLabel, GUILayout.MinWidth(kNameFieldWidth));
+                DrawShaderPropertyFlags(t.flags);
+
+                Rect buttonRect = GUILayoutUtility.GetRect(Styles.arrayValuePopupButton, GUI.skin.button, GUILayout.MinWidth(kValueFieldWidth));
+                buttonRect.width = kArrayValuePopupBtnWidth;
+                if (GUI.Button(buttonRect, Styles.arrayValuePopupButton))
+                {
+                    ArrayValuePopup.GetValueStringDelegate getValueString =
+                        (int index, bool highPrecision) => ints[index].value.ToString(kIntFormat, CultureInfo.InvariantCulture.NumberFormat);
+
+                    PopupWindowWithoutFocus.Show(
+                        buttonRect,
+                        new ArrayValuePopup(startIndex, numValues, 1, 100.0f, getValueString),
+                        new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right });
+                }
+            }
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+        }
+
         private void OnGUIShaderPropVectors(ShaderVectorInfo[] vectors, int startIndex, int numValues)
         {
             GUILayout.BeginHorizontal();
@@ -1367,6 +1415,18 @@ namespace UnityEditor
                 {
                     int arraySize = (props.floats[i].flags >> kShaderTypeBits) & kArraySizeBitMask;
                     OnGUIShaderPropFloats(props.floats, i, arraySize);
+                    i += arraySize;
+                }
+            }
+
+            if (props.ints.Length > 0)
+            {
+                GUILayout.Label("Integers", EditorStyles.boldLabel);
+
+                for (int i = 0; i < props.ints.Length;)
+                {
+                    int arraySize = (props.ints[i].flags >> kShaderTypeBits) & kArraySizeBitMask;
+                    OnGUIShaderPropInts(props.ints, i, arraySize);
                     i += arraySize;
                 }
             }

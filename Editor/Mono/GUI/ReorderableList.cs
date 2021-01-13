@@ -731,6 +731,8 @@ namespace UnityEditorInternal
 
         public void DoLayoutList() //TODO: better API?
         {
+            GUILayout.BeginVertical();
+
             // do the custom or default header GUI
             Rect headerRect = GUILayoutUtility.GetRect(0, HeaderHeight, GUILayout.ExpandWidth(true));
             //Elements area
@@ -742,12 +744,11 @@ namespace UnityEditorInternal
             DoListHeader(headerRect);
             DoListElements(listRect, Defaults.infinityRect);
             DoListFooter(footerRect);
+
+            GUILayout.EndVertical();
         }
 
-        public void DoList(Rect rect)
-        {
-            DoList(rect, Defaults.infinityRect);
-        }
+        public void DoList(Rect rect) => DoList(rect, Defaults.infinityRect);
 
         public void DoList(Rect rect, Rect visibleRect) //TODO: better API?
         {
