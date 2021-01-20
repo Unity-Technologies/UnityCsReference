@@ -2,8 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 // ReSharper disable PossibleInvalidOperationException -- we are accessing bool?
 // values in this file many times, but ensuring they are set before.
@@ -14,6 +17,48 @@ namespace UnityEditor
     internal static class Clipboard
     {
         static ClipboardState m_State = new ClipboardState();
+
+        public static bool hasInteger
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchInteger();
+                return m_State.m_HasInteger.Value;
+            }
+        }
+
+        public static int integerValue
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchInteger();
+                return m_State.m_ValueInteger;
+            }
+            set => EditorGUIUtility.systemCopyBuffer = value.ToString();
+        }
+
+        public static bool hasFloat
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchFloat();
+                return m_State.m_HasFloat.Value;
+            }
+        }
+
+        public static float floatValue
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchFloat();
+                return m_State.m_ValueFloat;
+            }
+            set => EditorGUIUtility.systemCopyBuffer = value.ToString(CultureInfo.InvariantCulture);
+        }
 
         public static bool hasString
         {
@@ -75,7 +120,6 @@ namespace UnityEditor
             }
             set => EditorGUIUtility.systemCopyBuffer = value.ToString();
         }
-
 
         public static bool hasGuid
         {

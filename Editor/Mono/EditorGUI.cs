@@ -2602,29 +2602,32 @@ namespace UnityEditor
 
                         pm.AddItem(EditorGUIUtility.TrTextContent("Duplicate Array Element"), false, (a) =>
                         {
-                            ReorderableListWrapper list = PropertyHandler.s_reorderableLists[ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)];
-
-                            // If we have a ReorderableList associated with this property lets use list selection array
-                            // and apply this action to all selected elements thus having better integration with
-                            // ReorderableLists multi-selection features
-                            if (list != null && list.m_ReorderableList.selectedIndices.Count > 0)
+                            if (PropertyHandler.s_reorderableLists.ContainsKey(ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)))
                             {
-                                for (int i = list.m_ReorderableList.selectedIndices.Count - 1; i >= 0; i--)
+                                ReorderableListWrapper list = PropertyHandler.s_reorderableLists[ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)];
+
+                                // If we have a ReorderableList associated with this property lets use list selection array
+                                // and apply this action to all selected elements thus having better integration with
+                                // ReorderableLists multi-selection features
+                                if (list != null && list.m_ReorderableList.selectedIndices.Count > 0)
                                 {
-                                    if (list.m_ReorderableList.selectedIndices[i] >= parentArrayProperty.arraySize) continue;
-
-                                    SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(list.m_ReorderableList.selectedIndices[i]);
-                                    if (resolvedProperty != null)
+                                    for (int i = list.m_ReorderableList.selectedIndices.Count - 1; i >= 0; i--)
                                     {
-                                        if (!TargetChoiceHandler.DuplicateArrayElement(resolvedProperty)) continue;
-                                    }
+                                        if (list.m_ReorderableList.selectedIndices[i] >= parentArrayProperty.arraySize) continue;
 
-                                    for (int j = i; j < list.m_ReorderableList.selectedIndices.Count; j++)
-                                    {
-                                        list.m_ReorderableList.m_Selection[j]++;
+                                        SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(list.m_ReorderableList.selectedIndices[i]);
+                                        if (resolvedProperty != null)
+                                        {
+                                            if (!TargetChoiceHandler.DuplicateArrayElement(resolvedProperty)) continue;
+                                        }
+
+                                        for (int j = i; j < list.m_ReorderableList.selectedIndices.Count; j++)
+                                        {
+                                            list.m_ReorderableList.m_Selection[j]++;
+                                        }
                                     }
+                                    ReorderableList.ClearExistingListCaches();
                                 }
-                                ReorderableList.ClearExistingListCaches();
                             }
                             else
                             {
@@ -2634,26 +2637,29 @@ namespace UnityEditor
                         }, propertyWithPath);
                         pm.AddItem(EditorGUIUtility.TrTextContent("Delete Array Element"), false, (a) =>
                         {
-                            ReorderableListWrapper list = PropertyHandler.s_reorderableLists[ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)];
-
-                            // If we have a ReorderableList associated with this property lets use list selection array
-                            // and apply this action to all selected elements thus having better integration with
-                            // ReorderableLists multi-selection features
-                            if (list != null && list.m_ReorderableList.selectedIndices.Count > 0)
+                            if (PropertyHandler.s_reorderableLists.ContainsKey(ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)))
                             {
-                                foreach (var selected in list.m_ReorderableList.selectedIndices.Reverse<int>())
+                                ReorderableListWrapper list = PropertyHandler.s_reorderableLists[ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)];
+
+                                // If we have a ReorderableList associated with this property lets use list selection array
+                                // and apply this action to all selected elements thus having better integration with
+                                // ReorderableLists multi-selection features
+                                if (list != null && list.m_ReorderableList.selectedIndices.Count > 0)
                                 {
-                                    if (selected >= parentArrayProperty.arraySize) continue;
-
-                                    SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(selected);
-                                    if (resolvedProperty != null)
+                                    foreach (var selected in list.m_ReorderableList.selectedIndices.Reverse<int>())
                                     {
-                                        if (!TargetChoiceHandler.DeleteArrayElement(resolvedProperty)) continue;
-                                    }
-                                }
+                                        if (selected >= parentArrayProperty.arraySize) continue;
 
-                                list.m_ReorderableList.m_Selection.Clear();
-                                ReorderableList.ClearExistingListCaches();
+                                        SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(selected);
+                                        if (resolvedProperty != null)
+                                        {
+                                            if (!TargetChoiceHandler.DeleteArrayElement(resolvedProperty)) continue;
+                                        }
+                                    }
+
+                                    list.m_ReorderableList.m_Selection.Clear();
+                                    ReorderableList.ClearExistingListCaches();
+                                }
                             }
                             else
                             {

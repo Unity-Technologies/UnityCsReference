@@ -65,7 +65,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal override void OnDropdownShown()
         {
             inputForm.SetEnabled(true);
-            m_AnchorWindow?.rootVisualElement?.SetEnabled(false);
+
+            // If we show a DropdownElement (dropdown filled with url values), we don't use the anchor window
+            if (container != null)
+                m_AnchorWindow?.rootVisualElement?.SetEnabled(false);
 
             if (string.IsNullOrEmpty(errorInfoBox.text) || packageNameField.ClassListContains("error"))
                 packageNameField.visualInput.Focus();
@@ -124,8 +127,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void ShowWithNewWindowSize()
         {
             // There's no direct `resize` function for a dropdown window but setting min/max size does the same trick.
-            container.minSize = windowSize;
-            container.maxSize = windowSize;
+            if (container != null)
+            {
+                container.minSize = windowSize;
+                container.maxSize = windowSize;
+            }
+
             OnDropdownShown();
         }
 
@@ -233,8 +240,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private VisualElementCache cache { get; set; }
         private VisualElement inputForm => cache.Get<VisualElement>("inputForm");
-        private TextField packageNameField => cache.Get<TextField>("packageName");
-        private TextField packageVersionField => cache.Get<TextField>("packageVersion");
+        internal TextField packageNameField => cache.Get<TextField>("packageName");
+        internal TextField packageVersionField => cache.Get<TextField>("packageVersion");
         private HelpBox errorInfoBox => cache.Get<HelpBox>("errorInfoBox");
         private Button submitButton => cache.Get<Button>("submitButton");
     }

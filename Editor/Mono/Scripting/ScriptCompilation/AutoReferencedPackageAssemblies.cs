@@ -30,7 +30,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             "UnityEngine.TestRunner.dll",
             "UnityEditor.TestRunner.dll",
             "UnityEngine.UIElementsModule.dll",
-            "UnityEditor.UIElementsModule.dll"
+            "UnityEditor.UIElementsModule.dll",
+            "UnityEditor.TextCoreTextEngineModule.dll",
+            "UnityEngine.TextCoreTextEngineModule.dll"
         },
             StringComparer.Ordinal);
 

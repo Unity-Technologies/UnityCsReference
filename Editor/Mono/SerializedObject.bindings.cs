@@ -204,5 +204,15 @@ namespace UnityEditor
             [NativeMethod("SetForceChildVisibiltyFlag")]
             set;
         }
+        internal static bool VersionEquals(SerializedObject x, SerializedObject y)
+        {
+            if (x == null || y == null || x.m_NativeObjectPtr == IntPtr.Zero || y.m_NativeObjectPtr == IntPtr.Zero
+                || !x.isValid || !y.isValid) return false;
+
+            return VersionEqualsInternal(x, y);
+        }
+
+        [FreeFunction("SerializedObjectBindings::VersionEqualsInternal")]
+        extern static bool VersionEqualsInternal(SerializedObject x, SerializedObject y);
     }
 }

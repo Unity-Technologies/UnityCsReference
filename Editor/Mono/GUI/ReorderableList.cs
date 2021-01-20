@@ -375,6 +375,7 @@ namespace UnityEditorInternal
 
             public void DrawElement(Rect rect, SerializedProperty element, System.Object listItem, bool selected, bool focused, bool draggable, bool editable)
             {
+                rect.y += elementPadding / 2;
                 var prop = element ?? listItem as SerializedProperty;
                 if (editable)
                 {
@@ -383,9 +384,9 @@ namespace UnityEditorInternal
 
                     var handler = ScriptAttributeUtility.GetHandler(prop);
                     handler.OnGUI(rect, prop, null, true);
-                    if (Event.current.type == EventType.MouseDown && Event.current.button == 1 && rect.Contains(Event.current.mousePosition)) Event.current.Use();
 
                     EditorGUIUtility.labelWidth = oldLabelWidth;
+                    if (Event.current.type == EventType.MouseDown && Event.current.button == 1 && rect.Contains(Event.current.mousePosition)) Event.current.Use();
                     return;
                 }
 
@@ -499,6 +500,8 @@ namespace UnityEditorInternal
         // show default background
         public bool showDefaultBackground = true;
 
+        const float elementPadding = 2;
+
         private float HeaderHeight { get { return Mathf.Max(m_DisplayHeader ? headerHeight : 0, Defaults.minHeaderHeight); } }
 
         private float listElementTopPadding => headerHeight > 5 ? 4 : 1; // headerHeight is usually set to 3px when there is no header content. Therefore, we add a 1px top margin to match the 4px bottom margin
@@ -522,7 +525,7 @@ namespace UnityEditorInternal
                 if (m_Elements != null)
                 {
                     SerializedProperty property;
-                    if (m_PropertyCache.Count == 0)
+                    if (m_PropertyCache.Count == 0 && count != 0)
                     {
                         property = m_Elements.GetArrayElementAtIndex(0);
                         offset = 0;
@@ -555,7 +558,7 @@ namespace UnityEditorInternal
                         }
                     }
 
-                    if (height > 0) m_PropertyCache.Add(new PropertyCacheEntry(property, height, offset));
+                    if (height > 0) m_PropertyCache.Add(new PropertyCacheEntry(property, height + elementPadding, offset));
                 }
                 else
                 {
@@ -575,7 +578,7 @@ namespace UnityEditorInternal
                         height = elementHeightCallback(m_PropertyCache.Count);
                     }
 
-                    m_PropertyCache.Add(new PropertyCacheEntry(null, height, offset));
+                    m_PropertyCache.Add(new PropertyCacheEntry(null, height + elementPadding, offset));
                 }
             }
         }
@@ -793,6 +796,12 @@ namespace UnityEditorInternal
 
         void EnsureValidProperty(SerializedProperty property)
         {
+            if (!property.isValid)
+            {
+                ClearCache();
+                CacheIfNeeded();
+            }
+
             try
             {
                 ScriptAttributeUtility.GetHandler(property);
@@ -859,13 +868,14 @@ namespace UnityEditorInternal
                     }
                     m_NonDragTargetIndices.Insert(targetIndex, -1);
 
+                    if (m_Elements != null) EnsureValidProperty(m_PropertyCache.Last().property);
+
                     // now draw each element in the list (excluding the active element)
                     var targetSeen = false;
                     for (var i = 0; i < m_NonDragTargetIndices.Count; i++)
                     {
                         if (visibleRect.y > GetElementYOffset(i) + GetElementHeight(i)) continue;
                         if (visibleRect.y + visibleRect.height < GetElementYOffset(i > 0 ? i - 1 : i)) break;
-                        if (m_Elements != null) EnsureValidProperty(m_PropertyCache[i].property);
 
                         var nonDragTargetIndex = m_NonDragTargetIndices[i];
                         if (nonDragTargetIndex != -1)
@@ -940,12 +950,13 @@ namespace UnityEditorInternal
                 }
                 else
                 {
+                    if (m_Elements != null) EnsureValidProperty(m_PropertyCache.Last().property);
+
                     // if we aren't dragging, we just draw all of the elements in order
                     for (int i = 0; i < m_Count; i++)
                     {
                         if (visibleRect.y > GetElementYOffset(i) + GetElementHeight(i)) continue;
                         if (visibleRect.y + visibleRect.height < GetElementYOffset(i > 0 ? i - 1 : i)) break;
-                        if (m_Elements != null) EnsureValidProperty(m_PropertyCache[i].property);
 
                         int initialProperties = EditorGUI.s_PropertyCount;
 
@@ -992,7 +1003,9 @@ namespace UnityEditorInternal
                         if (m_PropertyCache[i].lastControlCount > 1 && currentControlCount > 1
                             && m_PropertyCache[i].lastControlCount != currentControlCount)
                         {
-                            GUI.changed = true;
+                            ClearCacheRecursive();
+                            CacheIfNeeded();
+                            if ((m_Count = count) >= i) break;
                         }
                         m_PropertyCache[i].lastControlCount = currentControlCount;
 
@@ -1162,7 +1175,6 @@ namespace UnityEditorInternal
                 case EventType.MouseDown:
 
                     if (!listRect.Contains(Event.current.mousePosition)
-                        || (Event.current.button != 0 && Event.current.button != 1)
                         || Event.current.button > 0)
                         break;
 
@@ -1199,10 +1211,6 @@ namespace UnityEditorInternal
                         m_NonDragTargetIndices = new List<int>();
                     }
                     GrabKeyboardFocus();
-
-                    // Prevent consuming the right mouse event in order to enable the context menu
-                    if (Event.current.button == 1)
-                        break;
 
                     evt.Use();
                     clicked = true;

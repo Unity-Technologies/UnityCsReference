@@ -5191,6 +5191,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\DropdownContent.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\DropdownContent.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\DropdownElement.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\DropdownElement.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Filters\AssetStoreFiltersWindow.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Filters\AssetStoreFiltersWindow.cs</Link>
     </Compile>

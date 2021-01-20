@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 // Allow internal visibility for testing purposes.
 [assembly: InternalsVisibleTo("Unity.TextCore")]
-[assembly: InternalsVisibleTo("UnityEngine.TextCoreTextModule")]
+[assembly: InternalsVisibleTo("UnityEngine.TextCoreTextEngineModule")]
 [assembly: InternalsVisibleTo("Unity.TextCore.Editor")]
 [assembly: InternalsVisibleTo("Unity.TextMeshPro")]
 [assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor")]

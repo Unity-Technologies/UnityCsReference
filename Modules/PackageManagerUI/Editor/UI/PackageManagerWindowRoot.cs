@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Linq;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -23,6 +25,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private UnityConnectProxy m_UnityConnectProxy;
         private ApplicationProxy m_ApplicationProxy;
+        private UpmClient m_UpmClient;
         private void ResolveDependencies(ResourceLoader resourceLoader,
             SelectionProxy selection,
             PackageFiltering packageFiltering,
@@ -31,7 +34,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             PageManager pageManager,
             PackageManagerProjectSettingsProxy settingsProxy,
             UnityConnectProxy unityConnectProxy,
-            ApplicationProxy applicationProxy)
+            ApplicationProxy applicationProxy,
+            UpmClient upmClient)
         {
             m_ResourceLoader = resourceLoader;
             m_Selection = selection;
@@ -42,6 +46,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SettingsProxy = settingsProxy;
             m_UnityConnectProxy = unityConnectProxy;
             m_ApplicationProxy = applicationProxy;
+            m_UpmClient = upmClient;
         }
 
         public PackageManagerWindowRoot(ResourceLoader resourceLoader,
@@ -52,9 +57,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                                         PageManager pageManager,
                                         PackageManagerProjectSettingsProxy settingsProxy,
                                         UnityConnectProxy unityConnectProxy,
-                                        ApplicationProxy applicationProxy)
+                                        ApplicationProxy applicationProxy,
+                                        UpmClient upmClient)
         {
-            ResolveDependencies(resourceLoader, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy);
+            ResolveDependencies(resourceLoader, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient);
 
             styleSheets.Add(m_ResourceLoader.GetMainWindowStyleSheet());
 
@@ -328,6 +334,34 @@ namespace UnityEditor.PackageManager.UI.Internal
                 else
                     SelectPackageAndFilter();
             }
+        }
+
+        public void OpenAddPackageByNameDropdown(string url)
+        {
+            var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_PackageFiltering, m_UpmClient, m_PackageDatabase, m_PageManager, PackageManagerWindow.instance);
+
+            var packageNameAndVersion = url.Replace(PackageManagerWindow.k_UpmUrl, string.Empty);
+            var packageName = string.Empty;
+            var packageVersion = string.Empty;
+
+            if (packageNameAndVersion.Contains("@"))
+            {
+                var values = packageNameAndVersion.Split('@');
+                if (values.Count() > 1)
+                {
+                    packageName = values[0];
+                    packageVersion = values[1];
+                }
+            }
+            else
+                packageName = packageNameAndVersion;
+
+            DropdownElement.ShowDropdown(this, dropdown);
+
+            // We need to set the name and version after the dropdown is shown,
+            // so that the OnTextFieldChange of placeholder gets called
+            dropdown.packageNameField.value = packageName;
+            dropdown.packageVersionField.value = packageVersion;
         }
 
         private VisualElementCache cache { set; get; }

@@ -170,9 +170,14 @@ namespace UnityEditorInternal.Profiling
 
         public abstract void DrawDetailsView(Rect position);
 
-        public int DrawChartView(int currentFrame, bool isSelected)
+        public float GetMinimumChartHeight()
         {
-            currentFrame = m_Chart.DoChartGUI(currentFrame, isSelected);
+            return m_Chart.GetMinimumHeight();
+        }
+
+        public int DrawChartView(Rect chartRect, int currentFrame, bool isSelected)
+        {
+            currentFrame = m_Chart.DoChartGUI(chartRect, currentFrame, isSelected);
             if (isSelected)
                 DrawChartOverlay(m_Chart.lastChartRect);
             return currentFrame;

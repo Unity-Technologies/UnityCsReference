@@ -111,6 +111,21 @@ namespace UnityEditor
                         p => Clipboard.hasBounds,
                         p => p.boundsValue = Clipboard.boundsValue);
                     break;
+                case SerializedPropertyType.BoundsInt:
+                    SetupAction(property, menu, evt,
+                        p =>
+                        {
+                            var b = p.boundsIntValue;
+                            Clipboard.boundsValue = new Bounds(b.position, b.size * 2);
+                        },
+                        p => Clipboard.hasBounds,
+                        p =>
+                        {
+                            var b = Clipboard.boundsValue;
+                            p.boundsIntValue = new BoundsInt(new Vector3Int((int)b.center.x, (int)b.center.y, (int)b.center.z),
+                                new Vector3Int((int)(b.size.x / 2), (int)(b.size.y / 2), (int)(b.size.z / 2)));
+                        });
+                    break;
                 case SerializedPropertyType.LayerMask:
                     SetupAction(property, menu, evt,
                         p => Clipboard.layerMaskValue = p.intValue,
@@ -134,6 +149,30 @@ namespace UnityEditor
                         Clipboard.SetSerializedProperty,
                         p => Clipboard.HasSerializedProperty(),
                         Clipboard.GetSerializedProperty);
+                    break;
+                case SerializedPropertyType.Integer:
+                    SetupAction(property, menu, evt,
+                        p => Clipboard.integerValue = p.intValue,
+                        p => Clipboard.hasInteger,
+                        p => p.intValue = Clipboard.integerValue);
+                    break;
+                case SerializedPropertyType.Float:
+                    SetupAction(property, menu, evt,
+                        p => Clipboard.floatValue = p.floatValue,
+                        p => Clipboard.hasFloat,
+                        p => p.floatValue = Clipboard.floatValue);
+                    break;
+                case SerializedPropertyType.String:
+                    SetupAction(property, menu, evt,
+                        p => Clipboard.stringValue = p.stringValue,
+                        p => Clipboard.hasString,
+                        p => p.stringValue = Clipboard.stringValue);
+                    break;
+                case SerializedPropertyType.Character:
+                    SetupAction(property, menu, evt,
+                        p => Clipboard.stringValue = ((char)p.intValue).ToString(),
+                        p => Clipboard.hasString && Clipboard.stringValue.Length == 1,
+                        p => p.intValue = Convert.ToChar(Clipboard.stringValue[0]));
                     break;
             }
         }

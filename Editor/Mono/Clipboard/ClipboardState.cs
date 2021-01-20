@@ -158,5 +158,21 @@ namespace UnityEditor
             m_ValuesCustom.Add(key, ok ? res : default);
             return ok;
         }
+
+        internal bool? m_HasInteger;
+        internal int m_ValueInteger;
+        internal void FetchInteger()
+        {
+            if (!m_HasInteger.HasValue)
+                m_HasInteger = ClipboardParser.ParseInteger(m_RawContents, out m_ValueInteger);
+        }
+
+        internal bool? m_HasFloat;
+        internal float m_ValueFloat;
+        internal void FetchFloat()
+        {
+            if (!m_HasFloat.HasValue)
+                m_HasFloat = ClipboardParser.ParseFloat(m_RawContents, out m_ValueFloat);
+        }
     }
 }
