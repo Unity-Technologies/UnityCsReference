@@ -154,9 +154,11 @@ namespace UnityEditor.Build.Content
 
         public static extern void CalculateBuildUsageTags(ObjectIdentifier[] objectIDs, ObjectIdentifier[] dependentObjectIDs, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildUsageCache usageCache);
 
-        public static extern System.Type GetTypeForObject(ObjectIdentifier objectID);
+        public static extern Type GetTypeForObject(ObjectIdentifier objectID);
 
-        public static extern System.Type[] GetTypeForObjects(ObjectIdentifier[] objectIDs);
+        public static extern Type[] GetTypesForObject(ObjectIdentifier objectID);
+
+        public static extern Type[] GetTypeForObjects(ObjectIdentifier[] objectIDs);
 
         internal static extern bool IsBuildInProgress();
 
@@ -221,5 +223,7 @@ namespace UnityEditor.Build.Content
 
         [NativeThrows]
         extern public static ContentBuildProfileEvent[] StopProfileCapture();
+
+        public static extern UnityEngine.Hash128 CalculatePlayerSerializationHashForType(Type type, TypeDB typeDB);
     }
 }

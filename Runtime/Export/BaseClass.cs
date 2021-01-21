@@ -125,7 +125,10 @@ namespace UnityEngine
         // BJM
         Stadia = 34,
         // Cloud Rendering
-        CloudRendering = 35
+        CloudRendering = 35,
+        // Game Core
+        GameCoreScarlett = 36,
+        GameCoreXboxOne = 37,
     }
 
     // The language the user's operating system is running in. Returned by Application.systemLanguage.

@@ -9,10 +9,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
 {
     class ReferenceAssemblyHelpers
     {
+        public static void DeleteFileHash(ScriptAssembly assembly, string outputDirectory)
+        {
+            File.Delete(GetReferenceAssemblyFileHashPath(assembly, outputDirectory));
+        }
+
         public static bool IsReferenceAssemblyUnchanged(ScriptAssembly assembly, string outputDirectory)
         {
             var referenceAssemblyPath = AssetPath.Combine(outputDirectory, assembly.ReferenceAssemblyFilename);
-            var assemblyFileHashPath = AssetPath.Combine(outputDirectory, $"{assembly.Filename}.hash");
+            var assemblyFileHashPath = GetReferenceAssemblyFileHashPath(assembly, outputDirectory);
 
             return IsFileUnchanged(referenceAssemblyPath, assemblyFileHashPath);
         }
@@ -109,6 +114,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 bw.Write(h1);
                 bw.Write(h2);
             }
+        }
+
+        static string GetReferenceAssemblyFileHashPath(ScriptAssembly assembly, string outputDirectory)
+        {
+            return AssetPath.Combine(outputDirectory, $"{assembly.Filename}.hash");
         }
     }
 }

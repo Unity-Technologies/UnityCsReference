@@ -332,6 +332,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     {
                         var referenceAssemblyPath = AssetPath.Combine(buildOutputDirectory, assembly.ReferenceAssemblyFilename);
 
+                        // If the assembly has compiler errors, we should not keep the hash of the ref assembly around,
+                        // as the hash is later used to indicate whether or not to recompile dependent assemblies.
+                        if (assembly.HasCompileErrors)
+                        {
+                            ReferenceAssemblyHelpers.DeleteFileHash(assembly, buildOutputDirectory);
+                        }
+
                         // If a reference assembly is built, check if it is unchanged
                         // since the previous compilation.
                         if (UseReferenceAssemblies &&

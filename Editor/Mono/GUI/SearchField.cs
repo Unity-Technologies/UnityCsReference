@@ -61,7 +61,7 @@ namespace UnityEditor.IMGUI.Controls
             buttonRect.width = cancelButtonWidth;
             if (Event.current.type == EventType.MouseUp && buttonRect.Contains(Event.current.mousePosition))
             {
-                text = "";
+                text = string.Empty;
                 GUIUtility.keyboardControl = 0;
             }
 
@@ -70,7 +70,7 @@ namespace UnityEditor.IMGUI.Controls
             text = EditorGUI.TextFieldInternal(m_ControlID, textRect, text, style);
 
             GUI.Button(buttonRect, GUIContent.none,
-                text != "" ? cancelButtonStyle : emptyCancelButtonStyle);
+                !string.IsNullOrEmpty(text) ? cancelButtonStyle : emptyCancelButtonStyle);
             return text;
         }
 

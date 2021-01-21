@@ -179,6 +179,8 @@ namespace UnityEngine.PlayerLoop
     public struct PreLateUpdate
     {
         [RequiredByNativeCode]
+        public struct Physics2DLateUpdate {}
+        [RequiredByNativeCode]
         public struct AIUpdatePostScript {}
         [RequiredByNativeCode]
         public struct DirectorUpdateAnimationBegin {}

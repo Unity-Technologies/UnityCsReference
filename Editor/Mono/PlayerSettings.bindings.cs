@@ -887,6 +887,15 @@ namespace UnityEditor
             SetIl2CppCompilerConfigurationInternal(targetGroup, configuration);
         }
 
+        public static extern bool assemblyVersionValidation
+        {
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+            get;
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+            set;
+        }
+
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
         [NativeMethod("SetIl2CppCompilerConfiguration")]
         private static extern void SetIl2CppCompilerConfigurationInternal(BuildTargetGroup targetGroup, Il2CppCompilerConfiguration configuration);
@@ -1329,6 +1338,10 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings()")]
         [NativeMethod("SetVirtualTexturingSupportEnabled")]
         public static extern void SetVirtualTexturingSupportEnabled(bool enabled);
+
+        [StaticAccessor("GetPlayerSettings()")]
+        [NativeMethod("OnVirtualTexturingChanged")]
+        internal static extern bool OnVirtualTexturingChanged();
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         public static extern ShaderPrecisionModel GetShaderPrecisionModel();
