@@ -15,6 +15,8 @@ namespace UnityEditor
         private static class Styles
         {
             public static readonly GUIContent kJobOptionsLabel = EditorGUIUtility.TrTextContent("Job Options (Experimental)", "Allows the configuration of multi-threaded physics using the job system.");
+            public static readonly GUIContent kGizmosLabel = EditorGUIUtility.TrTextContent("Gizmos", "Allows the configuration of 2D physics gizmos shown in the Editor.");
+            public static readonly GUIContent kLayerCollisionMatrixLabel = EditorGUIUtility.TrTextContent("Layer Collision Matrix", "Allows the configuration of the layer-based collision detection.");
         }
 
         SerializedProperty m_JobOptions;
@@ -62,7 +64,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_JobOptions, Styles.kJobOptionsLabel, true);
             GUILayout.EndHorizontal();
 
-            m_GizmoSettingsFade.value = m_GizmoSettingsFade.target = EditorGUILayout.Foldout(m_GizmoSettingsFade.target, "Gizmos", true);
+            m_GizmoSettingsFade.value = m_GizmoSettingsFade.target = EditorGUILayout.Foldout(m_GizmoSettingsFade.target, Styles.kGizmosLabel, true);
 
             if (m_GizmoSettingsFade.value)
             {
@@ -84,7 +86,7 @@ namespace UnityEditor
             }
             serializedObject.ApplyModifiedProperties();
 
-            LayerMatrixGUI.DoGUI("Layer Collision Matrix", ref m_ShowLayerCollisionMatrix, GetValue, SetValue);
+            LayerMatrixGUI.DoGUI(Styles.kLayerCollisionMatrixLabel, ref m_ShowLayerCollisionMatrix, GetValue, SetValue);
         }
 
         [SettingsProvider]

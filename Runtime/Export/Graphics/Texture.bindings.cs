@@ -22,7 +22,7 @@ namespace UnityEngine
     {
         protected Texture() {}
 
-        extern public static int masterTextureLimit { get; set; }
+        [NativeProperty("GlobalMasterTextureLimit")] extern public static int masterTextureLimit { get; set; }
 
         extern public int mipmapCount { [NativeName("GetMipmapCount")] get; }
 

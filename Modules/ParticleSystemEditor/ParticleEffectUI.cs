@@ -369,7 +369,6 @@ namespace UnityEditor
                 //Stop();
             }
 
-            m_SelectedParticleSystems?.Clear();
             m_ParticleSystemCurveEditor.OnDisable();
             Tools.s_Hidden = false; // The collisionmodule might have hidden the tools
 
@@ -377,6 +376,13 @@ namespace UnityEditor
 
             PlayModeView.RepaintAll();
             SceneView.RepaintAll();
+        }
+
+        public void ClearSelectedSystems()
+        {
+            // We cant clear the selected systems inside of Clear as this method is also used during InitializeIfNeeded when
+            // the list is created and calling Clear each time would corrupt the list when multi editing. (case 1254599)
+            m_SelectedParticleSystems?.Clear();
         }
 
         static public Vector2 GetMinSize()

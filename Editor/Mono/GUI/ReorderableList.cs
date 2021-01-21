@@ -9,6 +9,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace UnityEditorInternal
 {
@@ -146,7 +147,9 @@ namespace UnityEditorInternal
             public const int dragHandleWidth = 20;
             internal const int propertyDrawerPadding = 8;
             internal const int minHeaderHeight = 2;
-            private static GUIContent s_ListIsEmpty = EditorGUIUtility.TrTextContent("List is Empty");
+            private int ArrayCountInPropertyPath(SerializedProperty prop) => Regex.Matches(prop.propertyPath, ".Array.data").Count;
+            private float FieldLabelSize(Rect r, SerializedProperty prop) => r.xMax * 0.45f - 35 - prop.depth * 15 - ArrayCountInPropertyPath(prop) * 10;
+            private static readonly GUIContent s_ListIsEmpty = EditorGUIUtility.TrTextContent("List is Empty");
             internal static readonly string undoAdd = "Add Element To Array";
             internal static readonly string undoRemove = "Remove Element From Array";
             internal static readonly string undoMove = "Reorder Element In Array";
@@ -358,9 +361,14 @@ namespace UnityEditorInternal
                 var prop = element ?? listItem as SerializedProperty;
                 if (editable)
                 {
+                    float oldLabelWidth = EditorGUIUtility.labelWidth;
+                    EditorGUIUtility.labelWidth = FieldLabelSize(rect, prop);
+
                     var handler = ScriptAttributeUtility.GetHandler(prop);
                     handler.OnGUI(rect, prop, null, true);
                     if (Event.current.type == EventType.MouseDown && Event.current.button == 1 && rect.Contains(Event.current.mousePosition)) Event.current.Use();
+
+                    EditorGUIUtility.labelWidth = oldLabelWidth;
                     return;
                 }
 

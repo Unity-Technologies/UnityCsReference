@@ -378,6 +378,8 @@ namespace UnityEditor
                 Capacity = assemblyReferences.Length
             };
 
+            var assemblyVersionValidation = PlayerSettings.assemblyVersionValidation;
+
             foreach (var reference in assemblyReferences)
             {
                 try
@@ -386,7 +388,7 @@ namespace UnityEditor
 
                     int referenceAssemblyDefinitionIndex;
 
-                    if (assemblyDefinitionNameToIndex.TryGetValue(referenceAssemblyDefinition.Name.Name,
+                    if (assemblyVersionValidation && assemblyDefinitionNameToIndex.TryGetValue(referenceAssemblyDefinition.Name.Name,
                         out referenceAssemblyDefinitionIndex))
                     {
                         bool isSigned = IsSigned(reference);
@@ -397,7 +399,7 @@ namespace UnityEditor
                             if (definition.Name.Version.ToString() != reference.Version.ToString() && !IsInSameFolder(assemblyDefinition, referenceAssemblyDefinition))
                             {
                                 errors[index].Add(ErrorFlags.UnresolvableReference,
-                                    $"{assemblyDefinition.Name.Name} references strong named {reference.Name} in a different folder, versions has to match. Assembly references: {reference.Version} Found in project: {definition.Name.Version}.");
+                                    $"{assemblyDefinition.Name.Name} references strong named {reference.Name} Assembly references: {reference.Version} Found in project: {definition.Name.Version}.\nAssembly Version Validation can be disabled in Player Settings \"Assembly Version Validation\"");
                             }
                         }
 

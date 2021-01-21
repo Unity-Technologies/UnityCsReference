@@ -89,6 +89,7 @@ namespace UnityEditor
             if (m_ParticleEffectUI != null)
             {
                 m_ParticleEffectUI.Clear();
+                m_ParticleEffectUI.ClearSelectedSystems();
                 m_ParticleEffectUI = null;
             }
         }

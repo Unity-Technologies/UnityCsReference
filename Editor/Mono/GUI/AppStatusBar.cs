@@ -243,12 +243,14 @@ namespace UnityEditor
 
         private void DelayRepaint()
         {
+            if (!this) // The window could have been destroyed during a reset layout.
+                return;
             Repaint();
         }
 
         private void DrawProgressBar()
         {
-            if (!this || !showProgress)
+            if (!showProgress)
                 return;
 
             GUILayout.Space(k_SpaceBeforeProgress);
@@ -266,7 +268,10 @@ namespace UnityEditor
                 Progress.ShowDetails();
 
             if (globalProgress == -1.0f)
+            {
+                EditorApplication.delayCall -= DelayRepaint;
                 EditorApplication.delayCall += DelayRepaint;
+            }
 
             EditorGUIUtility.AddCursorRect(progressRect, MouseCursor.Link);
             GUILayout.Space(k_SpaceAfterProgress);

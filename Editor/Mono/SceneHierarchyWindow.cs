@@ -65,6 +65,7 @@ namespace UnityEditor
 
             titleContent = GetLocalizedTitleContent();
             wantsLessLayoutEvents = true;
+            wantsMouseEnterLeaveWindow = true;
         }
 
         public override void OnDisable()

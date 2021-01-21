@@ -12,7 +12,7 @@ namespace UnityEditor
         public delegate bool GetValueFunc(int layerA, int layerB);
         public delegate void SetValueFunc(int layerA, int layerB, bool val);
 
-        public static void DoGUI(string title, ref bool show, GetValueFunc getValue, SetValueFunc setValue)
+        public static void DoGUI(GUIContent label, ref bool show, GetValueFunc getValue, SetValueFunc setValue)
         {
             const int kMaxLayers = 32;
             const int checkboxSize = 16;
@@ -34,7 +34,7 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal();
             GUILayout.Space(0);
-            show = EditorGUILayout.Foldout(show, title, true);
+            show = EditorGUILayout.Foldout(show, label, true);
             GUILayout.EndHorizontal();
 
             if (show)
@@ -177,6 +177,7 @@ namespace UnityEditor
             public static readonly GUIContent interCollisionPropertiesLabel = EditorGUIUtility.TrTextContent("Cloth Inter-Collision");
             public static readonly GUIContent interCollisionDistanceLabel = EditorGUIUtility.TrTextContent("Distance");
             public static readonly GUIContent interCollisionStiffnessLabel = EditorGUIUtility.TrTextContent("Stiffness");
+            public static readonly GUIContent kLayerCollisionMatrixLabel = EditorGUIUtility.TrTextContent("Layer Collision Matrix", "Allows the configuration of the layer-based collision detection.");
         }
 
         public override void OnInspectorGUI()
@@ -185,7 +186,7 @@ namespace UnityEditor
             DrawPropertiesExcluding(serializedObject, "m_ClothInterCollisionDistance", "m_ClothInterCollisionStiffness", "m_ClothInterCollisionSettingsToggle");
             serializedObject.ApplyModifiedProperties();
 
-            LayerMatrixGUI.DoGUI("Layer Collision Matrix", ref show, GetValue, SetValue);
+            LayerMatrixGUI.DoGUI(Styles.kLayerCollisionMatrixLabel, ref show, GetValue, SetValue);
 
             EditorGUI.BeginChangeCheck();
             bool collisionSettings = EditorGUILayout.Toggle(Styles.interCollisionPropertiesLabel, Physics.interCollisionSettingsToggle);

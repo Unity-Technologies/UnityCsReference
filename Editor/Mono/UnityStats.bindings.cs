@@ -122,6 +122,7 @@ namespace UnityEditor
         public extern static float audioClippingAmount { [FreeFunction("GetAudioManager().GetMasterGroupClippingAmount")] get; }
         public extern static float audioDSPLoad { [FreeFunction("GetAudioManager().GetDSPLoad")] get; }
         public extern static float audioStreamLoad { [FreeFunction("GetAudioManager().GetStreamLoad")] get; }
+        internal extern static bool audioOutputSuspended { [FreeFunction("GetAudioManager().IsOutputSuspended")] get; }
 
         public extern static int renderTextureCount { [FreeFunction("RenderTexture::GetCreatedRenderTextureCount")] get; }
         public extern static int renderTextureBytes { [FreeFunction("RenderTexture::GetCreatedRenderTextureBytes")] get; }

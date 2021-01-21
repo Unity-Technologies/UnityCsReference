@@ -91,12 +91,16 @@ namespace UnityEditor
             GUILayout.BeginArea(new Rect(GUIView.current.position.width - w - 10, 27, w, h), "Statistics", GUI.skin.window);
 
             // Audio stats
-            GUILayout.Label("Audio:", EditorStyles.boldLabel);
-            StringBuilder audioStats = new StringBuilder(400);
-            float audioLevel = UnityStats.audioLevel;
-            audioStats.Append("  Level: " + FormatDb(audioLevel) + (EditorUtility.audioMasterMute ? " (MUTED)\n" : "\n"));
-            audioStats.Append(UnityString.Format("  Clipping: {0:F1}%", 100.0f * UnityStats.audioClippingAmount));
-            GUILayout.Label(audioStats.ToString());
+            bool audioOutputSuspended = UnityStats.audioOutputSuspended;
+            GUILayout.Label((audioOutputSuspended) ? "Audio (suspended):" : "Audio:", EditorStyles.boldLabel);
+            using (new EditorGUI.DisabledScope(audioOutputSuspended))
+            {
+                StringBuilder audioStats = new StringBuilder(400);
+                float audioLevel = UnityStats.audioLevel;
+                audioStats.Append("  Level: " + FormatDb(audioLevel) + (EditorUtility.audioMasterMute ? " (MUTED)\n" : "\n"));
+                audioStats.Append(UnityString.Format("  Clipping: {0:F1}%", 100.0f * UnityStats.audioClippingAmount));
+                GUILayout.Label(audioStats.ToString());
+            }
 
             GUI.Label(new Rect(170, 40, 120, 20), UnityString.Format("DSP load: {0:F1}%", 100.0f * UnityStats.audioDSPLoad));
             GUI.Label(new Rect(170, 53, 120, 20), UnityString.Format("Stream load: {0:F1}%", 100.0f * UnityStats.audioStreamLoad));

@@ -124,7 +124,7 @@ namespace UnityEditorInternal
 
         public void Draw(Rect r, Rect visibleArea)
         {
-            r.xMin += EditorGUI.indent * (EditorGUI.indentLevel - 1);
+            r.xMin += EditorGUI.indent;
             var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
             m_IsNotInPrefabContextModeWithOverrides = prefabStage == null || prefabStage.mode != PrefabStage.Mode.InContext || !PrefabStage.s_PatchAllOverriddenProperties
                 || Selection.objects.All(obj => PrefabUtility.IsPartOfAnyPrefab(obj) && !AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(obj)).Equals(AssetDatabase.AssetPathToGUID(prefabStage.assetPath)));
@@ -143,8 +143,12 @@ namespace UnityEditorInternal
             bool prevEnabled = GUI.enabled;
             GUI.enabled = true;
             EditorGUI.BeginChangeCheck();
+
+            if (!m_OriginalProperty.hasMultipleDifferentValues) EditorGUI.BeginProperty(headerRect, GUIContent.none, m_OriginalProperty);
             Property.isExpanded = EditorGUI.BeginFoldoutHeaderGroup(headerRect, Property.isExpanded, m_Header);
             EditorGUI.EndFoldoutHeaderGroup();
+            if (!m_OriginalProperty.hasMultipleDifferentValues) EditorGUI.EndProperty();
+
             if (EditorGUI.EndChangeCheck())
             {
                 if (Event.current.alt)

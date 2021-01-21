@@ -1778,6 +1778,10 @@ namespace UnityEditor
 
         float GetListHeaderHeight()
         {
+            if (!m_SearchFilter.IsSearching())
+                return k_ToolbarHeight;
+            if (SearchService.Project.HasEngineOverride())
+                return 0f;
             return m_SearchFilter.GetState() == SearchFilter.State.EmptySearchFilter ? 0f : k_ToolbarHeight;
         }
 
@@ -2578,7 +2582,8 @@ namespace UnityEditor
             GUI.Label(rect, GUIContent.none, s_Styles.bottomBarBg);
 
             // Icons are fixed size in One Column mode, so only show icon size slider in Two Columns mode
-            if (m_ViewMode == ViewMode.TwoColumns)
+            bool showIconSizeSlider = m_ViewMode == ViewMode.TwoColumns || m_SearchFilter.IsSearching();
+            if (showIconSizeSlider)
             {
                 Rect sliderRect = new Rect(rect.x + rect.width - k_SliderWidth - 16f
                     , rect.y + rect.height - (m_BottomBarRect.height + EditorGUI.kSingleLineHeight) / 2, k_SliderWidth,
@@ -2593,7 +2598,7 @@ namespace UnityEditor
             rect.x += k_Margin;
             rect.height = k_BottomBarHeight;
 
-            if (m_ViewMode == ViewMode.TwoColumns)
+            if (showIconSizeSlider)
             {
                 rect.width -= k_SliderWidth + 14f;
             }
