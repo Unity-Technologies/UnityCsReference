@@ -1398,7 +1398,10 @@ namespace UnityEditor
                     if (instanceID == 0)
                     {
                         if (EditorUtility.DisplayDialog("Folder not found", "The folder '" + folderPath + "' might have been deleted or belong to another project. Do you want to delete the favorite?", "Delete", "Cancel"))
+                        {
                             SavedSearchFilters.RemoveSavedFilter(savedFilterID);
+                            GUIUtility.ExitGUI(); // exit gui since we are iterating items we just reloaded
+                        }
 
                         return false;
                     }
