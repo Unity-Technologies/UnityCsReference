@@ -52,18 +52,34 @@ namespace Unity.Collections.LowLevel.Unsafe
         {
             safety = (allocator == Allocator.Temp) ? AtomicSafetyHandle.GetTempMemoryHandle() : AtomicSafetyHandle.Create();
 
-            if (NativeLeakDetection.Mode == NativeLeakDetectionMode.Enabled && allocator != Allocator.Temp)
+            var leakDetectionMode = NativeLeakDetectionMode.Enabled;
+            GetLeakDetectionMode(out leakDetectionMode);
+            if (leakDetectionMode == NativeLeakDetectionMode.Enabled && allocator != Allocator.Temp)
             {
-                sentinel = new DisposeSentinel
-                {
-                    m_StackFrame = new StackFrame(callSiteStackDepth + 2, true),
-                    m_IsCreated = 1
-                };
+                if (Unity.Jobs.LowLevel.Unsafe.JobsUtility.IsExecutingJob)
+                    throw new InvalidOperationException("Jobs can only create Temp memory");
+                CreateInternal(out sentinel, callSiteStackDepth);
             }
             else
             {
                 sentinel = null;
             }
+        }
+
+        [Unity.Burst.BurstDiscard]
+        private static void GetLeakDetectionMode(out NativeLeakDetectionMode leakDetectionMode)
+        {
+            leakDetectionMode = NativeLeakDetection.Mode;
+        }
+
+        [Unity.Burst.BurstDiscard]
+        private static void CreateInternal(out DisposeSentinel sentinel, int callSiteStackDepth)
+        {
+            sentinel = new DisposeSentinel
+            {
+                m_StackFrame = new StackFrame(callSiteStackDepth + 2, true),
+                m_IsCreated = 1
+            };
         }
 
         ~DisposeSentinel()
@@ -78,6 +94,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             }
         }
 
+        [Unity.Burst.BurstDiscard]
         public static void Clear(ref DisposeSentinel sentinel)
         {
             if (sentinel != null)
