@@ -1847,7 +1847,7 @@ namespace UnityEditor.Search
             using (new EditorGUI.DisabledScope(!supportsSync))
             {
                 EditorGUI.BeginChangeCheck();
-                var syncButtonContent = !providerSupportsSync ? Styles.syncSearchProviderNotSupportedContent : !searchViewSyncEnabled ? Styles.syncSearchViewNotEnabledContent : Styles.syncSearchButtonContent;
+                var syncButtonContent = !providerSupportsSync ? Styles.syncSearchProviderNotSupportedContent : !searchViewSyncEnabled ? Styles.syncSearchViewNotEnabledContent : syncSearch ? Styles.syncSearchOnButtonContent : Styles.syncSearchButtonContent;
                 var sync = GUILayout.Toggle(syncSearch, syncButtonContent, Styles.syncButton);
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -1883,9 +1883,9 @@ namespace UnityEditor.Search
             qsWindow.ShowWindow(flags: flags);
             if (contextualProvider != null)
                 qsWindow.SelectGroup(contextualProvider.id);
-            qsWindow.syncSearch = true;
             qsWindow.SendEvent(SearchAnalytics.GenericEventType.QuickSearchJumpToSearch, qsWindow.m_FilteredItems.currentGroup, sourceContext);
             qsWindow.SetSearchText(query);
+            qsWindow.syncSearch = true;
             c.result = true;
         }
 

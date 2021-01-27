@@ -103,7 +103,7 @@ namespace UnityEditor
         private List<Progress.Item> m_ProgressItemChildren;
         private List<DisplayedTask> m_SubTasks;
         private VisualElement m_Details;
-        private ScrollView m_DetailsScrollView;
+        private VisualElement m_DetailsContent;
         private Toggle m_DetailsFoldoutToggle;
 
         private TaskReorderingHelper m_TaskReorderingHelper;
@@ -134,9 +134,9 @@ namespace UnityEditor
             task.Add(details);
 
             m_Details = rootVisualElement.Q<VisualElement>("Details");
-            m_DetailsScrollView = new ScrollView();
-            m_Details.Add(m_DetailsScrollView);
-            m_DetailsScrollView.AddToClassList("details-content");
+            m_DetailsContent = new VisualElement();
+            m_Details.Add(m_DetailsContent);
+            m_DetailsContent.AddToClassList("details-content");
 
             this.dataSource = dataSource;
 
@@ -229,12 +229,10 @@ namespace UnityEditor
                 sb.Insert(0, " ");
             }
 
-
             if (dataSource.timeDisplayMode == Progress.TimeDisplayMode.ShowRemainingTime && !dataSource.finished)
                 sb.Insert(0, FormatRemainingTime(dataSource.remainingTime));
             else
-                sb.Insert(0, $"{m_MainTask.lastElapsedTime:0} seconds");
-
+                sb.Insert(0, $"{dataSource.elapsedTime:0} seconds");
             m_MainTask.elapsedTimeLabel.text = sb.ToString();
         }
 
@@ -247,15 +245,15 @@ namespace UnityEditor
         {
             var itemToMove = m_ProgressItemChildren[itemIndex];
             var displayedTaskToMove = m_SubTasks[itemIndex];
-            var scrollViewElementToMove = m_DetailsScrollView[itemIndex];
+            var scrollViewElementToMove = m_DetailsContent[itemIndex];
             m_SubTasks.RemoveAt(itemIndex);
             m_ProgressItemChildren.RemoveAt(itemIndex);
-            m_DetailsScrollView.RemoveAt(itemIndex);
+            m_DetailsContent.RemoveAt(itemIndex);
             if (itemIndex <= insertIndex)
                 --insertIndex;
             m_ProgressItemChildren.Insert(insertIndex, itemToMove);
             m_SubTasks.Insert(insertIndex, displayedTaskToMove);
-            m_DetailsScrollView.Insert(insertIndex, scrollViewElementToMove);
+            m_DetailsContent.Insert(insertIndex, scrollViewElementToMove);
         }
 
         internal bool TryUpdate(Progress.Item op, int id, bool anotherSubtaskWasAlreadyUpdated)
@@ -284,13 +282,31 @@ namespace UnityEditor
             return false;
         }
 
+        internal void UpdateAnimatedState()
+        {
+            UpdateAnimatedState(m_MainTask, dataSource);
+            for (var i = 0; i < m_ProgressItemChildren.Count; ++i)
+            {
+                UpdateAnimatedState(m_SubTasks[i], m_ProgressItemChildren[i]);
+            }
+        }
+
+        private void UpdateAnimatedState(DisplayedTask task, Progress.Item dataSource)
+        {
+            // Update all ui state that needs to be animated:
+
+            if (dataSource.indefinite)
+                task.SetIndefinite(dataSource.indefinite);
+            UpdateRunningTime();
+        }
+
         internal bool TryRemove(int id)
         {
             for (int i = 0; i < m_ProgressItemChildren.Count; ++i)
             {
                 if (m_ProgressItemChildren[i].id == id)
                 {
-                    m_DetailsScrollView.RemoveAt(i);
+                    m_DetailsContent.RemoveAt(i);
                     m_ProgressItemChildren.RemoveAt(i);
                     m_SubTasks.RemoveAt(i);
                     if (!m_ProgressItemChildren.Any())
@@ -468,7 +484,7 @@ namespace UnityEditor
             int insertIndex = m_TaskReorderingHelper.FindIndexToInsertAt(subTaskSource, m_ProgressItemChildren.Count, i => m_ProgressItemChildren[i]);
             m_ProgressItemChildren.Insert(insertIndex, subTaskSource);
             m_SubTasks.Insert(insertIndex, displayedSubTask);
-            m_DetailsScrollView.Insert(insertIndex, parentElement);
+            m_DetailsContent.Insert(insertIndex, parentElement);
         }
 
         private DisplayedTask InitializeTask(Progress.Item progressItem, VisualElement parentElement)

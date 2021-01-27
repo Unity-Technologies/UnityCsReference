@@ -22,7 +22,8 @@ namespace UnityEditor
         public const string kCanceledIcon = "console.warnicon";
         public const int kIconSize = 16;
 
-        private const float WindowMinWidth = 280;
+        private const float WindowMinWidth = 100;
+        private const float WindowMinHeight = 70;
         private const float WindowWidth = 400;
         private const float WindowHeight = 300;
 
@@ -80,7 +81,7 @@ namespace UnityEditor
                 var mainWindowRect = EditorGUIUtility.GetMainWindowPosition();
                 var size = new Vector2(WindowWidth, WindowHeight);
                 m_Window.position = new Rect(mainWindowRect.xMax - WindowWidth - 6, mainWindowRect.yMax - WindowHeight - 50, size.x, size.y);
-                m_Window.minSize = new Vector2(WindowMinWidth, size.y);
+                m_Window.minSize = new Vector2(WindowMinWidth, WindowMinHeight);
             }
         }
 
@@ -139,7 +140,9 @@ namespace UnityEditor
                     style =
                     {
                         flexGrow = 1
-                    }
+                    },
+
+                    horizontalScrollerVisibility = ScrollerVisibility.Hidden
                 };
                 rootVisualElement.Add(m_ScrollView);
 
@@ -165,13 +168,27 @@ namespace UnityEditor
             m_ScrollView.Insert(insertIndex, elementToMove.rootVisualElement);
         }
 
-        private void Update()
+        private void OnInspectorUpdate()
         {
+            if (!Progress.running)
+                return;
+
             var now = EditorApplication.timeSinceStartup;
-            if (Progress.running && (now - m_LastUpdate) > k_CheckUnresponsiveDelayInSecond)
-            {
-                CheckUnresponsive();
+            var checkUnresponsive = (now - m_LastUpdate) > k_CheckUnresponsiveDelayInSecond;
+            if (checkUnresponsive)
                 m_LastUpdate = now;
+
+            // using (new EditorPerformanceTracker("ProgressWindow.UpdateAnimatedState"))
+            {
+                foreach (var progressElement in m_Elements)
+                {
+                    if (!progressElement.dataSource.running)
+                        continue;
+
+                    if (checkUnresponsive)
+                        progressElement.CheckUnresponsive();
+                    progressElement.UpdateAnimatedState();
+                }
             }
         }
 

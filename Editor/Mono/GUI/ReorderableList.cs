@@ -418,7 +418,6 @@ namespace UnityEditorInternal
 
         static List<ReorderableList> s_Instances = new List<ReorderableList>();
         internal static void ClearExistingListCaches() => s_Instances.ForEach(list => list.ClearCache());
-        internal static void ClearSelections() => s_Instances.ForEach(list => list.m_Selection.Clear());
 
         // constructors
         public ReorderableList(IList elements, Type elementType)

@@ -101,24 +101,29 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else
             {
-                // when the purchase info is not available for a package (either it's not fetched yet or just not available altogether)
-                // we'll try to fetch the purchase info first and then call the `FetchInternal`.
-                // In the case where a package not purchased, `purchaseInfo` will still be null,
-                // but the generated `AssetStorePackage` in the end will contain an error.
-                var fetchOperation = new AssetStoreListOperation(m_UnityConnect, m_AssetStoreRestAPI);
-                var queryArgs = new PurchasesQueryArgs { productIds = new List<long> { productId } };
-                fetchOperation.onOperationSuccess += op =>
-                {
-                    purchaseInfo = fetchOperation.result.list.FirstOrDefault();
-                    if (purchaseInfo != null)
-                    {
-                        m_AssetStoreCache.SetPurchaseInfo(purchaseInfo);
-                    }
-                    ;
-                    FetchInternal(productId, purchaseInfo);
-                };
-                fetchOperation.Start(queryArgs);
+                if (m_ListOperation.isInProgress)
+                    m_ListOperation.onOperationFinalized += op => StartFetchOperation(productId);
+                else
+                    StartFetchOperation(productId);
             }
+        }
+
+        private void StartFetchOperation(long productId)
+        {
+            // when the purchase info is not available for a package (either it's not fetched yet or just not available altogether)
+            // we'll try to fetch the purchase info first and then call the `FetchInternal`.
+            // In the case where a package not purchased, `purchaseInfo` will still be null,
+            // but the generated `AssetStorePackage` in the end will contain an error.
+            var fetchOperation = new AssetStoreListOperation(m_UnityConnect, m_AssetStoreRestAPI);
+            var queryArgs = new PurchasesQueryArgs { productIds = new List<long> { productId } };
+            fetchOperation.onOperationSuccess += op =>
+            {
+                var purchaseInfo = fetchOperation.result.list.FirstOrDefault();
+                if (purchaseInfo != null)
+                    m_AssetStoreCache.SetPurchaseInfo(purchaseInfo);
+                FetchInternal(productId, purchaseInfo);
+            };
+            fetchOperation.Start(queryArgs);
         }
 
         private void FetchInternal(long productId, AssetStorePurchaseInfo purchaseInfo)

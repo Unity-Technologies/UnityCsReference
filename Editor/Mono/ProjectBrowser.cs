@@ -285,11 +285,13 @@ namespace UnityEditor
                 {
                     m_SyncSearch = false;
                     SetSearch(m_OldSearch);
+                    TopBarSearchSettingsChanged();
                 }
 
                 if (evt == SearchService.SearchService.SyncSearchEvent.EndSession)
                 {
                     m_SyncSearch = false;
+                    TopBarSearchSettingsChanged(false);
                 }
             }
         }
@@ -2350,7 +2352,7 @@ namespace UnityEditor
             SearchService.SearchService.DrawOpenSearchButton(this, m_SearchFieldText);
         }
 
-        void TopBarSearchSettingsChanged()
+        void TopBarSearchSettingsChanged(bool keyboardValidation = true)
         {
             if (!m_SearchFilter.IsSearching())
             {
@@ -2358,7 +2360,7 @@ namespace UnityEditor
                 {
                     m_DidSelectSearchResult = false;
                     FrameObjectPrivate(Selection.activeInstanceID, true, false);
-                    if (GUIUtility.keyboardControl == 0)
+                    if (GUIUtility.keyboardControl == 0 && keyboardValidation)
                     {
                         // Ensure item has focus for visual feedback and instant key navigation
                         if (m_ViewMode == ViewMode.OneColumn)
@@ -2370,7 +2372,7 @@ namespace UnityEditor
                 else if (m_ViewMode == ViewMode.TwoColumns)
                 {
                     // Revert to last selected folders
-                    if (GUIUtility.keyboardControl == 0 && m_LastFolders != null && m_LastFolders.Length > 0)
+                    if ((GUIUtility.keyboardControl == 0 || !keyboardValidation) && m_LastFolders != null && m_LastFolders.Length > 0)
                     {
                         m_SearchFilter.folders = m_LastFolders;
                         SetFolderSelection(GetFolderInstanceIDs(m_LastFolders), true);

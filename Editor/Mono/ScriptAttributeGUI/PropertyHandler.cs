@@ -37,11 +37,7 @@ namespace UnityEditor
 
         static PropertyHandler()
         {
-            Undo.undoRedoPerformed += () =>
-            {
-                ReorderableList.ClearExistingListCaches();
-                ReorderableList.ClearSelections();
-            };
+            Undo.undoRedoPerformed += () => ReorderableList.ClearExistingListCaches();
         }
 
         public static void ClearCache()

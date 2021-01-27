@@ -63,6 +63,8 @@ namespace UnityEditor
             CachedValue<TimeDisplayMode> m_TimeDisplayMode = new CachedValue<TimeDisplayMode>(GetTimeDisplayMode);
             CachedValue<TimeSpan> m_RemainingTime = new CachedValue<TimeSpan>(id => SecToTimeSpan(GetRemainingTime(id)));
             CachedValue<int> m_Priority = new CachedValue<int>(GetPriority);
+            CachedValue<DateTime> m_LastResumeTime = new CachedValue<DateTime>(id => MSecToDateTime(GetLastResumeDateTime(id)));
+            CachedValue<TimeSpan> m_ElapsedTimeUntilLastPause = new CachedValue<TimeSpan>(id => MSecToTimeSpan(GetElapsedTimeUntilLastPause(id)));
             DateTime m_LastRemainingTime;
 
             public string name => m_Name.GetValue(id);
@@ -101,8 +103,11 @@ namespace UnityEditor
             public bool cancellable => IsCancellable(id);
             public bool pausable => IsPausable(id);
             public bool indefinite => running && (progress == -1f || (options & Options.Indefinite) == Options.Indefinite);
-            public float elapsedTime => (float)(updateTime - startTime).TotalSeconds;
+            public float elapsedTime => paused ? (float)elapsedTimeUntilLastPause.TotalSeconds : (float)(elapsedTimeUntilLastPause + (DateTime.UtcNow - lastResumeTime)).TotalSeconds;
+
             public bool exists => Exists(id);
+            internal DateTime lastResumeTime => m_LastResumeTime.GetValue(id);
+            internal TimeSpan elapsedTimeUntilLastPause => m_ElapsedTimeUntilLastPause.GetValue(id);
 
             internal Item(int id)
             {
@@ -222,6 +227,8 @@ namespace UnityEditor
                 m_Status.Dirty();
                 m_RemainingTime.Dirty();
                 m_TimeDisplayMode.Dirty();
+                m_LastResumeTime.Dirty();
+                m_ElapsedTimeUntilLastPause.Dirty();
             }
 
             internal static DateTime MSecToDateTime(long msec)
@@ -232,6 +239,11 @@ namespace UnityEditor
             internal static TimeSpan SecToTimeSpan(long sec)
             {
                 return new TimeSpan(0, 0, 0, (int)sec);
+            }
+
+            internal static TimeSpan MSecToTimeSpan(long msec)
+            {
+                return new TimeSpan(0, 0, 0, 0, (int)msec);
             }
         }
     }

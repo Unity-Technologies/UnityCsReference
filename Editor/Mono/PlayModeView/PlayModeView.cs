@@ -264,11 +264,15 @@ namespace UnityEditor
 
                 window.SetSerializedViews(serializedViews);
 
-                var da = m_Parent as DockArea;
-                if (da)
+                if (m_Parent is DockArea dockAreaParent)
                 {
-                    da.AddTab(window);
-                    da.RemoveTab(this);
+                    dockAreaParent.AddTab(window);
+                    dockAreaParent.RemoveTab(this);
+                    DestroyImmediate(this, true);
+                }
+                else if (m_Parent is MaximizedHostView maximizedParent)
+                {
+                    maximizedParent.actualView = window;
                     DestroyImmediate(this, true);
                 }
             }

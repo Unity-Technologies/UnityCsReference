@@ -330,21 +330,15 @@ namespace UnityEditor
                 for (var i = 0; i < importerDefineConstraints.Count; i++)
                 {
                     var importerDefineConstraint = importerDefineConstraints[i];
-                    try
-                    {
-                        var symbolName = importerDefineConstraint.StartsWith(DefineConstraintsHelper.Not) ? importerDefineConstraint.Substring(1) : importerDefineConstraint;
-                        Compatibility mixedValue = importerDefineConstraints[i] != baseImporterDefineConstraints[i] ? Compatibility.Mixed : Compatibility.Compatible;
-                        m_DefineConstraintState.Add(new DefineConstraint { name = importerDefineConstraint, displayValue = mixedValue });
 
-                        if (!DefineConstraintsHelper.IsDefineConstraintValid(symbolName))
-                        {
-                            throw new PrecompiledAssemblyException($"Invalid define constraint {symbolName}", symbolName);
-                        }
-                    }
-                    catch (PrecompiledAssemblyException exception)
+                    var symbolName = importerDefineConstraint.StartsWith(DefineConstraintsHelper.Not) ? importerDefineConstraint.Substring(1) : importerDefineConstraint;
+                    Compatibility mixedValue = importerDefineConstraints[i] != baseImporterDefineConstraints[i] ? Compatibility.Mixed : Compatibility.Compatible;
+                    m_DefineConstraintState.Add(new DefineConstraint { name = importerDefineConstraint, displayValue = mixedValue });
+
+                    if (!DefineConstraintsHelper.IsDefineConstraintValid(symbolName))
                     {
-                        Debug.LogException(exception, pluginImporter);
                         m_HasModified = true;
+                        Debug.LogError($"Invalid define constraint {symbolName} in plugin {pluginImporter.assetPath}");
                     }
                 }
             }

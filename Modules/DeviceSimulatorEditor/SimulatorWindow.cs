@@ -8,6 +8,8 @@ using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
 using System.Linq;
+using UnityEditor.UIElements;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.DeviceSimulation
 {
@@ -41,6 +43,21 @@ namespace UnityEditor.DeviceSimulation
 
             m_Main = new DeviceSimulatorMain(m_SimulatorState, rootVisualElement);
             s_SimulatorInstances.Add(this);
+
+            InitPlayModeViewSwapMenu();
+        }
+
+        private void InitPlayModeViewSwapMenu()
+        {
+            var playModeViewTypeMenu = rootVisualElement.Q<ToolbarMenu>("playmode-view-menu");
+            playModeViewTypeMenu.text = GetWindowTitle(GetType());
+
+            var types = GetAvailableWindowTypes();
+            foreach (var type in types)
+            {
+                var status = type.Key == GetType() ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
+                playModeViewTypeMenu.menu.AppendAction(type.Value, action => SwapMainWindow(type.Key), action => status);
+            }
         }
 
         private void OnDisable()
@@ -95,8 +112,6 @@ namespace UnityEditor.DeviceSimulation
 
         public virtual void AddItemsToMenu(GenericMenu menu)
         {
-            var gameWindowType = GetAvailableWindowTypes().First(type => type.Value == "Game");
-            menu.AddItem(new GUIContent("Switch to Game View"), false, () => HandleWindowSelection(gameWindowType.Key));
             menu.AddItem(new GUIContent("Reload"), false, m_Main.InitSimulation);
             if (RenderDoc.IsInstalled() && !RenderDoc.IsLoaded())
             {
@@ -111,11 +126,6 @@ namespace UnityEditor.DeviceSimulation
                 RenderDoc.Load();
                 ShaderUtil.RecreateGfxDevice();
             }
-        }
-
-        private void HandleWindowSelection(Type type)
-        {
-            SwapMainWindow(type);
         }
 
         private void OnFocus()

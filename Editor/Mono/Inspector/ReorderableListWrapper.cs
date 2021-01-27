@@ -135,8 +135,12 @@ namespace UnityEditorInternal
             bool prevEnabled = GUI.enabled;
             GUI.enabled = true;
             EditorGUI.BeginChangeCheck();
+
+            if (!m_OriginalProperty.hasMultipleDifferentValues) EditorGUI.BeginProperty(headerRect, GUIContent.none, m_OriginalProperty);
             Property.isExpanded = EditorGUI.BeginFoldoutHeaderGroup(headerRect, Property.isExpanded, m_Header);
             EditorGUI.EndFoldoutHeaderGroup();
+            if (!m_OriginalProperty.hasMultipleDifferentValues) EditorGUI.EndProperty();
+
             if (EditorGUI.EndChangeCheck())
             {
                 if (Event.current.alt)

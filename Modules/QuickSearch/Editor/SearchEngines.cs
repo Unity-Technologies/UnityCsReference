@@ -224,7 +224,8 @@ namespace UnityEditor.Search
         }
     }
 
-    //[ObjectSelectorEngine]
+    // TODO: To renenable when SearchPicker epics is being worked on.
+    // [ObjectSelectorEngine]
     class ObjectSelectorEngine : QuickSearchEngine, IObjectSelectorEngine
     {
         // Internal for tests purposes.

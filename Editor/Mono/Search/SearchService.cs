@@ -243,9 +243,9 @@ namespace UnityEditor.SearchService
             if (engines.Count == 0)
                 return null;
 
-            var index = engines.FindIndex(engine => engine is LegacySearchEngineBase);
+            var index = engines.FindIndex(engine => !(engine is LegacySearchEngineBase));
             if (index < 0)
-                return null;
+                return engines[engines.FindIndex(engine => engine is LegacySearchEngineBase)];
             return engines[index];
         }
 

@@ -3106,6 +3106,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CompilationPipelineCommonHelper.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\CompilationPipelineCommonHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CompilationSetupErrorsTracker.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\CompilationSetupErrorsTracker.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CompilerMessage.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\CompilerMessage.cs</Link>
     </Compile>
