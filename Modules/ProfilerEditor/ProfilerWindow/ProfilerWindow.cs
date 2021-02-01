@@ -1241,32 +1241,14 @@ namespace UnityEditor
                 m_PrevLastFrame = ProfilerDriver.lastFrameIndex;
             }
 
-            int newCurrentFrame = m_CurrentFrame;
-            bool noActiveModules = true;
-            for (int c = 0; c < m_Charts.Length; ++c)
-            {
-                var chart = m_Charts[c];
-                if (!chart.active)
-                    continue;
-                noActiveModules = false;
-                newCurrentFrame = chart.DoChartGUI(newCurrentFrame, m_CurrentArea == chart.m_Area);
-            }
-
+            var scrollViewContentWidth = position.width - GUI.skin.verticalScrollbar.fixedWidth - GUI.skin.verticalScrollbar.margin.horizontal - GUI.skin.verticalScrollbar.padding.horizontal;
+            var scrollViewViewportHeight = m_VertSplit.realSizes[0];
+            int newCurrentFrame = DrawModuleChartViews(new Vector2(scrollViewContentWidth, scrollViewViewportHeight));
             if (newCurrentFrame != m_CurrentFrame)
             {
                 SetCurrentFrame(newCurrentFrame);
                 Repaint();
                 GUIUtility.ExitGUI();
-            }
-            if (noActiveModules)
-            {
-                GUILayout.FlexibleSpace();
-                GUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-                GUILayout.Label(Styles.noActiveModules);
-                GUILayout.FlexibleSpace();
-                GUILayout.EndHorizontal();
-                GUILayout.FlexibleSpace();
             }
 
             EditorGUILayout.EndScrollView();
@@ -1294,6 +1276,90 @@ namespace UnityEditor
             }
             GUILayout.EndVertical();
             SplitterGUILayout.EndVerticalSplit();
+        }
+
+        int DrawModuleChartViews(Vector2 containerSize)
+        {
+            // Calculate the total minimum chart height of all active charts.
+            var totalMinimumChartHeight = 0f;
+            var activeChartCount = 0;
+            var lastActiveChartIndex = -1;
+            for (int i = 0; i < m_Charts.Length; ++i)
+            {
+                var chart = m_Charts[i];
+                if (chart.active)
+                {
+                    totalMinimumChartHeight += chart.GetMinimumHeight();
+                    activeChartCount++;
+                    lastActiveChartIndex = i;
+                }
+            }
+
+            var newCurrentFrame = m_CurrentFrame;
+            if (activeChartCount > 0)
+            {
+                // If there will be empty space below the charts, calculate how much to expand each chart by to fill this space.
+                var additionalChartHeight = 0f;
+                var requiresChartHeightExpansion = totalMinimumChartHeight < containerSize.y;
+                if (requiresChartHeightExpansion)
+                {
+                    var verticalSpaceToFill = containerSize.y - totalMinimumChartHeight;
+                    additionalChartHeight = GUIUtility.RoundToPixelGrid(verticalSpaceToFill / activeChartCount);
+                }
+
+                var accumulatedExpandedChartHeight = 0f;
+                for (int i = 0; i < m_Charts.Length; ++i)
+                {
+                    var chart = m_Charts[i];
+                    if (chart.active)
+                    {
+                        // Calculate final chart height.
+                        var chartHeight = chart.GetMinimumHeight();
+                        if (requiresChartHeightExpansion)
+                        {
+                            // Due to rounding additionalChartHeight to the pixel grid, we make the last chart fill the remaining space. This ensures that exactly the whole space is filled whilst maintaining that all expanded charts remain on the pixel grid.
+                            if (i == lastActiveChartIndex)
+                            {
+                                var remainingHeightToFill = containerSize.y - accumulatedExpandedChartHeight;
+                                chartHeight = remainingHeightToFill;
+                            }
+                            else
+                            {
+                                chartHeight += additionalChartHeight;
+                                accumulatedExpandedChartHeight += chartHeight;
+                            }
+                        }
+
+                        // Reserve a chart rect with the layout system.
+                        var chartRect = GUILayoutUtility.GetRect(containerSize.x, chartHeight);
+
+                        // Don't draw or update any charts during the layout pass, where rects are not computed yet.
+                        if (Event.current.type != EventType.Layout)
+                        {
+                            // Only draw or update modules that will be visible in the scroll view's viewport.
+                            var viewport = GUIClip.visibleRect;
+                            if (viewport.Overlaps(chartRect))
+                            {
+                                // DoChartGUI also handles interaction so we can't only call it when repainting.
+                                bool isSelected = (m_CurrentArea == chart.m_Area);
+                                newCurrentFrame = chart.DoChartGUI(chartRect, newCurrentFrame, isSelected);
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                GUILayout.FlexibleSpace();
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                GUILayout.Label(Styles.noActiveModules);
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+                GUILayout.FlexibleSpace();
+            }
+
+            return newCurrentFrame;
         }
 
         public void SetClearOnPlay(bool enabled)

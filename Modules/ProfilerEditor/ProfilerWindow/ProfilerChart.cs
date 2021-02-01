@@ -117,7 +117,14 @@ namespace UnityEditorInternal
             }
         }
 
-        public virtual int DoChartGUI(int currentFrame, bool active)
+        public float GetMinimumHeight()
+        {
+            var seriesCount = m_Data.numSeries;
+            var requiredHeight = k_LegendSeriesLabelOffset + ((seriesCount + 1) * k_LegendSeriesLabelHeight) + k_DistanceFromTopToFirstLegendLabel;
+            return Math.Max(requiredHeight, k_MinimumHeight);
+        }
+
+        public virtual int DoChartGUI(Rect chartRect, int currentFrame, bool active)
         {
             if (Event.current.type == EventType.Repaint)
             {
@@ -140,7 +147,7 @@ namespace UnityEditorInternal
                 legendHeaderLabel = EditorGUIUtility.TextContentWithIcon(GetLocalizedChartName(), iconName);
             }
 
-            return DoGUI(m_Type, currentFrame, m_Data, active);
+            return DoGUI(chartRect, m_Type, currentFrame, m_Data, active);
         }
 
         public void LoadAndBindSettings()

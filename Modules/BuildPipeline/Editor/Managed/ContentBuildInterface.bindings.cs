@@ -10,12 +10,24 @@ using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 
 [assembly: InternalsVisibleTo("Unity.ScriptableBuildPipeline.Editor")]
+[assembly: InternalsVisibleTo("Unity.ScriptableBuildPipeline.Editor.Tests")]
 
 namespace UnityEditor.Build.Content
 {
+    [Flags]
+    [NativeType("Modules/BuildPipeline/Editor/Shared/ContentDependencyCollector.h")]
+    public enum DependencyType
+    {
+        RecursiveOperation = 1 << 0,
+        MissingReferences = 1 << 1,
+        ValidReferences = 1 << 2,
+        DefaultDependencies = RecursiveOperation | ValidReferences
+    }
+
     [NativeHeader("Modules/BuildPipeline/Editor/Public/ContentBuildTypes.h")]
     [NativeHeader("Modules/BuildPipeline/Editor/Shared/ContentBuildInterface.bindings.h")]
     [NativeHeader("Modules/BuildPipeline/Editor/Public/ContentBuildInterfaceProfile.h")]
+    [NativeHeader("Modules/BuildPipeline/Editor/Public/BuildUtilities.h")]
     [StaticAccessor("BuildPipeline", StaticAccessorType.DoubleColon)]
     public static partial class ContentBuildInterface
     {
@@ -28,26 +40,60 @@ namespace UnityEditor.Build.Content
         {
             if (IsBuildInProgress())
                 throw new InvalidOperationException("Cannot call CalculatePlayerDependenciesForScene while a build is in progress");
-            return CalculatePlayerDependenciesForSceneInternal(scenePath, settings, usageSet, null);
+            return CalculatePlayerDependenciesForSceneInternal(scenePath, settings, usageSet, null, DependencyType.DefaultDependencies);
         }
 
         public static SceneDependencyInfo CalculatePlayerDependenciesForScene(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, BuildUsageCache usageCache)
         {
             if (IsBuildInProgress())
                 throw new InvalidOperationException("Cannot call CalculatePlayerDependenciesForScene while a build is in progress");
-            return CalculatePlayerDependenciesForSceneInternal(scenePath, settings, usageSet, usageCache);
+            return CalculatePlayerDependenciesForSceneInternal(scenePath, settings, usageSet, usageCache, DependencyType.DefaultDependencies);
+        }
+
+        public static SceneDependencyInfo CalculatePlayerDependenciesForScene(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, BuildUsageCache usageCache, DependencyType mode)
+        {
+            if (IsBuildInProgress())
+                throw new InvalidOperationException("Cannot call CalculatePlayerDependenciesForScene while a build is in progress");
+            return CalculatePlayerDependenciesForSceneInternal(scenePath, settings, usageSet, usageCache, mode);
         }
 
         [FreeFunction("CalculatePlayerDependenciesForScene")]
-        static extern SceneDependencyInfo CalculatePlayerDependenciesForSceneInternal(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, BuildUsageCache usageCache);
+        static extern SceneDependencyInfo CalculatePlayerDependenciesForSceneInternal(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, BuildUsageCache usageCache, DependencyType mode);
+
 
         public static extern ObjectIdentifier[] GetPlayerObjectIdentifiersInAsset(GUID asset, BuildTarget target);
 
         internal static extern ObjectIdentifier[] GetPlayerObjectIdentifiersInSerializedFile(string filePath, BuildTarget target);
 
-        public static extern ObjectIdentifier[] GetPlayerDependenciesForObject(ObjectIdentifier objectID, BuildTarget target, TypeDB typeDB);
+        public static ObjectIdentifier[] GetPlayerDependenciesForObject(ObjectIdentifier objectID, BuildTarget target, TypeDB typeDB)
+        {
+            return GetPlayerDependencies_ObjectID(objectID, target, typeDB, DependencyType.DefaultDependencies);
+        }
 
-        public static extern ObjectIdentifier[] GetPlayerDependenciesForObjects(ObjectIdentifier[] objectIDs, BuildTarget target, TypeDB typeDB);
+        public static ObjectIdentifier[] GetPlayerDependenciesForObject(ObjectIdentifier objectID, BuildTarget target, TypeDB typeDB, DependencyType mode)
+        {
+            return GetPlayerDependencies_ObjectID(objectID, target, typeDB, mode);
+        }
+
+        [FreeFunction("GetPlayerDependenciesForObjectID")]
+        static extern ObjectIdentifier[] GetPlayerDependencies_ObjectID(ObjectIdentifier objectID, BuildTarget target, TypeDB typeDB, DependencyType mode);
+
+
+        public static ObjectIdentifier[] GetPlayerDependenciesForObjects(ObjectIdentifier[] objectIDs, BuildTarget target, TypeDB typeDB)
+        {
+            return GetPlayerDependencies_ObjectIDs(objectIDs, target, typeDB, DependencyType.DefaultDependencies);
+        }
+
+        public static ObjectIdentifier[] GetPlayerDependenciesForObjects(ObjectIdentifier[] objectIDs, BuildTarget target, TypeDB typeDB, DependencyType mode)
+        {
+            return GetPlayerDependencies_ObjectIDs(objectIDs, target, typeDB, mode);
+        }
+
+        [FreeFunction("GetPlayerDependenciesForObjectIDs")]
+        static extern ObjectIdentifier[] GetPlayerDependencies_ObjectIDs(ObjectIdentifier[] objectIDs, BuildTarget target, TypeDB typeDB, DependencyType mode);
+
+
+        public static extern ObjectIdentifier[] GetPlayerAssetRepresentations(GUID asset, BuildTarget target);
 
         public static void CalculateBuildUsageTags(ObjectIdentifier[] objectIDs, ObjectIdentifier[] dependentObjectIDs, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet)
         {
@@ -121,5 +167,7 @@ namespace UnityEditor.Build.Content
 
         [NativeThrows]
         extern public static ContentBuildProfileEvent[] StopProfileCapture();
+
+        internal static extern int GetInstanceIDFromObjectIdentifier(ObjectIdentifier objectId);
     }
 }

@@ -16,20 +16,8 @@ namespace UnityEditorInternal.Profiling
     {
         public float totalSelectedPropertyTime { get; private set; }
 
-        public CallsData callersData
-        {
-            get
-            {
-                return m_CallersData;
-            }
-        }
-        public CallsData calleesData
-        {
-            get
-            {
-                return m_CalleesData;
-            }
-        }
+        public CallsData callersData => m_CallersData;
+        public CallsData calleesData => m_CalleesData;
         internal IProfilerSampleNameProvider profilerSampleNameProvider { get; set; }
 
         CallsData m_CallersData = new CallsData() {calls = new List<CallInformation>(), totalSelectedPropertyTime = 0 };
@@ -53,12 +41,12 @@ namespace UnityEditorInternal.Profiling
             public string name;
             public int callsCount;
             public int gcAllocBytes;
-            public double totalCallTimeMs;
-            public double totalSelfTimeMs;
-            public double timePercent; // Cached value - calculated based on view type
+            public float totalCallTimeMs;
+            public float totalSelfTimeMs;
+            public float timePercent; // Cached value - calculated based on view type
         }
 
-        internal float UpdateData(HierarchyFrameDataView frameDataView, int selectedMarkerId)
+        internal void UpdateData(HierarchyFrameDataView frameDataView, int selectedMarkerId)
         {
             totalSelectedPropertyTime = 0;
 
@@ -86,13 +74,15 @@ namespace UnityEditorInternal.Profiling
                         var totalSelfTime = frameDataView.GetItemColumnDataAsSingle(childId, HierarchyFrameDataView.columnTotalTime);
                         totalSelectedPropertyTime += totalSelfTime;
 
+                        // Skip root sample
                         if (current != 0)
                         {
                             // Add markerId to callers (except root)
                             CallInformation callInfo;
                             var totalTime = frameDataView.GetItemColumnDataAsSingle(current, HierarchyFrameDataView.columnTotalTime);
-                            var calls = (int)frameDataView.GetItemColumnDataAsSingle(current, HierarchyFrameDataView.columnCalls);
-                            var gcAlloc = (int)frameDataView.GetItemColumnDataAsSingle(current, HierarchyFrameDataView.columnGcMemory);
+                            // Display sample details in the scope of caller.
+                            var calls = (int)frameDataView.GetItemColumnDataAsSingle(childId, HierarchyFrameDataView.columnCalls);
+                            var gcAlloc = (int)frameDataView.GetItemColumnDataAsSingle(childId, HierarchyFrameDataView.columnGcMemory);
                             if (!m_Callers.TryGetValue(markerId, out callInfo))
                             {
                                 m_Callers.Add(markerId, new CallInformation()
@@ -108,9 +98,13 @@ namespace UnityEditorInternal.Profiling
                             else
                             {
                                 callInfo.callsCount += calls;
-                                callInfo.gcAllocBytes += gcAlloc;
-                                callInfo.totalCallTimeMs += totalTime;
-                                callInfo.totalSelfTimeMs += totalSelfTime;
+                                // Ignore adding time and gc allocations for recursive like calls
+                                if (markerId != childMarkerId)
+                                {
+                                    callInfo.gcAllocBytes += gcAlloc;
+                                    callInfo.totalCallTimeMs += totalTime;
+                                    callInfo.totalSelfTimeMs += totalSelfTime;
+                                }
                             }
                         }
                     }
@@ -137,8 +131,12 @@ namespace UnityEditorInternal.Profiling
                         else
                         {
                             callInfo.callsCount += calls;
-                            callInfo.gcAllocBytes += gcAlloc;
-                            callInfo.totalCallTimeMs += totalTime;
+                            // Ignore adding time and gc allocations for recursive like calls
+                            if (markerId != childMarkerId)
+                            {
+                                callInfo.gcAllocBytes += gcAlloc;
+                                callInfo.totalCallTimeMs += totalTime;
+                            }
                         }
                     }
 
@@ -147,7 +145,6 @@ namespace UnityEditorInternal.Profiling
             }
             UpdateCallsData(ref m_CallersData, m_Callers, totalSelectedPropertyTime);
             UpdateCallsData(ref m_CalleesData, m_Callees, totalSelectedPropertyTime);
-            return totalSelectedPropertyTime;
         }
 
         private void UpdateCallsData(ref CallsData callsData, Dictionary<int, CallInformation> data,  float totalSelectedPropertyTime)
@@ -163,7 +160,7 @@ namespace UnityEditorInternal.Profiling
     {
         static class Content
         {
-            public static readonly GUIContent totalSelectedPropertyTimeLabel = EditorGUIUtility.TrTextContent("", "Total time of all calls of the selected function in the frame.");
+            public static readonly string totalSelectedPropertyTimeTooltip = L10n.Tr("Total time of all calls of the selected function in the frame.");
         }
 
         [NonSerialized]
@@ -307,7 +304,7 @@ namespace UnityEditorInternal.Profiling
                     break;
                     case Column.TimeMs:
                     {
-                        var value = m_Type == Type.Callees ? callInfo.totalCallTimeMs : callInfo.totalSelfTimeMs;
+                        var value = callInfo.totalSelfTimeMs;
                         DefaultGUI.Label(cellRect, value.ToString("f2", CultureInfo.InvariantCulture.NumberFormat), args.selected, args.focused);
                     }
                     break;
@@ -582,7 +579,7 @@ namespace UnityEditorInternal.Profiling
             callersAndCalleeData = new ProfilerCallersAndCalleeData();
             callersAndCalleeData.profilerSampleNameProvider = profilerSampleNameProvider;
 
-            m_TotalSelectedPropertyTimeLabel = new GUIContent(Content.totalSelectedPropertyTimeLabel);
+            m_TotalSelectedPropertyTimeLabel = new GUIContent();
 
             m_Initialized = true;
         }
@@ -630,7 +627,9 @@ namespace UnityEditorInternal.Profiling
             m_CallersTreeView.SetCallsData(callersAndCalleeData.callersData);
             m_CalleesTreeView.SetCallsData(callersAndCalleeData.calleesData);
 
-            m_TotalSelectedPropertyTimeLabel.text = profilerSampleNameProvider.GetItemName(m_FrameDataView, selectedId) + UnityString.Format(" - Total time: {0:f2} ms", callersAndCalleeData.totalSelectedPropertyTime);
+            var sampleDetails = profilerSampleNameProvider.GetItemName(m_FrameDataView, selectedId) + UnityString.Format(" - Total time: {0:f2} ms", callersAndCalleeData.totalSelectedPropertyTime);
+            m_TotalSelectedPropertyTimeLabel.text = sampleDetails;
+            m_TotalSelectedPropertyTimeLabel.tooltip = string.Concat(sampleDetails, "\n\n", Content.totalSelectedPropertyTimeTooltip);
         }
 
         public void Clear()
