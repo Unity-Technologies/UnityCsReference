@@ -136,7 +136,7 @@ namespace UnityEditor.Build
         //common comparer for all callback types
         internal static int CompareICallbackOrder(IOrderedCallback a, IOrderedCallback b)
         {
-            return a.callbackOrder - b.callbackOrder;
+            return a.callbackOrder.CompareTo(b.callbackOrder);
         }
 
         static void AddToList<T>(object o, ref List<T> list) where T : class

@@ -25,7 +25,7 @@ namespace UnityEngine.Rendering
     [NativeHeader("Runtime/Shaders/ShaderKeywords.h")]
     public partial struct ShaderKeyword
     {
-        internal const int k_MaxShaderKeywords = 320; // Keep in sync with kMaxShaderKeywords in ShaderKeywordSet.h
+        internal const int k_MaxShaderKeywords = 448; // Keep in sync with kMaxShaderKeywords in ShaderKeywordSet.h
         private const int k_InvalidKeyword = -1; // Keep in sync with keywords::kInvalidKeyword in ShaderKeywords.h
 
         [FreeFunction("ShaderScripting::GetGlobalKeywordIndex")] extern internal static int GetGlobalKeywordIndex(string keyword);

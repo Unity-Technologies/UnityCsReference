@@ -197,14 +197,15 @@ namespace UnityEngine.Experimental.AI
                 }
             }
 
-            var agentTypeStart = GetAgentTypeIdForPolygon(start.polygon);
-            if (agentTypeStart < 0)
+            if (!IsValid(start.polygon))
                 throw new ArgumentException("The start location doesn't belong to any active NavMesh surface.", "start");
 
-            var agentTypeEnd = GetAgentTypeIdForPolygon(end.polygon);
-            if (agentTypeEnd < 0)
+
+            if (!IsValid(end.polygon))
                 throw new ArgumentException("The end location doesn't belong to any active NavMesh surface.", "end");
 
+            var agentTypeStart = GetAgentTypeIdForPolygon(start.polygon);
+            var agentTypeEnd = GetAgentTypeIdForPolygon(end.polygon);
             if (agentTypeStart != agentTypeEnd)
                 throw new ArgumentException(string.Format(
                     "The start and end locations belong to different NavMesh surfaces, with agent type IDs {0} and {1}.",

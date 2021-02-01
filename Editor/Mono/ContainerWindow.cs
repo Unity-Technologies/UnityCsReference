@@ -211,6 +211,9 @@ namespace UnityEditor
         {
             if (IsNotDocked())
             {
+                if (!rootView)
+                    return string.Empty;
+
                 HostView v = rootView as HostView;
 
                 if (v == null)

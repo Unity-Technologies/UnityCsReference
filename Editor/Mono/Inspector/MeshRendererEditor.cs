@@ -81,6 +81,9 @@ namespace UnityEditor
             LightingSettingsGUI(true);
             OtherSettingsGUI(true, false, false, true);
 
+            if (targets.Length == 1)
+                SpeedTreeMaterialFixer.DoFixerUI((target as MeshRenderer).gameObject);
+
             serializedObject.ApplyModifiedProperties();
         }
     }
