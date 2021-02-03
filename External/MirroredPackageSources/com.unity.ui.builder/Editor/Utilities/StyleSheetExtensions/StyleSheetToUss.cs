@@ -70,20 +70,20 @@ namespace Unity.UI.Builder
                     str = sheet.ReadKeyword(handle).ToString().ToLower();
                     break;
                 case StyleValueType.Float:
-                {
-                    var num = sheet.ReadFloat(handle);
-                    if (num == 0)
                     {
-                        str = "0";
+                        var num = sheet.ReadFloat(handle);
+                        if (num == 0)
+                        {
+                            str = "0";
+                        }
+                        else
+                        {
+                            str = num.ToString(CultureInfo.InvariantCulture.NumberFormat);
+                            if (IsLength(propertyName))
+                                str += "px";
+                        }
                     }
-                    else
-                    {
-                        str = num.ToString(CultureInfo.InvariantCulture.NumberFormat);
-                        if (IsLength(propertyName))
-                            str += "px";
-                    }
-                }
-                break;
+                    break;
                 case StyleValueType.Dimension:
                     var dim = sheet.ReadDimension(handle);
                     if (dim.value == 0)
@@ -147,11 +147,11 @@ namespace Unity.UI.Builder
                         sb.Append(",");
                         break;
                     default:
-                    {
-                        var propertyValueStr = ValueHandleToUssString(sheet, options, propertyName, propertyValue);
-                        sb.Append(propertyValueStr);
-                        break;
-                    }
+                        {
+                            var propertyValueStr = ValueHandleToUssString(sheet, options, propertyName, propertyValue);
+                            sb.Append(propertyValueStr);
+                            break;
+                        }
                 }
 
                 if (valueIndex < values.Length && values[valueIndex].valueType != StyleValueType.FunctionSeparator && valueCount != 1)
@@ -294,9 +294,8 @@ namespace Unity.UI.Builder
                     if (complexSelector.selectors.Length > 0 &&
                         complexSelector.selectors[0].parts.Length > 0 &&
                         (complexSelector.selectors[0].parts[0].value == BuilderConstants.SelectedStyleSheetSelectorName
-                         || complexSelector.selectors[0].parts[0].value.StartsWith(BuilderConstants.StyleSelectorElementName)
-                        )
-                    )
+                            || complexSelector.selectors[0].parts[0].value.StartsWith(BuilderConstants.StyleSelectorElementName)
+                        ))
                         continue;
 
                     if (isFirst)

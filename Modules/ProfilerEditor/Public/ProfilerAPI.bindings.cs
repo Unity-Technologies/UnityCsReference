@@ -532,10 +532,8 @@ namespace UnityEditorInternal
         [NativeMethod("SendQueryFunctionCallees")]
         static public extern void QueryFunctionCallees(string fullname);
 
-        [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
-        [NativeMethod("SendSetAutoInstrumentedAssemblies")]
-
-        static public extern void SetAutoInstrumentedAssemblies(InstrumentedAssemblyTypes fullname);
+        //Dummy method in order to not break binary compatibility
+        static public void SetAutoInstrumentedAssemblies(InstrumentedAssemblyTypes fullname) {}
 
         [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
         [NativeMethod("SendSetAudioCaptureFlags")]

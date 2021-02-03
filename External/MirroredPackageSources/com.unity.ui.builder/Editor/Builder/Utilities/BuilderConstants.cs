@@ -136,7 +136,7 @@ namespace Unity.UI.Builder
         public static readonly string ContextMenuUnsetMessage = "Unset";
         public static readonly string ContextMenuUnsetAllMessage = "Unset All";
         public static readonly string ContextMenuViewVariableMessage = "View Variable";
-        public static readonly string ContextMenuEditVariableMessage = "Edit Variable";
+        public static readonly string ContextMenuSetVariableMessage = "Set Variable";
         public static readonly string FontCannotBeNoneMessage = "UI Builder: Font cannot be set to none.";
         public static readonly string InspectorClassPillDoubleClickToCreate = "Double-click to create new USS selector.";
         public static readonly string InspectorClassPillDoubleClickToSelect = "Double-click to select and edit USS selector.";
@@ -172,6 +172,7 @@ namespace Unity.UI.Builder
         public static readonly string ExplorerItemNameLabelClassName = "unity-builder-explorer__name-label";
         public static readonly string ExplorerItemTypeLabelClassName = "unity-builder-explorer__type-label";
         public static readonly string ExplorerItemLabelContClassName = "unity-builder-explorer-tree-item-label-cont";
+        public static readonly string ExplorerItemSelectorLabelContClassName = "unity-builder-explorer-tree-item-selector-label-cont";
         public static readonly string ExplorerItemLabelClassName = "unity-builder-explorer-tree-item-label";
         public static readonly string ExplorerItemIconClassName = "unity-builder-explorer-tree-item-icon";
         public static readonly string ExplorerStyleSheetsPaneClassName = "unity-builder-stylesheets-pane";

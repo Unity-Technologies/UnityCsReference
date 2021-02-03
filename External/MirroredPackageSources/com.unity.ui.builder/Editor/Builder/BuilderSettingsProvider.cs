@@ -9,6 +9,18 @@ namespace Unity.UI.Builder
         const string k_DisableMouseWheelZoomingToggleName = "disable-mouse-wheel-zooming";
         const string k_EnableAbsolutePositionPlacementToggleName = "enable-absolute-position-placement";
 
+        private VisualElement m_HelpVisualTree;
+        private VisualTreeAsset m_BuilderTemplate;
+        private VisualTreeAsset builderTemplate
+        {
+            get
+            {
+                if (m_BuilderTemplate == null)
+                    m_BuilderTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(BuilderConstants.SettingsUIPath + "/BuilderSettingsView.uxml");
+                return m_BuilderTemplate;
+            }
+        }
+
         [SettingsProvider]
         public static SettingsProvider PreferenceSettingsProvider()
         {
@@ -16,7 +28,19 @@ namespace Unity.UI.Builder
         }
 
         public static string name => $"Project/{BuilderConstants.BuilderWindowTitle}";
-        bool HasSearchInterestHandler(string searchContext) => true;
+        
+        private bool HasSearchInterestHandler(string searchContext)
+        {
+            if (m_HelpVisualTree == null)
+                m_HelpVisualTree = builderTemplate.CloneTree();
+            foreach (var e in m_HelpVisualTree.Query<TextElement>().ToList())
+            {
+                if (e.text.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
+                    return true;
+            }
+
+            return false;
+        }
 
         public BuilderSettingsProvider() : base(name, SettingsScope.Project)
         {
@@ -25,7 +49,6 @@ namespace Unity.UI.Builder
 
         public override void OnActivate(string searchContext, VisualElement rootElement)
         {
-            var builderTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(BuilderConstants.SettingsUIPath + "/BuilderSettingsView.uxml");
             builderTemplate.CloneTree(rootElement);
 
             var styleSheet = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.SettingsUIPath + "/BuilderSettingsView.uss");

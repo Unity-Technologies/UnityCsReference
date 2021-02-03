@@ -348,7 +348,7 @@ namespace Unity.UI.Builder
                     m_LastRowHoverElement = m_LastRowHoverElement.parent;
             }
 
-            if (hoverElementIsValid)
+            if (hoverElementIsValid && m_LastRowHoverElement != null)
                 m_LastRowHoverElement.AddToClassList(s_TreeItemHoverHoverClassName);
 
             if (supportsDragBetweenElements)

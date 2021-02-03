@@ -11,7 +11,7 @@ using UnityEngine.Assertions;
 
 namespace UnityEditor.Search
 {
-    internal class StackedEnumerator<T> : IEnumerator<T>
+    internal class SearchEnumerator<T> : IEnumerator<T>
     {
         private const int k_MaxStackDepth = 32;
 
@@ -22,14 +22,14 @@ namespace UnityEditor.Search
 
         public int Count => m_ItemsEnumerator.Count;
 
-        public StackedEnumerator()
+        public SearchEnumerator()
         {}
 
 
-        public StackedEnumerator(object itemEnumerator)
+        public SearchEnumerator(object itemEnumerator)
         {
             if (itemEnumerator == this)
-                throw new ArgumentException($"StackedEnumerator cannot contain itself.", nameof(itemEnumerator));
+                throw new ArgumentException($"SearchEnumerator cannot contain itself.", nameof(itemEnumerator));
 
             if (itemEnumerator is IEnumerable enumerable)
                 m_ItemsEnumerator.Push(enumerable.GetEnumerator());
@@ -124,11 +124,11 @@ namespace UnityEditor.Search
         }
     }
 
-    internal class StackedEnumerator : StackedEnumerator<object>
+    internal class SearchEnumerator : SearchEnumerator<object>
     {
-        public StackedEnumerator() {}
+        public SearchEnumerator() {}
 
-        public StackedEnumerator(object itemEnumerator)
+        public SearchEnumerator(object itemEnumerator)
             : base(itemEnumerator)
         {}
     }

@@ -71,7 +71,8 @@ namespace Unity.UI.Builder
             var oppositeStyle = GetOppositeStyle(primaryStyle);
             var lengthStyle = GetLengthStyle(primaryStyle);
 
-            delta /= canvas.zoomScale;
+            // Make sure our delta is a whole number so we don't end up with non-whole pixel values.
+            delta = Mathf.Ceil(delta / canvas.zoomScale);
 
             if (!IsNoneOrAuto(oppositeStyle) && !IsNoneOrAuto(primaryStyle))
             {

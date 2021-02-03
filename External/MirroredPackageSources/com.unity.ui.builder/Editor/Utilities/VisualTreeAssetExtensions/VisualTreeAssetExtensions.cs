@@ -623,6 +623,5 @@ namespace Unity.UI.Builder
                     if (asset.stylesheets[i] != null)
                         element.styleSheets.Add(asset.stylesheets[i]);
         }
-
     }
 }

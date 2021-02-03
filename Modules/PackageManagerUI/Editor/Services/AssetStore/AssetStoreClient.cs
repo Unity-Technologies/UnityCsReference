@@ -53,7 +53,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient = upmClient;
             m_IOProxy = ioProxy;
 
-            m_ListOperation?.ResolveDependencies(unityConnect, assetStoreRestAPI);
+            m_ListOperation?.ResolveDependencies(unityConnect, assetStoreRestAPI, assetStoreCache);
         }
 
         public virtual void ListCategories(Action<List<string>> callback)
@@ -93,8 +93,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            var productIdString = productId.ToString();
-            var purchaseInfo = m_AssetStoreCache.GetPurchaseInfo(productIdString);
+            var purchaseInfo = m_AssetStoreCache.GetPurchaseInfo(productId.ToString());
             if (purchaseInfo != null)
             {
                 FetchInternal(productId, purchaseInfo);
@@ -114,8 +113,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             // we'll try to fetch the purchase info first and then call the `FetchInternal`.
             // In the case where a package not purchased, `purchaseInfo` will still be null,
             // but the generated `AssetStorePackage` in the end will contain an error.
-            var fetchOperation = new AssetStoreListOperation(m_UnityConnect, m_AssetStoreRestAPI);
-            var queryArgs = new PurchasesQueryArgs { productIds = new List<long> { productId } };
+            var fetchOperation = new AssetStoreListOperation(m_UnityConnect, m_AssetStoreRestAPI, m_AssetStoreCache);
+            var queryArgs = new PurchasesQueryArgs { productIds = new List<string> { productId.ToString() } };
             fetchOperation.onOperationSuccess += op =>
             {
                 var purchaseInfo = fetchOperation.result.list.FirstOrDefault();
@@ -149,7 +148,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (queryArgs.startIndex == 0)
                 RefreshProductUpdateDetails();
 
-            m_ListOperation = m_ListOperation ?? new AssetStoreListOperation(m_UnityConnect, m_AssetStoreRestAPI);
+            m_ListOperation = m_ListOperation ?? new AssetStoreListOperation(m_UnityConnect, m_AssetStoreRestAPI, m_AssetStoreCache);
             m_ListOperation.onOperationSuccess += op =>
             {
                 var result = m_ListOperation.result;

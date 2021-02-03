@@ -143,8 +143,8 @@ namespace Unity.UI.Builder
                         m_PaneWindow.commandHandler.CopySelection();
                 },
                 isValidCopyTarget
-                ? DropdownMenuAction.Status.Normal
-                : DropdownMenuAction.Status.Disabled);
+                    ? DropdownMenuAction.Status.Normal
+                    : DropdownMenuAction.Status.Disabled);
 
             evt.menu.AppendAction(
                 "Paste",
@@ -152,9 +152,10 @@ namespace Unity.UI.Builder
                 {
                     m_PaneWindow.commandHandler.Paste();
                 },
-                string.IsNullOrEmpty(BuilderEditorUtility.systemCopyBuffer)
-                ? DropdownMenuAction.Status.Disabled
-                : DropdownMenuAction.Status.Normal);
+                BuilderEditorUtility.CopyBufferMatchesTarget(target)
+                    ? DropdownMenuAction.Status.Normal
+                    : DropdownMenuAction.Status.Disabled);
+
 
             evt.menu.AppendSeparator();
 
@@ -162,16 +163,12 @@ namespace Unity.UI.Builder
                 "Rename",
                 a =>
                 {
-                    m_Selection.Select(null, documentElement);
-                    var explorerItemElement = documentElement?.GetProperty(BuilderConstants.ElementLinkedExplorerItemVEPropertyName) as BuilderExplorerItem;
-                    if (explorerItemElement == null)
-                        return;
-
-                    explorerItemElement.ActivateRenameElementMode();
+                    ReselectIfNecessary(documentElement);
+                    m_PaneWindow.commandHandler.RenameSelection();
                 },
                 isValidTarget
-                ? DropdownMenuAction.Status.Normal
-                : DropdownMenuAction.Status.Disabled);
+                    ? DropdownMenuAction.Status.Normal
+                    : DropdownMenuAction.Status.Disabled);
 
             evt.menu.AppendAction(
                 "Duplicate",
@@ -181,8 +178,8 @@ namespace Unity.UI.Builder
                     m_PaneWindow.commandHandler.DuplicateSelection();
                 },
                 isValidTarget
-                ? DropdownMenuAction.Status.Normal
-                : DropdownMenuAction.Status.Disabled);
+                    ? DropdownMenuAction.Status.Normal
+                    : DropdownMenuAction.Status.Disabled);
 
             evt.menu.AppendSeparator();
 
@@ -194,8 +191,8 @@ namespace Unity.UI.Builder
                     m_PaneWindow.commandHandler.DeleteSelection();
                 },
                 isValidTarget
-                ? DropdownMenuAction.Status.Normal
-                : DropdownMenuAction.Status.Disabled);
+                    ? DropdownMenuAction.Status.Normal
+                    : DropdownMenuAction.Status.Disabled);
 
             var linkedInstancedVTA = documentElement?.GetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName) as VisualTreeAsset;
             var linkedVEA = documentElement?.GetProperty(BuilderConstants.ElementLinkedVisualElementAssetVEPropertyName) as TemplateAsset;

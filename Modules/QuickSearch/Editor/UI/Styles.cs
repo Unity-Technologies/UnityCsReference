@@ -427,7 +427,7 @@ namespace UnityEditor.Search
         public static readonly GUIStyle panelBackgroundLeft = new GUIStyle() { name = "quick-search-panel-background-left" };
         public static readonly GUIStyle panelBackgroundRight = new GUIStyle() { name = "quick-search-panel-background-right" };
         public static readonly GUIStyle searchTabBackground = new GUIStyle() { name = "quick-search-tab-background" };
-        public static readonly GUIStyle searchTab = Utils.FromUSS("quick-search-tab");
+        public static readonly GUIStyle searchTab = Utils.FromUSS(new GUIStyle() { richText = true }, "quick-search-tab");
         public static readonly GUIStyle searchTabMoreButton = new GUIStyle("IN Foldout")
         {
             margin = new RectOffset(10, 2, 0, 0)
@@ -441,6 +441,16 @@ namespace UnityEditor.Search
             name = "quick-search-inspector",
             margin = new RectOffset(1, 0, 0, 0),
             padding = new RectOffset(0, 0, 0, 0)
+        };
+
+        public static readonly GUIStyle inpsectorMargins = new GUIStyle(EditorStyles.inspectorDefaultMargins)
+        {
+            padding = new RectOffset(8, 8, 4, 4)
+        };
+
+        public static readonly GUIStyle inpsectorWideMargins = new GUIStyle(inpsectorMargins)
+        {
+            padding = new RectOffset(18, 8, 4, 4)
         };
 
         public static class Wiggle

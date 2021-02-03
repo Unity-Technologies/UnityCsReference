@@ -79,12 +79,16 @@ namespace Unity.UI.Builder
 
             // Size Fields
             m_CanvasWidth = root.Q<IntegerField>("canvas-width");
-            m_CanvasWidth.isDelayed = true;
             m_CanvasWidth.RegisterValueChangedCallback(OnWidthChange);
             m_CanvasHeight = root.Q<IntegerField>("canvas-height");
-            m_CanvasHeight.isDelayed = true;
             m_CanvasHeight.RegisterValueChangedCallback(OnHeightChange);
             m_Canvas.RegisterCallback<GeometryChangedEvent>(OnCanvasSizeChange);
+
+            // This allows user to temporarily type values below the minimum canvas size
+            SetDelayOnSizeFieldsEnabled(true);
+
+            // To update the canvas size as user mouse drags the width or height labels
+            DisableDelayOnActiveLabelMouseDraggers();
 
             m_MatchGameViewToggle = root.Q<Toggle>("match-game-view");
             m_MatchGameViewToggle.RegisterValueChangedCallback(OnMatchGameViewModeChanged);
@@ -162,6 +166,30 @@ namespace Unity.UI.Builder
             EditorApplication.playModeStateChanged += PlayModeStateChange;
         }
 
+        // This is for temporarily disable delay on the width and height fields
+        void DisableDelayOnActiveLabelMouseDraggers()
+        {
+            DisableDelayOnActiveLabelMouseDragger(m_CanvasWidth);
+            DisableDelayOnActiveLabelMouseDragger(m_CanvasHeight);
+        }
+
+        void DisableDelayOnActiveLabelMouseDragger(IntegerField field)
+        {
+            // Use the Move event instead of the Down event because the Down event is intercepted (with Event.StopImmediatePropagation) 
+            // by the FieldMouseDragger manipulator attached to the label
+            field.labelElement.RegisterCallback<PointerMoveEvent>(e => {
+                if (e.pressedButtons != 0)
+                    SetDelayOnSizeFieldsEnabled(false);
+            });
+            field.labelElement.RegisterCallback<PointerUpEvent>(e => SetDelayOnSizeFieldsEnabled(true));
+        }
+
+        void SetDelayOnSizeFieldsEnabled(bool enabled)
+        {
+            m_CanvasWidth.isDelayed = enabled;
+            m_CanvasHeight.isDelayed = enabled;
+        }
+
         void SetupEditorExtensionsModeToggle()
         {
             m_EditorExtensionsModeToggle = root.Q<Toggle>(EditorExtensionsModeToggleName);
@@ -194,14 +222,12 @@ namespace Unity.UI.Builder
         public void Refresh()
         {
             // HACK until fix goes in:
-            m_CanvasWidth.isDelayed = false;
-            m_CanvasHeight.isDelayed = false;
+            SetDelayOnSizeFieldsEnabled(false);
 
             m_CanvasWidth.SetValueWithoutNotify(settings.CanvasWidth);
             m_CanvasHeight.SetValueWithoutNotify(settings.CanvasHeight);
 
-            m_CanvasWidth.isDelayed = true;
-            m_CanvasHeight.isDelayed = true;
+            SetDelayOnSizeFieldsEnabled(true);
 
             m_BackgroundOptionsFoldout.SetCheckboxValueWithoutNotify(settings.EnableCanvasBackground);
 
@@ -368,14 +394,12 @@ namespace Unity.UI.Builder
         void OnCanvasSizeChange(GeometryChangedEvent evt)
         {
             // HACK until fix goes in:
-            m_CanvasWidth.isDelayed = false;
-            m_CanvasHeight.isDelayed = false;
+            SetDelayOnSizeFieldsEnabled(false);
 
             m_CanvasWidth.SetValueWithoutNotify((int)m_Canvas.width);
             m_CanvasHeight.SetValueWithoutNotify((int)m_Canvas.height);
 
-            m_CanvasWidth.isDelayed = true;
-            m_CanvasHeight.isDelayed = true;
+            SetDelayOnSizeFieldsEnabled(true);
 
             UpdateCameraRects();
         }

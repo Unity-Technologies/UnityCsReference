@@ -74,9 +74,12 @@ namespace Unity.UI.Builder
             // Cannot use USS because no way to do version checks in USS.
             // This is not available in 2019.4.
             m_NameLabel.style.textOverflow = TextOverflow.Ellipsis;
+            m_NameLabel.displayTooltipWhenElided = true;
             m_ValueLabel.style.textOverflow = TextOverflow.Ellipsis;
             m_ValueLabel.style.unityTextOverflowPosition = TextOverflowPosition.Middle;
+            m_ValueLabel.displayTooltipWhenElided = true;
             m_StyleSheetLabel.style.textOverflow = TextOverflow.Ellipsis;
+            m_StyleSheetLabel.displayTooltipWhenElided = true;
             ClearUI();
         }
 

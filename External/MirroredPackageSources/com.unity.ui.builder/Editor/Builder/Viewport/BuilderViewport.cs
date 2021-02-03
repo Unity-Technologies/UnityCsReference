@@ -541,7 +541,11 @@ namespace Unity.UI.Builder
                 SetInnerSelection(m_Selection.selection.First());
             }
 
-            m_BuilderSelectionIndicator.canvasStyleControls.UpdateButtonIcons(styles);
+            if (m_Selection.selectionType == BuilderSelectionType.Element ||
+                m_Selection.selectionType == BuilderSelectionType.VisualTreeAsset)
+            {
+                m_BuilderSelectionIndicator.canvasStyleControls.UpdateButtonIcons(styles);
+            }
         }
     }
 }

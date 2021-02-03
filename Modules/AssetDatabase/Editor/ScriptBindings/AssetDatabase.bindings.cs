@@ -96,6 +96,10 @@ namespace UnityEditor
         extern internal static void RegisterRedirectedAssetFolder(string mountPoint, string folder, string physicalPath, bool immutable, string guid);
         extern internal static void UnregisterRedirectedAssetFolder(string mountPoint, string folder);
 
+        // This will return all registered roots, i.e. Assets/, Packages/** (all registered package roots), Workspaces/, etc.
+        [FreeFunction("AssetDatabase::GetAssetRootFolders")]
+        extern internal static string[] GetAssetRootFolders();
+
         // returns true if the folder is known by the asset database
         // rootFolder is true if the path is a registered root folder
         // immutable is true when the root of the path was registered with the immutable flag (e.g. shared package)

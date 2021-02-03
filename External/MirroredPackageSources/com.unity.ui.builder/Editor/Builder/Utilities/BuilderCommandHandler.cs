@@ -163,14 +163,14 @@ namespace Unity.UI.Builder
                     evt.StopPropagation();
                     break;
                 case KeyCode.Escape:
-                {
-                    if (m_CutElements.Count > 0)
                     {
-                        m_CutElements.Clear();
-                        BuilderEditorUtility.systemCopyBuffer = null;
+                        if (m_CutElements.Count > 0)
+                        {
+                            m_CutElements.Clear();
+                            BuilderEditorUtility.systemCopyBuffer = null;
+                        }
                     }
-                }
-                break;
+                    break;
             }
         }
 
@@ -342,15 +342,15 @@ namespace Unity.UI.Builder
 
         public void Paste()
         {
-            var copyBuffer = BuilderEditorUtility.systemCopyBuffer;
-
-            if (string.IsNullOrEmpty(copyBuffer))
+            var focused = m_PaneWindow.rootVisualElement.focusController.focusedElement as VisualElement;
+            if (!BuilderEditorUtility.CopyBufferMatchesTarget(focused))
                 return;
 
-            var trimmedBuffer = copyBuffer.Trim();
-            if (trimmedBuffer.StartsWith("<") && trimmedBuffer.EndsWith(">"))
+            var copyBuffer = BuilderEditorUtility.systemCopyBuffer;
+
+            if (BuilderEditorUtility.IsUxml(copyBuffer))
                 PasteUXML(copyBuffer);
-            else if (trimmedBuffer.EndsWith("}"))
+            else if (BuilderEditorUtility.IsUss(copyBuffer))
                 PasteUSS(copyBuffer);
             else // Unknown string.
                 return;

@@ -15,9 +15,16 @@ namespace UnityEditor.Search.Providers
 {
     static class AssetProvider
     {
+        enum IdentifierType { kNullIdentifier = 0, kImportedAsset = 1, kSceneObject = 2, kSourceAsset = 3, kBuiltInAsset = 4 };
+
+        struct AssetMetaInfo
+        {
+            public string path;
+            public GlobalObjectId gid;
+        }
+
         internal const string type = "asset";
         private const string displayName = "Project";
-        private const int k_ExactMatchScore = -99;
 
         private static bool reloadAssetIndexes = true;
         private static List<SearchDatabase> m_AssetIndexes = null;
@@ -28,7 +35,7 @@ namespace UnityEditor.Search.Providers
                 if (reloadAssetIndexes || m_AssetIndexes == null)
                 {
                     AssetPostprocessorIndexer.contentRefreshed -= TrackAssetIndexChanges;
-                    m_AssetIndexes = SearchDatabase.Enumerate("asset").ToList();
+                    m_AssetIndexes = SearchDatabase.Enumerate().ToList();
                     reloadAssetIndexes = false;
                     AssetPostprocessorIndexer.contentRefreshed += TrackAssetIndexChanges;
                 }
@@ -47,22 +54,133 @@ namespace UnityEditor.Search.Providers
                 showDetailsOptions = ShowDetailsOptions.Default | ShowDetailsOptions.Inspector,
                 supportsSyncViewSearch = true,
                 isEnabledForContextualSearch = () => Utils.IsFocusedWindowTypeName("ProjectBrowser"),
-                toObject = ToObject,
+                toObject = (item, type) => GetObject(item, type),
                 fetchItems = (context, items, provider) => SearchAssets(context, provider),
-                fetchDescription = (item, context) => (item.description = GetAssetDescription(item.id)),
-                fetchThumbnail = (item, context) => Utils.GetAssetThumbnailFromPath(item.id),
-                fetchPreview = (item, context, size, options) => Utils.GetAssetPreviewFromPath(item.id, size, options),
+                fetchLabel = (item, context) => FetchLabel(item),
+                fetchDescription = (item, context) => FetchDescription(item),
+                fetchThumbnail = (item, context) => FetchThumbnail(item),
+                fetchPreview = (item, context, size, options) => FetchPreview(item, size, options),
                 startDrag = (item, context) => StartDrag(item, context),
-                trackSelection = (item, context) => EditorGUIUtility.PingObject(Utils.GetMainAssetInstanceID(item.id)),
+                trackSelection = (item, context) => EditorGUIUtility.PingObject(GetInstanceId(item)),
                 fetchPropositions = (context, options) => FetchPropositions(context, options)
             };
         }
 
-        private static Object ToObject(SearchItem item, Type type)
+        private static Texture2D FetchPreview(SearchItem item, Vector2 size, FetchPreviewOptions options)
         {
-            if (typeof(AssetImporter).IsAssignableFrom(type))
-                return AssetImporter.GetAtPath(item.id);
-            return AssetDatabase.LoadAssetAtPath(item.id, type);
+            var info = GetInfo(item);
+
+            if (item.preview && item.preview.width >= size.x && item.preview.height >= size.y)
+                return item.preview;
+
+            if (info.gid.identifierType != (int)IdentifierType.kSceneObject)
+                return (item.preview = Utils.GetAssetPreviewFromPath(info.path, size, options));
+
+            var obj = GetObject(item);
+            if (obj is GameObject go)
+                return (item.preview = Utils.GetSceneObjectPreview(go, size, options, item.thumbnail));
+
+            var sourceAssetPath = AssetDatabase.GUIDToAssetPath(info.gid.assetGUID);
+            return (item.preview = Utils.GetAssetPreviewFromPath(sourceAssetPath, size, options));
+        }
+
+        private static Texture2D FetchThumbnail(SearchItem item)
+        {
+            var info = GetInfo(item);
+
+            if (item.thumbnail)
+                return item.thumbnail;
+
+            if (info.gid.identifierType != (int)IdentifierType.kSceneObject)
+                return Utils.GetAssetThumbnailFromPath(info.path);
+
+            var sourceAssetPath = AssetDatabase.GUIDToAssetPath(info.gid.assetGUID);
+            return Utils.GetAssetThumbnailFromPath(sourceAssetPath);
+        }
+
+        private static string FetchLabel(SearchItem item)
+        {
+            var info = GetInfo(item);
+
+            if (!string.IsNullOrEmpty(item.label))
+                return item.label;
+
+            if (info.gid.identifierType != (int)IdentifierType.kSceneObject)
+                return (item.label = Path.GetFileName(info.path));
+
+            return (item.label = info.path);
+        }
+
+        private static string FetchDescription(SearchItem item)
+        {
+            var info = GetInfo(item);
+
+            if (item.options.HasFlag(SearchItemOptions.Compacted))
+                return info.path;
+
+            if (!string.IsNullOrEmpty(item.description))
+                return item.description;
+
+            var sourceAssetPath = AssetDatabase.GUIDToAssetPath(info.gid.assetGUID.ToString());
+            if (info.gid.identifierType != (int)IdentifierType.kSceneObject)
+                return (item.description = GetAssetDescription(sourceAssetPath) ?? info.path);
+
+            return (item.description = $"Source: {GetAssetDescription(sourceAssetPath)}");
+        }
+
+        private static AssetMetaInfo GetInfo(SearchItem item)
+        {
+            return (AssetMetaInfo)item.data;
+        }
+
+        private static GlobalObjectId GetGID(SearchItem item)
+        {
+            return GetInfo(item).gid;
+        }
+
+        private static int GetInstanceId(SearchItem item)
+        {
+            var gid = GetGID(item);
+            return GlobalObjectId.GlobalObjectIdentifierToInstanceIDSlow(gid);
+        }
+
+        private static Object GetObject(SearchItem item)
+        {
+            return GetObject(item, typeof(UnityEngine.Object));
+        }
+
+        private static Object GetObject(SearchItem item, Type type)
+        {
+            var gid = GetGID(item);
+
+            var assetPath = AssetDatabase.GUIDToAssetPath(gid.assetGUID.ToString());
+            if (gid.identifierType == (int)IdentifierType.kImportedAsset)
+            {
+                var assetType = AssetDatabase.GetMainAssetTypeAtPath(assetPath);
+                if (!type.IsAssignableFrom(assetType))
+                    return null;
+                return AssetDatabase.LoadAssetAtPath(assetPath, type);
+            }
+
+            return ToObjectType(GlobalObjectId.GlobalObjectIdentifierToObjectSlow(gid), type) ??
+                ToObjectType(AssetDatabase.LoadAssetAtPath(assetPath, type), type);
+        }
+
+        private static Object ToObjectType(Object obj, Type type)
+        {
+            if (!obj)
+                return null;
+
+            if (type == null)
+                return obj;
+            var objType = obj.GetType();
+            if (type.IsAssignableFrom(objType))
+                return obj;
+
+            if (obj is GameObject go && typeof(Component).IsAssignableFrom(type))
+                return go.GetComponent(type);
+
+            return null;
         }
 
         private static IEnumerable<SearchProposition> FetchPropositions(SearchContext context, SearchPropositionOptions options)
@@ -97,12 +215,22 @@ namespace UnityEditor.Search.Providers
         {
             if (context.selection.Count > 1)
             {
-                var selectedObjects = context.selection.Select(i => AssetDatabase.LoadAssetAtPath<Object>(i.id));
-                var paths = context.selection.Select(i => i.id).ToArray();
+                var selectedObjects = context.selection.Select(i => GetObject(i));
+                var paths = context.selection.Select(i => GetAssetPath(i)).ToArray();
                 Utils.StartDrag(selectedObjects.ToArray(), paths, item.GetLabel(context, true));
             }
             else
-                Utils.StartDrag(new[] { AssetDatabase.LoadAssetAtPath<Object>(item.id) }, new[] { item.id }, item.GetLabel(context, true));
+                Utils.StartDrag(new[] { GetObject(item) }, new[] { GetAssetPath(item) }, item.GetLabel(context, true));
+        }
+
+        private static AssetMetaInfo CreateMetaInfo(string path)
+        {
+            return new AssetMetaInfo() { path = path, gid = GetGID(path) };
+        }
+
+        private static AssetMetaInfo CreateMetaInfo(string path, GlobalObjectId gid)
+        {
+            return new AssetMetaInfo() { path = path, gid = gid };
         }
 
         private static IEnumerator SearchAssets(SearchContext context, SearchProvider provider)
@@ -114,7 +242,7 @@ namespace UnityEditor.Search.Providers
                 // Search by GUID
                 var guidPath = AssetDatabase.GUIDToAssetPath(searchQuery);
                 if (!string.IsNullOrEmpty(guidPath))
-                    yield return provider.CreateItem(context, guidPath, -1, $"{Path.GetFileName(guidPath)} ({searchQuery})", null, null, null);
+                    yield return provider.CreateItem(context, GetGID(guidPath).ToString(), -1, $"{Path.GetFileName(guidPath)} ({searchQuery})", null, null, CreateMetaInfo(guidPath));
 
                 // Search indexes that are ready
                 bool allIndexesReady = false;
@@ -133,7 +261,7 @@ namespace UnityEditor.Search.Providers
                     // Perform a quick search on asset paths
                     var findOptions = FindOptions.Words | FindOptions.Regex | FindOptions.Glob | (context.wantsMore ? FindOptions.Fuzzy : FindOptions.None);
                     foreach (var e in FindProvider.Search(context, provider, findOptions))
-                        yield return CreateItem(context, provider, "Find", e.path, 998 + e.score);
+                        yield return CreateItem(context, provider, "Find", GetGID(e.path), e.path, 998 + e.score);
                 }
 
                 // Finally wait for indexes that are being built to end the search.
@@ -144,15 +272,32 @@ namespace UnityEditor.Search.Providers
                 }
             }
 
-            if (context.wantsMore && context.filterType != null && string.IsNullOrEmpty(searchQuery))
+            if (context.wantsMore && context.filterType != null)
             {
-                yield return AssetDatabase.FindAssets($"t:{context.filterType.Name}")
-                    .Select(guid => AssetDatabase.GUIDToAssetPath(guid))
-                    .Select(path => CreateItem(context, provider, "More", path, 999));
+                var filteredQuery = $"t={context.filterType.Name}";
+                if (string.IsNullOrEmpty(searchQuery))
+                {
+                    yield return AssetDatabase.FindAssets($"t:{context.filterType.Name}")
+                        .Select(guid => AssetDatabase.GUIDToAssetPath(guid))
+                        .Select(path => CreateItem(context, provider, "More", GetGID(path), path, 999));
+                }
+                else
+                {
+                    filteredQuery = $"({context.searchText}) t={context.filterType.Name}";
+                }
 
                 if (assetIndexes != null)
-                    yield return assetIndexes.Select(db => SearchIndexes($"t={context.filterType.Name}", context, provider, db));
+                {
+                    foreach (var db in assetIndexes)
+                        yield return SearchIndexes(filteredQuery, context, provider, db);
+                }
             }
+        }
+
+        public static GlobalObjectId GetGID(string assetPath)
+        {
+            var assetInstanceId = AssetDatabase.GetMainAssetInstanceID(assetPath);
+            return GlobalObjectId.GetGlobalObjectIdSlow(assetInstanceId);
         }
 
         private static IEnumerator SearchIndexes(string searchQuery, SearchContext context, SearchProvider provider, SearchDatabase db)
@@ -169,31 +314,73 @@ namespace UnityEditor.Search.Providers
             db.Report("Search", searchQuery);
             yield return index.Search(searchQuery.ToLowerInvariant(), context, provider)
                 .Where(e => e.id != null)
-                .Select(e => CreateItem(context, provider, db.name, e.id, e.score));
+                .Select(e => CreateItem(context, provider, db.name, ParseGID(db, e), db.index.GetDocument(e.index).path, e.score));
         }
 
-        private static SearchItem CreateItem(SearchContext context, SearchProvider provider, string dbName, string assetPath, int itemScore)
+        private static GlobalObjectId ParseGID(SearchDatabase db, SearchResult r)
         {
-            var words = context.searchPhrase;
-            var filenameNoExt = Path.GetFileNameWithoutExtension(assetPath).ToLowerInvariant();
-            if (filenameNoExt.Equals(words, StringComparison.Ordinal))
-                itemScore = k_ExactMatchScore;
+            if (GlobalObjectId.TryParse(r.id, out var gid))
+                return gid;
+            if (db.index != null)
+            {
+                var doc = db.index.GetDocument(r.index);
+                if (doc.valid)
+                    return GetGID(doc.path);
+            }
 
-            var filename = Path.GetFileName(assetPath);
+            return new GlobalObjectId();
+        }
+
+        public static SearchItem CreateItem(SearchContext context, SearchProvider provider, string dbName, GlobalObjectId gid, string path, int itemScore)
+        {
+            string filename = null;
             if (context.options.HasFlag(SearchFlags.Debug) && !string.IsNullOrEmpty(dbName))
-                filename += $" ({dbName})";
-            return provider.CreateItem(context, assetPath, itemScore, filename, null, null, null);
+            {
+                filename = Path.GetFileName(path);
+                filename += $" ({dbName}, {itemScore})";
+            }
+            return provider.CreateItem(context, gid.ToString(), itemScore, filename, null, null, CreateMetaInfo(path, gid));
+        }
+
+        public static string GetAssetPath(SearchItem item)
+        {
+            var gid = GetGID(item);
+            return AssetDatabase.GUIDToAssetPath(gid.assetGUID);
+        }
+
+        public static string GetAssetPath(string id)
+        {
+            if (GlobalObjectId.TryParse(id, out var gid))
+                return AssetDatabase.GUIDToAssetPath(gid.assetGUID);
+            return AssetDatabase.GUIDToAssetPath(id);
+        }
+
+        public static string GetAssetPath(SearchResult result)
+        {
+            return GetAssetPath(result.id);
+        }
+
+        public static string GetAssetPath(SearchDocument doc)
+        {
+            return GetAssetPath(doc.id);
         }
 
         internal static string GetAssetDescription(string assetPath)
         {
             if (AssetDatabase.IsValidFolder(assetPath))
                 return assetPath;
-            var fi = new FileInfo(assetPath);
-            if (!fi.Exists)
-                return $"File <i>{assetPath}</i> does not exist anymore.";
-            var fileSize = new FileInfo(assetPath).Length;
-            return $"{assetPath} ({EditorUtility.FormatBytes(fileSize)})";
+            try
+            {
+                var fi = new FileInfo(assetPath);
+                if (!fi.Exists)
+                    return $"File <i>{assetPath}</i> does not exist anymore.";
+                var fileSize = new FileInfo(assetPath).Length;
+                return $"{assetPath} ({EditorUtility.FormatBytes(fileSize)})";
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private static void ReimportAssets(IEnumerable<SearchItem> items)
@@ -205,9 +392,7 @@ namespace UnityEditor.Search.Providers
                 (ImportAssetOptions)(1 << 7); // AssetDatabase::kMayCancelImport
 
             foreach (var searchItem in items)
-            {
-                AssetDatabase.ImportAsset(searchItem.id, reimportAssetOptions);
-            }
+                AssetDatabase.ImportAsset(GetAssetPath(searchItem), reimportAssetOptions);
         }
 
         #region DocumentationDeleteAssets
@@ -225,8 +410,8 @@ namespace UnityEditor.Search.Providers
         // We have our own OpenPropertyEditorsOnSelection so we don't have to worry about global selection
         private static void OpenPropertyEditorsOnSelection(IEnumerable<SearchItem> items)
         {
-            var objs = items.Select(i => i.provider.toObject(i, typeof(UnityEngine.Object))).Where(o => o).ToArray();
-            if (Selection.objects.Length == 1)
+            var objs = items.Select(i => i.ToObject()).Where(o => o).ToArray();
+            if (objs.Length == 1)
             {
                 PropertyEditor.OpenPropertyEditor(objs[0]);
             }
@@ -254,56 +439,89 @@ namespace UnityEditor.Search.Providers
             {
                 new SearchAction(type, "select", null, "Select")
                 {
-                    handler = (item) => Utils.FrameAssetFromPath(item.id),
+                    handler = (item) => SelectItem(item),
                     execute = (items) => SearchUtils.SelectMultipleItems(items, focusProjectBrowser: true)
                 },
-                new SearchAction(type, "open", null, "Open")
+                new SearchAction(type, "open", null, "Open", OpenItem),
+                new SearchAction(type, "reimport", null, "Reimport", ReimportAssets),
+                new SearchAction(type, "add_scene", null, "Add scene")
                 {
-                    handler = (item) =>
-                    {
-                        var asset = AssetDatabase.LoadAssetAtPath<Object>(item.id);
-                        if (asset == null || !AssetDatabase.OpenAsset(asset))
-                            EditorUtility.OpenWithDefaultApp(item.id);
-                    }
+                    // Only works in single selection and adds a scene to the current hierarchy.
+                    enabled = (items) => CanAddScene(items),
+                    handler = (item) => SceneManagement.EditorSceneManager.OpenScene(GetAssetPath(item), SceneManagement.OpenSceneMode.Additive)
                 },
-                new SearchAction(type, "delete", null, "Delete")
-                {
-                    handler = (item) => DeleteAssets(new[] { item }),
-                    execute = DeleteAssets
-                },
+                new SearchAction(type, "reveal", null, k_RevealActionLabel, item => EditorUtility.RevealInFinder(GetAssetPath(item))),
+                new SearchAction(type, "delete", null, "Delete", DeleteAssets),
                 new SearchAction(type, "copy_path", null, "Copy Path")
                 {
                     enabled = items => items.Count == 1,
                     handler = item =>
                     {
-                        var selectedPath = item.id;
+                        var selectedPath = GetAssetPath(item);
                         Clipboard.stringValue = selectedPath;
                     }
                 },
-                new SearchAction(type, "reimport", null, "Reimport")
-                {
-                    handler = item =>
-                    {
-                        ReimportAssets(new[] { item });
-                    },
-                    execute = ReimportAssets
-                },
-                new SearchAction(type, "add_scene", null, "Add scene")
-                {
-                    // Only works in single selection and adds a scene to the current hierarchy.
-                    enabled = (items) => items.Count == 1 && items.Last().id.EndsWith(".unity", StringComparison.OrdinalIgnoreCase),
-                    handler = (item) => UnityEditor.SceneManagement.EditorSceneManager.OpenScene(item.id, UnityEditor.SceneManagement.OpenSceneMode.Additive)
-                },
-                new SearchAction(type, "reveal", null, k_RevealActionLabel)
-                {
-                    handler = (item) => EditorUtility.RevealInFinder(item.id)
-                },
-                new SearchAction(type, "properties", null, "Properties")
-                {
-                    handler = item => OpenPropertyEditorsOnSelection(new[] { item }),
-                    execute = OpenPropertyEditorsOnSelection
-                }
+                new SearchAction(type, "properties", null, "Properties", OpenPropertyEditorsOnSelection)
             };
+        }
+
+        private static void SelectItem(SearchItem item)
+        {
+            var info = GetInfo(item);
+            if (info.gid.identifierType == (int)IdentifierType.kSceneObject)
+            {
+                EditorApplication.delayCall += () =>
+                {
+                    if (!SelectObjectbyId(info.gid))
+                    {
+                        if (EditorUtility.DisplayDialog("Container scene is not opened", $"Do you want to open container scene {AssetDatabase.GUIDToAssetPath(info.gid.assetGUID)}?", "Yes", "No"))
+                            OpenItem(item);
+                    }
+                };
+            }
+
+            Utils.FrameAssetFromPath(GetAssetPath(item));
+        }
+
+        private static void OpenItem(SearchItem item)
+        {
+            var info = GetInfo(item);
+            if (info.gid.identifierType == (int)IdentifierType.kSceneObject)
+            {
+                var containerPath = AssetDatabase.GUIDToAssetPath(info.gid.assetGUID);
+                var containerAsset = AssetDatabase.LoadAssetAtPath<Object>(containerPath);
+                if (containerAsset != null)
+                {
+                    AssetDatabase.OpenAsset(containerAsset);
+                    EditorApplication.delayCall += () => SelectObjectbyId(info.gid);
+                }
+            }
+
+            var asset = GetObject(item);
+            if (asset == null || !AssetDatabase.OpenAsset(asset))
+                EditorUtility.OpenWithDefaultApp(GetAssetPath(item));
+        }
+
+        private static bool SelectObjectbyId(GlobalObjectId gid)
+        {
+            var obj = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(gid);
+            if (obj)
+            {
+                Utils.SelectObject(obj);
+                return true;
+            }
+            return false;
+        }
+
+        private static bool CanAddScene(IReadOnlyCollection<SearchItem> items)
+        {
+            if (items.Count != 1)
+                return false;
+            var singleItem = items.Last();
+            var info = GetInfo(singleItem);
+            if (info.gid.identifierType != (int)IdentifierType.kImportedAsset)
+                return false;
+            return info.path.EndsWith(".unity", StringComparison.OrdinalIgnoreCase);
         }
 
         [Shortcut("Help/Search/Assets")]

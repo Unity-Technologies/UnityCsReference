@@ -137,6 +137,11 @@ namespace Unity.UI.Builder
                     case k_FlexDirectionName: FlexDirectionUpdateToggleIcon(); break;
                     case k_AlignItemsName: AlignItemsUpdateToggleIcon(); break;
                     case k_JustifyContentName: JustifyContentUpdateToggleIcon(); break;
+                    case k_TextAlignName: 
+                        HorizontalTextAlignUpdateToggleIcon();
+                        VerticalTextAlignUpdateToggleIcon();
+                        break;
+                    case k_TextWrapName: TextWrapUpdateToggleIcon(); break;
                 }
             }
         }

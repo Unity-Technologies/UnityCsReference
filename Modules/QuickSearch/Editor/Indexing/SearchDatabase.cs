@@ -271,7 +271,10 @@ namespace UnityEditor.Search
         public static void ImportAsset(string settingsPath)
         {
             if (s_DefaultDB && s_DefaultDB.path == settingsPath)
+            {
+                s_DefaultDB.DeleteBackupIndex();
                 s_DefaultDB.Reload(settingsPath);
+            }
             else
             {
                 if (settingsPath == defaultSearchDatabaseIndexPath)
@@ -458,25 +461,30 @@ namespace UnityEditor.Search
                     {
                         if (availableState != OnDemandState.Failed)
                             unresolvedArtifacts.Add(a);
+                        else
+                            ReportWarning(a, artifactIndexSuffix, availableState.ToString());
                         continue;
                     }
-                }
 
-                if (GetArtifactPaths(a.key, out var paths))
-                {
-                    a.path = paths.LastOrDefault(p => p.EndsWith(artifactIndexSuffix, StringComparison.Ordinal));
-                    if (a.path == null)
+                    if (GetArtifactPaths(a.key, out var paths))
                     {
-                        var assetPath = AssetDatabase.GUIDToAssetPath(a.guid);
-                        Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, this,
-                            $"Cannot find search index artifact {artifactIndexSuffix} for {assetPath} ({a.guid})\n\t- {String.Join("\n\t- ", paths)}");
+                        a.path = paths.LastOrDefault(p => p.EndsWith(artifactIndexSuffix, StringComparison.Ordinal));
+                        if (a.path == null)
+                            ReportWarning(a, artifactIndexSuffix, paths);
+                        task.Report(++completed);
                     }
-                    task.Report(++completed);
                 }
             }
 
             task.Report(completed);
             return unresolvedArtifacts.Count == 0;
+        }
+
+        private void ReportWarning(IndexArtifact a, string artifactIndexSuffix, params string[] paths)
+        {
+            var assetPath = AssetDatabase.GUIDToAssetPath(a.guid);
+            Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, this,
+                $"Cannot find search index artifact for {assetPath} ({a.guid}{artifactIndexSuffix})\n\t- {string.Join("\n\t- ", paths)}");
         }
 
         private Task ResolveArtifacts(string taskName, string title, Task.ResolveHandler finished)
@@ -528,7 +536,8 @@ namespace UnityEditor.Search
                     }
 
                     // Resume later with remaining artifacts
-                    Utils.CallDelayed(() => ResolveArtifacts(artifacts, remainingArtifacts, task, combineAutoResolve), 3.0);
+                    Utils.CallDelayed(() => ResolveArtifacts(artifacts, remainingArtifacts, task, combineAutoResolve),
+                        GetArtifactResolutionCheckDelay(remainingArtifacts.Count));
                 }
             }
             catch (Exception err)
@@ -537,6 +546,13 @@ namespace UnityEditor.Search
             }
 
             return false;
+        }
+
+        private double GetArtifactResolutionCheckDelay(int artifactCount)
+        {
+            if (UnityEditorInternal.InternalEditorUtility.isHumanControllingUs)
+                return Math.Max(0.5, Math.Min(artifactCount / 1000.0, 3.0));
+            return 1;
         }
 
         private byte[] CombineIndexes(Settings settings, IndexArtifact[] artifacts, Task task, bool autoResolve)

@@ -12,7 +12,7 @@ namespace UnityEditor.Search
     /// <summary>
     /// An async search session tracks all incoming items found by a search provider that weren't returned right away after the search was initiated.
     /// </summary>
-    class AsyncSearchSession
+    class SearchSession
     {
         /// <summary>
         /// This event is used to receive any async search result.
@@ -31,7 +31,7 @@ namespace UnityEditor.Search
 
         private const long k_MaxTimePerUpdate = 10; // milliseconds
 
-        private StackedEnumerator<SearchItem> m_ItemsEnumerator = new StackedEnumerator<SearchItem>();
+        private SearchEnumerator<SearchItem> m_ItemsEnumerator = new SearchEnumerator<SearchItem>();
         private long m_MaxFetchTimePerProviderMs;
         private SearchContext m_Context;
 
@@ -40,7 +40,7 @@ namespace UnityEditor.Search
         /// </summary>
         public bool searchInProgress { get; set; } = false;
 
-        public AsyncSearchSession(SearchContext context)
+        public SearchSession(SearchContext context)
         {
             m_Context = context;
         }
@@ -86,7 +86,7 @@ namespace UnityEditor.Search
             m_MaxFetchTimePerProviderMs = maxFetchTimePerProviderMs;
             if (itemEnumerator != null)
             {
-                m_ItemsEnumerator = new StackedEnumerator<SearchItem>(itemEnumerator);
+                m_ItemsEnumerator = new SearchEnumerator<SearchItem>(itemEnumerator);
                 Utils.tick += OnUpdate;
             }
         }
@@ -196,7 +196,7 @@ namespace UnityEditor.Search
     /// </summary>
     class MultiProviderAsyncSearchSession
     {
-        private Dictionary<string, AsyncSearchSession> m_SearchSessions = new Dictionary<string, AsyncSearchSession>();
+        private Dictionary<string, SearchSession> m_SearchSessions = new Dictionary<string, SearchSession>();
 
         /// <summary>
         /// This event is used to receive any async search result.
@@ -223,11 +223,11 @@ namespace UnityEditor.Search
         /// </summary>
         /// <param name="providerId"></param>
         /// <returns>The provider's async search session.</returns>
-        public AsyncSearchSession GetProviderSession(SearchContext context, string providerId)
+        public SearchSession GetProviderSession(SearchContext context, string providerId)
         {
             if (!m_SearchSessions.TryGetValue(providerId, out var session))
             {
-                session = new AsyncSearchSession(context);
+                session = new SearchSession(context);
                 session.sessionStarted += OnProviderAsyncSessionStarted;
                 session.sessionEnded += OnProviderAsyncSessionEnded;
                 session.asyncItemReceived += OnProviderAsyncItemReceived;

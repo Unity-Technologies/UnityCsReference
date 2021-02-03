@@ -1,6 +1,9 @@
 using JetBrains.Annotations;
-using UnityEditor;
+using System;
+using System.Threading;
+using UnityEditor.PackageManager;
 using UnityEditor.UIElements;
+using Object = UnityEngine.Object;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -12,11 +15,15 @@ namespace Unity.UI.Builder
         [UsedImplicitly]
         public new class UxmlFactory : UxmlFactory<ImageStyleField, UxmlTraits> {}
 
-        const string k_UssPath = BuilderConstants.UtilitiesPath + "/StyleField/ImageStyleField.uss";
+        const double k_TimeoutMilliseconds = 10000;
+        const int k_TimeDeltaMilliseconds = 10;
+
+        const string k_UssPath = BuilderConstants.UtilitiesPath + "/StyleField/ImageStyleField.uss"; 
+        const string k_2DSpriteEditorPackageName = "com.unity.2d.sprite";
 
         const string k_2DSpriteEditorButtonString = "Open in Sprite Editor";
         const string k_No2DSpriteEditorPackageInstalledTitle = "Package required - 2D Sprite Editor";
-        const string k_No2DSpriteEditorPackageInstalledMessage =
+        const string k_No2DSpriteEditorPackageInstalledMessage = 
             "You must install the 2D Sprite Editor package to edit Sprites.\n" +
             "If you do not install the package, you can use existing Sprites, but you cannot create or modify them.\n" +
             "Do you want to install the package now?";
@@ -30,7 +37,7 @@ namespace Unity.UI.Builder
         private const string k_2DSpriteEditorButtonTooltip_Installed =
             "Use the Sprite Editor to 9-slice the image or edit its 9-slicing values.";
 
-        private const string k_2DSpriteEditorButtonTooltip_NotInstalled =
+        private const string k_2DSpriteEditorButtonTooltip_NotInstalled = 
             k_2DSpriteEditorButtonTooltip_Installed +
             " Unity will prompt you to install the com.unity.2d.sprite package first.";
 
@@ -95,9 +102,38 @@ namespace Unity.UI.Builder
                 k_No2DSpriteEditorPackageInstalledMessage,
                 "Install",
                 "Cancel"))
-                Application.OpenURL(k_2DSpriteEditorInstallationURL);
+            {
+                if (!Install2DSpriteEditorPackage())
+                    Application.OpenURL(k_2DSpriteEditorInstallationURL);
+            }
         }
 
+        bool Install2DSpriteEditorPackage()
+        {
+            var startTime = DateTime.Now;
+            var addRequest = Client.Add(k_2DSpriteEditorPackageName);
+
+            while (!addRequest.IsCompleted)
+            {
+                var timeDelta = DateTime.Now - startTime;
+                if (timeDelta.TotalMilliseconds >= k_TimeoutMilliseconds)
+                {
+                    Debug.LogError(
+                        $"Could not install package \"{k_2DSpriteEditorPackageName}\" within reasonable time.\n" +
+                                 "Please note that the installation might be taking longer than expected and may still end successfully.");
+                    return false;
+                }
+
+                Thread.Sleep(k_TimeDeltaMilliseconds);
+            }
+
+            if (addRequest.Result == null)
+                Debug.LogError($"Could not install package \"{k_2DSpriteEditorPackageName}\".  Error: {addRequest.Error.message}");
+            else
+                Debug.Log($"Successfully installed package \"{k_2DSpriteEditorPackageName}\".");
+
+            return addRequest.Result != null;
+        }
 
         public void TryEnableVectorGraphicTypeSupport()
         {

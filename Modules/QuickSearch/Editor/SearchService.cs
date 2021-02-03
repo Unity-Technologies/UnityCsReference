@@ -232,7 +232,7 @@ namespace UnityEditor.Search
                     var iterator = provider.fetchItems(context, allItems, provider);
                     if (iterator != null && options.HasFlag(SearchFlags.Synchronous))
                     {
-                        using (var stackedEnumerator = new StackedEnumerator<SearchItem>(iterator))
+                        using (var stackedEnumerator = new SearchEnumerator<SearchItem>(iterator))
                         {
                             while (stackedEnumerator.MoveNext())
                             {

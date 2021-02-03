@@ -3017,11 +3017,7 @@ namespace UnityEditor
         {
             var repaint = false;
             if (m_lastRenderedTime + 0.033f < EditorApplication.timeSinceStartup)
-            {
-                if (sceneViewState.visualEffectGraphsEnabled)
-                    UnityEngine.VFX.VFXManager.RequestRepaint();
                 repaint = sceneViewState.alwaysRefreshEnabled;
-            }
             repaint |= LODUtility.IsLODAnimating(m_Camera);
 
             if (repaint)

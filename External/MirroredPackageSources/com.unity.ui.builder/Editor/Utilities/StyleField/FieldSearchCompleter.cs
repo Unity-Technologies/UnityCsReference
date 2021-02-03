@@ -51,6 +51,7 @@ namespace Unity.UI.Builder
 
                 if (!m_Enabled)
                 {
+                    results = s_EmptyMatchingDataList;
                     DisconnectFromField();
                     m_Popup?.Hide();
                 }
@@ -471,6 +472,7 @@ namespace Unity.UI.Builder
             AddToClassList(s_UssClassName);
 
             listView = new ListView();
+            listView.Q<ScrollView>().horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             listView.onItemsChosen += (obj) =>
             {
                 onElementChosen?.Invoke(listView.selectedIndex);

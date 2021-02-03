@@ -1113,6 +1113,7 @@ namespace UnityEditor
                 if (GUILayout.Button(Styles.clearData, EditorStyles.toolbarButton))
                 {
                     Clear();
+                    GUIUtility.ExitGUI();
                 }
             }
 
@@ -1304,9 +1305,6 @@ namespace UnityEditor
                 EditorApplication.isPaused = true;
 
             currentFrameChanged?.Invoke(frame, shouldPause);
-
-            if (ProfilerInstrumentationPopup.InstrumentationEnabled)
-                ProfilerInstrumentationPopup.UpdateInstrumentableFunctions();
 
             SetCurrentFrameDontPause(frame);
         }

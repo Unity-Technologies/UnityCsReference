@@ -151,7 +151,7 @@ namespace UnityEditor.Search
         private float m_PreviousItemSize = -1;
         private SearchQuery m_CurrentSearchQuery;
         private RefreshFlags m_DebounceRefreshFlags;
-        internal double m_DebounceTime = 0.0;
+        private double m_DebounceTime = 0.0;
 
         [SerializeField] private EditorWindow m_LastFocusedWindow;
         [SerializeField] private bool m_SearchBoxFocus;
@@ -176,6 +176,8 @@ namespace UnityEditor.Search
         public Action<SearchItem, bool> selectCallback { get; set; }
         public Func<SearchItem, bool> filterCallback { get; set; }
         public Action<SearchItem> trackingCallback { get; set; }
+
+        internal bool searchInProgress => (context?.searchInProgress ?? false) || nextFrame != null || m_DebounceTime > 1;
 
         public SearchSelection selection
         {
@@ -221,8 +223,13 @@ namespace UnityEditor.Search
 
         internal string windowId => m_WindowId;
 
+        private string searchTopicPlaceHolder => $"Search {searchTopic}";
+
         public void SetSearchText(string searchText, TextCursorPlacement moveCursor = TextCursorPlacement.Default)
         {
+            if (context == null)
+                return;
+
             context.searchText = searchText ?? string.Empty;
             if (!string.IsNullOrWhiteSpace(context.searchText))
                 SearchField.UpdateLastSearchText(context.searchText);
@@ -429,7 +436,7 @@ namespace UnityEditor.Search
             SetSelection(true, selection);
         }
 
-        private void SetSelection(bool trackSelection, params int[] selection)
+        private void SetSelection(bool trackSelection, int[] selection)
         {
             if (!multiselect && selection.Length > 1)
                 throw new Exception("Multi selection is not allowed.");
@@ -1503,7 +1510,7 @@ namespace UnityEditor.Search
                     if (string.IsNullOrEmpty(context.searchText))
                     {
                         EditorGUI.BeginDisabledGroup(true);
-                        EditorGUI.TextArea(searchTextRect, $"Search {searchTopic}", Styles.placeholderTextStyle);
+                        EditorGUI.TextArea(searchTextRect, searchTopicPlaceHolder, Styles.placeholderTextStyle);
                         EditorGUI.EndDisabledGroup();
                     }
                     else
@@ -1609,7 +1616,19 @@ namespace UnityEditor.Search
 
             var searchTextTrimmedRect = Styles.searchFieldTabToFilterBtn.margin.Remove(searchTextRect);
             var searchTextWidth = Styles.searchField.CalcSize(new GUIContent(context.searchText)).x;
-            if (searchTextWidth < searchTextTrimmedRect.width - Styles.pressToFilterContentWidth)
+            var pressTabToFilterContextStart = searchTextTrimmedRect.width - Styles.pressToFilterContentWidth;
+            var showPressTabToFilter = searchTextWidth < pressTabToFilterContextStart;
+
+            // Prevent overlap with search topic place holder only when it is visible
+            if (showPressTabToFilter && string.IsNullOrEmpty(context.searchText))
+            {
+                var searchTopicPlaceHolderWidth = Styles.placeholderTextStyle.CalcSize(new GUIContent(searchTopicPlaceHolder)).x;
+                var searchTopicPlaceHolderEnd = searchTextRect.center.x + searchTopicPlaceHolderWidth / 2;
+                if (searchTopicPlaceHolderEnd >= pressTabToFilterContextStart)
+                    showPressTabToFilter = false;
+            }
+
+            if (showPressTabToFilter)
             {
                 EditorGUI.BeginDisabledGroup(true);
                 GUI.Label(searchTextTrimmedRect, Styles.pressToFilterContent, Styles.searchFieldTabToFilterBtn);

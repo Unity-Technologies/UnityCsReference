@@ -152,7 +152,11 @@ namespace Unity.UI.Builder
             foreach (var Doc in allHierarchyDocuments)
             {
                 string docName = BreadcrumbFileName(Doc);
-                Action onBreadCrumbClick = () => document.GoToSubdocument(m_Viewport.documentRootElement, m_PaneWindow, Doc);
+                Action onBreadCrumbClick = () =>
+                {
+                    document.GoToSubdocument(m_Viewport.documentRootElement, m_PaneWindow, Doc);
+                    m_Viewport.SetViewFromDocumentSetting();
+                };
                 bool clickedOnSameDocument = document.activeOpenUXMLFile == Doc;
                 m_Breadcrumbs.PushItem(docName, clickedOnSameDocument ? null : onBreadCrumbClick);
             }
@@ -203,7 +207,10 @@ namespace Unity.UI.Builder
                     string.Format(BuilderConstants.DialogAbortActionOption, actionName.ToPascalCase()));
 
                 if (acceptAction)
+                {
+                    // Open a new, empty document
                     NewDocument(false);
+                }
 
                 return acceptAction;
             }
@@ -436,31 +443,31 @@ namespace Unity.UI.Builder
             }
 
             m_CanvasThemeMenu.menu.AppendAction("Default", a =>
-            {
-                ChangeCanvasTheme(BuilderDocument.CanvasTheme.Default, null);
-                UpdateCanvasThemeMenuStatus();
-            },
+                {
+                    ChangeCanvasTheme(BuilderDocument.CanvasTheme.Default, null);
+                    UpdateCanvasThemeMenuStatus();
+                },
                 a => document.currentCanvasTheme == BuilderDocument.CanvasTheme.Default
-                ? DropdownMenuAction.Status.Checked
-                : DropdownMenuAction.Status.Normal);
+                    ? DropdownMenuAction.Status.Checked
+                    : DropdownMenuAction.Status.Normal);
 
             m_CanvasThemeMenu.menu.AppendAction("Dark", a =>
-            {
-                ChangeCanvasTheme(BuilderDocument.CanvasTheme.Dark);
-                UpdateCanvasThemeMenuStatus();
-            },
+                {
+                    ChangeCanvasTheme(BuilderDocument.CanvasTheme.Dark);
+                    UpdateCanvasThemeMenuStatus();
+                },
                 a => document.currentCanvasTheme == BuilderDocument.CanvasTheme.Dark
-                ? DropdownMenuAction.Status.Checked
-                : DropdownMenuAction.Status.Normal);
+                    ? DropdownMenuAction.Status.Checked
+                    : DropdownMenuAction.Status.Normal);
 
             m_CanvasThemeMenu.menu.AppendAction("Light", a =>
-            {
-                ChangeCanvasTheme(BuilderDocument.CanvasTheme.Light);
-                UpdateCanvasThemeMenuStatus();
-            },
+                {
+                    ChangeCanvasTheme(BuilderDocument.CanvasTheme.Light);
+                    UpdateCanvasThemeMenuStatus();
+                },
                 a => document.currentCanvasTheme == BuilderDocument.CanvasTheme.Light
-                ? DropdownMenuAction.Status.Checked
-                : DropdownMenuAction.Status.Normal);
+                    ? DropdownMenuAction.Status.Checked
+                    : DropdownMenuAction.Status.Normal);
 
             m_CanvasThemeMenu.menu.AppendAction("Runtime", a =>
             {
@@ -468,8 +475,8 @@ namespace Unity.UI.Builder
                 UpdateCanvasThemeMenuStatus();
             },
                 a => document.currentCanvasTheme == BuilderDocument.CanvasTheme.Runtime
-                ? DropdownMenuAction.Status.Checked
-                : DropdownMenuAction.Status.Normal);
+                    ? DropdownMenuAction.Status.Checked
+                    : DropdownMenuAction.Status.Normal);
 
             if (m_ThemeManager != null && m_ThemeManager.themeFiles.Count > 0)
             {
@@ -486,7 +493,7 @@ namespace Unity.UI.Builder
                         ChangeCanvasTheme(BuilderDocument.CanvasTheme.Custom, theme);
                         UpdateCanvasThemeMenuStatus();
                     },
-                        a => document.currentCanvasThemeStyleSheet != null && AssetDatabase.GetAssetPath(document.currentCanvasThemeStyleSheet) == themeFile
+                    a => document.currentCanvasThemeStyleSheet != null && AssetDatabase.GetAssetPath(document.currentCanvasThemeStyleSheet) == themeFile
                         ? DropdownMenuAction.Status.Checked
                         : DropdownMenuAction.Status.Normal);
                 }
@@ -656,8 +663,6 @@ namespace Unity.UI.Builder
         void SetViewportSubTitle()
         {
             var subTitle = string.Empty;
-            if (!string.IsNullOrEmpty(m_BuilderPackageVersion))
-                subTitle += $"UI Builder {m_BuilderPackageVersion}";
 
             m_Viewport.subTitle = subTitle;
         }

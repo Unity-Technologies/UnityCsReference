@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -22,6 +23,7 @@ namespace Unity.UI.Builder
         string m_StyleName;
         bool m_PopupTemporarilyDisabled = false;
         bool m_EditingTemporarilyDisabled = false;
+        VariableCompleter m_CompleterOnTarget;
 
         public bool editingEnabled { get; set; } = true;
 
@@ -66,8 +68,8 @@ namespace Unity.UI.Builder
 
             if (targetField is DimensionStyleField || targetField is NumericStyleField || targetField is IntegerStyleField)
             {
-                var completerOnTarget = CreateCompleter();
-                completerOnTarget.textField = targetField.Q<TextField>();
+                m_CompleterOnTarget = CreateCompleter();
+                m_CompleterOnTarget.textField = targetField.Q<TextField>();
             }
 
             labelElement = new Label();
@@ -203,6 +205,10 @@ namespace Unity.UI.Builder
 
             var cShartStyleName = BuilderInspectorStyleFields.ConvertUssStyleNameToCSharpStyleName(styleName);
             var property = BuilderInspectorStyleFields.GetStyleProperty(m_Inspector.currentRule, cShartStyleName);
+
+            // Disable completion on text field-based property fields when editing inline styles
+            if (m_CompleterOnTarget != null)
+                m_CompleterOnTarget.enabled = BuilderSharedStyles.IsSelectorElement(m_Inspector.currentVisualElement);
 
             if (property != null)
             {

@@ -792,7 +792,6 @@ namespace UnityEditor
 
         void RepaintIfNeeded()
         {
-            UnityEngine.VFX.VFXManager.RequestRepaint();
             if (LODUtility.IsLODAnimatingOnDisplay(targetDisplay))
                 Repaint();
         }

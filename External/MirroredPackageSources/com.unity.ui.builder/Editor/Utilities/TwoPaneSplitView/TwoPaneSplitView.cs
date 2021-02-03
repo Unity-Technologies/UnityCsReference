@@ -339,10 +339,7 @@ namespace Unity.UI.Builder
             else
                 direction = -1;
 
-            if (m_FixedPaneIndex == 0)
-                m_Resizer = new TwoPaneSplitViewResizer(this, direction, m_Orientation);
-            else
-                m_Resizer = new TwoPaneSplitViewResizer(this, direction, m_Orientation);
+            m_Resizer = new TwoPaneSplitViewResizer(this, direction, m_Orientation);
 
             m_DragLineAnchor.AddManipulator(m_Resizer);
 

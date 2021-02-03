@@ -71,8 +71,9 @@ namespace Unity.UI.Builder
         {
             if (IsNoneOrAuto(trackedStyle) && !force)
                 return;
-            
-            delta /= canvas.zoomScale;
+
+            // Make sure our delta is a whole number so we don't end up with non-whole pixel values.
+            delta = Mathf.Ceil(delta / canvas.zoomScale);
 
             var styleName = GetStyleName(trackedStyle);
             SetStyleSheetValue(styleName, onStartDragPrimary + delta);

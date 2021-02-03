@@ -969,6 +969,14 @@ namespace UnityEditor
             return s_Text;
         }
 
+        internal static GUIContent TempContent(string text, string tip)
+        {
+            s_Text.image = null;
+            s_Text.text = text;
+            s_Text.tooltip = tip;
+            return s_Text;
+        }
+
         internal static GUIContent TempContent(Texture i)
         {
             s_Image.image = i;

@@ -402,8 +402,6 @@ namespace UnityEditor.Search
             if (!m_Disposed)
             {
                 EndSession();
-
-                m_Providers.Clear();
                 m_Disposed = true;
             }
         }

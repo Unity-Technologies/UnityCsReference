@@ -175,7 +175,7 @@ namespace UnityEditor
                 try
                 {
                     m_NestingLevel++;
-                    drawer.OnGUISafe(position, property.Copy(), label ?? EditorGUIUtility.TempContent(property.localizedDisplayName));
+                    drawer.OnGUISafe(position, property.Copy(), label ?? EditorGUIUtility.TempContent(property.localizedDisplayName, tooltip));
                 }
                 finally
                 {
@@ -302,7 +302,7 @@ namespace UnityEditor
                 try
                 {
                     m_NestingLevel++;
-                    height += drawer.GetPropertyHeightSafe(property.Copy(), label ?? EditorGUIUtility.TempContent(property.displayName));
+                    height += drawer.GetPropertyHeightSafe(property.Copy(), label ?? EditorGUIUtility.TempContent(property.localizedDisplayName, tooltip));
                 }
                 finally
                 {
@@ -322,7 +322,7 @@ namespace UnityEditor
                 bool childrenAreExpanded = property.isExpanded && EditorGUI.HasVisibleChildFields(property);
 
                 // Loop through all child properties
-                var tc = EditorGUIUtility.TempContent(property.displayName);
+                var tc = EditorGUIUtility.TempContent(property.localizedDisplayName, tooltip);
                 if (childrenAreExpanded)
                 {
                     SerializedProperty endProperty = property.GetEndProperty();

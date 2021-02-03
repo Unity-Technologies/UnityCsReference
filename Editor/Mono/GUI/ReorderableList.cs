@@ -1115,11 +1115,13 @@ namespace UnityEditorInternal
                     if (evt.keyCode == KeyCode.DownArrow)
                     {
                         index += 1;
+                        if (index >= m_Count) index = 0;
                         evt.Use();
                     }
                     if (evt.keyCode == KeyCode.UpArrow)
                     {
                         index -= 1;
+                        if (index < 0) index = m_Count - 1;
                         evt.Use();
                     }
                     if (evt.keyCode == KeyCode.LeftArrow)
@@ -1169,6 +1171,15 @@ namespace UnityEditorInternal
                         // don't allow arrowing through the ends of the list
                         m_Selection = m_Selection.Where(i => i >= 0 && i < (m_Elements != null ? m_Elements.arraySize : m_ElementList.Count)).ToList();
                     }
+                    if (oldIndex != index && PropertyEditor.FocusedPropertyEditor != null)
+                    {
+                        float offset = 0;
+                        if (oldIndex < index) offset = Mathf.Min(GetElementHeight(index), PropertyEditor.FocusedPropertyEditor.scrollViewportRect.height * 0.9f);
+
+                        Vector2 elementPosition = new Vector2(0, listRect.y + GetElementYOffset(index) + offset);
+                        elementPosition = GUIUtility.GUIToScreenPoint(elementPosition) - new Vector2(0, PropertyEditor.FocusedPropertyEditor.m_Pos.y);
+                        PropertyEditor.FocusedPropertyEditor.ScrollTo(elementPosition);
+                    }
                     break;
 
                 case EventType.MouseDown:
@@ -1216,8 +1227,11 @@ namespace UnityEditorInternal
                     break;
 
                 case EventType.MouseDrag:
-                    if (!m_Draggable || GUIUtility.hotControl != id || Mathf.Approximately(evt.delta.y, 0.0f)) // Ignore dragging on the x axis
+                    if (!m_Draggable || GUIUtility.hotControl != id || evt.modifiers != EventModifiers.None) // Ignore dragging on the x axis
+                    {
+                        m_Dragging = false;
                         break;
+                    }
 
                     // Set m_Dragging state on first MouseDrag event after we got hotcontrol (to prevent animating elements when deleting elements by context menu)
                     m_Dragging = true;
@@ -1232,11 +1246,11 @@ namespace UnityEditorInternal
                     UpdateDraggedY(listRect);
 
                     // handle inspector auto-scroll
-                    if (PropertyEditor.CurrentPropertyEditor != null)
+                    if (PropertyEditor.HoveredPropertyEditor != null)
                     {
                         Vector2 mousePoistion = new Vector2(0, Mathf.Clamp(evt.mousePosition.y, listRect.y, listRect.y + listRect.height));
-                        mousePoistion = GUIUtility.GUIToScreenPoint(mousePoistion) - new Vector2(0, PropertyEditor.CurrentPropertyEditor.m_Pos.y);
-                        PropertyEditor.CurrentPropertyEditor.AutoScroll(mousePoistion);
+                        mousePoistion = GUIUtility.GUIToScreenPoint(mousePoistion) - new Vector2(0, PropertyEditor.HoveredPropertyEditor.m_Pos.y);
+                        PropertyEditor.HoveredPropertyEditor.AutoScroll(mousePoistion);
                     }
                     evt.Use();
                     break;
@@ -1264,7 +1278,7 @@ namespace UnityEditorInternal
                     {
                         // What will be the index of this if we release?
                         int targetIndex = CalculateRowIndex(listRect);
-                        if (index != targetIndex)
+                        if (index != targetIndex && m_Dragging)
                         {
                             // if the target index is different than the current index...
                             if (m_SerializedObject != null && m_Elements != null)

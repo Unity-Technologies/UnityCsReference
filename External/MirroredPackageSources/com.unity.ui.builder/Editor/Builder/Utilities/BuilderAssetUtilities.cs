@@ -283,7 +283,8 @@ namespace Unity.UI.Builder
                     document.visualTreeAsset, BuilderConstants.ChangeSelectionUndoMessage);
 
                 var vta = ve.GetVisualTreeAsset();
-                vta.AddElement(null, BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName);
+                var vtaRoot = vta.GetRootUXMLElement();
+                vta.AddElement(vtaRoot, BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName);
             }
             else if (ve.GetVisualElementAsset() != null)
             {

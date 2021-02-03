@@ -94,7 +94,15 @@ namespace Unity.UI.Builder
         {
             get
             {
-                m_Settings = BuilderDocumentSettings.CreateOrLoadSettingsObject(m_Settings, uxmlPath);
+                // If this uxmnl is being edited in place then use the parent document's settings
+                if (isChildSubDocument && openSubDocumentParentSourceTemplateAssetIndex != -1)
+                {
+                    m_Settings = openSubDocumentParent.settings;
+                }
+                else
+                {
+                    m_Settings = BuilderDocumentSettings.CreateOrLoadSettingsObject(m_Settings, uxmlPath);
+                }
                 return m_Settings;
             }
         }
@@ -345,7 +353,6 @@ namespace Unity.UI.Builder
                 RemoveStyleSheetsFromRootAsset(asset);
             }
         }
-
 
         public void AddStyleSheetsToAllRootElements(string newUssPath = null, int newUssIndex = 0)
         {
@@ -748,6 +755,7 @@ namespace Unity.UI.Builder
                 return;
 
             documentRootElement.Clear();
+            documentRootElement.styleSheets.Clear();
             BuilderSharedStyles.ClearContainer(documentRootElement);
 
             documentRootElement.SetProperty(

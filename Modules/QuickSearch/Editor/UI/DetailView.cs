@@ -19,9 +19,6 @@ namespace UnityEditor.Search
         private Texture2D m_PreviewTexture;
         private bool m_DisposedValue;
 
-        static RectOffset s_RectOffsetZero = new RectOffset();
-        static private Dictionary<string, bool> s_EditorCollapsed = new Dictionary<string, bool>();
-
         public DetailView(ISearchView searchView)
         {
             m_SearchView = searchView;
@@ -212,32 +209,24 @@ namespace UnityEditor.Search
                         SetEditorCollapsed(e, newCollapsed);
                     if (!newCollapsed)
                     {
-                        using (new EditorGUILayout.VerticalScope(EditorStyles.inspectorFullWidthMargins))
+                        var wideMode = width > Editor.k_WideModeMinWidth;
+                        using (new EditorGUILayout.VerticalScope(wideMode ? Styles.inpsectorWideMargins : Styles.inpsectorMargins))
                         {
                             if (e.HasPreviewGUI())
                             {
                                 var previewRect = EditorGUILayout.GetControlRect(false, 256,
                                     GUIStyle.none, GUILayout.MaxWidth(width), GUILayout.Height(256));
                                 if (previewRect.width > 0 && previewRect.height > 0)
-                                {
-                                    previewRect = Styles.largePreview.margin.Remove(previewRect);
                                     e.OnInteractivePreviewGUI(previewRect, Styles.largePreview);
-                                }
                             }
 
                             GUI.changed = false;
                             EditorGUIUtility.currentViewWidth = width;
-                            EditorGUIUtility.wideMode = width > Editor.k_WideModeMinWidth;
-                            EditorGUIUtility.hierarchyMode = width > Editor.k_WideModeMinWidth;
-                            EditorGUIUtility.labelWidth = Mathf.Max((width > 175f ? 0.4f : 0.2f) * width, 145f);
-                            var bp = EditorStyles.inspectorDefaultMargins.padding;
-                            if (EditorGUIUtility.hierarchyMode)
-                                EditorStyles.inspectorDefaultMargins.padding = s_RectOffsetZero;
-
+                            EditorGUIUtility.wideMode = wideMode;
+                            EditorGUIUtility.hierarchyMode = wideMode;
+                            EditorGUIUtility.labelWidth = Mathf.Max((wideMode ? 0.4f : 0.2f) * width, 150f);
                             e.OnInspectorGUI();
                             EditorGUIUtility.currentViewWidth = -1f;
-                            if (EditorGUIUtility.hierarchyMode)
-                                EditorStyles.inspectorDefaultMargins.padding = bp;
                         }
                     }
                 }
@@ -250,14 +239,12 @@ namespace UnityEditor.Search
 
         private void SetEditorCollapsed(Editor e, bool collapsed)
         {
-            s_EditorCollapsed[e.target.GetType().Name] = collapsed;
+            SessionState.SetBool($"collapsed_{e.target.GetType().Name}", collapsed);
         }
 
         private bool IsEditorCollapsed(Editor e)
         {
-            if (!s_EditorCollapsed.TryGetValue(e.target.GetType().Name, out var collapsed))
-                return false;
-            return collapsed;
+            return SessionState.GetBool($"collapsed_{e.target.GetType().Name}", false);
         }
 
         private void SetupEditors(SearchSelection selection, ShowDetailsOptions showOptions)

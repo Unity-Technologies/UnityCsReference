@@ -148,6 +148,8 @@ namespace Unity.UI.Builder
         {
             m_SelectionMadeExternally = true;
 
+            m_ElementHierarchyView.ClearHighlightOverlay();
+
             UpdateHierarchy(hasUnsavedChanges);
 
             if (!m_Selection.isEmpty)

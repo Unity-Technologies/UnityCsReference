@@ -162,7 +162,14 @@ namespace UnityEditor.Search
             }
             searchSession.context.searchText = query;
             var items = SearchService.GetItems(searchSession.context);
-            return items.Select(item => item.id);
+            return items.Select(item => ToPath(item));
+        }
+
+        private string ToPath(SearchItem item)
+        {
+            if (GlobalObjectId.TryParse(item.id, out var gid))
+                return AssetDatabase.GUIDToAssetPath(gid.assetGUID);
+            return item.id;
         }
     }
 
@@ -230,7 +237,7 @@ namespace UnityEditor.Search
     {
         // Internal for tests purposes.
         internal QuickSearch qsWindow;
-        public override string providerId => "res";
+        public override string providerId => "asset";
 
         public override void BeginSearch(ISearchContext context, string query) {}
         public override void BeginSession(ISearchContext context) {}

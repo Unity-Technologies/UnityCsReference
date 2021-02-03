@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -16,6 +16,12 @@ namespace UnityEditor.Search
 {
     class AssetIndexer : ObjectIndexer
     {
+        static string[] s_AssetDabaseRoots;
+        static AssetIndexer()
+        {
+            s_AssetDabaseRoots = AssetDatabase.GetAssetRootFolders();
+        }
+
         public AssetIndexer(SearchDatabase.Settings settings)
             : base(string.IsNullOrEmpty(settings.name) ? "assets" : settings.name, settings)
         {
@@ -25,10 +31,15 @@ namespace UnityEditor.Search
         {
             if (settings.roots == null)
                 settings.roots = new string[0];
-            var roots = settings.roots.Where(r => Directory.Exists(r)).ToArray();
+            var roots = settings.roots;
             if (roots.Length == 0)
                 roots = new string[] { settings.root };
-            return roots.Select(r => r.Replace("\\", "/"));
+
+            return roots
+                .Select(r => r.Replace("\\", "/").Trim('/'))
+                .Concat(roots.SelectMany(r => s_AssetDabaseRoots.Where(adbRoot => adbRoot.StartsWith(r, StringComparison.OrdinalIgnoreCase))))
+                .Distinct()
+                .Where(r => Directory.Exists(r));
         }
 
         internal override List<string> GetDependencies()
@@ -50,14 +61,37 @@ namespace UnityEditor.Search
             return Utils.GetSourceAssetFileHash(guid);
         }
 
+        public string GetPartialPath(string path)
+        {
+            path = path.Replace("Assets/", "");
+            if (path.StartsWith("Packages/", StringComparison.Ordinal))
+                path = Regex.Replace(path, @"Packages\/com\.unity\.[^/]+\/", "");
+            return path;
+        }
+
+        public void IndexTypes(Type objType, int documentIndex)
+        {
+            while (objType != null && objType != typeof(Object))
+            {
+                if (objType == typeof(GameObject))
+                    IndexProperty(documentIndex, "t", "prefab", saveKeyword: true);
+                if (objType == typeof(MonoScript))
+                    IndexProperty(documentIndex, "t", "script", saveKeyword: true);
+                IndexProperty(documentIndex, "t", objType.Name, saveKeyword: true);
+                objType = objType.BaseType;
+            }
+        }
+
         public override void IndexDocument(string path, bool checkIfDocumentExists)
         {
-            var documentIndex = AddDocument(path, checkIfDocumentExists);
+            int assetInstanceId = AssetDatabase.GetMainAssetInstanceID(path);
+            var globalObjectId = GlobalObjectId.GetGlobalObjectIdSlow(assetInstanceId);
+            var documentIndex = AddDocument(globalObjectId.ToString(), path, checkIfDocumentExists);
             if (documentIndex < 0)
                 return;
 
             AddSourceDocument(path, GetDocumentHash(path));
-            IndexWordComponents(documentIndex, path);
+            IndexWordComponents(documentIndex, GetPartialPath(path));
 
             try
             {
@@ -96,15 +130,10 @@ namespace UnityEditor.Search
                 if (settings.options.types && at != null)
                 {
                     IndexWord(documentIndex, at.Name);
-                    while (at != null && at != typeof(Object))
-                    {
-                        if (at == typeof(GameObject))
-                            IndexProperty(documentIndex, "t", "prefab", saveKeyword: true);
-                        if (at == typeof(MonoScript))
-                            IndexProperty(documentIndex, "t", "script", saveKeyword: true);
-                        IndexProperty(documentIndex, "t", at.Name, saveKeyword: true);
-                        at = at.BaseType;
-                    }
+                    IndexTypes(at, documentIndex);
+
+                    foreach (var obj in AssetDatabase.LoadAllAssetRepresentationsAtPath(path))
+                        IndexTypes(obj.GetType(), documentIndex);
                 }
                 else if (at != null)
                 {

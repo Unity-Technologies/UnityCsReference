@@ -226,7 +226,7 @@ namespace UnityEditor.Search
         /// <param name="pingSelection">If true, will ping the selected objects.</param>
         public static void SelectMultipleItems(IEnumerable<SearchItem> items, bool focusProjectBrowser = false, bool pingSelection = true)
         {
-            Selection.objects = items.Select(i => i.provider.toObject(i, typeof(UnityEngine.Object))).Where(o => o).ToArray();
+            Selection.objects = items.Select(i => i.ToObject()).Where(o => o).ToArray();
             if (Selection.objects.Length == 0)
             {
                 var firstItem = items.FirstOrDefault();

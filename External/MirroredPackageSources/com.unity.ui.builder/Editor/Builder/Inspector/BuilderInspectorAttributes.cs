@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor;
@@ -66,12 +67,18 @@ namespace Unity.UI.Builder
 
             foreach (var attribute in attributeList)
             {
-                if (attribute == null || attribute.name == null)
+                if (attribute == null || attribute.name == null || IsAttributeIgnored(attribute))
                     continue;
 
                 var styleRow = CreateAttributeRow(attribute);
                 m_AttributesSection.Add(styleRow);
             }
+        }
+
+        static bool IsAttributeIgnored(UxmlAttributeDescription attribute)
+        {
+            // Temporary check until we add an "obsolete" mechanism to uxml attribute description.
+            return attribute.name == "show-horizontal-scroller" || attribute.name == "show-vertical-scroller";
         }
 
         BuilderStyleRow CreateAttributeRow(UxmlAttributeDescription attribute)
@@ -142,8 +149,8 @@ namespace Unity.UI.Builder
                 fieldElement = uiField;
             }
             else if (attributeType.IsGenericType &&
-                     !attributeType.GetGenericArguments()[0].IsEnum &&
-                     attributeType.GetGenericArguments()[0] is Type)
+                !attributeType.GetGenericArguments()[0].IsEnum &&
+                attributeType.GetGenericArguments()[0] is Type)
             {
                 var uiField = new TextField(fieldLabel);
                 uiField.isDelayed = true;
@@ -225,11 +232,11 @@ namespace Unity.UI.Builder
                 }
                 else if (attributeName == "show-horizontal-scroller")
                 {
-                    return scrollView.horizontalScrollerVisibility == ScrollerVisibility.AlwaysVisible;
+                    return scrollView.horizontalScrollerVisibility != ScrollerVisibility.Hidden;
                 }
                 else if (attributeName == "show-vertical-scroller")
                 {
-                    return scrollView.verticalScrollerVisibility == ScrollerVisibility.AlwaysVisible;
+                    return scrollView.verticalScrollerVisibility != ScrollerVisibility.Hidden;
                 }
             }
             else if (currentVisualElement is ListView listView)
@@ -297,18 +304,18 @@ namespace Unity.UI.Builder
                 (fieldElement as ColorField).SetValueWithoutNotify((Color)veValueAbstract);
             }
             else if (attributeType.IsGenericType &&
-                     !attributeType.GetGenericArguments()[0].IsEnum &&
-                     attributeType.GetGenericArguments()[0] is Type &&
-                     fieldElement is TextField textField &&
-                     veValueAbstract is Type veTypeValue)
+                !attributeType.GetGenericArguments()[0].IsEnum &&
+                attributeType.GetGenericArguments()[0] is Type &&
+                fieldElement is TextField textField &&
+                veValueAbstract is Type veTypeValue)
             {
                 var fullTypeName = veTypeValue.AssemblyQualifiedName;
                 var fullTypeNameSplit = fullTypeName.Split(',');
                 textField.SetValueWithoutNotify($"{fullTypeNameSplit[0]},{fullTypeNameSplit[1]}");
             }
             else if (attributeType.IsGenericType &&
-                     attributeType.GetGenericArguments()[0].IsEnum &&
-                     fieldElement is EnumField)
+                attributeType.GetGenericArguments()[0].IsEnum &&
+                fieldElement is EnumField)
             {
                 var propInfo = attributeType.GetProperty("defaultValue");
                 var enumValue = propInfo.GetValue(attribute, null) as Enum;
@@ -423,9 +430,9 @@ namespace Unity.UI.Builder
                 f.SetValueWithoutNotify(a.defaultValue);
             }
             else if (attributeType.IsGenericType &&
-                     !attributeType.GetGenericArguments()[0].IsEnum &&
-                     attributeType.GetGenericArguments()[0] is Type &&
-                     fieldElement is TextField)
+                !attributeType.GetGenericArguments()[0].IsEnum &&
+                attributeType.GetGenericArguments()[0] is Type &&
+                fieldElement is TextField)
             {
                 var a = attribute as TypedUxmlAttributeDescription<Type>;
                 var f = fieldElement as TextField;
@@ -435,8 +442,8 @@ namespace Unity.UI.Builder
                     f.SetValueWithoutNotify(a.defaultValue.ToString());
             }
             else if (attributeType.IsGenericType &&
-                     attributeType.GetGenericArguments()[0].IsEnum &&
-                     fieldElement is EnumField)
+                attributeType.GetGenericArguments()[0].IsEnum &&
+                fieldElement is EnumField)
             {
                 var propInfo = attributeType.GetProperty("defaultValue");
                 var enumValue = propInfo.GetValue(attribute, null) as Enum;
@@ -473,8 +480,8 @@ namespace Unity.UI.Builder
                     var attributeName = fieldElement.bindingPath;
                     var vea = currentVisualElement.GetVisualElementAsset();
                     return vea.HasAttribute(attributeName)
-                    ? DropdownMenuAction.Status.Normal
-                    : DropdownMenuAction.Status.Disabled;
+                        ? DropdownMenuAction.Status.Normal
+                        : DropdownMenuAction.Status.Disabled;
                 },
                 evt.target);
 
@@ -620,13 +627,13 @@ namespace Unity.UI.Builder
         void OnAttributeValueChange(ChangeEvent<float> evt)
         {
             var field = evt.target as FloatField;
-            PostAttributeValueChange(field, evt.newValue.ToString());
+            PostAttributeValueChange(field, evt.newValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
         }
 
         void OnAttributeValueChange(ChangeEvent<double> evt)
         {
             var field = evt.target as DoubleField;
-            PostAttributeValueChange(field, evt.newValue.ToString());
+            PostAttributeValueChange(field, evt.newValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
         }
 
         void OnAttributeValueChange(ChangeEvent<int> evt)
@@ -682,8 +689,8 @@ namespace Unity.UI.Builder
                     styleField.AddToClassList(BuilderConstants.InspectorLocalStyleOverrideClassName);
                 }
                 else if (!string.IsNullOrEmpty(styleField.bindingPath) &&
-                         field.bindingPath != styleField.bindingPath &&
-                         !styleField.ClassListContains(BuilderConstants.InspectorLocalStyleOverrideClassName))
+                    field.bindingPath != styleField.bindingPath &&
+                    !styleField.ClassListContains(BuilderConstants.InspectorLocalStyleOverrideClassName))
                 {
                     styleField.AddToClassList(BuilderConstants.InspectorLocalStyleResetClassName);
                 }
