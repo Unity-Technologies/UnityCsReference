@@ -102,6 +102,8 @@ namespace UnityEditor
         CloudRendering = 30,
 
         GameCoreScarlett = 31,
-        GameCoreXboxOne = 32
+        GameCoreXboxOne = 32,
+
+        PS5 = 33,
     }
 }

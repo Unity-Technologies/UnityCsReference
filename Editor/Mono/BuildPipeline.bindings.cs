@@ -176,6 +176,14 @@ namespace UnityEditor
         AssetBundleStripUnityVersion = 32768 // 1 << 15
     }
 
+    // Keep in sync with CanAppendBuild in EditorUtility.h
+    public enum CanAppendBuild
+    {
+        Unsupported = 0,
+        Yes = 1,
+        No = 2,
+    }
+
     public struct AssetBundleBuild
     {
         public string   assetBundleName;
@@ -261,6 +269,9 @@ namespace UnityEditor
             EditorApplication.Exit(1);
         }
 
+        [FreeFunction]
+        public extern static CanAppendBuild BuildCanBeAppended(BuildTarget target, string location);
+
         public static BuildReport BuildPlayer(EditorBuildSettingsScene[] levels, string locationPathName, BuildTarget target, BuildOptions options)
         {
             BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
@@ -302,10 +313,10 @@ namespace UnityEditor
 
             if ((options & BuildOptions.AcceptExternalModificationsToPlayer) == BuildOptions.AcceptExternalModificationsToPlayer)
             {
-                UnityEditorInternal.CanAppendBuild canAppend = UnityEditorInternal.InternalEditorUtility.BuildCanBeAppended(target, locationPathName);
-                if (canAppend == UnityEditorInternal.CanAppendBuild.Unsupported)
+                CanAppendBuild canAppend = BuildCanBeAppended(target, locationPathName);
+                if (canAppend == CanAppendBuild.Unsupported)
                     throw new InvalidOperationException("The build target does not support build appending.");
-                if (canAppend == UnityEditorInternal.CanAppendBuild.No)
+                if (canAppend == CanAppendBuild.No)
                     throw new InvalidOperationException("The build cannot be appended.");
             }
 

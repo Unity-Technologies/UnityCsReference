@@ -4,6 +4,9 @@
 
 using System.Runtime.CompilerServices;
 
+// Allow internal visibility for com.unity.TextCore package
+[assembly: InternalsVisibleTo("UnityEngine.TextCoreTextEngineModule")]
+
 // Allow internal visibility for testing purposes.
 [assembly: InternalsVisibleTo("Unity.TextCore")]
 [assembly: InternalsVisibleTo("Unity.TextCore.Editor")]

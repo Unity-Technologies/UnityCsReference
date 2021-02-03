@@ -128,19 +128,6 @@ namespace UnityEditor.Scripting.Compilers
             }
         }
 
-        public static bool IsReferenceToMissingObsoleteMember(string namespaceName, string className)
-        {
-            try
-            {
-                var found = FindTypeInLoadedAssemblies(t => t.Name == className && t.Namespace == namespaceName && IsUpdateable(t));
-                return found != null;
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                throw new Exception(ex.Message + ex.LoaderExceptions.Aggregate("", (acc, curr) => acc + "\r\n\t" + curr.Message));
-            }
-        }
-
         public static void UpdateScripts(string responseFile, string sourceExtension, string[] sourceFiles)
         {
             bool anyFileInAssetsFolder = false;

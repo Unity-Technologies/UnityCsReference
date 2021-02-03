@@ -1256,7 +1256,9 @@ namespace UnityEngine.Rendering
         Switch = 22,
         XboxOneD3D12 = 23,
         GameCoreXboxOne = 24,
-        GameCoreScarlett = 25
+        GameCoreScarlett = 25,
+        PlayStation5 = 26,
+        PlayStation5NGGC = 27
     }
 
     public enum GraphicsTier

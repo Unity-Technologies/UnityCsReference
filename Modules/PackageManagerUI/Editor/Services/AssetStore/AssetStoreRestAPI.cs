@@ -94,12 +94,12 @@ namespace UnityEditor.PackageManager.UI
         public virtual void GetPurchases(string query, Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)
         {
             // Abort any previous request
-            m_HttpClientFactory.AbortByTag("GetPurchases");
+            m_HttpClientFactory.AbortByTag($"GetPurchases{query}");
 
             HandleHttpRequest(() =>
             {
                 var httpRequest = m_HttpClientFactory.GetASyncHTTPClient($"{host}{k_PurchasesUri}{query ?? string.Empty}");
-                httpRequest.tag = "GetPurchases";
+                httpRequest.tag = $"GetPurchases{query}";
                 return httpRequest;
             }, doneCallbackAction, errorCallbackAction);
         }

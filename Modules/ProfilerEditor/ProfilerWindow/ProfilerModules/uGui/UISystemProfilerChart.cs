@@ -35,9 +35,9 @@ namespace UnityEditor
             ProfilerDriver.GetUISystemEventMarkersBatch(firstFrame, frameCount, m_Markers, m_MarkerNames);
         }
 
-        public override int DoChartGUI(int currentFrame, bool active)
+        public override int DoChartGUI(Rect chartRect, int currentFrame, bool active)
         {
-            int res = base.DoChartGUI(currentFrame, active);
+            int res = base.DoChartGUI(chartRect, currentFrame, active);
             if (m_Markers != null && showMarkers)
             {
                 Rect rect = GUILayoutUtility.GetLastRect();

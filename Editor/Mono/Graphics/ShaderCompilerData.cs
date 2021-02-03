@@ -73,6 +73,8 @@ namespace UnityEditor.Rendering
         Switch          = 19, // Nintendo Switch (NVN)
         XboxOneD3D12    = 20, // Xbox One D3D12
         GameCore        = 21, // Game Core
+        PS5             = 23, // PS5
+        PS5NGGC         = 24  // PS5 NGGC
     }
 
     public enum ShaderCompilerMessageSeverity

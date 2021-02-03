@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.IMGUI.Controls
 {
@@ -229,7 +230,16 @@ namespace UnityEditor.IMGUI.Controls
             }
 
             // We create a guiclip to let the header be able to scroll horizontally according to the tree view's horizontal scroll
-            GUIClip.Push(rect, new Vector2(-xScroll, 0f), Vector2.zero, false);
+            // If the tree view is inside a UI Toolkit scroll view, however, we don't need the x scroll offset.
+
+            Vector2 scrollOffset = Vector2.zero;
+            var container = UIElementsUtility.GetCurrentIMGUIContainer();
+            var uiScrollView = container?.GetFirstAncestorOfType<ScrollView>();
+            if (uiScrollView == null)
+            {
+                scrollOffset = new Vector2(-xScroll, 0f);
+            }
+            GUIClip.Push(rect, scrollOffset, Vector2.zero, false);
             {
                 Rect localRect = new Rect(0, 0, rect.width, rect.height);
 
