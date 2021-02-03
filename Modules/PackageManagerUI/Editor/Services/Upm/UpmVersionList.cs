@@ -43,6 +43,8 @@ namespace UnityEditor.PackageManager.UI
         private int m_InstalledIndex;
         public IPackageVersion installed { get { return m_InstalledIndex < 0 ? null : m_Versions[m_InstalledIndex]; } }
 
+        private bool isUnityPackage => m_Versions.All(v => v.isUnityPackage);
+
         public IPackageVersion latest => m_Versions.LastOrDefault();
 
         public IPackageVersion recommended
@@ -50,15 +52,18 @@ namespace UnityEditor.PackageManager.UI
             get
             {
                 var installed = this.installed;
+
+                if (installed != null && installed.HasTag(PackageTag.VersionLocked))
+                    return installed;
+
+                if ((installed != null && installed.HasTag(PackageTag.Preview)) || !isUnityPackage)
+                    return latest;
+
                 if (installed != null)
                 {
-                    if (installed.HasTag(PackageTag.VersionLocked))
-                        return installed;
-
                     var newerVersions = m_Versions.Skip(m_InstalledIndex + 1).SkipWhile(v => v.version <= installed.version);
                     return newerVersions.LastOrDefault(v => v.HasTag(PackageTag.Verified))
                         ?? newerVersions.LastOrDefault(v => v.HasTag(PackageTag.Release) && v.version?.IsPatchOf(installed.version) == true)
-                        ?? (installed.HasTag(PackageTag.Preview) ? newerVersions.LastOrDefault(v => v.version?.IsPatchOf(installed.version) == true) : installed)
                         ?? installed;
                 }
                 else

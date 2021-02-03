@@ -307,6 +307,9 @@ namespace UnityEditor
                 }
             }
 
+            if (targets.Length == 1)
+                SpeedTreeMaterialFixer.DoFixerUI((target as LODGroup).gameObject);
+
             // Apply the property, handle undo
             serializedObject.ApplyModifiedProperties();
 

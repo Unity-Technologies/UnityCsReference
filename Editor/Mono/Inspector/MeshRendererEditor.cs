@@ -82,6 +82,9 @@ namespace UnityEditor
             RayTracingSettingsGUI();
             OtherSettingsGUI(true, false, false);
 
+            if (targets.Length == 1)
+                SpeedTreeMaterialFixer.DoFixerUI((target as MeshRenderer).gameObject);
+
             serializedObject.ApplyModifiedProperties();
         }
     }

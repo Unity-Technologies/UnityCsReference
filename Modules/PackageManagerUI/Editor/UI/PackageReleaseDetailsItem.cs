@@ -28,11 +28,6 @@ namespace UnityEditor.PackageManager.UI
             var root = m_ResourceLoader.GetTemplate("PackageReleaseDetailsItem.uxml");
             Add(root);
             cache = new VisualElementCache(root);
-
-            root.Query<TextField>().ForEach(t =>
-            {
-                t.isReadOnly = true;
-            });
         }
 
         public PackageReleaseDetailsItem(string versionString, DateTime? publishedDate, string releaseNotes) : this()
@@ -63,9 +58,9 @@ namespace UnityEditor.PackageManager.UI
         }
 
         private VisualElementCache cache { get; set; }
-        private TextField versionAndReleaseDateLabel { get { return cache.Get<TextField>("versionAndReleaseDate"); } }
+        private SelectableLabel versionAndReleaseDateLabel { get { return cache.Get<SelectableLabel>("versionAndReleaseDate"); } }
         private VisualElement releaseNotesContainer { get { return cache.Get<VisualElement>("releaseNotesContainer"); } }
-        private TextField releaseNotesLabel { get { return cache.Get<TextField>("releaseNotes"); } }
+        private SelectableLabel releaseNotesLabel { get { return cache.Get<SelectableLabel>("releaseNotes"); } }
         private Button moreButton { get { return cache.Get<Button>("releaseDetailMore"); } }
         private Button lessButton { get { return cache.Get<Button>("releaseDetailLess"); } }
     }

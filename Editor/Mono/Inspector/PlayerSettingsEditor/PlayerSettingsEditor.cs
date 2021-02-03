@@ -143,6 +143,7 @@ namespace UnityEditor
             public static readonly GUIContent appleDeveloperTeamID = EditorGUIUtility.TrTextContent("iOS Developer Team ID", "Developers can retrieve their Team ID by visiting the Apple Developer site under Account > Membership.");
             public static readonly GUIContent useOnDemandResources = EditorGUIUtility.TrTextContent("Use on-demand resources*");
             public static readonly GUIContent gcIncremental = EditorGUIUtility.TrTextContent("Use incremental GC", "With incremental Garbage Collection, the Garbage Collector will try to time-slice the collection task into multiple steps, to avoid long GC times preventing content from running smoothly.");
+            public static readonly GUIContent assemblyVersionValidation = EditorGUIUtility.TrTextContent("Assembly Version Validation", "When Mono Resolves types from a assembly that is Strong Named, versions have to match with the one already loaded.");
             public static readonly GUIContent accelerometerFrequency = EditorGUIUtility.TrTextContent("Accelerometer Frequency*");
             public static readonly GUIContent cameraUsageDescription = EditorGUIUtility.TrTextContent("Camera Usage Description*", "String shown to the user when requesting permission to use the device camera. Written to the NSCameraUsageDescription field in Xcode project's info.plist file");
             public static readonly GUIContent locationUsageDescription = EditorGUIUtility.TrTextContent("Location Usage Description*", "String shown to the user when requesting permission to access the device location. Written to the NSLocationWhenInUseUsageDescription field in Xcode project's info.plist file.");
@@ -318,6 +319,7 @@ namespace UnityEditor
         SerializedProperty m_SuppressCommonWarnings;
         SerializedProperty m_AllowUnsafeCode;
         SerializedProperty m_GCIncremental;
+        SerializedProperty m_AssemblyVersionValidation;
 
         SerializedProperty m_OverrideDefaultApplicationIdentifier;
         SerializedProperty m_ApplicationIdentifier;
@@ -523,6 +525,7 @@ namespace UnityEditor
             m_SuppressCommonWarnings        = FindPropertyAssert("suppressCommonWarnings");
             m_AllowUnsafeCode               = FindPropertyAssert("allowUnsafeCode");
             m_GCIncremental                 = FindPropertyAssert("gcIncremental");
+            m_AssemblyVersionValidation = FindPropertyAssert("assemblyVersionValidation");
             m_UseDeterministicCompilation   = FindPropertyAssert("useDeterministicCompilation");
             m_UseReferenceAssemblies        = FindPropertyAssert("useReferenceAssemblies");
             m_ScriptingBackend              = FindPropertyAssert("scriptingBackend");
@@ -1987,51 +1990,7 @@ namespace UnityEditor
                 m_VirtualTexturingSupportEnabled.boolValue = EditorGUILayout.Toggle(SettingsContent.virtualTexturingSupportEnabled, m_VirtualTexturingSupportEnabled.boolValue);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    bool doApply = false;
-                    var dirtyScenes = new List<Scene>(EditorSceneManager.sceneCount);
-                    for (int i = 0; i < EditorSceneManager.sceneCount; ++i)
-                    {
-                        var scene = EditorSceneManager.GetSceneAt(i);
-                        if (scene.isDirty)
-                            dirtyScenes.Add(scene);
-                    }
-                    if (dirtyScenes.Count != 0)
-                    {
-                        var result = EditorUtility.DisplayDialogComplex("Changing Virtual Texturing support",
-                            "Enabling or disabling Virtual Texturing requires a restart of the Editor.",
-                            "Save and Restart", "Cancel", "Discard Changes and Restart");
-                        if (result == 1)
-                        {
-                            doApply = false; // Cancel was selected
-                        }
-                        else
-                        {
-                            doApply = true;
-                            if (result == 0) // Save and Restart was selected
-                            {
-                                for (int i = 0; i < dirtyScenes.Count; ++i)
-                                {
-                                    bool saved = EditorSceneManager.SaveScene(dirtyScenes[i]);
-                                    if (saved == false)
-                                    {
-                                        doApply = false;
-                                    }
-                                }
-                            }
-                            else // Discard Changes and Restart was selected
-                            {
-                                for (int i = 0; i < dirtyScenes.Count; ++i)
-                                    EditorSceneManager.ClearSceneDirtiness(dirtyScenes[i]);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        doApply = EditorUtility.DisplayDialog("Changing Virtual Texturing support",
-                            "Enabling or disabling Virtual Texturing requires a restart of the Editor.",
-                            "Restart Editor", "Cancel");
-                    }
-                    if (doApply)
+                    if (PlayerSettings.OnVirtualTexturingChanged())
                     {
                         PlayerSettings.SetVirtualTexturingSupportEnabled(m_VirtualTexturingSupportEnabled.boolValue);
                         EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
@@ -2394,6 +2353,11 @@ namespace UnityEditor
                         else
                             m_GCIncremental.boolValue = oldValue;
                     }
+                }
+
+                using (new EditorGUI.DisabledScope(PlayerSettings.GetScriptingBackend(targetGroup) != ScriptingImplementation.Mono2x))
+                {
+                    EditorGUILayout.PropertyField(m_AssemblyVersionValidation, SettingsContent.assemblyVersionValidation);
                 }
             }
 

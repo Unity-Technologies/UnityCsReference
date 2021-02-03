@@ -117,11 +117,11 @@ namespace UnityEditor
                 newNode.setNodeState = SetNodeState;
 
                 var newPath = newNode.path;
-                while (!string.IsNullOrEmpty(currentPath) && !newPath.StartsWith(currentPath + "/"))
+                while (!string.IsNullOrEmpty(currentPath) && !newPath.StartsWith(currentPath + "/", StringComparison.InvariantCulture))
                 {
                     // we are in a new node, lets unstack until we reach the correct hierarchy
                     var oldParent = depth.Pop();
-                    var index = currentPath.LastIndexOf(oldParent);
+                    var index = currentPath.LastIndexOf(oldParent, StringComparison.InvariantCulture);
                     if (index > 0)
                         index--;
                     currentPath = currentPath.Remove(index);

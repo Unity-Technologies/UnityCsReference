@@ -21,7 +21,7 @@ namespace UnityEditor
         static readonly List<InspectorWindow> m_AllInspectors = new List<InspectorWindow>();
         static bool s_AllOptimizedGUIBlocksNeedsRebuild;
 
-        [SerializeField] EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker m_LockTracker;
+        [SerializeField] EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker m_LockTracker = new EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker();
         [SerializeField] PreviewWindow m_PreviewWindow;
 
         private IMGUIContainer m_TrackerResetter;
@@ -62,9 +62,6 @@ namespace UnityEditor
 
         protected override void OnEnable()
         {
-            if (m_LockTracker == null)
-                m_LockTracker = new EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker();
-
             // Enable MSAA for UIElements inspectors, which is the only supported
             // antialiasing solution for UIElements.
             antiAliasing = 4;

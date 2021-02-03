@@ -1254,7 +1254,11 @@ namespace UnityEngine.Rendering
         N3DS = 19,
         Vulkan = 21,
         Switch = 22,
-        XboxOneD3D12 = 23
+        XboxOneD3D12 = 23,
+        GameCoreXboxOne = 24,
+        GameCoreScarlett = 25,
+        PlayStation5 = 26,
+        PlayStation5NGGC = 27
     }
 
     public enum GraphicsTier

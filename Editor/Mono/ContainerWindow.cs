@@ -38,6 +38,7 @@ namespace UnityEditor
         static internal bool linuxEditor => Application.platform == RuntimePlatform.LinuxEditor;
 
         static internal bool s_Modal = false;
+        private static bool hasMainWindow = false;
 
         private static class Styles
         {
@@ -111,6 +112,9 @@ namespace UnityEditor
 
         internal void ShowPopupWithMode(ShowMode mode, bool giveFocus)
         {
+            if (mode == ShowMode.MainWindow)
+                throw new ArgumentException("Cannot create more than one main window.");
+
             m_ShowMode = (int)mode;
             Internal_Show(m_PixelRect, m_ShowMode, m_MinSize, m_MaxSize);
             if (m_RootView)
@@ -133,6 +137,9 @@ namespace UnityEditor
         // Show the editor window.
         public void Show(ShowMode showMode, bool loadPosition, bool displayImmediately, bool setFocus)
         {
+            if (hasMainWindow && showMode == ShowMode.MainWindow)
+                throw new InvalidOperationException("Trying to create a second main window from layout when one already exists.");
+
             bool useMousePos = showMode == ShowMode.AuxWindow;
             if (showMode == ShowMode.AuxWindow)
                 showMode = ShowMode.Utility;
@@ -150,7 +157,6 @@ namespace UnityEditor
 
             var initialMaximizedState = m_Maximized;
 
-
             Internal_Show(m_PixelRect, m_ShowMode, m_MinSize, m_MaxSize);
 
             // Tell the main view its now in this window (quick hack to get platform-specific code to move its views to the right window)
@@ -165,6 +171,9 @@ namespace UnityEditor
             // Window could be killed by now in user callbacks...
             if (!this)
                 return;
+
+            if (showMode == ShowMode.MainWindow)
+                hasMainWindow = true;
 
             // Fit window to screen - needs to be done after bringing the window live
             position = FitWindowRectToScreen(m_PixelRect, true, useMousePos);
@@ -280,6 +289,10 @@ namespace UnityEditor
         internal void InternalCloseWindow()
         {
             Save();
+
+            if (m_ShowMode == (int)ShowMode.MainWindow)
+                hasMainWindow = false;
+
             if (m_RootView)
             {
                 DestroyImmediate(m_RootView, true);

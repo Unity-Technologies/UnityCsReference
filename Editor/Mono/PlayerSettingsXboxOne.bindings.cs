@@ -156,6 +156,15 @@ namespace UnityEditor
                 set;
             }
 
+            // Returns true Xbox Compatibility mode should be set to max in manifest
+            [NativeProperty("XboxOneEnhancedXboxCompatibilityMode", TargetType.Field)]
+            extern public static bool EnhancedXboxCompatibilityMode
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+                get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+                set;
+            }
             // Version used in AppManifest
             [NativeProperty("XboxOneVersion", false, TargetType.Function)]
             extern public static string Version { get; set; }

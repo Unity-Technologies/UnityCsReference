@@ -77,7 +77,10 @@ namespace UnityEditor
             Undo.undoRedoPerformed -= UndoRedoPerformed;
 
             if (m_ParticleEffectUI != null)
+            {
                 m_ParticleEffectUI.Clear();
+                m_ParticleEffectUI.ClearSelectedSystems();
+            }
 
             ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_ShortcutContext);
         }
@@ -285,7 +288,10 @@ namespace UnityEditor
         void Clear()
         {
             if (m_ParticleEffectUI != null)
+            {
                 m_ParticleEffectUI.Clear();
+                m_ParticleEffectUI.ClearSelectedSystems();
+            }
             m_ParticleEffectUI = null;
         }
 

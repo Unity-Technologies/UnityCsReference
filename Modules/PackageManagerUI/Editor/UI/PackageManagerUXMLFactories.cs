@@ -20,6 +20,7 @@ namespace UnityEditor.PackageManager.UI
 
             IUxmlFactory[] factories =
             {
+                new SelectableLabel.UxmlFactory(),
                 new Alert.UxmlFactory(),
                 new DropdownButton.UxmlFactory(),
                 new LoadingSpinner.UxmlFactory(),

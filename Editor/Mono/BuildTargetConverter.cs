@@ -16,6 +16,8 @@ namespace UnityEditor
                     return RuntimePlatform.Android;
                 case BuildTarget.PS4:
                     return RuntimePlatform.PS4;
+                case BuildTarget.PS5:
+                    return RuntimePlatform.PS5;
                 case BuildTarget.StandaloneLinux64:
                     return RuntimePlatform.LinuxPlayer;
                 case BuildTarget.StandaloneOSX:
@@ -38,6 +40,10 @@ namespace UnityEditor
                     return RuntimePlatform.WebGLPlayer;
                 case BuildTarget.Lumin:
                     return RuntimePlatform.Lumin;
+                case BuildTarget.GameCoreScarlett:
+                    return RuntimePlatform.GameCoreScarlett;
+                case BuildTarget.GameCoreXboxOne:
+                    return RuntimePlatform.GameCoreXboxOne;
                 default:
                     return null;
             }

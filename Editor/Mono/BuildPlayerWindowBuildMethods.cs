@@ -279,7 +279,7 @@ namespace UnityEditor
 
                     if (!askForBuildLocation)
                     {
-                        switch (UnityEditorInternal.InternalEditorUtility.BuildCanBeAppended(buildTarget, newLocation))
+                        switch (BuildPipeline.BuildCanBeAppended(buildTarget, newLocation))
                         {
                             case CanAppendBuild.Unsupported:
                                 break;

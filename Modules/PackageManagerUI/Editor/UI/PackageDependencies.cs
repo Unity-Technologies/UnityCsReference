@@ -80,14 +80,13 @@ namespace UnityEditor.PackageManager.UI
             return label;
         }
 
-        private static TextField BuildTextField(string text, string clazz)
+        private static SelectableLabel BuildSelectableLabel(string text, string clazz)
         {
-            var textfield = new TextField();
-            textfield.SetValueWithoutNotify(text);
-            textfield.AddToClassList(clazz);
-            textfield.tooltip = text;
-            textfield.isReadOnly = true;
-            return textfield;
+            var label = new SelectableLabel();
+            label.SetValueWithoutNotify(text);
+            label.AddToClassList(clazz);
+            label.tooltip = text;
+            return label;
         }
 
         private string GetNameText(DependencyInfo dependency)
@@ -144,8 +143,8 @@ namespace UnityEditor.PackageManager.UI
 
             foreach (var dependency in dependencies)
             {
-                dependenciesNames.Add(BuildTextField(GetNameText(dependency), "text"));
-                dependenciesVersions.Add(BuildTextField(dependency.version, "text"));
+                dependenciesNames.Add(BuildSelectableLabel(GetNameText(dependency), "text"));
+                dependenciesVersions.Add(BuildSelectableLabel(dependency.version, "text"));
                 dependenciesStatuses.Add(BuildLabel(GetStatusText(dependency), "text"));
 
                 var dependencyLowWidthItem = new PackageDependencySampleItemLowWidth(GetNameText(dependency), dependency.version.ToString(), BuildLabel(GetStatusText(dependency), "text"));
@@ -169,8 +168,8 @@ namespace UnityEditor.PackageManager.UI
 
             foreach (var version in reverseDependencies)
             {
-                reverseDependenciesNames.Add(BuildTextField(version.displayName ?? string.Empty, "text"));
-                reverseDependenciesVersions.Add(BuildTextField(version.version.ToString(), "text"));
+                reverseDependenciesNames.Add(BuildSelectableLabel(version.displayName ?? string.Empty, "text"));
+                reverseDependenciesVersions.Add(BuildSelectableLabel(version.version.ToString(), "text"));
 
                 var reverseDependencyLowWidthItem = new PackageDependencySampleItemLowWidth(version.displayName ?? string.Empty, version.version.ToString(), null);
                 reverseDependenciesListLowWidth.Add(reverseDependencyLowWidthItem);

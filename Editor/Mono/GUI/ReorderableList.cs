@@ -9,6 +9,8 @@ using System.Collections;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
 using System.Linq;
+using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace UnityEditorInternal
 {
@@ -146,7 +148,9 @@ namespace UnityEditorInternal
             public const int dragHandleWidth = 20;
             internal const int propertyDrawerPadding = 8;
             internal const int minHeaderHeight = 2;
-            private static GUIContent s_ListIsEmpty = EditorGUIUtility.TrTextContent("List is Empty");
+            private int ArrayCountInPropertyPath(SerializedProperty prop) => Regex.Matches(prop.propertyPath, ".Array.data").Count;
+            private float FieldLabelSize(Rect r, SerializedProperty prop) => r.xMax * 0.45f - 35 - prop.depth * 15 - ArrayCountInPropertyPath(prop) * 10;
+            private static readonly GUIContent s_ListIsEmpty = EditorGUIUtility.TrTextContent("List is Empty");
             internal static readonly string undoAdd = "Add Element To Array";
             internal static readonly string undoRemove = "Remove Element From Array";
             internal static readonly string undoMove = "Reorder Element In Array";
@@ -246,15 +250,24 @@ namespace UnityEditorInternal
                 else
                 {
                     // this is ugly but there are a lot of cases like null types and default constructors
-                    var elementType = list.list.GetType().GetElementType();
+
+                    //GetElementType() returns the Type of the object encompassed or referred to by the current array, pointer, or reference type,
+                    //or null if the current Type is not an array or a pointer, or is not passed by reference,
+                    //or represents a generic type or a type parameter in the definition of a generic type or generic method.
+                    Type listType = list.list.GetType();
+                    Type elementType;
+                    if (listType.IsGenericType)
+                        elementType = listType.GetGenericArguments()[0];
+                    else
+                        elementType = listType.GetElementType();
                     if (value != null)
                         list.index = list.list.Add(value);
                     else if (elementType == typeof(string))
                         list.index = list.list.Add("");
-                    else if (elementType != null && elementType.GetConstructor(Type.EmptyTypes) == null)
-                        Debug.LogError("Cannot add element. Type " + elementType + " has no default constructor. Implement a default constructor or implement your own add behaviour.");
                     else if (list.list.GetType().GetGenericArguments()[0] != null)
                         list.index = list.list.Add(Activator.CreateInstance(list.list.GetType().GetGenericArguments()[0]));
+                    else if (elementType != null && elementType.GetConstructor(Type.EmptyTypes) == null)
+                        Debug.LogError("Cannot add element. Type " + elementType + " has no default constructor. Implement a default constructor or implement your own add behaviour.");
                     else if (elementType != null)
                         list.index = list.list.Add(Activator.CreateInstance(elementType));
                     else
@@ -358,9 +371,14 @@ namespace UnityEditorInternal
                 var prop = element ?? listItem as SerializedProperty;
                 if (editable)
                 {
+                    float oldLabelWidth = EditorGUIUtility.labelWidth;
+                    EditorGUIUtility.labelWidth = FieldLabelSize(rect, prop);
+
                     var handler = ScriptAttributeUtility.GetHandler(prop);
                     handler.OnGUI(rect, prop, null, true);
                     if (Event.current.type == EventType.MouseDown && Event.current.button == 1 && rect.Contains(Event.current.mousePosition)) Event.current.Use();
+
+                    EditorGUIUtility.labelWidth = oldLabelWidth;
                     return;
                 }
 
@@ -654,6 +672,8 @@ namespace UnityEditorInternal
 
         public void DoLayoutList() //TODO: better API?
         {
+            GUILayout.BeginVertical();
+
             // do the custom or default header GUI
             Rect headerRect = GUILayoutUtility.GetRect(0, HeaderHeight, GUILayout.ExpandWidth(true));
             //Elements area
@@ -665,12 +685,11 @@ namespace UnityEditorInternal
             DoListHeader(headerRect);
             DoListElements(listRect, Defaults.infinityRect);
             DoListFooter(footerRect);
+
+            GUILayout.EndVertical();
         }
 
-        public void DoList(Rect rect)
-        {
-            DoList(rect, Defaults.infinityRect);
-        }
+        public void DoList(Rect rect) => DoList(rect, Defaults.infinityRect);
 
         public void DoList(Rect rect, Rect visibleRect) //TODO: better API?
         {
@@ -967,6 +986,12 @@ namespace UnityEditorInternal
 
         private void DoListHeader(Rect headerRect)
         {
+            // Ensure there's proper Prefab and context menu handling for the list as a whole.
+            // This ensures a deleted element in the list is displayed as an override and can
+            // be handled by the user via the context menu. Case 1292522
+            if (m_Elements != null)
+                EditorGUI.BeginProperty(headerRect, GUIContent.none, m_Elements);
+
             recursionCounter = 0;
             // draw the background on repaint
             if (showDefaultBackground && Event.current.type == EventType.Repaint)
@@ -983,6 +1008,9 @@ namespace UnityEditorInternal
                 drawHeaderCallback(headerRect);
             else if (m_DisplayHeader)
                 defaultBehaviours.DrawHeader(headerRect, m_SerializedObject, m_Elements, m_ElementList);
+
+            if (m_Elements != null)
+                EditorGUI.EndProperty();
         }
 
         private void DoListFooter(Rect footerRect)
