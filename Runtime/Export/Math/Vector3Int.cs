@@ -245,6 +245,8 @@ namespace UnityEngine
         public static Vector3Int down { get { return s_Down; } }
         public static Vector3Int left { get { return s_Left; } }
         public static Vector3Int right { get { return s_Right; } }
+        public static Vector3Int forward { get { return s_Forward; } }
+        public static Vector3Int back { get { return s_Back; } }
 
         private static readonly Vector3Int s_Zero = new Vector3Int(0, 0, 0);
         private static readonly Vector3Int s_One = new Vector3Int(1, 1, 1);
@@ -252,5 +254,7 @@ namespace UnityEngine
         private static readonly Vector3Int s_Down = new Vector3Int(0, -1, 0);
         private static readonly Vector3Int s_Left = new Vector3Int(-1, 0, 0);
         private static readonly Vector3Int s_Right = new Vector3Int(1, 0, 0);
+        private static readonly Vector3Int s_Forward = new Vector3Int(0, 0, 1);
+        private static readonly Vector3Int s_Back = new Vector3Int(0, 0, -1);
     }
 }
