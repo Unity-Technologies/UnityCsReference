@@ -236,11 +236,7 @@ namespace UnityEditor
 
             go.GetComponent<Transform>().SetLocalEulerAngles(new Vector3(-90, 0, 0), RotationOrder.OrderZXY);
             var renderer = go.GetComponent<ParticleSystemRenderer>();
-            renderer.materials = new Material[]
-            {
-                Material.GetDefaultParticleMaterial(),
-                    null
-            };
+            renderer.material = Material.GetDefaultParticleMaterial();
             Place(go, parent);
         }
 
