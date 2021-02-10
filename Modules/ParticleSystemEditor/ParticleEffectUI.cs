@@ -463,7 +463,7 @@ namespace UnityEditor
 
                 if (particleMat == null)
                     particleMat = AssetDatabase.GetBuiltinExtraResource<Material>("Default-ParticleSystem.mat");
-                renderer.materials = new[] {particleMat, null};
+                renderer.material = particleMat;
 
                 Undo.RegisterCreatedObjectUndo(go, "Create ParticleSystem");
                 return go;

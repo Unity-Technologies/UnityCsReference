@@ -1402,6 +1402,9 @@
     <Compile Include="..\..\Editor\Mono\EditorMode\ModeService.cs">
       <Link>Editor\Mono\EditorMode\ModeService.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\GI\BuiltinSkyManager.bindings.cs">
+      <Link>Editor\Mono\GI\BuiltinSkyManager.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\GI\LightProbeVisualization.bindings.cs">
       <Link>Editor\Mono\GI\LightProbeVisualization.bindings.cs</Link>
     </Compile>
