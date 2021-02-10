@@ -6,6 +6,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Toolbar = UnityEditor.UIElements.Toolbar;
+using ProgressBar = UnityEngine.UIElements.ProgressBar;
 
 namespace Unity.UI.Builder
 {

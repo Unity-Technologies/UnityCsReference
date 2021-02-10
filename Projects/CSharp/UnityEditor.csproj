@@ -4222,6 +4222,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Delegates\EditorDelegateRegistration.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Delegates\EditorDelegateRegistration.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Delegates\SerializedPropertyDelegates.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Delegates\SerializedPropertyDelegates.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Delegates\TextEditorDelegates.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Delegates\TextEditorDelegates.cs</Link>
     </Compile>
@@ -4251,6 +4254,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Inspector\InspectorElement.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Inspector\InspectorElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Legacy\ProgressBar.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Legacy\ProgressBar.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\PanelDebug.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\PanelDebug.cs</Link>

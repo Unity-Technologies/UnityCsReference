@@ -62,6 +62,7 @@ namespace UnityEditor.UIElements
                 new EnumFlagsField.UxmlFactory(),
                 new Hash128Field.UxmlFactory(),
 
+                new ProgressBar.UxmlFactory(),
                 // Compounds
                 new RectField.UxmlFactory(),
                 new Vector2Field.UxmlFactory(),

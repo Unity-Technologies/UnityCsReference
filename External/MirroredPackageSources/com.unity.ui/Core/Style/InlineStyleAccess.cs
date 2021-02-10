@@ -227,24 +227,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        StyleTextShadow IStyle.textShadow
-        {
-            get
-            {
-                var inlineTextShadow = new StyleTextShadow();
-                if (TryGetInlineTextShadow(ref inlineTextShadow))
-                    return inlineTextShadow;
-                return StyleKeyword.Null;
-            }
-            set
-            {
-                if (SetInlineTextShadow(value, ve.sharedStyle.textShadow))
-                {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
-                }
-            }
-        }
-
         private bool SetStyleValue(StylePropertyId id, StyleLength inlineValue, Length sharedValue)
         {
             var sv = new StyleValue();
@@ -545,34 +527,6 @@ namespace UnityEngine.UIElements
             }
 
             ve.computedStyle.ApplyStyleCursor(styleCursor.value);
-            return true;
-        }
-
-        private bool SetInlineTextShadow(StyleTextShadow inlineValue, StyleTextShadow sharedValue)
-        {
-            var styleTextShadow = new StyleTextShadow();
-            if (TryGetInlineTextShadow(ref styleTextShadow))
-            {
-                if (styleTextShadow.value == inlineValue.value && styleTextShadow.keyword == inlineValue.keyword)
-                    return false;
-            }
-            else if (inlineValue.keyword == StyleKeyword.Null)
-            {
-                return false;
-            }
-
-            styleTextShadow.value = inlineValue.value;
-            styleTextShadow.keyword = inlineValue.keyword;
-
-            SetInlineTextShadow(styleTextShadow);
-
-            if (styleTextShadow.keyword == StyleKeyword.Null)
-            {
-                styleTextShadow.keyword = sharedValue.keyword;
-                styleTextShadow.value = sharedValue.value;
-            }
-
-            ve.computedStyle.ApplyStyleTextShadow(styleTextShadow.value);
             return true;
         }
 

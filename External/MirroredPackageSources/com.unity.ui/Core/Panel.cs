@@ -724,7 +724,8 @@ namespace UnityEngine.UIElements
             m_RootContainer = new VisualElement
             {
                 name = VisualElementUtils.GetUniqueName("unity-panel-container"),
-                viewDataKey = "PanelContainer"
+                viewDataKey = "PanelContainer",
+                pickingMode = contextType == ContextType.Editor ? PickingMode.Position : PickingMode.Ignore
             };
 
             // Required!

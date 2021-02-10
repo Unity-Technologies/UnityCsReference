@@ -491,7 +491,7 @@ namespace UnityEngine.UIElements.UIR
                     // The page itself is not going to be usable and will be feed after 60 frames.
                     // This is done because because the page is required when creating the native slice
                     var pageVertexCount = (vertexCount > maxVerticesPerPage) ? 2 : vertexCount;
-                    Debug.Assert(vertexCount <= maxVerticesPerPage, $"Requested Vertex count ({vertexCount}) is above the limit ({maxVerticesPerPage}). Alloc will fail.");
+                    Debug.Assert(vertexCount <= maxVerticesPerPage, "Requested Vertex count is above the limit. Alloc will fail.");
 
                     // A huge mesh, push it to a page of its own. Put this page at the end so it won't be queried often
                     page = new Page((uint)pageVertexCount, (uint)indexCount, k_MaxQueuedFrameCount, m_MockDevice);
@@ -506,8 +506,8 @@ namespace UnityEngine.UIElements.UIR
             }
 
 
-            Debug.Assert(va.size == vertexCount, $"Vertices allocated ({va.size}) != Vertices requested ({vertexCount})");
-            Debug.Assert(ia.size == indexCount, $"Indices allocated ({ia.size}) != Indices requested ({indexCount})");
+            Debug.Assert(va.size == vertexCount, "Vertices allocated != Vertices requested");
+            Debug.Assert(ia.size == indexCount, "Indices allocated != Indices requested");
 
             // If the allocated VB or IB has a different size than expected, both are invalidated.
             // The user may check one buffer size but not the other.

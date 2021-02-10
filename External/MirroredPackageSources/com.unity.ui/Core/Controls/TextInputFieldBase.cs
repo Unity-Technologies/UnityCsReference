@@ -823,7 +823,7 @@ namespace UnityEngine.UIElements
                 // Draw the cursor
                 if (!isReadOnly && !isDragging)
                 {
-                    if (cursorIndex == selectionEndIndex && (computedStyle.unityFont != null || !computedStyle.unityFontDefinition.IsEmpty()))
+                    if (cursorIndex == selectionEndIndex && (computedStyle.unityFont != null))
                     {
                         cursorParams = CursorPositionStylePainterParameters.GetDefault(this, text);
                         cursorParams.text = editorEngine.text;

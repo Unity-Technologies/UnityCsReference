@@ -171,9 +171,11 @@ namespace UnityEngine.UIElements
 
         public static void RegisterEventSystem(Object eventSystem)
         {
-            Debug.Assert(activeEventSystem == null || activeEventSystem == eventSystem, "There can be only one active Event System.");
+            if (activeEventSystem != null && activeEventSystem != eventSystem)
+                Debug.LogWarning("There can be only one active Event System.");
             activeEventSystem = eventSystem;
         }
+
         public static void UnregisterEventSystem(Object eventSystem)
         {
             if (activeEventSystem == eventSystem)
@@ -183,6 +185,7 @@ namespace UnityEngine.UIElements
         private static DefaultEventSystem s_DefaultEventSystem;
         internal static DefaultEventSystem defaultEventSystem =>
             s_DefaultEventSystem ?? (s_DefaultEventSystem = new DefaultEventSystem());
+
         public static void UpdateRuntimePanels()
         {
             foreach (BaseRuntimePanel panel in GetSortedPlayerPanels())
@@ -190,7 +193,7 @@ namespace UnityEngine.UIElements
                 panel.Update();
             }
 
-            if (useDefaultEventSystem)
+            if (Application.isPlaying && useDefaultEventSystem)
             {
                 defaultEventSystem.Update();
             }

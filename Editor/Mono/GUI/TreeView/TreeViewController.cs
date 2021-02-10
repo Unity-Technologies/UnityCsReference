@@ -599,9 +599,10 @@ namespace UnityEditor.IMGUI.Controls
 
             Event evt = Event.current;
             if (evt.type == EventType.Repaint)
+            {
                 m_TotalRect = rect;
-            if (evt.type == EventType.Layout)
                 m_CachedSelection.Set(state.selectedIDs);
+            }
 
             m_GUIView = GUIView.current;
 

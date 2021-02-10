@@ -844,7 +844,7 @@ namespace UnityEditor.UIElements.Bindings
                 }
             }
         }
-        
+
         static Dictionary<object, object> GetTemporaryCache(VisualElement element)
         {
             var updater = element.elementPanel?.GetUpdater(VisualTreeUpdatePhase.Bindings) as VisualTreeBindingsUpdater;

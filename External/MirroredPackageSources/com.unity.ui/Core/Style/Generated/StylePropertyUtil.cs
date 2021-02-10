@@ -50,7 +50,6 @@ namespace UnityEngine.UIElements.StyleSheets
             {"height", StylePropertyId.Height},
             {"justify-content", StylePropertyId.JustifyContent},
             {"left", StylePropertyId.Left},
-            {"letter-spacing", StylePropertyId.LetterSpacing},
             {"margin", StylePropertyId.Margin},
             {"margin-bottom", StylePropertyId.MarginBottom},
             {"margin-left", StylePropertyId.MarginLeft},
@@ -70,28 +69,21 @@ namespace UnityEngine.UIElements.StyleSheets
             {"position", StylePropertyId.Position},
             {"right", StylePropertyId.Right},
             {"text-overflow", StylePropertyId.TextOverflow},
-            {"text-shadow", StylePropertyId.TextShadow},
             {"top", StylePropertyId.Top},
             {"-unity-background-image-tint-color", StylePropertyId.UnityBackgroundImageTintColor},
             {"-unity-background-scale-mode", StylePropertyId.UnityBackgroundScaleMode},
             {"-unity-font", StylePropertyId.UnityFont},
-            {"-unity-font-definition", StylePropertyId.UnityFontDefinition},
             {"-unity-font-style", StylePropertyId.UnityFontStyleAndWeight},
             {"-unity-overflow-clip-box", StylePropertyId.UnityOverflowClipBox},
-            {"-unity-paragraph-spacing", StylePropertyId.UnityParagraphSpacing},
             {"-unity-slice-bottom", StylePropertyId.UnitySliceBottom},
             {"-unity-slice-left", StylePropertyId.UnitySliceLeft},
             {"-unity-slice-right", StylePropertyId.UnitySliceRight},
             {"-unity-slice-top", StylePropertyId.UnitySliceTop},
             {"-unity-text-align", StylePropertyId.UnityTextAlign},
-            {"-unity-text-outline", StylePropertyId.UnityTextOutline},
-            {"-unity-text-outline-color", StylePropertyId.UnityTextOutlineColor},
-            {"-unity-text-outline-width", StylePropertyId.UnityTextOutlineWidth},
             {"-unity-text-overflow-position", StylePropertyId.UnityTextOverflowPosition},
             {"visibility", StylePropertyId.Visibility},
             {"white-space", StylePropertyId.WhiteSpace},
-            {"width", StylePropertyId.Width},
-            {"word-spacing", StylePropertyId.WordSpacing}
+            {"width", StylePropertyId.Width}
         };
 
         public static int GetEnumIntValue(StyleEnumType enumType, string value)

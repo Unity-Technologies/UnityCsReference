@@ -6,7 +6,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Style value that can be either a <see cref="TextShadow"/> or a <see cref="StyleKeyword"/>.
     /// </summary>
-    public struct StyleTextShadow : IStyleValue<TextShadow>, IEquatable<StyleTextShadow>
+    internal struct StyleTextShadow : IStyleValue<TextShadow>, IEquatable<StyleTextShadow>
     {
         /// <summary>
         /// The <see cref="TextShadow"/> value.

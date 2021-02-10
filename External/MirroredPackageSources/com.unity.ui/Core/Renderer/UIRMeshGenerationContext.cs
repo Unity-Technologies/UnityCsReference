@@ -43,6 +43,10 @@ namespace UnityEngine.UIElements
         internal Color32 opacityPageSettingIndex; //XY (ZW SVG setting index)
         internal float textureId;
 
+        // For backward-compatibility. Before 2021.1, the ids and flags were merged
+        // in an idsFlags field where idsFlags.rgb contained the ids, and idsFlags.a held the flags.
+        internal Color32 idsFlags;
+
         // Winding order of vertices matters. CCW is for clipped meshes.
     }
 
@@ -609,11 +613,7 @@ namespace UnityEngine.UIElements
             public Rect rect;
             public string text;
             public Font font;
-            public FontDefinition fontDefinition;
             public int fontSize;
-            public Length letterSpacing;
-            public Length wordSpacing;
-            public Length paragraphSpacing;
             public FontStyle fontStyle;
             public Color fontColor;
             public TextAnchor anchor;
@@ -657,7 +657,6 @@ namespace UnityEngine.UIElements
                 {
                     rect = ve.contentRect,
                     text = text,
-                    fontDefinition = style.unityFontDefinition,
                     font = style.unityFont,
                     fontSize = (int)style.fontSize.value,
                     fontStyle = style.unityFontStyleAndWeight,
@@ -670,9 +669,6 @@ namespace UnityEngine.UIElements
                     textOverflow = style.textOverflow,
                     textOverflowPosition = style.unityTextOverflowPosition,
                     overflow = style.overflow,
-                    letterSpacing = isTextElement ? 0 : style.letterSpacing,
-                    wordSpacing = isTextElement ? 0 : style.wordSpacing,
-                    paragraphSpacing = isTextElement ? 0 : style.unityParagraphSpacing,
                     panel = ve.panel,
                 };
             }
@@ -711,7 +707,7 @@ namespace UnityEngine.UIElements
 
         public static void Text(this MeshGenerationContext mgc, TextParams textParams, ITextHandle handle, float pixelsPerPoint)
         {
-            if (textParams.font != null || !textParams.fontDefinition.IsEmpty())
+            if (textParams.font != null)
                 mgc.painter.DrawText(textParams, handle, pixelsPerPoint);
         }
 

@@ -139,10 +139,6 @@ namespace UnityEngine.UIElements
         /// </summary>
         float left { get; }
         /// <summary>
-        /// Increases or decreases the space between characters.
-        /// </summary>
-        float letterSpacing { get; }
-        /// <summary>
         /// Space reserved for the bottom edge of the margin during the layout phase.
         /// </summary>
         float marginBottom { get; }
@@ -232,23 +228,12 @@ namespace UnityEngine.UIElements
         /// </remarks>
         Font unityFont { get; }
         /// <summary>
-        /// Font to draw the element's text.
-        /// </summary>
-        /// <remarks>
-        /// This property is inherited by default.
-        /// </remarks>
-        FontDefinition unityFontDefinition { get; }
-        /// <summary>
         /// Font style and weight (normal, bold, italic) to draw the element's text.
         /// </summary>
         /// <remarks>
         /// This property is inherited by default.
         /// </remarks>
         FontStyle unityFontStyleAndWeight { get; }
-        /// <summary>
-        /// Increases or decreases the space between paragraphs.
-        /// </summary>
-        float unityParagraphSpacing { get; }
         /// <summary>
         /// Size of the 9-slice's bottom edge when painting an element's background image.
         /// </summary>
@@ -273,14 +258,6 @@ namespace UnityEngine.UIElements
         /// </remarks>
         TextAnchor unityTextAlign { get; }
         /// <summary>
-        /// Outline color of the text.
-        /// </summary>
-        Color unityTextOutlineColor { get; }
-        /// <summary>
-        /// Outline width of the text.
-        /// </summary>
-        float unityTextOutlineWidth { get; }
-        /// <summary>
         /// The element's text overflow position.
         /// </summary>
         TextOverflowPosition unityTextOverflowPosition { get; }
@@ -302,9 +279,5 @@ namespace UnityEngine.UIElements
         /// Fixed width of an element for the layout.
         /// </summary>
         float width { get; }
-        /// <summary>
-        /// Increases or decreases the space between words.
-        /// </summary>
-        float wordSpacing { get; }
     }
 }

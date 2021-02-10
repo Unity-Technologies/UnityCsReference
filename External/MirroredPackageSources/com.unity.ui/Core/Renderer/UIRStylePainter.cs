@@ -341,7 +341,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void DrawText(MeshGenerationContextUtils.TextParams textParams, ITextHandle handle, float pixelsPerPoint)
         {
-            if (textParams.font == null && textParams.fontDefinition.IsEmpty())
+            if (textParams.font == null)
                 return;
 
             if (currentElement.panel.contextType == ContextType.Editor)
@@ -978,7 +978,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void DrawText(MeshGenerationContextUtils.TextParams textParams, ITextHandle handle, float pixelsPerPoint)
         {
-            if (textParams.font == null && textParams.fontDefinition.IsEmpty())
+            if (textParams.font == null)
                 return;
 
             if (m_CurrentElement.panel.contextType == ContextType.Editor)

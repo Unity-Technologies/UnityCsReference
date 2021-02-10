@@ -265,8 +265,6 @@ namespace UnityEngine.UIElements
             highValue = end;
             pickingMode = PickingMode.Ignore;
 
-            visualInput.pickingMode = PickingMode.Position;
-
             dragContainer = new VisualElement() { name = "unity-drag-container" };
             dragContainer.AddToClassList(dragContainerUssClassName);
             visualInput.Add(dragContainer);
@@ -285,7 +283,8 @@ namespace UnityEngine.UIElements
             dragContainer.Add(dragElement);
 
             clampedDragger = new ClampedDragger<TValueType>(this, SetSliderValueFromClick, SetSliderValueFromDrag);
-            visualInput.AddManipulator(clampedDragger);
+            dragContainer.pickingMode = PickingMode.Position;
+            dragContainer.AddManipulator(clampedDragger);
 
             RegisterCallback<KeyDownEvent>(OnKeyDown);
 

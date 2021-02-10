@@ -331,7 +331,7 @@ namespace UnityEngine.UIElements
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
         {
             return MeasureTextSize(text, desiredWidth, widthMode, desiredHeight, heightMode);
-		}
+        }
 
         // Used in tests
         internal int VerticesCount(string text)

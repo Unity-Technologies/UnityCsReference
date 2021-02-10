@@ -6,7 +6,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Style value that can be either a <see cref="FontDefinition"/> or a <see cref="StyleKeyword"/>.
     /// </summary>
-    public struct StyleFontDefinition : IStyleValue<FontDefinition>, IEquatable<StyleFontDefinition>
+    internal struct StyleFontDefinition : IStyleValue<FontDefinition>, IEquatable<StyleFontDefinition>
     {
         public FontDefinition value
         {
@@ -43,7 +43,7 @@ namespace UnityEngine.UIElements
         public StyleFontDefinition(StyleKeyword keyword)
             : this(new FontDefinition(), keyword)
         {}
-        
+
         internal StyleFontDefinition(object obj, StyleKeyword keyword)
             : this(FontDefinition.FromObject(obj), keyword)
         {

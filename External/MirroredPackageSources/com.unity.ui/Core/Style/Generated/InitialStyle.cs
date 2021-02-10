@@ -48,7 +48,6 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.nonInheritedData.height = StyleKeyword.Auto.ToLength();
             s_InitialStyle.nonInheritedData.justifyContent = Justify.FlexStart;
             s_InitialStyle.nonInheritedData.left = StyleKeyword.Auto.ToLength();
-            s_InitialStyle.inheritedData.letterSpacing = 0f;
             s_InitialStyle.nonInheritedData.marginBottom = 0f;
             s_InitialStyle.nonInheritedData.marginLeft = 0f;
             s_InitialStyle.nonInheritedData.marginRight = 0f;
@@ -66,27 +65,21 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.nonInheritedData.position = Position.Relative;
             s_InitialStyle.nonInheritedData.right = StyleKeyword.Auto.ToLength();
             s_InitialStyle.nonInheritedData.textOverflow = TextOverflow.Clip;
-            s_InitialStyle.inheritedData.textShadow = default(TextShadow);
             s_InitialStyle.nonInheritedData.top = StyleKeyword.Auto.ToLength();
             s_InitialStyle.nonInheritedData.unityBackgroundImageTintColor = Color.white;
             s_InitialStyle.nonInheritedData.unityBackgroundScaleMode = ScaleMode.StretchToFill;
             s_InitialStyle.inheritedData.unityFont = default(Font);
-            s_InitialStyle.inheritedData.unityFontDefinition = default(FontDefinition);
             s_InitialStyle.inheritedData.unityFontStyleAndWeight = FontStyle.Normal;
             s_InitialStyle.nonInheritedData.unityOverflowClipBox = OverflowClipBox.PaddingBox;
-            s_InitialStyle.inheritedData.unityParagraphSpacing = 0f;
             s_InitialStyle.nonInheritedData.unitySliceBottom = 0;
             s_InitialStyle.nonInheritedData.unitySliceLeft = 0;
             s_InitialStyle.nonInheritedData.unitySliceRight = 0;
             s_InitialStyle.nonInheritedData.unitySliceTop = 0;
             s_InitialStyle.inheritedData.unityTextAlign = TextAnchor.UpperLeft;
-            s_InitialStyle.inheritedData.unityTextOutlineColor = Color.clear;
-            s_InitialStyle.inheritedData.unityTextOutlineWidth = 0f;
             s_InitialStyle.nonInheritedData.unityTextOverflowPosition = TextOverflowPosition.End;
             s_InitialStyle.inheritedData.visibility = Visibility.Visible;
             s_InitialStyle.inheritedData.whiteSpace = WhiteSpace.Normal;
             s_InitialStyle.nonInheritedData.width = StyleKeyword.Auto.ToLength();
-            s_InitialStyle.inheritedData.wordSpacing = 0f;
         }
 
         public static Align alignContent => s_InitialStyle.nonInheritedData.alignContent;
@@ -119,7 +112,6 @@ namespace UnityEngine.UIElements.StyleSheets
         public static Length height => s_InitialStyle.nonInheritedData.height;
         public static Justify justifyContent => s_InitialStyle.nonInheritedData.justifyContent;
         public static Length left => s_InitialStyle.nonInheritedData.left;
-        public static Length letterSpacing => s_InitialStyle.inheritedData.letterSpacing;
         public static Length marginBottom => s_InitialStyle.nonInheritedData.marginBottom;
         public static Length marginLeft => s_InitialStyle.nonInheritedData.marginLeft;
         public static Length marginRight => s_InitialStyle.nonInheritedData.marginRight;
@@ -137,26 +129,20 @@ namespace UnityEngine.UIElements.StyleSheets
         public static Position position => s_InitialStyle.nonInheritedData.position;
         public static Length right => s_InitialStyle.nonInheritedData.right;
         public static TextOverflow textOverflow => s_InitialStyle.nonInheritedData.textOverflow;
-        public static TextShadow textShadow => s_InitialStyle.inheritedData.textShadow;
         public static Length top => s_InitialStyle.nonInheritedData.top;
         public static Color unityBackgroundImageTintColor => s_InitialStyle.nonInheritedData.unityBackgroundImageTintColor;
         public static ScaleMode unityBackgroundScaleMode => s_InitialStyle.nonInheritedData.unityBackgroundScaleMode;
         public static Font unityFont => s_InitialStyle.inheritedData.unityFont;
-        public static FontDefinition unityFontDefinition => s_InitialStyle.inheritedData.unityFontDefinition;
         public static FontStyle unityFontStyleAndWeight => s_InitialStyle.inheritedData.unityFontStyleAndWeight;
         public static OverflowClipBox unityOverflowClipBox => s_InitialStyle.nonInheritedData.unityOverflowClipBox;
-        public static Length unityParagraphSpacing => s_InitialStyle.inheritedData.unityParagraphSpacing;
         public static int unitySliceBottom => s_InitialStyle.nonInheritedData.unitySliceBottom;
         public static int unitySliceLeft => s_InitialStyle.nonInheritedData.unitySliceLeft;
         public static int unitySliceRight => s_InitialStyle.nonInheritedData.unitySliceRight;
         public static int unitySliceTop => s_InitialStyle.nonInheritedData.unitySliceTop;
         public static TextAnchor unityTextAlign => s_InitialStyle.inheritedData.unityTextAlign;
-        public static Color unityTextOutlineColor => s_InitialStyle.inheritedData.unityTextOutlineColor;
-        public static float unityTextOutlineWidth => s_InitialStyle.inheritedData.unityTextOutlineWidth;
         public static TextOverflowPosition unityTextOverflowPosition => s_InitialStyle.nonInheritedData.unityTextOverflowPosition;
         public static Visibility visibility => s_InitialStyle.inheritedData.visibility;
         public static WhiteSpace whiteSpace => s_InitialStyle.inheritedData.whiteSpace;
         public static Length width => s_InitialStyle.nonInheritedData.width;
-        public static Length wordSpacing => s_InitialStyle.inheritedData.wordSpacing;
     }
 }

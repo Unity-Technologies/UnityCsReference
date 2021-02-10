@@ -207,6 +207,7 @@ namespace UnityEngine.UIElements
             s_EditorMenuType = editorAssembly?.GetType("UnityEditor.UIElements.GenericOSMenu");
         }
 
+
         internal static IGenericMenu CreateDropdown()
         {
             return Activator.CreateInstance(s_EditorMenuType ?? typeof(GenericDropdownMenu)) as IGenericMenu;

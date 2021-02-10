@@ -569,7 +569,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         static void UpdateTextCoreSettings(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
         {
-            if (ve == null || ve.computedStyle.unityFontDefinition.IsEmpty())
+            if (ve == null)
                 return;
 
             bool allocatesID = RenderChainVEData.AllocatesID(ve.renderChainData.textCoreSettingsID);
@@ -1064,6 +1064,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 v.position = mat.MultiplyPoint3x4(v.position);
                 v.xformClipPages = xformClipPages;
                 v.ids = ids;
+                if (v.idsFlags.a != 0)
+                    // Backward-compatibility: GraphView may still use the old idsFlags for the edges
+                    v.flags.r = v.idsFlags.a;
                 v.flags.r += addFlags.r;
                 v.opacityPageSettingIndex.r = opacityPage.r;
                 v.opacityPageSettingIndex.g = opacityPage.g;
@@ -1091,6 +1094,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 v.uv = mat.MultiplyVector(vec);
                 v.xformClipPages = xformClipPages;
                 v.ids = ids;
+                if (v.idsFlags.a != 0)
+                    // Backward-compatibility: GraphView may still use the old idsFlags for the edges
+                    v.flags.r = v.idsFlags.a;
                 v.flags.r += addFlags.r;
                 v.opacityPageSettingIndex.r = opacityPage.r;
                 v.opacityPageSettingIndex.g = opacityPage.g;

@@ -6,7 +6,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Script interface for <see cref="VisualElement"/> text-shadow style property <see cref="IStyle.textShadow"/>.
     /// </summary>
-    public struct TextShadow : IEquatable<TextShadow>
+    internal struct TextShadow : IEquatable<TextShadow>
     {
         /// <summary>
         /// The offset of the shadow.

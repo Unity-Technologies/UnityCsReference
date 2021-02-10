@@ -148,10 +148,6 @@ namespace UnityEngine.UIElements
         /// </summary>
         StyleLength left { get; set; }
         /// <summary>
-        /// Increases or decreases the space between characters.
-        /// </summary>
-        StyleLength letterSpacing { get; set; }
-        /// <summary>
         /// Space reserved for the bottom edge of the margin during the layout phase.
         /// </summary>
         StyleLength marginBottom { get; set; }
@@ -226,10 +222,6 @@ namespace UnityEngine.UIElements
         /// </summary>
         StyleEnum<TextOverflow> textOverflow { get; set; }
         /// <summary>
-        /// Drop shadow of the text.
-        /// </summary>
-        StyleTextShadow textShadow { get; set; }
-        /// <summary>
         /// Top distance from the element's box during layout.
         /// </summary>
         StyleLength top { get; set; }
@@ -249,13 +241,6 @@ namespace UnityEngine.UIElements
         /// </remarks>
         StyleFont unityFont { get; set; }
         /// <summary>
-        /// Font to draw the element's text.
-        /// </summary>
-        /// <remarks>
-        /// This property is inherited by default.
-        /// </remarks>
-        StyleFontDefinition unityFontDefinition { get; set; }
-        /// <summary>
         /// Font style and weight (normal, bold, italic) to draw the element's text.
         /// </summary>
         /// <remarks>
@@ -266,10 +251,6 @@ namespace UnityEngine.UIElements
         /// Specifies which box the element content is clipped against.
         /// </summary>
         StyleEnum<OverflowClipBox> unityOverflowClipBox { get; set; }
-        /// <summary>
-        /// Increases or decreases the space between paragraphs.
-        /// </summary>
-        StyleLength unityParagraphSpacing { get; set; }
         /// <summary>
         /// Size of the 9-slice's bottom edge when painting an element's background image.
         /// </summary>
@@ -294,14 +275,6 @@ namespace UnityEngine.UIElements
         /// </remarks>
         StyleEnum<TextAnchor> unityTextAlign { get; set; }
         /// <summary>
-        /// Outline color of the text.
-        /// </summary>
-        StyleColor unityTextOutlineColor { get; set; }
-        /// <summary>
-        /// Outline width of the text.
-        /// </summary>
-        StyleFloat unityTextOutlineWidth { get; set; }
-        /// <summary>
         /// The element's text overflow position.
         /// </summary>
         StyleEnum<TextOverflowPosition> unityTextOverflowPosition { get; set; }
@@ -323,9 +296,5 @@ namespace UnityEngine.UIElements
         /// Fixed width of an element for the layout.
         /// </summary>
         StyleLength width { get; set; }
-        /// <summary>
-        /// Increases or decreases the space between words.
-        /// </summary>
-        StyleLength wordSpacing { get; set; }
     }
 }
