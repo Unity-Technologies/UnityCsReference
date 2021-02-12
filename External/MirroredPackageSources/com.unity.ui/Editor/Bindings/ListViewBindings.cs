@@ -5,9 +5,9 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections;
 
-namespace UnityEditor.UIElements
+namespace UnityEditor.UIElements.Bindings
 {
-    class ListViewSerializedObjectBinding : DefaultSerializedObjectBindingImplementation.SerializedObjectBindingBase
+    class ListViewSerializedObjectBinding : SerializedObjectBindingBase
     {
         ListView listView { get { return boundElement as ListView; } set { boundElement = value; } }
 
@@ -16,40 +16,67 @@ namespace UnityEditor.UIElements
         SerializedProperty m_ArraySize;
         int m_ListViewArraySize;
 
+        private bool makeItemSet;
+        private bool bindItemSet;
+
         public static void CreateBind(ListView listView,
-            DefaultSerializedObjectBindingImplementation.SerializedObjectUpdateWrapper objWrapper,
+            SerializedObjectBindingContext context,
             SerializedProperty prop)
         {
             var newBinding = new ListViewSerializedObjectBinding();
-            newBinding.SetBinding(listView, objWrapper, prop);
+            newBinding.SetBinding(listView, context, prop);
         }
 
-        protected void SetBinding(ListView listView,
-            DefaultSerializedObjectBindingImplementation.SerializedObjectUpdateWrapper objWrapper,
+        protected void SetBinding(ListView listView, SerializedObjectBindingContext context,
             SerializedProperty prop)
         {
-            boundObject = objWrapper;
+            bindingContext = context;
             boundProperty = prop;
             boundPropertyPath = prop.propertyPath;
 
             m_DataList = new SerializedObjectList(prop, listView.showBoundCollectionSize);
             m_ArraySize = m_DataList.ArraySize;
             m_ListViewArraySize = m_DataList.ArraySize.intValue;
-            this.listView = listView;
+            SetListView(listView);
+        }
 
-            if (listView.makeItem == null)
+        private void SetListView(ListView lv)
+        {
+            if (listView != null)
             {
-                listView.makeItem = () => MakeListViewItem();
+                if (bindItemSet)
+                    listView.bindItem = null;
+                if (makeItemSet)
+                    listView.makeItem = null;
+
+                listView.itemsSource = null;
+                listView.Refresh();
+
+                listView.SetDragAndDropController(null);
             }
 
-            if (listView.bindItem == null)
+
+            this.listView = lv;
+
+            makeItemSet = bindItemSet = false;
+            if (listView != null)
             {
-                listView.bindItem = (v, i) => BindListViewItem(v, i);
+                if (listView.makeItem == null)
+                {
+                    listView.makeItem = () => MakeListViewItem();
+                    makeItemSet = true;
+                }
+
+                if (listView.bindItem == null)
+                {
+                    listView.bindItem = (v, i) => BindListViewItem(v, i);
+                    bindItemSet = true;
+                }
+
+                listView.itemsSource = m_DataList;
+
+                listView.SetDragAndDropController(new SerializedObjectListReorderableDragAndDropController(listView));
             }
-
-            listView.itemsSource = m_DataList;
-
-            listView.SetDragAndDropController(new SerializedObjectListReorderableDragAndDropController(listView));
         }
 
         VisualElement MakeListViewItem()
@@ -75,7 +102,7 @@ namespace UnityEditor.UIElements
             object item = listView.itemsSource[index];
             var itemProp = item as SerializedProperty;
             field.bindingPath = itemProp.propertyPath;
-            BindingExtensions.bindingImpl.Bind(ve, boundObject, itemProp);
+            bindingContext.ContinueBinding(ve, itemProp);
         }
 
         void UpdateArraySize()
@@ -89,6 +116,15 @@ namespace UnityEditor.UIElements
         public override void Release()
         {
             isReleased = true;
+
+            SetListView(null);
+
+            bindingContext = null;
+            boundProperty = null;
+            m_DataList = null;
+
+            m_ArraySize = null;
+            m_ListViewArraySize = -1;
         }
 
         private UInt64 lastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
@@ -111,22 +147,19 @@ namespace UnityEditor.UIElements
                 ResetUpdate();
                 isUpdating = true;
 
-                if (boundObject.IsValid() && IsPropertyValid())
-                {
-                    if (lastUpdatedRevision == boundObject.LastRevision)
-                    {
-                        //nothing to do
-                        return;
-                    }
+                if (lastUpdatedRevision == bindingContext.lastRevision)
+                    return;
 
-                    lastUpdatedRevision = boundObject.LastRevision;
+                if (bindingContext.IsValid() && IsPropertyValid())
+                {
+                    lastUpdatedRevision = bindingContext.lastRevision;
 
                     int currentArraySize = m_ArraySize.intValue;
-
                     if (currentArraySize != m_ListViewArraySize)
                     {
                         UpdateArraySize();
                     }
+
                     return;
                 }
             }
@@ -163,6 +196,8 @@ namespace UnityEditor.UIElements
             }
 
             var array = objectList;
+
+            // TODO: GC Allocs generated by LINQ
             var selection = m_ListView.selectedIndices.OrderBy((i) => i).ToArray();
 
             var baseOffset = 0;

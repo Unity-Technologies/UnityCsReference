@@ -3,8 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -392,6 +392,15 @@ namespace UnityEditor
 
         private static Item CreateProgressItem(int id)
         {
+            // It is possible for this function to be called during
+            // RestoreProgressItems and right after in OnOperationStateCreated,
+            // for the same id, if the progress comes from C++ and
+            // the C# Progress class has not been initialized before. Therefore,
+            // we have to check if the progress already exists in our list
+            // otherwise we will have duplicates.
+            var currentItem = s_ProgressItems.FirstOrDefault(i => i.id == id);
+            if (currentItem != null)
+                return currentItem;
             var item = new Item(id);
             s_ProgressItems.Add(item);
             return item;

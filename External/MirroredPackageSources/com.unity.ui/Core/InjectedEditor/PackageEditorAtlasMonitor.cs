@@ -37,7 +37,8 @@ namespace UnityEditor.UIElements
             bool colorSpaceChanged = CheckForColorSpaceChange();
             bool importedTextureChanged = CheckForImportedTextures();
             bool importedVectorImageChanged = CheckForImportedVectorImages();
-            if (colorSpaceChanged || importedTextureChanged)
+            bool renderTexturesTrashed = CheckForRenderTexturesTrashed();
+            if (colorSpaceChanged || importedTextureChanged || renderTexturesTrashed)
             {
                 UIRAtlasManager.MarkAllForReset();
                 VectorImageManager.MarkAllForReset();
@@ -75,6 +76,7 @@ namespace UnityEditor.UIElements
         private static ColorSpace m_LastColorSpace;
         private static int m_LastImportedTexturesCount;
         private static int m_LastImportedVectorImagesCount;
+        private static RenderTexture m_RenderTexture;
 
         private static bool CheckForColorSpaceChange()
         {
@@ -106,6 +108,24 @@ namespace UnityEditor.UIElements
             m_LastImportedVectorImagesCount = importedVectorImagesCount;
 
             return true;
+        }
+
+        private static bool CheckForRenderTexturesTrashed()
+        {
+            if (m_RenderTexture == null)
+            {
+                m_RenderTexture = new RenderTexture(1, 1, 0, RenderTextureFormat.ARGB32);
+                m_RenderTexture.Create();
+                return true;
+            }
+
+            if (!m_RenderTexture.IsCreated())
+            {
+                m_RenderTexture.Create();
+                return true;
+            }
+
+            return false;
         }
     }
 }

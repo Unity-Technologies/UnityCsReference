@@ -131,7 +131,7 @@ namespace UnityEngine.UIElements
             {
                 var child = ve.hierarchy[i];
 
-                if (child.canGrabFocus)
+                if (child.canGrabFocus && child.tabIndex >= 0)
                 {
                     return child;
                 }

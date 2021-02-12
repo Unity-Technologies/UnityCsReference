@@ -20,6 +20,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
     {
         public string DirectoryPath;
         public bool IsTestable;
-        public AssetPathVersionMetaData[] VersionMetaDatas;
+        public VersionMetaData VersionMetaData;
     }
 }

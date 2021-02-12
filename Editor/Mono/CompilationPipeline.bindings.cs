@@ -8,13 +8,13 @@ using UnityEngine.Bindings;
 namespace UnityEditor.Compilation
 {
     [Flags]
-    internal enum CompilationSetupErrorFlags    // Keep in sync with enum CompilationSetupErrorFlags::Flags in ScriptCompilationPipeline.h
+    enum CompilationSetupErrors     // Keep in sync with enum CompilationSetupErrors::Flags in ScriptCompilationPipeline.h
     {
-        none = 0,
-        cyclicReferences = (1 << 0),            // set when CyclicAssemblyReferenceException is thrown
-        loadError = (1 << 1),                   // set when AssemblyDefinitionException is thrown
-        precompiledAssemblyError = (1 << 2),    // set when PrecompiledAssemblyException is thrown
-        all = cyclicReferences | loadError | precompiledAssemblyError,
+        None                        = 0,
+        CyclicReferences            = 1 << 0, // set when CyclicAssemblyReferenceException is thrown
+        LoadError                   = 1 << 1, // set when AssemblyDefinitionException is thrown
+        PrecompiledAssemblyError    = 1 << 2, // set when PrecompiledAssemblyException is thrown
+        All                         = CyclicReferences | LoadError | PrecompiledAssemblyError,
     };
 
     [NativeHeader("Editor/Src/ScriptCompilation/ScriptCompilationPipeline.h")]

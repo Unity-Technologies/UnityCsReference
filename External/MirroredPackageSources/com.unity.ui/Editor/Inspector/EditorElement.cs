@@ -148,7 +148,7 @@ namespace UnityEditor.UIElements
 
             Add(m_Footer);
         }
-        
+
         public void ReinitCulled(int editorIndex)
         {
             if (m_Header != null)
@@ -158,9 +158,8 @@ namespace UnityEditor.UIElements
                 Clear();
                 InitCulled();
                 return;
- 
             }
-           
+
             PopulateCache();
         }
 
@@ -171,10 +170,10 @@ namespace UnityEditor.UIElements
                 m_EditorIndex = editorIndex;
                 Clear();
                 Init();
- 
+
                 return;
             }
-            
+
             PopulateCache();
             Object editorTarget = editor.targets[0];
             string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);

@@ -87,7 +87,7 @@ namespace UnityEditor.Scripting.Compilers
         {
             var assemblyInfo = ScriptAssemblyToAssemblyInfo(m_Assembly, m_TempOutputDirectory);
             var systemReferenceDirectories = MonoLibraryHelpers.GetSystemReferenceDirectories(m_Assembly.CompilerOptions.ApiCompatibilityLevel);
-            m_ExternalCompiler.BeginCompiling(assemblyInfo, m_Assembly.CompilerOptions.ResponseFiles, SystemInfo.operatingSystemFamily, systemReferenceDirectories);
+            m_ExternalCompiler.BeginCompiling(assemblyInfo, m_Assembly.GetResponseFiles(), SystemInfo.operatingSystemFamily, systemReferenceDirectories);
         }
 
         public override bool Poll()

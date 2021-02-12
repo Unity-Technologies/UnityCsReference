@@ -1146,9 +1146,6 @@ namespace UnityEditor
 
             currentFrameChanged?.Invoke(frame, shouldPause);
 
-            if (ProfilerInstrumentationPopup.InstrumentationEnabled)
-                ProfilerInstrumentationPopup.UpdateInstrumentableFunctions();
-
             SetCurrentFrameDontPause(frame);
         }
 

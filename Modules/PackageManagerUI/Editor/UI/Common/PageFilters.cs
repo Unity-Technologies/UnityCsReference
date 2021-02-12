@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -67,30 +66,6 @@ namespace UnityEditor.PackageManager.UI
                 statuses.Count == other.statuses.Count && statuses.SequenceEqual(other.statuses) &&
                 categories.Count == other.categories.Count && categories.SequenceEqual(other.categories) &&
                 labels.Count == other.labels.Count && labels.SequenceEqual(other.labels);
-        }
-
-        public override string ToString()
-        {
-            var stringBuilder = new StringBuilder();
-            if (!string.IsNullOrEmpty(searchText))
-                stringBuilder.Append($"searchText={searchText},");
-            if (!string.IsNullOrEmpty(orderBy))
-            {
-                stringBuilder.Append($"orderBy={orderBy},");
-                stringBuilder.Append($"isReverseOrder={isReverseOrder}");
-            }
-
-            if (statuses.Any())
-                stringBuilder.Append($"statuses=[{string.Join(",", statuses.ToArray())}],");
-            if (categories.Any())
-                stringBuilder.Append($"categories=[{string.Join(",", categories.ToArray())}],");
-            if (labels.Any())
-                stringBuilder.Append($"labels=[{string.Join(",", labels.ToArray())}],");
-
-            var text = stringBuilder.ToString();
-            if (!string.IsNullOrEmpty(text))
-                text = text.Remove(text.Length - 1);
-            return text;
         }
     }
 }

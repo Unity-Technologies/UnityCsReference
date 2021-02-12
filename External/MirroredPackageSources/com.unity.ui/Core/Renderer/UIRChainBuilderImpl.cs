@@ -16,6 +16,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
     internal static class RenderEvents
     {
+        private static readonly float VisibilityTreshold = Mathf.Epsilon;
+
         internal static void ProcessOnClippingChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
         {
             bool hierarchical = (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.ClippingHierarchy) != 0;
@@ -391,16 +393,21 @@ namespace UnityEngine.UIElements.UIR.Implementation
             float oldOpacity = ve.renderChainData.compositeOpacity;
             float newOpacity = ve.resolvedStyle.opacity * parentCompositeOpacity;
 
-            bool compositeOpacityChanged = Mathf.Abs(oldOpacity - newOpacity) > 0.0001f;
+            const float meaningfullOpacityChange = 0.0001f;
+
+            bool visiblityTresholdPassed = (oldOpacity < VisibilityTreshold ^ newOpacity < VisibilityTreshold);
+            bool becameVisible = oldOpacity < VisibilityTreshold && newOpacity >= VisibilityTreshold;
+            bool compositeOpacityChanged = Mathf.Abs(oldOpacity - newOpacity) > meaningfullOpacityChange || visiblityTresholdPassed;
             if (compositeOpacityChanged)
             {
                 // Avoid updating cached opacity if it changed too little, because we don't want slow changes to
                 // update the cache and never trigger the compositeOpacityChanged condition.
+                // The only small change allowed is when we cross the "visible" boundary of VisibilityTreshold
                 ve.renderChainData.compositeOpacity = newOpacity;
             }
 
             bool changedOpacityID = false;
-            bool hasDistinctOpacity = newOpacity < parentCompositeOpacity - 0.0001f; //assume 0 <= opacity <= 1
+            bool hasDistinctOpacity = newOpacity < parentCompositeOpacity - meaningfullOpacityChange; //assume 0 <= opacity <= 1
             if (hasDistinctOpacity)
             {
                 if (ve.renderChainData.opacityID.ownedState == OwnedState.Inherited)
@@ -434,7 +441,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 // A parent already called UIEOnVisualsChanged with hierarchical=true
             }
-            else if (oldOpacity < Mathf.Epsilon && newOpacity >= Mathf.Epsilon) // became visible
+            else if (becameVisible) // became visible
             {
                 renderChain.UIEOnVisualsChanged(ve, true); // Force a full vertex regeneration, as this element was considered as hidden from the hierarchy
                 isDoingFullVertexRegeneration = true;
@@ -555,7 +562,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         static bool IsElementHierarchyHidden(VisualElement ve)
         {
-            return ve.resolvedStyle.opacity < Mathf.Epsilon || ve.resolvedStyle.display == DisplayStyle.None;
+            return ve.resolvedStyle.opacity < VisibilityTreshold || ve.resolvedStyle.display == DisplayStyle.None;
         }
 
         static bool IsElementSelfHidden(VisualElement ve)
