@@ -36,7 +36,7 @@ namespace UnityEditor.UIElements
             focusable = true;
             tabIndex = 0;
             excludeFromFocusRing = true;
-            delegatesFocus = false;
+            delegatesFocus = true;
 
             AddToClassList(ussClassName);
 

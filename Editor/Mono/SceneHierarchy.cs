@@ -117,6 +117,8 @@ namespace UnityEditor
         bool m_DidSelectSearchResult;
         [NonSerialized]
         double m_LastUserInteractionTime;
+        [NonSerialized]
+        bool m_IgnoreNextHierarchyChangedEvent;
 
         public static bool s_Debug
         {
@@ -275,8 +277,23 @@ namespace UnityEditor
             dataSource.sortingState = m_SortingObjects[m_CurrentSortingName];
             dragging.parentForDraggedObjectsOutsideItems = m_CustomParentForNewGameObjects;
             dragging.SetCustomDragHandler(m_CustomDragHandler);
+            gui.renameEnded += ItemRenameEnded;
 
             m_TreeView.ReloadData();
+        }
+
+        void ItemRenameEnded(bool userAcceptedRename, int itemID, string name, string originalName)
+        {
+            if (userAcceptedRename && name != originalName)
+            {
+                // Handle reloading immediately when an internal change happens instead of waiting for
+                // the delayed OnHierarchyChange event (fixes case 981190)
+                ObjectNames.SetNameSmartWithInstanceID(itemID, name);
+                m_IgnoreNextHierarchyChangedEvent = true;
+                ReloadData();
+
+                EditorApplication.RepaintAnimationWindow();
+            }
         }
 
         bool AreCustomScenesValid(Scene[] customScenes)
@@ -730,23 +747,6 @@ namespace UnityEditor
             }
         }
 
-        /* public void SetSearch(string searchString, SearchableEditorWindow.SearchModeHierarchyWindow searchMode)
-         {
-             m_SearchFilter = searchString;
-             m_SearchMode = searchMode;
-
-             if (m_TreeView == null)
-             {
-                 Init();
-             }
-             else
-             {
-                 dataSource.searchString = searchString;
-                 dataSource.searchMode = searchMode;
-                 ReloadData();
-             }
-         }*/
-
         void TreeViewSelectionChanged(int[] ids)
         {
             //Last selected should be the active selected object to reflect the behavior of the scene view selection
@@ -780,6 +780,12 @@ namespace UnityEditor
 
         public void OnHierarchyChange()
         {
+            if (m_IgnoreNextHierarchyChangedEvent)
+            {
+                m_IgnoreNextHierarchyChangedEvent = false;
+                return;
+            }
+
             // Avoid end renaming once if gameObject is newly created and is set to enter rename mode
             if (m_TreeView != null && !isNewGOInRenameMode)
             {

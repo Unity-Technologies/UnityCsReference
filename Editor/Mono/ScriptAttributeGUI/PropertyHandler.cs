@@ -390,27 +390,52 @@ namespace UnityEditor
 
         internal static bool IsArrayReorderable(SerializedProperty property)
         {
+            const BindingFlags fieldFilter = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
             if (property == null) return false;
             if (property.IsReorderable()) return true;
 
             FieldInfo listInfo = null;
             Queue<string> propertyName = new Queue<string>(property.propertyPath.Split(".".ToCharArray(), StringSplitOptions.RemoveEmptyEntries));
-            listInfo = property.serializedObject.targetObject.GetType().GetField(propertyName.Dequeue(), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var type = property.serializedObject.targetObject.GetType();
+            var name = propertyName.Dequeue();
+            listInfo = type.GetField(name, fieldFilter);
 
-            if (listInfo == null) return false;
+            if (listInfo == null)
+            {
+                // it may be private in any parent and still serializable
+                type = type.BaseType;
+                while (listInfo == null && type != null)
+                {
+                    listInfo = type.GetField(name, fieldFilter);
+                    type = type.BaseType;
+                }
+                if (listInfo == null) return false;
+            }
 
             // If we have a nested property we need to find it via reflection in order to verify
             // if it has a non-reorderable attribute
             while (propertyName.Count > 0)
             {
                 Type t = listInfo.FieldType;
-                if (t.IsArray) t = t.GetElementType();
-                else if (t.IsArrayOrList()) t = t.GetGenericArguments().Single();
-                FieldInfo f = t.GetField(propertyName.Dequeue());
-                if (f != null)
+
+                // if the current type is an Array or List, the next two elements in the queue
+                // are Array and data[], we can skip them directly to test against the field name.
+                if (t.IsArray)
                 {
-                    listInfo = f;
+                    t = t.GetElementType();
+                    propertyName.Dequeue();
+                    propertyName.Dequeue();
                 }
+                else if (t.IsArrayOrList())
+                {
+                    t = t.GetGenericArguments().Single();
+                    propertyName.Dequeue();
+                    propertyName.Dequeue();
+                }
+
+                FieldInfo f = t.GetField(propertyName.Dequeue(), fieldFilter);
+                if (f != null) listInfo = f;
             }
 
             return !TypeCache.GetFieldsWithAttribute(typeof(NonReorderableAttribute)).Any(f => f.Equals(listInfo));

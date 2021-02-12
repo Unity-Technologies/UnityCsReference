@@ -100,6 +100,10 @@ namespace UnityEngine.Networking
                         {
                             Debug.LogWarning(string.Format("Unsupported encoding '{0}': {1}", encoding, e.Message));
                         }
+                        catch (NotSupportedException e)
+                        {
+                            Debug.LogWarning(string.Format("Unsupported encoding '{0}': {1}", encoding, e.Message));
+                        }
                     }
                 }
             }

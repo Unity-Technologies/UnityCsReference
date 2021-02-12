@@ -15,7 +15,7 @@ using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 
 namespace UnityEditorInternal
 {
-    // Keep in sync with CanAppendBuild in EditorUtility.h
+    [System.Obsolete("CanAppendBuild has been deprecated. Use UnityEditor.CanAppendBuild instead (UnityUpgradable) -> [UnityEditor] UnityEditor.CanAppendBuild", true)]
     public enum CanAppendBuild
     {
         Unsupported = 0,
@@ -175,8 +175,11 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::InstantiateMaterialsInEditMode")]
         public extern static Material[] InstantiateMaterialsInEditMode([NotNull] Renderer renderer);
 
-        [FreeFunction("InternalEditorUtilityBindings::BuildCanBeAppended")]
-        public extern static CanAppendBuild BuildCanBeAppended(BuildTarget target, string location);
+        [System.Obsolete("BuildCanBeAppended has been deprecated. Use UnityEditor.BuildPipeline.BuildCanBeAppended instead (UnityUpgradable) -> [UnityEditor] UnityEditor.BuildPipeline.BuildCanBeAppended(*)", true)]
+        public static CanAppendBuild BuildCanBeAppended(BuildTarget target, string location)
+        {
+            return (CanAppendBuild)BuildPipeline.BuildCanBeAppended(target, location);
+        }
 
         [FreeFunction("InternalEditorUtilityBindings::RegisterExtensionDll")]
         extern internal static void RegisterExtensionDll(string dllLocation, string guid);

@@ -96,21 +96,26 @@ namespace UnityEngine.UIElements
         }
     }
 
-    internal static class StringListPool
+    internal class ObjectListPool<T>
     {
-        static ObjectPool<List<string>> pool = new ObjectPool<List<string>>(20);
+        static ObjectPool<List<T>> pool = new ObjectPool<List<T>>(20);
 
-        public static List<string> Get()
+        public static List<T> Get()
         {
             return pool.Get();
         }
 
-        public static void Release(List<string> elements)
+        public static void Release(List<T> elements)
         {
             elements.Clear();
             pool.Release(elements);
         }
     }
+
+    internal class StringListPool : ObjectListPool<string>
+    {
+    }
+
 
     /// <summary>
     /// Base class for objects that are part of the UIElements visual tree.

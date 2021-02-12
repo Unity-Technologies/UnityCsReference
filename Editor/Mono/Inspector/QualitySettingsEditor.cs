@@ -28,7 +28,7 @@ namespace UnityEditor
             public static readonly GUIContent kIconTrash = EditorGUIUtility.TrIconContent("TreeEditor.Trash", "Delete Level");
             public static readonly GUIContent kSoftParticlesHint = EditorGUIUtility.TrTextContent("Soft Particles require using Deferred Lighting or making camera render the depth texture.");
             public static readonly GUIContent kBillboardsFaceCameraPos = EditorGUIUtility.TrTextContent("Billboards Face Camera Position", "Make billboards face towards camera position. Otherwise they face towards camera plane. This makes billboards look nicer when camera rotates but is more expensive to render.");
-            public static readonly GUIContent kVSyncCountLabel = EditorGUIUtility.TrTextContent("VSync Count");
+            public static readonly GUIContent kVSyncCountLabel = EditorGUIUtility.TrTextContent("VSync Count", "Limit refresh rate to avoid tearing");
             public static readonly GUIContent kLODBiasLabel = EditorGUIUtility.TrTextContent("LOD Bias");
             public static readonly GUIContent kMipStrippingHint = EditorGUIUtility.TrTextContent("Where maximum possible texture mip resolution for a platform is less than full, package size can be reduced by enabling Texture MipMap Stripping in Player Settings.");
         }

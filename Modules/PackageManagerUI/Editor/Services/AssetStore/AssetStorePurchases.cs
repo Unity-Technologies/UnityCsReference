@@ -5,38 +5,24 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Text;
 
 namespace UnityEditor.PackageManager.UI
 {
     [Serializable]
     internal class PurchasesQueryArgs : PageFilters
     {
+        private static readonly string k_DownloadedStatus = "downloaded";
+
         public int startIndex;
         public int limit;
-        public List<long> productIds;
+        public List<string> productIds;
 
-        public override string ToString()
+        public string status => statuses?.FirstOrDefault() ?? string.Empty;
+        public bool downloadedOnly => k_DownloadedStatus.Equals(status, StringComparison.OrdinalIgnoreCase);
+
+        public new PurchasesQueryArgs Clone()
         {
-            var limit = this.limit;
-            var startIndex = this.startIndex > 0 ? this.startIndex : 0;
-            var stringBuilder = new StringBuilder($"?offset={startIndex}&limit={limit}", 512);
-            if (!string.IsNullOrEmpty(searchText))
-                stringBuilder.Append($"&query={Uri.EscapeDataString(searchText)}");
-            if (statuses?.Any() ?? false)
-                stringBuilder.Append($"&status={statuses.FirstOrDefault()}");
-            if (!string.IsNullOrEmpty(orderBy))
-            {
-                stringBuilder.Append($"&orderBy={orderBy}");
-                stringBuilder.Append(isReverseOrder ? "&order=desc" : "&order=asc");
-            }
-            if (labels?.Any() ?? false)
-                stringBuilder.Append($"&tagging={string.Join(",", labels.Select(label => Uri.EscapeDataString(label)).ToArray())}");
-            if (categories?.Any() ?? false)
-                stringBuilder.Append($"&categories={string.Join(",", categories.Select(cat => Uri.EscapeDataString(cat)).ToArray())}");
-            if (productIds?.Any() ?? false)
-                stringBuilder.Append($"&ids={string.Join(",", productIds.Select(id => id.ToString()).ToArray())}");
-            return stringBuilder.ToString();
+            return (PurchasesQueryArgs)MemberwiseClone();
         }
     }
 
@@ -66,11 +52,12 @@ namespace UnityEditor.PackageManager.UI
             this.queryArgs = queryArgs ?? new PurchasesQueryArgs();
         }
 
-        public void ParsePurchases(IDictionary<string, object> rawList)
+        public void AppendPurchases(IDictionary<string, object> rawList)
         {
-            total = (long)rawList["total"];
-            if (total <= 0)
+            var parsedTotal = (long)rawList["total"];
+            if (parsedTotal <= 0)
                 return;
+            total = parsedTotal;
 
             var results = rawList.GetList<Dictionary<string, object>>("results") ?? Enumerable.Empty<Dictionary<string, object>>();
             foreach (var item in results)
@@ -78,7 +65,14 @@ namespace UnityEditor.PackageManager.UI
 
             var categories = rawList.GetList<Dictionary<string, object>>("category") ?? Enumerable.Empty<Dictionary<string, object>>();
             foreach (var item in categories)
-                this.categories.Add(new Category { name = item.GetString("name"), count = (long)item["count"] });
+            {
+                var categoryName = item.GetString("name");
+                var matchingCategory = this.categories.FirstOrDefault(c => c.name == categoryName);
+                if (matchingCategory != null)
+                    matchingCategory.count += (long)item["count"];
+                else
+                    this.categories.Add(new Category { name = categoryName, count = (long)item["count"] });
+            }
         }
     }
 }

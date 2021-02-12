@@ -53,7 +53,7 @@ namespace UnityEditor.PackageManager.UI
             m_UpmClient = upmClient;
             m_IOProxy = ioProxy;
 
-            m_ListOperation?.ResolveDependencies(unityConnect, assetStoreRestAPI);
+            m_ListOperation?.ResolveDependencies(unityConnect, assetStoreRestAPI, assetStoreCache);
         }
 
         public virtual void ListCategories(Action<List<string>> callback)
@@ -93,32 +93,36 @@ namespace UnityEditor.PackageManager.UI
                 return;
             }
 
-            var productIdString = productId.ToString();
-            var purchaseInfo = m_AssetStoreCache.GetPurchaseInfo(productIdString);
+            var purchaseInfo = m_AssetStoreCache.GetPurchaseInfo(productId.ToString());
             if (purchaseInfo != null)
             {
                 FetchInternal(productId, purchaseInfo);
             }
             else
             {
-                // when the purchase info is not available for a package (either it's not fetched yet or just not available altogether)
-                // we'll try to fetch the purchase info first and then call the `FetchInternal`.
-                // In the case where a package not purchased, `purchaseInfo` will still be null,
-                // but the generated `AssetStorePackage` in the end will contain an error.
-                var fetchOperation = new AssetStoreListOperation(m_UnityConnect, m_AssetStoreRestAPI);
-                var queryArgs = new PurchasesQueryArgs { productIds = new List<long> { productId } };
-                fetchOperation.onOperationSuccess += op =>
-                {
-                    purchaseInfo = fetchOperation.result.list.FirstOrDefault();
-                    if (purchaseInfo != null)
-                    {
-                        m_AssetStoreCache.SetPurchaseInfo(purchaseInfo);
-                    }
-                    ;
-                    FetchInternal(productId, purchaseInfo);
-                };
-                fetchOperation.Start(queryArgs);
+                if (m_ListOperation.isInProgress)
+                    m_ListOperation.onOperationFinalized += op => StartFetchOperation(productId);
+                else
+                    StartFetchOperation(productId);
             }
+        }
+
+        private void StartFetchOperation(long productId)
+        {
+            // when the purchase info is not available for a package (either it's not fetched yet or just not available altogether)
+            // we'll try to fetch the purchase info first and then call the `FetchInternal`.
+            // In the case where a package not purchased, `purchaseInfo` will still be null,
+            // but the generated `AssetStorePackage` in the end will contain an error.
+            var fetchOperation = new AssetStoreListOperation(m_UnityConnect, m_AssetStoreRestAPI, m_AssetStoreCache);
+            var queryArgs = new PurchasesQueryArgs { productIds = new List<string> { productId.ToString() } };
+            fetchOperation.onOperationSuccess += op =>
+            {
+                var purchaseInfo = fetchOperation.result.list.FirstOrDefault();
+                if (purchaseInfo != null)
+                    m_AssetStoreCache.SetPurchaseInfo(purchaseInfo);
+                FetchInternal(productId, purchaseInfo);
+            };
+            fetchOperation.Start(queryArgs);
         }
 
         private void FetchInternal(long productId, AssetStorePurchaseInfo purchaseInfo)
@@ -144,7 +148,7 @@ namespace UnityEditor.PackageManager.UI
             if (queryArgs.startIndex == 0)
                 RefreshProductUpdateDetails();
 
-            m_ListOperation = m_ListOperation ?? new AssetStoreListOperation(m_UnityConnect, m_AssetStoreRestAPI);
+            m_ListOperation = m_ListOperation ?? new AssetStoreListOperation(m_UnityConnect, m_AssetStoreRestAPI, m_AssetStoreCache);
             m_ListOperation.onOperationSuccess += op =>
             {
                 var result = m_ListOperation.result;

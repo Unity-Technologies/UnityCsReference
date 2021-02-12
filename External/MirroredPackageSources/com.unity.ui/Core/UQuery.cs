@@ -126,30 +126,47 @@ namespace UnityEngine.UIElements
             {
                 match = null;
                 base.Run(root, matchers);
+                m_Matchers = null;
             }
+
+            public bool IsInUse()
+            {
+                return m_Matchers != null;
+            }
+
+            public abstract SingleQueryMatcher CreateNew();
         }
 
         internal class FirstQueryMatcher : SingleQueryMatcher
         {
+            public static readonly FirstQueryMatcher Instance = new FirstQueryMatcher();
             protected override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
             {
                 if (match == null)
                     match = element;
                 return true;
             }
+
+            public override SingleQueryMatcher CreateNew() => new FirstQueryMatcher();
         }
 
         internal class LastQueryMatcher : SingleQueryMatcher
         {
+            public static readonly LastQueryMatcher Instance = new LastQueryMatcher();
+
             protected override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
             {
                 match = element;
                 return false;
             }
+            public override SingleQueryMatcher CreateNew() => new LastQueryMatcher();
+
         }
 
         internal class IndexQueryMatcher : SingleQueryMatcher
         {
+            public static readonly IndexQueryMatcher Instance = new IndexQueryMatcher();
+
             private int matchCount = -1;
             private int _matchIndex;
 
@@ -179,6 +196,9 @@ namespace UnityEngine.UIElements
 
                 return matchCount >= _matchIndex;
             }
+            
+            public override SingleQueryMatcher CreateNew() => new IndexQueryMatcher();
+
         }
     }
 
@@ -188,9 +208,6 @@ namespace UnityEngine.UIElements
     public struct UQueryState<T> : IEquatable<UQueryState<T>> where T : VisualElement
     {
         //this makes it non-thread safe. But saves on allocations...
-        private static UQuery.FirstQueryMatcher s_First = new UQuery.FirstQueryMatcher();
-        private static UQuery.LastQueryMatcher s_Last = new UQuery.LastQueryMatcher();
-        private static UQuery.IndexQueryMatcher s_Index = new UQuery.IndexQueryMatcher();
         private static ActionQueryMatcher s_Action = new ActionQueryMatcher();
 
         private readonly VisualElement m_Element;
@@ -212,33 +229,32 @@ namespace UnityEngine.UIElements
             return new UQueryState<T>(element, m_Matchers);
         }
 
+        private T Single(UQuery.SingleQueryMatcher matcher)
+        {
+            if (matcher.IsInUse())  //Prevent reentrance issues
+            {
+                matcher = matcher.CreateNew();
+            }
+            
+            matcher.Run(m_Element, m_Matchers);
+            var match = matcher.match as T;
+
+            // We need to make sure we don't leak a ref to the VisualElement.
+            matcher.match = null;
+            return match;
+        }
+
         /// <summary>
         /// The first element matching all the criteria, or null if none was found.
         /// </summary>
         /// <returns>The first element matching all the criteria, or null if none was found.</returns>
-        public T First()
-        {
-            s_First.Run(m_Element, m_Matchers);
-
-            // We need to make sure we don't leak a ref to the VisualElement.
-            var match = s_First.match as T;
-            s_First.match = null;
-            return match;
-        }
+        public T First() => Single(UQuery.FirstQueryMatcher.Instance);
 
         /// <summary>
         /// The last element matching all the criteria, or null if none was found.
         /// </summary>
         /// <returns>The last element matching all the criteria, or null if none was found.</returns>
-        public T Last()
-        {
-            s_Last.Run(m_Element, m_Matchers);
-
-            // We need to make sure we don't leak a ref to the VisualElement.
-            var match = s_Last.match as T;
-            s_Last.match = null;
-            return match;
-        }
+        public T Last() => Single(UQuery.LastQueryMatcher.Instance);
 
         private class ListQueryMatcher : UQuery.UQueryMatcher
         {
@@ -287,13 +303,9 @@ namespace UnityEngine.UIElements
         /// <returns>The match element at the specified index.</returns>
         public T AtIndex(int index)
         {
-            s_Index.matchIndex = index;
-            s_Index.Run(m_Element, m_Matchers);
-
-            // We need to make sure we don't leak a ref to the VisualElement.
-            var match = s_Index.match as T;
-            s_Index.match = null;
-            return match;
+            var indexMatcher = UQuery.IndexQueryMatcher.Instance;
+            indexMatcher.matchIndex = index;
+            return Single(indexMatcher);
         }
 
         //Convoluted trick so save on allocating memory for delegates or lambdas
@@ -798,6 +810,13 @@ namespace UnityEngine.UIElements
         public UQueryState<T> Build()
         {
             FinishSelector();
+
+            if (m_Matchers.Count == 0)
+            {
+                // an empty query should match everything
+                parts.Add(new StyleSelectorPart() {type = StyleSelectorType.Wildcard});
+                FinishSelector();
+            }
             return new UQueryState<T>(m_Element, m_Matchers);
         }
 

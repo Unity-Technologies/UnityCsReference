@@ -16,10 +16,10 @@ namespace UnityEditorInternal
 
         private static int s_ChartHash = "Charts".GetHashCode();
         public const float kSideWidth = 180.0f;
-        private const int kDistFromTopToFirstLabel = 38;
-        private const int kLabelHeight = 14;
-        private const float kLabelOffset = 5f;
-        private const float kChartMinHeight = 130;
+        protected const int k_DistanceFromTopToFirstLegendLabel = 38;
+        protected const int k_LegendSeriesLabelHeight = 14;
+        protected const int k_LegendSeriesLabelOffset = 5;
+        protected const int k_MinimumHeight = 130;
         private const float k_LineWidth = 2f;
         private const int k_LabelLayoutMaxIterations = 5;
         const string k_Ellipsis = "...";
@@ -203,22 +203,17 @@ namespace UnityEditorInternal
             GUI.Label(headerRect, headerLabel, Styles.legendHeaderLabel);
 
             position.yMin += headerRect.height + Styles.legendHeaderLabel.margin.bottom;
-            position.xMin += kLabelOffset;
-            position.xMax -= kLabelOffset;
+            position.xMin += k_LegendSeriesLabelOffset;
+            position.xMax -= k_LegendSeriesLabelOffset;
             DoSeriesList(position, m_chartControlID, type, cdata);
         }
 
-        public int DoGUI(ChartType type, int selectedFrame, ChartViewData cdata, bool active)
+        public int DoGUI(Rect chartRect, ChartType type, int selectedFrame, ChartViewData cdata, bool active)
         {
             if (cdata == null)
                 return selectedFrame;
 
             m_chartControlID = GUIUtility.GetControlID(s_ChartHash, FocusType.Keyboard);
-
-            var chartHeight = GUILayout.MinHeight(
-                Math.Max(kLabelOffset + ((cdata.numSeries + 1) * kLabelHeight) + kDistFromTopToFirstLabel, kChartMinHeight)
-            );
-            Rect chartRect = GUILayoutUtility.GetRect(GUIContent.none, Styles.background, chartHeight);
 
             Rect r = chartRect;
 

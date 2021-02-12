@@ -13,10 +13,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
     /// </summary>
     abstract class CompilationSetupErrorsTrackerBase
     {
-        public abstract void SetCompilationSetupErrorFlags(CompilationSetupErrorFlags flags);
-        public abstract void ClearCompilationSetupErrorFlags(CompilationSetupErrorFlags flags);
+        public abstract void SetCompilationSetupErrors(CompilationSetupErrors errors);
+        public abstract void ClearCompilationSetupErrors(CompilationSetupErrors errors);
         public abstract bool HaveCompilationSetupErrors();
-        public abstract void LogCompilationSetupErrors(CompilationSetupErrorFlags compilationSetupError, string[] filePaths, string message);
+        public abstract void LogCompilationSetupErrors(CompilationSetupErrors compilationSetupError, string[] filePaths, string message);
 
         /// <summary>PrecompiledAssemblyException is treated differently from other compilation setup error signifying exceptions.
         /// If it is discovered in the context of script compilation within the editor, then CompilationSetupErrorsTracker should be allowed to process it
@@ -26,8 +26,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         /// </summary>
         public virtual void ProcessPrecompiledAssemblyException(PrecompiledAssemblyException exception)
         {
-            SetCompilationSetupErrorFlags(CompilationSetupErrorFlags.precompiledAssemblyError);
-            LogCompilationSetupErrors(CompilationSetupErrorFlags.precompiledAssemblyError, exception.filePaths, exception.Message);
+            SetCompilationSetupErrors(CompilationSetupErrors.PrecompiledAssemblyError);
+            LogCompilationSetupErrors(CompilationSetupErrors.PrecompiledAssemblyError, exception.filePaths, exception.Message);
         }
 
         /// <summary>ProcessException is a utility function to call from a code which processes all exceptions thrown by any EditorCompilation action in a generic fashion
@@ -42,8 +42,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (assemblyDefinitionException != null && assemblyDefinitionException.filePaths.Length > 0)
             {
                 LogCompilationSetupErrors(
-                    assemblyDefinitionException.errorType == AssemblyDefinitionErrorType.loadError ?
-                    CompilationSetupErrorFlags.loadError : CompilationSetupErrorFlags.cyclicReferences,
+                    assemblyDefinitionException.errorType == AssemblyDefinitionErrorType.LoadError ?
+                    CompilationSetupErrors.LoadError : CompilationSetupErrors.CyclicReferences,
                     assemblyDefinitionException.filePaths, assemblyDefinitionException.Message);
                 return true;
             }
@@ -59,19 +59,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
     }
 
-    /// <summary>Class <c>CompilationSetupErrorsTracker</c> is the defailt implementation of CompilationSetupErrorsTrackerBase
+    /// <summary>Class <c>CompilationSetupErrorsTracker</c> is the default implementation of CompilationSetupErrorsTrackerBase
     /// which uses native state to keep track of present errors and it communicates these errors as sticky console errors.
     /// </summary>
     class CompilationSetupErrorsTracker : CompilationSetupErrorsTrackerBase
     {
-        public override void SetCompilationSetupErrorFlags(CompilationSetupErrorFlags flags)
+        public override void SetCompilationSetupErrors(CompilationSetupErrors errors)
         {
-            SetCompilationSetupErrorFlagsNative(flags);
+            SetCompilationSetupErrorsNative(errors);
         }
 
-        public override void ClearCompilationSetupErrorFlags(CompilationSetupErrorFlags flags)
+        public override void ClearCompilationSetupErrors(CompilationSetupErrors errors)
         {
-            ClearCompilationSetupErrorFlagsNative(flags);
+            ClearCompilationSetupErrorsNative(errors);
         }
 
         public override bool HaveCompilationSetupErrors()
@@ -79,22 +79,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return HaveCompilationSetupErrorsNative();
         }
 
-        public override void LogCompilationSetupErrors(CompilationSetupErrorFlags compilationSetupError, string[] filePaths, string message)
+        public override void LogCompilationSetupErrors(CompilationSetupErrors compilationSetupError, string[] filePaths, string message)
         {
             foreach (var filePath in filePaths)
             {
-                var messageWithPath = string.Format("{0} ({1})", message, filePath);
+                var messageWithPath = $"{message} ({filePath})";
                 LogCompilationSetupErrorNative(compilationSetupError, messageWithPath, filePath);
             }
         }
 
-        [FreeFunction(Name = "SetCompilationSetupErrorFlags")]
-        internal static extern void SetCompilationSetupErrorFlagsNative(CompilationSetupErrorFlags flags);
-        [FreeFunction(Name = "ClearCompilationSetupErrorFlags")]
-        internal static extern void ClearCompilationSetupErrorFlagsNative(CompilationSetupErrorFlags flags);
+        [FreeFunction(Name = "SetCompilationSetupErrors")]
+        internal static extern void SetCompilationSetupErrorsNative(CompilationSetupErrors errors);
+        [FreeFunction(Name = "ClearCompilationSetupErrors")]
+        internal static extern void ClearCompilationSetupErrorsNative(CompilationSetupErrors errors);
         [FreeFunction(Name = "HaveCompilationSetupErrors")]
         internal static extern bool HaveCompilationSetupErrorsNative();
         [FreeFunction(Name = "LogCompilationSetupError")]
-        internal static extern void LogCompilationSetupErrorNative(CompilationSetupErrorFlags compilationSetupError, string message, string filePath);
+        internal static extern void LogCompilationSetupErrorNative(CompilationSetupErrors compilationSetupError, string message, string filePath);
     }
 }

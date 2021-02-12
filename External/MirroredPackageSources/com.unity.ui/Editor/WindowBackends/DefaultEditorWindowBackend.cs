@@ -97,7 +97,7 @@ namespace UnityEditor.UIElements
 
             UpdateStyleMargins();
             m_WindowRegistered = true;
-            
+
             SendInitializeIfNecessary();
         }
 
@@ -251,7 +251,7 @@ namespace UnityEditor.UIElements
         {
             if (editorWindowModel == null)
                 return;
-            
+
             var window = editorWindowModel.window;
 
 

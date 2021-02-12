@@ -9,7 +9,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.TextMeshPro")]
 [assembly: InternalsVisibleTo("Unity.TextCore.FontEngine")]
 [assembly: InternalsVisibleTo("Unity.TextCore.FontEngine.Tools")]
-[assembly: InternalsVisibleTo("UnityEngine.TextCoreModule")]
+[assembly: InternalsVisibleTo("UnityEngine.TextCoreTextEngineModule")]
+[assembly: InternalsVisibleTo("UnityEditor.TextCoreTextEngineModule")]
 [assembly: InternalsVisibleTo("Unity.TextCore.Editor")]
 [assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor")]
 
