@@ -171,9 +171,9 @@ namespace UnityEngine.UIElements
         // "atlas manager", who was able to rebuild the atlas texture from the dictionary, these are not internally tracked.
         // Having this hybrid atlas for the sake of reusing similar code makes the code actually more complicated in terms of
         // how we handle reset sequences, since they may differ based on the actual usage.
-        public void EnqueueBlit(Texture image, int x, int y, bool addBorder, Color tint)
+        public void EnqueueBlit(Texture image, RectInt srcRect, int x, int y, bool addBorder, Color tint)
         {
-            m_Blitter.QueueBlit(image, new RectInt(0, 0, image.width, image.height), new Vector2Int(x, y), addBorder, tint);
+            m_Blitter.QueueBlit(image, srcRect, new Vector2Int(x, y), addBorder, tint);
         }
 
         public void Commit()

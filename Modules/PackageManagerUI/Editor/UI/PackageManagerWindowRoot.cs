@@ -222,6 +222,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SelectPackageAndFilter()
         {
+            if (!m_PageManager.IsInitialFetchingDone())
+            {
+                return;
+            }
+
             IPackageVersion version = null;
             IPackage package = null;
             if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))

@@ -96,7 +96,8 @@ namespace UnityEditor
         FilterResult[] m_Results = new FilterResult[0];     // When filtering of folder we have all sub assets here
         FilterResult[] m_VisibleItems = new FilterResult[0]; // Subset of m_Results used for showing/hiding sub assets
 
-        SearchService.SearchSessionHandler m_SearchSessionHandler = new SearchService.SearchSessionHandler(SearchService.SearchEngineScope.Scene);
+        SearchService.SceneSearchSessionHandler m_SearchSessionHandler = new SearchService.SceneSearchSessionHandler();
+        SearchService.SearchSessionOptions m_SearchSessionOptions;
 
         HierarchyType m_HierarchyType;
 
@@ -105,6 +106,13 @@ namespace UnityEditor
         public FilteredHierarchy(HierarchyType type)
         {
             m_HierarchyType = type;
+            m_SearchSessionOptions = SearchService.SearchSessionOptions.Default;
+        }
+
+        public FilteredHierarchy(HierarchyType type, SearchService.SearchSessionOptions searchSessionOptions)
+        {
+            m_HierarchyType = type;
+            m_SearchSessionOptions = searchSessionOptions;
         }
 
         public HierarchyType hierarchyType
@@ -282,10 +290,9 @@ namespace UnityEditor
                         requiredTypeNames = m_SearchFilter.classNames,
                         requiredTypes = searchFilter.classNames.Select(name => TypeCache.GetTypesDerivedFrom<Object>().FirstOrDefault(t => name == t.FullName || name == t.Name))
                     };
-                });
+                }, m_SearchSessionOptions);
 
                 var searchQuery = m_SearchFilter.originalText;
-                var searchContext = (SearchService.HierarchySearchContext)m_SearchSessionHandler.context;
                 m_SearchSessionHandler.BeginSearch(searchQuery);
 
                 if (m_SearchFilter.sceneHandles != null &&
@@ -297,7 +304,7 @@ namespace UnityEditor
                 var newResults = new List<FilterResult>();
                 while (property.Next(null))
                 {
-                    if (!SearchService.SceneSearch.Filter(searchQuery, property, searchContext))
+                    if (!m_SearchSessionHandler.Filter(searchQuery, property))
                         continue;
                     FilterResult newResult = new FilterResult();
                     CopyPropertyData(ref newResult, property);

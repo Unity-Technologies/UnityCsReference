@@ -20,6 +20,11 @@ namespace UnityEngine.TextCore
     public struct FaceInfo
     {
         /// <summary>
+        /// The index of the font face and style to be loaded from the font file.
+        /// </summary>
+        internal int faceIndex { get { return m_FaceIndex; } set { m_FaceIndex = value; } }
+
+        /// <summary>
         /// The name of the font typeface also known as family name.
         /// </summary>
         public string familyName { get { return m_FamilyName; } set { m_FamilyName = value; } }
@@ -123,6 +128,10 @@ namespace UnityEngine.TextCore
         // =============================================
 
         [SerializeField]
+        [NativeName("faceIndex")]
+        private int m_FaceIndex;
+
+        [SerializeField]
         [NativeName("familyName")]
         private string m_FamilyName;
 
@@ -203,6 +212,7 @@ namespace UnityEngine.TextCore
         /// </summary>
         internal FaceInfo(string familyName, string styleName, int pointSize, float scale, float lineHeight, float ascentLine, float capLine, float meanLine, float baseline, float descentLine, float superscriptOffset, float superscriptSize, float subscriptOffset, float subscriptSize, float underlineOffset, float underlineThickness, float strikethroughOffset, float strikethroughThickness, float tabWidth)
         {
+            m_FaceIndex = 0;
             m_FamilyName = familyName;
             m_StyleName = styleName;
 
@@ -239,6 +249,7 @@ namespace UnityEngine.TextCore
         {
             return familyName == other.familyName &&
                 styleName == other.styleName &&
+                faceIndex == other.faceIndex &&
                 pointSize == other.pointSize &&
                 FontEngineUtilities.Approximately(scale, other.scale) &&
                 FontEngineUtilities.Approximately(lineHeight, other.lineHeight) &&

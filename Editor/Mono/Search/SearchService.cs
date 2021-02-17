@@ -54,11 +54,50 @@ namespace UnityEditor.SearchService
         void SetSearchFilter(ISearchContext context, string searchFilter);
     }
 
+    struct SearchSessionOptions
+    {
+        public bool legacyOnly;
+        public static readonly SearchSessionOptions Default = new SearchSessionOptions();
+    }
+
+    struct SearchSessionOptionsApplicator : IDisposable
+    {
+        bool m_Disposed;
+
+        ISearchApi m_Api;
+        SearchSessionOptions m_Options;
+
+        string m_CurrentActiveEngine;
+
+        public SearchSessionOptionsApplicator(ISearchApi api, SearchSessionOptions options)
+        {
+            m_Api = api;
+            m_Options = options;
+            m_Disposed = false;
+            m_CurrentActiveEngine = m_Api?.activeSearchEngineName;
+
+            if (m_Options.legacyOnly)
+                m_Api?.SetActiveSearchEngine(LegacySearchEngineBase.k_Name, false);
+        }
+
+        public void Dispose()
+        {
+            if (m_Disposed)
+                return;
+
+            if (m_Options.legacyOnly)
+                m_Api?.SetActiveSearchEngine(m_CurrentActiveEngine, false);
+
+            m_Disposed = true;
+        }
+    }
+
     class SearchSessionHandler
     {
         SearchEngineScope m_EngineScope;
         bool m_WasSearching;
-        ISearchApi m_Api;
+        protected ISearchApi m_Api;
+        protected SearchSessionOptions m_Options;
 
         public ISearchContext context { get; private set; }
 
@@ -83,7 +122,7 @@ namespace UnityEditor.SearchService
             EndSession();
         }
 
-        public void BeginSession(Func<ISearchContext> searchContextCreator)
+        public void BeginSession(Func<ISearchContext> searchContextCreator, SearchSessionOptions options)
         {
             if (m_WasSearching)
                 return;
@@ -94,9 +133,16 @@ namespace UnityEditor.SearchService
                 if (m_Api == null)
                     throw new NullReferenceException("SearchService Apis were not initialized properly.");
             }
+            m_Options = options;
             context = searchContextCreator();
             m_WasSearching = true;
-            m_Api?.BeginSession(context);
+            using (new SearchSessionOptionsApplicator(m_Api, options))
+                m_Api?.BeginSession(context);
+        }
+
+        public void BeginSession(Func<ISearchContext> searchContextCreator)
+        {
+            BeginSession(searchContextCreator, SearchSessionOptions.Default);
         }
 
         public void EndSession()
@@ -104,18 +150,22 @@ namespace UnityEditor.SearchService
             if (!m_WasSearching)
                 return;
             m_WasSearching = false;
-            m_Api?.EndSession(context);
+            using (new SearchSessionOptionsApplicator(m_Api, m_Options))
+                m_Api?.EndSession(context);
             context = null;
+            m_Options = SearchSessionOptions.Default;
         }
 
         public void BeginSearch(string query)
         {
-            m_Api?.BeginSearch(query, context);
+            using (new SearchSessionOptionsApplicator(m_Api, m_Options))
+                m_Api?.BeginSearch(query, context);
         }
 
         public void EndSearch()
         {
-            m_Api?.EndSearch(context);
+            using (new SearchSessionOptionsApplicator(m_Api, m_Options))
+                m_Api?.EndSearch(context);
         }
     }
 
@@ -126,7 +176,7 @@ namespace UnityEditor.SearchService
         IEnumerable<ISearchEngineBase> engines { get; }
         string activeSearchEngineName { get; }
         ISearchEngineBase GetActiveSearchEngine();
-        void SetActiveSearchEngine(string searchEngineName);
+        void SetActiveSearchEngine(string searchEngineName, bool notify = true);
         void RegisterEngine(ISearchEngineBase engine);
         void UnregisterEngine(ISearchEngineBase engine);
         bool HasEngineOverride();
@@ -243,9 +293,9 @@ namespace UnityEditor.SearchService
             if (engines.Count == 0)
                 return null;
 
-            var index = engines.FindIndex(engine => !(engine is LegacySearchEngineBase));
+            var index = engines.FindIndex(engine => engine is LegacySearchEngineBase);
             if (index < 0)
-                return engines[engines.FindIndex(engine => engine is LegacySearchEngineBase)];
+                return null;
             return engines[index];
         }
 
@@ -254,17 +304,18 @@ namespace UnityEditor.SearchService
             return GetDefaultEngine();
         }
 
-        public void SetActiveSearchEngine(string searchEngineName)
+        public void SetActiveSearchEngine(string searchEngineName, bool notify = true)
         {
-            activeEngineChanged?.Invoke(searchEngineName);
+            if (notify)
+                activeEngineChanged?.Invoke(searchEngineName);
             activeSearchEngineName = searchEngineName;
             EditorPrefs.SetString(SearchService.activeSearchEnginesPrefKey + engineScope, searchEngineName);
             activeSearchEngine = null;
         }
 
-        void ISearchApi.SetActiveSearchEngine(string searchEngineName)
+        void ISearchApi.SetActiveSearchEngine(string searchEngineName, bool notify)
         {
-            SetActiveSearchEngine(searchEngineName);
+            SetActiveSearchEngine(searchEngineName, notify);
         }
 
         public bool HasEngineOverride()

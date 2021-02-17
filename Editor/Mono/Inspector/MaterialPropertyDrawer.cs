@@ -165,6 +165,8 @@ namespace UnityEditor
 
         private static MaterialPropertyHandler GetShaderPropertyHandler(Shader shader, string name)
         {
+            if (name == null)
+                return null;
             int propertyIndex = shader.FindPropertyIndex(name);
             if (propertyIndex < 0)
                 return null;
@@ -201,7 +203,7 @@ namespace UnityEditor
 
         internal static MaterialPropertyHandler GetHandler(Shader shader, string name)
         {
-            if (shader == null)
+            if (shader == null || name == null)
                 return null;
 
             // Use cached handler if available

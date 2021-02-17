@@ -23,7 +23,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
         }
 
-        public static PackageTagLabel CreateTagLabel(IPackageVersion version, bool isDeveloperBuild, bool isVersionItem = false)
+        public static PackageTagLabel CreateTagLabel(IPackageVersion version, bool isVersionItem = false)
         {
             // check with version.packageInfo.UnityLifecycle
             if (version != null)
@@ -38,12 +38,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (version.HasTag(PackageTag.Experimental))
                     return new PackageTagLabel(L10n.Tr("Exp"), L10n.Tr("Experimental"), PackageTag.Experimental);
                 if (version.HasTag(PackageTag.ReleaseCandidate))
-                {
-                    if (isDeveloperBuild && isVersionItem)
-                        return new PackageTagLabel(L10n.Tr("RC"), L10n.Tr("Release Candidate"), PackageTag.ReleaseCandidate);
-                    else
-                        return new PackageTagLabel(L10n.Tr("Pre"), L10n.Tr("Pre-release"), PackageTag.PreRelease);
-                }
+                    return new PackageTagLabel(L10n.Tr("RC"), L10n.Tr("Release Candidate"), PackageTag.ReleaseCandidate);
             }
             return null;
         }

@@ -41,8 +41,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal IEnumerable<PackageVersionItem> versionItems { get { return versionList.Children().Cast<PackageVersionItem>(); } }
 
-        private bool m_IsDeveloperBuild;
-
         private ResourceLoader m_ResourceLoader;
         private PageManager m_PageManager;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
@@ -53,10 +51,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SettingsProxy = settingsProxy;
         }
 
-        public PackageItem(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, IPackage package, VisualState state, bool isDeveloperBuild)
+        public PackageItem(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, IPackage package, VisualState state)
         {
             ResolveDependencies(resourceLoader, pageManager, settingsProxy);
-            m_IsDeveloperBuild = isDeveloperBuild;
 
             var root = m_ResourceLoader.GetTemplate("PackageItem.uxml");
             Add(root);
@@ -145,7 +142,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(versionList, showVersionList);
 
             tagContainer.Clear();
-            var tagLabel = PackageTagLabel.CreateTagLabel(displayVersion, m_IsDeveloperBuild);
+            var tagLabel = PackageTagLabel.CreateTagLabel(displayVersion);
             if (tagLabel != null)
                 tagContainer.Add(tagLabel);
 
@@ -197,7 +194,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 //  if there's more than one version shown
                 var alwaysShowRecommendedLabel = versions.Count > 1;
                 var isLatestVersion = i == versions.Count - 1;
-                versionList.Add(new PackageVersionItem(package, versions[i], alwaysShowRecommendedLabel, isLatestVersion, m_IsDeveloperBuild));
+                versionList.Add(new PackageVersionItem(package, versions[i], alwaysShowRecommendedLabel, isLatestVersion));
             }
 
             var seeAllVersionsLabelVisible = !seeAllVersions && allVersions.Count > keyVersions.Count

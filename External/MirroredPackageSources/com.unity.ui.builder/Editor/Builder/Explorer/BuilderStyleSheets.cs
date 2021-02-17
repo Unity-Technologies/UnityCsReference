@@ -20,7 +20,14 @@ namespace Unity.UI.Builder
         ToolbarMenu m_PseudoStatesMenu;
         BuilderTooltipPreview m_TooltipPreview;
 
-        bool m_FieldFocusedFromStandby;
+        enum FieldFocusStep
+        {
+            Idle,
+            FocusedFromStandby,
+            NeedsSelectionOverride
+        }
+
+        FieldFocusStep m_FieldFocusStep;
         bool m_ShouldRefocusSelectorFieldOnBlur;
 
         BuilderDocument document => m_PaneWindow?.document;
@@ -70,7 +77,7 @@ namespace Unity.UI.Builder
             {
                 var input = evt.target as VisualElement;
                 var field = input.parent as TextField;
-                m_FieldFocusedFromStandby = true;
+                m_FieldFocusStep = FieldFocusStep.FocusedFromStandby;
                 if (field.text == BuilderConstants.ExplorerInExplorerNewClassSelectorInfoMessage || m_ShouldRefocusSelectorFieldOnBlur)
                 {
                     m_ShouldRefocusSelectorFieldOnBlur = false;
@@ -82,16 +89,30 @@ namespace Unity.UI.Builder
 
             m_NewSelectorTextField.RegisterCallback<ChangeEvent<string>>((evt) =>
             {
-                var field = evt.target as TextField;
-
-                if (!m_FieldFocusedFromStandby)
+                if (m_FieldFocusStep != FieldFocusStep.FocusedFromStandby)
                     return;
 
-                m_FieldFocusedFromStandby = false;
+                m_FieldFocusStep = m_NewSelectorTextField.value == BuilderConstants.UssSelectorClassNameSymbol ? FieldFocusStep.NeedsSelectionOverride : FieldFocusStep.Idle;
 
                 // We don't want the '.' we just inserted in the FocusEvent to be highlighted,
-                // which is the default behavior.
-                field.SelectRange(1, 1);
+                // which is the default behavior. Same goes for when we add pseudo states with options menu.
+                m_NewSelectorTextField.SelectRange(m_NewSelectorTextField.value.Length, m_NewSelectorTextField.value.Length);
+            });
+
+            m_NewSelectorTextInputField.RegisterCallback<MouseUpEvent>((evt) =>
+            {
+                // We want to prevent the default action on mouse up in KeyboardTextEditor, but only when
+                // the field selection behaviour was changed by us.
+                if (m_FieldFocusStep != FieldFocusStep.NeedsSelectionOverride)
+                    return;
+
+                m_FieldFocusStep = FieldFocusStep.Idle;
+
+                // Reselect on the next execution, after the KeyboardTextEditor selects all.
+                m_NewSelectorTextInputField.schedule.Execute(() =>
+                {
+                    m_NewSelectorTextField.SelectRange(m_NewSelectorTextField.value.Length, m_NewSelectorTextField.value.Length);
+                });
             });
 
             m_NewSelectorTextInputField.RegisterCallback<BlurEvent>((evt) =>

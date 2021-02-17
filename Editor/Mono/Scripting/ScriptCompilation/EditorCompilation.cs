@@ -62,13 +62,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public PrecompiledAssemblyProviderBase PrecompiledAssemblyProvider { get; set; } = new PrecompiledAssemblyProvider();
         public CompilationSetupErrorsTrackerBase CompilationSetupErrorsTracker { get; set; } = new CompilationSetupErrorsTracker();
         public ResponseFileProvider ResponseFileProvider { get; set; } = new MicrosoftCSharpResponseFileProvider();
+        public ILoadingAssemblyDefinition loadingAssemblyDefinition { get; set; } = new LoadingAssemblyDefinition();
 
         internal string projectDirectory = string.Empty;
         Dictionary<string, string> allScripts = new Dictionary<string, string>();
 
         private bool m_ScriptsForEditorHaveBeenCompiledSinceLastDomainReload;
         private RequestScriptCompilationOptions? m_ScriptCompilationRequest = null;
-        CustomScriptAssembly[] customScriptAssemblies = new CustomScriptAssembly[0];
         List<CustomScriptAssemblyReference> customScriptAssemblyReferences = new List<CustomScriptAssemblyReference>();
         Dictionary<string, TargetAssembly> customTargetAssemblies = new Dictionary<string, TargetAssembly>(); // TargetAssemblies for customScriptAssemblies.
         PrecompiledAssembly[] unityAssemblies;
@@ -112,7 +112,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 .Select(x => x.VersionMetaData)
                 .Distinct(versionMetaDataComparer)
                 .ToDictionary(x => x.Name, x => x);
-            UpdateCustomTargetAssembliesAssetPathsMetaData(customScriptAssemblies, assetPathMetaDatas, forceUpdate: true);
+
+            UpdateCustomTargetAssembliesAssetPathsMetaData(
+                loadingAssemblyDefinition.CustomScriptAssemblies,
+                assetPathMetaDatas,
+                exceptions: new List<Exception>(),
+                forceUpdate: true);
         }
 
         internal void SetAdditionalVersionMetaDatas(VersionMetaData[] versionMetaDatas)
@@ -208,9 +213,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public void GetAssemblyDefinitionReferencesWithMissingAssemblies(out List<CustomScriptAssemblyReference> referencesWithMissingAssemblies)
         {
-            var nameLookup = customScriptAssemblies.ToDictionary(x => x.Name);
+            var nameLookup = loadingAssemblyDefinition.CustomScriptAssemblies.ToDictionary(x => x.Name);
             referencesWithMissingAssemblies = new List<CustomScriptAssemblyReference>();
-            foreach (var asmref in customScriptAssemblyReferences)
+            foreach (var asmref in loadingAssemblyDefinition.CustomScriptAssemblyReferences)
             {
                 if (!nameLookup.ContainsKey(asmref.Reference))
                 {
@@ -319,56 +324,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return targetAssemblies;
         }
 
-        static CustomScriptAssembly LoadCustomScriptAssemblyFromJsonPath(string path, string guid)
-        {
-            var json = Utility.ReadTextAsset(path);
-
-            try
-            {
-                var customScriptAssemblyData = CustomScriptAssemblyData.FromJson(json);
-                return CustomScriptAssembly.FromCustomScriptAssemblyData(path, guid, customScriptAssemblyData);
-            }
-            catch (Exception e)
-            {
-                throw new AssemblyDefinitionException(e.Message, path);
-            }
-        }
-
-        static CustomScriptAssembly LoadCustomScriptAssemblyFromJson(string path, string json, string guid)
-        {
-            try
-            {
-                var customScriptAssemblyData = CustomScriptAssemblyData.FromJson(json);
-                return CustomScriptAssembly.FromCustomScriptAssemblyData(path, guid, customScriptAssemblyData);
-            }
-            catch (Exception e)
-            {
-                throw new Compilation.AssemblyDefinitionException(e.Message, path);
-            }
-        }
-
-        static CustomScriptAssemblyReference LoadCustomScriptAssemblyReferenceFromJsonPath(string path)
-        {
-            var json = Utility.ReadTextAsset(path);
-            return LoadCustomScriptAssemblyReferenceFromJson(path, json);
-        }
-
-        static CustomScriptAssemblyReference LoadCustomScriptAssemblyReferenceFromJson(string path, string json)
-        {
-            try
-            {
-                var customScriptAssemblyRefData = CustomScriptAssemblyReferenceData.FromJson(json);
-                return CustomScriptAssemblyReference.FromCustomScriptAssemblyReferenceData(path, customScriptAssemblyRefData);
-            }
-            catch (Exception e)
-            {
-                throw new Compilation.AssemblyDefinitionException(e.Message, path);
-            }
-        }
-
         string[] CustomTargetAssembliesToFilePaths(IEnumerable<TargetAssembly> targetAssemblies)
         {
-            var customAssemblies = targetAssemblies.Select(a => FindCustomTargetAssemblyFromTargetAssembly(a));
+            var customAssemblies = targetAssemblies.Select(FindCustomTargetAssemblyFromTargetAssembly);
             var filePaths = customAssemblies.Select(a => a.FilePath).ToArray();
             return filePaths;
         }
@@ -460,9 +418,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        public static Exception[] UpdateCustomScriptAssemblies(CustomScriptAssembly[] customScriptAssemblies,
+        public static void UpdateCustomScriptAssemblies(CustomScriptAssembly[] customScriptAssemblies,
             List<CustomScriptAssemblyReference> customScriptAssemblyReferences,
-            AssetPathMetaData[] assetPathsMetaData, ResponseFileProvider responseFileProvider)
+            AssetPathMetaData[] assetPathsMetaData,
+            ResponseFileProvider responseFileProvider,
+            List<Exception> exceptions)
         {
             var asmrefLookup = customScriptAssemblyReferences.ToLookup(x => x.Reference);
 
@@ -476,8 +436,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             UpdateCustomTargetAssembliesResponseFileData(customScriptAssemblies, responseFileProvider);
-            var exceptions = UpdateCustomTargetAssembliesAssetPathsMetaData(customScriptAssemblies, assetPathsMetaData);
-            return exceptions.ToArray();
+            UpdateCustomTargetAssembliesAssetPathsMetaData(customScriptAssemblies, assetPathsMetaData, exceptions);
         }
 
         static void UpdateCustomTargetAssembliesResponseFileData(CustomScriptAssembly[] customScriptAssemblies, ResponseFileProvider responseFileProvider)
@@ -495,15 +454,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        static Exception[] UpdateCustomTargetAssembliesAssetPathsMetaData(CustomScriptAssembly[] customScriptAssemblies,
-            AssetPathMetaData[] assetPathsMetaData, bool forceUpdate = false)
+        static void UpdateCustomTargetAssembliesAssetPathsMetaData(
+            CustomScriptAssembly[] customScriptAssemblies,
+            AssetPathMetaData[] assetPathsMetaData,
+            List<Exception> exceptions,
+            bool forceUpdate = false)
         {
             if (assetPathsMetaData == null)
             {
-                return new Exception[0];
+                return;
             }
 
-            var exceptions = new List<Exception>();
             var assetMetaDataPaths = new string[assetPathsMetaData.Length];
             var lowerAssetMetaDataPaths = new string[assetPathsMetaData.Length];
 
@@ -540,35 +501,30 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     exceptions.Add(e);
                 }
             }
-
-            return exceptions.ToArray();
         }
 
-        Exception[] UpdateCustomTargetAssemblies()
+        void UpdateCustomTargetAssemblies(List<Exception> exceptions)
         {
-            var exceptions = UpdateCustomScriptAssemblies(customScriptAssemblies, customScriptAssemblyReferences, m_AssetPathsMetaData, ResponseFileProvider);
+            UpdateCustomScriptAssemblies(
+                loadingAssemblyDefinition.CustomScriptAssemblies,
+                loadingAssemblyDefinition.CustomScriptAssemblyReferences,
+                m_AssetPathsMetaData,
+                ResponseFileProvider,
+                exceptions);
 
-            if (exceptions.Length > 0)
+            if (exceptions.Count > 0)
             {
                 CompilationSetupErrorsTracker.SetCompilationSetupErrors(CompilationSetupErrors.LoadError);
             }
 
-            customTargetAssemblies = EditorBuildRules.CreateTargetAssemblies(customScriptAssemblies);
+            customTargetAssemblies = EditorBuildRules.CreateTargetAssemblies(loadingAssemblyDefinition.CustomScriptAssemblies);
 
             CompilationSetupErrorsTracker.ClearCompilationSetupErrors(CompilationSetupErrors.CyclicReferences);
-
-            return exceptions;
         }
 
         public void SkipCustomScriptAssemblyGraphValidation(bool skipChecks)
         {
             skipCustomScriptAssemblyGraphValidation = skipChecks;
-        }
-
-        public void ClearCustomScriptAssemblies()
-        {
-            customScriptAssemblies = null;
-            customScriptAssemblyReferences.Clear();
         }
 
         public Exception[] SetAllCustomScriptAssemblyReferenceJsons(string[] paths)
@@ -578,94 +534,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public Exception[] SetAllCustomScriptAssemblyReferenceJsonsContents(string[] paths, string[] contents)
         {
-            var assemblyRefs = new List<CustomScriptAssemblyReference>();
-            var exceptions = new List<Exception>();
-
-            // We only construct this lookup if it is required, which is when we are using guids instead of assembly names.
-            Dictionary<string, CustomScriptAssembly> guidsToAssemblies = null;
-
-            // To check if a path prefix is already being used we use a Dictionary where the key is the prefix and the value is the file path.
-            var prefixToFilePathLookup = skipCustomScriptAssemblyGraphValidation ?
-                null :
-                customScriptAssemblies.GroupBy(x => x.PathPrefix).ToDictionary(x => x.First().PathPrefix, x => new List<string>() { x.First().FilePath }, StringComparer.OrdinalIgnoreCase);
-
-            for (var i = 0; i < paths.Length; ++i)
-            {
-                var path = paths[i];
-
-                CustomScriptAssemblyReference loadedCustomScriptAssemblyReference = null;
-
-                try
-                {
-                    var fullPath = AssetPath.IsPathRooted(path) ? AssetPath.GetFullPath(path) : AssetPath.Combine(projectDirectory, path);
-
-                    if (contents != null)
-                    {
-                        var jsonContents = contents[i];
-                        loadedCustomScriptAssemblyReference = LoadCustomScriptAssemblyReferenceFromJson(fullPath, jsonContents);
-                    }
-                    else
-                    {
-                        loadedCustomScriptAssemblyReference = LoadCustomScriptAssemblyReferenceFromJsonPath(fullPath);
-                    }
-
-                    if (!skipCustomScriptAssemblyGraphValidation)
-                    {
-                        // Check both asmdef and asmref files.
-                        List<string> duplicateFilePaths;
-                        if (prefixToFilePathLookup.TryGetValue(loadedCustomScriptAssemblyReference.PathPrefix, out duplicateFilePaths))
-                        {
-                            var filePaths = new List<string>();
-                            filePaths.Add(loadedCustomScriptAssemblyReference.FilePath);
-                            filePaths.AddRange(duplicateFilePaths);
-
-                            throw new Compilation.AssemblyDefinitionException(string.Format("Folder '{0}' contains multiple assembly definition files", loadedCustomScriptAssemblyReference.PathPrefix), filePaths.ToArray());
-                        }
-                    }
-
-                    // Convert GUID references to assembly names
-                    if (GUIDReference.IsGUIDReference(loadedCustomScriptAssemblyReference.Reference))
-                    {
-                        // Generate the guid to assembly lookup?
-                        if (guidsToAssemblies == null)
-                            guidsToAssemblies = customScriptAssemblies.ToDictionary(x => x.GUID);
-
-                        var guid = Utility.FastToLower(GUIDReference.GUIDReferenceToGUID(loadedCustomScriptAssemblyReference.Reference));
-                        CustomScriptAssembly foundAssembly;
-                        if (guidsToAssemblies.TryGetValue(guid, out foundAssembly))
-                        {
-                            loadedCustomScriptAssemblyReference.Reference = foundAssembly.Name;
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    CompilationSetupErrorsTracker.SetCompilationSetupErrors(CompilationSetupErrors.LoadError);
-                    exceptions.Add(e);
-                }
-
-                if (loadedCustomScriptAssemblyReference != null)
-                {
-                    assemblyRefs.Add(loadedCustomScriptAssemblyReference);
-
-                    if (!skipCustomScriptAssemblyGraphValidation)
-                    {
-                        List<string> duplicateFilePaths;
-                        if (!prefixToFilePathLookup.TryGetValue(loadedCustomScriptAssemblyReference.PathPrefix, out duplicateFilePaths))
-                        {
-                            duplicateFilePaths = new List<string>();
-                            prefixToFilePathLookup[loadedCustomScriptAssemblyReference.PathPrefix] = duplicateFilePaths;
-                        }
-
-                        duplicateFilePaths.Add(loadedCustomScriptAssemblyReference.FilePath);
-                    }
-                }
-            }
-
-            customScriptAssemblyReferences = assemblyRefs;
-            var updateCustomTargetAssembliesExceptions = UpdateCustomTargetAssemblies();
-            exceptions.AddRange(updateCustomTargetAssembliesExceptions);
-            return exceptions.ToArray();
+            RefreshLoadingAssemblyDefinition();
+            loadingAssemblyDefinition.SetAllCustomScriptAssemblyReferenceJsonsContents(paths, contents);
+            return GetLoadingExceptions();
         }
 
         public Exception[] SetAllCustomScriptAssemblyJsons(string[] paths, string[] guids)
@@ -675,184 +546,30 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public Exception[] SetAllCustomScriptAssemblyJsonContents(string[] paths, string[] contents, string[] guids)
         {
-            var assemblies = new List<CustomScriptAssembly>();
-            var assemblyLowercaseNamesLookup = new Dictionary<string, CustomScriptAssembly>();
-            var exceptions = new List<Exception>();
-            var guidsToAssemblies = new Dictionary<string, CustomScriptAssembly>();
-            HashSet<string> predefinedAssemblyNames = null;
+            RefreshLoadingAssemblyDefinition();
+            loadingAssemblyDefinition.SetAllCustomScriptAssemblyJsonContents(paths, contents, guids);
+            return GetLoadingExceptions();
+        }
 
-            // To check if a path prefix is already being used we use a Dictionary where the key is the prefix and the value is the file path.
-            var prefixToFilePathLookup = customScriptAssemblyReferences.ToDictionary(x => x.PathPrefix, x => new List<string>() { x.FilePath }, StringComparer.OrdinalIgnoreCase);
-
-            CompilationSetupErrorsTracker.ClearCompilationSetupErrors(CompilationSetupErrors.LoadError);
-
-            // Load first to setup guidsToAssemblies dictionary and convert guids to assembly names
-            // before checking for assembly reference errors, so errors emit assembly names instead of guids.
-            for (var i = 0; i < paths.Length; ++i)
-            {
-                var path = paths[i];
-                var guid = guids[i];
-
-                CustomScriptAssembly loadedCustomScriptAssembly = null;
-                string lowerCaseName = null;
-
-                try
-                {
-                    var fullPath = AssetPath.IsPathRooted(path) ? AssetPath.GetFullPath(path) : AssetPath.Combine(projectDirectory, path);
-
-                    if (contents != null)
-                    {
-                        var jsonContents = contents[i];
-                        loadedCustomScriptAssembly = LoadCustomScriptAssemblyFromJson(fullPath, jsonContents, guid);
-                    }
-                    else
-                    {
-                        loadedCustomScriptAssembly = LoadCustomScriptAssemblyFromJsonPath(fullPath, guid);
-                    }
-
-                    if (loadedCustomScriptAssembly.References == null)
-                        loadedCustomScriptAssembly.References = new string[0];
-
-                    lowerCaseName = Utility.FastToLower(loadedCustomScriptAssembly.Name);
-                    guidsToAssemblies[Utility.FastToLower(guid)] = loadedCustomScriptAssembly;
-
-                    if (!skipCustomScriptAssemblyGraphValidation)
-                    {
-                        if (predefinedAssemblyNames == null)
-                        {
-                            predefinedAssemblyNames = new HashSet<string>(EditorBuildRules.PredefinedTargetAssemblyNames);
-                            var net46 = MonoLibraryHelpers.GetSystemLibraryReferences(ApiCompatibilityLevel.NET_4_6).Select(Path.GetFileNameWithoutExtension);
-                            var netstandard20 = MonoLibraryHelpers.GetSystemLibraryReferences(ApiCompatibilityLevel.NET_Standard_2_0).Select(Path.GetFileNameWithoutExtension);
-                            predefinedAssemblyNames.UnionWith(net46);
-                            predefinedAssemblyNames.UnionWith(netstandard20);
-                        }
-
-                        if (predefinedAssemblyNames.Contains(loadedCustomScriptAssembly.Name))
-                        {
-                            throw new Compilation.AssemblyDefinitionException(
-                                $"Assembly cannot be have reserved name '{loadedCustomScriptAssembly.Name}'",
-                                loadedCustomScriptAssembly.FilePath);
-                        }
-
-                        CustomScriptAssembly duplicate;
-                        if (assemblyLowercaseNamesLookup.TryGetValue(lowerCaseName, out duplicate))
-                        {
-                            var filePaths = new string[]
-                            {
-                                loadedCustomScriptAssembly.FilePath,
-                                duplicate.FilePath
-                            };
-                            var errorMsg = string.Format("Assembly with name '{0}' already exists", loadedCustomScriptAssembly.Name);
-                            loadedCustomScriptAssembly = null; // Set to null to prevent it being added.
-                            throw new Compilation.AssemblyDefinitionException(errorMsg, filePaths);
-                        }
-
-                        // Check both asmdef and asmref files.
-                        List<string> duplicateFilePaths;
-                        if (prefixToFilePathLookup.TryGetValue(loadedCustomScriptAssembly.PathPrefix, out duplicateFilePaths))
-                        {
-                            var filePaths = new List<string>();
-                            filePaths.Add(loadedCustomScriptAssembly.FilePath);
-                            filePaths.AddRange(duplicateFilePaths);
-
-                            throw new Compilation.AssemblyDefinitionException(
-                                string.Format("Folder '{0}' contains multiple assembly definition files",
-                                    loadedCustomScriptAssembly.PathPrefix), filePaths.ToArray());
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    CompilationSetupErrorsTracker.SetCompilationSetupErrors(CompilationSetupErrors.LoadError);
-                    exceptions.Add(e);
-                }
-
-                if (loadedCustomScriptAssembly != null)
-                {
-                    if (loadedCustomScriptAssembly.References == null)
-                        loadedCustomScriptAssembly.References = new string[0];
-
-                    if (!skipCustomScriptAssemblyGraphValidation || !assemblyLowercaseNamesLookup.ContainsKey(lowerCaseName))
-                    {
-                        assemblyLowercaseNamesLookup[lowerCaseName] = loadedCustomScriptAssembly;
-                        assemblies.Add(loadedCustomScriptAssembly);
-
-                        List<string> duplicateFilePaths;
-                        if (!prefixToFilePathLookup.TryGetValue(loadedCustomScriptAssembly.PathPrefix, out duplicateFilePaths))
-                        {
-                            duplicateFilePaths = new List<string>();
-                            prefixToFilePathLookup[loadedCustomScriptAssembly.PathPrefix] = duplicateFilePaths;
-                        }
-                        duplicateFilePaths.Add(loadedCustomScriptAssembly.FilePath);
-                    }
-                }
-            }
-
-            // Convert GUID references to assembly names
-            foreach (var assembly in assemblies)
-            {
-                for (int i = 0; i < assembly.References.Length; ++i)
-                {
-                    var reference = assembly.References[i];
-
-                    if (!GUIDReference.IsGUIDReference(reference))
-                    {
-                        continue;
-                    }
-
-                    var guid = Utility.FastToLower(GUIDReference.GUIDReferenceToGUID(reference));
-
-                    CustomScriptAssembly referenceAssembly;
-
-                    if (guidsToAssemblies.TryGetValue(guid, out referenceAssembly))
-                    {
-                        reference = referenceAssembly.Name;
-                    }
-                    else
-                    {
-                        reference = string.Empty;
-                    }
-
-                    assembly.References[i] = reference;
-                }
-            }
-
-            // Check loaded assemblies for assembly reference errors after all GUID references have been
-            // converted to names.
-            if (!skipCustomScriptAssemblyGraphValidation)
-            {
-                foreach (var loadedCustomScriptAssembly in assemblies)
-                {
-                    try
-                    {
-                        var references = loadedCustomScriptAssembly.References.Where(r => !string.IsNullOrEmpty(r));
-
-                        if (references.Count() != references.Distinct().Count())
-                        {
-                            var duplicateRefs = references.GroupBy(r => r).Where(g => g.Count() > 1).Select(g => g.Key)
-                                .ToArray();
-                            var duplicateRefsString = string.Join(",", duplicateRefs);
-
-                            throw new Compilation.AssemblyDefinitionException(string.Format(
-                                "Assembly has duplicate references: {0}",
-                                duplicateRefsString),
-                                loadedCustomScriptAssembly.FilePath);
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        CompilationSetupErrorsTracker.SetCompilationSetupErrors(CompilationSetupErrors.LoadError);
-                        exceptions.Add(e);
-                    }
-                }
-            }
-
-            customScriptAssemblies = assemblies.ToArray();
-
-            var updateCustomTargetAssembliesExceptions = UpdateCustomTargetAssemblies();
-            exceptions.AddRange(updateCustomTargetAssembliesExceptions);
+        Exception[] GetLoadingExceptions()
+        {
+            var exceptions = loadingAssemblyDefinition.Exceptions;
+            UpdateCustomTargetAssemblies(exceptions);
 
             return exceptions.ToArray();
+        }
+
+        void RefreshLoadingAssemblyDefinition()
+        {
+            loadingAssemblyDefinition.Refresh(
+                CompilationSetupErrorsTracker,
+                skipCustomScriptAssemblyGraphValidation,
+                projectDirectory);
+        }
+
+        public void ClearCustomScriptAssemblies()
+        {
+            loadingAssemblyDefinition.ClearCustomScriptAssemblies();
         }
 
         public bool IsPathInPackageDirectory(string path)
@@ -872,22 +589,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             assemblyName = AssetPath.GetAssemblyNameWithoutExtension(assemblyName);
 
-            if (customScriptAssemblies != null)
+            if (loadingAssemblyDefinition.CustomScriptAssemblies != null)
             {
-                var result = customScriptAssemblies.FirstOrDefault(a => a.Name == assemblyName);
+                var result = loadingAssemblyDefinition.CustomScriptAssemblies.FirstOrDefault(a => a.Name == assemblyName);
                 if (result != null)
                     return result;
             }
 
             var exceptionMessage = "Cannot find CustomScriptAssembly with name '" + assemblyName + "'.";
 
-            if (customScriptAssemblies == null)
+            if (loadingAssemblyDefinition.CustomScriptAssemblies == null)
             {
                 exceptionMessage += " customScriptAssemblies is null.";
             }
             else
             {
-                var assemblyNames = customScriptAssemblies.Select(a => a.Name).ToArray();
+                var assemblyNames = loadingAssemblyDefinition.CustomScriptAssemblies.Select(a => a.Name).ToArray();
                 var assemblyNamesString = string.Join(", ", assemblyNames);
                 exceptionMessage += " Assembly names: " + assemblyNamesString;
             }
@@ -916,10 +633,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return FindCustomScriptAssemblyFromAssemblyName(reference);
             }
 
-            if (customScriptAssemblies != null)
+            if (loadingAssemblyDefinition.CustomScriptAssemblies != null)
             {
                 var guid = GUIDReference.GUIDReferenceToGUID(reference);
-                var result = customScriptAssemblies.FirstOrDefault(a => string.Equals(a.GUID, guid, StringComparison.OrdinalIgnoreCase));
+                var result = loadingAssemblyDefinition.CustomScriptAssemblies.FirstOrDefault(a => string.Equals(a.GUID, guid, StringComparison.OrdinalIgnoreCase));
 
                 if (result != null)
                     return result;
@@ -1424,7 +1141,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public CustomScriptAssembly[] GetCustomScriptAssemblies()
         {
-            return customScriptAssemblies;
+            return loadingAssemblyDefinition.CustomScriptAssemblies;
         }
 
         public PrecompiledAssembly[] GetUnityAssemblies()
@@ -1453,26 +1170,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public ScriptAssembly[] GetAllEditorScriptAssemblies(EditorScriptCompilationOptions additionalOptions, string[] defines)
         {
             return GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies | additionalOptions, defines);
-        }
-
-        public ScriptAssembly[] GetScriptAssembliesForRoslynAnalysis(string[] candidateAssemblies)
-        {
-            Dictionary<string, PrecompiledAssembly> precompiledAssemblies =
-                GetPrecompiledAssembliesDictionaryWithSetupErrorsTracking(
-                    isEditor: true,
-                    EditorUserBuildSettings.activeBuildTargetGroup,
-                    EditorUserBuildSettings.activeBuildTarget);
-
-            ScriptAssemblySettings settings =
-                CreateEditorScriptAssemblySettings(EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithRoslynAnalysis);
-
-            return GetAllScriptAssemblies(
-                settings,
-                unityAssemblies,
-                precompiledAssemblies,
-                defines: null,
-                targetAssemblyCondition: assembly => (assembly.Flags & AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers) != 0
-                && candidateAssemblies.Contains(assembly.Filename));
         }
 
         public ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options, string[] defines)

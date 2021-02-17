@@ -283,6 +283,7 @@ namespace UnityEditor.UIElements
             }
         }
 
+        private static readonly string k_InitializedWindowPropertyName = "Initialized";
         void SendInitializeIfNecessary()
         {
             if (editorWindowModel == null)
@@ -293,7 +294,12 @@ namespace UnityEditor.UIElements
 
             if (window != null)
             {
-                if (window.rootVisualElement.GetProperty("Initialized") != null)
+                var rootElement = window.rootVisualElement;
+                
+                //we make sure styles have been applied
+                UIElementsEditorUtility.AddDefaultEditorStyleSheets(rootElement);
+                
+                if (rootElement.GetProperty(k_InitializedWindowPropertyName) != null)
                     return;
 
                 if (EditorApplication.isUpdating)
@@ -302,7 +308,7 @@ namespace UnityEditor.UIElements
                     return;
                 }
 
-                window.rootVisualElement.SetProperty("Initialized", true);
+                rootElement.SetProperty(k_InitializedWindowPropertyName, true);
 
                 Invoke("CreateGUI");
             }

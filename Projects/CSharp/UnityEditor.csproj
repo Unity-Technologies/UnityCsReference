@@ -3151,6 +3151,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\IVersion.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\IVersion.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\LoadingAssemblyDefinition.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\LoadingAssemblyDefinition.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\MonoLibraryHelpers.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\MonoLibraryHelpers.cs</Link>
     </Compile>
@@ -3162,9 +3165,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\PrecompiledAssembly.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\PrecompiledAssembly.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\RoslynAnalysisRunner.cs">
-      <Link>Editor\Mono\Scripting\ScriptCompilation\RoslynAnalysisRunner.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ScriptAssembly.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\ScriptAssembly.cs</Link>
@@ -4998,6 +4998,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\VisualElementExtensions.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\VisualElementExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\EntitlementsErrorChecker.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\EntitlementsErrorChecker.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IOperation.cs</Link>

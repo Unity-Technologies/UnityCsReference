@@ -17,8 +17,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public IEnumerable<PackageItem> packageItems => groupContainer.Children().Cast<PackageItem>();
 
-        private bool m_IsDeveloperBuild;
-
         private ResourceLoader m_ResourceLoader;
         private PageManager m_PageManager;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
@@ -29,10 +27,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SettingsProxy = settingsProxy;
         }
 
-        public PackageGroup(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, string groupName, string displayName, bool isDeveloperBuild, bool expanded = true, bool hidden = false)
+        public PackageGroup(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, string groupName, string displayName, bool expanded = true, bool hidden = false)
         {
             ResolveDependencies(resourceLoader, pageManager, settingsProxy);
-            m_IsDeveloperBuild = isDeveloperBuild;
 
             name = groupName;
             var root = m_ResourceLoader.GetTemplate("PackageGroup.uxml");
@@ -67,7 +64,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal PackageItem AddPackageItem(IPackage package, VisualState state)
         {
-            var packageItem = new PackageItem(m_ResourceLoader, m_PageManager, m_SettingsProxy, package, state, m_IsDeveloperBuild) {packageGroup = this};
+            var packageItem = new PackageItem(m_ResourceLoader, m_PageManager, m_SettingsProxy, package, state) {packageGroup = this};
             groupContainer.Add(packageItem);
             return packageItem;
         }

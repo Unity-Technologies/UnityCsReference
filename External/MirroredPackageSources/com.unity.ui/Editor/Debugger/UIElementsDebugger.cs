@@ -61,6 +61,9 @@ namespace UnityEditor.UIElements.Debugger
         [SerializeField]
         private bool m_ShowDrawStats = false;
 
+        [SerializeField]
+        private bool m_BreakBatches = false;
+
         public DebuggerSelection selection { get; } = new DebuggerSelection();
         public VisualElement selectedElement => selection.element;
         public IPanelDebug panelDebug => selection.panelDebug;
@@ -123,6 +126,18 @@ namespace UnityEditor.UIElements.Debugger
                 if (m_ShowDrawStats == value)
                     return;
                 m_ShowDrawStats = value;
+                onStateChange?.Invoke();
+            }
+        }
+
+        public bool breakBatches
+        {
+            get { return m_BreakBatches; }
+            set
+            {
+                if(m_BreakBatches == value)
+                    return;
+                m_BreakBatches = value;
                 onStateChange?.Invoke();
             }
         }
@@ -212,6 +227,7 @@ namespace UnityEditor.UIElements.Debugger
         private ToolbarToggle m_ShowLayoutToggle;
         private ToolbarToggle m_RepaintOverlayToggle;
         private ToolbarToggle m_ShowDrawStatsToggle;
+        private ToolbarToggle m_BreakBatchesToggle;
 
         private DebuggerTreeView m_TreeViewContainer;
         private StylesDebugger m_StylesDebuggerContainer;
@@ -278,6 +294,11 @@ namespace UnityEditor.UIElements.Debugger
                 m_ShowDrawStatsToggle.text = "Draw Stats";
                 m_ShowDrawStatsToggle.RegisterValueChangedCallback((e) => { m_Context.showDrawStats = e.newValue; });
                 m_Toolbar.Add(m_ShowDrawStatsToggle);
+
+                m_BreakBatchesToggle = new ToolbarToggle() { name = "breakBatchesToggle" };
+                m_BreakBatchesToggle.text = "Break Batches";
+                m_BreakBatchesToggle.RegisterValueChangedCallback((e) => { m_Context.breakBatches = e.newValue; });
+                m_Toolbar.Add(m_BreakBatchesToggle);
             }
 
             var splitter = new DebuggerSplitter();
@@ -345,10 +366,9 @@ namespace UnityEditor.UIElements.Debugger
             {
                 m_RepaintOverlayToggle.SetValueWithoutNotify(m_Context.showRepaintOverlay);
                 m_ShowDrawStatsToggle.SetValueWithoutNotify(m_Context.showDrawStats);
+                m_BreakBatchesToggle.SetValueWithoutNotify(m_Context.breakBatches);
 
-                var updater = (panel as BaseVisualElementPanel)?.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;
-                if (updater != null)
-                    updater.DebugGetRenderChain().drawStats = m_Context.showDrawStats;
+                ApplyToPanel(m_Context);
             }
 
             panelDebug?.MarkDirtyRepaint();
@@ -389,9 +409,36 @@ namespace UnityEditor.UIElements.Debugger
                 panelDebug.debuggerOverlayPanel.visualTree.layout = panel.visualTree.layout;
         }
 
+        static UIRRepaintUpdater GetRepaintUpdater(IPanel panel)
+        {
+            return (panel as BaseVisualElementPanel)?.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;
+        }
+
+        static void ResetPanel(DebuggerContext context)
+        {
+            var updater = GetRepaintUpdater(context.selection.panel);
+            if (updater != null)
+            {
+                updater.drawStats = false;
+                updater.breakBatches = false;
+            }
+        }
+
+        static void ApplyToPanel(DebuggerContext context)
+        {
+            var updater = GetRepaintUpdater(context.selection.panel);
+            if (updater != null)
+            {
+                updater.drawStats = context.showDrawStats;
+                updater.breakBatches = context.breakBatches;
+            }
+        }
+
         protected override void OnSelectPanelDebug(IPanelDebug pdbg)
         {
             m_RepaintOverlay.ClearOverlay();
+
+            ResetPanel(m_Context);
 
             m_TreeViewContainer.hierarchyHasChanged = true;
             if (m_Context.panelDebug?.debugContainer != null)
@@ -401,6 +448,8 @@ namespace UnityEditor.UIElements.Debugger
 
             if (panelDebug?.debugContainer != null)
                 panelDebug.debugContainer.generateVisualContent += OnGenerateVisualContent;
+
+            ApplyToPanel(m_Context);
 
             Refresh();
         }

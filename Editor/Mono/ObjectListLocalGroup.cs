@@ -1074,18 +1074,18 @@ namespace UnityEditor
                 return InternalEditorUtility.GetNewSelection(ref clickedAssetReference, instanceIDs, guids, selectedInstanceIDs, lastClickedInstanceID, beginOfDrag, useShiftAsActionKey, allowMultiselection);
             }
 
-            public override void UpdateFilter(HierarchyType hierarchyType, SearchFilter searchFilter, bool foldersFirst)
+            public override void UpdateFilter(HierarchyType hierarchyType, SearchFilter searchFilter, bool foldersFirst, SearchService.SearchSessionOptions searchSessionOptions)
             {
                 // Filtered hierarchy list
-                RefreshHierarchy(hierarchyType, searchFilter, foldersFirst);
+                RefreshHierarchy(hierarchyType, searchFilter, foldersFirst, searchSessionOptions);
 
                 // Filtered builtin list
                 RefreshBuiltinResourceList(searchFilter);
             }
 
-            private void RefreshHierarchy(HierarchyType hierarchyType, SearchFilter searchFilter, bool foldersFirst)
+            private void RefreshHierarchy(HierarchyType hierarchyType, SearchFilter searchFilter, bool foldersFirst, SearchService.SearchSessionOptions searchSessionOptions)
             {
-                m_FilteredHierarchy = new FilteredHierarchy(hierarchyType);
+                m_FilteredHierarchy = new FilteredHierarchy(hierarchyType, searchSessionOptions);
                 m_FilteredHierarchy.foldersFirst = foldersFirst;
                 m_FilteredHierarchy.searchFilter = searchFilter;
                 m_FilteredHierarchy.RefreshVisibleItems(m_Owner.m_State.m_ExpandedInstanceIDs);

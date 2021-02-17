@@ -356,6 +356,7 @@ namespace UnityEngine.UIElements
 
         internal abstract uint version { get; }
         internal abstract uint repaintVersion { get; }
+        internal abstract uint hierarchyVersion { get; }
 
         // Updaters can request an panel invalidation when some callbacks aren't coming from UIElements internally
         internal abstract void RequestUpdateAfterExternalEvent(IVisualTreeUpdater updater);
@@ -555,6 +556,7 @@ namespace UnityEngine.UIElements
         private string m_PanelName;
         private uint m_Version = 0;
         private uint m_RepaintVersion = 0;
+        private uint m_HierarchyVersion = 0;
 
         ProfilerMarker m_MarkerBeforeUpdate;
         ProfilerMarker m_MarkerUpdate;
@@ -665,15 +667,9 @@ namespace UnityEngine.UIElements
 
         public override IMGUIContainer rootIMGUIContainer { get; set; }
 
-        internal override uint version
-        {
-            get { return m_Version; }
-        }
-
-        internal override uint repaintVersion
-        {
-            get { return m_RepaintVersion; }
-        }
+        internal override uint version => m_Version;
+        internal override uint repaintVersion => m_RepaintVersion;
+        internal override uint hierarchyVersion => m_HierarchyVersion;
 
         private Shader m_StandardShader;
 
@@ -971,6 +967,9 @@ namespace UnityEngine.UIElements
         {
             ++m_Version;
             m_VisualTreeUpdater.OnVersionChanged(ve, versionChangeType);
+
+            if ((versionChangeType & VersionChangeType.Hierarchy) == VersionChangeType.Hierarchy)
+                ++m_HierarchyVersion;
             panelDebug?.OnVersionChanged(ve, versionChangeType);
         }
 
@@ -1058,9 +1057,9 @@ namespace UnityEngine.UIElements
         internal int targetDisplay { get; set;}
 
         internal int screenRenderingWidth => targetDisplay > 0 && targetDisplay < Display.displays.Length
-            ? Display.displays[targetDisplay].renderingWidth : Screen.width;
+        ? Display.displays[targetDisplay].renderingWidth : Screen.width;
         internal int screenRenderingHeight => targetDisplay > 0 && targetDisplay < Display.displays.Length
-            ? Display.displays[targetDisplay].renderingHeight : Screen.height;
+        ? Display.displays[targetDisplay].renderingHeight : Screen.height;
 
         public override void Repaint(Event e)
         {

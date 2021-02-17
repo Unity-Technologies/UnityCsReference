@@ -1539,8 +1539,8 @@ namespace UnityEditor
 
         private void RefreshPreviewChannelSelection()
         {
-            //Skip where there is no texture inspector
-            if (textureInspector == null)
+            //If the Preview is null or NOT the TextureInspector (e.g. ObjectPreview) then return, we do not need to refresh the preview channel selection
+            if (!(preview is TextureInspector))
                 return;
 
             string platformName = BuildPipeline.GetBuildTargetName(EditorUserBuildSettings.activeBuildTarget);

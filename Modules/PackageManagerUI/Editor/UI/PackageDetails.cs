@@ -415,13 +415,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 foreach (var tag in k_VisibleTags)
                     UIUtils.SetElementDisplay(GetTagLabel(tag.ToString()), displayVersion.HasTag(tag));
 
-                // if not developer build, hide the Release Candidate tag and show Pre-Release instead
-                if (!m_Application.isDeveloperBuild && displayVersion.HasTag(PackageTag.ReleaseCandidate))
-                {
-                    UIUtils.SetElementDisplay(GetTagLabel(PackageTag.ReleaseCandidate.ToString()), false);
-                    UIUtils.SetElementDisplay(GetTagLabel(PackageTag.PreRelease.ToString()), true);
-                }
-
                 var scopedRegistryTagLabel = GetTagLabel("ScopedRegistry");
                 if ((displayVersion as UpmPackageVersion)?.isUnityPackage == false && !string.IsNullOrEmpty(displayVersion.version?.Prerelease))
                 {

@@ -24,6 +24,7 @@ namespace UnityEditorInternal
         ProfilerModuleBase selectedModule { get; set; }
         ProfilerModuleBase GetProfilerModuleByType(Type T);
 
+        event Action frameDataViewAboutToBeDisposed;
 
         event Action<int, bool> currentFrameChanged;
         void SetClearOnPlay(bool enabled);

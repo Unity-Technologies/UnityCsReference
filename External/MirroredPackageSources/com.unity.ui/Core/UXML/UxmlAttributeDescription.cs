@@ -346,7 +346,7 @@ namespace UnityEngine.UIElements
         static float ConvertValueToFloat(string v, float defaultValue)
         {
             float l;
-            if (v == null || !Single.TryParse(v, out l))
+            if (v == null || !Single.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out l))
                 return defaultValue;
             return l;
         }
@@ -398,7 +398,7 @@ namespace UnityEngine.UIElements
         static double ConvertValueToDouble(string v, double defaultValue)
         {
             double l;
-            if (v == null || !Double.TryParse(v, out l))
+            if (v == null || !Double.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out l))
                 return defaultValue;
             return l;
         }

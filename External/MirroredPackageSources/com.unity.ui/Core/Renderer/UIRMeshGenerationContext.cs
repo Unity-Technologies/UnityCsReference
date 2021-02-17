@@ -675,7 +675,7 @@ namespace UnityEngine.UIElements
 
             internal static TextNativeSettings GetTextNativeSettings(TextParams textParams, float scaling)
             {
-                var settings = new TextNativeSettings
+                return new TextNativeSettings
                 {
                     text = textParams.text,
                     font = textParams.font,
@@ -688,10 +688,6 @@ namespace UnityEngine.UIElements
                     wordWrapWidth = textParams.wordWrapWidth,
                     richText = textParams.richText
                 };
-
-                settings.color *= textParams.playmodeTintColor;
-
-                return settings;
             }
         }
 

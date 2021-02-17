@@ -1078,6 +1078,7 @@ namespace UnityEngine.UIElements
                 }
 
                 BaseVisualElementPanel previousPanel = elementPanel;
+                var previousHierarchyVersion = previousPanel?.hierarchyVersion ?? 0;
 
                 using (pDispatcherGate)
                 using (panelDispatcherGate)
@@ -1087,28 +1088,25 @@ namespace UnityEngine.UIElements
                         e.WillChangePanel(p);
                     }
 
+                    var hierarchyVersion = previousPanel?.hierarchyVersion ?? 0;
+                    if (previousHierarchyVersion != hierarchyVersion)
+                    {
+                        // Update the elements list since the hierarchy has changed after sending the detach events
+                        elements.Clear();
+                        elements.Add(this);
+                        GatherAllChildren(elements);
+                    }
+
                     VisualElementFlags flagToAdd = p != null ? VisualElementFlags.NeedsAttachToPanelEvent : 0;
 
                     foreach (var e in elements)
                     {
-                        // this can happen if the elements gets re-parented during a user callback
-                        // in this case another SetPanel() call should already have notified the element
-                        // so we simply ignore it
-                        if (previousPanel != e.elementPanel)
-                            continue;
-
                         e.elementPanel = p;
                         e.m_Flags |= flagToAdd;
                     }
 
                     foreach (var e in elements)
                     {
-                        // this can happen if the elements gets re-parented during a user callback
-                        // in this case another SetPanel() call should already have notified the element
-                        // so we simply ignore it
-                        if (p != e.elementPanel)
-                            continue;
-
                         e.HasChangedPanel(previousPanel);
                     }
                 }

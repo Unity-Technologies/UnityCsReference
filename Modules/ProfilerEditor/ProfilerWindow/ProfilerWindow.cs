@@ -195,6 +195,7 @@ namespace UnityEditor
         const string kProfilerDeepProfilingWarningSessionKey = "ProfilerDeepProfilingWarning";
 
         internal event Action<int, bool> currentFrameChanged = delegate {};
+        internal event Action frameDataViewAboutToBeDisposed = delegate {};
 
         internal event Action<bool> recordingStateChanged = delegate {};
         internal event Action<bool> deepProfileChanged = delegate {};
@@ -577,7 +578,7 @@ namespace UnityEditor
             m_FrameCountLabelMinWidth = 0;
             // Reset the cached data view
             if (m_FrameDataView != null)
-                m_FrameDataView.Dispose();
+                DisposeFrameDataView();
             m_FrameDataView = null;
 
             if (cleared)
@@ -972,6 +973,12 @@ namespace UnityEditor
             return GetFrameDataView(foundThreadIndex, viewMode, profilerSortColumn, sortAscending);
         }
 
+        void DisposeFrameDataView()
+        {
+            frameDataViewAboutToBeDisposed();
+            m_FrameDataView.Dispose();
+        }
+
         internal HierarchyFrameDataView GetFrameDataView(int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
         {
             var frameIndex = GetActiveVisibleFrameIndex();
@@ -980,7 +987,7 @@ namespace UnityEditor
             {
                 // if the frame index is out of range, invalidate the FrameDataView
                 if (m_FrameDataView != null && m_FrameDataView.valid)
-                    m_FrameDataView.Dispose();
+                    DisposeFrameDataView();
             }
             else if (frameIndex != FrameDataView.invalidOrCurrentFrameIndex)
             {
@@ -1005,8 +1012,7 @@ namespace UnityEditor
             }
 
             if (m_FrameDataView != null)
-                m_FrameDataView.Dispose();
-
+                DisposeFrameDataView();
             m_FrameDataView = new HierarchyFrameDataView(frameIndex, threadIndex, viewMode, profilerSortColumn, sortAscending);
             return m_FrameDataView;
         }
@@ -1771,6 +1777,13 @@ namespace UnityEditor
             add { currentFrameChanged += value; }
             remove { currentFrameChanged -= value; }
         }
+
+        event Action IProfilerWindowController.frameDataViewAboutToBeDisposed
+        {
+            add { frameDataViewAboutToBeDisposed += value; }
+            remove { frameDataViewAboutToBeDisposed -= value; }
+        }
+
         void IProfilerWindowController.SetClearOnPlay(bool enabled) => SetClearOnPlay(enabled);
         bool IProfilerWindowController.GetClearOnPlay() => GetClearOnPlay();
         HierarchyFrameDataView IProfilerWindowController.GetFrameDataView(string groupName, string threadName, ulong threadId, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
@@ -1810,6 +1823,12 @@ namespace UnityEditor
             {
                 add { m_ProfilerWindowController.currentFrameChanged += value; }
                 remove { m_ProfilerWindowController.currentFrameChanged -= value; }
+            }
+
+            public event Action frameDataViewAboutToBeDisposed
+            {
+                add { m_ProfilerWindowController.frameDataViewAboutToBeDisposed += value; }
+                remove { m_ProfilerWindowController.frameDataViewAboutToBeDisposed -= value; }
             }
 
             long IProfilerWindowController.selectedFrameIndex { get => m_ProfilerWindowController.selectedFrameIndex; set => m_ProfilerWindowController.selectedFrameIndex = value; }

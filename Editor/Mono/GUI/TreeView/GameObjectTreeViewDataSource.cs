@@ -29,7 +29,7 @@ namespace UnityEditor
 
         int m_RootInstanceID;
         string m_SearchString = "";
-        readonly SearchService.SearchSessionHandler m_SearchSessionHandler = new SearchService.SearchSessionHandler(SearchService.SearchEngineScope.Scene);
+        readonly SearchService.SceneSearchSessionHandler m_SearchSessionHandler = new SearchService.SceneSearchSessionHandler();
         SearchableEditorWindow.SearchModeHierarchyWindow m_SearchMode = 0; // 0 = All
         double m_LastFetchTime = 0.0;
         int m_DelayedFetches = 0;
@@ -448,7 +448,7 @@ namespace UnityEditor
             var headerRows = new List<int>();
             while (property.NextWithDepthCheck(null, minAllowedDepth))
             {
-                if (!SearchService.SceneSearch.Filter(m_SearchString, property, searchContext))
+                if (!m_SearchSessionHandler.Filter(m_SearchString, property))
                 {
                     property.SetFilteredVisibility(false);
                     continue;

@@ -310,6 +310,12 @@ namespace UnityEditorInternal.Profiling
             m_FrameIndex = FrameDataView.invalidOrCurrentFrameIndex;
             m_DetailedObjectsView?.OnEnable(cpuModule, this);
             m_DetailedCallsView?.OnEnable(cpuModule, this);
+            profilerWindow.frameDataViewAboutToBeDisposed += OnFrameDataViewAboutToBeDisposed;
+        }
+
+        void OnFrameDataViewAboutToBeDisposed()
+        {
+            m_TreeView?.OnFrameDataViewAboutToBeDisposed();
         }
 
         void OnMultiColumnHeaderChanged(MultiColumnHeader header)
@@ -964,6 +970,7 @@ namespace UnityEditorInternal.Profiling
         {
             base.OnDisable();
             SaveViewSettings();
+            m_ProfilerWindow.frameDataViewAboutToBeDisposed -= OnFrameDataViewAboutToBeDisposed;
             if (m_TreeView != null)
             {
                 if (m_TreeView.multiColumnHeader != null)
