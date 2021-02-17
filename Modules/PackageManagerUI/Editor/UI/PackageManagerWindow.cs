@@ -47,6 +47,8 @@ namespace UnityEditor.PackageManager.UI
 
         private PackageManagerWindowRoot m_Root;
 
+        internal const string k_UpmUrl = "com.unity3d.kharma:upmpackage/";
+
         void OnEnable()
         {
             this.SetAntiAliasing(4);
@@ -66,11 +68,14 @@ namespace UnityEditor.PackageManager.UI
             var settingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             var unityConnectProxy = container.Resolve<UnityConnectProxy>();
             var applicationProxy = container.Resolve<ApplicationProxy>();
+            var upmClient = container.Resolve<UpmClient>();
 
-            m_Root = new PackageManagerWindowRoot(resourceLoader, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy);
+            m_Root = new PackageManagerWindowRoot(resourceLoader, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient);
             rootVisualElement.Add(m_Root);
 
             m_Root.OnEnable();
+
+            Events.registeredPackages += OnRegisteredPackages;
         }
 
         void OnDisable()
@@ -80,6 +85,8 @@ namespace UnityEditor.PackageManager.UI
                 return;
 
             m_Root?.OnDisable();
+
+            Events.registeredPackages -= OnRegisteredPackages;
         }
 
         void OnDestroy()
@@ -105,15 +112,37 @@ namespace UnityEditor.PackageManager.UI
             if (string.IsNullOrEmpty(url))
                 return;
 
-            var startIndex = url.LastIndexOf('/');
-            if (startIndex > 0)
+            // com.unity3d.kharma:content/11111                       => AssetStore url
+            // com.unity3d.kharma:upmpackage/com.unity.xxx@1.2.2      => Upm url
+            if (url.StartsWith(k_UpmUrl))
             {
-                var id = url.Substring(startIndex + 1);
-                var endIndex = id.IndexOf('?');
-                if (endIndex > 0)
-                    id = id.Substring(0, endIndex);
-                SelectPackageAndFilterStatic(id, PackageFilterTab.AssetStore);
+                SelectPackageAndFilterStatic(string.Empty, PackageFilterTab.InProject);
+                EditorApplication.delayCall += () => OpenAddPackageByName(url);
             }
+            else
+            {
+                var startIndex = url.LastIndexOf('/');
+                if (startIndex > 0)
+                {
+                    var id = url.Substring(startIndex + 1);
+                    var endIndex = id.IndexOf('?');
+                    if (endIndex > 0)
+                        id = id.Substring(0, endIndex);
+
+                    SelectPackageAndFilterStatic(id, PackageFilterTab.AssetStore);
+                }
+            }
+        }
+
+        private static void OpenAddPackageByName(string url)
+        {
+            if (float.IsNaN(instance.position.x) || float.IsNaN(instance.position.y))
+            {
+                EditorApplication.delayCall += () => OpenAddPackageByName(url);
+                return;
+            }
+            instance.Focus();
+            instance.m_Root.OpenAddPackageByNameDropdown(url);
         }
 
         [UsedByNativeCode]
@@ -151,13 +180,16 @@ namespace UnityEditor.PackageManager.UI
                 var upmRegistryClient = ServicesContainer.instance.Resolve<UpmRegistryClient>();
                 upmRegistryClient.CheckRegistriesChanged();
             }
+        }
 
-            // we don't want to refresh at all if window refresh hasn't happened yet
-            var pageManager = ServicesContainer.instance.Resolve<PageManager>();
-            if (pageManager.GetRefreshTimestamp(RefreshOptions.UpmList | RefreshOptions.UpmListOffline) == 0)
+        private static void OnRegisteredPackages(PackageRegistrationEventArgs args)
+        {
+            var applicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
+            if (applicationProxy.isBatchMode)
                 return;
-            var upmCache = ServicesContainer.instance.Resolve<UpmCache>();
-            upmCache.SetInstalledPackageInfos(PackageInfo.GetAllRegisteredPackages());
+
+            var pageManager = ServicesContainer.instance.Resolve<PageManager>();
+            pageManager.Refresh(RefreshOptions.UpmListOffline);
         }
 
         internal static void SelectPackageAndFilterStatic(string packageToSelect, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")
@@ -176,15 +208,6 @@ namespace UnityEditor.PackageManager.UI
 
             foreach (var window in windows)
                 window.Close();
-        }
-
-        [MenuItem("internal:Packages/Reset Package Database")]
-        public static void ResetPackageDatabase()
-        {
-            var pageManager = ServicesContainer.instance.Resolve<PageManager>();
-
-            CloseAll();
-            pageManager.Reload();
         }
     }
 }

@@ -298,6 +298,7 @@ namespace UnityEditor
             {
                 var dropdown = new ShaderSelectionDropdown(m_Shader, OnSelectedShaderPopup);
                 dropdown.Show(position);
+                GUIUtility.ExitGUI();
             }
 
             EditorGUI.showMixedValue = false;
@@ -1742,6 +1743,17 @@ namespace UnityEditor
 
         public bool PropertiesGUI()
         {
+            // Dont show the properties if hidden flag is enabled for any attached component
+            GameObject currrentGameObject = Selection.activeGameObject;
+            if (currrentGameObject)
+            {
+                foreach (var component in currrentGameObject.GetComponents<Component>())
+                {
+                    if (component.hideFlags == HideFlags.HideInInspector)
+                        return false;
+                }
+            }
+
             // OnInspectorGUI is wrapped inside a BeginVertical/EndVertical block that adds padding,
             // which we don't want here so we could have the VC bar span the entire Material Editor width
             // we stop the vertical block, draw the VC bar, and then start a new vertical block with the same style.

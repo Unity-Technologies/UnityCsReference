@@ -39,6 +39,20 @@ namespace UnityEditor.AssetImporters
             return importer.SupportsRemappedAssetType(type);
         }
 
+        static bool IsStaticMethodInClassOrParent(Type type, string methodName)
+        {
+            var baseClass = typeof(ScriptedImporter);
+            while (type != null && type != baseClass)
+            {
+                // we have to look for each parent on by one because BindingFlags.FlattenHierarchy cannot find private methods in parent classes.
+                if (type.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static) != null)
+                    return true;
+                type = type.BaseType;
+            }
+
+            return false;
+        }
+
         [RequiredByNativeCode]
         internal static void RegisterScriptedImporters()
         {
@@ -105,7 +119,7 @@ namespace UnityEditor.AssetImporters
                 {
                     var supportsImportDependencyHinting =
                         (importer.GetMethod("GetHashOfImportedAssetDependencyHintsForTesting", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static) != null) ||
-                        (importer.GetMethod("GatherDependenciesFromSourceFile", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static) != null);
+                        IsStaticMethodInClassOrParent(importer, "GatherDependenciesFromSourceFile");
 
                     // Register the importer
                     foreach (var ext in handledExts)

@@ -1,6 +1,9 @@
 using JetBrains.Annotations;
-using UnityEditor;
+using System;
+using System.Threading;
+using UnityEditor.PackageManager;
 using UnityEditor.UIElements;
+using Object = UnityEngine.Object;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -12,7 +15,11 @@ namespace Unity.UI.Builder
         [UsedImplicitly]
         public new class UxmlFactory : UxmlFactory<ImageStyleField, UxmlTraits> {}
 
+        const double k_TimeoutMilliseconds = 10000;
+        const int k_TimeDeltaMilliseconds = 10;
+
         const string k_UssPath = BuilderConstants.UtilitiesPath + "/StyleField/ImageStyleField.uss";
+        const string k_2DSpriteEditorPackageName = "com.unity.2d.sprite";
 
         const string k_2DSpriteEditorButtonString = "Open in Sprite Editor";
         const string k_No2DSpriteEditorPackageInstalledTitle = "Package required - 2D Sprite Editor";
@@ -95,7 +102,37 @@ namespace Unity.UI.Builder
                 k_No2DSpriteEditorPackageInstalledMessage,
                 "Install",
                 "Cancel"))
-                Application.OpenURL(k_2DSpriteEditorInstallationURL);
+            {
+                if (!Install2DSpriteEditorPackage())
+                    Application.OpenURL(k_2DSpriteEditorInstallationURL);
+            }
+        }
+
+        bool Install2DSpriteEditorPackage()
+        {
+            var startTime = DateTime.Now;
+            var addRequest = Client.Add(k_2DSpriteEditorPackageName);
+
+            while (!addRequest.IsCompleted)
+            {
+                var timeDelta = DateTime.Now - startTime;
+                if (timeDelta.TotalMilliseconds >= k_TimeoutMilliseconds)
+                {
+                    Debug.LogError(
+                        $"Could not install package \"{k_2DSpriteEditorPackageName}\" within reasonable time.\n" +
+                        "Please note that the installation might be taking longer than expected and may still end successfully.");
+                    return false;
+                }
+
+                Thread.Sleep(k_TimeDeltaMilliseconds);
+            }
+
+            if (addRequest.Result == null)
+                Debug.LogError($"Could not install package \"{k_2DSpriteEditorPackageName}\".  Error: {addRequest.Error.message}");
+            else
+                Debug.Log($"Successfully installed package \"{k_2DSpriteEditorPackageName}\".");
+
+            return addRequest.Result != null;
         }
 
 

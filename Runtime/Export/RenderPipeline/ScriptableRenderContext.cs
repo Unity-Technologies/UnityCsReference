@@ -162,6 +162,8 @@ namespace UnityEngine.Rendering
         {
             if (commandBuffer == null)
                 throw new ArgumentNullException(nameof(commandBuffer));
+            if (commandBuffer.m_Ptr == IntPtr.Zero)
+                throw new ObjectDisposedException(nameof(commandBuffer));
 
             Validate();
             ExecuteCommandBuffer_Internal(commandBuffer);
@@ -171,6 +173,8 @@ namespace UnityEngine.Rendering
         {
             if (commandBuffer == null)
                 throw new ArgumentNullException(nameof(commandBuffer));
+            if (commandBuffer.m_Ptr == IntPtr.Zero)
+                throw new ObjectDisposedException(nameof(commandBuffer));
 
             Validate();
             ExecuteCommandBufferAsync_Internal(commandBuffer, queueType);

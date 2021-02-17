@@ -18,6 +18,9 @@ namespace UnityEditor.DeviceSimulation
         private readonly PluginController m_PluginController;
         private readonly TouchEventManipulator m_TouchInput;
 
+        public UserInterfaceController userInterface => m_UserInterface;
+        public PlayModeView playModeView { get; }
+
         public Vector2 targetSize => new Vector2(m_ScreenSimulation.currentResolution.width, m_ScreenSimulation.currentResolution.height);
 
         public RenderTexture displayTexture
@@ -25,7 +28,6 @@ namespace UnityEditor.DeviceSimulation
             set
             {
                 m_UserInterface.PreviewTexture = value.IsCreated() ? value : null;
-                m_UserInterface.OverlayTexture = currentDevice.deviceInfo.screens[0].presentation.overlay;
             }
         }
 
@@ -41,14 +43,14 @@ namespace UnityEditor.DeviceSimulation
             get => m_DeviceIndex;
             set
             {
-                DeviceLoader.UnloadOverlays(currentDevice);
                 m_DeviceIndex = value;
                 InitSimulation();
             }
         }
 
-        public DeviceSimulatorMain(SimulatorState serializedState, VisualElement rootVisualElement)
+        public DeviceSimulatorMain(SimulatorState serializedState, VisualElement rootVisualElement, PlayModeView view)
         {
+            playModeView = view;
             if (serializedState == null)
                 serializedState = new SimulatorState();
             m_Devices = DeviceLoader.LoadDevices();
@@ -57,7 +59,7 @@ namespace UnityEditor.DeviceSimulation
             m_DeviceSimulator = new DeviceSimulator {applicationSimulation = m_ApplicationSimulation};
             m_PluginController = new PluginController(serializedState, m_DeviceSimulator);
             m_TouchInput = new TouchEventManipulator(m_DeviceSimulator);
-            m_UserInterface = new UserInterfaceController(this, rootVisualElement, serializedState, m_PluginController.Plugins, m_TouchInput);
+            m_UserInterface = new UserInterfaceController(this, rootVisualElement, serializedState, m_PluginController, m_TouchInput);
             InitSimulation();
         }
 
@@ -67,7 +69,6 @@ namespace UnityEditor.DeviceSimulation
             m_ScreenSimulation.Dispose();
             m_ApplicationSimulation.Dispose();
             m_SystemInfoSimulation.Dispose();
-            DeviceLoader.UnloadOverlays(currentDevice);
             m_PluginController.Dispose();
         }
 
@@ -93,7 +94,7 @@ namespace UnityEditor.DeviceSimulation
             m_SystemInfoSimulation?.Dispose();
 
             var playerSettings = new SimulationPlayerSettings();
-            DeviceLoader.LoadOverlay(currentDevice, 0);
+            m_UserInterface.OverlayTexture = DeviceLoader.LoadOverlay(currentDevice, 0);
             m_ScreenSimulation = new ScreenSimulation(currentDevice.deviceInfo, playerSettings);
             m_SystemInfoSimulation = new SystemInfoSimulation(currentDevice, playerSettings);
             m_TouchInput.InitTouchInput(currentDevice.deviceInfo.screens[0].width, currentDevice.deviceInfo.screens[0].height, m_ScreenSimulation);
@@ -132,7 +133,6 @@ namespace UnityEditor.DeviceSimulation
         public void UpdateDeviceList()
         {
             var deviceName = currentDevice.deviceInfo.friendlyName;
-            DeviceLoader.UnloadOverlays(currentDevice);
             m_Devices = DeviceLoader.LoadDevices();
 
             m_DeviceIndex = 0;

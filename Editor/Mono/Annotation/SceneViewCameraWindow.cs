@@ -17,6 +17,7 @@ namespace UnityEditor
             public static readonly GUIContent copySettingsLabel = EditorGUIUtility.TrTextContent("Copy Settings");
             public static readonly GUIContent pasteSettingsLabel = EditorGUIUtility.TrTextContent("Paste Settings");
             public static readonly GUIContent resetSettingsLabel = EditorGUIUtility.TrTextContent("Reset Settings");
+            public static readonly GUIContent cameraSpeedRange = EditorGUIUtility.TrTextContent(" ");
 
             public static readonly GUIStyle settingsArea;
 
@@ -41,20 +42,19 @@ namespace UnityEditor
         GUIContent m_SceneCameraLabel = EditorGUIUtility.TrTextContent("Scene Camera");
         GUIContent m_NavigationLabel = EditorGUIUtility.TrTextContent("Navigation");
 
-        const int kFieldCount = 12;
+        const int kFieldCount = 13;
         const int kWindowWidth = 290;
         const int kContentPadding = 4;
-        const int kWindowHeight = ((int)EditorGUI.kSingleLineHeight) * kFieldCount + kContentPadding * 2;
-        const float kPrefixLabelWidth = 120f;
-        const float kNearClipMin = .01f;
         const int k_HeaderSpacing = 2;
+        const int kWindowHeight = ((int)EditorGUI.kSingleLineHeight) * kFieldCount + kContentPadding * 2 + k_HeaderSpacing * 2;
+        const float kPrefixLabelWidth = 120f;
+
         // FOV values chosen to be the smallest and largest before extreme visual corruption
         const float k_MinFieldOfView = 4f;
         const float k_MaxFieldOfView = 120f;
 
         Vector2 m_WindowSize;
         Vector2 m_Scroll;
-        float[] m_Vector2Floats = { 0, 0 };
 
         public static event Action<SceneView> additionalSettingsGui;
 
@@ -76,8 +76,8 @@ namespace UnityEditor
             m_WindowSize = new Vector2(kWindowWidth, kWindowHeight);
             m_MinMaxContent = new[]
             {
-                EditorGUIUtility.TrTextContent("Min", "The minimum speed of the camera in the Scene view. Valid values are between [0.001, 98]."),
-                EditorGUIUtility.TrTextContent("Max", "The maximum speed of the camera in the Scene view. Valid values are between [0.002, 99].")
+                EditorGUIUtility.TrTextContent("Min", $"The minimum speed of the camera in the Scene view. Valid values are between [{SceneView.CameraSettings.kAbsoluteSpeedMin}, {SceneView.CameraSettings.kAbsoluteSpeedMax - 1}]."),
+                EditorGUIUtility.TrTextContent("Max", $"The maximum speed of the camera in the Scene view. Valid values are between [{SceneView.CameraSettings.kAbsoluteSpeedMin + .0001f}, {SceneView.CameraSettings.kAbsoluteSpeedMax}].")
             };
         }
 
@@ -127,7 +127,10 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(settings.dynamicClip))
             {
                 float near = settings.nearClip, far = settings.farClip;
-                DrawClipPlanesField(EditorGUI.s_ClipingPlanesLabel, ref near, ref far, EditorGUI.kNearFarLabelsWidth);
+                DrawStackedFloatField(EditorGUI.s_ClipingPlanesLabel,
+                    EditorGUI.s_NearAndFarLabels[0],
+                    EditorGUI.s_NearAndFarLabels[1], ref near, ref far,
+                    EditorGUI.kNearFarLabelsWidth);
                 settings.SetClipPlanes(near, far);
             }
 
@@ -151,13 +154,15 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
 
-            m_Vector2Floats[0] = settings.speedMin;
-            m_Vector2Floats[1] = settings.speedMax;
+            DrawStackedFloatField(Styles.cameraSpeedRange,
+                m_MinMaxContent[0],
+                m_MinMaxContent[1],
+                ref min, ref max,
+                EditorGUI.kNearFarLabelsWidth);
 
-            DrawSpeedMinMaxFields();
 
             if (EditorGUI.EndChangeCheck())
-                settings.SetSpeedMinMax(m_Vector2Floats);
+                settings.SetSpeedMinMax(min, max);
 
             EditorGUIUtility.labelWidth = 0f;
 
@@ -165,25 +170,16 @@ namespace UnityEditor
             {
                 EditorGUILayout.Space(k_HeaderSpacing);
                 additionalSettingsGui(m_SceneView);
-            }
 
-            if (Event.current.type == EventType.Repaint)
-                m_WindowSize.y = Math.Min(GUILayoutUtility.GetLastRect().yMax + kContentPadding, kWindowHeight * 3);
+                if (Event.current.type == EventType.Repaint)
+                    m_WindowSize.y = Math.Min(GUILayoutUtility.GetLastRect().yMax + kContentPadding * 2, kWindowHeight * 3);
+            }
 
             GUILayout.EndVertical();
             GUILayout.EndScrollView();
         }
 
-        void DrawSpeedMinMaxFields()
-        {
-            GUILayout.BeginHorizontal();
-            GUILayout.Space(EditorGUIUtility.labelWidth);
-            Rect r = EditorGUILayout.GetControlRect(false, EditorGUI.kSingleLineHeight, EditorStyles.numberField);
-            EditorGUI.MultiFloatField(r, m_MinMaxContent, m_Vector2Floats);
-            GUILayout.EndHorizontal();
-        }
-
-        void DrawClipPlanesField(GUIContent label, ref float near, ref float far, float propertyLabelsWidth, params GUILayoutOption[] options)
+        static void DrawStackedFloatField(GUIContent label, GUIContent firstFieldLabel, GUIContent secondFieldLabel, ref float near, ref float far, float propertyLabelsWidth, params GUILayoutOption[] options)
         {
             bool hasLabel = EditorGUI.LabelHasContent(label);
             float height = EditorGUI.kSingleLineHeight * 2 + EditorGUI.kVerticalSpacingMultiField;
@@ -198,9 +194,9 @@ namespace UnityEditor
             EditorGUIUtility.labelWidth = propertyLabelsWidth;
             EditorGUI.indentLevel = 0;
 
-            near = EditorGUI.FloatField(fieldPosition, EditorGUI.s_NearAndFarLabels[0], near);
+            near = EditorGUI.FloatField(fieldPosition, firstFieldLabel, near);
             fieldPosition.y += EditorGUI.kSingleLineHeight + EditorGUI.kVerticalSpacingMultiField;
-            far = EditorGUI.FloatField(fieldPosition, EditorGUI.s_NearAndFarLabels[1], far);
+            far = EditorGUI.FloatField(fieldPosition, secondFieldLabel, far);
 
             EditorGUI.indentLevel = oldIndentLevel;
             EditorGUIUtility.labelWidth = oldLabelWidth;

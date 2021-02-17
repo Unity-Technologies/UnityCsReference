@@ -77,6 +77,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 Aggregate((path1, path2) => new NPath(path1).Combine(path2).ToString(SlashMode.Native));
         }
 
+        public virtual string CurrentDirectory => NPath.CurrentDirectory.ToString(SlashMode.Native);
+
         public virtual string GetDirectoryName(string path) => new NPath(path).FileName;
 
         public virtual string GetParentDirectory(string directoryPath) => new NPath(directoryPath).Parent.ToString(SlashMode.Native);

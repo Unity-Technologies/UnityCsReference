@@ -11,10 +11,9 @@ namespace UnityEditor
     {
         public delegate bool GetValueFunc(int layerA, int layerB);
         public delegate void SetValueFunc(int layerA, int layerB, bool val);
-
+        const int kMaxLayers = 32;
         public static void DoGUI(GUIContent label, ref bool show, GetValueFunc getValue, SetValueFunc setValue)
         {
-            const int kMaxLayers = 32;
             const int checkboxSize = 16;
             int labelSize = 110;
             const int indent = 30;
@@ -39,10 +38,10 @@ namespace UnityEditor
 
             if (show)
             {
-                GUILayout.BeginScrollView(new Vector2(0, 0), GUILayout.Height(labelSize + 10));
+                GUILayout.BeginScrollView(new Vector2(0, 0), GUILayout.Height(labelSize + 15));
                 Rect topLabelRect = GUILayoutUtility.GetRect(checkboxSize * numLayers + labelSize, labelSize);
                 Rect scrollArea = GUIClip.topmostRect;
-                Vector2 topLeft = GUIClip.Unclip(new Vector2(topLabelRect.x, topLabelRect.y));
+                Vector2 topLeft = GUIClip.Unclip(new Vector2(topLabelRect.x - 10, topLabelRect.y));
                 int y = 0;
                 for (int i = 0; i < kMaxLayers; i++)
                 {
@@ -112,13 +111,13 @@ namespace UnityEditor
                         }
 
 
-                        Vector3 translate = new Vector3(labelSize + indent + checkboxSize * (numLayers - y) + topLeft.y + topLeft.x, topLeft.y, 0);
+                        Vector3 translate = new Vector3(labelSize + indent + checkboxSize * (numLayers - y) + topLeft.y + topLeft.x + 10, topLeft.y, 0);
                         GUI.matrix = Matrix4x4.TRS(translate, Quaternion.identity, Vector3.one) * Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(0, 0, 90), Vector3.one);
 
                         if (hidelabel || hidelabelonscrollbar)
-                            GUI.Label(new Rect(2 - topLeft.x, 0, labelSize, checkboxSize), "", "RightLabel");
+                            GUI.Label(new Rect(2 - topLeft.x, 0, labelSize, checkboxSize + 5), "", "RightLabel");
                         else
-                            GUI.Label(new Rect(2 - topLeft.x, 0, labelSize, checkboxSize), LayerMask.LayerToName(i), "RightLabel");
+                            GUI.Label(new Rect(2 - topLeft.x, 0, labelSize, checkboxSize + 5), LayerMask.LayerToName(i), "RightLabel");
 
                         y++;
                     }
@@ -133,7 +132,7 @@ namespace UnityEditor
                     {
                         int x = 0;
                         var r = GUILayoutUtility.GetRect(indent + checkboxSize * numLayers + labelSize, checkboxSize);
-                        GUI.Label(new Rect(r.x + indent, r.y, labelSize, checkboxSize), LayerMask.LayerToName(i), "RightLabel");
+                        GUI.Label(new Rect(r.x + indent, r.y, labelSize, checkboxSize + 5), LayerMask.LayerToName(i), "RightLabel");
                         for (int j = kMaxLayers - 1; j >= 0; j--)
                         {
                             if (LayerMask.LayerToName(j) != "")
@@ -152,7 +151,27 @@ namespace UnityEditor
                         y++;
                     }
                 }
+
+                GUILayout.BeginHorizontal();
+
+                // Padding on the left
+                GUILayout.Label("", GUILayout.Width(labelSize + 23));
+                // Made the buttons span the entire matrix of layers
+                if (GUILayout.Button("Disable All", GUILayout.MinWidth((checkboxSize * numLayers) / 2), GUILayout.ExpandWidth(false)))
+                    SetAllLayerCollisions(false, setValue);
+
+                if (GUILayout.Button("Enable All", GUILayout.MinWidth((checkboxSize * numLayers) / 2), GUILayout.ExpandWidth(false)))
+                    SetAllLayerCollisions(true, setValue);
+
+                GUILayout.EndHorizontal();
             }
+        }
+
+        static void SetAllLayerCollisions(bool flag, SetValueFunc setValue)
+        {
+            for (int i = 0; i < kMaxLayers; ++i)
+                for (int j = i; j < kMaxLayers; ++j)
+                    setValue(i, j, flag);
         }
     }
 

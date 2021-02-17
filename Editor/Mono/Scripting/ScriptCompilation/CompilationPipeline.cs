@@ -20,6 +20,13 @@ namespace UnityEditor.Compilation
         EditorAssembly = (1 << 0)
     }
 
+    [Flags]
+    public enum RequestScriptCompilationOptions
+    {
+        None,
+        CleanBuildCache
+    }
+
     public class ScriptCompilerOptions
     {
         public string RoslynAnalyzerRulesetPath { get; set; }
@@ -612,29 +619,22 @@ namespace UnityEditor.Compilation
 
         internal static string GetAssemblyDefinitionFilePathFromAssemblyName(EditorCompilation editorCompilation, string assemblyName)
         {
-            try
+            if (editorCompilation.TryFindCustomScriptAssemblyFromAssemblyName(assemblyName, out var customScriptAssembly))
             {
-                var customScriptAssembly = editorCompilation.FindCustomScriptAssemblyFromAssemblyName(assemblyName);
                 return customScriptAssembly.FilePath;
             }
-            catch (Exception)
-            {
-                return null;
-            }
+
+            return null;
         }
 
-        internal static string GetAssemblyDefinitionFilePathFromAssemblyReference(EditorCompilation editorCompilation,
-            string reference)
+        internal static string GetAssemblyDefinitionFilePathFromAssemblyReference(EditorCompilation editorCompilation, string reference)
         {
-            try
+            if (editorCompilation.TryFindCustomScriptAssemblyFromAssemblyReference(reference, out var customScriptAssembly))
             {
-                var customScriptAssembly = editorCompilation.FindCustomScriptAssemblyFromAssemblyReference(reference);
                 return customScriptAssembly.FilePath;
             }
-            catch (Exception)
-            {
-                return null;
-            }
+
+            return null;
         }
 
         internal static string GetAssemblyRootNamespaceFromScriptPath(EditorCompilation editorCompilation, string projectRootNamespace, string sourceFilePath)
@@ -652,18 +652,16 @@ namespace UnityEditor.Compilation
 
         internal static string GetAssemblyDefinitionFilePathFromScriptPath(EditorCompilation editorCompilation, string sourceFilePath)
         {
-            try
+            if (editorCompilation.TryFindCustomScriptAssemblyFromScriptPath(sourceFilePath, out var customScriptAssembly))
             {
-                var customScriptAssembly = editorCompilation.FindCustomScriptAssemblyFromScriptPath(sourceFilePath);
-                return customScriptAssembly != null ? customScriptAssembly.FilePath : null;
+                return customScriptAssembly.FilePath;
             }
-            catch (Exception)
-            {
-                return null;
-            }
+
+            return null;
         }
 
-        public static void RequestScriptCompilation() => EditorCompilationInterface.RequestScriptCompilation("Requested through public api");
+        public static void RequestScriptCompilation() => RequestScriptCompilation(RequestScriptCompilationOptions.None);
+        public static void RequestScriptCompilation(RequestScriptCompilationOptions options) => EditorCompilationInterface.Instance.RequestScriptCompilation("Requested through public api", options);
 
         [RequiredByNativeCode]
         internal static void OnCodeOptimizationChanged(bool scriptDebugInfoEnabled)

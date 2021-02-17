@@ -8,7 +8,7 @@ using Object = UnityEngine.Object;
 
 namespace Unity.UI.Builder
 {
-    abstract class MultiTypeField : BaseField<object>
+    abstract class MultiTypeField : BaseField<Object>
     {
         static readonly string k_UssPath = BuilderConstants.UtilitiesPath + "/MultiTypeField/MultiTypeField.uss";
         static readonly string k_UxmlPath = BuilderConstants.UtilitiesPath + "/MultiTypeField/MultiTypeField.uxml";
@@ -51,7 +51,7 @@ namespace Unity.UI.Builder
 
         protected void AddType(Type type, string displayName)
         {
-            if(m_TypeOptions.ContainsKey(displayName))
+            if (m_TypeOptions.ContainsKey(displayName))
                 throw new ArgumentException($"Item with the name: {displayName} already exists.", nameof(displayName));
 
             m_TypeOptions.Add(displayName, type);
@@ -83,9 +83,9 @@ namespace Unity.UI.Builder
             m_TypePopup.SetValueWithoutNotify(typeDisplayName);
         }
 
-        public override void SetValueWithoutNotify(object newValue)
+        public override void SetValueWithoutNotify(Object newValue)
         {
-            m_ObjectField.SetValueWithoutNotify((Object)newValue);
+            m_ObjectField.SetValueWithoutNotify(newValue);
             if (newValue != null)
             {
                 foreach (var pair in m_TypeOptions)

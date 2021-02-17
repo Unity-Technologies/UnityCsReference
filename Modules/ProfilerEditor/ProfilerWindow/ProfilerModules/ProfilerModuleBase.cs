@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Unity.Profiling;
 using UnityEditor;
 using UnityEditor.Profiling;
 using UnityEngine;
@@ -16,6 +17,12 @@ namespace UnityEditorInternal.Profiling
     [Serializable]
     internal abstract class ProfilerModuleBase
     {
+        static class Markers
+        {
+            public static readonly ProfilerMarker updateModule = new ProfilerMarker("ProfilerModule.Update");
+            public static readonly ProfilerMarker drawChartView = new ProfilerMarker("ProfilerModule.DrawChartView");
+        }
+
         const string k_ProfilerModuleActiveStatePreferenceKeyFormat = "ProfilerModule.{0}.Active";
         const string k_ProfilerModuleOrderIndexPreferenceKeyFormat = "ProfilerModule.{0}.OrderIndex";
         const string k_NoCategory = "NoCategory";
@@ -33,6 +40,10 @@ namespace UnityEditorInternal.Profiling
         [SerializeField] protected Chart.ChartType m_ChartType;
 
         [SerializeField] protected Vector2 m_PaneScroll;
+
+        // We cannot use -1 as the Profiler uses a frame index of -1 to signify 'no data'.
+        const int k_NoFrameIndex = int.MinValue;
+        int m_LastUpdatedFrameIndex = k_NoFrameIndex;
 
         protected ProfilerModuleBase(IProfilerWindowController profilerWindow, string name, string localizedName, string iconName, Chart.ChartType chartType = Chart.ChartType.Line)
         {
@@ -146,7 +157,11 @@ namespace UnityEditorInternal.Profiling
 
         public virtual void Update()
         {
-            UpdateChart();
+            using (Markers.updateModule.Auto())
+            {
+                UpdateChart();
+                m_LastUpdatedFrameIndex = ProfilerDriver.lastFrameIndex;
+            }
         }
 
         public virtual void SaveViewSettings() {}
@@ -156,6 +171,7 @@ namespace UnityEditorInternal.Profiling
 
         public virtual void Clear()
         {
+            m_LastUpdatedFrameIndex = k_NoFrameIndex;
             m_Chart?.ResetChartState();
         }
 
@@ -170,12 +186,27 @@ namespace UnityEditorInternal.Profiling
 
         public abstract void DrawDetailsView(Rect position);
 
-        public int DrawChartView(int currentFrame, bool isSelected)
+        public float GetMinimumChartHeight()
         {
-            currentFrame = m_Chart.DoChartGUI(currentFrame, isSelected);
-            if (isSelected)
-                DrawChartOverlay(m_Chart.lastChartRect);
-            return currentFrame;
+            return m_Chart.GetMinimumHeight();
+        }
+
+        public int DrawChartView(Rect chartRect, int currentFrame, bool isSelected, int lastVisibleFrameIndex)
+        {
+            using (Markers.drawChartView.Auto())
+            {
+                // Only update modules if repainting and the visible range has changed.
+                var visibleRangeHasChanged = (m_LastUpdatedFrameIndex != lastVisibleFrameIndex);
+                if (Event.current.type == EventType.Repaint && visibleRangeHasChanged)
+                {
+                    Update();
+                }
+
+                currentFrame = m_Chart.DoChartGUI(chartRect, currentFrame, isSelected);
+                if (isSelected)
+                    DrawChartOverlay(m_Chart.lastChartRect);
+                return currentFrame;
+            }
         }
 
         public virtual void DrawChartOverlay(Rect chartRect) {}
@@ -379,6 +410,16 @@ namespace UnityEditorInternal.Profiling
             var isStackedFillChartType = (m_ChartType == Chart.ChartType.StackedFill);
             var chartScale = (isStackedFillChartType) ? 0.001f : 1f;
             var chartMaximumScaleInterpolationValue = (isStackedFillChartType) ? -1f : 0f;
+            // DynamicProfilerModules rely on serialization to store their counter lists.
+            if (!(this is DynamicProfilerModule))
+            {
+                // Legacy modules rely on getting the counter lists from native.
+                // Counter modules rely on CollectDefaultChartCounters overloads and lists of counters.
+                // So to give these a chance to update what was serialized to layout file, stomp these serialized lists with fresh ones here
+                // otherwise, e.g. a legacy module that no longer reports stat x or no longer charts it, would still try to query it based on the outdated serialized list.
+                m_ChartCounters = CollectDefaultChartCounters();
+                m_DetailCounters = CollectDefaultDetailCounters();
+            }
             m_Chart = InstantiateChart(chartScale, chartMaximumScaleInterpolationValue);
             m_Chart.ConfigureChartSeries(ProfilerUserSettings.frameCount, m_ChartCounters);
             ConfigureChartSelectionCallbacks();

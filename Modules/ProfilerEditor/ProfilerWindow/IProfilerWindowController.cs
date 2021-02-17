@@ -24,6 +24,7 @@ namespace UnityEditorInternal
         ProfilerModuleBase selectedModule { get; set; }
         ProfilerModuleBase GetProfilerModuleByType(Type T);
 
+        event Action frameDataViewAboutToBeDisposed;
 
         event Action<int, bool> currentFrameChanged;
         void SetClearOnPlay(bool enabled);
@@ -33,6 +34,7 @@ namespace UnityEditorInternal
         HierarchyFrameDataView GetFrameDataView(int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending);
 
         bool IsRecording();
+        bool ProfilerWindowOverheadIsAffectingProfilingRecordingData();
 
         string ConnectedTargetName { get; }
         bool ConnectedToEditor { get; }

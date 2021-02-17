@@ -521,42 +521,46 @@ namespace UnityEditor.Animations
 
         public AnimatorTransition AddStateMachineTransition(AnimatorStateMachine sourceStateMachine)
         {
-            AnimatorStateMachine sm = null;
-            return AddStateMachineTransition(sourceStateMachine, sm);
+            AnimatorTransition newTransition = new AnimatorTransition();
+            AddStateMachineTransition(sourceStateMachine, newTransition);
+            return newTransition;
         }
 
         public AnimatorTransition AddStateMachineTransition(AnimatorStateMachine sourceStateMachine, AnimatorStateMachine destinationStateMachine)
         {
-            undoHandler.DoUndo(this, "StateMachine Transition Added");
-
-            AnimatorTransition[] transitionsVector = GetStateMachineTransitions(sourceStateMachine);
             AnimatorTransition newTransition = new AnimatorTransition();
-            if (destinationStateMachine)
-            {
-                newTransition.destinationStateMachine = destinationStateMachine;
-            }
-
-            if (AssetDatabase.GetAssetPath(this) != "")
-                AssetDatabase.AddObjectToAsset(newTransition, AssetDatabase.GetAssetPath(this));
-
-            newTransition.hideFlags = HideFlags.HideInHierarchy;
-            ArrayUtility.Add(ref transitionsVector, newTransition);
-            SetStateMachineTransitions(sourceStateMachine, transitionsVector);
-
+            newTransition.destinationStateMachine = destinationStateMachine;
+            AddStateMachineTransition(sourceStateMachine, newTransition);
             return newTransition;
         }
 
         public AnimatorTransition AddStateMachineTransition(AnimatorStateMachine sourceStateMachine, AnimatorState destinationState)
         {
-            AnimatorTransition newTransition = AddStateMachineTransition(sourceStateMachine);
+            AnimatorTransition newTransition = new AnimatorTransition();
             newTransition.destinationState = destinationState;
+            AddStateMachineTransition(sourceStateMachine, newTransition);
             return newTransition;
+        }
+
+        internal void AddStateMachineTransition(AnimatorStateMachine sourceStateMachine, AnimatorTransition transition)
+        {
+            undoHandler.DoUndo(this, "StateMachine Transition Added");
+
+            AnimatorTransition[] transitionsVector = GetStateMachineTransitions(sourceStateMachine);
+
+            if (AssetDatabase.GetAssetPath(this) != "")
+                AssetDatabase.AddObjectToAsset(transition, AssetDatabase.GetAssetPath(this));
+
+            transition.hideFlags = HideFlags.HideInHierarchy;
+            ArrayUtility.Add(ref transitionsVector, transition);
+            SetStateMachineTransitions(sourceStateMachine, transitionsVector);
         }
 
         public AnimatorTransition AddStateMachineExitTransition(AnimatorStateMachine sourceStateMachine)
         {
-            AnimatorTransition newTransition = AddStateMachineTransition(sourceStateMachine);
+            AnimatorTransition newTransition = new AnimatorTransition();
             newTransition.isExit = true;
+            AddStateMachineTransition(sourceStateMachine, newTransition);
             return newTransition;
         }
 

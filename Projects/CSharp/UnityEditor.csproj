@@ -403,6 +403,9 @@
     <Compile Include="..\..\Editor\Mono\AssetStore.bindings.cs">
       <Link>Editor\Mono\AssetStore.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetStoreContext.bindings.cs">
+      <Link>Editor\Mono\AssetStoreContext.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\AssetStoreToolUtils.bindings.cs">
       <Link>Editor\Mono\AssetStoreToolUtils.bindings.cs</Link>
     </Compile>
@@ -411,6 +414,15 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreAsset.cs">
       <Link>Editor\Mono\AssetStore\AssetStoreAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreClient.cs">
+      <Link>Editor\Mono\AssetStore\AssetStoreClient.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreContext.cs">
+      <Link>Editor\Mono\AssetStore\AssetStoreContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetStore\AssetStorePreviewManager.cs">
+      <Link>Editor\Mono\AssetStore\AssetStorePreviewManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreWindow.cs">
       <Link>Editor\Mono\AssetStore\AssetStoreWindow.cs</Link>
@@ -1000,6 +1012,9 @@
     <Compile Include="..\..\Editor\Mono\EditorHeaderItemAttribute.cs">
       <Link>Editor\Mono\EditorHeaderItemAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\EditorMode\MenuService.cs">
+      <Link>Editor\Mono\EditorMode\MenuService.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\EditorMode\ModeService.cs">
       <Link>Editor\Mono\EditorMode\ModeService.cs</Link>
     </Compile>
@@ -1068,6 +1083,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\FlagSet.cs">
       <Link>Editor\Mono\FlagSet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\GI\BuiltinSkyManager.bindings.cs">
+      <Link>Editor\Mono\GI\BuiltinSkyManager.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GI\LightProbeVisualization.bindings.cs">
       <Link>Editor\Mono\GI\LightProbeVisualization.bindings.cs</Link>
@@ -3094,6 +3112,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CompilationPipelineCommonHelper.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\CompilationPipelineCommonHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CompilationSetupErrorsTracker.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\CompilationSetupErrorsTracker.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CompilerMessage.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\CompilerMessage.cs</Link>
     </Compile>
@@ -3136,6 +3157,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\IVersion.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\IVersion.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\LoadingAssemblyDefinition.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\LoadingAssemblyDefinition.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\MonoLibraryHelpers.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\MonoLibraryHelpers.cs</Link>
     </Compile>
@@ -3147,9 +3171,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\PrecompiledAssembly.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\PrecompiledAssembly.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\RoslynAnalysisRunner.cs">
-      <Link>Editor\Mono\Scripting\ScriptCompilation\RoslynAnalysisRunner.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ScriptAssembly.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\ScriptAssembly.cs</Link>
@@ -4159,6 +4180,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\DebuggerTreeView.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\DebuggerTreeView.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\EditorWindowExtension.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\EditorWindowExtension.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\CodeLine.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\CodeLine.cs</Link>
     </Compile>
@@ -4168,8 +4192,20 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\EventLogLine.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\EventLogLine.cs</Link>
     </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\EventTypeSelectField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\EventTypeSelectField.cs</Link>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\EventTypeSearchField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\EventTypeSearchField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\IRegisteredCallbackLine.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\IRegisteredCallbackLine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\CallbackInfo.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\CallbackInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\CodeLineInfo.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\CodeLineInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\TitleInfo.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\TitleInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\UIElementsEventDebugger.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\UIElementsEventDebugger.cs</Link>
@@ -4207,8 +4243,11 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Delegates\EditorDelegateRegistration.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Delegates\EditorDelegateRegistration.cs</Link>
     </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Delegates\TextEditorDelegates.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Delegates\TextEditorDelegates.cs</Link>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Delegates\SerializedPropertyDelegates.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Delegates\SerializedPropertyDelegates.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Delegates\TextDelegateRegistration.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Delegates\TextDelegateRegistration.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\EditorAtlasMonitorInjector.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\EditorAtlasMonitorInjector.cs</Link>
@@ -4231,11 +4270,38 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\FieldMouseDragger.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\FieldMouseDragger.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\Delegates\RuntimeEditorDelegateRegistration.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\Delegates\RuntimeEditorDelegateRegistration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\Inspector\PanelSettingsInspector.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\Inspector\PanelSettingsInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\Inspector\UIDocumentInspector.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\Inspector\UIDocumentInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\LiveReloadTrackerCreator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\LiveReloadTrackerCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\PanelSettingsCreator\PanelSettingsCreator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\PanelSettingsCreator\PanelSettingsCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\PlayModeMenuItems.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\PlayModeMenuItems.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\UIDocumentAssetPostProcessor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\UIDocumentAssetPostProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\UIDocumentHierarchyWatcher.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\UIDocumentHierarchyWatcher.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Inspector\EditorElement.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Inspector\EditorElement.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Inspector\InspectorElement.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Inspector\InspectorElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Legacy\ProgressBar.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Legacy\ProgressBar.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\PanelDebug.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\PanelDebug.cs</Link>
@@ -4261,6 +4327,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeAssetDefinitionState.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeAssetDefinitionState.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeRegistry.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeRegistry.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeStyleSheetImporter.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeStyleSheetImporter.cs</Link>
     </Compile>
@@ -4269,6 +4338,15 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\URIHelpers.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\URIHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Text\PanelTextSettingsCreationMenu.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Text\PanelTextSettingsCreationMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Text\PanelTextSettingsEditor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Text\PanelTextSettingsEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Text\PanelTextSettingsImporter.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Text\PanelTextSettingsImporter.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\IToolbarMenuElement.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\IToolbarMenuElement.cs</Link>
@@ -4357,11 +4435,17 @@
     <Compile Include="..\..\Modules\AssetDatabase\Editor\Public\PreviewImporter.bindings.cs">
       <Link>Modules\AssetDatabase\Editor\Public\PreviewImporter.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AssetDatabase\Editor\ScriptBindings\ArtifactInfo.binding.cs">
+      <Link>Modules\AssetDatabase\Editor\ScriptBindings\ArtifactInfo.binding.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabase.bindings.cs">
       <Link>Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabase.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabaseExperimental.bindings.cs">
       <Link>Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabaseExperimental.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AssetDatabase\Editor\V2\ArtifactBrowser.cs">
+      <Link>Modules\AssetDatabase\Editor\V2\ArtifactBrowser.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AssetDatabase\Editor\V2\MultiArtifactTestImporter.bindings.cs">
       <Link>Modules\AssetDatabase\Editor\V2\MultiArtifactTestImporter.bindings.cs</Link>
@@ -4978,6 +5062,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\VisualElementExtensions.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\VisualElementExtensions.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\EntitlementsErrorChecker.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\EntitlementsErrorChecker.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IOperation.cs</Link>
     </Compile>
@@ -5179,6 +5266,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\DropdownContent.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\DropdownContent.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\DropdownElement.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\DropdownElement.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Filters\AssetStoreFiltersWindow.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Filters\AssetStoreFiltersWindow.cs</Link>
     </Compile>
@@ -5211,6 +5301,12 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetails.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDetails.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetailsImages.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageDetailsImages.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetailsLinks.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageDetailsLinks.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageGroup.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageGroup.cs</Link>
@@ -5370,6 +5466,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\RepositoryInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\RepositoryInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\AddAndRemoveRequest.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Requests\AddAndRemoveRequest.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\AddRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\AddRequest.cs</Link>
@@ -5692,9 +5791,6 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerFrameViewBase.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerFrameViewBase.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerInstrumentationPopup.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerInstrumentationPopup.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModulesDropdownWindow.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModulesDropdownWindow.cs</Link>
     </Compile>
@@ -5836,35 +5932,11 @@
     <Compile Include="..\..\Modules\ProfilerEditor\Public\RawFrameDataView.bindings.cs">
       <Link>Modules\ProfilerEditor\Public\RawFrameDataView.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\AsyncSearchSession.cs">
-      <Link>Modules\QuickSearch\Editor\AsyncSearchSession.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\AutoComplete.cs">
-      <Link>Modules\QuickSearch\Editor\AutoComplete.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\BlinkCursorScope.cs">
-      <Link>Modules\QuickSearch\Editor\BlinkCursorScope.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\DebugTimer.cs">
-      <Link>Modules\QuickSearch\Editor\DebugTimer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\DetailView.cs">
-      <Link>Modules\QuickSearch\Editor\DetailView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\Dispatcher.cs">
-      <Link>Modules\QuickSearch\Editor\Dispatcher.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\FuzzySearch.cs">
       <Link>Modules\QuickSearch\Editor\FuzzySearch.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\GridView.cs">
-      <Link>Modules\QuickSearch\Editor\GridView.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\ISearchView.cs">
       <Link>Modules\QuickSearch\Editor\ISearchView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\Icons.cs">
-      <Link>Modules\QuickSearch\Editor\Icons.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\AssetIndexer.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\AssetIndexer.cs</Link>
@@ -5917,9 +5989,6 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchTask.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\SearchTask.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\ListView.cs">
-      <Link>Modules\QuickSearch\Editor\ListView.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\AssetProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\AssetProvider.cs</Link>
     </Compile>
@@ -5941,14 +6010,8 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\MenuProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\MenuProvider.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\ObjectProvider.cs">
-      <Link>Modules\QuickSearch\Editor\Providers\ObjectProvider.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\PackageManagerProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\PackageManagerProvider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\ResourceProvider.cs">
-      <Link>Modules\QuickSearch\Editor\Providers\ResourceProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\SceneProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\SceneProvider.cs</Link>
@@ -6034,23 +6097,11 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\QueryEngine\WhereEnumerable.cs">
       <Link>Modules\QuickSearch\Editor\QueryEngine\WhereEnumerable.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\QuickSearch.cs">
-      <Link>Modules\QuickSearch\Editor\QuickSearch.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\ResourceDescriptors.cs">
-      <Link>Modules\QuickSearch\Editor\ResourceDescriptors.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\ResultView.cs">
-      <Link>Modules\QuickSearch\Editor\ResultView.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchAction.cs">
       <Link>Modules\QuickSearch\Editor\SearchAction.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchAnalytics.cs">
       <Link>Modules\QuickSearch\Editor\SearchAnalytics.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchContent.cs">
-      <Link>Modules\QuickSearch\Editor\SearchContent.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchContext.cs">
       <Link>Modules\QuickSearch\Editor\SearchContext.cs</Link>
@@ -6058,8 +6109,11 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchEngines.cs">
       <Link>Modules\QuickSearch\Editor\SearchEngines.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchField.cs">
-      <Link>Modules\QuickSearch\Editor\SearchField.cs</Link>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchEnumerator.cs">
+      <Link>Modules\QuickSearch\Editor\SearchEnumerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchFlags.cs">
+      <Link>Modules\QuickSearch\Editor\SearchFlags.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchItem.cs">
       <Link>Modules\QuickSearch\Editor\SearchItem.cs</Link>
@@ -6070,17 +6124,11 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchProvider.cs">
       <Link>Modules\QuickSearch\Editor\SearchProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQuery.cs">
+      <Link>Modules\QuickSearch\Editor\SearchQuery.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQueryError.cs">
       <Link>Modules\QuickSearch\Editor\SearchQueryError.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQuery\SearchQuery.cs">
-      <Link>Modules\QuickSearch\Editor\SearchQuery\SearchQuery.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQuery\SearchQueryEditor.cs">
-      <Link>Modules\QuickSearch\Editor\SearchQuery\SearchQueryEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQuery\SearchResultView.cs">
-      <Link>Modules\QuickSearch\Editor\SearchQuery\SearchResultView.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchSelection.cs">
       <Link>Modules\QuickSearch\Editor\SearchSelection.cs</Link>
@@ -6088,20 +6136,14 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchService.cs">
       <Link>Modules\QuickSearch\Editor\SearchService.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchSession.cs">
+      <Link>Modules\QuickSearch\Editor\SearchSession.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchSettings.cs">
       <Link>Modules\QuickSearch\Editor\SearchSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchUtils.cs">
       <Link>Modules\QuickSearch\Editor\SearchUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\StackedEnumerator.cs">
-      <Link>Modules\QuickSearch\Editor\StackedEnumerator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\StringView.cs">
-      <Link>Modules\QuickSearch\Editor\StringView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\Styles.cs">
-      <Link>Modules\QuickSearch\Editor\Styles.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Transactions\TimeRange.cs">
       <Link>Modules\QuickSearch\Editor\Transactions\TimeRange.cs</Link>
@@ -6118,14 +6160,62 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Transactions\TransactionViewer.cs">
       <Link>Modules\QuickSearch\Editor\Transactions\TransactionViewer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\TryConvert.cs">
-      <Link>Modules\QuickSearch\Editor\TryConvert.cs</Link>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\AutoComplete.cs">
+      <Link>Modules\QuickSearch\Editor\UI\AutoComplete.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\BlinkCursorScope.cs">
+      <Link>Modules\QuickSearch\Editor\UI\BlinkCursorScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\DetailView.cs">
+      <Link>Modules\QuickSearch\Editor\UI\DetailView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\Dispatcher.cs">
+      <Link>Modules\QuickSearch\Editor\UI\Dispatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\GridView.cs">
+      <Link>Modules\QuickSearch\Editor\UI\GridView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\Icons.cs">
+      <Link>Modules\QuickSearch\Editor\UI\Icons.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\ListView.cs">
+      <Link>Modules\QuickSearch\Editor\UI\ListView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\QuickSearch.cs">
+      <Link>Modules\QuickSearch\Editor\UI\QuickSearch.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\ResultView.cs">
+      <Link>Modules\QuickSearch\Editor\UI\ResultView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SearchContent.cs">
+      <Link>Modules\QuickSearch\Editor\UI\SearchContent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SearchField.cs">
+      <Link>Modules\QuickSearch\Editor\UI\SearchField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SearchQueryEditor.cs">
+      <Link>Modules\QuickSearch\Editor\UI\SearchQueryEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SearchResultView.cs">
+      <Link>Modules\QuickSearch\Editor\UI\SearchResultView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\Styles.cs">
+      <Link>Modules\QuickSearch\Editor\UI\Styles.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\UI\VisualSplitter.cs">
       <Link>Modules\QuickSearch\Editor\UI\VisualSplitter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\Utils.cs">
-      <Link>Modules\QuickSearch\Editor\Utils.cs</Link>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\DebugTimer.cs">
+      <Link>Modules\QuickSearch\Editor\Utilities\DebugTimer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\StringView.cs">
+      <Link>Modules\QuickSearch\Editor\Utilities\StringView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\TryConvert.cs">
+      <Link>Modules\QuickSearch\Editor\Utilities\TryConvert.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\Utils.cs">
+      <Link>Modules\QuickSearch\Editor\Utilities\Utils.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\RestService\Handler.cs">
       <Link>Modules\RestService\Handler.cs</Link>
@@ -6406,11 +6496,104 @@
     <Compile Include="..\..\Modules\TerrainEditor\Utilities\TerrainPaintUtilityEditor.cs">
       <Link>Modules\TerrainEditor\Utilities\TerrainPaintUtilityEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\AssemblyInfo.cs">
-      <Link>Modules\TextCoreEditor\Managed\AssemblyInfo.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreFontEngineEditor\Managed\AssemblyInfo.cs">
+      <Link>Modules\TextCoreFontEngineEditor\Managed\AssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreEditor\Managed\FontEngineEditor.bindings.cs">
-      <Link>Modules\TextCoreEditor\Managed\FontEngineEditor.bindings.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreFontEngineEditor\Managed\FontEngineEditor.bindings.cs">
+      <Link>Modules\TextCoreFontEngineEditor\Managed\FontEngineEditor.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\AssemblyInfo.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\CharacterPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\CharacterPropertyDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\EditorShaderUtilities.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\EditorShaderUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\FontAssetCreationMenu.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\FontAssetCreationMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\FontAssetCreatorWindow.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\FontAssetCreatorWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\FontAssetEditor.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\FontAssetEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\GlyphMetricsPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\GlyphMetricsPropertyDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\GlyphPairAdjustmentRecordPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\GlyphPairAdjustmentRecordPropertyDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\GlyphPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\GlyphPropertyDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\GlyphRectPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\GlyphRectPropertyDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\SerializedPropertyHolder.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\SerializedPropertyHolder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\SpriteAssetCreationMenu.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\SpriteAssetCreationMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\SpriteAssetImportFormats.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\SpriteAssetImportFormats.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\SpriteAssetImporter.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\SpriteAssetImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\SpriteCharacterPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\SpriteCharacterPropertyDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\SpriteGlyphPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\SpriteGlyphPropertyDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextColorGradientAssetCreationMenu.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\TextColorGradientAssetCreationMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextColorGradientEditor.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\TextColorGradientEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextCoreContextMenuItems.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\TextCoreContextMenuItems.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextCoreEditorUtilities.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\TextCoreEditorUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextCorePreBuildProcessor.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\TextCorePreBuildProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextCoreShaderGUI.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\TextCoreShaderGUI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextCoreShaderGUIBitmap.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\TextCoreShaderGUIBitmap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextCoreShaderGUISDF.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\TextCoreShaderGUISDF.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextEditorResourceManager.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\TextEditorResourceManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextSettingsCreationMenu.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\TextSettingsCreationMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextSettingsEditor.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\TextSettingsEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextSpriteAssetEditor.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\TextSpriteAssetEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextStyleAssetCreationMenu.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\TextStyleAssetCreationMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextStyleSheetEditor.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\TextStyleSheetEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\UnicodeLineBreakingRulesPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\UnicodeLineBreakingRulesPropertyDrawer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextRenderingEditor\TextRenderingCommands.cs">
       <Link>Modules\TextRenderingEditor\TextRenderingCommands.cs</Link>
@@ -6529,6 +6712,9 @@
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\CurveFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\CurveFieldSnippet.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\DropdownFieldSnippet.cs">
+      <Link>Modules\UIElementsSamplesEditor\Snippets\DropdownFieldSnippet.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\EnumFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\EnumFieldSnippet.cs</Link>
     </Compile>
@@ -6573,6 +6759,12 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\PopupFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\PopupFieldSnippet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\RadioButtonGroupSnippet.cs">
+      <Link>Modules\UIElementsSamplesEditor\Snippets\RadioButtonGroupSnippet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\RadioButtonSnippet.cs">
+      <Link>Modules\UIElementsSamplesEditor\Snippets\RadioButtonSnippet.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\RectFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\RectFieldSnippet.cs</Link>
@@ -6875,7 +7067,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\artifacts\UnityEditor.dll\Debug</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_ASSETPIPELINE_GUI;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API;USE_SEARCH_MODULE</DefineConstants>
+    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_ASSETPIPELINE_GUI;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API;USE_SEARCH_MODULE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoWarn>0169;0649;0626</NoWarn>

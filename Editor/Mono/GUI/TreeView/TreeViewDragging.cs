@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -24,12 +25,24 @@ namespace UnityEditor.IMGUI.Controls
 
         protected class DropData
         {
-            public int[]    expandedArrayBeforeDrag;
-            public int      lastControlID = -1;
-            public int      dropTargetControlID = -1;
-            public int      rowMarkerControlID = -1;
-            public double   expandItemBeginTimer;
-            public Vector2  expandItemBeginPosition;
+            public int[] expandedArrayBeforeDrag;
+            public int lastControlID = -1;
+            public int dropTargetControlID = -1;
+            public int rowMarkerControlID = -1;
+            public int ancestorControlID;
+            public double expandItemBeginTimer;
+            public Vector2 expandItemBeginPosition;
+            public float insertionMarkerYPosition;
+            public TreeViewItem insertRelativeToSibling;
+
+            public void ClearPerEventState()
+            {
+                dropTargetControlID = -1;
+                rowMarkerControlID = -1;
+                ancestorControlID = -1;
+                insertionMarkerYPosition = -1f;
+                insertRelativeToSibling = null;
+            }
         }
 
         public enum DropPosition
@@ -46,7 +59,6 @@ namespace UnityEditor.IMGUI.Controls
         {
             public const string UndoActionName = "Drag";
             public const string GetInsertionIndexNotFound = "Did not find targetItem,; should be a child of parentItem";
-            public const string UnhandledEnum = "Unhandled enum";
         }
 
         public TreeViewDragging(TreeViewController treeView)
@@ -68,7 +80,16 @@ namespace UnityEditor.IMGUI.Controls
             return m_DropData.rowMarkerControlID;
         }
 
+        public int GetAncestorControlID()
+        {
+            return m_DropData.ancestorControlID;
+        }
+
         public bool drawRowMarkerAbove { get; set; }
+        public float insertionMarkerYPosition { get { return m_DropData.insertionMarkerYPosition; } }
+        public TreeViewItem insertRelativeToSibling { get { return m_DropData.insertRelativeToSibling; } }
+
+        public Func<int> getIndentLevelForMouseCursor;
 
         public virtual bool CanStartDrag(TreeViewItem targetItem, List<int> draggedItemIDs, Vector2 mouseDownPosition)
         {
@@ -95,6 +116,94 @@ namespace UnityEditor.IMGUI.Controls
         protected float GetDropBetweenHalfHeight(TreeViewItem item, Rect itemRect)
         {
             return m_TreeView.data.CanBeParent(item) ? m_TreeView.gui.halfDropBetweenHeight : itemRect.height * 0.5f;
+        }
+
+        void GetPreviousAndNextItemsIgnoringDraggedItems(int targetRow, DropPosition dropPosition, out TreeViewItem previousItem, out TreeViewItem nextItem)
+        {
+            if (dropPosition != DropPosition.Above && dropPosition != DropPosition.Below)
+                throw new ArgumentException("Invalid argument: " + dropPosition);
+
+            previousItem = nextItem = null;
+            int curPrevRow = (dropPosition == DropPosition.Above) ? targetRow - 1 : targetRow;
+            int curNextRow = (dropPosition == DropPosition.Above) ? targetRow : targetRow + 1;
+
+            while (curPrevRow > 0)
+            {
+                var curPreviousItem = m_TreeView.data.GetItem(curPrevRow);
+                if (!m_TreeView.IsDraggingItem(curPreviousItem))
+                {
+                    previousItem = curPreviousItem;
+                    break;
+                }
+                curPrevRow--;
+            }
+
+            while (curNextRow < m_TreeView.data.rowCount)
+            {
+                var curNextItem = m_TreeView.data.GetItem(curNextRow);
+                if (!m_TreeView.IsDraggingItem(curNextItem))
+                {
+                    nextItem = curNextItem;
+                    break;
+                }
+                curNextRow++;
+            }
+        }
+
+        internal void HandleSiblingInsertionAtAvailableDepthsAndChangeTargetIfNeeded(ref TreeViewItem targetItem, int targetItemRow, ref DropPosition dropPosition, int cursorDepth, out bool didChangeTargetToAncestor)
+        {
+            if (dropPosition != DropPosition.Above && dropPosition != DropPosition.Below)
+                throw new ArgumentException("Invalid argument: " + dropPosition);
+
+            didChangeTargetToAncestor = false;
+
+            TreeViewItem prevItem, nextItem;
+            GetPreviousAndNextItemsIgnoringDraggedItems(targetItemRow, dropPosition, out prevItem, out nextItem);
+
+            if (prevItem == null)
+                return; // Above first row so keep targetItem
+
+            bool hoveringBetweenExpandedParentAndFirstChild = prevItem.hasChildren && m_TreeView.data.IsExpanded(prevItem.id);
+            int minDepth = nextItem != null ? nextItem.depth : 0;
+            int maxDepth = prevItem.depth + (hoveringBetweenExpandedParentAndFirstChild ? 1 : 0);
+
+            // Change targetItem and dropPosition
+            targetItem = prevItem;
+            dropPosition = DropPosition.Below;
+
+            if (maxDepth <= minDepth)
+            {
+                if (hoveringBetweenExpandedParentAndFirstChild)
+                {
+                    targetItem = prevItem.children[0];
+                    dropPosition = DropPosition.Above;
+                }
+                return; // The nextItem is a descendant of previous item so keep targetItem
+            }
+
+            if (cursorDepth >= maxDepth)
+            {
+                if (hoveringBetweenExpandedParentAndFirstChild)
+                {
+                    targetItem = prevItem.children[0];
+                    dropPosition = DropPosition.Above;
+                }
+                return; // No need to change targetItem if same or higher depth
+            }
+
+            // Search through parents for a new target that matches the cursor
+            var target = targetItem;
+            while (target.depth > minDepth)
+            {
+                if (target.depth == cursorDepth)
+                    break;
+                target = target.parent;
+            }
+
+            didChangeTargetToAncestor = target != targetItem;
+
+            // Change to new targetItem
+            targetItem = target;
         }
 
         protected bool TryGetDropPosition(TreeViewItem item, Rect itemRect, int row, out DropPosition dropPosition)
@@ -168,12 +277,10 @@ namespace UnityEditor.IMGUI.Controls
                 // If so clear any drop markers
                 if (m_DropData != null)
                 {
-                    m_DropData.dropTargetControlID = 0;
-                    m_DropData.rowMarkerControlID = 0;
+                    m_DropData.ClearPerEventState();
                 }
 
                 // And let client decide what happens when dragging outside items
-
                 DragAndDrop.visualMode = DoDrag(null, null, perform, DropPosition.Below);
                 if (DragAndDrop.visualMode != DragAndDropVisualMode.None && perform)
                     FinalizeDragPerformed(true);
@@ -186,52 +293,52 @@ namespace UnityEditor.IMGUI.Controls
                 return false;
 
             TreeViewItem parentItem = null;
+            TreeViewItem dropRelativeToItem = targetItem;
+            bool didChangeTargetToAncector = false;
+            DropPosition originalDropPosition = dropPosition;
             switch (dropPosition)
             {
                 case DropPosition.Upon:
-                {
-                    // Client must decide what happens when dropping upon: e.g: insert last or first in child list
-                    parentItem = targetItem;
-                }
-                break;
+                    // Parent change: Client must decide what happens when dropping upon: e.g: insert last or first in child list
+                    parentItem = dropRelativeToItem;
+                    break;
+
                 case DropPosition.Below:
-                {
-                    // When hovering between an expanded parent and its first child then make sure we change state to match that
-                    if (m_TreeView.data.IsExpanded(targetItem) && targetItem.hasChildren)
+                case DropPosition.Above:
+                    // Sibling change
+                    if (getIndentLevelForMouseCursor != null)
                     {
-                        parentItem = targetItem;
-                        targetItem = targetItem.children[0];
-                        dropPosition = DropPosition.Above;
+                        int cursorDepth = getIndentLevelForMouseCursor();
+                        HandleSiblingInsertionAtAvailableDepthsAndChangeTargetIfNeeded(ref dropRelativeToItem, row, ref dropPosition, cursorDepth, out didChangeTargetToAncector);
                     }
                     else
                     {
-                        // Drop as next sibling to target
-                        parentItem = targetItem.parent;
+                        if (dropPosition == DropPosition.Below && m_TreeView.data.IsExpanded(dropRelativeToItem) && dropRelativeToItem.hasChildren)
+                        {
+                            // When hovering between an expanded parent and its first child then make sure we change state to match that
+                            dropPosition = DropPosition.Above;
+                            dropRelativeToItem = dropRelativeToItem.children[0];
+                        }
                     }
-                }
-                break;
-                case DropPosition.Above:
-                {
-                    parentItem = targetItem.parent;
-                }
-                break;
+                    parentItem = dropRelativeToItem.parent;
+                    break;
+
                 default:
-                    Assert.IsTrue(false, Constants.UnhandledEnum);
+                    Debug.LogError("Unhandled enum. Report a bug.");
                     break;
             }
 
-
-            DragAndDropVisualMode mode = DragAndDropVisualMode.None;
             if (perform)
             {
-                // Try Drop on top of element
+                DragAndDropVisualMode mode = DragAndDropVisualMode.None;
+                // Try Drop upon target item
                 if (dropPosition == DropPosition.Upon)
-                    mode = DoDrag(targetItem, targetItem, true, dropPosition);
+                    mode = DoDrag(dropRelativeToItem, dropRelativeToItem, true, dropPosition);
 
-                // Fall back to dropping on parent  (drop between elements)
+                // Drop between items
                 if (mode == DragAndDropVisualMode.None && parentItem != null)
                 {
-                    mode = DoDrag(parentItem, targetItem, true, dropPosition);
+                    mode = DoDrag(parentItem, dropRelativeToItem, true, dropPosition);
                 }
 
                 // Finalize drop
@@ -249,30 +356,36 @@ namespace UnityEditor.IMGUI.Controls
             {
                 if (m_DropData == null)
                     m_DropData = new DropData();
-                m_DropData.dropTargetControlID = 0;
-                m_DropData.rowMarkerControlID = 0;
+                m_DropData.ClearPerEventState();
 
-                int itemControlID = TreeViewController.GetItemControlID(targetItem);
-                HandleAutoExpansion(itemControlID, targetItem, targetItemRect);
-
-                // Try drop on top of element
+                // Try drop on top of items
                 if (dropPosition == DropPosition.Upon)
-                    mode = DoDrag(targetItem, targetItem, false, dropPosition);
-
-                if (mode != DragAndDropVisualMode.None)
                 {
-                    m_DropData.dropTargetControlID = itemControlID;
-                    DragAndDrop.visualMode = mode;
+                    int itemControlID = TreeViewController.GetItemControlID(dropRelativeToItem);
+                    HandleAutoExpansion(itemControlID, dropRelativeToItem, targetItemRect);
+
+                    var mode = DoDrag(dropRelativeToItem, dropRelativeToItem, false, dropPosition);
+                    if (mode != DragAndDropVisualMode.None)
+                    {
+                        m_DropData.dropTargetControlID = itemControlID;
+                        DragAndDrop.visualMode = mode;
+                    }
                 }
-                // Fall back to dropping on parent (drop between elements)
-                else if (targetItem != null && parentItem != null)
+                // Drop between items
+                else if (dropRelativeToItem != null && parentItem != null)
                 {
-                    mode = DoDrag(parentItem, targetItem, false, dropPosition);
-
+                    var mode = DoDrag(parentItem, dropRelativeToItem, false, dropPosition);
                     if (mode != DragAndDropVisualMode.None)
                     {
                         drawRowMarkerAbove = dropPosition == DropPosition.Above;
-                        m_DropData.rowMarkerControlID = itemControlID;
+                        m_DropData.rowMarkerControlID = TreeViewController.GetItemControlID(dropRelativeToItem);
+                        m_DropData.insertionMarkerYPosition = originalDropPosition == DropPosition.Above ? targetItemRect.y : targetItemRect.yMax;
+                        m_DropData.insertRelativeToSibling = dropRelativeToItem;
+                        if (didChangeTargetToAncector)
+                        {
+                            m_DropData.ancestorControlID = TreeViewController.GetItemControlID(dropRelativeToItem);
+                        }
+
                         DragAndDrop.visualMode = mode;
                     }
                 }
@@ -287,7 +400,7 @@ namespace UnityEditor.IMGUI.Controls
             DragCleanup(revertExpanded);
             DragAndDrop.AcceptDrag();
 
-            List<Object> objs = new List<Object>(DragAndDrop.objectReferences); // TODO, what about when dragging non objects...
+            List<UnityEngine.Object> objs = new List<UnityEngine.Object>(DragAndDrop.objectReferences); // TODO, what about when dragging non objects...
 
             bool draggedItemsFromOwnTreeView = true;
             if (objs.Count > 0 && objs[0] != null && TreeViewUtility.FindItemInList(objs[0].GetInstanceID(), m_TreeView.data.GetRows()) == null)

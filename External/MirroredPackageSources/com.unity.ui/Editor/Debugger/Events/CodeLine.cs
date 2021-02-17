@@ -8,13 +8,14 @@ namespace UnityEditor.UIElements.Debugger
         string m_FileName;
         int m_LineNumber;
 
-        public int hashCode { get; }
+        public int hashCode { get; private set; }
 
-        public CodeLine(string name, string fileName, int lineNumber, int hashCode) : base(name)
+        public void Init(string textName, string fileName, int lineNumber, int lineHashCode)
         {
+            text = textName;
             m_FileName = fileName;
             m_LineNumber = lineNumber;
-            this.hashCode = hashCode;
+            this.hashCode = lineHashCode;
         }
 
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
@@ -29,13 +30,18 @@ namespace UnityEditor.UIElements.Debugger
             if (evt.eventTypeId == ContextualMenuPopulateEvent.TypeId())
             {
                 ContextualMenuPopulateEvent e = evt as ContextualMenuPopulateEvent;
-                e.menu.AppendAction("Go to callback registration point", GotoCode, DropdownMenuAction.AlwaysEnabled);
+                e.menu.AppendAction("Go to callback registration point", (e) => GotoCode(), DropdownMenuAction.AlwaysEnabled);
             }
         }
 
-        void GotoCode(DropdownMenuAction action)
+        public void GotoCode()
         {
             CodeEditor.Editor.CurrentCodeEditor.OpenProject(m_FileName, m_LineNumber);
+        }
+
+        public override string ToString()
+        {
+            return $"{m_FileName} ({m_LineNumber})";
         }
     }
 }

@@ -32,6 +32,8 @@ namespace UnityEditor.UIElements
         }
         public IEnumerable<Editor> Editors => m_Editors.AsEnumerable();
 
+        Object m_EditorTarget;
+
         int m_EditorIndex;
         public Editor editor
         {
@@ -113,8 +115,8 @@ namespace UnityEditor.UIElements
         void Init()
         {
             var editors = PopulateCache();
-            Object editorTarget = editor.targets[0];
-            string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);
+            m_EditorTarget = editor.targets[0];
+            string editorTitle = ObjectNames.GetInspectorTitle(m_EditorTarget);
 
             var inspectorElementMode = InspectorElement.GetModeFromInspectorMode(inspectorWindow.inspectorMode);
             if (inspectorWindow.useUIElementsDefaultInspector)
@@ -132,17 +134,21 @@ namespace UnityEditor.UIElements
             m_InspectorElement.name = editorTitle + "Inspector";
             m_InspectorElement.style.paddingBottom = InspectorWindow.kEditorElementPaddingBottom;
 
-            if (EditorNeedsVerticalOffset(editors, editorTarget))
+            if (EditorNeedsVerticalOffset(editors, m_EditorTarget))
             {
                 m_InspectorElement.style.overflow = Overflow.Hidden;
             }
 
             UpdateInspectorVisibility();
 
+            //Need to update the cache for multi-object edit detection. 
+            if (editor.targets.Length != Selection.objects.Length)
+                inspectorWindow.tracker.RebuildIfNecessary();
+
             Add(m_Header);
             // If the editor targets contain many target and the multi editing is not supported, we should not add this inspector.
             // However, the header and footer are kept since these are showing information regarding this state.
-            if ((editor.targets.Length <= 1) || (inspectorWindow.IsMultiEditingSupported(editor, editor.target)))
+            if (editor != null && ((editor.targets.Length <= 1) || (inspectorWindow.IsMultiEditingSupported(editor, editor.target))))
             {
                 Add(m_InspectorElement);
             }
@@ -178,6 +184,15 @@ namespace UnityEditor.UIElements
             Object editorTarget = editor.targets[0];
             string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);
 
+            // If the target change we need to invalidate IMGUI container cached measurements
+            // See https://fogbugz.unity3d.com/f/cases/1279830/
+            if (m_EditorTarget != editorTarget)
+            {
+                m_Header.MarkDirtyLayout();
+                m_Footer.MarkDirtyLayout();
+            }
+
+            m_EditorTarget = editorTarget;
             m_EditorIndex = editorIndex;
 
             m_Header.onGUIHandler = HeaderOnGUI;
@@ -190,6 +205,9 @@ namespace UnityEditor.UIElements
             m_Footer.name = editorTitle + "Footer";
 
             UpdateInspectorVisibility();
+
+            // InspectorElement should be enabled only if the Editor is open for edit.
+            m_InspectorElement.SetEnabled(editor.IsOpenForEdit());
         }
 
         private void UpdateInspectorVisibility()
@@ -243,6 +261,8 @@ namespace UnityEditor.UIElements
             }
         }
 
+        private bool m_LastOpenForEdit;
+
         void HeaderOnGUI()
         {
             var editors = PopulateCache();
@@ -262,6 +282,18 @@ namespace UnityEditor.UIElements
             {
                 SetElementVisible(m_InspectorElement, false);
                 return;
+            }
+
+            // Active polling of "open for edit" changes.
+            // If the header is moving to UI Toolkit, we may have to rely on a scheduler instead.
+            if (editor != null)
+            {
+                bool openForEdit = editor.IsOpenForEdit();
+                if (openForEdit != m_LastOpenForEdit)
+                {
+                    m_LastOpenForEdit = openForEdit;
+                    m_InspectorElement.SetEnabled(openForEdit);
+                }
             }
 
             m_WasVisible = inspectorWindow.WasEditorVisible(editors, m_EditorIndex, target);

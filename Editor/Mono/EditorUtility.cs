@@ -8,11 +8,11 @@ using System.Linq;
 using System.Text;
 using UnityEditor.Compilation;
 using UnityEditor.Experimental;
-using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Internal;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -705,6 +705,25 @@ namespace UnityEditor
             PreferencesProvider.ReloadCustomDiffToolData();
             if (forceEnableCustomTool)
                 PreferencesProvider.ForceEnableCustomTool();
+        }
+
+        public static void SetDefaultParentObject(GameObject defaultParentObject)
+        {
+            defaultParentObject = !PrefabStageUtility.IsGameObjectThePrefabRootInAnyPrefabStage(defaultParentObject) ? defaultParentObject : null;
+            SceneHierarchy.SetDefaultParentObject(false, defaultParentObject);
+        }
+
+        public static void ClearDefaultParentObject(Scene scene)
+        {
+            if (scene != null)
+                SceneHierarchy.ClearDefaultParentObject(scene.guid);
+            else
+                SceneHierarchy.ClearDefaultParentObject("");
+        }
+
+        public static void ClearDefaultParentObject()
+        {
+            SceneHierarchy.ClearDefaultParentObject();
         }
 
         public static void OpenPropertyEditor(Object obj)

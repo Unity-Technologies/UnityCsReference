@@ -38,7 +38,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             ResolveDependencies(resourceLoader);
 
-            styleSheets.Add(m_ResourceLoader.GetInputDropdownWindowStylesheet());
+            styleSheets.Add(m_ResourceLoader.inputDropdownStyleSheet);
 
             var root = m_ResourceLoader.GetTemplate("GenericInputDropdown.uxml");
             Add(root);

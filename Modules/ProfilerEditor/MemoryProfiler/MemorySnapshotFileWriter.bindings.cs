@@ -15,7 +15,7 @@ namespace UnityEditorInternal.Profiling.Memory.Experimental
         private IntPtr m_Ptr;
 
         [NativeThrows]
-        extern public void Open(string filename);
+        extern private void OpenFile(string filename);
         extern public void Close();
 
         extern private static IntPtr Internal_Create();
@@ -27,6 +27,23 @@ namespace UnityEditorInternal.Profiling.Memory.Experimental
         extern private void Internal_WriteEntryData(IntPtr data, int dataSize, int entryType);
         [NativeThrows]
         extern private void Internal_WriteEntryDataArray(IntPtr data, int dataSize, int numElements, int entryType);
+
+        public void Open(string filename)
+        {
+            if (string.IsNullOrEmpty(filename))
+            {
+                throw new ArgumentException("snapshot file path can not be null or empty.");
+            }
+
+            try
+            {
+                OpenFile(filename);
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+        }
 
         public MemorySnapshotFileWriter(string filepath)
         {
@@ -51,6 +68,10 @@ namespace UnityEditorInternal.Profiling.Memory.Experimental
 
         public void WriteEntry(FileFormat.EntryType entryType, string data)
         {
+            if (data == null)
+            {
+                throw new NullReferenceException();
+            }
             Internal_WriteEntryString(data, (int)entryType);
         }
 

@@ -104,11 +104,17 @@ namespace UnityEditor.UIElements.StyleSheets
             foreach (var styleSheet in styleSheets)
             {
                 var styleSheetPath = AssetDatabase.GetAssetPath(styleSheet);
+
                 if (string.IsNullOrEmpty(styleSheetPath))
                     continue;
 
                 string url;
-                if (styleSheetPath.StartsWith(targetDirectory))
+
+                if (styleSheetPath == targetPath && AssetDatabase.IsSubAsset(styleSheet))
+                {
+                    url = $"{ThemeRegistry.kThemeScheme}://{styleSheet.name}";
+                }
+                else if (styleSheetPath.StartsWith(targetDirectory))
                     url = styleSheetPath.Remove(0, targetDirectory.Length);
                 else
                     url = $"/{styleSheetPath}";
@@ -143,12 +149,16 @@ namespace UnityEditor.UIElements.StyleSheets
             extraData.InheritedThemes = new List<ThemeStyleSheet>();
             var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(assetPath);
 
-            foreach (var importStruct in styleSheet.imports)
+            // styleSheet will be null if the asset has been deleted while the editor was opened
+            if (styleSheet != null)
             {
-                if (importStruct.styleSheet is ThemeStyleSheet themeStyleSheet)
-                    extraData.InheritedThemes.Add(themeStyleSheet);
-                else
-                    extraData.StyleSheets.Add(importStruct.styleSheet);
+                foreach (var importStruct in styleSheet.imports)
+                {
+                    if (importStruct.styleSheet is ThemeStyleSheet themeStyleSheet)
+                        extraData.InheritedThemes.Add(themeStyleSheet);
+                    else
+                        extraData.StyleSheets.Add(importStruct.styleSheet);
+                }
             }
         }
     }

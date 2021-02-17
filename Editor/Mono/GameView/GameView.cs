@@ -90,7 +90,6 @@ namespace UnityEditor
             public static GUIContent gizmosContent = EditorGUIUtility.TrTextContent("Gizmos");
             public static GUIContent zoomSliderContent = EditorGUIUtility.TrTextContent("Scale", "Size of the game view on the screen.");
             public static GUIContent vsyncContent = EditorGUIUtility.TrTextContent("VSync");
-            public static GUIContent maximizeOnPlayContent = EditorGUIUtility.TrTextContent("Maximize On Play");
             public static GUIContent muteContent = EditorGUIUtility.TrTextContent("Mute Audio");
             public static GUIContent statsContent = EditorGUIUtility.TrTextContent("Stats");
             public static GUIContent frameDebuggerOnContent = EditorGUIUtility.TrTextContent("Frame Debugger On");
@@ -278,6 +277,12 @@ namespace UnityEditor
         float gameMouseScale { get { return EditorGUIUtility.pixelsPerPoint / m_ZoomArea.scale.y; } }
 
         private bool showToolbar { get; set; }
+
+        internal bool drawGizmos
+        {
+            get => m_Gizmos;
+            set => m_Gizmos = value;
+        }
 
         void InitializeZoomArea()
         {
@@ -608,7 +613,7 @@ namespace UnityEditor
                     }
                 }
 
-                maximizeOnPlay = GUILayout.Toggle(maximizeOnPlay, Styles.maximizeOnPlayContent, EditorStyles.toolbarButton);
+                enterPlayModeBehavior = (EnterPlayModeBehavior)EditorGUILayout.EnumPopup(enterPlayModeBehavior, EditorStyles.toolbarDropDown, GUILayout.Width(110));
 
                 EditorUtility.audioMasterMute = GUILayout.Toggle(EditorUtility.audioMasterMute, Styles.muteContent, EditorStyles.toolbarButton);
 
@@ -786,7 +791,6 @@ namespace UnityEditor
 
         void RepaintIfNeeded()
         {
-            UnityEngine.VFX.VFXManager.RequestRepaint();
             if (LODUtility.IsLODAnimatingOnDisplay(targetDisplay))
                 Repaint();
         }
@@ -953,9 +957,9 @@ namespace UnityEditor
 
                 EditorGUIUtility.QueueGameViewInputEvent(Event.current);
 
-                // Do not use mouse UP event if mousepos is outside game view rect (fix for case 380995: Gameview tab's context menu is not appearing on right click)
+                // Do not use mouse or touch events if mousepos is outside game view rect (fix for case 380995: Gameview tab's context menu is not appearing on right click)
                 // Placed after event queueing above to ensure scripts can react on mouse up events.
-                bool useEvent = !(Event.current.rawType == EventType.MouseUp && !mousePosInGameViewRect);
+                bool useEvent = mousePosInGameViewRect;
 
                 // Don't use command events, or they won't be sent to other views.
                 if (type == EventType.ExecuteCommand || type == EventType.ValidateCommand)

@@ -113,7 +113,8 @@ namespace UnityEditor
         public EditorDragging editorDragging { get; }
         public bool useUIElementsDefaultInspector { get; internal set; } = false;
         public Editor lastInteractedEditor { get; set; }
-        internal static PropertyEditor CurrentPropertyEditor { get; private set; }
+        internal static PropertyEditor HoveredPropertyEditor { get; private set; }
+        internal static PropertyEditor FocusedPropertyEditor { get; private set; }
 
         public InspectorMode inspectorMode
         {
@@ -143,6 +144,8 @@ namespace UnityEditor
                     worldRootRect.y + worldRootRect.height - worldEditorRect.height - worldEditorRect.y);
             }
         }
+
+        internal Rect scrollViewportRect => m_ScrollView.contentViewport.rect;
 
         protected static class Styles
         {
@@ -305,6 +308,13 @@ namespace UnityEditor
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
             PrefabUtility.prefabInstanceUnpacked += OnPrefabInstanceUnpacked;
             ObjectChangeEvents.changesPublished += OnObjectChanged;
+
+            rootVisualElement.RegisterCallback<DragUpdatedEvent>(DragOverBottomArea);
+            rootVisualElement.RegisterCallback<DragPerformEvent>(DragPerformInBottomArea);
+            rootVisualElement.RegisterCallback<MouseEnterEvent>(OnMouseEnter);
+            rootVisualElement.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
+            rootVisualElement.RegisterCallback<FocusInEvent>(OnFocusIn);
+            rootVisualElement.RegisterCallback<FocusOutEvent>(OnFocusOut);
         }
 
         [UsedImplicitly]
@@ -320,7 +330,22 @@ namespace UnityEditor
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             PrefabUtility.prefabInstanceUnpacked -= OnPrefabInstanceUnpacked;
             ObjectChangeEvents.changesPublished -= OnObjectChanged;
+
+            rootVisualElement.UnregisterCallback<DragUpdatedEvent>(DragOverBottomArea);
+            rootVisualElement.UnregisterCallback<DragPerformEvent>(DragPerformInBottomArea);
+            rootVisualElement.UnregisterCallback<MouseEnterEvent>(OnMouseEnter);
+            rootVisualElement.UnregisterCallback<MouseLeaveEvent>(OnMouseLeave);
+            rootVisualElement.UnregisterCallback<FocusInEvent>(OnFocusIn);
+            rootVisualElement.UnregisterCallback<FocusOutEvent>(OnFocusOut);
         }
+
+        private void OnMouseEnter(MouseEnterEvent e) => HoveredPropertyEditor = this;
+
+        private void OnMouseLeave(MouseLeaveEvent e) => HoveredPropertyEditor = null;
+
+        private void OnFocusIn(FocusInEvent e) => FocusedPropertyEditor = this;
+
+        private void OnFocusOut(FocusOutEvent e) => FocusedPropertyEditor = null;
 
         [UsedImplicitly]
         protected virtual void OnLostFocus()
@@ -904,11 +929,6 @@ namespace UnityEditor
 
             ScriptAttributeUtility.ClearGlobalCache();
 
-            rootVisualElement.RegisterCallback<DragUpdatedEvent>(DragOverBottomArea);
-            rootVisualElement.RegisterCallback<DragPerformEvent>(DragPerformInBottomArea);
-            rootVisualElement.RegisterCallback<MouseEnterEvent>((e) => { CurrentPropertyEditor = this; });
-            rootVisualElement.RegisterCallback<MouseLeaveEvent>((e) => { CurrentPropertyEditor = null; });
-
             EndRebuildContentContainers();
 
             Repaint();
@@ -930,6 +950,19 @@ namespace UnityEditor
                     m_ScrollView.verticalScroller.ScrollPageUp();
                 else if (localDragPosition.y > m_ScrollView.contentViewport.rect.height - k_AutoScrollZoneHeight)
                     m_ScrollView.verticalScroller.ScrollPageDown();
+            }
+        }
+
+        internal void ScrollTo(Vector2 position)
+        {
+            if (m_ScrollView != null)
+            {
+                var localDragPosition = m_ScrollView.contentViewport.WorldToLocal(position);
+
+                if (localDragPosition.y < k_AutoScrollZoneHeight)
+                    m_ScrollView.verticalScroller.value += localDragPosition.y - k_AutoScrollZoneHeight;
+                else if (localDragPosition.y > m_ScrollView.contentViewport.rect.height - k_AutoScrollZoneHeight)
+                    m_ScrollView.verticalScroller.value += localDragPosition.y - (m_ScrollView.contentViewport.rect.height - k_AutoScrollZoneHeight);
             }
         }
 
@@ -1663,13 +1696,16 @@ namespace UnityEditor
                         editor.isInspectorDirty = false;
 
                         // Adds an empty IMGUIContainer to prevent infinite repainting (case 1264833).
-                        if (mapping == null || !mapping.TryGetValue(editor.target.GetInstanceID(),
-                            out var culledEditorContainer))
+                        // EXCEPT for the ParticleSystemRenderer, because it prevents the ParticleSystem inspector
+                        // from working correctly when setting the Material for its renderer (case 1308966).
+                        if (!(editor.target is ParticleSystemRenderer) && (mapping == null || !mapping.TryGetValue(editor.target.GetInstanceID(),
+                            out var culledEditorContainer)))
                         {
                             string editorTitle = editorTarget == null
                                 ? "Nothing Selected"
                                 : ObjectNames.GetInspectorTitle(editorTarget);
-                            culledEditorContainer = EditorUIService.instance.CreateCulledEditorElement(editorIndex, this, editorTitle);
+                            culledEditorContainer =
+                                EditorUIService.instance.CreateCulledEditorElement(editorIndex, this, editorTitle);
                             editorsElement.Add(culledEditorContainer as VisualElement);
                         }
 
@@ -2007,7 +2043,13 @@ namespace UnityEditor
 
                 if (ShouldCullEditor(editors, newEditorsIndex))
                 {
-                    currentElement.ReinitCulled(newEditorsIndex);
+                    // Reinit culled when editor is culled to avoid NullPointerException (case 1281347)
+                    // EXCEPT for the ParticleSystemRenderer, because it prevents the ParticleSystem inspector
+                    // from working correctly when setting the Material for its renderer (case 1308966).
+                    if (!(ed.target is ParticleSystemRenderer))
+                    {
+                        currentElement.ReinitCulled(newEditorsIndex);
+                    }
                     ++newEditorsIndex;
                     continue;
                 }

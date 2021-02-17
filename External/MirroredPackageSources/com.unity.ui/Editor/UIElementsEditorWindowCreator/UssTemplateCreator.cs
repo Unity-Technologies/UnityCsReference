@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEditor.UIElements.StyleSheets;
 
 namespace UnityEditor.UIElements
 {
@@ -26,6 +27,21 @@ namespace UnityEditor.UIElements
                 var folder = GetCurrentFolder();
                 var path = AssetDatabase.GenerateUniqueAssetPath(folder + "/NewTSSFile.tss");
                 var contents = "VisualElement {}";
+                var icon = EditorGUIUtility.IconContent<ThemeStyleSheet>().image as Texture2D;
+                ProjectWindowUtil.CreateAssetWithContent(path, contents, icon);
+            }
+        }
+
+        [MenuItem("Assets/Create/UI Toolkit/Default Runtime Theme File", false, 605, false)]
+        public static void CreateDefaultRuntimeTSSFile()
+        {
+            if (CommandService.Exists(nameof(CreateDefaultRuntimeTSSFile)))
+                CommandService.Execute(nameof(CreateDefaultRuntimeTSSFile), CommandHint.Menu);
+            else
+            {
+                var folder = GetCurrentFolder();
+                var path = AssetDatabase.GenerateUniqueAssetPath(folder + "/UnityDefaultRuntimeTheme.tss");
+                var contents = "@import url(\"" + ThemeRegistry.kThemeScheme + "://default\");\nVisualElement {}";
                 var icon = EditorGUIUtility.IconContent<ThemeStyleSheet>().image as Texture2D;
                 ProjectWindowUtil.CreateAssetWithContent(path, contents, icon);
             }

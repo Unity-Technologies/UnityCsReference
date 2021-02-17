@@ -57,7 +57,6 @@ namespace UnityEngine.Rendering
         public bool receiveShadows { get; set; } = true;
         public bool reflectionProbes { get; set; } = true;
         public bool rendererPriority { get; set; } = false;
-        public bool terrainDetailUnsupported { get; set; } = false;
         public bool rendersUIOverlay { get; set; }
         public bool overridesEnvironmentLighting { get; set; } = false;
         public bool overridesFog { get; set; } = false;
@@ -191,7 +190,7 @@ namespace UnityEngine.Rendering
 
             *isSupported = ((active.lightmapBakeTypes & bakeType) == bakeType);
 
-            // if we are using realtime GI and Enlighten has been deprecated, don't allow realtime GI
+            // If we are using real time lighting and Enlighten is disabled, don't allow realtime GI.
             if (bakeType == LightmapBakeType.Realtime && !active.enlighten)
                 *isSupported = false;
         }
@@ -223,7 +222,7 @@ namespace UnityEngine.Rendering
             var isSupported = (bool*)isSupportedPtr;
 
             // 0 = Enlighten
-            // if the lightmapper is Enlighten but Enlighten is deprecated, it's not supported
+            // If the lightmapper is Enlighten but Enlighten is disabled, the Enlighten bake backend is not supported.
             *isSupported = ((lightmapper == 0) && !active.enlighten) ? false : true;
         }
 
@@ -247,6 +246,13 @@ namespace UnityEngine.Rendering
             var lightmapper = (int*)lightmapperPtr;
 
             *lightmapper = 1; // Progressive CPU
+        }
+
+        [Obsolete("terrainDetailUnsupported is deprecated.")]
+        public bool terrainDetailUnsupported
+        {
+            get { return true; }
+            set {}
         }
     }
 }

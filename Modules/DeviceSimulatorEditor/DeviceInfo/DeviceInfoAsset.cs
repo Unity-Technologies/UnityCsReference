@@ -17,8 +17,8 @@ namespace UnityEditor.DeviceSimulation
         [NonSerialized] public bool editorResource;
         public string directory;
 
-        public HashSet<string> availableSystemInfoFields;
-        public Dictionary<GraphicsDeviceType, HashSet<string>> availableGraphicsSystemInfoFields;
+        public HashSet<string> availableSystemInfoFields = new HashSet<string>();
+        public Dictionary<GraphicsDeviceType, HashSet<string>> availableGraphicsSystemInfoFields = new Dictionary<GraphicsDeviceType, HashSet<string>>();
 
         [SerializeField] private List<string> m_AvailableSystemInfoFields;
         [SerializeField] private List<GraphicsTypeFields> m_AvailableGraphicsSystemInfoFields;
@@ -30,12 +30,12 @@ namespace UnityEditor.DeviceSimulation
 
             if (availableGraphicsSystemInfoFields == null) return;
 
-            foreach (var graphicsDeviceType in availableGraphicsSystemInfoFields.Keys)
+            foreach (var graphicsDevice in availableGraphicsSystemInfoFields)
             {
                 m_AvailableGraphicsSystemInfoFields.Add(new GraphicsTypeFields
                 {
-                    type = graphicsDeviceType,
-                    fields = new List<string>(availableGraphicsSystemInfoFields[graphicsDeviceType])
+                    type = graphicsDevice.Key,
+                    fields = new List<string>(graphicsDevice.Value)
                 });
             }
         }

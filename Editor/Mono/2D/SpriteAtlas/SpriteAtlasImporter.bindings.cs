@@ -16,6 +16,7 @@ namespace UnityEditor.U2D
 {
     // SpriteAtlas Importer lets you modify [[SpriteAtlas]]
     [NativeHeader("Editor/Src/2D/SpriteAtlas/SpriteAtlasImporter.h")]
+    [ExcludeFromPreset]
     public sealed partial class SpriteAtlasImporter : AssetImporter
     {
         extern internal static void MigrateAllSpriteAtlases();

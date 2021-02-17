@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor;
@@ -66,12 +67,18 @@ namespace Unity.UI.Builder
 
             foreach (var attribute in attributeList)
             {
-                if (attribute == null || attribute.name == null)
+                if (attribute == null || attribute.name == null || IsAttributeIgnored(attribute))
                     continue;
 
                 var styleRow = CreateAttributeRow(attribute);
                 m_AttributesSection.Add(styleRow);
             }
+        }
+
+        static bool IsAttributeIgnored(UxmlAttributeDescription attribute)
+        {
+            // Temporary check until we add an "obsolete" mechanism to uxml attribute description.
+            return attribute.name == "show-horizontal-scroller" || attribute.name == "show-vertical-scroller";
         }
 
         BuilderStyleRow CreateAttributeRow(UxmlAttributeDescription attribute)
@@ -225,11 +232,11 @@ namespace Unity.UI.Builder
                 }
                 else if (attributeName == "show-horizontal-scroller")
                 {
-                    return scrollView.horizontalScrollerVisibility == ScrollerVisibility.AlwaysVisible;
+                    return scrollView.horizontalScrollerVisibility != ScrollerVisibility.Hidden;
                 }
                 else if (attributeName == "show-vertical-scroller")
                 {
-                    return scrollView.verticalScrollerVisibility == ScrollerVisibility.AlwaysVisible;
+                    return scrollView.verticalScrollerVisibility != ScrollerVisibility.Hidden;
                 }
             }
             else if (currentVisualElement is ListView listView)
@@ -620,13 +627,13 @@ namespace Unity.UI.Builder
         void OnAttributeValueChange(ChangeEvent<float> evt)
         {
             var field = evt.target as FloatField;
-            PostAttributeValueChange(field, evt.newValue.ToString());
+            PostAttributeValueChange(field, evt.newValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
         }
 
         void OnAttributeValueChange(ChangeEvent<double> evt)
         {
             var field = evt.target as DoubleField;
-            PostAttributeValueChange(field, evt.newValue.ToString());
+            PostAttributeValueChange(field, evt.newValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
         }
 
         void OnAttributeValueChange(ChangeEvent<int> evt)

@@ -94,7 +94,15 @@ namespace Unity.UI.Builder
         {
             get
             {
-                m_Settings = BuilderDocumentSettings.CreateOrLoadSettingsObject(m_Settings, uxmlPath);
+                // If this uxmnl is being edited in place then use the parent document's settings
+                if (isChildSubDocument && openSubDocumentParentSourceTemplateAssetIndex != -1)
+                {
+                    m_Settings = openSubDocumentParent.settings;
+                }
+                else
+                {
+                    m_Settings = BuilderDocumentSettings.CreateOrLoadSettingsObject(m_Settings, uxmlPath);
+                }
                 return m_Settings;
             }
         }
@@ -453,10 +461,38 @@ namespace Unity.UI.Builder
                 if (documentRootElement != null)
                     ReloadDocumentToCanvas(documentRootElement);
             }
+            else
+            {
+                SetInlineStyleRecursively(documentRootElement);
+            }
 
             hasUnsavedChanges = false;
 
             return true;
+        }
+
+        private void SetInlineStyleRecursively(VisualElement ve)
+        {
+            if (ve == null)
+            {
+                return;
+            }
+
+            var inlineSheet = m_VisualTreeAsset.inlineSheet;
+            var vea = ve.GetVisualElementAsset();
+
+            if (vea != null && vea.ruleIndex != -1)
+            {
+                var rule = inlineSheet.rules[vea.ruleIndex];
+                ve.SetInlineRule(inlineSheet, rule);
+            }
+
+            var children = ve.Children();
+
+            foreach (var child in children)
+            {
+                SetInlineStyleRecursively(child);
+            }
         }
 
         public bool CheckForUnsavedChanges(bool assetModifiedExternally = false)
@@ -536,6 +572,8 @@ namespace Unity.UI.Builder
         public void PostLoadDocumentStyleSheetCleanup()
         {
             m_VisualTreeAsset.ConvertAllAssetReferencesToPaths();
+
+            m_OpenUSSFiles.Clear();
 
             // Load styles.
             var styleSheetsUsed = m_VisualTreeAsset.GetAllReferencedStyleSheets();
@@ -748,6 +786,7 @@ namespace Unity.UI.Builder
                 return;
 
             documentRootElement.Clear();
+            documentRootElement.styleSheets.Clear();
             BuilderSharedStyles.ClearContainer(documentRootElement);
 
             documentRootElement.SetProperty(

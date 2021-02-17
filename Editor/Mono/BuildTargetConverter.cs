@@ -2,12 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using JetBrains.Annotations;
 using UnityEngine;
 
 namespace UnityEditor
 {
-    internal class BuildTargetConverter
+    internal static class BuildTargetConverter
     {
+        [UsedImplicitly] // used by com.unity.test-framework package
         public static RuntimePlatform? TryConvertToRuntimePlatform(BuildTarget buildTarget)
         {
             switch (buildTarget)

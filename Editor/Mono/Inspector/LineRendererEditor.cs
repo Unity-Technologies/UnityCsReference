@@ -219,7 +219,12 @@ namespace UnityEditor
 
         private void DrawEditPointTools()
         {
+            EditorGUI.BeginChangeCheck();
             LineRendererEditor.showWireframe = GUILayout.Toggle(LineRendererEditor.showWireframe, Styles.showWireframe);
+            if (EditorGUI.EndChangeCheck())
+            {
+                SceneView.RepaintAll();
+            }
 
             bool adjacentPointsSelected = HasAdjacentPointsSelected();
             using (new EditorGUI.DisabledGroupScope(!adjacentPointsSelected))
@@ -514,6 +519,13 @@ namespace UnityEditor
         public Bounds OnGetFrameBounds()
         {
             return m_PointEditor.selectedPositionsBounds;
+        }
+
+        internal override Bounds GetWorldBoundsOfTarget(Object targetObject)
+        {
+            if (sceneViewEditing)
+                return OnGetFrameBounds();
+            return base.GetWorldBoundsOfTarget(targetObject);
         }
     }
 }

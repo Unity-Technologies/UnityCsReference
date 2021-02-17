@@ -26,6 +26,13 @@ namespace UnityEditor.PackageManager.Requests
         private static extern PackageInfo GetOperationData(long operationId);
     }
 
+    public partial class AddAndRemoveRequest
+    {
+        [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
+        [StaticAccessor("PackageManager::AddAndRemove", StaticAccessorType.DoubleColon)]
+        private static extern OperationStatus GetOperationData(long operationId);
+    }
+
     internal partial class AddScopedRegistryRequest
     {
         [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]

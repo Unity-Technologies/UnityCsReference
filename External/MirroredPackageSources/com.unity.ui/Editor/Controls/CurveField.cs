@@ -273,10 +273,10 @@ namespace UnityEditor.UIElements
                     showCurveEditor = true;
                 }
             }
-            else if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse)
+            else if ((evt as PointerDownEvent)?.button == (int)MouseButton.LeftMouse)
             {
-                var mde = (MouseDownEvent)evt;
-                if (visualInput.ContainsPoint(visualInput.WorldToLocal(mde.mousePosition)))
+                var mde = (PointerDownEvent)evt;
+                if (visualInput.ContainsPoint(visualInput.WorldToLocal(mde.position)))
                 {
                     showCurveEditor = true;
                 }

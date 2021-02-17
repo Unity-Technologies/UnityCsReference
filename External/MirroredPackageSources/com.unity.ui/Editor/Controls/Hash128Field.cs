@@ -100,8 +100,10 @@ namespace UnityEditor.UIElements
                     if ((kde?.character == 3) ||     // KeyCode.KeypadEnter
                         (kde?.character == '\n'))    // KeyCode.Return
                     {
-                        // Here we should update the value, but it will be done when the blur event will be handled...
+                        // Here we should update the value, but it will be done when the blur event is handled...
                         parent.Focus();
+                        evt.StopPropagation();
+                        evt.PreventDefault();
                     }
                     else if (!isReadOnly)
                     {

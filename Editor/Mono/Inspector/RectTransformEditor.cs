@@ -130,6 +130,7 @@ namespace UnityEditor
             m_ChangingBottom.valueChanged.AddListener(RepaintScene);
 
             ManipulationToolUtility.handleDragChange += HandleDragChange;
+            SceneView.duringSceneGui += DrawAnchorsOnSceneView;
         }
 
         void OnDisable()
@@ -146,6 +147,7 @@ namespace UnityEditor
             m_ChangingBottom.valueChanged.RemoveListener(RepaintScene);
 
             ManipulationToolUtility.handleDragChange -= HandleDragChange;
+            SceneView.duringSceneGui -= DrawAnchorsOnSceneView;
 
             if (m_DropdownWindow != null && m_DropdownWindow.editorWindow != null)
                 m_DropdownWindow.editorWindow.Close();
@@ -169,6 +171,33 @@ namespace UnityEditor
             }
             if (animBool != null)
                 animBool.target = dragging;
+        }
+
+        void DrawAnchorsOnSceneView(SceneView sceneView)
+        {
+            if (!target)
+                return;
+
+            if (!sceneView.drawGizmos || !EditorGUIUtility.IsGizmosAllowedForObject(target))
+                return;
+
+            if (SceneView.activeEditors.Contains(this) || SceneView.activeEditors.Contains(target))
+                return;
+
+            RectTransform gui = target as RectTransform;
+            Transform ownSpace = gui.transform;
+            Transform parentSpace = ownSpace;
+            RectTransform guiParent = null;
+
+            if (ownSpace.parent != null)
+            {
+                parentSpace = ownSpace.parent;
+                guiParent = parentSpace.GetComponent<RectTransform>();
+            }
+
+            if (m_TargetCount == 1)
+                if (guiParent != null)
+                    AllAnchorsSceneGUI(gui, guiParent, parentSpace, ownSpace);
         }
 
         void SetFadingBasedOnMouseDownUp(ref AnimatedValues.AnimBool animBool, Event eventBefore)

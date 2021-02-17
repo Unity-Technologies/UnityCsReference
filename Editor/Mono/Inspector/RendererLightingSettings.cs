@@ -529,7 +529,8 @@ namespace UnityEditor
 
         void ShowAtlasGUI(int instanceID, bool isMeshRenderer)
         {
-            if (m_LightmapIndex == null)
+            // If lightmap index is missing, or renderer is not lightmapped, hide this gui
+            if (m_LightmapIndex == null || m_LightmapIndex.intValue >= 0xFFFE)
                 return;
 
             Hash128 contentHash = LightmapVisualizationUtility.GetBakedGITextureHash(m_LightmapIndex.intValue, 0, GITextureType.Baked);

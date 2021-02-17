@@ -728,6 +728,7 @@ namespace UnityEngine.UIElements
             if (evt.destinationPanel == null)
                 return;
 
+            m_ScrollView.contentContainer.RegisterCallback<PointerMoveEvent>(OnPointerMove);
             m_ScrollView.contentContainer.RegisterCallback<PointerDownEvent>(OnPointerDown);
             m_ScrollView.contentContainer.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
             m_ScrollView.contentContainer.RegisterCallback<PointerUpEvent>(OnPointerUp);
@@ -743,6 +744,7 @@ namespace UnityEngine.UIElements
             if (evt.originPanel == null)
                 return;
 
+            m_ScrollView.contentContainer.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
             m_ScrollView.contentContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown);
             m_ScrollView.contentContainer.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
             m_ScrollView.contentContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp);
@@ -935,7 +937,7 @@ namespace UnityEngine.UIElements
                 if (itemsSource.Count < actualCount)
                     m_ScrollView.scrollOffset = new Vector2(0, 0);
                 else
-                    m_ScrollView.scrollOffset = new Vector2(0, itemsSource.Count * pixelAlignedItemHeight);
+                    m_ScrollView.scrollOffset = new Vector2(0, (itemsSource.Count + 1) * pixelAlignedItemHeight);
             }
             else if (m_FirstVisibleIndex >= index)
             {
@@ -947,7 +949,7 @@ namespace UnityEngine.UIElements
                 if (index < m_FirstVisibleIndex + actualCount)
                     return;
 
-                var d = index - actualCount;
+                var d = index - actualCount + 1;    // +1 ensures targeted element is fully visible
                 var visibleOffset = pixelAlignedItemHeight - (m_LastHeight - actualCount * pixelAlignedItemHeight);
                 var yScrollOffset = pixelAlignedItemHeight * d + visibleOffset;
 
@@ -958,25 +960,25 @@ namespace UnityEngine.UIElements
         private long m_TouchDownTime = 0;
         private Vector3 m_TouchDownPosition;
 
+        private void OnPointerMove(PointerMoveEvent evt)
+        {
+            // Support cases where PointerMove corresponds to a MouseDown or MouseUp event with multiple buttons.
+            if (evt.button == (int)MouseButton.LeftMouse)
+            {
+                if ((evt.pressedButtons & (1 << (int)MouseButton.LeftMouse)) == 0)
+                {
+                    ProcessPointerUp(evt);
+                }
+                else
+                {
+                    ProcessPointerDown(evt);
+                }
+            }
+        }
+
         private void OnPointerDown(PointerDownEvent evt)
         {
-            if (!HasValidDataAndBindings())
-                return;
-
-            if (!evt.isPrimary)
-                return;
-
-            if (evt.button != (int)MouseButton.LeftMouse)
-                return;
-
-            if (evt.pointerType != PointerType.mouse)
-            {
-                m_TouchDownTime = evt.timestamp;
-                m_TouchDownPosition = evt.position;
-                return;
-            }
-
-            DoSelect(evt.localPosition, evt.clickCount, evt.actionKey, evt.shiftKey);
+            ProcessPointerDown(evt);
         }
 
         private void OnPointerCancel(PointerCancelEvent evt)
@@ -992,6 +994,11 @@ namespace UnityEngine.UIElements
 
         private void OnPointerUp(PointerUpEvent evt)
         {
+            ProcessPointerUp(evt);
+        }
+
+        private void ProcessPointerDown(IPointerEvent evt)
+        {
             if (!HasValidDataAndBindings())
                 return;
 
@@ -1003,7 +1010,28 @@ namespace UnityEngine.UIElements
 
             if (evt.pointerType != PointerType.mouse)
             {
-                var delay = evt.timestamp - m_TouchDownTime;
+                m_TouchDownTime = ((EventBase)evt).timestamp;
+                m_TouchDownPosition = evt.position;
+                return;
+            }
+
+            DoSelect(evt.localPosition, evt.clickCount, evt.actionKey, evt.shiftKey);
+        }
+
+        private void ProcessPointerUp(IPointerEvent evt)
+        {
+            if (!HasValidDataAndBindings())
+                return;
+
+            if (!evt.isPrimary)
+                return;
+
+            if (evt.button != (int)MouseButton.LeftMouse)
+                return;
+
+            if (evt.pointerType != PointerType.mouse)
+            {
+                var delay = ((EventBase)evt).timestamp - m_TouchDownTime;
                 var delta = evt.position - m_TouchDownPosition;
                 if (delay < 500 && delta.sqrMagnitude <= 100)
                 {
@@ -1474,6 +1502,8 @@ namespace UnityEngine.UIElements
                     m_SelectedIndices.Add(index);
                     m_SelectedItems.Add(m_ItemsSource[index]);
                 }
+
+                NotifyOfSelectionChange();
             }
 
             if (!HasValidDataAndBindings())

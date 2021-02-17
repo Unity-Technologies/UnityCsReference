@@ -83,6 +83,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Version = version;
             m_Samples = samples;
 
+            UIUtils.SetElementDisplay(samplesErrorInfoBox, m_Version.HasTag(PackageTag.InDevelopment) && m_Samples.Any(sample => string.IsNullOrEmpty(sample.displayName)));
             ToggleLowWidthSampleView(width, packageChanged);
         }
 
@@ -108,8 +109,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             importStatusContainer.Clear();
             nameAndSizeLabelContainer.Clear();
             importButtonContainer.Clear();
-
-            UIUtils.SetElementDisplay(samplesErrorInfoBox, m_Version.HasTag(PackageTag.InDevelopment) && m_Samples.Any(sample => string.IsNullOrEmpty(sample.displayName)));
 
             foreach (var sample in m_Samples.Where(s => !string.IsNullOrEmpty(s.displayName)))
             {

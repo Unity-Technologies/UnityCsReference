@@ -51,11 +51,8 @@ namespace UnityEditor.Search.Providers
     {
         public const string providerId = "find";
 
-        private static List<string> s_Roots;
-        private static readonly List<string> s_ProjectRoots = new List<string>() { "Assets" };
+        private static Dictionary<FindOptions, List<string>> s_Roots = new Dictionary<FindOptions, List<string>>();
         private static readonly ConcurrentDictionary<string, ConcurrentDictionary<string, byte>> s_RootFilePaths = new ConcurrentDictionary<string, ConcurrentDictionary<string, byte>>();
-
-        private static readonly string[] s_SubsetRoots = new string[] { "<subset>" };
         private static readonly QueryEngine<SearchDocument> s_QueryEngine = new QueryEngine<SearchDocument>(validateFilters: false);
 
         static IEnumerable<SearchItem> FetchItems(SearchContext context, SearchProvider provider)
@@ -65,11 +62,7 @@ namespace UnityEditor.Search.Providers
                 options |= FindOptions.Packages | FindOptions.Fuzzy;
 
             foreach (var e in Search(context, provider, options))
-            {
-                yield return provider.CreateItem(context, e.path, e.score,
-                    null,
-                    null, null, null);
-            }
+                yield return AssetProvider.CreateItem(context, provider, "Find", AssetProvider.GetGID(e.path), e.path, e.score, useGroupProvider: false);
         }
 
         public static IEnumerable<SearchDocument> Search(SearchContext context, SearchProvider provider, FindOptions options)
@@ -115,9 +108,7 @@ namespace UnityEditor.Search.Providers
 
                     IEnumerable<SearchDocument> results = new List<SearchDocument>();
                     if (args.name == null && args.value is string word && word.Length > 0)
-                    {
                         results = SearchWord(args.exclude, word, options, subset);
-                    }
 
                     if (args.orSet != null)
                         results = results.Concat(args.orSet);
@@ -291,26 +282,32 @@ namespace UnityEditor.Search.Providers
 
         static IEnumerable<string> GetRoots(FindOptions options)
         {
-            var projectRoots = s_ProjectRoots;
+            if (s_Roots.TryGetValue(options, out var roots))
+                return roots;
+
+            var projectRoots = new List<string>() { "Assets" };
+            projectRoots.AddRange(Utils.GetAssetRootFolders().Where(r => FilterRoot(r, options)));
             if (options.HasFlag(FindOptions.AllFiles))
             {
                 var baseProjectRoot = new DirectoryInfo(Path.Combine(Application.dataPath, "..")).FullName.Replace("\\", "/");
-                projectRoots = Directory.EnumerateDirectories(baseProjectRoot, "*", SearchOption.TopDirectoryOnly)
+                projectRoots.AddRange(Directory.EnumerateDirectories(baseProjectRoot, "*", SearchOption.TopDirectoryOnly)
                     .Select(d => d.Replace(baseProjectRoot, "").Substring(1))
-                    .Where(d => d.Length > 0 && char.IsLetterOrDigit(d[0]))
-                    .ToList();
+                    .Where(d => d.Length > 0 && char.IsLetterOrDigit(d[0])));
             }
 
+            return (s_Roots[options] = projectRoots);
+        }
+
+        public static void Reset()
+        {
+            s_Roots.Clear();
+        }
+
+        private static bool FilterRoot(string root, FindOptions options)
+        {
             if (!options.HasFlag(FindOptions.Packages))
-                return projectRoots;
-
-            if (s_Roots != null)
-                return s_Roots;
-
-            var listRequest = PackageManager.Client.List(offlineMode: true);
-            while (!listRequest.IsCompleted)
-                ;
-            return (s_Roots = projectRoots.Concat(listRequest.Result.Select(r => r.assetPath)).ToList());
+                return !root.StartsWith("Packages/", StringComparison.Ordinal);
+            return true;
         }
 
         [SearchItemProvider]

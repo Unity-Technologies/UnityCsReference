@@ -12,8 +12,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public IPackage package { get; set; }
         public IPackageVersion version { get; set; }
 
-        private bool m_IsDeveloperBuild;
-
         private ResourceLoader m_ResourceLoader;
         private PageManager m_PageManager;
         private void ResolveDependencies()
@@ -23,10 +21,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager = container.Resolve<PageManager>();
         }
 
-        public PackageVersionItem(IPackage package, IPackageVersion version, bool alwaysShowRecommendedLabel, bool isLatestVersion, bool isDeveloperBuild)
+        public PackageVersionItem(IPackage package, IPackageVersion version, bool alwaysShowRecommendedLabel, bool isLatestVersion)
         {
             ResolveDependencies();
-            m_IsDeveloperBuild = isDeveloperBuild;
 
             var root = m_ResourceLoader.GetTemplate("PackageVersionItem.uxml");
             Add(root);
@@ -44,6 +41,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshLabel(bool alwaysShowRecommendedLabel, bool isLatestVersion)
         {
             versionLabel.text = version.version?.ToString() ?? version.versionString;
+            versionLabel.ShowTextTooltipOnSizeChange();
+
             var primary = package.versions.primary;
             var recommended = package.versions.recommended;
             var stateText = string.Empty;
@@ -67,7 +66,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             stateLabel.text = stateText;
 
-            var tagLabel = PackageTagLabel.CreateTagLabel(version, m_IsDeveloperBuild, true);
+            var tagLabel = PackageTagLabel.CreateTagLabel(version, true);
             if (tagLabel != null)
                 stateContainer.Add(tagLabel);
         }

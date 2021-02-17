@@ -589,10 +589,7 @@ namespace UnityEditor
 
             CreateController();
 
-            if (m_ParameterInfoList == null)
-            {
-                CreateParameterInfoList();
-            }
+            CreateParameterInfoList();
         }
 
         public void DoTransitionPreview()

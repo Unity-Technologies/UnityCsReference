@@ -191,29 +191,27 @@ namespace UnityEditorInternal
                 return results;
 
             foreach (var processor in processors)
+            {
                 results.Add(processor.GenerateAdditionalLinkXmlFile(runInformation.BuildReport, runInformation.pipelineData));
+                var processorType = processor.GetType();
+
+                // The OnBeforeRun and OnAfterRun methods are no longer supported. We warn if the project uses them.
+                // But since these were interface methods, any project using GenerateAdditionalLinkXmlFile also had to
+                // implement these. So we only want to warn if the methods are not empty.
+                //
+                // To detect if we should consider a method as "empty" we check if the method body has more than 2 bytes.
+                // An empty method is 1 byte (ret), or 2 bytes in debug mode (nop, ret). The assumption is that there is
+                // no viable void method with side effects having only 2 bytes.
+
+                var onBeforeRun = processorType.GetMethod("OnBeforeRun");
+                if (onBeforeRun != null && onBeforeRun.GetMethodBody().GetILAsByteArray().Length > 2)
+                    Debug.LogWarning($"{processorType} has a non-empty OnBeforeRun method, but IUnityLinkerProcessor.OnBeforeRun is no longer supported.");
+                var onAfterRun = processorType.GetMethod("OnAfterRun");
+                if (onAfterRun != null && onAfterRun.GetMethodBody().GetILAsByteArray().Length > 2)
+                    Debug.LogWarning($"{processorType} has a non-empty OnAfterRun method, but IUnityLinkerProcessor.OnAfterRun is no longer supported.");
+            }
 
             return results;
-        }
-
-        static void ProcessBuildPipelineOnBeforeRun(UnityLinkerRunInformation runInformation)
-        {
-            var processors = BuildPipelineInterfaces.processors.unityLinkerProcessors;
-            if (processors == null)
-                return;
-
-            foreach (var processor in processors)
-                processor.OnBeforeRun(runInformation.BuildReport, runInformation.pipelineData);
-        }
-
-        static void ProcessBuildPipelineOnAfterRun(UnityLinkerRunInformation runInformation)
-        {
-            var processors = BuildPipelineInterfaces.processors.unityLinkerProcessors;
-            if (processors == null)
-                return;
-
-            foreach (var processor in processors)
-                processor.OnAfterRun(runInformation.BuildReport, runInformation.pipelineData);
         }
 
         internal static IEnumerable<string> GetUserBlacklistFiles()
@@ -233,7 +231,6 @@ namespace UnityEditorInternal
             if (rcr != null)
             {
                 linkXmlFiles.Add(WriteMethodsToPreserveBlackList(rcr, runInformation.target));
-                linkXmlFiles.Add(MonoAssemblyStripping.GenerateLinkXmlToPreserveDerivedTypes(managedAssemblyFolderPath, rcr));
                 linkXmlFiles.Add(WriteTypesInScenesBlacklist(managedAssemblyFolderPath, rcr));
                 linkXmlFiles.Add(WriteSerializedTypesBlacklist(managedAssemblyFolderPath, rcr));
             }
@@ -256,8 +253,6 @@ namespace UnityEditorInternal
             WriteEditorData(runInformation);
 
             var tempStripPath = GetFullPath(Path.Combine(managedAssemblyFolderPath, "tempStrip"));
-
-            ProcessBuildPipelineOnBeforeRun(runInformation);
 
             if (EditorUtility.DisplayCancelableProgressBar("Building Player", "Stripping assemblies", 0.0f))
                 throw new OperationCanceledException();
@@ -303,8 +298,6 @@ namespace UnityEditorInternal
             foreach (var dir in Directory.GetDirectories(tempStripPath))
                 Directory.Move(dir, Path.Combine(managedAssemblyFolderPath, Path.GetFileName(dir)));
             Directory.Delete(tempStripPath);
-
-            ProcessBuildPipelineOnAfterRun(runInformation);
         }
 
         private static string WriteTypesInScenesBlacklist(string managedAssemblyDirectory, RuntimeClassRegistry rcr)

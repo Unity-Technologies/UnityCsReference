@@ -92,7 +92,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (purchaseInfo == null)
             {
-                var errorMessage = L10n.Tr("Unable to get purchase details because you may not have purchased this package.");
+                var errorMessage = L10n.Tr("The Asset Store package you are trying to import is not available to the current Unity account. If you purchased this asset from the Asset Store using a different account, use that Unity account to sign into the Editor.");
                 AddError(new UIError(UIErrorCode.AssetStorePackageError, errorMessage));
             }
             if (string.IsNullOrEmpty(productInfo?.id) || string.IsNullOrEmpty(productInfo?.versionId))

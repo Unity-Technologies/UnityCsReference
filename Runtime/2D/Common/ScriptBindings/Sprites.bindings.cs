@@ -220,16 +220,19 @@ namespace UnityEngine
         }
 
         [FreeFunction("SpritesBindings::GetPhysicsShape", ThrowsException = true)]
-        private extern static void GetPhysicsShapeImpl(Sprite sprite, int shapeIdx, List<Vector2> physicsShape);
+        private extern static void GetPhysicsShapeImpl(Sprite sprite, int shapeIdx, [NotNull] List<Vector2> physicsShape);
 
         public void OverridePhysicsShape(IList<Vector2[]> physicsShapes)
         {
+            if (physicsShapes == null)
+                throw new ArgumentNullException(nameof(physicsShapes));
+
             for (int i = 0; i < physicsShapes.Count; ++i)
             {
                 var physicsShape = physicsShapes[i];
                 if (physicsShape == null)
                 {
-                    throw new ArgumentNullException(String.Format("Physics Shape at {0} is null.", i));
+                    throw new ArgumentNullException(nameof(physicsShape), String.Format("Physics Shape at {0} is null.", i));
                 }
                 if (physicsShape.Length < 3)
                 {
@@ -249,7 +252,7 @@ namespace UnityEngine
         private extern static void OverridePhysicsShape(Sprite sprite, Vector2[] physicsShape, int idx);
 
         [FreeFunction("SpritesBindings::OverrideGeometry", HasExplicitThis = true)]
-        public extern void OverrideGeometry(Vector2[] vertices, UInt16[] triangles);
+        public extern void OverrideGeometry([NotNull] Vector2[] vertices, [NotNull] UInt16[] triangles);
 
         // Workaround for Overloads as described in
         internal static Sprite Create(Rect rect, Vector2 pivot, float pixelsToUnits, Texture2D texture)

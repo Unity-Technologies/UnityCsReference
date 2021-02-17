@@ -152,7 +152,11 @@ namespace Unity.UI.Builder
             foreach (var Doc in allHierarchyDocuments)
             {
                 string docName = BreadcrumbFileName(Doc);
-                Action onBreadCrumbClick = () => document.GoToSubdocument(m_Viewport.documentRootElement, m_PaneWindow, Doc);
+                Action onBreadCrumbClick = () =>
+                {
+                    document.GoToSubdocument(m_Viewport.documentRootElement, m_PaneWindow, Doc);
+                    m_Viewport.SetViewFromDocumentSetting();
+                };
                 bool clickedOnSameDocument = document.activeOpenUXMLFile == Doc;
                 m_Breadcrumbs.PushItem(docName, clickedOnSameDocument ? null : onBreadCrumbClick);
             }
@@ -203,7 +207,10 @@ namespace Unity.UI.Builder
                     string.Format(BuilderConstants.DialogAbortActionOption, actionName.ToPascalCase()));
 
                 if (acceptAction)
+                {
+                    // Open a new, empty document
                     NewDocument(false);
+                }
 
                 return acceptAction;
             }
@@ -512,7 +519,7 @@ namespace Unity.UI.Builder
             // Find the runtime stylesheet.
             var runtimeStyleSheet = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.RuntimeThemeUSSPath);
             if (runtimeStyleSheet == null)
-                runtimeStyleSheet = UIElementsEditorUtility.s_DefaultCommonLightStyleSheet;
+                runtimeStyleSheet = UIElementsEditorUtility.GetCommonLightStyleSheet();
 
             // Remove any null stylesheet. This may occur if an used theme has been deleted.
             // This should be handle by ui toolkit
@@ -544,8 +551,8 @@ namespace Unity.UI.Builder
             {
                 element.styleSheets.Remove(m_LastCustomTheme);
             }
-            element.styleSheets.Remove(UIElementsEditorUtility.s_DefaultCommonDarkStyleSheet);
-            element.styleSheets.Remove(UIElementsEditorUtility.s_DefaultCommonLightStyleSheet);
+            element.styleSheets.Remove(UIElementsEditorUtility.GetCommonDarkStyleSheet());
+            element.styleSheets.Remove(UIElementsEditorUtility.GetCommonLightStyleSheet());
             element.styleSheets.Remove(runtimeStyleSheet);
             m_Viewport.canvas.defaultBackgroundElement.style.display = DisplayStyle.Flex;
 
@@ -555,10 +562,10 @@ namespace Unity.UI.Builder
             switch (theme)
             {
                 case BuilderDocument.CanvasTheme.Dark:
-                    themeStyleSheet = UIElementsEditorUtility.s_DefaultCommonDarkStyleSheet;
+                    themeStyleSheet = UIElementsEditorUtility.GetCommonDarkStyleSheet();
                     break;
                 case BuilderDocument.CanvasTheme.Light:
-                    themeStyleSheet = UIElementsEditorUtility.s_DefaultCommonLightStyleSheet;
+                    themeStyleSheet = UIElementsEditorUtility.GetCommonLightStyleSheet();
                     break;
                 case BuilderDocument.CanvasTheme.Runtime:
                     themeStyleSheet = runtimeStyleSheet;
@@ -656,8 +663,6 @@ namespace Unity.UI.Builder
         void SetViewportSubTitle()
         {
             var subTitle = string.Empty;
-            if (!string.IsNullOrEmpty(m_BuilderPackageVersion))
-                subTitle += $"UI Builder {m_BuilderPackageVersion}";
 
             m_Viewport.subTitle = subTitle;
         }

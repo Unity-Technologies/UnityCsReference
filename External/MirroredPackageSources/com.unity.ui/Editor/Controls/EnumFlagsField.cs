@@ -5,7 +5,6 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
-
     /// <summary>
     /// Makes a dropdown for switching between enum flag values that are marked with the Flags attribute.
     /// </summary>

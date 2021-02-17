@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {

@@ -668,7 +668,6 @@ namespace UnityEditor.Experimental
         public static extern bool Bake(Scene targetScene);
 
         public static event Action additionalBakedProbesCompleted;
-
         internal static void Internal_CallAdditionalBakedProbesCompleted()
         {
             if (additionalBakedProbesCompleted != null)

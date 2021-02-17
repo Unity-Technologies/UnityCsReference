@@ -40,7 +40,7 @@ namespace UnityEngine
         extern public static Light sun { get; set; }
         extern public static Rendering.SphericalHarmonicsL2 ambientProbe { [NativeMethod("GetFinalAmbientProbe")] get; set; }
 
-        extern public static Cubemap        customReflection            { get; set; }
+        extern public static Texture        customReflection            { get; [NativeThrows] set; }
         extern public static float          reflectionIntensity         { get; set; }
         extern public static int            reflectionBounces           { get; set; }
         extern public static ReflectionMode defaultReflectionMode       { get; set; }

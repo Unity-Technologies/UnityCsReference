@@ -9,20 +9,15 @@ using System.IO;
 using System.Linq;
 using UnityEditor.Callbacks;
 using UnityEditor.IMGUI.Controls;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.SceneManagement;
+using UnityEngine.Scripting.APIUpdating;
 
-
-namespace UnityEditor.Experimental.SceneManagement
+namespace UnityEditor.SceneManagement
 {
-    // For the initial Improved Prefabs release we didn't have time to generalize the stage concept to also work
-    // for other things than main scenes and Prefabs. But it makes sense to use also for e.g. Avatar Setup.
-    // Until we have gone through the work of generalizing it by making e.g. Avatar Setup use it too,
-    // we're not confident that the API is right, hence it's experimental for now.
-
     [Serializable]
+    [MovedFrom("UnityEditor.Experimental.SceneManagement")]
     public sealed partial class PrefabStage : PreviewSceneStage
     {
         static class Styles
@@ -343,7 +338,13 @@ namespace UnityEditor.Experimental.SceneManagement
             return this;
         }
 
-        internal override Color GetBackgroundColor() { return SceneView.kSceneViewPrefabBackground.Color; }
+        internal override Color GetBackgroundColor()
+        {
+            // Case 1255995 - Workaround for OSX 10.15 driver issue with Intel 630 cards
+            Color opaqueBackground = SceneView.kSceneViewPrefabBackground.Color;
+            opaqueBackground.a = 1;
+            return opaqueBackground;
+        }
 
         public bool IsPartOfPrefabContents(GameObject gameObject)
         {

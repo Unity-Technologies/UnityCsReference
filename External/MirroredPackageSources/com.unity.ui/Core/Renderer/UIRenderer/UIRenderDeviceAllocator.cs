@@ -463,10 +463,18 @@ namespace UnityEngine.UIElements.UIR
                 m_UpdateRangesEnqueued++;
             }
 
+            bool HasMappedBufferRange()
+            {
+                return Utility.HasMappedBufferRange();
+            }
+
             // This is expected to be called no more than once per frame
             public void SendUpdates()
             {
-                SendPartialRanges();
+                if (HasMappedBufferRange())
+                    SendPartialRanges();
+                else
+                    SendFullRange();
             }
 
             public void SendFullRange()

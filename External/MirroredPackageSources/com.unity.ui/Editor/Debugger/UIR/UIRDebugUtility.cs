@@ -16,7 +16,7 @@ namespace UnityEditor.UIElements.Debugger
         public static UIRenderDevice GetUIRenderDevice(IPanel panel)
         {
             UIRRepaintUpdater updater = GetUIRRepaintUpdater(panel);
-            return updater?.DebugGetRenderChain()?.device as UIRenderDevice;
+            return updater?.renderChain?.device as UIRenderDevice;
         }
 
         public static RepaintMode GetPanelRepaintMode(IPanel panel)

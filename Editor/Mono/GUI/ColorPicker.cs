@@ -1213,7 +1213,7 @@ namespace UnityEditor
         const int kPixelSize = 10;
         // Can't be larger right now since OSX Metal surfaces can't be larger than 16384 pixels.
         // This needs to be changed to a larger size since it will miss mouse events when using multiple 4K monitors
-        private const int kDummyWindowSize = 8192;
+        private const int kDummyWindowSize = 100;
         internal static Color s_LastPickedColor;
         GUIView m_DelegateView;
         Texture2D m_Preview;
@@ -1245,8 +1245,10 @@ namespace UnityEditor
             instance.AddToAuxWindowList();
             win.SetInvisible();
             instance.SetMinMaxSizes(new Vector2(0, 0), new Vector2(kDummyWindowSize, kDummyWindowSize));
-            win.position = new Rect(-kDummyWindowSize / 2f, -kDummyWindowSize / 2f, kDummyWindowSize, kDummyWindowSize);
+            Vector2 p = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+            win.position = new Rect(p.x - kDummyWindowSize / 2, p.y - kDummyWindowSize / 2, kDummyWindowSize, kDummyWindowSize);
             instance.wantsMouseMove = true;
+            instance.SetEyeDropperOpen(true);
             instance.StealMouseCapture();
         }
 
@@ -1254,6 +1256,7 @@ namespace UnityEditor
         {
             if (s_Instance != null)
             {
+                s_Instance.SetEyeDropperOpen(false);
                 s_Instance.window.Close();
                 s_Instance = null;
             }
@@ -1393,6 +1396,7 @@ namespace UnityEditor
                 // We have to close helper window before we read color from screen. On Win
                 // the window covers whole desktop (see Show()) and is black with 0x01 alpha value.
                 // That might cause invalid picked color.
+                s_Instance.SetEyeDropperOpen(false);
                 window.Close();
                 s_LastPickedColor = GetPickedColor();
                 Event.current.Use();
@@ -1408,6 +1412,7 @@ namespace UnityEditor
         {
             if (Event.current.keyCode == KeyCode.Escape)
             {
+                s_Instance.SetEyeDropperOpen(false);
                 window.Close();
                 Event.current.Use();
                 SendEvent(EventCommandNames.EyeDropperCancelled, true);

@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
 using System.Collections.Generic;
-using UnityEditorInternal;
 using System;
 using System.Linq;
 using UnityEditor.Compilation;
@@ -18,8 +16,6 @@ namespace UnityEditor
     /// </summary>
     internal class RuntimeClassRegistry
     {
-        protected BuildTarget buildTarget;
-        protected HashSet<string> monoBaseClasses = new HashSet<string>();
         protected Dictionary<string, HashSet<string>> serializedClassesPerAssembly = new Dictionary<string, HashSet<string>>();
         protected Dictionary<string, string[]> m_UsedTypesPerUserAssembly = new Dictionary<string, string[]>();
         protected Dictionary<int, List<string>> classScenes = new Dictionary<int, List<string>>();
@@ -70,11 +66,6 @@ namespace UnityEditor
             }
 
             return m_UsedTypesPerUserAssembly.ContainsKey(dll);
-        }
-
-        protected void AddManagedBaseClass(string className)
-        {
-            monoBaseClasses.Add(className);
         }
 
         protected void AddSerializedClass(string assemblyName, string className)
@@ -134,11 +125,6 @@ namespace UnityEditor
             return new List<string>(allNativeClasses.Values);
         }
 
-        public List<string> GetAllManagedBaseClassesAsString()
-        {
-            return new List<string>(monoBaseClasses);
-        }
-
         public IEnumerable<KeyValuePair<string, string[]>> GetAllSerializedClassesAsString()
         {
             foreach (var pair in serializedClassesPerAssembly)
@@ -152,10 +138,8 @@ namespace UnityEditor
             return new RuntimeClassRegistry();
         }
 
-        public void Initialize(int[] nativeClassIDs, BuildTarget buildTarget)
+        public void Initialize(int[] nativeClassIDs)
         {
-            this.buildTarget = buildTarget;
-            InitRuntimeClassRegistry();
             foreach (int ID in nativeClassIDs)
                 AddNativeClassID(ID);
         }
@@ -208,22 +192,6 @@ namespace UnityEditor
         internal string[] GetUserAssemblies()
         {
             return m_UserAssemblies.ToArray();
-        }
-
-        protected void InitRuntimeClassRegistry()
-        {
-            BuildTargetGroup group = UnityEditor.BuildPipeline.GetBuildTargetGroup(buildTarget);
-
-            // Don't strip any classes which extend the following base classes
-
-            if (group == BuildTargetGroup.Android)
-            {
-                AddManagedBaseClass("UnityEngine.AndroidJavaProxy");
-            }
-
-            string[] runtimeLoadDontStripClassNames = RuntimeInitializeOnLoadManager.dontStripClassNames;
-            foreach (string kclass in runtimeLoadDontStripClassNames)
-                AddManagedBaseClass(kclass);
         }
     }
 }

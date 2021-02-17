@@ -81,9 +81,7 @@ namespace UnityEngine.UIElements
         {
             if (evt.eventTypeId == AttachToPanelEvent.TypeId() && evt is AttachToPanelEvent attachEvent)
             {
-                textHandle = attachEvent.destinationPanel.contextType == ContextType.Editor
-                    ? TextHandleFactory.GetEditorHandle()
-                    : TextHandleFactory.GetRuntimeHandle();
+                textHandle = panel.contextType == ContextType.Editor ? TextNativeHandle.New() : TextCoreHandle.New();
                 (attachEvent.destinationPanel as BaseVisualElementPanel)?.OnTextElementAdded(this);
             }
             else if (evt.eventTypeId == DetachFromPanelEvent.TypeId() && evt is DetachFromPanelEvent detachEvent)
@@ -331,7 +329,7 @@ namespace UnityEngine.UIElements
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
         {
             return MeasureTextSize(text, desiredWidth, widthMode, desiredHeight, heightMode);
-		}
+        }
 
         // Used in tests
         internal int VerticesCount(string text)

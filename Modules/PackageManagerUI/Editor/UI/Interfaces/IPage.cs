@@ -43,6 +43,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         void SetSelected(IPackage package, IPackageVersion version = null);
         void SetSelected(string packageUniqueId, string versionUniqueId);
+        void RefreshSelected();
+
         void SetExpanded(string packageUniqueId, bool value);
         void SetExpanded(IPackage package, bool value);
         void SetSeeAllVersions(string packageUniqueId, bool value);

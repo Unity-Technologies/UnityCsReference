@@ -85,7 +85,7 @@ namespace Unity.UI.Builder
                     if (veValueStr == attributeValueStr)
                         continue;
 
-                    overriddenAttributes.Add(attribute.name, veValueAbstract.ToString());
+                    overriddenAttributes.Add(attribute.name, veValueStr);
                 }
             }
 

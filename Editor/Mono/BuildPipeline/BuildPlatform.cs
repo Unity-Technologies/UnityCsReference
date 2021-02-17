@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
 using DiscoveredTargetInfo = UnityEditor.BuildTargetDiscovery.DiscoveredTargetInfo;
@@ -20,8 +19,8 @@ namespace UnityEditor.Build
         public string tooltip;
         public BuildTarget defaultTarget;
 
-        private ScalableGUIContent m_Title;
-        private ScalableGUIContent m_SmallTitle;
+        ScalableGUIContent m_Title;
+        ScalableGUIContent m_SmallTitle;
 
         public GUIContent title => m_Title;
         public Texture2D smallIcon => ((GUIContent)m_SmallTitle).image as Texture2D;
@@ -45,15 +44,9 @@ namespace UnityEditor.Build
 
     internal class BuildPlatforms
     {
-        private static readonly BuildPlatforms s_Instance = new BuildPlatforms();
+        static readonly BuildPlatforms s_Instance = new BuildPlatforms();
 
-        public static BuildPlatforms instance
-        {
-            get
-            {
-                return s_Instance;
-            }
-        }
+        public static BuildPlatforms instance => s_Instance;
 
         internal BuildPlatforms()
         {
@@ -134,17 +127,12 @@ namespace UnityEditor.Build
             return GetBuildTargetDisplayName(buildTargetGroup, buildTarget);
         }
 
-        private int BuildPlatformIndexFromTargetGroup(BuildTargetGroup group)
+        int BuildPlatformIndexFromTargetGroup(BuildTargetGroup group)
         {
             for (int i = 0; i < buildPlatforms.Length; i++)
                 if (group == buildPlatforms[i].targetGroup)
                     return i;
             return -1;
-        }
-
-        public bool ContainsBuildTarget(BuildTargetGroup group)
-        {
-            return BuildPlatformIndexFromTargetGroup(group) >= 0;
         }
 
         public BuildPlatform BuildPlatformFromTargetGroup(BuildTargetGroup group)

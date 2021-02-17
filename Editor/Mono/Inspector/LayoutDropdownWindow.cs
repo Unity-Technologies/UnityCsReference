@@ -119,6 +119,12 @@ namespace UnityEditor
             if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Return)
                 editorWindow.Close();
 
+            if (Event.current.type == EventType.MouseDown && Event.current.clickCount == 2 && rect.Contains(Event.current.mousePosition))
+            {
+                Event.current.Use();
+                editorWindow.Close();
+            }
+
             GUI.Label(new Rect(rect.x + 5, rect.y + 3, rect.width - 10, 16), EditorGUIUtility.TrTextContent("Anchor Presets"), EditorStyles.boldLabel);
             GUI.Label(new Rect(rect.x + 5, rect.y + 3 + 16, rect.width - 10, 16), EditorGUIUtility.TrTextContent("Shift: Also set pivot     Alt: Also set position"), EditorStyles.label);
 

@@ -179,6 +179,22 @@ namespace UnityEditor
             return true;
         }
 
+        internal static bool? ParseInteger(string text, out int res)
+        {
+            res = 0;
+            if (string.IsNullOrEmpty(text))
+                return false;
+            return int.TryParse(text, out res);
+        }
+
+        internal static bool? ParseFloat(string text, out float res)
+        {
+            res = 0;
+            if (string.IsNullOrEmpty(text))
+                return false;
+            return float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out res);
+        }
+
         public static string WriteQuaternion(Quaternion value)
         {
             return string.Format(CultureInfo.InvariantCulture, "Quaternion({0:g9},{1:g9},{2:g9},{3:g9})", value.x, value.y, value.z, value.w);

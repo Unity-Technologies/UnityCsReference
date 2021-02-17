@@ -274,6 +274,9 @@ namespace UnityEditor.Modules
         // Show path location dialog during Build or Build & Run click
         bool AskForBuildLocation();
 
+        bool ShouldDrawRunLastBuildButton();
+        void DoRunLastBuildButtonGui();
+
         bool ShouldDrawScriptDebuggingCheckbox();
 
         bool ShouldDrawProfilerCheckbox();

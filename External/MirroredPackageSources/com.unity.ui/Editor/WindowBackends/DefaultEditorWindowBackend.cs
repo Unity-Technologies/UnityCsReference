@@ -30,11 +30,8 @@ namespace UnityEditor.UIElements
                 m_Owner = owner;
             }
 
-            internal override void OnVisualTreeAssetChanged(bool inMemoryChange)
+            internal override void OnVisualTreeAssetChanged()
             {
-                if ((inMemoryChange && !m_Owner.panel.enableAssetReload) || !m_Owner.m_WindowRegistered)
-                    return;
-
                 m_Owner.RecreateWindow();
             }
         }
@@ -283,6 +280,7 @@ namespace UnityEditor.UIElements
             }
         }
 
+        private static readonly string k_InitializedWindowPropertyName = "Initialized";
         void SendInitializeIfNecessary()
         {
             if (editorWindowModel == null)
@@ -293,7 +291,12 @@ namespace UnityEditor.UIElements
 
             if (window != null)
             {
-                if (window.rootVisualElement.GetProperty("Initialized") != null)
+                var rootElement = window.rootVisualElement;
+                
+                //we make sure styles have been applied
+                UIElementsEditorUtility.AddDefaultEditorStyleSheets(rootElement);
+                
+                if (rootElement.GetProperty(k_InitializedWindowPropertyName) != null)
                     return;
 
                 if (EditorApplication.isUpdating)
@@ -302,7 +305,7 @@ namespace UnityEditor.UIElements
                     return;
                 }
 
-                window.rootVisualElement.SetProperty("Initialized", true);
+                rootElement.SetProperty(k_InitializedWindowPropertyName, true);
 
                 Invoke("CreateGUI");
             }
@@ -360,9 +363,13 @@ namespace UnityEditor.UIElements
             panel.enableAssetReload = !panel.enableAssetReload;
             EditorPrefs.SetBool(m_LiveReloadPreferenceKey, panel.enableAssetReload);
 
-            if (panel.enableAssetReload)
+            // We recreate the window regardless of Live Reload being on or off to guarantee tracking is there or not
+            // depending on the option being on or off, and we don't leave leftover tracking by turning it off.
+            RecreateWindow();
+
+            if (SetupLiveReloadPanelTrackers != null && editorWindowModel?.window.GetType() == typeof(GameView))
             {
-                RecreateWindow();
+                SetupLiveReloadPanelTrackers(panel.enableAssetReload);
             }
         }
 
@@ -414,6 +421,8 @@ namespace UnityEditor.UIElements
                 }
             }
         }
+
+        internal static Action<bool> SetupLiveReloadPanelTrackers;
 
         private static string GetWindowLiveReloadPreferenceKey(Type windowType)
         {

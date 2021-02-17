@@ -52,8 +52,9 @@ namespace UnityEditor
             public static GUIContent additionalExtensionsToInclude = EditorGUIUtility.TrTextContent("Additional extensions to include");
             public static GUIContent rootNamespace = EditorGUIUtility.TrTextContent("Root namespace");
 
-            public static GUIContent etcTextureCompressor = EditorGUIUtility.TrTextContent("ETC Texture Compressor");
-            public static GUIContent behavior = EditorGUIUtility.TrTextContent("Behaviour");
+            public static GUIContent textureCompressors = EditorGUIUtility.TrTextContent("Texture Compressors");
+            public static GUIContent bc7Compressor = EditorGUIUtility.TrTextContent("BC7 Compressor", "Compressor to use for BC7 format texture compression");
+            public static GUIContent etcCompressor = EditorGUIUtility.TrTextContent("ETC Compressor", "Compressors to use for ETC/ETC2/EAC format texture compression");
             public static GUIContent fast = EditorGUIUtility.TrTextContent("Fast");
             public static GUIContent normal = EditorGUIUtility.TrTextContent("Normal");
             public static GUIContent best = EditorGUIUtility.TrTextContent("Best");
@@ -188,6 +189,13 @@ namespace UnityEditor
             new PopupElement("Basic")
         };
 
+        private GUIContent[] bc7TextureCompressorOptions =
+        {
+            EditorGUIUtility.TrTextContent("Default", "Use default BC7 compressor (currently bc7e)"),
+            EditorGUIUtility.TrTextContent("ISPC (legacy)", "Use Intel ISPCTextureCompressor (legacy pre-2021.2 behavior)"),
+            EditorGUIUtility.TrTextContent("bc7e", "Use Binomial bc7e compressor"),
+        };
+
         private PopupElement[] etcTextureCompressorPopupList =
         {
             new PopupElement("Legacy"),
@@ -236,6 +244,7 @@ namespace UnityEditor
         SerializedProperty m_UseLegacyProbeSampleCount;
         SerializedProperty m_DisableCookiesInLightmapper;
         SerializedProperty m_SpritePackerMode;
+        SerializedProperty m_Bc7TextureCompressor;
         SerializedProperty m_EtcTextureCompressorBehavior;
         SerializedProperty m_EtcTextureFastCompressor;
         SerializedProperty m_EtcTextureNormalCompressor;
@@ -295,6 +304,9 @@ namespace UnityEditor
 
             m_SpritePackerMode = serializedObject.FindProperty("m_SpritePackerMode");
             Assert.IsNotNull(m_SpritePackerMode);
+
+            m_Bc7TextureCompressor = serializedObject.FindProperty("m_Bc7TextureCompressor");
+            Assert.IsNotNull(m_Bc7TextureCompressor);
 
             m_EtcTextureCompressorBehavior = serializedObject.FindProperty("m_EtcTextureCompressorBehavior");
             Assert.IsNotNull(m_EtcTextureCompressorBehavior);
@@ -532,7 +544,7 @@ namespace UnityEditor
             }
 
             DoProjectGenerationSettings();
-            DoEtcTextureCompressionSettings();
+            var compressorsChanged = DoTextureCompressorSettings();
             DoLineEndingsSettings();
             DoStreamingSettings();
             DoShaderCompilationSettings();
@@ -540,6 +552,8 @@ namespace UnityEditor
             DoNumberingSchemeSettings();
 
             serializedObject.ApplyModifiedProperties();
+            if (compressorsChanged)
+                AssetDatabase.Refresh(); // note: needs to be done after ApplyModifiedProperties call
         }
 
         private void DoProjectGenerationSettings()
@@ -563,14 +577,20 @@ namespace UnityEditor
             }
         }
 
-        private void DoEtcTextureCompressionSettings()
+        private bool DoTextureCompressorSettings()
         {
             GUILayout.Space(10);
 
-            GUILayout.Label(Content.etcTextureCompressor, EditorStyles.boldLabel);
+            GUILayout.Label(Content.textureCompressors, EditorStyles.boldLabel);
 
+            EditorGUI.BeginChangeCheck();
+
+            // BC7
+            EditorGUILayout.Popup(m_Bc7TextureCompressor, bc7TextureCompressorOptions, Content.bc7Compressor);
+
+            // ETC
             int index = Mathf.Clamp(m_IsGlobalSettings ? EditorSettings.etcTextureCompressorBehavior : m_EtcTextureCompressorBehavior.intValue, 0, etcTextureCompressorPopupList.Length - 1);
-            CreatePopupMenu(Content.behavior.text, etcTextureCompressorPopupList, index, SetEtcTextureCompressorBehavior);
+            CreatePopupMenu(Content.etcCompressor.text, etcTextureCompressorPopupList, index, SetEtcTextureCompressorBehavior);
 
             EditorGUI.indentLevel++;
             EditorGUI.BeginDisabledGroup(index < 2);
@@ -586,6 +606,8 @@ namespace UnityEditor
 
             EditorGUI.EndDisabledGroup();
             EditorGUI.indentLevel--;
+
+            return EditorGUI.EndChangeCheck();
         }
 
         private static string GetForcedAssetPipelineWarning()
@@ -659,26 +681,16 @@ namespace UnityEditor
 
                     if (GUILayout.Button("Check Connection", GUILayout.Width(150)))
                     {
-                        if (AssetDatabase.IsV2Enabled())
-                        {
-                            var address = EditorSettings.cacheServerEndpoint.Split(':');
-                            var ip = address[0];
-                            UInt16 port = 0; // If 0, will use the default set port
-                            if (address.Length == 2)
-                                port = Convert.ToUInt16(address[1]);
+                        var address = EditorSettings.cacheServerEndpoint.Split(':');
+                        var ip = address[0];
+                        UInt16 port = 0; // If 0, will use the default set port
+                        if (address.Length == 2)
+                            port = Convert.ToUInt16(address[1]);
 
-                            if (AssetDatabase.CanConnectToCacheServer(ip, port))
-                                m_CacheServerConnectionState = CacheServerConnectionState.Success;
-                            else
-                                m_CacheServerConnectionState = CacheServerConnectionState.Failure;
-                        }
+                        if (AssetDatabase.CanConnectToCacheServer(ip, port))
+                            m_CacheServerConnectionState = CacheServerConnectionState.Success;
                         else
-                        {
-                            if (InternalEditorUtility.CanConnectToCacheServer())
-                                m_CacheServerConnectionState = CacheServerConnectionState.Success;
-                            else
-                                m_CacheServerConnectionState = CacheServerConnectionState.Failure;
-                        }
+                            m_CacheServerConnectionState = CacheServerConnectionState.Failure;
                     }
 
                     GUILayout.Space(25);

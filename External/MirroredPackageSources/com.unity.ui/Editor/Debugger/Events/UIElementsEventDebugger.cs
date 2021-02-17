@@ -1,8 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using UnityEditor;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -26,72 +27,102 @@ namespace UnityEditor.UIElements.Debugger
         {
             if (m_DebuggerImpl == null)
                 m_DebuggerImpl = new UIElementsEventsDebuggerImpl();
-
             m_DebuggerImpl.Initialize(this, rootVisualElement);
         }
 
         void OnDisable()
         {
+            m_DebuggerImpl.ClearLogs();
             m_DebuggerImpl.OnDisable();
+            m_DebuggerImpl = null;
         }
     }
 
     [Serializable]
     class UIElementsEventsDebuggerImpl : PanelDebugger
     {
-        Label m_EventPropagationPaths;
-        Label m_EventbaseInfo;
-        ListView m_EventsLog;
-        ScrollView m_EventRegistrationsScrollView;
-        ScrollView m_EventCallbacksScrollView;
-        EventLog m_Log;
-
-        ScrollView m_EventsHistogramScrollView;
-        ScrollView m_EventTimelineScrollView;
-
-        long m_ModificationCount;
-        bool m_AutoScroll;
-
-        EventTypeSelectField m_EventTypeFilter;
-        Label m_TimelineLegend;
-        Label m_LogCountLabel;
-        Label m_SelectionCountLabel;
-        Label m_HistogramTitle;
-        List<EventLogLine> m_SelectedEvents;
-
-        Button m_ReplaySelectedEventsButton;
-
-        Dictionary<ulong, long> m_EventTimestampDictionary = new Dictionary<ulong, long>();
-
         const string k_EventsContainerName = "eventsHistogramContainer";
         const string k_EventsLabelName = "eventsHistogramEntry";
         const string k_EventsDurationName = "eventsHistogramDuration";
         const string k_EventsDurationLabelName = "eventsHistogramDurationLabel";
         const string k_EventsDurationLengthName = "eventsHistogramDurationLength";
+        const int k_DefaultMaxLogLines = 5000;
 
-        VisualElement m_LegendContainer;
+        Label m_EventPropagationPaths;
+        Label m_EventBaseInfo;
+        ListView m_EventsLog;
+        ListView m_EventRegistrationsListView;
+        ScrollView m_EventCallbacksScrollView;
+        EventLog m_Log;
+        int m_StartIndex;
 
+        ScrollView m_EventsHistogramScrollView;
+
+        long m_ModificationCount;
+        [SerializeField]
+        bool m_AutoScroll;
+        [SerializeField]
+        bool m_MaxLogLines;
+        [SerializeField]
+        int m_MaxLogLineCount;
+        [SerializeField]
+        bool m_DisplayHistogram;
+        [SerializeField]
+        bool m_DisplayRegisteredEventCallbacks;
+
+        EventTypeSearchField m_EventTypeFilter;
+        ToolbarSearchField m_CallbackTypeFilter;
+        Label m_LogCountLabel;
+        Label m_SelectionCountLabel;
+        Toggle m_HistogramToggle;
+        Toggle m_RegisteredEventCallbacksToggle;
+        List<EventLogLine> m_SelectedEvents;
+        IntegerField m_MaxLogLinesField;
+        ToolbarMenu m_SettingsMenu;
+        ToolbarToggle m_SuspendListeningToggle;
+        List<IRegisteredCallbackLine> m_RegisteredEventCallbacksDataSource = new List<IRegisteredCallbackLine>();
+
+        ToolbarToggle m_TogglePlayback;
+        ToolbarButton m_DecreasePlaybackSpeedButton;
+        TextField m_PlaybackSpeedTextField;
+        ToolbarButton m_IncreasePlaybackSpeedButton;
+        ToolbarButton m_SaveReplayButton;
+        ToolbarButton m_LoadReplayButton;
+        ToolbarButton m_StartPlaybackButton;
+        ToolbarButton m_StopPlaybackButton;
+        Label m_PlaybackLabel;
+
+        Dictionary<ulong, long> m_EventTimestampDictionary = new Dictionary<ulong, long>();
         VisualElement rootVisualElement;
 
-        private readonly EventDebugger m_Debugger = new EventDebugger();
+        HighlightOverlayPainter m_HighlightOverlay;
+        RepaintOverlayPainter m_RepaintOverlay;
+
+        readonly EventDebugger m_Debugger = new EventDebugger();
 
         void DisplayHistogram(ScrollView scrollView)
         {
-            // Clear the scrollview
+            if (scrollView == null)
+                return;
+
+            // Clear the ScrollView
             scrollView.Clear();
+
+            if (!m_DisplayHistogram)
+                return;
 
             if (panel == null)
             {
-                m_HistogramTitle.text = "Histogram - No Panel Selected";
+                m_HistogramToggle.text = "Histogram - No Panel Selected";
             }
             else
             {
-                Dictionary<string, long> histogramValue;
-                histogramValue = m_Debugger.ComputeHistogram(m_SelectedEvents?.Select(x => x.eventBase).ToList() ?? m_Log.lines.Select(x => x.eventBase).ToList());
+                m_HistogramToggle.text = "Histogram";
+
+                var histogramValue = m_Debugger.ComputeHistogram(m_SelectedEvents?.Select(x => x.eventBase).ToList() ??
+                    m_Log.lines.Select(x => x.eventBase).ToList());
                 if (histogramValue == null)
                     return;
-
-                m_HistogramTitle.text = "Histogram - Element Count : " + histogramValue.Count;
 
                 var childrenList = scrollView.Children().ToList();
                 foreach (var child in childrenList)
@@ -106,6 +137,10 @@ namespace UnityEditor.UIElements.Debugger
 
                 foreach (var key in histogramValue.Keys)
                     AddHistogramEntry(scrollView, key, histogramValue[key], histogramValue[key] / (float)maxDuration);
+
+                var eventsHistogramTitleContainer = rootVisualElement.MandatoryQ("eventsHistogramTitleContainer");
+                var eventsHistogramTotal = eventsHistogramTitleContainer.MandatoryQ<Label>("eventsHistogramTotal");
+                eventsHistogramTotal.text = $"{histogramValue.Count} elements";
             }
         }
 
@@ -132,77 +167,117 @@ namespace UnityEditor.UIElements.Debugger
             durationGraphLength.style.width = 300.0f * percent;
         }
 
-        void DisplayTimeline(ScrollView scrollView)
+        void InitializeRegisteredCallbacksBinding()
         {
-            // Clear the scrollview
-            scrollView.Clear();
+            m_EventRegistrationsListView.itemHeight = 18;
+            m_EventRegistrationsListView.makeItem += () =>
+            {
+                var lineContainer = new VisualElement { pickingMode = PickingMode.Position };
+                lineContainer.RegisterCallback<ClickEvent>(OnCallbackLineClick);
+                lineContainer.RegisterCallback<MouseOverEvent>(OnCallbackMouseOver);
 
-            if (panel == null)
+                // Title items
+                var titleLine = new Label { pickingMode = PickingMode.Ignore };
+                titleLine.AddToClassList("callback-list-element");
+                titleLine.AddToClassList("visual-element");
+                lineContainer.Add(titleLine);
+
+                // Callback items
+                var callbackLine = new Label { pickingMode = PickingMode.Ignore };
+                callbackLine.AddToClassList("callback-list-element");
+                callbackLine.AddToClassList("event-type");
+                lineContainer.Add(callbackLine);
+
+                // Code line items
+                var codeLineContainer = new VisualElement();
+                codeLineContainer.AddToClassList("code-line-container");
+                var line = new CodeLine { pickingMode = PickingMode.Ignore };
+                line.AddToClassList("callback-list-element");
+                line.AddToClassList("callback");
+                codeLineContainer.Add(line);
+                var openSourceFileButton = new Button();
+                openSourceFileButton.AddToClassList("open-source-file-button");
+                openSourceFileButton.clickable.clicked += line.GotoCode;
+                openSourceFileButton.tooltip = $"Click to go to event registration point in code:\n{line}";
+                codeLineContainer.Add(openSourceFileButton);
+                lineContainer.Add(codeLineContainer);
+
+                return lineContainer;
+            };
+            m_EventRegistrationsListView.bindItem += (element, i) =>
             {
-                DisplayEmptyTimelinePanel(scrollView);
-            }
-            else
-            {
-                var calls = m_Debugger.GetBeginEndProcessedEvents(panel);
-                if ((calls == null) || (calls.Count == 0))
-                {
-                    DisplayEmptyTimelinePanel(scrollView);
+                var titleLine = element[0] as Label;
+                var callbackLine = element[1] as Label;
+                var codeLineContainer = element[2];
+                var codeLine = codeLineContainer?.Q<CodeLine>();
+
+                if (titleLine == null || callbackLine == null || codeLine == null)
                     return;
-                }
 
-                long maxDuration = 0;
-                foreach (var entry in calls)
+                var data = m_RegisteredEventCallbacksDataSource[i];
+                titleLine.style.display = data.type == LineType.Title ? DisplayStyle.Flex : DisplayStyle.None;
+                callbackLine.style.display = data.type == LineType.Callback ? DisplayStyle.Flex : DisplayStyle.None;
+                codeLineContainer.style.display = data.type == LineType.CodeLine ? DisplayStyle.Flex : DisplayStyle.None;
+
+                element.userData = data.callbackHandler;
+
+                titleLine.text = data.text;
+                callbackLine.text = data.text;
+
+                if (data.type == LineType.CodeLine)
                 {
-                    if (maxDuration < entry.duration)
+                    if (!(data is CodeLineInfo codeLineData))
+                        return;
+
+                    codeLine.Init(codeLineData.text, codeLineData.fileName, codeLineData.lineNumber, codeLineData.lineHashCode);
+                    codeLine.RemoveFromClassList("highlighted");
+
+                    if (codeLineData.highlighted)
                     {
-                        maxDuration = entry.duration;
+                        codeLine.AddToClassList("highlighted");
                     }
                 }
-
-                float currentTop = 5.0f;
-                float lastPixel = 0;
-                float maxHeight = 75.0f;
-                foreach (var dbgObject in calls)
-                {
-                    var entry = new VisualElement();
-                    entry.style.position = Position.Absolute;
-                    entry.style.backgroundColor = m_EventTypeFilter.m_Color.ContainsKey(dbgObject.eventBase.eventBaseName)
-                        ? m_EventTypeFilter.m_Color[dbgObject.eventBase.eventBaseName]
-                        : Color.black;
-                    double percent = dbgObject.duration / (double)maxDuration;
-                    float topPosition = currentTop + (float)((1 - percent) * 100);
-                    entry.style.top = (topPosition > (maxHeight - 5)) ? (maxHeight - 5) : topPosition;
-                    entry.style.height = (maxHeight - topPosition) < 5 ? 5 : (maxHeight - topPosition);
-                    entry.style.width = 5;
-                    entry.style.left = lastPixel;
-                    entry.tooltip = dbgObject.eventBase.eventBaseName + " (" + dbgObject.duration / 1000 + " ms)";
-                    scrollView.Add(entry);
-                    lastPixel += 7;
-                }
-
-                scrollView.contentContainer.style.width = (lastPixel < 100) ? 100 : lastPixel;
-
-                if (m_AutoScroll)
-                    scrollView.scrollOffset = new Vector2(lastPixel, 0);
-            }
+            };
         }
 
-        void DisplayEmptyTimelinePanel(ScrollView scrollView)
+        long GetTypeId(Type type)
         {
-            Label line = new Label("Timeline - No Panel Selected");
-            scrollView.Add(line);
+            var getTypeId = type.GetMethod("TypeId", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+            if (getTypeId == null)
+                return -1;
+
+            return (long)getTypeId.Invoke(null, null);
         }
 
-        void DisplayEvents(ScrollView scrollView)
+        void DisplayRegisteredEventCallbacks()
         {
-            scrollView.Clear();
-
-            if (panel == null)
+            var listView = m_EventRegistrationsListView;
+            var filter = m_CallbackTypeFilter.value;
+            if (panel == null || listView == null)
                 return;
 
-            foreach (var eventRegistrationListener in GlobalCallbackRegistry.s_Listeners)
+            m_RegisteredEventCallbacksDataSource.Clear();
+
+            if (!m_DisplayRegisteredEventCallbacks || !GlobalCallbackRegistry.IsEventDebuggerConnected)
             {
-                VisualElement key = eventRegistrationListener.Key as VisualElement; // VE that sends events
+                listView.Refresh();
+                return;
+            }
+
+            bool IsFilteredOut(Type type)
+            {
+                var id = GetTypeId(type);
+                return m_EventTypeFilter.State.TryGetValue(id, out var isEnabled) && !isEnabled;
+            }
+
+            GlobalCallbackRegistry.CleanListeners(panel);
+
+            var listeners = GlobalCallbackRegistry.s_Listeners.ToList();
+            var nbListeners = 0;
+            var nbCallbacks = 0;
+            foreach (var eventRegistrationListener in listeners)
+            {
+                var key = eventRegistrationListener.Key as VisualElement; // VE that sends events
                 if (key?.panel == null)
                     continue;
 
@@ -210,40 +285,63 @@ namespace UnityEditor.UIElements.Debugger
                 if (vePanel != panel)
                     continue;
 
-                string text = EventDebugger.GetObjectDisplayName(key);
+                var text = EventDebugger.GetObjectDisplayName(key);
 
-                {
-                    Label line = new Label(text);
-                    line.AddToClassList("callback-list-element");
-                    line.AddToClassList("visual-element");
-                    scrollView.Add(line);
-                }
+                if (!string.IsNullOrEmpty(filter) && !text.ToLower().Contains(filter.ToLower()))
+                    continue;
 
                 var events = eventRegistrationListener.Value;
+                if (events.All(e => IsFilteredOut(e.Key)))
+                    continue;
+
+                m_RegisteredEventCallbacksDataSource.Add(new TitleInfo(text, key));
+
                 foreach (var evt in events)
                 {
                     var evtType = evt.Key;
-                    text = evtType.Name + " callbacks:";
+                    text = EventDebugger.GetTypeDisplayName(evtType);
 
-                    {
-                        Label line = new Label(text);
-                        line.AddToClassList("callback-list-element");
-                        line.AddToClassList("event-type");
-                        scrollView.Add(line);
-                    }
+                    if (IsFilteredOut(evtType))
+                        continue;
+
+                    m_RegisteredEventCallbacksDataSource.Add(new CallbackInfo(text, key));
 
                     var evtCallbacks = evt.Value;
                     foreach (var evtCallback in evtCallbacks)
                     {
-                        {
-                            CodeLine line = new CodeLine(evtCallback.name, evtCallback.fileName, evtCallback.lineNumber, evtCallback.hashCode);
-                            line.AddToClassList("callback-list-element");
-                            line.AddToClassList("callback");
-                            scrollView.Add(line);
-                        }
+                        m_RegisteredEventCallbacksDataSource.Add(new CodeLineInfo(evtCallback.name, key, evtCallback.fileName, evtCallback.lineNumber, evtCallback.hashCode));
+                        nbCallbacks++;
                     }
                 }
+
+                nbListeners++;
             }
+
+            listView.itemsSource = m_RegisteredEventCallbacksDataSource;
+
+            var nbEvents = m_EventTypeFilter.State.Count(s => s.Key > 0);
+            var nbFilteredEvents = m_EventTypeFilter.State.Count(s => s.Key > 0 && s.Value);
+            var eventsRegistrationTitleContainer = rootVisualElement.MandatoryQ("eventsRegistrationTitleContainer");
+            var eventsRegistrationTotals = eventsRegistrationTitleContainer.MandatoryQ<Label>("eventsRegistrationTotals");
+            eventsRegistrationTotals.text =
+                $"{nbListeners} listener{(nbListeners > 1 ? "s" : "")}, {nbCallbacks} callback{(nbCallbacks > 1 ? "s" : "")}" +
+                (nbFilteredEvents < nbEvents ? $" (filter: {nbFilteredEvents} event{(nbFilteredEvents > 1 ? "s" : "")})" : string.Empty);
+        }
+
+        void OnCallbackMouseOver(MouseOverEvent evt)
+        {
+            m_HighlightOverlay?.ClearOverlay();
+
+            var element = evt.currentTarget as VisualElement;
+            var highlightElement = element.userData as VisualElement;
+            HighlightElement(highlightElement, true, false);
+        }
+
+        void OnCallbackLineClick(ClickEvent evt)
+        {
+            var element = evt.currentTarget as VisualElement;
+            var highlightElement = element.userData as VisualElement;
+            HighlightElement(highlightElement, true);
         }
 
         public void Initialize(EditorWindow debuggerWindow, VisualElement root)
@@ -251,9 +349,10 @@ namespace UnityEditor.UIElements.Debugger
             rootVisualElement = root;
 
             VisualTreeAsset template = EditorGUIUtility.Load("UIPackageResources/UXML/UIElementsDebugger/UIElementsEventsDebugger.uxml") as VisualTreeAsset;
-            template.CloneTree(rootVisualElement);
+            if (template != null)
+                template.CloneTree(rootVisualElement);
 
-            var toolbar = rootVisualElement.MandatoryQ("toolbar");
+            var toolbar = rootVisualElement.MandatoryQ<Toolbar>("toolbar");
             m_Toolbar = toolbar;
 
             base.Initialize(debuggerWindow);
@@ -265,37 +364,71 @@ namespace UnityEditor.UIElements.Debugger
 
             m_EventCallbacksScrollView = (ScrollView)rootVisualElement.MandatoryQ("eventCallbacksScrollView");
 
-            m_EventTypeFilter = toolbar.MandatoryQ<EventTypeSelectField>("filter-event-type");
-            m_EventTypeFilter.RegisterCallback<ChangeEvent<ulong>>(OnFilterChange);
-            var refreshButton = toolbar.MandatoryQ<Button>("refresh");
+            m_EventTypeFilter = toolbar.MandatoryQ<EventTypeSearchField>("filter-event-type");
+            m_EventTypeFilter.RegisterCallback<ChangeEvent<string>>(OnFilterChange);
+            m_SuspendListeningToggle = rootVisualElement.MandatoryQ<ToolbarToggle>("suspend");
+            m_SuspendListeningToggle.RegisterValueChangedCallback(SuspendListening);
+            var refreshButton = rootVisualElement.MandatoryQ<ToolbarButton>("refresh");
             refreshButton.clickable.clicked += Refresh;
-            var clearLogsButton = toolbar.MandatoryQ<Button>("clear-logs");
-            clearLogsButton.clickable.clicked += () => { ClearLogs(); };
-            m_ReplaySelectedEventsButton = toolbar.MandatoryQ<Button>("replay-selected-events");
-            m_ReplaySelectedEventsButton.clickable.clicked += ReplaySelectedEvents;
-            UpdateReplaySelectedEventsButton();
+            var clearLogsButton = rootVisualElement.MandatoryQ<ToolbarButton>("clear-logs");
+            clearLogsButton.clickable.clicked += ClearLogs;
+
+            var eventReplayToolbar = rootVisualElement.MandatoryQ<Toolbar>("eventReplayToolbar");
+            m_DecreasePlaybackSpeedButton = eventReplayToolbar.MandatoryQ<ToolbarButton>("decrease-playback-speed");
+            m_DecreasePlaybackSpeedButton.clickable.clicked += DecreasePlaybackSpeed;
+            m_IncreasePlaybackSpeedButton = eventReplayToolbar.MandatoryQ<ToolbarButton>("increase-playback-speed");
+            m_IncreasePlaybackSpeedButton.clickable.clicked += IncreasePlaybackSpeed;
+            m_PlaybackSpeedTextField = eventReplayToolbar.MandatoryQ<TextField>("playback-speed");
+            m_PlaybackSpeedTextField.RegisterValueChangedCallback(UpdatePlaybackSpeed);
+            m_SaveReplayButton = eventReplayToolbar.MandatoryQ<ToolbarButton>("save-replay");
+            m_SaveReplayButton.clickable.clicked += SaveReplaySessionFromSelection;
+            m_LoadReplayButton = eventReplayToolbar.MandatoryQ<ToolbarButton>("load-replay");
+            m_LoadReplayButton.clickable.clicked += LoadReplaySession;
+            m_TogglePlayback = eventReplayToolbar.MandatoryQ<ToolbarToggle>("pause-resume-playback");
+            m_TogglePlayback.RegisterValueChangedCallback(TogglePlayback);
+            m_PlaybackLabel = eventReplayToolbar.MandatoryQ<Label>("replay-selected-events");
+            m_PlaybackLabel.text = "";
+            m_StartPlaybackButton = eventReplayToolbar.MandatoryQ<ToolbarButton>("start-playback");
+            m_StartPlaybackButton.clickable.clicked += OnReplayStart;
+            m_StopPlaybackButton = eventReplayToolbar.MandatoryQ<ToolbarButton>("stop-playback");
+            m_StopPlaybackButton.clickable.clicked += OnReplayCompleted;
+            UpdatePlaybackButtons();
 
             var infoContainer = rootVisualElement.MandatoryQ("eventInfoContainer");
             m_LogCountLabel = infoContainer.MandatoryQ<Label>("log-count");
             m_SelectionCountLabel = infoContainer.MandatoryQ<Label>("selection-count");
-            var autoScrollToggle = infoContainer.MandatoryQ<Toggle>("autoscroll");
-            autoScrollToggle.value = m_AutoScroll;
-            autoScrollToggle.RegisterValueChangedCallback((e) => { m_AutoScroll = e.newValue; });
+
+            m_MaxLogLinesField = infoContainer.MandatoryQ<IntegerField>("maxLogLinesField");
+            m_MaxLogLinesField.RegisterValueChangedCallback(e =>
+            {
+                // Minimum 1 line if max log lines is enabled
+                m_MaxLogLineCount = Math.Max(1, e.newValue);
+                m_MaxLogLinesField.value = m_MaxLogLineCount;
+                DoMaxLogLines();
+            });
+
+            m_SettingsMenu = infoContainer.Q<ToolbarMenu>("settings-menu");
+            SetupSettingsMenu();
 
             m_EventPropagationPaths = (Label)rootVisualElement.MandatoryQ("eventPropagationPaths");
-            m_EventbaseInfo = (Label)rootVisualElement.MandatoryQ("eventbaseInfo");
+            m_EventBaseInfo = (Label)rootVisualElement.MandatoryQ("eventbaseInfo");
 
             m_EventsLog = (ListView)rootVisualElement.MandatoryQ("eventsLog");
             m_EventsLog.focusable = true;
             m_EventsLog.selectionType = SelectionType.Multiple;
             m_EventsLog.onSelectionChange += OnEventsLogSelectionChanged;
+            m_EventsLog.RegisterCallback<FocusOutEvent>(OnListFocusedOut, TrickleDown.TrickleDown);
 
-            m_HistogramTitle = (Label)rootVisualElement.MandatoryQ("eventsHistogramTitle");
+            m_HistogramToggle = rootVisualElement.MandatoryQ<Toggle>("eventsHistogramTitle");
+            m_HistogramToggle.RegisterValueChangedCallback((e) =>
+            {
+                m_DisplayHistogram = e.newValue;
+                DisplayHistogram(m_EventsHistogramScrollView);
+            });
 
             m_Log = new EventLog();
 
             m_ModificationCount = 0;
-            m_AutoScroll = true;
 
             var eventCallbacksScrollView = (ScrollView)rootVisualElement.MandatoryQ("eventCallbacksScrollView");
             eventCallbacksScrollView.StretchToParentSize();
@@ -303,38 +436,90 @@ namespace UnityEditor.UIElements.Debugger
             var eventPropagationPathsScrollView = (ScrollView)rootVisualElement.MandatoryQ("eventPropagationPathsScrollView");
             eventPropagationPathsScrollView.StretchToParentSize();
 
-            var eventbaseInfoScrollView = (ScrollView)rootVisualElement.MandatoryQ("eventbaseInfoScrollView");
-            eventbaseInfoScrollView.StretchToParentSize();
+            var eventBaseInfoScrollView = (ScrollView)rootVisualElement.MandatoryQ("eventbaseInfoScrollView");
+            eventBaseInfoScrollView.StretchToParentSize();
 
-            m_EventRegistrationsScrollView = (ScrollView)rootVisualElement.MandatoryQ("eventsRegistrationsScrollView");
-            DisplayEvents(m_EventRegistrationsScrollView);
-            m_EventRegistrationsScrollView.StretchToParentSize();
+            m_RegisteredEventCallbacksToggle = rootVisualElement.MandatoryQ<Toggle>("eventsRegistrationTitle");
+            m_RegisteredEventCallbacksToggle.RegisterValueChangedCallback((e) =>
+            {
+                m_DisplayRegisteredEventCallbacks = e.newValue;
+                DisplayRegisteredEventCallbacks();
+            });
 
+            m_CallbackTypeFilter = rootVisualElement.MandatoryQ<ToolbarSearchField>("filter-registered-callback");
+            m_CallbackTypeFilter.RegisterCallback<ChangeEvent<string>>(OnRegisteredCallbackFilterChange);
+            m_CallbackTypeFilter.tooltip = "Type in element name, type or id to filter callbacks.";
+
+            m_EventRegistrationsListView = rootVisualElement.MandatoryQ<ListView>("eventsRegistrationsListView");
+            InitializeRegisteredCallbacksBinding();
+            DisplayRegisteredEventCallbacks();
+            m_EventRegistrationsListView.StretchToParentSize();
 
             m_EventsHistogramScrollView = (ScrollView)rootVisualElement.MandatoryQ("eventsHistogramScrollView");
+            m_EventsHistogramScrollView.horizontalScrollerVisibility = ScrollerVisibility.Auto;
+            m_EventsHistogramScrollView.verticalScrollerVisibility = ScrollerVisibility.Auto;
             DisplayHistogram(m_EventsHistogramScrollView);
             m_EventsHistogramScrollView.StretchToParentSize();
 
+            m_AutoScroll = true;
+            m_MaxLogLines = false;
+            m_MaxLogLineCount = k_DefaultMaxLogLines;
+            m_MaxLogLinesField.value = m_MaxLogLineCount;
+            m_DisplayHistogram = true;
+            m_HistogramToggle.value = m_DisplayHistogram;
+            m_DisplayRegisteredEventCallbacks = true;
+            m_RegisteredEventCallbacksToggle.value = m_DisplayRegisteredEventCallbacks;
 
-            m_EventTimelineScrollView = (ScrollView)rootVisualElement.MandatoryQ("eventTimelineScrollView");
-            DisplayTimeline(m_EventTimelineScrollView);
-            m_EventTimelineScrollView.SetScrollViewMode(ScrollViewMode.Horizontal);
-            m_EventTimelineScrollView.StretchToParentSize();
+            m_HighlightOverlay = new HighlightOverlayPainter();
+            m_RepaintOverlay = new RepaintOverlayPainter();
 
-            m_TimelineLegend = (Label)rootVisualElement.MandatoryQ("eventTimelineTitleLegend");
-            m_TimelineLegend.RegisterCallback<MouseEnterEvent>(ShowLegend);
-            m_TimelineLegend.RegisterCallback<MouseLeaveEvent>(HideLegend);
-            CreateLegendContainer();
-
-            BuildEventsLog();
+            DoMaxLogLines();
 
             GlobalCallbackRegistry.IsEventDebuggerConnected = true;
+
+            EditorApplication.update += EditorUpdate;
+        }
+
+        void SuspendListening(ChangeEvent<bool> evt)
+        {
+            m_Debugger.suspended = evt.newValue;
+            m_SuspendListeningToggle.text = m_Debugger.suspended ? "Suspended" : "Suspend";
+            Refresh();
+        }
+
+        void SetupSettingsMenu()
+        {
+            m_SettingsMenu.menu.AppendAction(
+                "Autoscroll",
+                a =>
+                {
+                    m_AutoScroll = !m_AutoScroll;
+                    DoAutoScroll();
+                },
+                a => m_AutoScroll ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+
+            m_SettingsMenu.menu.AppendAction(
+                "Max Log Lines",
+                a =>
+                {
+                    m_MaxLogLines = !m_MaxLogLines;
+                    DoMaxLogLines();
+                },
+                a => m_MaxLogLines ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+        }
+
+        void DoMaxLogLines()
+        {
+            m_MaxLogLinesField.SetEnabled(m_MaxLogLines);
+            m_MaxLogLineCount = m_MaxLogLinesField.value;
+            BuildEventsLog();
         }
 
         public new void OnDisable()
         {
             base.OnDisable();
-            GlobalCallbackRegistry.IsEventDebuggerConnected = false;
+
+            EditorApplication.update -= EditorUpdate;
         }
 
         public override bool InterceptEvent(EventBase evt)
@@ -359,67 +544,167 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        void CreateLegendContainer()
+        void HighlightElement(VisualElement ve, bool isFirst, bool showRepaint = true)
         {
-            m_LegendContainer = new VisualElement() { name = "eventTimelineLegendContainer" };
-            rootVisualElement.Add(m_LegendContainer);
-            m_LegendContainer.visible = false;
-
-            var title = new Label("Legend") { name = "eventTimelineLegendTitle" };
-            m_LegendContainer.Add(title);
-            var listOfEventForColor = m_EventTypeFilter.m_Color.Keys;
-            foreach (var eventName in listOfEventForColor)
+            var visible = ve.resolvedStyle.visibility == Visibility.Visible && ve.resolvedStyle.opacity > Mathf.Epsilon;
+            if (visible)
             {
-                var container = new VisualElement() { name = "eventTimelineLegendEntry" };
-
-                var colorCode = new VisualElement() { name = "eventTimelineLegendEntryColor" };
-                colorCode.style.backgroundColor = m_EventTypeFilter.m_Color[eventName];
-
-                var newEntry = new Label(eventName) { name = "eventTimelineLegendEntryName" };
-
-                container.Add(colorCode);
-                container.Add(newEntry);
-                m_LegendContainer.Add(container);
-            }
-        }
-
-        void ShowLegend(MouseEnterEvent evt)
-        {
-            if (m_LegendContainer == null)
-            {
-                CreateLegendContainer();
-            }
-
-            m_LegendContainer.style.left = evt.mousePosition.x + 5;
-            m_LegendContainer.style.top = evt.mousePosition.y - m_LegendContainer.layout.height - 5;
-            m_LegendContainer.visible = true;
-        }
-
-        void HideLegend(MouseLeaveEvent evt)
-        {
-            m_LegendContainer.visible = false;
-        }
-
-        void ReplaySelectedEvents()
-        {
-            if (m_SelectedEvents == null)
-                return;
-            m_Debugger.ReplayEvents(m_SelectedEvents.Select(x => x.eventBase).ToList());
-        }
-
-        void HighlightCodeline(int hashcode)
-        {
-            foreach (var codeLine in m_EventRegistrationsScrollView.Children().OfType<CodeLine>())
-            {
-                if (codeLine.hashCode == hashcode)
+                if (isFirst)
                 {
-                    codeLine.AddToClassList("highlighted");
-                    m_EventRegistrationsScrollView.ScrollTo(codeLine);
+                    m_HighlightOverlay?.AddOverlay(ve, OverlayContent.Content);
+                    if (m_Debugger.panelDebug?.debugContainer != null && showRepaint)
+                        m_RepaintOverlay?.AddOverlay(ve, m_Debugger.panelDebug.debugContainer);
                 }
                 else
                 {
-                    codeLine.RemoveFromClassList("highlighted");
+                    m_HighlightOverlay?.AddOverlay(ve, OverlayContent.Content, 0.1f);
                 }
+            }
+
+            SelectPanelToDebug(panel);
+
+            m_Debugger.panelDebug?.MarkDirtyRepaint();
+            m_Debugger.panelDebug?.MarkDebugContainerDirtyRepaint();
+        }
+
+        float[] m_PlaybackSpeeds = { 0.1f, 0.2f, 0.5f, 1.0f, 2.0f, 5.0f, 10f };
+
+        void DecreasePlaybackSpeed()
+        {
+            var i = m_PlaybackSpeeds.Length - 1;
+            for (; i >= 0; i--)
+            {
+                if (m_PlaybackSpeeds[i] < m_Debugger.playbackSpeed)
+                {
+                    UpdatePlaybackSpeed(m_PlaybackSpeeds[i]);
+                    break;
+                }
+            }
+        }
+
+        void IncreasePlaybackSpeed()
+        {
+            var i = 0;
+            for (; i < m_PlaybackSpeeds.Length; i++)
+            {
+                if (m_PlaybackSpeeds[i] > m_Debugger.playbackSpeed)
+                {
+                    UpdatePlaybackSpeed(m_PlaybackSpeeds[i]);
+                    break;
+                }
+            }
+        }
+
+        IEnumerator _replayEnumerator;
+
+        void OnReplayStart()
+        {
+            if (m_SelectedEvents == null)
+                return;
+
+            ReplayEvents(m_SelectedEvents.Select(x => x.eventBase));
+        }
+
+        void ReplayEvents(IEnumerable<EventDebuggerEventRecord> events)
+        {
+            if (!m_Debugger.isReplaying)
+            {
+                _replayEnumerator = m_Debugger.ReplayEvents(events, RefreshFromReplay);
+
+                if (_replayEnumerator == null || !_replayEnumerator.MoveNext())
+                    return;
+
+                UpdatePlaybackButtons();
+            }
+        }
+
+        void EditorUpdate()
+        {
+            var overlayPanel = m_Debugger.panelDebug?.debuggerOverlayPanel as Panel;
+            overlayPanel?.UpdateAnimations();
+
+            if (_replayEnumerator != null && !_replayEnumerator.MoveNext())
+            {
+                OnReplayCompleted();
+                _replayEnumerator = null;
+            }
+        }
+
+        void TogglePlayback(ChangeEvent<bool> evt)
+        {
+            if (!m_Debugger.isReplaying)
+                return;
+
+            m_Debugger.isPlaybackPaused = evt.newValue;
+            if (m_Debugger.isPlaybackPaused)
+                m_PlaybackLabel.text = m_PlaybackLabel.text.Replace("Replaying", "Paused");
+            else
+                m_PlaybackLabel.text = m_PlaybackLabel.text.Replace("Paused", "Replaying");
+        }
+
+        void RefreshFromReplay(int i, int count)
+        {
+            m_PlaybackLabel.text = $"{(m_Debugger.isPlaybackPaused ? "Paused" : "Replaying")} {i}/{count}...";
+            Refresh();
+        }
+
+        void UpdatePlaybackSpeed(ChangeEvent<string> changeEvent)
+        {
+            if (!float.TryParse(changeEvent.newValue, out float result))
+                return;
+
+            UpdatePlaybackSpeed(result);
+        }
+
+        void UpdatePlaybackSpeed(float playbackSpeed)
+        {
+            var slowest = m_PlaybackSpeeds[0];
+            var fastest = m_PlaybackSpeeds[m_PlaybackSpeeds.Length - 1];
+            var newValue = Mathf.Max(slowest, Mathf.Min(fastest, playbackSpeed));
+
+            m_Debugger.playbackSpeed = newValue;
+            m_PlaybackSpeedTextField.SetValueWithoutNotify(m_Debugger.playbackSpeed.ToString("F1"));
+            m_DecreasePlaybackSpeedButton.SetEnabled(newValue > slowest);
+            m_IncreasePlaybackSpeedButton.SetEnabled(newValue < fastest);
+        }
+
+        void SaveReplaySessionFromSelection()
+        {
+            var path = EditorUtility.SaveFilePanel("Save Replay File", Application.dataPath, "ReplayData.json", "json");
+            m_Debugger.SaveReplaySessionFromSelection(path, m_SelectedEvents.Select(x => x.eventBase).ToList());
+        }
+
+        void LoadReplaySession()
+        {
+            var path = EditorUtility.OpenFilePanel("Select Replay File", "", "json");
+            var savedRecord = m_Debugger.LoadReplaySession(path);
+            if (savedRecord == null)
+                return;
+
+            ReplayEvents(savedRecord.eventList);
+        }
+
+        void HighlightCodeLine(int hashcode)
+        {
+            var matchingIndex = -1;
+            for (var i = 0; i < m_RegisteredEventCallbacksDataSource.Count; i++)
+            {
+                var data = m_RegisteredEventCallbacksDataSource[i];
+                if (data.type == LineType.CodeLine && data is CodeLineInfo codeLineData)
+                {
+                    var matchesHashcode = codeLineData.lineHashCode == hashcode;
+                    if (matchesHashcode)
+                    {
+                        matchingIndex = i;
+                        codeLineData.highlighted = true;
+                    }
+                }
+            }
+
+            if (matchingIndex >= 0)
+            {
+                m_EventRegistrationsListView.Refresh();
+                m_EventRegistrationsListView.ScrollToItem(matchingIndex);
             }
         }
 
@@ -430,9 +715,9 @@ namespace UnityEditor.UIElements.Debugger
 
             m_Log.Clear();
 
-            List<long> activeEventTypes = new List<long>();
+            var activeEventTypes = new List<long>();
 
-            foreach (var s in m_EventTypeFilter.m_State)
+            foreach (var s in m_EventTypeFilter.State)
             {
                 if (s.Value)
                 {
@@ -440,7 +725,7 @@ namespace UnityEditor.UIElements.Debugger
                 }
             }
 
-            bool allActive = activeEventTypes.Count == m_EventTypeFilter.m_State.Count;
+            bool allActive = activeEventTypes.Count == m_EventTypeFilter.State.Count;
             bool allInactive = activeEventTypes.Count == 0;
 
             if (panel == null)
@@ -478,18 +763,24 @@ namespace UnityEditor.UIElements.Debugger
 
             UpdateLogCount();
             BuildEventsLog();
+            ClearOverlays();
         }
 
-        void OnEventsLogSelectionChanged(object obj)
+        void OnListFocusedOut(FocusOutEvent evt)
+        {
+            ClearOverlays();
+        }
+
+        void OnEventsLogSelectionChanged(IEnumerable<object> obj)
         {
             if (m_SelectedEvents == null)
                 m_SelectedEvents = new List<EventLogLine>();
             m_SelectedEvents.Clear();
+            ClearOverlays();
 
-            var list = obj as List<object>;
-            if (list != null)
+            if (obj != null)
             {
-                foreach (EventLogLine listItem in list)
+                foreach (EventLogLine listItem in obj)
                 {
                     if (listItem != null)
                         m_SelectedEvents.Add(listItem);
@@ -503,46 +794,44 @@ namespace UnityEditor.UIElements.Debugger
             {
                 var line = m_SelectedEvents[0];
                 var calls = m_Debugger.GetBeginEndProcessedEvents(panel);
-                eventBase = line != null ? calls ? [line.lineNumber - 1].eventBase : null;
-                focused = line != null ? calls ? [line.lineNumber - 1].focusedElement : null;
-                capture = line != null ? calls ? [line.lineNumber - 1].mouseCapture : null;
+                eventBase = line != null ? calls?[line.lineNumber - 1].eventBase : null;
+                focused = line != null ? calls?[line.lineNumber - 1].focusedElement : null;
+                capture = line != null ? calls?[line.lineNumber - 1].mouseCapture : null;
             }
 
             UpdateSelectionCount();
-            UpdateReplaySelectedEventsButton();
+            UpdatePlaybackButtons();
 
             if (m_SelectedEvents.Count == 1)
             {
                 UpdateEventCallbacks(eventBase);
                 UpdateEventPropagationPaths(eventBase);
-                UpdateEventbaseInfo(eventBase, focused, capture);
+                UpdateEventBaseInfo(eventBase, focused, capture);
             }
             else
             {
                 ClearEventCallbacks();
                 ClearEventPropagationPaths();
-                ClearEventbaseInfo();
+                ClearEventBaseInfo();
             }
 
             DisplayHistogram(m_EventsHistogramScrollView);
-
-            // Not working :         DisplayTimeline(m_EventTimelineScrollView, m_SelectedVisualTree.panel);
         }
 
-        void ClearEventbaseInfo()
+        void ClearEventBaseInfo()
         {
-            m_EventbaseInfo.text = "";
+            m_EventBaseInfo.text = "";
         }
 
-        void UpdateEventbaseInfo(EventDebuggerEventRecord eventBase, IEventHandler focused, IEventHandler capture)
+        void UpdateEventBaseInfo(EventDebuggerEventRecord eventBase, IEventHandler focused, IEventHandler capture)
         {
-            ClearEventbaseInfo();
+            ClearEventBaseInfo();
 
             if (eventBase == null)
                 return;
 
-            m_EventbaseInfo.text += "Focused element: " + EventDebugger.GetObjectDisplayName(focused) + "\n";
-            m_EventbaseInfo.text += "Capture element: " + EventDebugger.GetObjectDisplayName(capture) + "\n";
+            m_EventBaseInfo.text += "Focused element: " + EventDebugger.GetObjectDisplayName(focused) + "\n";
+            m_EventBaseInfo.text += "Capture element: " + EventDebugger.GetObjectDisplayName(capture) + "\n";
 
             if (eventBase.eventTypeId == MouseMoveEvent.TypeId() ||
                 eventBase.eventTypeId == MouseOverEvent.TypeId() ||
@@ -567,14 +856,14 @@ namespace UnityEditor.UIElements.Debugger
                 eventBase.eventTypeId == PointerEnterEvent.TypeId() ||
                 eventBase.eventTypeId == PointerLeaveEvent.TypeId())
             {
-                m_EventbaseInfo.text += "Mouse position: " + eventBase.mousePosition + "\n";
-                m_EventbaseInfo.text += "Modifiers: " + eventBase.modifiers + "\n";
+                m_EventBaseInfo.text += "Mouse position: " + eventBase.mousePosition + "\n";
+                m_EventBaseInfo.text += "Modifiers: " + eventBase.modifiers + "\n";
             }
 
             if (eventBase.eventTypeId == KeyDownEvent.TypeId() ||
                 eventBase.eventTypeId == KeyUpEvent.TypeId())
             {
-                m_EventbaseInfo.text += "Modifiers: " + eventBase.modifiers + "\n";
+                m_EventBaseInfo.text += "Modifiers: " + eventBase.modifiers + "\n";
             }
 
             if (eventBase.eventTypeId == MouseDownEvent.TypeId() ||
@@ -585,8 +874,8 @@ namespace UnityEditor.UIElements.Debugger
                 eventBase.eventTypeId == DragPerformEvent.TypeId() ||
                 eventBase.eventTypeId == DragExitedEvent.TypeId())
             {
-                m_EventbaseInfo.text += "Button: " + (eventBase.button == 0 ? "Left" : eventBase.button == 1 ? "Middle" : "Right") + "\n";
-                m_EventbaseInfo.text += "Click count: " + eventBase.clickCount + "\n";
+                m_EventBaseInfo.text += "Button: " + (eventBase.button == 0 ? "Left" : eventBase.button == 1 ? "Middle" : "Right") + "\n";
+                m_EventBaseInfo.text += "Click count: " + eventBase.clickCount + "\n";
             }
 
             if (eventBase.eventTypeId == MouseMoveEvent.TypeId() ||
@@ -613,12 +902,12 @@ namespace UnityEditor.UIElements.Debugger
                 eventBase.eventTypeId == PointerEnterEvent.TypeId() ||
                 eventBase.eventTypeId == PointerLeaveEvent.TypeId())
             {
-                m_EventbaseInfo.text += "Pressed buttons: " + eventBase.pressedButtons + "\n";
+                m_EventBaseInfo.text += "Pressed buttons: " + eventBase.pressedButtons + "\n";
             }
 
             if (eventBase.eventTypeId == WheelEvent.TypeId())
             {
-                m_EventbaseInfo.text += "Mouse delta: " + eventBase.delta + "\n";
+                m_EventBaseInfo.text += "Mouse delta: " + eventBase.delta + "\n";
             }
 
             if (eventBase.eventTypeId == KeyDownEvent.TypeId() ||
@@ -626,37 +915,50 @@ namespace UnityEditor.UIElements.Debugger
             {
                 if (char.IsControl(eventBase.character))
                 {
-                    m_EventbaseInfo.text += "Character: \\" + (byte)(eventBase.character) + "\n";
+                    m_EventBaseInfo.text += "Character: \\" + (byte)(eventBase.character) + "\n";
                 }
                 else
                 {
-                    m_EventbaseInfo.text += "Character: " + eventBase.character + "\n";
+                    m_EventBaseInfo.text += "Character: " + eventBase.character + "\n";
                 }
 
-                m_EventbaseInfo.text += "Key code: " + eventBase.keyCode + "\n";
+                m_EventBaseInfo.text += "Key code: " + eventBase.keyCode + "\n";
             }
 
             if (eventBase.eventTypeId == ValidateCommandEvent.TypeId() ||
                 eventBase.eventTypeId == ExecuteCommandEvent.TypeId())
             {
-                m_EventbaseInfo.text += "Command: " + eventBase.commandName + "\n";
+                m_EventBaseInfo.text += "Command: " + eventBase.commandName + "\n";
             }
         }
 
-        void OnFilterChange(ChangeEvent<ulong> e)
+        void OnFilterChange(ChangeEvent<string> e)
         {
+            if (e.newValue != null)
+                return;
+
             m_Debugger.UpdateModificationCount();
             Refresh();
             BuildEventsLog();
+            DisplayRegisteredEventCallbacks();
+        }
+
+        void OnRegisteredCallbackFilterChange(ChangeEvent<string> e)
+        {
+            DisplayRegisteredEventCallbacks();
         }
 
         void ClearEventCallbacks()
         {
-            foreach (var codeLine in m_EventRegistrationsScrollView.Children().OfType<CodeLine>())
+            foreach (var data in m_RegisteredEventCallbacksDataSource)
             {
-                codeLine.RemoveFromClassList("highlighted");
+                if (data.type == LineType.CodeLine && data is CodeLineInfo codeLineData)
+                {
+                    codeLineData.highlighted = false;
+                }
             }
 
+            m_EventRegistrationsListView.Refresh();
             m_EventCallbacksScrollView.Clear();
         }
 
@@ -674,11 +976,15 @@ namespace UnityEditor.UIElements.Debugger
                 {
                     VisualElement container = new VisualElement { name = "line-container" };
 
-                    Label timeStamp = new Label { name = "timestamp" };
-                    Label handler = new Label { name = "handler" };
+                    Label timeStamp = new Label();
+                    timeStamp.AddToClassList("timestamp");
+                    Label handler = new Label();
+                    handler.AddToClassList("handler");
                     Label phaseDurationContainer = new Label { name = "phaseDurationContainer" };
-                    Label phase = new Label { name = "phase" };
-                    Label duration = new Label { name = "duration" };
+                    Label phase = new Label();
+                    phase.AddToClassList("phase");
+                    Label duration = new Label();
+                    duration.AddToClassList("duration");
 
                     timeStamp.AddToClassList("log-line-item");
                     handler.AddToClassList("log-line-item");
@@ -694,7 +1000,7 @@ namespace UnityEditor.UIElements.Debugger
                         handler.text += " (Default Prevented)";
 
                     phase.text = callback.eventBase.propagationPhase.ToString();
-                    duration.text = "Duration: " + callback.duration / 1000f + "ms";
+                    duration.text = callback.duration / 1000f + "ms";
 
                     container.Add(timeStamp);
                     container.Add(handler);
@@ -705,7 +1011,7 @@ namespace UnityEditor.UIElements.Debugger
                     m_EventCallbacksScrollView.Add(container);
 
                     var hash = callback.callbackHashCode;
-                    HighlightCodeline(hash);
+                    HighlightCodeLine(hash);
                 }
             }
 
@@ -717,11 +1023,15 @@ namespace UnityEditor.UIElements.Debugger
             {
                 VisualElement container = new VisualElement { name = "line-container" };
 
-                Label timeStamp = new Label { name = "timestamp" };
-                Label handler = new Label { name = "handler" };
+                Label timeStamp = new Label();
+                timeStamp.AddToClassList("timestamp");
+                Label handler = new Label();
+                handler.AddToClassList("handler");
                 Label phaseDurationContainer = new Label { name = "phaseDurationContainer" };
-                Label phase = new Label { name = "phase" };
-                Label duration = new Label { name = "duration" };
+                Label phase = new Label();
+                phase.AddToClassList("phase");
+                Label duration = new Label();
+                duration.AddToClassList("duration");
 
                 timeStamp.AddToClassList("log-line-item");
                 handler.AddToClassList("log-line-item");
@@ -733,7 +1043,7 @@ namespace UnityEditor.UIElements.Debugger
                         ? "ExecuteDefaultActionAtTarget"
                         : "ExecuteDefaultAction");
 
-                duration.text = "Duration: " + defaultAction.duration / 1000f + "ms";
+                duration.text = defaultAction.duration / 1000f + "ms";
 
                 container.Add(timeStamp);
                 container.Add(handler);
@@ -787,12 +1097,15 @@ namespace UnityEditor.UIElements.Debugger
                 var targets = propagationPath.paths.targetElements;
                 if (targets != null && targets.Any())
                 {
+                    var i = 0;
                     foreach (var t in targets)
                     {
                         var targetName = t.name;
                         if (string.IsNullOrEmpty(targetName))
                             targetName = t.GetType().Name;
                         m_EventPropagationPaths.text += "    " + targetName + "\n";
+
+                        HighlightElement(t, i++ == 0);
                     }
                 }
                 else
@@ -821,28 +1134,44 @@ namespace UnityEditor.UIElements.Debugger
 
         void BuildEventsLog()
         {
-            m_EventsLog.itemsSource = ToList();
+            if (m_MaxLogLines)
+            {
+                m_StartIndex = Math.Max(0, m_Log.lines.Count - m_MaxLogLineCount);
+                m_EventsLog.itemsSource = m_Log.lines.Skip(m_StartIndex).Take(m_MaxLogLineCount).ToList();
+            }
+            else
+            {
+                m_StartIndex = 0;
+                m_EventsLog.itemsSource = ToList();
+            }
+
             m_EventsLog.itemHeight = 15;
             m_EventsLog.bindItem = (target, index) =>
             {
-                var line = m_Log.lines[index];
+                var line = m_Log.lines[index + m_StartIndex];
 
                 // Add text
                 VisualElement lineText = target.MandatoryQ<VisualElement>("log-line");
-                Label theLabel;
-                theLabel = lineText[0] as Label;
-                theLabel.text = line.timestamp;
-                theLabel = lineText[1] as Label;
-                theLabel.text = line.eventName;
-                theLabel = lineText[2] as Label;
-                theLabel.text = line.target;
+                if (lineText[0] is Label theLabel)
+                {
+                    theLabel.text = line.timestamp;
+                    theLabel = lineText[1] as Label;
+                    if (theLabel != null)
+                        theLabel.text = line.eventName;
+                    theLabel = lineText[2] as Label;
+                    if (theLabel != null)
+                        theLabel.text = line.target;
+                }
             };
             m_EventsLog.makeItem = () =>
             {
                 VisualElement container = new VisualElement { name = "log-line" };
-                Label timeStamp = new Label { name = "timestamp" };
-                Label eventLabel = new Label { name = "event" };
-                Label target = new Label { name = "target" };
+                Label timeStamp = new Label();
+                timeStamp.AddToClassList("timestamp");
+                Label eventLabel = new Label();
+                eventLabel.AddToClassList("event");
+                Label target = new Label();
+                target.AddToClassList("target");
 
                 timeStamp.AddToClassList("log-line-item");
                 eventLabel.AddToClassList("log-line-item");
@@ -854,10 +1183,15 @@ namespace UnityEditor.UIElements.Debugger
 
                 return container;
             };
-            m_EventsLog.Refresh();
 
+            m_EventsLog.Refresh();
+            DoAutoScroll();
+        }
+
+        void DoAutoScroll()
+        {
             if (m_AutoScroll)
-                m_EventsLog.ScrollToItem(-1);
+                rootVisualElement.schedule.Execute(() => m_EventsLog.ScrollToItem(-1));
         }
 
         IList ToList()
@@ -870,28 +1204,55 @@ namespace UnityEditor.UIElements.Debugger
             m_Debugger.ClearLogs();
             m_SelectedEvents?.Clear();
             Refresh();
+            OnReplayCompleted();
         }
 
-        public override void OnVersionChanged(VisualElement ve, VersionChangeType changeTypeFlag)
+        void ClearOverlays()
         {
+            m_HighlightOverlay?.ClearOverlay();
+            m_RepaintOverlay?.ClearOverlay();
+            m_Debugger.panelDebug?.MarkDirtyRepaint();
+            m_Debugger.panelDebug?.MarkDebugContainerDirtyRepaint();
         }
 
-        protected override void OnSelectPanelDebug(IPanelDebug pdbg)
+        void OnReplayCompleted()
         {
-            if (pdbg != null)
+            m_Debugger.StopPlayback();
+
+            if (m_TogglePlayback != null)
+                m_TogglePlayback.value = false;
+            if (m_PlaybackLabel != null)
+                m_PlaybackLabel.text = "";
+            UpdatePlaybackButtons();
+        }
+
+        public override void OnVersionChanged(VisualElement ve, VersionChangeType changeTypeFlag) { }
+
+        protected override void OnSelectPanelDebug(IPanelDebug selectedPanelDebug)
+        {
+            if (selectedPanelDebug == m_Debugger.panelDebug)
+                return;
+
+            if (selectedPanelDebug != null)
             {
-                m_Debugger.panel = pdbg.panel;
+                if (m_Debugger.panelDebug?.debugContainer != null)
+                    m_Debugger.panelDebug.debugContainer.generateVisualContent -= OnGenerateVisualContent;
+
+                m_Debugger.panelDebug = selectedPanelDebug;
+                m_Debugger.panel = selectedPanelDebug.panel;
+
+                if (m_Debugger.panelDebug.debugContainer != null)
+                    m_Debugger.panelDebug.debugContainer.generateVisualContent += OnGenerateVisualContent;
             }
 
-            DisplayEvents(m_EventRegistrationsScrollView);
-            DisplayHistogram(m_EventsHistogramScrollView);
-            DisplayTimeline(m_EventTimelineScrollView);
+            m_EventTypeFilter.SetEventLog(m_Debugger.eventTypeProcessedCount);
 
-            var erTitle = rootVisualElement.MandatoryQ<Label>("eventsRegistrationTitle");
+            DisplayRegisteredEventCallbacks();
+            Refresh();
+
+            var erTitle = rootVisualElement.MandatoryQ<Toggle>("eventsRegistrationTitle");
             const string prefix = "Registered Event Callbacks";
             erTitle.text = panel != null ? prefix + " in " + ((Panel)panel).name : prefix + " [No Panel Selected]";
-
-            Refresh();
         }
 
         public override void Refresh()
@@ -899,30 +1260,46 @@ namespace UnityEditor.UIElements.Debugger
             var eventDebuggerModificationCount = m_Debugger.GetModificationCount(panel);
             if (eventDebuggerModificationCount == m_ModificationCount)
                 return;
+
             m_ModificationCount = eventDebuggerModificationCount;
 
             UpdateEventsLog();
             UpdateLogCount();
             UpdateSelectionCount();
-            UpdateReplaySelectedEventsButton();
+            UpdatePlaybackButtons();
             DisplayHistogram(m_EventsHistogramScrollView);
-            DisplayTimeline(m_EventTimelineScrollView);
+        }
+
+        void OnGenerateVisualContent(MeshGenerationContext context)
+        {
+            m_HighlightOverlay?.Draw(context);
+            m_RepaintOverlay?.Draw(context);
         }
 
         void UpdateLogCount()
         {
+            if (m_LogCountLabel == null || m_Log?.lines == null)
+                return;
+
             m_LogCountLabel.text = m_Log.lines.Count + " event" + (m_Log.lines.Count > 1 ? "s" : "");
         }
 
         void UpdateSelectionCount()
         {
+            if (m_SelectionCountLabel == null)
+                return;
+
             m_SelectionCountLabel.text =
                 "(" + (m_SelectedEvents != null ? m_SelectedEvents.Count.ToString() : "0") + " selected)";
         }
 
-        void UpdateReplaySelectedEventsButton()
+        void UpdatePlaybackButtons()
         {
-            m_ReplaySelectedEventsButton.SetEnabled(m_SelectedEvents != null && m_SelectedEvents.Any());
+            var anySelected = m_SelectedEvents != null && m_SelectedEvents.Any();
+            m_TogglePlayback?.SetEnabled(m_Debugger.isReplaying);
+            m_StopPlaybackButton?.SetEnabled(m_Debugger.isReplaying);
+            m_SaveReplayButton?.SetEnabled(anySelected);
+            m_StartPlaybackButton?.SetEnabled(anySelected && !m_Debugger.isReplaying);
         }
     }
 }

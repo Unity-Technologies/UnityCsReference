@@ -67,6 +67,13 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/EditorUserSettings.h")]
     public sealed class EditorSettings : Object
     {
+        internal enum Bc7TextureCompressor
+        {
+            Default = 0,
+            Ispc = 1,
+            Bc7e = 2,
+        }
+
         private EditorSettings()
         {
         }
@@ -151,6 +158,9 @@ namespace UnityEditor
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern int spritePackerPaddingPower { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        internal static extern Bc7TextureCompressor bc7TextureCompressor { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern int etcTextureCompressorBehavior { get; set; }

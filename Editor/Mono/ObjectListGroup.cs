@@ -67,7 +67,12 @@ namespace UnityEditor
             abstract protected void DrawInternal(int itemIdx, int endItem, float yOffset);
 
             // Called when the filter has changed
-            abstract public void UpdateFilter(HierarchyType hierarchyType, SearchFilter searchFilter, bool showFoldersFirst);
+            abstract public void UpdateFilter(HierarchyType hierarchyType, SearchFilter searchFilter, bool showFoldersFirst, SearchService.SearchSessionOptions searchSessionOptions);
+
+            public void UpdateFilter(HierarchyType hierarchyType, SearchFilter searchFilter, bool showFoldersFirst)
+            {
+                UpdateFilter(hierarchyType, searchFilter, showFoldersFirst, SearchService.SearchSessionOptions.Default);
+            }
 
             protected virtual float GetHeaderHeight()
             {

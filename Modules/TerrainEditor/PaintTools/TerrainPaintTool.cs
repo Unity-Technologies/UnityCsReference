@@ -41,6 +41,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         void RepaintAllInspectors();
         void Repaint(RepaintFlags flags = RepaintFlags.UI);
     }
+
     public interface IOnSceneGUI
     {
         SceneView sceneView { get; }
@@ -49,6 +50,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         float brushSize { get; }
         bool hitValidTerrain { get; }
         RaycastHit raycastHit { get;  }
+        int controlId { get; }
 
         void Repaint(RepaintFlags flags = RepaintFlags.UI);
     }
@@ -70,6 +72,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         void OnEnterToolMode();
         void OnExitToolMode();
         void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext);
+        void OnRenderBrushPreview(Terrain terrain, IOnSceneGUI editContext);
         void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext);
         bool OnPaint(Terrain terrain, IOnPaint editContext);
     }
@@ -83,6 +86,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         public virtual void OnEnterToolMode() {}
         public virtual void OnExitToolMode() {}
         public virtual void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext) {}
+        public virtual void OnRenderBrushPreview(Terrain terrain, IOnSceneGUI editContext) {}
         public virtual void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext) {}
         public virtual bool OnPaint(Terrain terrain, IOnPaint editContext) { return false; }
     }
@@ -146,13 +150,14 @@ namespace UnityEditor.Experimental.TerrainAPI
         internal float m_BrushSize = 0;
         internal bool m_HitValidTerrain = false;
         internal RaycastHit m_RaycastHit;
+        internal int m_ControlId;
 
-        public OnSceneGUIContext(SceneView sceneView, RaycastHit raycastHit, Texture brushTexture, float brushStrength, float brushSize)
+        public OnSceneGUIContext(SceneView sceneView, RaycastHit raycastHit, Texture brushTexture, float brushStrength, float brushSize, int controlId)
         {
-            Set(sceneView, false, raycastHit, brushTexture, brushStrength, brushSize);
+            Set(sceneView, false, raycastHit, brushTexture, brushStrength, brushSize, controlId);
         }
 
-        public OnSceneGUIContext Set(SceneView sceneView, bool hitValidTerrain, RaycastHit raycastHit, Texture brushTexture, float brushStrength, float brushSize)
+        public OnSceneGUIContext Set(SceneView sceneView, bool hitValidTerrain, RaycastHit raycastHit, Texture brushTexture, float brushStrength, float brushSize, int controlId)
         {
             m_SceneView = sceneView;
             m_BrushTexture = brushTexture;
@@ -160,6 +165,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             m_BrushSize = brushSize;
             m_HitValidTerrain = hitValidTerrain;
             m_RaycastHit = raycastHit;
+            m_ControlId = controlId;
             return this;
         }
 
@@ -169,6 +175,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         public float brushSize { get { return m_BrushSize; } }
         public bool hitValidTerrain { get { return m_HitValidTerrain; } }
         public RaycastHit raycastHit { get { return m_RaycastHit; } }
+        public int controlId { get { return m_ControlId; } }
 
         public void Repaint(RepaintFlags flags)
         {

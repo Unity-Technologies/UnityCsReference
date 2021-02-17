@@ -55,6 +55,7 @@ namespace UnityEngine
 
         internal static readonly Rect kDummyRect = new Rect(0, 0, 1, 1);
 
+        internal static int unbalancedgroupscount { get; set; }
         internal static void CleanupRoots()
         {
             // See GUI.CleanupRoots
@@ -298,6 +299,7 @@ namespace UnityEngine
         // Generic helper - use this when creating a layoutgroup. It will make sure everything is wired up correctly.
         internal static GUILayoutGroup BeginLayoutGroup(GUIStyle style, GUILayoutOption[] options, Type layoutType)
         {
+            unbalancedgroupscount++;
             GUILayoutGroup g;
             switch (Event.current.type)
             {
@@ -325,6 +327,7 @@ namespace UnityEngine
         // The matching end for BeginLayoutGroup
         internal static void EndLayoutGroup()
         {
+            unbalancedgroupscount--;
             if (current.layoutGroups.Count == 0
                 || Event.current == null
             )

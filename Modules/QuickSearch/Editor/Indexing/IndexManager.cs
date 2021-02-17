@@ -33,8 +33,8 @@ namespace UnityEditor.Search
             window.Show();
         }
 
-        [UnityEditor.Callbacks.OnOpenAsset(1)]
-        public static bool OnOpenAsset(int instanceID, int line)
+        [Callbacks.OnOpenAsset(1)]
+        public static bool OnOpenAsset(int instanceID, int _)
         {
             if (Path.GetExtension(AssetDatabase.GetAssetPath(instanceID)) == "." + k_IndexExtension)
             {
@@ -54,6 +54,7 @@ namespace UnityEditor.Search
         private ListViewIndexSettings m_ListViewRoots;
         private ListViewIndexSettings m_ListViewIncludes;
         private ListViewIndexSettings m_ListViewExcludes;
+        private Toggle m_HasPackagesRoot;
         private Foldout m_RootsFoldout;
         private Foldout m_IncludesFoldout;
         private Foldout m_ExcludesFoldout;
@@ -211,7 +212,6 @@ namespace UnityEditor.Search
 
         internal void OnDisable()
         {
-
             m_ListViewIndexSettings.ListView.onSelectionChange -= OnSelectedIndexChanged;
 
             SearchDatabase.indexLoaded -= OnIndexLoaded;
@@ -307,9 +307,21 @@ namespace UnityEditor.Search
             m_IndexScore.RegisterValueChangedCallback(evt => { selectedItem.score = evt.newValue; UpdateUnsavedChanges(true); });
             m_IndexDetailsElementScrollView.Add(m_IndexScore);
 
+            m_HasPackagesRoot = new Toggle("Packages")
+            {
+                value = selectedItem.hasPackagesRoot,
+                tooltip = "If checked, all packages content will be indexed."
+            };
+            m_HasPackagesRoot.RegisterValueChangedCallback(evt =>
+            {
+                selectedItem.hasPackagesRoot = evt.newValue;
+                UpdateUnsavedChanges(true);
+            });
+
             m_RootsFoldout = CreateFoldout("Roots");
-            m_RootsFoldout.tooltip = "List of root folders to start indexing from (can index single files too)";
+            m_RootsFoldout.tooltip = "List of root folders to start indexing from.";
             m_ListViewRoots = new ListViewIndexSettings(selectedItem.roots, MakeRootPathItem, BindRootPathItem, AddRootElement, RemoveRootElement, this, false);
+            m_RootsFoldout.Add(m_HasPackagesRoot);
             m_RootsFoldout.Add(m_ListViewRoots);
             m_IndexDetailsElementScrollView.Add(m_RootsFoldout);
 
@@ -365,7 +377,7 @@ namespace UnityEditor.Search
 
             m_IndexDetailsElementScrollView.Q<VisualElement>("unity-content-container").RegisterCallback<GeometryChangedEvent>(UpdateIndexStatsListViewHeight);
 
-            SelectTab(1);
+            SelectTab(0);
 
             UpdateDetailsForNewOrExistingSettings();
         }
@@ -456,29 +468,14 @@ namespace UnityEditor.Search
                 {
                     m_SavedIndexDataNotLoadedYet.style.display = DisplayStyle.None;
                     m_SavedIndexData.style.display = DisplayStyle.Flex;
-                    var documentTitle = "";
-                    if (selectedItemAsset.index is SceneIndexer objectIndexer)
-                    {
-                        m_DependenciesButton.style.display = DisplayStyle.Flex;
+                    m_DependenciesButton.style.display = DisplayStyle.Flex;
 
-                        var dependencies = objectIndexer.GetDependencies();
-                        UpdateIndexPreviewListView(dependencies, m_DependenciesListView);
-                        m_DependenciesButton.text = $"{dependencies.Count} Documents";
-
-                        documentTitle = "Objects";
-                    }
-                    else
-                    {
-                        if (m_DependenciesButton.style.display != DisplayStyle.None)
-                        {
-                            m_DependenciesButton.style.display = DisplayStyle.None;
-                            SelectTab(1);
-                        }
-                        documentTitle = "Documents";
-                    }
+                    var dependencies = selectedItemAsset.index.GetDependencies();
+                    UpdateIndexPreviewListView(dependencies, m_DependenciesListView);
+                    m_DependenciesButton.text = $"{dependencies.Count} Documents";
 
                     UpdateIndexPreviewListView(selectedItemAsset.index.GetDocuments(true).OrderBy(p => p.id).Select(d => d.id).ToList(), m_DocumentsListView);
-                    m_DocumentsButton.text = $"{selectedItemAsset.index.documentCount} {documentTitle}";
+                    m_DocumentsButton.text = $"{selectedItemAsset.index.documentCount} Objects";
 
                     UpdateIndexPreviewListView(selectedItemAsset.index.GetKeywords().OrderBy(p => p).ToList(), m_KeywordsListView);
                     m_KeywordsButton.text = $"{selectedItemAsset.index.keywordCount} Keywords";
@@ -701,7 +698,7 @@ namespace UnityEditor.Search
             var evt = SearchAnalytics.GenericEvent.Create(m_WindowId, SearchAnalytics.GenericEventType.IndexManagerSaveModifiedIndex, model.type.ToString());
             evt.message = $"0x{model.options.GetHashCode():X}";
             if (model.roots.Count > 0)
-                evt.description = "roots:" + string.Join(",", model.roots);
+                evt.description = "roots:" + string.Join(",", model.GetRoots());
             if (model.includes.Count > 0)
                 evt.stringPayload1 = "includes:" + string.Join(",", model.includes);
             if (model.excludes.Count > 0)
@@ -1260,6 +1257,7 @@ namespace UnityEditor.Search
             public string name;
             public SearchDatabase.IndexType type;
             public int score;
+            public bool hasPackagesRoot;
             public List<string> roots;
             public List<string> includes;
             public List<string> excludes;
@@ -1277,19 +1275,31 @@ namespace UnityEditor.Search
 
             public IndexManagerViewModel(SearchDatabase.Settings searchDatabaseSettings, bool newItem) : this()
             {
-                this.name = !newItem ? searchDatabaseSettings.name : null;
+                name = !newItem ? searchDatabaseSettings.name : null;
                 type = (SearchDatabase.IndexType)Enum.Parse(typeof(SearchDatabase.IndexType), searchDatabaseSettings.type);
-                this.score = searchDatabaseSettings.baseScore;
-                this.roots = new List<string>();
+                score = searchDatabaseSettings.baseScore;
+                roots = new List<string>();
+                hasPackagesRoot = false;
                 if (searchDatabaseSettings.roots != null)
-                    this.roots.AddRange(searchDatabaseSettings.roots);
-                this.includes = new List<string>();
+                {
+                    hasPackagesRoot = searchDatabaseSettings.roots.Any(r => r == "Packages");
+                    roots.AddRange(searchDatabaseSettings.roots.Where(r => r != "Packages"));
+                }
+                includes = new List<string>();
                 if (searchDatabaseSettings.includes != null)
-                    this.includes.AddRange(searchDatabaseSettings.includes);
-                this.excludes = new List<string>();
+                    includes.AddRange(searchDatabaseSettings.includes);
+                excludes = new List<string>();
                 if (searchDatabaseSettings.excludes != null)
-                    this.excludes.AddRange(searchDatabaseSettings.excludes);
-                SetOptions(this.options, searchDatabaseSettings.options);
+                    excludes.AddRange(searchDatabaseSettings.excludes);
+                SetOptions(options, searchDatabaseSettings.options);
+            }
+
+            public IEnumerable<string> GetRoots()
+            {
+                if (hasPackagesRoot)
+                    yield return "Packages";
+                foreach (var r in roots)
+                    yield return r;
             }
 
             internal void UpdateAsset(SearchDatabase searchDatabase, string path)
@@ -1306,7 +1316,7 @@ namespace UnityEditor.Search
 
                 searchDatabase.settings.type = Enum.GetName(typeof(SearchDatabase.IndexType), type);
                 searchDatabase.settings.baseScore = score;
-                searchDatabase.settings.roots = roots.ToArray();
+                searchDatabase.settings.roots = GetRoots().ToArray();
                 searchDatabase.settings.includes = includes.ToArray();
                 searchDatabase.settings.excludes = excludes.ToArray();
                 SetOptions(searchDatabase.settings.options, this.options);

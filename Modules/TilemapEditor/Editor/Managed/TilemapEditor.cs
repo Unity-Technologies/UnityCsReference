@@ -102,7 +102,10 @@ namespace UnityEditor
                     tilemap.GetUsedTilesNonAlloc(usedTiles);
                     tilemap.GetUsedSpritesNonAlloc(usedSprites);
 
+                    EditorGUILayout.BeginHorizontal();
                     EditorGUILayout.LabelField(Styles.usedTilesLabel, EditorStyles.boldLabel);
+                    GUILayout.FlexibleSpace();
+                    EditorGUILayout.EndHorizontal();
                     if (tileCount > 0)
                     {
                         foreach (var tile in usedTiles)
@@ -114,7 +117,11 @@ namespace UnityEditor
                     {
                         EditorGUILayout.LabelField(Styles.noneUsedLabel);
                     }
+
+                    EditorGUILayout.BeginHorizontal();
                     EditorGUILayout.LabelField(Styles.usedSpritesLabel, EditorStyles.boldLabel);
+                    GUILayout.FlexibleSpace();
+                    EditorGUILayout.EndHorizontal();
                     if (spriteCount > 0)
                     {
                         foreach (var sprite in usedSprites)

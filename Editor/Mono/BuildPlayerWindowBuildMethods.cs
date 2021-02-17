@@ -5,8 +5,6 @@
 using UnityEditor.Modules;
 using UnityEditor.Build;
 using UnityEngine;
-using UnityEditorInternal;
-using UnityEditor.Experimental;
 using UnityEditor.Scripting.ScriptCompilation;
 using System.Collections;
 using System.IO;
@@ -250,8 +248,8 @@ namespace UnityEditor
                     options.options |= BuildOptions.Development;
                 if (EditorUserBuildSettings.allowDebugging && developmentBuild)
                     options.options |= BuildOptions.AllowDebugging;
-                if (EditorUserBuildSettings.symlinkLibraries)
-                    options.options |= BuildOptions.SymlinkLibraries;
+                if (EditorUserBuildSettings.symlinkSources)
+                    options.options |= BuildOptions.SymlinkSources;
                 if (EditorUserBuildSettings.enableHeadlessMode)
                     options.options |= BuildOptions.EnableHeadlessMode;
                 if (EditorUserBuildSettings.connectProfiler && (developmentBuild || buildTarget == BuildTarget.WSAPlayer))

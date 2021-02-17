@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.Experimental.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -91,6 +90,8 @@ namespace UnityEditor
 
             public string prefabAssetPath { get; private set; }
 
+            public Bounds renderableBounds { get; private set; }
+
             public PreviewData(UnityObject targetObject)
             {
                 renderUtility = new PreviewRenderUtility();
@@ -105,6 +106,7 @@ namespace UnityEditor
                 var prefabGo = PrefabUtility.GetOriginalSourceOrVariantRoot(targetObject);
                 prefabAssetPath = AssetDatabase.GetAssetPath(prefabGo);
                 renderUtility.AddManagedGO(gameObject);
+                renderableBounds = GetRenderableBounds(gameObject);
             }
 
             public void Dispose()
@@ -132,6 +134,7 @@ namespace UnityEditor
         bool m_IsPrefabInstanceOutermostRoot;
         bool m_IsAssetRoot;
         bool m_AllOfSamePrefabType = true;
+        bool m_HasRenderableParts = true;
         GUIContent m_OpenPrefabContent;
         GUIContent m_SelectedObjectCountContent;
 
@@ -151,6 +154,7 @@ namespace UnityEditor
 
             SetSelectedObjectCountLabelContent();
             CalculatePrefabStatus();
+            CaculateHasRenderableParts();
 
             m_PreviewCache = new Dictionary<int, Texture>();
 
@@ -240,6 +244,7 @@ namespace UnityEditor
         {
             base.OnForceReloadInspector();
             CalculatePrefabStatus();
+            CaculateHasRenderableParts();
             ReloadPreviewInstances();
             SetSelectedObjectCountLabelContent();
         }
@@ -578,7 +583,10 @@ namespace UnityEditor
             if (toggled)
             {
                 rect = GUILayoutUtility.topLevel.GetLast();
-                PopupWindowWithoutFocus.Show(rect, new StaticFieldDropdown(m_StaticEditorFlags));
+                // We do not pass the serializedProperty directly, as its parent serializedObject
+                // can get destroyed when references to parent windows are lost, thus we use
+                // the target object & the path to reconstruct the property inside the window itself
+                PopupWindow.Show(rect, new StaticFieldDropdown(m_StaticEditorFlags.serializedObject.targetObjects, m_StaticEditorFlags.propertyPath));
                 GUIUtility.ExitGUI();
             }
         }
@@ -675,95 +683,63 @@ namespace UnityEditor
             return previewData;
         }
 
-        public static bool HasRenderableParts(GameObject go)
+        static readonly List<Renderer> s_RendererComponentsList = new List<Renderer>();
+
+        static bool IsRendererUsableForPreview(Renderer r)
         {
-            // Do we have a mesh?
-            var renderers = go.GetComponentsInChildren<MeshRenderer>();
-            foreach (var renderer in renderers)
+            switch (r)
             {
-                var filter = renderer.gameObject.GetComponent<MeshFilter>();
-                if (filter && filter.sharedMesh)
-                    return true;
+                case MeshRenderer mr:
+                    mr.gameObject.TryGetComponent<MeshFilter>(out var mf);
+                    if (mf == null || mf.sharedMesh == null)
+                        return false;
+                    break;
+                case SkinnedMeshRenderer skin:
+                    if (skin.sharedMesh == null)
+                        return false;
+                    break;
+                case SpriteRenderer sprite:
+                    if (sprite.sprite == null)
+                        return false;
+                    break;
+                case BillboardRenderer billboard:
+                    if (billboard.billboard == null || billboard.sharedMaterial == null)
+                        return false;
+                    break;
             }
-
-            // Do we have a skinned mesh?
-            var skins = go.GetComponentsInChildren<SkinnedMeshRenderer>();
-            foreach (var skin in skins)
-            {
-                if (skin.sharedMesh)
-                    return true;
-            }
-
-            // Do we have a Sprite?
-            var sprites = go.GetComponentsInChildren<SpriteRenderer>();
-            foreach (var sprite in sprites)
-            {
-                if (sprite.sprite)
-                    return true;
-            }
-
-            // Do we have a billboard?
-            var billboards = go.GetComponentsInChildren<BillboardRenderer>();
-            foreach (var billboard in billboards)
-            {
-                if (billboard.billboard && billboard.sharedMaterial)
-                    return true;
-            }
-
-            // Nope, we don't have it.
-            return false;
+            return true;
         }
 
-        public static void GetRenderableBoundsRecurse(ref Bounds bounds, GameObject go)
+        void CaculateHasRenderableParts()
         {
-            // Do we have a mesh?
-            var renderer = go.GetComponent<MeshRenderer>();
-            var filter = go.GetComponent<MeshFilter>();
-            if (renderer && filter && filter.sharedMesh)
+            m_HasRenderableParts = HasRenderableParts(target as GameObject);
+        }
+
+        public static bool HasRenderableParts(GameObject go)
+        {
+            if (!go)
+                return false;
+            go.GetComponentsInChildren(s_RendererComponentsList);
+            return s_RendererComponentsList.Any(IsRendererUsableForPreview);
+        }
+
+        public static Bounds GetRenderableBounds(GameObject go)
+        {
+            var b = new Bounds();
+            if (!go)
+                return b;
+            go.GetComponentsInChildren(s_RendererComponentsList);
+            foreach (var r in s_RendererComponentsList)
             {
-                // To prevent origo from always being included in bounds we initialize it
-                // with renderer.bounds. This ensures correct bounds for meshes with origo outside the mesh.
-                if (bounds.extents == Vector3.zero)
-                    bounds = renderer.bounds;
+                if (!IsRendererUsableForPreview(r))
+                    continue;
+                if (b.extents == Vector3.zero)
+                    b = r.bounds;
                 else
-                    bounds.Encapsulate(renderer.bounds);
+                    b.Encapsulate(r.bounds);
             }
 
-            // Do we have a skinned mesh?
-            var skin = go.GetComponent<SkinnedMeshRenderer>();
-            if (skin && skin.sharedMesh)
-            {
-                if (bounds.extents == Vector3.zero)
-                    bounds = skin.bounds;
-                else
-                    bounds.Encapsulate(skin.bounds);
-            }
-
-            // Do we have a Sprite?
-            var sprite = go.GetComponent<SpriteRenderer>();
-            if (sprite && sprite.sprite)
-            {
-                if (bounds.extents == Vector3.zero)
-                    bounds = sprite.bounds;
-                else
-                    bounds.Encapsulate(sprite.bounds);
-            }
-
-            // Do we have a billboard?
-            var billboard = go.GetComponent<BillboardRenderer>();
-            if (billboard && billboard.billboard && billboard.sharedMaterial)
-            {
-                if (bounds.extents == Vector3.zero)
-                    bounds = billboard.bounds;
-                else
-                    bounds.Encapsulate(billboard.bounds);
-            }
-
-            // Recurse into children
-            foreach (Transform t in go.transform)
-            {
-                GetRenderableBoundsRecurse(ref bounds, t.gameObject);
-            }
+            return b;
         }
 
         private static float GetRenderableCenterRecurse(ref Vector3 center, GameObject go, int depth, int minDepth, int maxDepth)
@@ -867,8 +843,7 @@ namespace UnityEditor
             if (target == null)
                 return false;
 
-            GameObject go = target as GameObject;
-            return HasRenderableParts(go);
+            return m_HasRenderableParts;
         }
 
         public override void OnPreviewSettings()
@@ -881,9 +856,7 @@ namespace UnityEditor
         private void DoRenderPreview()
         {
             var previewData = GetPreviewData();
-
-            Bounds bounds = new Bounds(previewData.gameObject.transform.position, Vector3.zero);
-            GetRenderableBoundsRecurse(ref bounds, previewData.gameObject);
+            var bounds = previewData.renderableBounds;
             float halfSize = Mathf.Max(bounds.extents.magnitude, 0.0001f);
             float distance = halfSize * 3.8f;
 
@@ -1121,7 +1094,6 @@ namespace UnityEditor
                 draggedObject.transform.parent = parent;
             draggedObject.hideFlags = 0;
             Undo.RegisterCreatedObjectUndo(draggedObject, "Place " + draggedObject.name);
-            EditorUtility.SetDirty(draggedObject);
             DragAndDrop.AcceptDrag();
             if (s_ShouldClearSelection)
             {

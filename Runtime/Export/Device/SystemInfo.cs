@@ -192,6 +192,8 @@ namespace UnityEngine.Device
 
         public static bool supportsMultiview => ShimManager.systemInfoShim.supportsMultiview;
 
+        public static bool supportsStoreAndResolveAction => ShimManager.systemInfoShim.supportsStoreAndResolveAction;
+
         public static bool IsFormatSupported(GraphicsFormat format, FormatUsage usage)
         {
             return ShimManager.systemInfoShim.IsFormatSupported(format, usage);

@@ -118,6 +118,8 @@ namespace UnityEngine.UIElements.UIR
 
         internal uint maxVerticesPerPage  { get; } = 0xFFFF; // On DX11, 0xFFFF is an invalid index (associated to primitive restart). With size = 0xFFFF last index is 0xFFFE    cases:1259449
 
+        internal bool breakBatches { get; set; }
+
 
         static UIRenderDevice()
         {
@@ -169,10 +171,17 @@ namespace UnityEngine.UIElements.UIR
             {
                 if (s_WhiteTexel == null)
                 {
-                    s_WhiteTexel = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+                    // Case 1309555: We actually use a 2x2 texture instead of 1x1 because Intel integrated GPUs
+                    // encounter issues when reading from a real single-texel texture.
+                    s_WhiteTexel = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                    s_WhiteTexel.name = "UIR White Texel";
                     s_WhiteTexel.hideFlags = HideFlags.HideAndDontSave;
-                    s_WhiteTexel.filterMode = FilterMode.Bilinear; // Make sure it's bilinear so UIRAtlasManager accepts it on older HW targets
-                    s_WhiteTexel.SetPixel(0, 0, Color.white);
+                    s_WhiteTexel.filterMode = FilterMode.Point;
+                    int pixelCount = s_WhiteTexel.width * s_WhiteTexel.height;
+                    var pixels = new Color[pixelCount];
+                    for(int i = 0 ; i < pixelCount ; ++i)
+                        pixels[i] = Color.white;
+                    s_WhiteTexel.SetPixels(pixels);
                     s_WhiteTexel.Apply(false, true);
                 }
                 return s_WhiteTexel;
@@ -491,7 +500,7 @@ namespace UnityEngine.UIElements.UIR
                     // The page itself is not going to be usable and will be feed after 60 frames.
                     // This is done because because the page is required when creating the native slice
                     var pageVertexCount = (vertexCount > maxVerticesPerPage) ? 2 : vertexCount;
-                    Debug.Assert(vertexCount <= maxVerticesPerPage, $"Requested Vertex count ({vertexCount}) is above the limit ({maxVerticesPerPage}). Alloc will fail.");
+                    Debug.Assert(vertexCount <= maxVerticesPerPage, "Requested Vertex count is above the limit. Alloc will fail.");
 
                     // A huge mesh, push it to a page of its own. Put this page at the end so it won't be queried often
                     page = new Page((uint)pageVertexCount, (uint)indexCount, k_MaxQueuedFrameCount, m_MockDevice);
@@ -506,8 +515,8 @@ namespace UnityEngine.UIElements.UIR
             }
 
 
-            Debug.Assert(va.size == vertexCount, $"Vertices allocated ({va.size}) != Vertices requested ({vertexCount})");
-            Debug.Assert(ia.size == indexCount, $"Indices allocated ({ia.size}) != Indices requested ({indexCount})");
+            Debug.Assert(va.size == vertexCount, "Vertices allocated != Vertices requested");
+            Debug.Assert(ia.size == indexCount, "Indices allocated != Indices requested");
 
             // If the allocated VB or IB has a different size than expected, both are invalidated.
             // The user may check one buffer size but not the other.
@@ -767,6 +776,8 @@ namespace UnityEngine.UIElements.UIR
         {
             Utility.ProfileDrawChainBegin();
 
+            bool doBreakBatches = this.breakBatches; // Keeping this on the stack for better performance
+
             var drawParams = m_DrawParams;
             drawParams.Reset();
             drawParams.renderTexture.Add(RenderTexture.active);
@@ -867,12 +878,21 @@ namespace UnityEngine.UIElements.UIR
 
                     if (stashRange && isLastRange)
                     {
-                        // mechanism will need to be implemented to handle the "ranges-buffer-full" condition. For
-                        // the time being, calling KickRanges will make the whole buffer available.
+                        // The range we'll close is the last that we can store.
+                        // TODO: This only works since ranges are serialized and will break once the ranges are
+                        //       truly processed in a multi-threaded fashion without copies. When this happens, a new
+                        //       mechanism will need to be implemented to handle the "ranges-buffer-full" condition. For
+                        //       the time being, calling KickRanges will make the whole buffer available.
                         kickRanges = true;
                     }
                 }
                 else
+                {
+                    stashRange = true;
+                    kickRanges = true;
+                }
+
+                if (doBreakBatches)
                 {
                     stashRange = true;
                     kickRanges = true;

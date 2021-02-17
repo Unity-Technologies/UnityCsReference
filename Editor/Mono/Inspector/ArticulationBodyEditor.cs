@@ -12,6 +12,15 @@ namespace UnityEditor
     internal class ArticulationBodyEditor : Editor
     {
         SerializedProperty m_Mass;
+        SerializedProperty m_Immovable;
+        SerializedProperty m_UseGravity;
+
+        SerializedProperty m_LinearDamping;
+        SerializedProperty m_AngularDamping;
+        SerializedProperty m_JointFriction;
+
+        SerializedProperty m_CollisionDetectionMode;
+
         SerializedProperty m_ParentAnchorPosition;
         SerializedProperty m_ParentAnchorRotation;
         SerializedProperty m_AnchorPosition;
@@ -31,13 +40,6 @@ namespace UnityEditor
         SerializedProperty m_YDrive;
         SerializedProperty m_ZDrive;
 
-        SerializedProperty m_LinearDamping;
-        SerializedProperty m_AngularDamping;
-        SerializedProperty m_JointFriction;
-
-        SerializedProperty m_Immovable;
-        SerializedProperty m_UseGravity;
-
         readonly AnimBool m_ShowInfo = new AnimBool();
         bool m_RequiresConstantRepaint;
         SavedBool m_ShowInfoFoldout;
@@ -50,15 +52,18 @@ namespace UnityEditor
             public static GUIContent mass = EditorGUIUtility.TrTextContent("Mass", "Mass of this articulation body");
             public static GUIContent immovable = EditorGUIUtility.TrTextContent("Immovable", "Is this articulation body immovable by forces and torques? Only applies to the root body of the articulation.");
             public static GUIContent useGravity = EditorGUIUtility.TrTextContent("Use Gravity", "Controls whether gravity affects this articulation body.");
+
+            public static GUIContent collisionDetectionMode = EditorGUIUtility.TrTextContent("Collision Detection", "The method to use to detect collisions for child colliders: discrete (default) or various modes of continuous collision detection that can help solving fast moving object issues.");
+
+            public static GUIContent linearDamping = EditorGUIUtility.TrTextContent("Linear Damping", "Damping factor that affects how this body resists linear motion.");
+            public static GUIContent angularDamping = EditorGUIUtility.TrTextContent("Angular Damping", "Damping factor that affects how this body resists rotations.");
+            public static GUIContent jointFriction = EditorGUIUtility.TrTextContent("Joint Friction", "Amount of friction that is applied as a result of connected bodies moving relative to this body.");
+
             public static GUIContent computeParentAnchor = EditorGUIUtility.TrTextContent("Compute Parent Anchor", "Controls whether to set the anchor relative to the parent to be the same as the anchor relative to this body.");
             public static GUIContent anchorPosition = EditorGUIUtility.TrTextContent("Anchor Position", "Position of the anchor relative to this body.");
             public static GUIContent parentAnchorPosition = EditorGUIUtility.TrTextContent("Parent Anchor Position", "Position of the anchor relative to the parent body.");
             public static GUIContent anchorRotation =  EditorGUIUtility.TrTextContent("Anchor Rotation", "Rotation of the anchor relative to this body.");
             public static GUIContent parentAnchorRotation = EditorGUIUtility.TrTextContent("Parent Anchor Rotation", "Rotation of the anchor relative to the parent body.");
-
-            public static GUIContent linearDamping = EditorGUIUtility.TrTextContent("Linear Damping", "Damping factor that affects how this body resists linear motion.");
-            public static GUIContent angularDamping = EditorGUIUtility.TrTextContent("Angular Damping", "Damping factor that affects how this body resists rotations.");
-            public static GUIContent jointFriction = EditorGUIUtility.TrTextContent("Joint Friction", "Amount of friction that is applied as a result of connected bodies moving relative to this body.");
 
             public static GUIContent prismaticAxis = EditorGUIUtility.TrTextContent("Axis", "The only axis the joint allows linear motion along.");
             public static GUIContent unlockedMotionType = EditorGUIUtility.TrTextContent("Motion", "Controls whether the motion is free or limited.");
@@ -89,6 +94,15 @@ namespace UnityEditor
         public void OnEnable()
         {
             m_Mass = serializedObject.FindProperty("m_Mass");
+            m_Immovable = serializedObject.FindProperty("m_Immovable");
+            m_UseGravity = serializedObject.FindProperty("m_UseGravity");
+
+            m_CollisionDetectionMode = serializedObject.FindProperty("m_CollisionDetectionMode");
+
+            m_LinearDamping = serializedObject.FindProperty("m_LinearDamping");
+            m_AngularDamping = serializedObject.FindProperty("m_AngularDamping");
+            m_JointFriction = serializedObject.FindProperty("m_JointFriction");
+
             m_ParentAnchorPosition = serializedObject.FindProperty("m_ParentAnchorPosition");
             m_ParentAnchorRotation = serializedObject.FindProperty("m_ParentAnchorRotation");
             m_AnchorPosition = serializedObject.FindProperty("m_AnchorPosition");
@@ -106,13 +120,6 @@ namespace UnityEditor
             m_XDrive = serializedObject.FindProperty("m_XDrive");
             m_YDrive = serializedObject.FindProperty("m_YDrive");
             m_ZDrive = serializedObject.FindProperty("m_ZDrive");
-
-            m_LinearDamping = serializedObject.FindProperty("m_LinearDamping");
-            m_AngularDamping = serializedObject.FindProperty("m_AngularDamping");
-            m_JointFriction = serializedObject.FindProperty("m_JointFriction");
-
-            m_Immovable = serializedObject.FindProperty("m_Immovable");
-            m_UseGravity = serializedObject.FindProperty("m_UseGravity");
 
             // Info foldout
             m_ShowInfo.valueChanged.AddListener(Repaint);
@@ -139,17 +146,32 @@ namespace UnityEditor
             ArticulationBody body = (ArticulationBody)target;
 
             EditorGUILayout.PropertyField(m_Mass, Styles.mass);
+            CollisionDetectionMode collisionDetectionMode = (CollisionDetectionMode)m_CollisionDetectionMode.intValue;
 
+            EditorGUILayout.PropertyField(m_UseGravity, Styles.useGravity);
             if (body.isRoot)
             {
                 EditorGUILayout.PropertyField(m_Immovable, Styles.immovable);
-                EditorGUILayout.PropertyField(m_UseGravity, Styles.useGravity);
+                if (!m_Immovable.boolValue)
+                {
+                    EditorGUILayout.PropertyField(m_LinearDamping, Styles.linearDamping);
+                    EditorGUILayout.PropertyField(m_AngularDamping, Styles.angularDamping);
+                }
+
+                collisionDetectionMode = (CollisionDetectionMode)EditorGUILayout.EnumPopup(Styles.collisionDetectionMode, collisionDetectionMode);
+                m_CollisionDetectionMode.intValue = (int)collisionDetectionMode;
 
                 EditorGUILayout.HelpBox("This is the root body of the articulation.", MessageType.Info);
             }
             else
             {
-                EditorGUILayout.PropertyField(m_UseGravity, Styles.useGravity);
+                EditorGUILayout.PropertyField(m_LinearDamping, Styles.linearDamping);
+                EditorGUILayout.PropertyField(m_AngularDamping, Styles.angularDamping);
+                EditorGUILayout.PropertyField(m_JointFriction, Styles.jointFriction);
+
+                collisionDetectionMode = (CollisionDetectionMode)EditorGUILayout.EnumPopup(Styles.collisionDetectionMode, collisionDetectionMode);
+                m_CollisionDetectionMode.intValue = (int)collisionDetectionMode;
+
                 EditorGUILayout.PropertyField(m_ComputeParentAnchor, Styles.computeParentAnchor);
 
                 // Show anchor edit fields and set to joint if changed
@@ -189,15 +211,10 @@ namespace UnityEditor
                 if (GUILayout.Button("Snap anchor to closest contact"))
                 {
                     Undo.RecordObject(body, "Changing anchor position/rotation to match closest contact.");
-
                     body.SnapAnchorToClosestContact();
                 }
 
                 EditorGUILayout.PropertyField(m_ArticulationJointType); // the tooltip for this is still in the header
-
-                EditorGUILayout.PropertyField(m_LinearDamping, Styles.linearDamping);
-                EditorGUILayout.PropertyField(m_AngularDamping, Styles.angularDamping);
-                EditorGUILayout.PropertyField(m_JointFriction, Styles.jointFriction);
 
                 switch (body.jointType)
                 {
@@ -316,7 +333,7 @@ namespace UnityEditor
             if (body.isRoot)
                 return;
 
-            ArticulationBody parentBody = body.transform.parent.GetComponentInParent<ArticulationBody>();
+            ArticulationBody parentBody = FindEnabledParentArticulationBody(body);
 
             {
                 Vector3 localAnchorT = body.anchorPosition;
@@ -362,7 +379,7 @@ namespace UnityEditor
 
         private void DisplayJointLimits(ArticulationBody body)
         {
-            ArticulationBody parentBody = body.transform.parent.GetComponentInParent<ArticulationBody>();
+            ArticulationBody parentBody = FindEnabledParentArticulationBody(body);
 
             Matrix4x4 parentAnchorSpace = Matrix4x4.TRS(parentBody.transform.TransformPoint(body.parentAnchorPosition), parentBody.transform.rotation * body.parentAnchorRotation, Vector3.one);
 
@@ -605,6 +622,16 @@ namespace UnityEditor
         public override bool RequiresConstantRepaint()
         {
             return m_RequiresConstantRepaint;
+        }
+
+        private ArticulationBody FindEnabledParentArticulationBody(ArticulationBody body)
+        {
+            ArticulationBody parent = body.transform.parent.GetComponentInParent<ArticulationBody>();
+            while (parent && !parent.enabled)
+            {
+                parent = parent.transform.parent.GetComponentInParent<ArticulationBody>();
+            }
+            return parent;
         }
     }
 }

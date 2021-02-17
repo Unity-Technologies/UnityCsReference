@@ -92,7 +92,7 @@ namespace UnityEngine.UIElements
             m_MenuContainer.RegisterCallback<PointerUpEvent>(OnPointerUp);
 
             evt.destinationPanel.visualTree.RegisterCallback<GeometryChangedEvent>(OnParentResized);
-            m_ScrollView.RegisterCallback<GeometryChangedEvent>(EnsureVisibilityInParent);
+            m_ScrollView.RegisterCallback<GeometryChangedEvent>(OnContainerGeometryChanged);
             m_ScrollView.RegisterCallback<FocusOutEvent>(OnFocusOut);
         }
 
@@ -101,26 +101,18 @@ namespace UnityEngine.UIElements
             if (evt.originPanel == null)
                 return;
 
-            m_MenuContainer.UnregisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-            m_MenuContainer.UnregisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            m_MenuContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp);
-
             contentContainer.RemoveManipulator(m_NavigationManipulator);
             m_MenuContainer.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
+            m_MenuContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp);
 
             evt.originPanel.visualTree.UnregisterCallback<GeometryChangedEvent>(OnParentResized);
-            m_ScrollView.UnregisterCallback<GeometryChangedEvent>(EnsureVisibilityInParent);
+            m_ScrollView.UnregisterCallback<GeometryChangedEvent>(OnContainerGeometryChanged);
             m_ScrollView.UnregisterCallback<FocusOutEvent>(OnFocusOut);
         }
 
         void Hide()
         {
-            m_Items.Clear();
-            m_Items = null;
-            m_ScrollView.Clear();
-            m_ScrollView.RemoveFromHierarchy();
             m_MenuContainer.RemoveFromHierarchy();
-            m_ScrollView = null;
         }
 
         void Apply(KeyboardNavigationOperation op, EventBase sourceEvent)
@@ -387,15 +379,18 @@ namespace UnityEngine.UIElements
             m_OuterContainer.style.left = local.x - m_PanelRootVisualContainer.layout.x;
             m_OuterContainer.style.top = local.y + position.height - m_PanelRootVisualContainer.layout.y;
 
-            if (anchored)
-            {
-                m_DesiredRect = position;
-            }
+            m_DesiredRect = anchored ? position : Rect.zero;
 
             m_MenuContainer.schedule.Execute(contentContainer.Focus);
+            EnsureVisibilityInParent();
         }
 
-        void EnsureVisibilityInParent(GeometryChangedEvent evt)
+        void OnContainerGeometryChanged(GeometryChangedEvent evt)
+        {
+            EnsureVisibilityInParent();
+        }
+
+        void EnsureVisibilityInParent()
         {
             if (m_PanelRootVisualContainer != null && !float.IsNaN(m_OuterContainer.layout.width) && !float.IsNaN(m_OuterContainer.layout.height))
             {
@@ -412,7 +407,7 @@ namespace UnityEngine.UIElements
                     m_MenuContainer.layout.height - m_MenuContainer.layout.y - m_OuterContainer.layout.y,
                     m_ScrollView.layout.height + m_OuterContainer.resolvedStyle.borderBottomWidth + m_OuterContainer.resolvedStyle.borderTopWidth);
 
-                if (m_DesiredRect.width > m_OuterContainer.resolvedStyle.width)
+                if (m_DesiredRect != Rect.zero)
                 {
                     m_OuterContainer.style.width = m_DesiredRect.width;
                 }

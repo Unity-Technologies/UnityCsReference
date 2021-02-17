@@ -84,6 +84,8 @@ namespace UnityEditorInternal
 
         [NonSerialized]
         protected IProfilerSampleNameProvider m_ProfilerSampleNameProvider;
+        [SerializeReference]
+        protected IProfilerWindowController m_ProfilerWindowController;
 
         // Tree of expanded nodes.
         // Each level has a set of expanded marker ids, which are equivalent to sample name.
@@ -93,11 +95,14 @@ namespace UnityEditorInternal
         }
         [NonSerialized]
         ExpandedMarkerIdHierarchy m_ExpandedMarkersHierarchy;
-        [NonSerialized]
 
+        [NonSerialized]
         bool m_ExpandDuringNextSelectionMigration;
+        bool m_SelectionNeedsMigration;
         [NonSerialized]
         List<TreeViewItem> m_RowsPool = new List<TreeViewItem>();
+        [NonSerialized]
+        int m_RowsPoolLastItemIndex = -1;
         [NonSerialized]
         Stack<List<TreeViewItem>> m_ChildrenPool = new Stack<List<TreeViewItem>>();
         [NonSerialized]
@@ -171,6 +176,7 @@ namespace UnityEditorInternal
                 m_Initialized = false;
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal void Init(HierarchyFrameDataView frameDataView, int id, int depth, TreeViewItem parent)
             {
                 this.id = id;
@@ -213,6 +219,7 @@ namespace UnityEditorInternal
             Assert.IsNotNull(multicolumnHeader);
             deselectOnUnhandledMouseDown = true;
             m_ProfilerSampleNameProvider = profilerSampleNameProvider;
+            m_ProfilerWindowController = profilerWindowController;
             m_MultiColumnHeader = multicolumnHeader;
             m_MultiColumnHeader.sortingChanged += OnSortingChanged;
             profilerWindowController.currentFrameChanged += FrameChanged;
@@ -251,7 +258,7 @@ namespace UnityEditorInternal
             {
                 var childItem = item.children[i];
                 // Inlining !IsChildListForACollapsedParent without childList.Count == 1 check, as we only create list if we have children
-                if (childItem.children != null && childItem.children[0] != null)
+                if (childItem != null && childItem.children != null && childItem.children[0] != null)
                 {
                     var subHierarchy = new ExpandedMarkerIdHierarchy();
                     if (expandedHierarchy.expandedMarkers == null)
@@ -286,6 +293,7 @@ namespace UnityEditorInternal
             m_LocalSelectedItemMarkerIdPath.Clear();
             m_LocalSelectedItemMarkerIdPath.AddRange(selection.markerIdPath);
             m_ExpandDuringNextSelectionMigration = expandSelection;
+            m_SelectionNeedsMigration = true;
             proxySelectionInfo = default;
         }
 
@@ -301,9 +309,18 @@ namespace UnityEditorInternal
             m_Selected = null;
             m_LocalSelectedItemMarkerIdPath.Clear();
             m_ExpandDuringNextSelectionMigration = false;
+            m_SelectionNeedsMigration = false;
             proxySelectionInfo = default;
             if (setClearedSelection)
                 SetSelection(new List<int>());
+        }
+
+        public void OnFrameDataViewAboutToBeDisposed()
+        {
+            if (m_FrameDataView == null || !m_FrameDataView.valid)
+                return;
+            StoreExpandedState();
+            StoreSelectedState();
         }
 
         private bool PropertyPathMatchesSelectedIDs(string legacyPropertyPath, List<int> selectedIDs)
@@ -346,100 +363,102 @@ namespace UnityEditorInternal
         }
 
         static readonly ProfilerMarker k_MigrateSelectionStateMarker = new ProfilerMarker($"{nameof(ProfilerFrameDataTreeView)}.{nameof(MigrateSelectedState)}");
-        void MigrateSelectedState(bool expandIfNecessary)
+        void MigrateSelectedState(bool expandIfNecessary, bool framingAllowed)
         {
             if (m_LocalSelectedItemMarkerIdPath == null || m_Selected == null || m_LocalSelectedItemMarkerIdPath.Count != m_Selected.markerNamePath.Count)
                 return;
+
+            m_SelectionNeedsMigration = false;
 
             var markerNamePath = m_Selected.markerNamePath;
 
             expandIfNecessary |= m_ExpandDuringNextSelectionMigration;
 
-            k_MigrateSelectionStateMarker.Begin();
-            var safeFrameWithSafeMarkerIds = m_Selected.frameIndexIsSafe && m_FrameDataView.frameIndex == m_Selected.safeFrameIndex;
-            var rawHierarchyView = (m_FrameDataView.viewMode & HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName) == HierarchyFrameDataView.ViewModes.Default;
-            var allowProxySelection = !safeFrameWithSafeMarkerIds;
-
-            var finalRawSampleIndex = RawFrameDataView.invalidSampleIndex;
-
-            using (var frameData = new RawFrameDataView(m_FrameDataView.frameIndex, m_FrameDataView.threadIndex))
+            using (k_MigrateSelectionStateMarker.Auto())
             {
-                if (!safeFrameWithSafeMarkerIds)
+                var safeFrameWithSafeMarkerIds = m_Selected.frameIndexIsSafe && m_FrameDataView.frameIndex == m_Selected.safeFrameIndex;
+                var rawHierarchyView = (m_FrameDataView.viewMode & HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName) == HierarchyFrameDataView.ViewModes.Default;
+                var allowProxySelection = !safeFrameWithSafeMarkerIds;
+
+                var finalRawSampleIndex = RawFrameDataView.invalidSampleIndex;
+
+                using (var frameData = new RawFrameDataView(m_FrameDataView.frameIndex, m_FrameDataView.threadIndex))
                 {
-                    // marker names might have changed Ids between frames, update them if that is the case
-                    for (int i = 0; i < m_LocalSelectedItemMarkerIdPath.Count; i++)
+                    if (!frameData.valid)
+                        return;
+                    if (!safeFrameWithSafeMarkerIds)
                     {
-                        m_LocalSelectedItemMarkerIdPath[i] = frameData.GetMarkerId(markerNamePath[i]);
-                    }
-                }
-                else if (!allowProxySelection)
-                {
-                    for (int i = 0; i < m_LocalSelectedItemMarkerIdPath.Count; i++)
-                    {
-                        var markerIsEditorOnlyMarker = frameData.GetMarkerFlags(m_LocalSelectedItemMarkerIdPath[i]).HasFlag(Unity.Profiling.LowLevel.MarkerFlags.AvailabilityEditor);
-                        if (markerIsEditorOnlyMarker && i < m_LocalSelectedItemMarkerIdPath.Count - 1)
+                        // marker names might have changed Ids between frames, update them if that is the case
+                        for (int i = 0; i < m_LocalSelectedItemMarkerIdPath.Count; i++)
                         {
-                            // Technically, proxy selections are not supposed to be allowed when switching between views in the same frame.
-                            // However, if there are Editor Only markers in the path that are NOT the last item, Hierarchy View might have collapsed the path from this point forward,
-                            // so we need to allow Proxy Selections here.
-                            allowProxySelection = true;
-                            break;
+                            m_LocalSelectedItemMarkerIdPath[i] = frameData.GetMarkerId(markerNamePath[i]);
                         }
                     }
-                }
-                var name = m_Selected.sampleDisplayName;
-                m_CachedDeepestRawSampleIndexPath.Clear();
-                if (m_CachedDeepestRawSampleIndexPath.Capacity < markerNamePath.Count)
-                    m_CachedDeepestRawSampleIndexPath.Capacity = markerNamePath.Count;
+                    else if (!allowProxySelection)
+                    {
+                        for (int i = 0; i < m_LocalSelectedItemMarkerIdPath.Count; i++)
+                        {
+                            var markerIsEditorOnlyMarker = frameData.GetMarkerFlags(m_LocalSelectedItemMarkerIdPath[i]).HasFlag(Unity.Profiling.LowLevel.MarkerFlags.AvailabilityEditor);
+                            if (markerIsEditorOnlyMarker && i < m_LocalSelectedItemMarkerIdPath.Count - 1)
+                            {
+                                // Technically, proxy selections are not supposed to be allowed when switching between views in the same frame.
+                                // However, if there are Editor Only markers in the path that are NOT the last item, Hierarchy View might have collapsed the path from this point forward,
+                                // so we need to allow Proxy Selections here.
+                                allowProxySelection = true;
+                                break;
+                            }
+                        }
+                    }
+                    var name = m_Selected.sampleDisplayName;
+                    m_CachedDeepestRawSampleIndexPath.Clear();
+                    if (m_CachedDeepestRawSampleIndexPath.Capacity < markerNamePath.Count)
+                        m_CachedDeepestRawSampleIndexPath.Capacity = markerNamePath.Count;
 
-                if (allowProxySelection || rawHierarchyView)
-                {
-                    finalRawSampleIndex = ProfilerTimelineGUI.FindFirstSampleThroughMarkerPath(
-                        frameData, m_ProfilerSampleNameProvider,
-                        m_LocalSelectedItemMarkerIdPath, markerNamePath.Count, ref name,
-                        longestMatchingPath: m_CachedDeepestRawSampleIndexPath);
+                    if (allowProxySelection || rawHierarchyView)
+                    {
+                        finalRawSampleIndex = ProfilerTimelineGUI.FindFirstSampleThroughMarkerPath(
+                            frameData, m_ProfilerSampleNameProvider,
+                            m_LocalSelectedItemMarkerIdPath, markerNamePath.Count, ref name,
+                            longestMatchingPath: m_CachedDeepestRawSampleIndexPath);
+                    }
+                    else
+                    {
+                        finalRawSampleIndex = ProfilerTimelineGUI.FindNextSampleThroughMarkerPath(
+                            frameData, m_ProfilerSampleNameProvider,
+                            m_LocalSelectedItemMarkerIdPath, markerNamePath.Count, ref name,
+                            ref m_CachedDeepestRawSampleIndexPath);
+                    }
                 }
-                else
+                var newSelectedId = m_FrameDataView.GetRootItemID();
+                bool selectedItemsPathIsExpanded = true;
+                var proxySelection = new ProxySelection();
+                proxySelectionInfo = default;
+                var deepestPath = m_CachedDeepestRawSampleIndexPath.Count;
+
+                if (finalRawSampleIndex >= 0 || allowProxySelection && deepestPath > 0)
                 {
-                    finalRawSampleIndex = ProfilerTimelineGUI.FindNextSampleThroughMarkerPath(
-                        frameData, m_ProfilerSampleNameProvider,
-                        m_LocalSelectedItemMarkerIdPath, markerNamePath.Count, ref name,
-                        ref m_CachedDeepestRawSampleIndexPath);
+                    // if a valid raw index was found, find the corresponding HierarchyView Sample id next:
+                    newSelectedId = GetItemIdFromRawFrameDataIndexPath(m_FrameDataView, m_CachedDeepestRawSampleIndexPath, out deepestPath, out selectedItemsPathIsExpanded);
+                    if (m_LocalSelectedItemMarkerIdPath.Count > deepestPath && newSelectedId >= 0)
+                    {
+                        proxySelection.hasProxySelection = true;
+                        proxySelection.nonProxyName = m_Selected.sampleDisplayName;
+                        proxySelection.nonProxySampleStack = m_Selected.markerNamePath;
+                        proxySelection.pathLengthDifferenceForProxy = deepestPath - m_LocalSelectedItemMarkerIdPath.Count;
+                    }
                 }
+
+                var newSelection = (newSelectedId == 0) ? new List<int>() : new List<int>() { newSelectedId };
+                state.selectedIDs = newSelection;
+
+                // Framing invalidates expanded state and this is very expensive operation to perform each frame.
+                // Thus we auto frame selection only when we are not currently receiving profiler data from the Editor we are profiling, or the user opted into a "Live" view of the data
+                if (newSelectedId != 0 && isInitialized && framingAllowed && (selectedItemsPathIsExpanded || expandIfNecessary))
+                    FrameItem(newSelectedId);
+                m_ExpandDuringNextSelectionMigration = false;
+
+                proxySelectionInfo = proxySelection;
             }
-            var newSelectedId = m_FrameDataView.GetRootItemID();
-            bool selectedItemsPathIsExpanded = true;
-            var proxySelection = new ProxySelection();
-            proxySelectionInfo = default;
-            var deepestPath = m_CachedDeepestRawSampleIndexPath.Count;
-
-            if (finalRawSampleIndex >= 0 || allowProxySelection && deepestPath > 0)
-            {
-                // if a valid raw index was found, find the corresponding HierarchyView Sample id next:
-                newSelectedId = GetItemIdFromRawFrameDataIndexPath(m_FrameDataView, m_CachedDeepestRawSampleIndexPath, out deepestPath, out selectedItemsPathIsExpanded);
-                if (m_LocalSelectedItemMarkerIdPath.Count > deepestPath && newSelectedId >= 0)
-                {
-                    proxySelection.hasProxySelection = true;
-                    proxySelection.nonProxyName = m_Selected.sampleDisplayName;
-                    proxySelection.nonProxySampleStack = m_Selected.markerNamePath;
-                    proxySelection.pathLengthDifferenceForProxy = deepestPath - m_LocalSelectedItemMarkerIdPath.Count;
-                }
-            }
-
-            var newSelection = (newSelectedId == 0) ? new List<int>() : new List<int>() { newSelectedId };
-            state.selectedIDs = newSelection;
-
-            // Framing invalidates expanded state and this is very expensive operation to perform each frame.
-            // Thus we auto frame selection only when we are not profiling.
-            var collectingSamples = ProfilerDriver.enabled && (ProfilerDriver.profileEditor || EditorApplication.isPlaying);
-            var isFramingAllowed = !collectingSamples;
-            if (newSelectedId != 0 && isInitialized && isFramingAllowed && (selectedItemsPathIsExpanded || expandIfNecessary))
-                FrameItem(newSelectedId);
-            m_ExpandDuringNextSelectionMigration = false;
-
-            proxySelectionInfo = proxySelection;
-
-            k_MigrateSelectionStateMarker.End();
         }
 
         public int GetItemIDFromRawFrameDataViewIndex(HierarchyFrameDataView frameDataView, int rawSampleIndex, ReadOnlyCollection<int> markerIdPath)
@@ -535,6 +554,7 @@ namespace UnityEditorInternal
             m_FrameDataView = null;
 
             m_RowsPool.Clear();
+            m_RowsPoolLastItemIndex = -1;
             m_ChildrenPool.Clear();
             m_ReusableVisitList.Clear();
             m_ReusableChildrenIds.Clear();
@@ -562,7 +582,14 @@ namespace UnityEditorInternal
         protected override IList<TreeViewItem> BuildRows(TreeViewItem root)
         {
             if (m_RowsPool.Count < kMaxPooledRowsCount)
+            {
+                // clean out items in the pool that where currently in use.
+                if (m_RowsPoolLastItemIndex + 1 < m_RowsPool.Count)
+                    m_RowsPool.RemoveRange(m_RowsPoolLastItemIndex + 1, m_RowsPool.Count - (m_RowsPoolLastItemIndex + 1));
+                // pool current rows
                 m_RowsPool.AddRange(m_Rows);
+                m_RowsPoolLastItemIndex += m_Rows.Count;
+            }
             m_Rows.Clear();
 
             if (m_FrameDataView == null || !m_FrameDataView.valid)
@@ -616,7 +643,7 @@ namespace UnityEditorInternal
             if (!requestedDelayedSearch)
             {
                 MigrateExpandedState(newExpandedIds);
-                MigrateSelectedState(false);
+                MigrateSelectedState(false, !m_ProfilerWindowController.ProfilerWindowOverheadIsAffectingProfilingRecordingData() || m_UpdateViewLive);
             }
 
             m_PrevFrameIndex = ProfilerDriver.lastFrameIndex;
@@ -687,6 +714,7 @@ namespace UnityEditorInternal
             public ExpandedMarkerIdHierarchy expandedHierarchy;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         LinkedListNode<TreeTraversalState> AcquireTreeTraversalStateNode(FrameDataTreeViewItem item, ExpandedMarkerIdHierarchy expandedHierarchy)
         {
             if (m_TreeTraversalStatePool.Count == 0)
@@ -697,16 +725,18 @@ namespace UnityEditorInternal
             return node;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         FrameDataTreeViewItem AcquireFrameDataTreeViewItem(HierarchyFrameDataView frameDataView, int id, int depth, TreeViewItem parent)
         {
-            if (m_RowsPool.Count > 0)
+            if (m_RowsPoolLastItemIndex > -1)
             {
-                FrameDataTreeViewItem child = (FrameDataTreeViewItem)m_RowsPool[m_RowsPool.Count - 1];
-                m_RowsPool.RemoveAt(m_RowsPool.Count - 1);
+                FrameDataTreeViewItem child = (FrameDataTreeViewItem)m_RowsPool[m_RowsPoolLastItemIndex];
+                --m_RowsPoolLastItemIndex;
                 child.Init(m_FrameDataView, id, depth, parent);
-                if (child.children != null)
+                var children = child.children;
+                if (children != null)
                 {
-                    m_ChildrenPool.Push(child.children);
+                    m_ChildrenPool.Push(children);
                     child.children = null;
                 }
 
@@ -724,19 +754,31 @@ namespace UnityEditorInternal
             // Think of it as an unrolled recursion where stack state is defined by TreeTraversalState.
             while (m_ReusableVisitList.First != null)
             {
-                var currentItem = m_ReusableVisitList.First.Value;
-                m_TreeTraversalStatePool.Push(m_ReusableVisitList.First);
-                m_ReusableVisitList.RemoveFirst();
+                var currentItem = m_ReusableVisitList.First.Value.item;
+                var currentExpandedHierarchy =  m_ReusableVisitList.First.Value.expandedHierarchy;
+                {
+                    // scope firstItem to avoid reusing it accidentally
+                    var firstItem = m_ReusableVisitList.First;
+                    firstItem.Value = default;
+                    m_TreeTraversalStatePool.Push(firstItem);
+                    m_ReusableVisitList.RemoveFirst();
+                }
 
-                if (currentItem.item.depth != ProfilerFrameDataHierarchyView.invalidTreeViewDepth)
-                    newRows.Add(currentItem.item);
+                // This loop can be a bit of a hot path so, micro optimizations like property caching and inlinig have some effect:
+                // So... cache depth
+                var currentItemDepth = currentItem.depth;
+                // and cache children, remember to also set currentItem.children if a new list is assigned
+                var currentItemChildren = currentItem.children;
 
-                m_FrameDataView.GetItemChildren(currentItem.item.id, m_ReusableChildrenIds);
+                if (currentItemDepth != ProfilerFrameDataHierarchyView.invalidTreeViewDepth)
+                    newRows.Add(currentItem);
+
+                m_FrameDataView.GetItemChildren(currentItem.id, m_ReusableChildrenIds);
                 var childrenCount = m_ReusableChildrenIds.Count;
                 if (childrenCount == 0)
                     continue;
 
-                if (currentItem.item.depth != ProfilerFrameDataHierarchyView.invalidTreeViewDepth)
+                if (currentItemDepth != ProfilerFrameDataHierarchyView.invalidTreeViewDepth)
                 {
                     // Check expansion state from a previous frame view state (marker id path) or current tree view state (frame-specific id).
                     bool needsExpansion;
@@ -744,53 +786,68 @@ namespace UnityEditorInternal
                     {
                         // When we alter expansion state of the currently selected frame,
                         // we rely on TreeView's IsExpanded functionality.
-                        needsExpansion = IsExpanded(currentItem.item.id);
+                        needsExpansion = IsExpanded(currentItem.id);
                     }
                     else
                     {
                         // When we switch to another frame, we rebuild expanded state based on stored m_ExpandedMarkersHierarchy
                         // which represents tree of expanded nodes.
-                        needsExpansion = currentItem.expandedHierarchy != null;
+                        needsExpansion = currentExpandedHierarchy != null;
                     }
 
                     if (!needsExpansion)
                     {
-                        if (currentItem.item.children == null)
-                            currentItem.item.children = CreateChildListForCollapsedParent();
+                        if (currentItemChildren == null)
+                        {
+                            // Lets create a fake laze child list.
+                            // Not using CreateChildListForCollapsedParent as that list returns a static list and will cause funkyness later on.
+                            // We have a pool, so we're gonna use that.
+                            if (m_ChildrenPool.Count > 0)
+                            {
+                                currentItem.children = currentItemChildren = m_ChildrenPool.Pop();
+                                currentItemChildren.Clear();
+                            }
+                            else
+                                currentItem.children = currentItemChildren = new List<TreeViewItem>();
+                            currentItemChildren.Add(null);
+                        }
                         continue;
                     }
 
                     if (newExpandedIds != null)
-                        newExpandedIds.Add(currentItem.item.id);
+                        newExpandedIds.Add(currentItem.id);
                 }
 
                 // Generate children based on the view data.
-                if (currentItem.item.children == null)
+                if (currentItemChildren == null)
                 {
                     // Reuse existing list.
                     if (m_ChildrenPool.Count > 0)
-                        currentItem.item.children = m_ChildrenPool.Pop();
+                        currentItem.children = currentItemChildren = m_ChildrenPool.Pop();
                     else
-                        currentItem.item.children = new List<TreeViewItem>();
+                        currentItem.children = currentItemChildren = new List<TreeViewItem>();
                 }
-                currentItem.item.children.Clear();
-                currentItem.item.children.Capacity = childrenCount;
+                currentItemChildren.Clear();
+                const int k_MaxSuperflousCapacity = 32 - 1;
+                // only reset capacity if needed or if too much space would be wasted. Otherwise, what's the point of pooling them?
+                if (currentItemChildren.Capacity < childrenCount || currentItemChildren.Capacity > childrenCount + k_MaxSuperflousCapacity)
+                    currentItemChildren.Capacity = childrenCount;
 
                 for (var i = 0; i < childrenCount; ++i)
                 {
-                    var child = AcquireFrameDataTreeViewItem(m_FrameDataView, m_ReusableChildrenIds[i], currentItem.item.depth + 1, currentItem.item);
-                    currentItem.item.children.Add(child);
+                    var child = AcquireFrameDataTreeViewItem(m_FrameDataView, m_ReusableChildrenIds[i], currentItemDepth + 1, currentItem);
+                    currentItemChildren.Add(child);
                 }
 
                 // Add children to the traversal list.
                 // We add all of them in front, so it is depth search, but with preserved siblings order.
                 LinkedListNode<TreeTraversalState> prev = null;
-                foreach (var child in currentItem.item.children)
+                foreach (var child in currentItemChildren)
                 {
                     var childMarkerId = m_FrameDataView.GetItemMarkerID(child.id);
                     ExpandedMarkerIdHierarchy childExpandedHierarchy = null;
-                    if (currentItem.expandedHierarchy != null && currentItem.expandedHierarchy.expandedMarkers != null)
-                        currentItem.expandedHierarchy.expandedMarkers.TryGetValue(childMarkerId, out childExpandedHierarchy);
+                    if (currentExpandedHierarchy != null && currentExpandedHierarchy.expandedMarkers != null)
+                        currentExpandedHierarchy.expandedMarkers.TryGetValue(childMarkerId, out childExpandedHierarchy);
 
                     var traversalState = AcquireTreeTraversalStateNode((FrameDataTreeViewItem)child, childExpandedHierarchy);
                     if (prev == null)
@@ -912,11 +969,18 @@ namespace UnityEditorInternal
             Reload();
         }
 
-        public override void OnGUI(Rect rect)
+        bool m_UpdateViewLive = false;
+        // Profiler UI should be calling this OnGUI over the base OnGUI
+        public void OnGUI(Rect rect, bool updateViewLive)
         {
-            if (m_ExpandDuringNextSelectionMigration)
-                MigrateSelectedState(true);
-
+            m_UpdateViewLive = updateViewLive;
+            if (m_SelectionNeedsMigration && m_Selected != null)
+            {
+                var profilingEditor = m_ProfilerWindowController.ProfilerWindowOverheadIsAffectingProfilingRecordingData();
+                if (profilingEditor)
+                    m_ExpandDuringNextSelectionMigration = false;
+                MigrateSelectedState(m_ExpandDuringNextSelectionMigration, !profilingEditor || updateViewLive);
+            }
             if (m_FrameDataView != null && m_FrameDataView.valid)
                 base.OnGUI(rect);
         }

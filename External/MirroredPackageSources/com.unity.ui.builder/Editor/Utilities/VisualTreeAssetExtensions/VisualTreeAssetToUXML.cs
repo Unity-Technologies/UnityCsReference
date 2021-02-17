@@ -5,6 +5,7 @@ using UnityEngine.UIElements;
 using UnityEngine;
 using System.IO;
 using System.Linq;
+using UnityEditor;
 
 namespace Unity.UI.Builder
 {
@@ -142,7 +143,14 @@ namespace Unity.UI.Builder
                             int index = usings.BinarySearch(lookingFor, VisualTreeAsset.UsingEntry.comparer);
                             if (index >= 0)
                             {
-                                string path = usings[index].path;
+                                var usingEntry = usings[index];
+                                string path = usingEntry.path;
+
+                                // If the path is empty then get the path from the asset
+                                if (string.IsNullOrEmpty(path) && usingEntry.asset != null)
+                                {
+                                    path = AssetDatabase.GetAssetPath(usingEntry.asset);
+                                }
                                 path = GetProcessedPathForSrcAttribute(vtaPath, path);
                                 AppendElementAttribute("src", path, stringBuilder);
                             }

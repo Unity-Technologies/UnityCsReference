@@ -215,7 +215,7 @@ namespace UnityEngine.UIElements.StyleSheets
             // To support having the root pseudo states set for style sheets added onto an element
             // we need to find which sheets belongs to the element itself.
             VisualElement element = context.currentElement;
-            int parentSheetIndex =  context.styleSheetStack.Count - 1;
+            int parentSheetIndex =  context.styleSheetCount - 1;
             if (element.styleSheetList != null)
             {
                 // The number of style sheet for an element is the count of the styleSheetList + all imported style sheet
@@ -241,7 +241,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
             VisualElement element = context.currentElement;
             bool toggledRoot = false;
-            for (int i = 0; i < context.styleSheetStack.Count; i++)
+            for (int i = 0; i < context.styleSheetCount; i++)
             {
                 // If the sheet is added on the element consider it as :root
                 if (!toggledRoot && i > parentSheetIndex)
@@ -250,7 +250,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     toggledRoot = true;
                 }
 
-                StyleSheet styleSheet = context.styleSheetStack[i];
+                StyleSheet styleSheet = context.GetStyleSheetAt(i);
                 SelectorMatchRecord record = new SelectorMatchRecord(styleSheet, i);
 
                 FastLookup(styleSheet.orderedTypeSelectors, matchedSelectors, context, element.typeName, ref record);

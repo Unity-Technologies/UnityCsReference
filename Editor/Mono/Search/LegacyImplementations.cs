@@ -12,7 +12,8 @@ namespace UnityEditor.SearchService
     // Default implementations for built-in search engines.
     abstract class LegacySearchEngineBase : ISearchEngineBase
     {
-        public string name => "Legacy";
+        internal const string k_Name = "Legacy";
+        public string name => k_Name;
 
         public virtual void BeginSession(ISearchContext context)
         {}

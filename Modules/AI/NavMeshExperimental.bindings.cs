@@ -140,6 +140,9 @@ namespace UnityEngine.Experimental.AI
         {
             if (!world.IsValid())
                 throw new ArgumentNullException("world", "Invalid world");
+
+            if (pathNodePoolSize < 0 || pathNodePoolSize > ushort.MaxValue)
+                throw new ArgumentException($"The path node pool size ({pathNodePoolSize}) must be greater than or equal to 0 and less than {ushort.MaxValue + 1}.");
             m_NavMeshQuery = Create(world, pathNodePoolSize);
 
             DisposeSentinel.Create(out m_Safety, out m_DisposeSentinel, 0, allocator);

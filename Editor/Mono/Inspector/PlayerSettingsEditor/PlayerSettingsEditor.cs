@@ -48,6 +48,7 @@ namespace UnityEditor
 
         class SettingsContent
         {
+            public static readonly GUIContent lightmapEncodingWebGLWarning = EditorGUIUtility.TrTextContent("High quality lightmap encoding requires WebGL 2 only. Uncheck 'Automatic Graphics API' if it's set and remove the WebGL 1 API.");
             public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, uncheck 'Automatic Graphics API' to remove OpenGL ES 2 API, Blit Type for non-SRP projects must be Always Blit or Auto");
             public static readonly GUIContent colorSpaceWebGLWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires WebGL 2, uncheck 'Automatic Graphics API' to remove WebGL 1 API. WARNING: If DXT sRGB is not supported by the browser, texture will be decompressed");
             public static readonly GUIContent colorSpaceIOSWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2/3 APIs.");
@@ -212,6 +213,7 @@ namespace UnityEditor
             public static string undoChangedScriptingDefineString { get { return LocalizationDatabase.GetLocalizedString("Changed Scripting Define Settings"); } }
             public static string undoChangedGraphicsJobsString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics Jobs Setting"); } }
             public static string undoChangedGraphicsJobModeString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics Job Mode Setting"); } }
+            public static string changeColorSpaceString { get { return LocalizationDatabase.GetLocalizedString("Changing the color space may take a significant amount of time."); } }
         }
 
         class RecompileReason
@@ -1632,7 +1634,7 @@ namespace UnityEditor
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    if (m_ActiveColorSpace.enumValueIndex != selectedValue && EditorUtility.DisplayDialog("Changing Color Space", "Warning: Changing the color space can take some time.", $"Change to {(ColorSpace)m_ActiveColorSpace.enumValueIndex}", "Cancel"))
+                    if (m_ActiveColorSpace.enumValueIndex != selectedValue && EditorUtility.DisplayDialog("Changing Color Space", SettingsContent.changeColorSpaceString, $"Change to {(ColorSpace)m_ActiveColorSpace.enumValueIndex}", "Cancel"))
                     {
                         serializedObject.ApplyModifiedProperties();
                     }
@@ -1893,6 +1895,18 @@ namespace UnityEditor
                         serializedObject.ApplyModifiedProperties();
 
                         GUIUtility.ExitGUI();
+                    }
+
+                    if (encodingQuality == LightmapEncodingQuality.High)
+                    {
+                        if (targetGroup == BuildTargetGroup.WebGL)
+                        {
+                            var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL);
+                            if (apis.Contains(GraphicsDeviceType.OpenGLES2))
+                            {
+                                EditorGUILayout.HelpBox(SettingsContent.lightmapEncodingWebGLWarning.text, MessageType.Warning);
+                            }
+                        }
                     }
 
                     if (encodingQuality != LightmapEncodingQuality.Low)
@@ -2851,12 +2865,12 @@ namespace UnityEditor
                         var logProperty = m_StackTraceTypes.GetArrayElementAtIndex((int)logType);
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            GUILayout.Label(logType.ToString());
+                            GUILayout.Label(logType.ToString(), GUILayout.MinWidth(60));
                             foreach (StackTraceLogType stackTraceLogType in Enum.GetValues(typeof(StackTraceLogType)))
                             {
                                 StackTraceLogType inStackTraceLogType = (StackTraceLogType)logProperty.intValue;
                                 EditorGUI.BeginChangeCheck();
-                                bool val = EditorGUILayout.ToggleLeft(" ", inStackTraceLogType == stackTraceLogType, GUILayout.Width(70));
+                                bool val = EditorGUILayout.ToggleLeft(" ", inStackTraceLogType == stackTraceLogType, GUILayout.Width(65));
                                 if (EditorGUI.EndChangeCheck() && val)
                                 {
                                     logProperty.intValue = (int)stackTraceLogType;

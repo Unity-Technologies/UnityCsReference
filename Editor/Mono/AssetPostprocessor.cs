@@ -285,7 +285,7 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static void PreprocessMesh(string pathName)
+        static void PreprocessModel(string pathName)
         {
             CallPostProcessMethods("OnPreprocessModel", null);
         }

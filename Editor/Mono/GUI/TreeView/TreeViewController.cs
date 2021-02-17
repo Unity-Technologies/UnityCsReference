@@ -8,6 +8,7 @@ using System.Linq;
 using UnityEditor.AnimatedValues;
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.IMGUI.Controls
 {
@@ -226,6 +227,11 @@ namespace UnityEditor.IMGUI.Controls
         public bool isDragging
         {
             get { return m_DragSelection.HasValues(); }
+        }
+
+        public bool IsDraggingItem(TreeViewItem item)
+        {
+            return m_DragSelection.Contains(item.id);
         }
 
         public bool showingVerticalScrollBar
@@ -598,9 +604,10 @@ namespace UnityEditor.IMGUI.Controls
 
             Event evt = Event.current;
             if (evt.type == EventType.Repaint)
+            {
                 m_TotalRect = rect;
-            if (evt.type == EventType.Layout)
                 m_CachedSelection.Set(state.selectedIDs);
+            }
 
             m_GUIView = GUIView.current;
 
@@ -663,7 +670,50 @@ namespace UnityEditor.IMGUI.Controls
                     }
                     else
                     {
-                        m_VisibleRect = m_TotalRect;
+                        // If this is contained withing something from UI Toolkit (e.g. the Inspector window), the scroll
+                        // will be controlled by UI Toolkit itself so we need to make sure to only show what we need to
+                        // show, otherwise things can become really slow.
+                        var container = UIElementsUtility.GetCurrentIMGUIContainer();
+                        var uiScrollView = container?.GetFirstAncestorOfType<ScrollView>();
+                        if (uiScrollView != null)
+                        {
+                            // We use the viewport of the UI Toolkit scroll view to calculate the visible area.
+                            var viewport = uiScrollView.Q("unity-content-viewport");
+                            var viewportWorldBound = viewport.worldBound;
+                            var viewportRectWorld = GUIClip.Unclip(viewportWorldBound);
+                            var treeViewRectWindow = GUIClip.UnclipToWindow(m_TotalRect);
+
+                            float visibleHeight = (viewportRectWorld.y + viewportRectWorld.height) - treeViewRectWindow.y;
+                            float visibleWidth = (viewportRectWorld.x + viewportRectWorld.width) - treeViewRectWindow.x;
+                            float scrollPosY = 0f, scrollPosX = 0f;
+
+                            if (visibleHeight > viewportRectWorld.height)
+                            {
+                                visibleHeight = viewportRectWorld.height;
+                                scrollPosY = viewportRectWorld.y - treeViewRectWindow.y;
+                            }
+
+                            if (visibleWidth > viewportRectWorld.width)
+                            {
+                                visibleWidth = viewportRectWorld.width;
+                                scrollPosX = viewportRectWorld.x - treeViewRectWindow.x;
+                            }
+
+                            if (scrollPosX == 0 && scrollPosY == 0)
+                            {
+                                // Avoids newing a Vector2 if we don't need a scroll position.
+                                state.scrollPos = Vector2.zero;
+                            }
+                            else
+                            {
+                                state.scrollPos = new Vector2(scrollPosX, scrollPosY);
+                            }
+                            m_VisibleRect = new Rect(0f, 0f, visibleWidth, visibleHeight);
+                        }
+                        else
+                        {
+                            m_VisibleRect = m_TotalRect;
+                        }
                     }
                 }
             }

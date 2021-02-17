@@ -603,7 +603,8 @@ namespace UnityEditor
             float slowestParticle = Mathf.Infinity;
             foreach (ParticleSystem ps in m_SelectedParticleSystems)
             {
-                ps.CalculateEffectUIData(ref particleCount, ref fastestParticle, ref slowestParticle);
+                if (ps != null)
+                    ps.CalculateEffectUIData(ref particleCount, ref fastestParticle, ref slowestParticle);
             }
             EditorGUILayout.LabelField(s_Texts.particleCount, GUIContent.Temp(particleCount.ToString()));
 
@@ -612,7 +613,7 @@ namespace UnityEditor
             foreach (ParticleSystem ps in m_SelectedParticleSystems)
             {
                 int subEmitterParticlesCurrent = 0;
-                if (ps.CalculateEffectUISubEmitterData(ref subEmitterParticlesCurrent, ref fastestParticle, ref slowestParticle))
+                if (ps != null && ps.CalculateEffectUISubEmitterData(ref subEmitterParticlesCurrent, ref fastestParticle, ref slowestParticle))
                 {
                     hasSubEmitters = true;
                     subEmitterParticles += subEmitterParticlesCurrent;
@@ -984,12 +985,16 @@ namespace UnityEditor
                         GUI.color = orgColor;
                     }
 
-                    GUILayout.Space(5);
-                    if (GUILayout.Button(s_Texts.addParticleSystem, "OL Plus", GUILayout.Width(20)))
+                    // Do not show the Add button when editing a prefab asset (case 1287185)
+                    if (!PrefabUtility.IsPartOfPrefabAsset(m_SelectedParticleSystems[0]))
                     {
-                        // Store state of inspector before creating new particle system that will reload the inspector (new selected object)
-                        //SessionState.SetFloat("CurrentEmitterAreaScroll", m_EmitterAreaScrollPos.x);
-                        CreateParticleSystem(ParticleSystemEditorUtils.GetRoot(m_SelectedParticleSystems[0]), SubModuleUI.SubEmitterType.None);
+                        GUILayout.Space(5);
+                        if (GUILayout.Button(s_Texts.addParticleSystem, "OL Plus", GUILayout.Width(20)))
+                        {
+                            // Store state of inspector before creating new particle system that will reload the inspector (new selected object)
+                            //SessionState.SetFloat("CurrentEmitterAreaScroll", m_EmitterAreaScrollPos.x);
+                            CreateParticleSystem(ParticleSystemEditorUtils.GetRoot(m_SelectedParticleSystems[0]), SubModuleUI.SubEmitterType.None);
+                        }
                     }
 
                     GUILayout.FlexibleSpace(); // prevent centering

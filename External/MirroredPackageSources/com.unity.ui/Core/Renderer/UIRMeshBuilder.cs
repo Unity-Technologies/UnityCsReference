@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Profiling;
+using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -59,7 +60,7 @@ namespace UnityEngine.UIElements.UIR
             else MakeSlicedQuad(ref rectParams, posZ, meshAlloc);
         }
 
-        private static Vertex ConvertTextVertexToUIRVertex(TextMeshInfo info, int index, Vector2 offset, VertexFlags flags = VertexFlags.IsText)
+        private static Vertex ConvertTextVertexToUIRVertex(MeshInfo info, int index, Vector2 offset, VertexFlags flags = VertexFlags.IsText)
         {
             float dilate = 0.0f;
             // If Bold, dilate the shape (this value is hardcoded, should be set from the font actual bold weight)
@@ -95,7 +96,7 @@ namespace UnityEngine.UIElements.UIR
             return s_MaxTextMeshVertices;
         }
 
-        internal static void MakeText(TextMeshInfo meshInfo, Vector2 offset, AllocMeshData meshAlloc, VertexFlags flags = VertexFlags.IsText)
+        internal static void MakeText(MeshInfo meshInfo, Vector2 offset, AllocMeshData meshAlloc, VertexFlags flags = VertexFlags.IsText)
         {
             int vertexCount = LimitTextVertices(meshInfo.vertexCount);
             int quadCount = vertexCount / 4;

@@ -75,7 +75,7 @@ namespace UnityEditor.UIElements
                 new Vector3IntField.UxmlFactory(),
                 new BoundsIntField.UxmlFactory(),
 
-                new EventTypeSelectField.UxmlFactory()
+                new EventTypeSearchField.UxmlFactory()
             };
 
             foreach (IUxmlFactory factory in factories)

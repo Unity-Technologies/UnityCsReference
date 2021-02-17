@@ -143,7 +143,7 @@ namespace UnityEngine.UIElements
 
     internal abstract class BaseLiveReloadVisualTreeAssetTracker : BaseLiveReloadAssetTracker<VisualTreeAsset>
     {
-        internal abstract void OnVisualTreeAssetChanged(bool inMemoryChange);
+        internal abstract void OnVisualTreeAssetChanged();
 
         public override bool CheckTrackedAssetsDirty()
         {
@@ -151,7 +151,7 @@ namespace UnityEngine.UIElements
 
             if (isTrackedVisualTreeAssetDirty)
             {
-                OnVisualTreeAssetChanged(true);
+                OnVisualTreeAssetChanged();
             }
 
             return isTrackedVisualTreeAssetDirty;
@@ -169,7 +169,7 @@ namespace UnityEngine.UIElements
 
             if (ProcessDeletedAssets(deletedAssets) || shouldReload)
             {
-                OnVisualTreeAssetChanged(false);
+                OnVisualTreeAssetChanged();
 
                 if (m_RemovedAssets.Count > 0)
                 {

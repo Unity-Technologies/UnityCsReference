@@ -245,12 +245,16 @@ namespace UnityEngine.UIElements
                                  ((kde?.character == '\n') && (kde?.shiftKey == true))) // KeyCode.Return
                         {
                             parent.Focus();
+                            evt.StopPropagation();
+                            evt.PreventDefault();
                         }
                     }
                     else if ((kde?.character == 3) ||    // KeyCode.KeypadEnter
                              (kde?.character == '\n'))   // KeyCode.Return
                     {
                         parent.Focus();
+                        evt.StopPropagation();
+                        evt.PreventDefault();
                     }
                 }
                 else if (evt.eventTypeId == ExecuteCommandEvent.TypeId())

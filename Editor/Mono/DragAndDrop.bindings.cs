@@ -69,6 +69,8 @@ namespace UnityEditor
         public static void PrepareStartDrag()
         {
             s_GenericData = null;
+            paths = null;
+            objectReferences = new UnityEngine.Object[] {};
             PrepareStartDrag_Internal();
         }
 

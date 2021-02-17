@@ -105,6 +105,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void CheckRegistriesChanged()
         {
+            if (Unsupported.IsRegistryValidationDisabled)
+                return;
+
             if (getRegistriesOperation.isInProgress)
                 getRegistriesOperation.Cancel();
             getRegistriesOperation.GetRegistries();

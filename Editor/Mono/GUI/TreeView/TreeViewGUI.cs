@@ -15,6 +15,7 @@ namespace UnityEditor.IMGUI.Controls
         protected TreeViewController m_TreeView;
         protected PingData m_Ping = new PingData();
         protected Rect m_DraggingInsertionMarkerRect;
+        protected Rect m_DraggingAncestorMarkerRect;
         protected bool m_UseHorizontalScroll;
 
         // Icon overlay
@@ -61,6 +62,7 @@ namespace UnityEditor.IMGUI.Controls
         {
             public static GUIStyle foldout = "IN Foldout";
             public static GUIStyle insertion = "TV Insertion";
+            public static GUIStyle insertionRelativeToSibling = "TV InsertionRelativeToSibling";
             public static GUIStyle ping = "TV Ping";
             public static GUIStyle toolbarButton = "ToolbarButton";
             public static GUIStyle lineStyle = "TV Line";
@@ -78,6 +80,7 @@ namespace UnityEditor.IMGUI.Controls
             }
             set { m_FoldoutStyle = value; }
         }
+
         private GUIStyle m_InsertionStyle;
         protected GUIStyle insertionStyle
         {
@@ -87,6 +90,17 @@ namespace UnityEditor.IMGUI.Controls
             }
             set { m_InsertionStyle = value; }
         }
+
+        private GUIStyle m_InsertionRelativeToSiblingStyle;
+        protected GUIStyle insertionRelativeToSiblingStyle
+        {
+            get
+            {
+                return m_InsertionRelativeToSiblingStyle ?? Styles.insertionRelativeToSibling;
+            }
+            set { m_InsertionRelativeToSiblingStyle = value; }
+        }
+
         private GUIStyle m_PingStyle;
         protected GUIStyle pingStyle
         {
@@ -152,6 +166,16 @@ namespace UnityEditor.IMGUI.Controls
 
         virtual public void OnInitialize()
         {
+            var dragging = m_TreeView.dragging as TreeViewDragging;
+            if (dragging != null)
+                dragging.getIndentLevelForMouseCursor = GetIndentLevelForMouseCursor;
+        }
+
+        int GetIndentLevelForMouseCursor()
+        {
+            float contentStartX = k_BaseIndent + extraInsertionMarkerIndent + foldoutStyleWidth + lineStyle.margin.left;
+            float mousePosX = Event.current.mousePosition.x;
+            return Mathf.FloorToInt((mousePosX - contentStartX) / indentWidth);
         }
 
         internal Texture GetEffectiveIcon(TreeViewItem item, bool selected, bool focused)
@@ -270,6 +294,7 @@ namespace UnityEditor.IMGUI.Controls
         {
             // Reset
             m_DraggingInsertionMarkerRect.x = -1;
+            m_DraggingAncestorMarkerRect.x = -1;
 
             SyncFakeItem(); // After domain reload we ensure to reconstruct new Item state
 
@@ -278,13 +303,36 @@ namespace UnityEditor.IMGUI.Controls
                 DoRenameOverlay();
         }
 
-        virtual public void EndRowGUI()
+        void DrawDraggingInsertionMarkerIfNeeded()
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
+
+            // If an inheriting class already set the m_DraggingInsertionMarkerRect we don't overwrite it
+            var dragging = m_TreeView.dragging as TreeViewDragging;
+            if (dragging != null && dragging.insertionMarkerYPosition > 0 && m_DraggingInsertionMarkerRect.x == -1)
+            {
+                float xPos = GetContentIndent(dragging.insertRelativeToSibling) + extraInsertionMarkerIndent;
+                float yPos = dragging.insertionMarkerYPosition - insertionStyle.fixedHeight * 0.5f;
+                m_DraggingInsertionMarkerRect = new Rect(xPos, yPos, GUIClip.visibleRect.width - xPos, insertionStyle.fixedHeight);
+            }
+
             // Draw row marker when dragging
-            if (m_DraggingInsertionMarkerRect.x >= 0 && Event.current.type == EventType.Repaint)
+            if (m_DraggingInsertionMarkerRect.x >= 0)
             {
                 insertionStyle.Draw(m_DraggingInsertionMarkerRect, false, false, false, false);
             }
+
+            if (m_DraggingAncestorMarkerRect.x >= 0)
+            {
+                insertionRelativeToSiblingStyle.Draw(m_DraggingAncestorMarkerRect, GUIContent.none, false, false, false, false);
+            }
+        }
+
+        virtual public void EndRowGUI()
+        {
+            DrawDraggingInsertionMarkerIfNeeded();
+
             // Render rename overlay last (input is handled in BeginRowGUI)
             if (Event.current.type == EventType.Repaint)
                 DoRenameOverlay();
@@ -319,13 +367,8 @@ namespace UnityEditor.IMGUI.Controls
         {
             EditorGUIUtility.SetIconSize(new Vector2(k_IconWidth, k_IconWidth)); // If not set we see icons scaling down if text is being cropped
 
-            float indent = GetFoldoutIndent(item);
-
             int itemControlID = TreeViewController.GetItemControlID(item);
 
-            bool isDropTarget = false;
-            if (m_TreeView.dragging != null)
-                isDropTarget = m_TreeView.dragging.GetDropTargetControlID() == itemControlID && m_TreeView.data.CanBeParent(item);
             bool isRenamingThisItem = IsRenaming(item.id);
             bool showFoldout = m_TreeView.data.IsExpandable(item);
 
@@ -351,17 +394,23 @@ namespace UnityEditor.IMGUI.Controls
                 if (selected)
                     selectionStyle.Draw(rect, false, false, true, focused);
 
-                // Draw drop marker
-                if (isDropTarget)
+                bool hasDragHandling = m_TreeView.dragging != null;
+                if (hasDragHandling)
                 {
-                    Styles.lineStyle.Draw(GetDropTargetRect(rect), GUIContent.none, true, true, false, false);
-                }
+                    // Draw drop marker
+                    if (m_TreeView.dragging.GetDropTargetControlID() == itemControlID && m_TreeView.data.CanBeParent(item))
+                    {
+                        Styles.lineStyle.Draw(GetDropTargetRect(rect), GUIContent.none, true, true, false, false);
+                    }
 
-                // Show insertion marker below this item (rendered end of rows)
-                if (m_TreeView.dragging != null && m_TreeView.dragging.GetRowMarkerControlID() == itemControlID)
-                {
-                    float yPos = (m_TreeView.dragging.drawRowMarkerAbove ? rect.y : rect.yMax) - insertionStyle.fixedHeight * 0.5f;
-                    m_DraggingInsertionMarkerRect = new Rect(rect.x + indent + extraInsertionMarkerIndent + foldoutStyleWidth + lineStyle.margin.left, yPos, rect.width - indent, rect.height);
+                    // Ancestor item marker is rendered after all rows in RowEndGUI - extra visual helper marker when previous sibling is far away from the cursor
+                    var dragging = m_TreeView.dragging as TreeViewDragging;
+                    if (dragging != null && dragging.GetAncestorControlID() == itemControlID && dragging.insertRelativeToSibling != null)
+                    {
+                        m_DraggingAncestorMarkerRect = rect;
+                        m_DraggingAncestorMarkerRect.xMin += extraInsertionMarkerIndent + GetContentIndent(item);
+                        m_DraggingAncestorMarkerRect.y = rect.yMax - insertionRelativeToSiblingStyle.fixedHeight * 0.5f;
+                    }
                 }
             }
 

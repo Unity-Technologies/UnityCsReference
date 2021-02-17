@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
@@ -172,7 +173,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public FontDefinition ReadFontDefinition(int index)
         {
-            Object fontAsset = null;
+            FontAsset fontAsset = null;
             Font font = null;
             var value = m_Values[m_CurrentValueIndex + index];
             switch (value.handle.valueType)
@@ -184,7 +185,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     {
                         font = Panel.LoadResource(path, typeof(Font), dpiScaling) as Font;
                         if (font == null)
-                            fontAsset = Panel.LoadResource(path, typeof(Object), dpiScaling);
+                            fontAsset = Panel.LoadResource(path, typeof(FontAsset), dpiScaling) as FontAsset;
                     }
 
                     if (fontAsset == null && font == null)
@@ -197,7 +198,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 {
                     font = value.sheet.ReadAssetReference(value.handle) as Font;
                     if (font == null)
-                        fontAsset = value.sheet.ReadAssetReference(value.handle);
+                        fontAsset = value.sheet.ReadAssetReference(value.handle) as FontAsset;
 
                     if (fontAsset == null && font == null)
                         Debug.LogWarning("Invalid font reference");

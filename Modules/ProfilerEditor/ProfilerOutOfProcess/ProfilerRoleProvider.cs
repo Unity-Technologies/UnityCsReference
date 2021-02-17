@@ -134,8 +134,6 @@ namespace UnityEditor
                 if (!SessionState.GetBool("OOPP.PlayerConnectionOpened", false))
                     EventService.Request(nameof(EventType.UmpProfilerOpenPlayerConnection), HandlePlayerConnectionOpened, playerConnectionInfo, 5000L);
                 s_ProfilerDriverSetup = true;
-
-                ModeService.RefreshMenus();
             }
 
             static void SetupProfiledConnection(int connId)

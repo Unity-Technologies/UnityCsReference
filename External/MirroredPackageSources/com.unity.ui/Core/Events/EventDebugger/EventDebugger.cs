@@ -1,5 +1,8 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace UnityEngine.UIElements
 {
@@ -110,17 +113,42 @@ namespace UnityEngine.UIElements
 
     class EventDebugger
     {
-        public IPanel panel { get; set; }
+        public IPanel panel
+        {
+            get { return panelDebug?.panel; }
+            set
+            {
+                /* Ignore in editor */
+            }
+        }
+
+        IPanelDebug m_PanelDebug;
+        public IPanelDebug panelDebug
+        {
+            get { return m_PanelDebug; }
+            set
+            {
+                m_PanelDebug = value;
+                if (m_PanelDebug != null)
+                {
+                    if (!m_EventTypeProcessedCount.ContainsKey(panel))
+                        m_EventTypeProcessedCount.Add(panel, new Dictionary<long, int>());
+                }
+            }
+        }
+
+        public bool isReplaying { get; private set; }
+        public float playbackSpeed { get; set; } = 1.0f;
+        public bool isPlaybackPaused { get; set; }
 
         public void UpdateModificationCount()
         {
             if (panel == null)
                 return;
 
-            long count = 0;
-            if (m_ModificationCount.ContainsKey(panel))
+            if (!m_ModificationCount.TryGetValue(panel, out var count))
             {
-                count = m_ModificationCount[panel];
+                count = 0;
             }
 
             count++;
@@ -174,10 +202,9 @@ namespace UnityEngine.UIElements
 
         public List<EventDebuggerCallTrace> GetCalls(IPanel panel, EventDebuggerEventRecord evt = null)
         {
-            List<EventDebuggerCallTrace> list = null;
-            if (m_EventCalledObjects.ContainsKey(panel))
+            if (!m_EventCalledObjects.TryGetValue(panel, out var list))
             {
-                list = m_EventCalledObjects[panel];
+                return null;
             }
 
             if ((evt != null) && (list != null))
@@ -193,16 +220,17 @@ namespace UnityEngine.UIElements
 
                 list = filteredList;
             }
+
             return list;
         }
 
         public List<EventDebuggerDefaultActionTrace> GetDefaultActions(IPanel panel, EventDebuggerEventRecord evt = null)
         {
-            List<EventDebuggerDefaultActionTrace> list = null;
-            if (m_EventDefaultActionObjects.ContainsKey(panel))
+            if (!m_EventDefaultActionObjects.TryGetValue(panel, out var list))
             {
-                list = m_EventDefaultActionObjects[panel];
+                return null;
             }
+
             if ((evt != null) && (list != null))
             {
                 List<EventDebuggerDefaultActionTrace> filteredList = new List<EventDebuggerDefaultActionTrace>();
@@ -213,17 +241,18 @@ namespace UnityEngine.UIElements
                         filteredList.Add(defaultActionObject);
                     }
                 }
+
                 list = filteredList;
             }
+
             return list;
         }
 
         public List<EventDebuggerPathTrace> GetPropagationPaths(IPanel panel, EventDebuggerEventRecord evt = null)
         {
-            List<EventDebuggerPathTrace> list = null;
-            if (m_EventPathObjects.ContainsKey(panel))
+            if (!m_EventPathObjects.TryGetValue(panel, out var list))
             {
-                list = m_EventPathObjects[panel];
+                return null;
             }
 
             if ((evt != null) && (list != null))
@@ -245,11 +274,11 @@ namespace UnityEngine.UIElements
 
         public List<EventDebuggerTrace> GetBeginEndProcessedEvents(IPanel panel, EventDebuggerEventRecord evt = null)
         {
-            List<EventDebuggerTrace> list = null;
-            if (m_EventProcessedEvents.ContainsKey(panel))
+            if (!m_EventProcessedEvents.TryGetValue(panel, out var list))
             {
-                list = m_EventProcessedEvents[panel];
+                return null;
             }
+
             if ((evt != null) && (list != null))
             {
                 List<EventDebuggerTrace> filteredList = new List<EventDebuggerTrace>();
@@ -260,19 +289,24 @@ namespace UnityEngine.UIElements
                         filteredList.Add(defaultActionObject);
                     }
                 }
+
                 list = filteredList;
             }
+
             return list;
         }
 
         public long GetModificationCount(IPanel panel)
         {
-            long modifCount = -1;
-            if (panel != null && m_ModificationCount.ContainsKey(panel))
+            if (panel == null)
+                return -1;
+
+            if (!m_ModificationCount.TryGetValue(panel, out var modificationCount))
             {
-                modifCount = m_ModificationCount[panel];
+                modificationCount = -1;
             }
-            return modifCount;
+
+            return modificationCount;
         }
 
         public void ClearLogs()
@@ -286,7 +320,7 @@ namespace UnityEngine.UIElements
                 m_EventPathObjects.Clear();
                 m_EventProcessedEvents.Clear();
                 m_StackOfProcessedEvent.Clear();
-
+                m_EventTypeProcessedCount.Clear();
                 return;
             }
 
@@ -295,16 +329,86 @@ namespace UnityEngine.UIElements
             m_EventPathObjects.Remove(panel);
             m_EventProcessedEvents.Remove(panel);
             m_StackOfProcessedEvent.Remove(panel);
+
+            if (m_EventTypeProcessedCount.TryGetValue(panel, out var eventTypeProcessedForPanel))
+                eventTypeProcessedForPanel.Clear();
         }
 
-        public void ReplayEvents(List<EventDebuggerEventRecord> eventBases)
+        public void SaveReplaySessionFromSelection(string path, List<EventDebuggerEventRecord> eventList)
         {
-            if (eventBases == null)
+            if (string.IsNullOrEmpty(path))
                 return;
 
-            foreach (var eventBase in eventBases)
+            var recordSave = new EventDebuggerRecordList() { eventList = eventList };
+            var json = JsonUtility.ToJson(recordSave);
+            File.WriteAllText(path, json);
+            Debug.Log($"Saved under: {path}");
+        }
+
+        public EventDebuggerRecordList LoadReplaySession(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return null;
+
+            var fileContent = File.ReadAllText(path);
+            return JsonUtility.FromJson<EventDebuggerRecordList>(fileContent);
+        }
+
+        public IEnumerator ReplayEvents(IEnumerable<EventDebuggerEventRecord> eventBases, Action<int, int> refreshList)
+        {
+            if (eventBases == null)
+                yield break;
+
+            isReplaying = true;
+            var doReplay = DoReplayEvents(eventBases, refreshList);
+            while (doReplay.MoveNext())
             {
-                Event newEvent = new Event
+                yield return null;
+            }
+        }
+
+        public void StopPlayback()
+        {
+            isReplaying = false;
+            isPlaybackPaused = false;
+        }
+
+        private IEnumerator DoReplayEvents(IEnumerable<EventDebuggerEventRecord> eventBases, Action<int, int> refreshList)
+        {
+            var sortedEvents = eventBases.OrderBy(e => e.timestamp).ToList();
+            var sortedEventsCount = sortedEvents.Count;
+
+            IEnumerator AwaitForNextEvent(int currentIndex)
+            {
+                if (currentIndex == sortedEvents.Count - 1)
+                    yield break;
+
+                var deltaTimestampMs = sortedEvents[currentIndex + 1].timestamp - sortedEvents[currentIndex].timestamp;
+
+                var timeMs = 0.0f;
+                while (timeMs < deltaTimestampMs)
+                {
+                    if (isPlaybackPaused)
+                    {
+                        yield return null;
+                    }
+                    else
+                    {
+                        var time = Panel.TimeSinceStartupMs();
+                        yield return null;
+                        var delta = Panel.TimeSinceStartupMs() - time;
+                        timeMs += delta * playbackSpeed;
+                    }
+                }
+            }
+
+            for (var i = 0; i < sortedEventsCount; i++)
+            {
+                if (!isReplaying)
+                    break;
+
+                var eventBase = sortedEvents[i];
+                var newEvent = new Event
                 {
                     button = eventBase.button,
                     clickCount = eventBase.clickCount,
@@ -346,6 +450,24 @@ namespace UnityEngine.UIElements
                 {
                     newEvent.type = EventType.MouseLeaveWindow;
                     panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.MouseLeaveWindow), panel,
+                        DispatchMode.Default);
+                }
+                else if (eventBase.eventTypeId == PointerMoveEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
+                {
+                    newEvent.type = EventType.MouseMove;
+                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.MouseMove), panel,
+                        DispatchMode.Default);
+                }
+                else if (eventBase.eventTypeId == PointerDownEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
+                {
+                    newEvent.type = EventType.MouseDown;
+                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.MouseDown), panel,
+                        DispatchMode.Default);
+                }
+                else if (eventBase.eventTypeId == PointerUpEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
+                {
+                    newEvent.type = EventType.MouseUp;
+                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.MouseUp), panel,
                         DispatchMode.Default);
                 }
                 else if (eventBase.eventTypeId == WheelEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
@@ -406,24 +528,33 @@ namespace UnityEngine.UIElements
                 else if (eventBase.eventTypeId == IMGUIEvent.TypeId())
                 {
                     Debug.Log("Skipped IMGUI event (" + eventBase.eventBaseName + "): " + eventBase);
+                    var awaitSkipped = AwaitForNextEvent(i);
+                    while (awaitSkipped.MoveNext()) yield return null;
                     continue;
                 }
                 else
                 {
                     Debug.Log("Skipped event (" + eventBase.eventBaseName + "): " + eventBase);
+                    var awaitSkipped = AwaitForNextEvent(i);
+                    while (awaitSkipped.MoveNext()) yield return null;
                     continue;
                 }
 
-                Debug.Log("Replayed event (" + eventBase.eventBaseName + "): " + newEvent);
+                refreshList?.Invoke(i, sortedEventsCount);
+
+                Debug.Log($"Replayed event {eventBase.eventId.ToString()} ({eventBase.eventBaseName}): {newEvent}");
+                var await = AwaitForNextEvent(i);
+                while (await.MoveNext()) yield return null;
             }
+
+            isReplaying = false;
         }
 
         public Dictionary<string, long> ComputeHistogram(List<EventDebuggerEventRecord> eventBases)
         {
-            if (panel == null || !m_EventProcessedEvents.ContainsKey(panel))
+            if (panel == null || !m_EventProcessedEvents.TryGetValue(panel, out var list))
                 return null;
 
-            var list = m_EventProcessedEvents[panel];
             if (list == null)
                 return null;
 
@@ -433,16 +564,16 @@ namespace UnityEngine.UIElements
                 if (eventBases == null || eventBases.Count == 0 || eventBases.Contains(callObject.eventBase))
                 {
                     var key = callObject.eventBase.eventBaseName;
-                    long totalDuration = callObject.duration;
-                    if (histogram.ContainsKey(key))
+                    var totalDuration = callObject.duration;
+                    if (histogram.TryGetValue(key, out var currentDuration))
                     {
-                        var currentDuration = histogram[key];
-                        totalDuration = totalDuration + currentDuration;
+                        totalDuration += currentDuration;
                     }
 
                     histogram[key] = totalDuration;
                 }
             }
+
             return histogram;
         }
 
@@ -452,9 +583,14 @@ namespace UnityEngine.UIElements
         Dictionary<IPanel, List<EventDebuggerPathTrace>> m_EventPathObjects;
         Dictionary<IPanel, List<EventDebuggerTrace>> m_EventProcessedEvents;
         Dictionary<IPanel, Stack<EventDebuggerTrace>> m_StackOfProcessedEvent;
+        Dictionary<IPanel, Dictionary<long, int>> m_EventTypeProcessedCount;
+
+        public Dictionary<long, int> eventTypeProcessedCount => m_EventTypeProcessedCount.TryGetValue(panel, out var eventTypeProcessedCountForPanel) ? eventTypeProcessedCountForPanel : null;
 
         readonly Dictionary<IPanel, long> m_ModificationCount;
         readonly bool m_Log;
+
+        public bool suspended { get; set; }
 
         // Methods
         public EventDebugger()
@@ -464,124 +600,126 @@ namespace UnityEngine.UIElements
             m_EventPathObjects = new Dictionary<IPanel, List<EventDebuggerPathTrace>>();
             m_StackOfProcessedEvent = new Dictionary<IPanel, Stack<EventDebuggerTrace>>();
             m_EventProcessedEvents = new Dictionary<IPanel, List<EventDebuggerTrace>>();
+            m_EventTypeProcessedCount = new Dictionary<IPanel, Dictionary<long, int>>();
             m_ModificationCount = new Dictionary<IPanel, long>();
             m_Log = true;
         }
 
         void AddCallObject(int cbHashCode, string cbName, EventBase evt, bool propagationHasStopped, bool immediatePropagationHasStopped, bool defaultHasBeenPrevented, long duration, IEventHandler mouseCapture)
         {
+            if (suspended)
+                return;
+
             if (m_Log)
             {
                 var callObject = new EventDebuggerCallTrace(panel, evt, cbHashCode, cbName, propagationHasStopped, immediatePropagationHasStopped, defaultHasBeenPrevented, duration, mouseCapture);
 
-                List<EventDebuggerCallTrace> list;
-                if (m_EventCalledObjects.ContainsKey(panel))
-                {
-                    list = m_EventCalledObjects[panel];
-                }
-                else
+                if (!m_EventCalledObjects.TryGetValue(panel, out var list))
                 {
                     list = new List<EventDebuggerCallTrace>();
                     m_EventCalledObjects.Add(panel, list);
                 }
+
                 list.Add(callObject);
             }
         }
 
         void AddExecuteDefaultAction(EventBase evt, PropagationPhase phase, long duration, IEventHandler mouseCapture)
         {
+            if (suspended)
+                return;
+
             if (m_Log)
             {
                 var defaultActionObject = new EventDebuggerDefaultActionTrace(panel, evt, phase, duration, mouseCapture);
-                List<EventDebuggerDefaultActionTrace> list;
 
-                if (m_EventDefaultActionObjects.ContainsKey(panel))
-                {
-                    list = m_EventDefaultActionObjects[panel];
-                }
-                else
+                if (!m_EventDefaultActionObjects.TryGetValue(panel, out var list))
                 {
                     list = new List<EventDebuggerDefaultActionTrace>();
                     m_EventDefaultActionObjects.Add(panel, list);
                 }
+
                 list.Add(defaultActionObject);
             }
         }
 
         void AddPropagationPaths(EventBase evt, PropagationPaths paths)
         {
+            if (suspended)
+                return;
+
             if (m_Log)
             {
                 var pathObject = new EventDebuggerPathTrace(panel, evt, paths);
 
-                List<EventDebuggerPathTrace> list;
-                if (m_EventPathObjects.ContainsKey(panel))
-                {
-                    list = m_EventPathObjects[panel];
-                }
-                else
+                if (!m_EventPathObjects.TryGetValue(panel, out var list))
                 {
                     list = new List<EventDebuggerPathTrace>();
                     m_EventPathObjects.Add(panel, list);
                 }
+
                 list.Add(pathObject);
             }
         }
 
         void AddIMGUICall(EventBase evt, long duration, IEventHandler mouseCapture)
         {
+            if (suspended)
+                return;
+
             if (m_Log)
             {
                 var callObject = new EventDebuggerCallTrace(panel, evt, 0, "OnGUI", false, false, false, duration, mouseCapture);
-                List<EventDebuggerCallTrace> list;
 
-                if (m_EventCalledObjects.ContainsKey(panel))
-                {
-                    list = m_EventCalledObjects[panel];
-                }
-                else
+                if (!m_EventCalledObjects.TryGetValue(panel, out var list))
                 {
                     list = new List<EventDebuggerCallTrace>();
                     m_EventCalledObjects.Add(panel, list);
                 }
+
                 list.Add(callObject);
             }
         }
 
         void AddBeginProcessEvent(EventBase evt, IEventHandler mouseCapture)
         {
+            if (suspended)
+                return;
+
             var dbgObject = new EventDebuggerTrace(panel, evt, -1, mouseCapture);
-            Stack<EventDebuggerTrace> stack;
-            if (m_StackOfProcessedEvent.ContainsKey(panel))
-            {
-                stack = m_StackOfProcessedEvent[panel];
-            }
-            else
+            
+            if (!m_StackOfProcessedEvent.TryGetValue(panel, out var stack))
             {
                 stack = new Stack<EventDebuggerTrace>();
                 m_StackOfProcessedEvent.Add(panel, stack);
             }
 
-            List<EventDebuggerTrace> list;
-            if (m_EventProcessedEvents.ContainsKey(panel))
-            {
-                list = m_EventProcessedEvents[panel];
-            }
-            else
+            if (!m_EventProcessedEvents.TryGetValue(panel, out var list))
             {
                 list = new List<EventDebuggerTrace>();
                 m_EventProcessedEvents.Add(panel, list);
             }
+
             list.Add(dbgObject);
             stack.Push(dbgObject);
+
+            if (!m_EventTypeProcessedCount.TryGetValue(panel, out var eventTypeProcessedCountForPanel))
+                return;
+
+            if (!eventTypeProcessedCountForPanel.TryGetValue(dbgObject.eventBase.eventTypeId, out var count))
+                count = 0;
+
+            eventTypeProcessedCountForPanel[dbgObject.eventBase.eventTypeId] = count + 1;
         }
 
         void AddEndProcessEvent(EventBase evt, long duration, IEventHandler mouseCapture)
         {
+            if (suspended)
+                return;
+
             bool evtHandled = false;
-            if (m_StackOfProcessedEvent.ContainsKey(panel))
+            if (m_StackOfProcessedEvent.TryGetValue(panel, out var stack))
             {
-                var stack = m_StackOfProcessedEvent[panel];
                 if (stack.Count > 0)
                 {
                     var dbgObject = stack.Peek();
@@ -589,11 +727,13 @@ namespace UnityEngine.UIElements
                     {
                         stack.Pop();
                         dbgObject.duration = duration;
+
                         // Update the target if it was unknown in AddBeginProcessEvent.
                         if (dbgObject.eventBase.target == null)
                         {
                             dbgObject.eventBase.target = evt.target;
                         }
+
                         evtHandled = true;
                     }
                 }
@@ -602,18 +742,21 @@ namespace UnityEngine.UIElements
             if (!evtHandled)
             {
                 var dbgObject = new EventDebuggerTrace(panel, evt, duration, mouseCapture);
-                List<EventDebuggerTrace> list;
-                if (m_EventProcessedEvents.ContainsKey(panel))
-                {
-                    list = m_EventProcessedEvents[panel];
-                }
-                else
+                if (!m_EventProcessedEvents.TryGetValue(panel, out var list))
                 {
                     list = new List<EventDebuggerTrace>();
                     m_EventProcessedEvents.Add(panel, list);
                 }
 
                 list.Add(dbgObject);
+
+                if (!m_EventTypeProcessedCount.TryGetValue(panel, out var eventTypeProcessedForPanel))
+                    return;
+
+                if (!eventTypeProcessedForPanel.TryGetValue(dbgObject.eventBase.eventTypeId, out var count))
+                    count = 0;
+
+                eventTypeProcessedForPanel[dbgObject.eventBase.eventTypeId] = count + 1;
             }
         }
 
@@ -621,7 +764,8 @@ namespace UnityEngine.UIElements
         {
             if (obj == null) return String.Empty;
 
-            string objectName = obj.GetType().Name;
+            var type = obj.GetType();
+            var objectName = GetTypeDisplayName(type);
             if (obj is VisualElement)
             {
                 VisualElement ve = obj as VisualElement;
@@ -637,6 +781,11 @@ namespace UnityEngine.UIElements
             }
 
             return objectName;
+        }
+
+        public static string GetTypeDisplayName(Type type)
+        {
+            return type.IsGenericType ? $"{type.Name.TrimEnd('`', '1')}<{type.GetGenericArguments()[0].Name}>" : type.Name;
         }
     }
 }

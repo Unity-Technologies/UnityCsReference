@@ -75,6 +75,10 @@ namespace UnityEditor.Search
             if (String.IsNullOrEmpty(path))
                 return true;
 
+            // Skip files with ~ in their file path
+            if (path.IndexOf('~') != -1)
+                return true;
+
             if (checkRoots)
             {
                 if (!GetRoots().Any(r => path.StartsWith(r, StringComparison.OrdinalIgnoreCase)))

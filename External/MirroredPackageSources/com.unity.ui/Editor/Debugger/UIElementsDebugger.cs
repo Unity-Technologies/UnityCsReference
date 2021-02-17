@@ -38,8 +38,15 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        public IPanel panel { get { return panelDebug?.panel; } }
-        public VisualElement visualTree { get { return panel?.visualTree; } }
+        public IPanel panel
+        {
+            get { return panelDebug?.panel; }
+        }
+
+        public VisualElement visualTree
+        {
+            get { return panel?.visualTree; }
+        }
 
         public Action<IPanelDebug> onPanelDebugChanged;
         public Action<VisualElement> onSelectedElementChanged;
@@ -60,6 +67,9 @@ namespace UnityEditor.UIElements.Debugger
 
         [SerializeField]
         private bool m_ShowDrawStats = false;
+
+        [SerializeField]
+        private bool m_BreakBatches = false;
 
         public DebuggerSelection selection { get; } = new DebuggerSelection();
         public VisualElement selectedElement => selection.element;
@@ -123,6 +133,18 @@ namespace UnityEditor.UIElements.Debugger
                 if (m_ShowDrawStats == value)
                     return;
                 m_ShowDrawStats = value;
+                onStateChange?.Invoke();
+            }
+        }
+
+        public bool breakBatches
+        {
+            get { return m_BreakBatches; }
+            set
+            {
+                if(m_BreakBatches == value)
+                    return;
+                m_BreakBatches = value;
                 onStateChange?.Invoke();
             }
         }
@@ -198,6 +220,11 @@ namespace UnityEditor.UIElements.Debugger
         {
             m_DebuggerImpl.OnFocus();
         }
+
+        protected internal void ScrollToSelection()
+        {
+            m_DebuggerImpl.ScrollToSelection();
+        }
     }
 
     [Serializable]
@@ -212,6 +239,7 @@ namespace UnityEditor.UIElements.Debugger
         private ToolbarToggle m_ShowLayoutToggle;
         private ToolbarToggle m_RepaintOverlayToggle;
         private ToolbarToggle m_ShowDrawStatsToggle;
+        private ToolbarToggle m_BreakBatchesToggle;
 
         private DebuggerTreeView m_TreeViewContainer;
         private StylesDebugger m_StylesDebuggerContainer;
@@ -247,6 +275,7 @@ namespace UnityEditor.UIElements.Debugger
             m_PickToggle.RegisterValueChangedCallback((e) =>
             {
                 m_Context.pickElement = e.newValue;
+
                 // On OSX, as focus-follow-mouse is not supported,
                 // we explicitly focus the EditorWindow when enabling picking
                 if (Application.platform == RuntimePlatform.OSXEditor)
@@ -278,6 +307,11 @@ namespace UnityEditor.UIElements.Debugger
                 m_ShowDrawStatsToggle.text = "Draw Stats";
                 m_ShowDrawStatsToggle.RegisterValueChangedCallback((e) => { m_Context.showDrawStats = e.newValue; });
                 m_Toolbar.Add(m_ShowDrawStatsToggle);
+
+                m_BreakBatchesToggle = new ToolbarToggle() { name = "breakBatchesToggle" };
+                m_BreakBatchesToggle.text = "Break Batches";
+                m_BreakBatchesToggle.RegisterValueChangedCallback((e) => { m_Context.breakBatches = e.newValue; });
+                m_Toolbar.Add(m_BreakBatchesToggle);
             }
 
             var splitter = new DebuggerSplitter();
@@ -297,14 +331,23 @@ namespace UnityEditor.UIElements.Debugger
             m_LayoutOverlay = new LayoutOverlayPainter();
 
             OnContextChange();
+
+            EditorApplication.update += EditorUpdate;
         }
 
         public new void OnDisable()
         {
             base.OnDisable();
 
+            EditorApplication.update -= EditorUpdate;
+
             if (DebuggerEventDispatchingStrategy.s_GlobalPanelDebug == this)
                 DebuggerEventDispatchingStrategy.s_GlobalPanelDebug = null;
+        }
+
+        void EditorUpdate()
+        {
+            (panelDebug?.debuggerOverlayPanel as Panel)?.UpdateAnimations();
         }
 
         public void OnFocus()
@@ -332,6 +375,7 @@ namespace UnityEditor.UIElements.Debugger
                 m_StylesDebuggerContainer.RefreshStylePropertyDebugger();
                 m_DebuggerWindow.Repaint();
             }
+
             panelDebug?.MarkDebugContainerDirtyRepaint();
         }
 
@@ -345,10 +389,9 @@ namespace UnityEditor.UIElements.Debugger
             {
                 m_RepaintOverlayToggle.SetValueWithoutNotify(m_Context.showRepaintOverlay);
                 m_ShowDrawStatsToggle.SetValueWithoutNotify(m_Context.showDrawStats);
+                m_BreakBatchesToggle.SetValueWithoutNotify(m_Context.breakBatches);
 
-                var updater = (panel as BaseVisualElementPanel)?.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;
-                if (updater != null)
-                    updater.DebugGetRenderChain().drawStats = m_Context.showDrawStats;
+                ApplyToPanel(m_Context);
             }
 
             panelDebug?.MarkDirtyRepaint();
@@ -389,9 +432,36 @@ namespace UnityEditor.UIElements.Debugger
                 panelDebug.debuggerOverlayPanel.visualTree.layout = panel.visualTree.layout;
         }
 
+        static UIRRepaintUpdater GetRepaintUpdater(IPanel panel)
+        {
+            return (panel as BaseVisualElementPanel)?.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;
+        }
+
+        static void ResetPanel(DebuggerContext context)
+        {
+            var updater = GetRepaintUpdater(context.selection.panel);
+            if (updater != null)
+            {
+                updater.drawStats = false;
+                updater.breakBatches = false;
+            }
+        }
+
+        static void ApplyToPanel(DebuggerContext context)
+        {
+            var updater = GetRepaintUpdater(context.selection.panel);
+            if (updater != null)
+            {
+                updater.drawStats = context.showDrawStats;
+                updater.breakBatches = context.breakBatches;
+            }
+        }
+
         protected override void OnSelectPanelDebug(IPanelDebug pdbg)
         {
             m_RepaintOverlay.ClearOverlay();
+
+            ResetPanel(m_Context);
 
             m_TreeViewContainer.hierarchyHasChanged = true;
             if (m_Context.panelDebug?.debugContainer != null)
@@ -401,6 +471,8 @@ namespace UnityEditor.UIElements.Debugger
 
             if (panelDebug?.debugContainer != null)
                 panelDebug.debugContainer.generateVisualContent += OnGenerateVisualContent;
+
+            ApplyToPanel(m_Context);
 
             Refresh();
         }
@@ -443,6 +515,40 @@ namespace UnityEditor.UIElements.Debugger
             // Ignore events on detached elements
             if (panel == null)
                 return false;
+
+            if (((BaseVisualElementPanel)panel).ownerObject is HostView hostView && hostView.actualView is GameView)
+            {
+                var innerArea = panel.GetRootVisualElement();
+                var gameViewPadding =
+                    (innerArea.parent.contentRect.height - innerArea.contentRect.height) * Vector2.up +
+                    innerArea.layout.position; // Measured to: gameViewPadding = new Vector2(1, 40)
+
+                // Send event to runtime panels from closest to deepest
+                var panels = UIElementsRuntimeUtility.GetSortedPlayerPanels();
+                for (var i = panels.Count - 1; i >= 0; i--)
+                {
+                    if (SendEventToRuntimePanel((BaseRuntimePanel)panels[i], evtBase, gameViewPadding))
+                        return true;
+                }
+
+                // If no RuntimePanel catches it, select GameView editor panel and let interception fall through.
+                if (evtType == MouseMoveEvent.TypeId() && m_Context.selectedElement != target)
+                {
+                    OnPickMouseOver(target, panel);
+                }
+            }
+            else if (panel is BaseRuntimePanel)
+            {
+                // Ignore events not coming from the Editor event loop
+                if (evtBase.imguiEvent == null)
+                    return false;
+
+                // RuntimePanel won't receive MouseOverEvent when arriving from GameView editor panel, so force it to be selected.
+                if (evtType == MouseMoveEvent.TypeId() && m_Context.selectedElement != target)
+                {
+                    OnPickMouseOver(target, panel);
+                }
+            }
 
             // Only intercept mouse clicks, MouseOverEvent and MouseEnterWindow
             if (evtType != MouseDownEvent.TypeId() && evtType != MouseOverEvent.TypeId() && evtType != MouseEnterWindowEvent.TypeId())
@@ -502,11 +608,17 @@ namespace UnityEditor.UIElements.Debugger
                         targetIsImguiContainer = false;
                     }
                 }
+
                 if (!targetIsImguiContainer)
                 {
                     ShowInspectMenu(target);
                 }
             }
+        }
+
+        protected internal void ScrollToSelection()
+        {
+            m_TreeViewContainer.ScrollToSelection();
         }
 
         private void ShowInspectMenu(VisualElement ve)
@@ -550,6 +662,7 @@ namespace UnityEditor.UIElements.Debugger
             m_PickOverlay.ClearOverlay();
 
             m_DebuggerWindow.Focus();
+            (m_DebuggerWindow as UIElementsDebugger)?.ScrollToSelection();
         }
 
         private void SelectElement(VisualElement ve)
@@ -562,6 +675,24 @@ namespace UnityEditor.UIElements.Debugger
                 m_Context.selection.element = ve;
                 m_Context.selectedElementIndex = panel.FindVisualElementIndex(ve);
             }
+        }
+
+        private bool SendEventToRuntimePanel(BaseRuntimePanel runtimePanel, EventBase ev, Vector2 gameViewPadding)
+        {
+            if (ev.imguiEvent == null)
+                return false;
+
+            if (!runtimePanel.ScreenToPanel(ev.imguiEvent.mousePosition - gameViewPadding, ev.imguiEvent.delta, out var panelPosition, out _))
+                return false;
+
+            if (runtimePanel.Pick(panelPosition) == null)
+                return false;
+
+            using (EventBase evt = UIElementsRuntimeUtility.CreateEvent(new Event(ev.imguiEvent) { mousePosition = panelPosition }))
+            {
+                runtimePanel.visualTree.SendEvent(evt);
+            }
+            return true;
         }
 
         private void DrawLayoutBounds(MeshGenerationContext mgc)

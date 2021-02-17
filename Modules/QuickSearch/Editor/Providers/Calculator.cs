@@ -24,18 +24,20 @@ namespace UnityEditor.Search
                     priority = 10,
                     filterId = "=",
                     isExplicitProvider = true,
-                    fetchItems = (context, items, provider) =>
-                    {
-                        var expression = context.searchQuery;
-                        if (Evaluate(context.searchQuery, out var result))
-                            expression += " = " + result;
-
-                        items.Add(provider.CreateItem(context, result.ToString(), "compute", expression, null, null));
-                        return null;
-                    },
-
+                    fetchItems = (context, items, provider) => Compute(context, provider),
                     fetchThumbnail = (item, context) => Icons.settings
                 };
+            }
+
+            internal static IEnumerable<SearchItem> Compute(SearchContext context, SearchProvider provider)
+            {
+                var expression = context.searchQuery;
+                if (Evaluate(context.searchQuery, out var result))
+                    expression += " = " + result;
+
+                var calcItem = provider.CreateItem(context, result.ToString(), "compute", expression, null, null);
+                calcItem.value = result;
+                yield return calcItem;
             }
 
             [SearchActionsProvider]

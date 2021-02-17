@@ -495,7 +495,7 @@ namespace UnityEditorInternal
 
             if (DoDragAndDrop(dopeline, dopeline.position, false))
             {
-                float time = Mathf.Max(state.PixelToTime(Event.current.mousePosition.x, AnimationWindowState.SnapMode.SnapToClipFrame), 0f);
+                float time = Mathf.Max(state.PixelToTime(Event.current.mousePosition.x, AnimationWindowState.SnapMode.SnapToFrame), 0f);
 
                 Color keyColor = Color.gray.RGBMultiplied(1.2f);
                 Texture2D texture = null;
@@ -563,7 +563,7 @@ namespace UnityEditorInternal
                     hoveringKeys.Add(key);
             }
 
-            AnimationKeyTime mouseKeyTime = AnimationKeyTime.Time(state.PixelToTime(Event.current.mousePosition.x, AnimationWindowState.SnapMode.SnapToClipFrame), state.frameRate);
+            AnimationKeyTime mouseKeyTime = AnimationKeyTime.Time(state.PixelToTime(Event.current.mousePosition.x, AnimationWindowState.SnapMode.SnapToFrame), state.frameRate);
 
             string str = L10n.Tr("Add Key");
             if (dopeline.isEditable && hoveringKeys.Count == 0)
@@ -640,7 +640,7 @@ namespace UnityEditorInternal
                 foreach (AnimationWindowKeyframe selectedKey in state.selectedKeys)
                     firstSelectedKeyTime = Mathf.Min(selectedKey.time, firstSelectedKeyTime);
 
-                float currentTime = state.SnapToFrame(state.PixelToTime(Event.current.mousePosition.x), AnimationWindowState.SnapMode.SnapToClipFrame);
+                float currentTime = state.SnapToFrame(state.PixelToTime(Event.current.mousePosition.x), AnimationWindowState.SnapMode.SnapToFrame);
 
                 if (m_IsDragging)
                 {
@@ -1005,7 +1005,7 @@ namespace UnityEditorInternal
 
         private void HandleDopelineDoubleclick(DopeLine dopeline)
         {
-            float timeAtMousePosition = state.PixelToTime(Event.current.mousePosition.x, AnimationWindowState.SnapMode.SnapToClipFrame);
+            float timeAtMousePosition = state.PixelToTime(Event.current.mousePosition.x, AnimationWindowState.SnapMode.SnapToFrame);
             AnimationKeyTime mouseKeyTime = AnimationKeyTime.Time(timeAtMousePosition, state.frameRate);
             AnimationWindowUtility.AddKeyframes(state, dopeline.curves, mouseKeyTime);
 
@@ -1029,7 +1029,7 @@ namespace UnityEditorInternal
             if (dopeline.isPptrDopeline && dopeline.tallMode && (keyframe == null || keyframe.value != null))
                 width = dopeline.position.height;
 
-            return new Rect(state.TimeToPixel(state.SnapToFrame(time, AnimationWindowState.SnapMode.SnapToClipFrame)) + GetKeyframeOffset(dopeline, keyframe), dopeline.position.yMin, width, dopeline.position.height);
+            return new Rect(state.TimeToPixel(state.SnapToFrame(time, AnimationWindowState.SnapMode.SnapToFrame)) + GetKeyframeOffset(dopeline, keyframe), dopeline.position.yMin, width, dopeline.position.height);
         }
 
         // This means "how much is the rendered keyframe offset in pixels for x-axis".
@@ -1164,7 +1164,7 @@ namespace UnityEditorInternal
 
             if (perform)
             {
-                float time = Mathf.Max(state.PixelToTime(Event.current.mousePosition.x, AnimationWindowState.SnapMode.SnapToClipFrame), 0f);
+                float time = Mathf.Max(state.PixelToTime(Event.current.mousePosition.x, AnimationWindowState.SnapMode.SnapToFrame), 0f);
                 AnimationWindowCurve targetCurve = GetCurveOfType(dopeLine, targetType);
                 PerformDragAndDrop(targetCurve, time);
             }
@@ -1423,8 +1423,8 @@ namespace UnityEditorInternal
             {
                 float height = AnimationWindowHierarchyGUI.k_DopeSheetRowHeight;
                 Rect r = AnimationWindowUtility.FromToRect(m_SelectStartPoint, m_SelectMousePoint);
-                r.xMin = owner.state.TimeToPixel(owner.state.PixelToTime(r.xMin, AnimationWindowState.SnapMode.SnapToClipFrame), AnimationWindowState.SnapMode.SnapToClipFrame);
-                r.xMax = owner.state.TimeToPixel(owner.state.PixelToTime(r.xMax, AnimationWindowState.SnapMode.SnapToClipFrame), AnimationWindowState.SnapMode.SnapToClipFrame);
+                r.xMin = owner.state.TimeToPixel(owner.state.PixelToTime(r.xMin, AnimationWindowState.SnapMode.SnapToFrame), AnimationWindowState.SnapMode.SnapToFrame);
+                r.xMax = owner.state.TimeToPixel(owner.state.PixelToTime(r.xMax, AnimationWindowState.SnapMode.SnapToFrame), AnimationWindowState.SnapMode.SnapToFrame);
                 r.yMin = Mathf.Floor(r.yMin / height) * height;
                 r.yMax = (Mathf.Floor(r.yMax / height) + 1) * height;
                 return r;
@@ -1434,8 +1434,8 @@ namespace UnityEditorInternal
             {
                 float height = AnimationWindowHierarchyGUI.k_DopeSheetRowHeight;
                 Rect r = AnimationWindowUtility.FromToRect(m_SelectStartPoint, m_SelectMousePoint);
-                r.xMin = owner.state.PixelToTime(r.xMin, AnimationWindowState.SnapMode.SnapToClipFrame);
-                r.xMax = owner.state.PixelToTime(r.xMax, AnimationWindowState.SnapMode.SnapToClipFrame);
+                r.xMin = owner.state.PixelToTime(r.xMin, AnimationWindowState.SnapMode.SnapToFrame);
+                r.xMax = owner.state.PixelToTime(r.xMax, AnimationWindowState.SnapMode.SnapToFrame);
                 r.yMin = Mathf.Floor(r.yMin / height) * height;
                 r.yMax = (Mathf.Floor(r.yMax / height) + 1) * height;
                 return r;

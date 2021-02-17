@@ -171,7 +171,7 @@ namespace UnityEditor
             string buttonText = "Mixed...";
             if (mask == 0)
                 buttonText = nothingName;
-            else if (mask == int.MaxValue)
+            else if (mask == int.MaxValue || mask == ~0)
                 buttonText = everythingName;
             else
             {

@@ -78,6 +78,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UIElements")]
 [assembly: InternalsVisibleTo("UnityEngine.UIElementsGameObjectsModule")]
 [assembly: InternalsVisibleTo("Unity.UIElements.Editor")]
+[assembly: InternalsVisibleTo("Unity.UIElements.PlayModeTests")]
+
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
 [assembly: InternalsVisibleTo("UnityEngine.UI")]
 

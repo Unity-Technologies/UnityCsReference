@@ -52,7 +52,13 @@ namespace UnityEditor
         AllowDebugging = 1 << 9,
 
         // Symlink runtime libraries when generating iOS XCode project. (Faster iteration time).
+        [Obsolete("BuildOptions.SymlinkLibraries is obsolete. Use BuildOptions.SymlinkSources instead (UnityUpgradable) -> [UnityEditor] BuildOptions.SymlinkSources", true)]
+
         SymlinkLibraries = 1 << 10,
+
+        // Symlink runtime libraries and reference externally .m, .mm, .c, .cpp, .swift files from Unity project when generating iOS XCode project.(Faster iteration time).
+        // Reference externally .java, .kt files when generating Android gradle project
+        SymlinkSources = 1 << 10,
 
         // Don't compress the data when creating the asset bundle.
         UncompressedAssetBundle = 1 << 11,

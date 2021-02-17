@@ -76,27 +76,6 @@ namespace UnityEditor
 
         public void Sync()
         {
-            // Use settings from default if any of the targets are not overridden
-            if (!model.isDefault && (!model.platformTextureSettings.overridden || model.overriddenIsDifferent))
-            {
-                BaseTextureImportPlatformSettings defaultSettings = GetDefaultImportSettings();
-                model.platformTextureSettings.maxTextureSize = defaultSettings.model.platformTextureSettings.maxTextureSize;
-                model.maxTextureSizeIsDifferent = defaultSettings.model.maxTextureSizeIsDifferent;
-                model.platformTextureSettings.resizeAlgorithm = defaultSettings.model.platformTextureSettings.resizeAlgorithm;
-                model.resizeAlgorithmIsDifferent = defaultSettings.model.resizeAlgorithmIsDifferent;
-                model.platformTextureSettings.textureCompression = defaultSettings.model.platformTextureSettings.textureCompression;
-                model.textureCompressionIsDifferent = defaultSettings.model.textureCompressionIsDifferent;
-                model.platformTextureSettings.format = defaultSettings.model.platformTextureSettings.format;
-                model.textureFormatIsDifferent = defaultSettings.model.textureFormatIsDifferent;
-                model.platformTextureSettings.compressionQuality = defaultSettings.model.platformTextureSettings.compressionQuality;
-                model.compressionQualityIsDifferent = defaultSettings.model.compressionQualityIsDifferent;
-                model.platformTextureSettings.crunchedCompression = defaultSettings.model.platformTextureSettings.crunchedCompression;
-                model.crunchedCompressionIsDifferent = defaultSettings.model.crunchedCompressionIsDifferent;
-                model.platformTextureSettings.allowsAlphaSplitting = defaultSettings.model.platformTextureSettings.allowsAlphaSplitting;
-                model.allowsAlphaSplitIsDifferent = defaultSettings.model.allowsAlphaSplitIsDifferent;
-                model.androidETC2FallbackOverrideIsDifferent = defaultSettings.model.androidETC2FallbackOverrideIsDifferent;
-            }
-
             if ((model.platformTextureSettings.overridden || model.overriddenIsDifferent) && model.platformTextureSettings.format < 0)
             {
                 var showSettingsForPreset = ShowPresetSettings();

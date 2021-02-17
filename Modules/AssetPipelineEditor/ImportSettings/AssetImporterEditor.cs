@@ -279,7 +279,7 @@ namespace UnityEditor.AssetImporters
                     // proceed to an editor count check to make sure we have the proper number of instances saved.
                     // If it is not the case, then a dispose was not done properly.
                     var editors = Resources.FindObjectsOfTypeAll(this.GetType()).Cast<AssetImporterEditor>();
-                    int count = editors.Count(e => e.targets.Contains(t[i]));
+                    int count = editors.Count(e => !Unsupported.IsDestroyScriptableObject(e) && e.targets.Contains(t[i]));
                     if (s_UnreleasedInstances != null)
                     {
                         count += s_UnreleasedInstances.Count(id => id == instanceID);
@@ -586,6 +586,8 @@ namespace UnityEditor.AssetImporters
                             m_Inspector.SetObjectsLocked(new List<Object>(assetTargets));
                         else
                             Selection.objects = assetTargets;
+                        // For some reason the InspectorWindow does not repaint after this change anymore if the selection was reverted from null.
+                        EditorApplication.delayCall += InspectorWindow.RefreshInspectors;
                     }
                     else
                     {
@@ -805,6 +807,13 @@ namespace UnityEditor.AssetImporters
         {
             Apply();
             ImportAssets(GetAssetPaths());
+            // Re-import of assets may change settings dur AssetPostprocessors
+            // We have to make sure we update the saved data after the import is done
+            // so users see the real state of the importer once the import is finished.
+            for (int i = 0; i < targets.Length; i++)
+            {
+                UpdateSavedData(targets[i]);
+            }
         }
 
         static void ImportAssets(IEnumerable<string> paths)

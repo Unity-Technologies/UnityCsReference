@@ -33,19 +33,21 @@ namespace UnityEngine.UIElements
         Layout = 1 << 3,
         // changes to StyleSheet, USS class
         StyleSheet = 1 << 4,
+        // removal of inline style
+        InlineStyleRemove = 1 << 5,
         // changes to styles, colors and other render properties
-        Styles = 1 << 5,
-        Overflow = 1 << 6,
-        BorderRadius = 1 << 7,
-        BorderWidth = 1 << 8,
+        Styles = 1 << 6,
+        Overflow = 1 << 7,
+        BorderRadius = 1 << 8,
+        BorderWidth = 1 << 9,
         // changes that may impact the world transform (e.g. laid out position, local transform)
-        Transform = 1 << 9,
+        Transform = 1 << 10,
         // changes to the size of the element after layout has been performed, without taking the local transform into account
-        Size = 1 << 10,
+        Size = 1 << 11,
         // The visuals of the element have changed
-        Repaint = 1 << 11,
+        Repaint = 1 << 12,
         // The opacity of the element have changed
-        Opacity = 1 << 12,
+        Opacity = 1 << 13,
     }
 
     /// <summary>
@@ -356,6 +358,7 @@ namespace UnityEngine.UIElements
 
         internal abstract uint version { get; }
         internal abstract uint repaintVersion { get; }
+        internal abstract uint hierarchyVersion { get; }
 
         // Updaters can request an panel invalidation when some callbacks aren't coming from UIElements internally
         internal abstract void RequestUpdateAfterExternalEvent(IVisualTreeUpdater updater);
@@ -532,6 +535,8 @@ namespace UnityEngine.UIElements
             ValidateLayout();
             UpdateAnimations();
             UpdateBindings();
+
+            focusController.ValidateInternalState(this);
         }
     }
 
@@ -555,6 +560,7 @@ namespace UnityEngine.UIElements
         private string m_PanelName;
         private uint m_Version = 0;
         private uint m_RepaintVersion = 0;
+        private uint m_HierarchyVersion = 0;
 
         ProfilerMarker m_MarkerBeforeUpdate;
         ProfilerMarker m_MarkerUpdate;
@@ -665,15 +671,9 @@ namespace UnityEngine.UIElements
 
         public override IMGUIContainer rootIMGUIContainer { get; set; }
 
-        internal override uint version
-        {
-            get { return m_Version; }
-        }
-
-        internal override uint repaintVersion
-        {
-            get { return m_RepaintVersion; }
-        }
+        internal override uint version => m_Version;
+        internal override uint repaintVersion => m_RepaintVersion;
+        internal override uint hierarchyVersion => m_HierarchyVersion;
 
         private Shader m_StandardShader;
 
@@ -724,7 +724,8 @@ namespace UnityEngine.UIElements
             m_RootContainer = new VisualElement
             {
                 name = VisualElementUtils.GetUniqueName("unity-panel-container"),
-                viewDataKey = "PanelContainer"
+                viewDataKey = "PanelContainer",
+                pickingMode = contextType == ContextType.Editor ? PickingMode.Position : PickingMode.Ignore
             };
 
             // Required!
@@ -929,12 +930,6 @@ namespace UnityEngine.UIElements
 
         public override void Repaint(Event e)
         {
-            if (contextType == ContextType.Editor)
-            {
-                Debug.Assert(GUIClip.Internal_GetCount() == 0,
-                    "UIElement is not compatible with IMGUI GUIClips, only GUIClip.ParentClipScope");
-            }
-
             m_RepaintVersion = version;
 
             // in an in-game context, pixelsPerPoint is user driven
@@ -970,6 +965,9 @@ namespace UnityEngine.UIElements
         {
             ++m_Version;
             m_VisualTreeUpdater.OnVersionChanged(ve, versionChangeType);
+
+            if ((versionChangeType & VersionChangeType.Hierarchy) == VersionChangeType.Hierarchy)
+                ++m_HierarchyVersion;
             panelDebug?.OnVersionChanged(ve, versionChangeType);
         }
 
@@ -1002,6 +1000,7 @@ namespace UnityEngine.UIElements
         }
 
         public event Action destroyed;
+
 
         protected BaseRuntimePanel(ScriptableObject ownerObject, EventDispatcher dispatcher = null)
             : base(ownerObject, ContextType.Player, dispatcher)
@@ -1057,9 +1056,9 @@ namespace UnityEngine.UIElements
         internal int targetDisplay { get; set;}
 
         internal int screenRenderingWidth => targetDisplay > 0 && targetDisplay < Display.displays.Length
-            ? Display.displays[targetDisplay].renderingWidth : Screen.width;
+        ? Display.displays[targetDisplay].renderingWidth : Screen.width;
         internal int screenRenderingHeight => targetDisplay > 0 && targetDisplay < Display.displays.Length
-            ? Display.displays[targetDisplay].renderingHeight : Screen.height;
+        ? Display.displays[targetDisplay].renderingHeight : Screen.height;
 
         public override void Repaint(Event e)
         {

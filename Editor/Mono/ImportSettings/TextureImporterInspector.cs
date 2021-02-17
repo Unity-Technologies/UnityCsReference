@@ -267,7 +267,7 @@ namespace UnityEditor
 
             public readonly GUIContent mipmapFadeOutToggle = EditorGUIUtility.TrTextContent("Fadeout Mip Maps");
             public readonly GUIContent mipmapFadeOut = EditorGUIUtility.TrTextContent("Fade Range");
-            public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write Enabled", "Enable to be able to access the raw pixel data from code.");
+            public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write", "Enable to be able to access the raw pixel data from code.");
             public readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Streaming Mipmaps", "Only load larger mipmaps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings.");
             public readonly GUIContent streamingMipmapsPriority = EditorGUIUtility.TrTextContent("Mip Map Priority", "Mip map streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127.");
 
@@ -1219,13 +1219,6 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = m_FilterMode.hasMultipleDifferentValues;
             FilterMode filter = (FilterMode)m_FilterMode.intValue;
-            if ((int)filter == -1)
-            {
-                if (m_FadeOut.intValue > 0 || m_ConvertToNormalMap.intValue > 0)
-                    filter = FilterMode.Trilinear;
-                else
-                    filter = FilterMode.Bilinear;
-            }
             filter = (FilterMode)EditorGUILayout.IntPopup(s_Styles.filterMode, (int)filter, s_Styles.filterModeOptions, m_FilterModeOptions);
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
@@ -1240,10 +1233,7 @@ namespace UnityEditor
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = m_Aniso.hasMultipleDifferentValues;
-                int aniso = m_Aniso.intValue;
-                if (aniso == -1)
-                    aniso = 1;
-                aniso = EditorGUILayout.IntSlider("Aniso Level", aniso, 0, 16);
+                int aniso = EditorGUILayout.IntSlider("Aniso Level", m_Aniso.intValue, 0, 16);
                 EditorGUI.showMixedValue = false;
                 if (EditorGUI.EndChangeCheck())
                     m_Aniso.intValue = aniso;
@@ -1521,6 +1511,7 @@ namespace UnityEditor
 
         protected override void Apply()
         {
+            SpriteUtilityWindow.ApplySpriteEditorWindow();
             base.Apply();
             RefreshPreviewChannelSelection();
             BaseTextureImportPlatformSettings.ApplyPlatformSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings));
@@ -1538,8 +1529,8 @@ namespace UnityEditor
 
         private void RefreshPreviewChannelSelection()
         {
-            //Skip where there is no texture inspector
-            if (textureInspector == null)
+            //If the Preview is null or NOT the TextureInspector (e.g. ObjectPreview) then return, we do not need to refresh the preview channel selection
+            if (!(preview is TextureInspector))
                 return;
 
             string platformName = BuildPipeline.GetBuildTargetName(EditorUserBuildSettings.activeBuildTarget);

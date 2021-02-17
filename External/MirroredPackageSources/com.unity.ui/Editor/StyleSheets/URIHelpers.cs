@@ -14,6 +14,7 @@ namespace UnityEditor.UIElements.StyleSheets
     static class URIHelpers
     {
         static readonly Uri s_ProjectRootUri = new UriBuilder("project", "").Uri;
+        static readonly Uri s_ThemeUri = new UriBuilder(ThemeRegistry.kThemeScheme, "").Uri;
 
         public static URIValidationResult ValidAssetURL(string assetPath, string path, out string errorMessage, out string resolvedProjectRelativePath)
         {
@@ -36,10 +37,17 @@ namespace UnityEditor.UIElements.StyleSheets
             resolvedSubAssetPath = ExtractUrlFragment(ref path);
 
             Uri absoluteUri = null;
+            bool isUnityThemePath = path.StartsWith($"{ThemeRegistry.kThemeScheme}://");
             // Always treat URIs starting with "/" as implicit project schemes
             if (path.StartsWith("/"))
             {
                 var builder = new UriBuilder(s_ProjectRootUri.Scheme, "", 0, path);
+                absoluteUri = builder.Uri;
+            }
+            else if (isUnityThemePath)
+            {
+                var themeName = path.Substring($"{s_ThemeUri.Scheme}://".Length);
+                var builder = new UriBuilder(s_ThemeUri.Scheme, "", 0, themeName);
                 absoluteUri = builder.Uri;
             }
             else if (Uri.TryCreate(path, UriKind.Absolute, out absoluteUri) == false)
@@ -67,13 +75,14 @@ namespace UnityEditor.UIElements.StyleSheets
                 projectRelativePath = projectRelativePath.Substring(1);
             }
 
-            if (string.IsNullOrEmpty(projectRelativePath) || !File.Exists(projectRelativePath))
+            if (string.IsNullOrEmpty(projectRelativePath) ||
+                (absoluteUri.Scheme != s_ThemeUri.Scheme && !File.Exists(projectRelativePath)))
             {
                 errorMessage = projectRelativePath;
                 return URIValidationResult.InvalidURIProjectAssetPath;
             }
 
-            resolvedProjectRelativePath = projectRelativePath;
+            resolvedProjectRelativePath = absoluteUri.Scheme != s_ThemeUri.Scheme ? projectRelativePath : path;
             errorMessage = null;
 
             return URIValidationResult.OK;

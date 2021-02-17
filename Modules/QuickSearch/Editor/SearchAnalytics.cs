@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Profiling;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Analytics;
@@ -283,7 +284,7 @@ namespace UnityEditor.Search
             };
 
 
-            EditorApplication.quitting += UnityQuit;
+            EditorApplication.wantsToQuit += UnityQuit;
             m_Debouncer = Delayer.Debounce(SendEventFromEventCreator);
         }
 
@@ -344,8 +345,11 @@ namespace UnityEditor.Search
 
         public static void SendReportUsage()
         {
-            var report = CreateSearchUsageReport();
-            Send(EventName.quickSearchUsageReport, report);
+            using (new EditorPerformanceTracker("Quicksearch.Analytics.SendReportUsage"))
+            {
+                var report = CreateSearchUsageReport();
+                Send(EventName.quickSearchUsageReport, report);
+            }
         }
 
         public static void DebounceSendEvent(Func<GenericEvent> evtCreator)
@@ -380,9 +384,10 @@ namespace UnityEditor.Search
             Send(EventName.quickSearch, evt);
         }
 
-        private static void UnityQuit()
+        private static bool UnityQuit()
         {
             SendReportUsage();
+            return true;
         }
 
         private static SearchUsageReport CreateSearchUsageReport()

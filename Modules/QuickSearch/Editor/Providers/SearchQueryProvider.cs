@@ -51,7 +51,7 @@ namespace UnityEditor.Search.Providers
                 new SearchAction(type, "exec", null, "Execute search query")
                 {
                     closeWindowAfterExecution = false,
-                    handler = (item) => SearchQuery.ExecuteQuery(item.context.searchView, (SearchQuery)item.data)
+                    handler = ExecuteQuery
                 },
                 new SearchAction(type, "select", null, "Select search query", (item) =>
                 {
@@ -60,6 +60,12 @@ namespace UnityEditor.Search.Providers
                         Utils.FrameAssetFromPath(queryPath);
                 })
             };
+        }
+
+        private static void ExecuteQuery(SearchItem item)
+        {
+            if (item.context.searchView is QuickSearch qs && item.data is SearchQuery query)
+                qs.ExecuteSearchQuery(query);
         }
     }
 }

@@ -235,6 +235,7 @@ namespace UnityEngine.VFX
         Texture3D,
         TextureCube,
         TextureCubeArray,
+        CameraBuffer,
         Matrix4x4,
         Curve,
         ColorGradient,
@@ -319,4 +320,11 @@ namespace UnityEngine.VFX
         Color = 1 << 1,
         Normal = 1 << 2,
     }
+
+    internal enum VFXMainCameraBufferFallback
+    {
+        NoFallback,
+        PreferMainCamera,
+        PreferSceneCamera
+    };
 }

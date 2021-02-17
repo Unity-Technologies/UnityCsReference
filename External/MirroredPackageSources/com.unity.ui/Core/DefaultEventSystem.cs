@@ -8,6 +8,7 @@ namespace UnityEngine.UIElements
 
         internal static Func<bool> IsEditorRemoteConnected = () => false;
 
+
         private bool ShouldIgnoreEventsOnAppNotFocused()
         {
             switch (SystemInfo.operatingSystemFamily)
@@ -41,8 +42,9 @@ namespace UnityEngine.UIElements
             {
                 if (m_FocusedPanel != value)
                 {
-                    m_FocusedPanel?.focusController.BlurLastFocusedElement();
+                    m_FocusedPanel?.Blur();
                     m_FocusedPanel = value;
+                    m_FocusedPanel?.Focus();
                 }
             }
         }

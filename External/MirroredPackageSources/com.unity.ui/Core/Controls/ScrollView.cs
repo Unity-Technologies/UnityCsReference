@@ -219,11 +219,14 @@ namespace UnityEngine.UIElements
             set => m_VerticalScrollerVisibility = value ? ScrollerVisibility.AlwaysVisible : ScrollerVisibility.Auto;
         }
 
+        // Case 1297053: ScrollableWidth/Height may contain some numerical imprecisions.
+        const float k_SizeThreshold = 0.001f;
+
         internal bool needsHorizontal
         {
             get
             {
-                return horizontalScrollerVisibility == ScrollerVisibility.AlwaysVisible || (horizontalScrollerVisibility == ScrollerVisibility.Auto && scrollableWidth > 0);
+                return horizontalScrollerVisibility == ScrollerVisibility.AlwaysVisible || (horizontalScrollerVisibility == ScrollerVisibility.Auto && scrollableWidth > k_SizeThreshold);
             }
         }
 
@@ -231,7 +234,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                return verticalScrollerVisibility == ScrollerVisibility.AlwaysVisible || (verticalScrollerVisibility == ScrollerVisibility.Auto && scrollableHeight > 0);
+                return verticalScrollerVisibility == ScrollerVisibility.AlwaysVisible || (verticalScrollerVisibility == ScrollerVisibility.Auto && scrollableHeight > k_SizeThreshold);
             }
         }
 
@@ -648,6 +651,11 @@ namespace UnityEngine.UIElements
 
         void OnPointerCaptureOut(PointerCaptureOutEvent evt)
         {
+            if (evt.target == contentContainer)
+            {
+                ReleaseScrolling(evt.pointerId);
+            }
+
             if (m_CapturedTarget == null)
                 return;
 
@@ -941,7 +949,8 @@ namespace UnityEngine.UIElements
 
                 if (touchStopsVelocityOnly)
                 {
-                    CancelTargetAndCapturePointer(evt);
+                    contentContainer.CapturePointer(evt.pointerId);
+                    evt.PreventDefault();
                 }
             }
         }
@@ -1015,7 +1024,8 @@ namespace UnityEngine.UIElements
             if (scrollOffsetChanged)
             {
                 evt.isHandledByDraggable = true;
-                CancelTargetAndCapturePointer(evt);
+                contentContainer.CapturePointer(evt.pointerId);
+                evt.StopPropagation();
             }
             else
             {
@@ -1027,35 +1037,18 @@ namespace UnityEngine.UIElements
         {
             if (evt.target == contentContainer)
             {
-                ReleaseScrolling(evt);
+                ReleaseScrolling(evt.pointerId);
             }
         }
 
         void OnPointerUp(PointerUpEvent evt)
         {
-            ReleaseScrolling(evt);
+            ReleaseScrolling(evt.pointerId);
         }
 
-        void CancelTargetAndCapturePointer<T>(T evt) where T : PointerEventBase<T>, new()
+        void ReleaseScrolling(int pointerId)
         {
-            if (evt.target != contentContainer)
-            {
-                using (var cancelEvent = PointerCancelEvent.GetPooled(evt, evt.position, m_ScrollingPointerId))
-                {
-                    cancelEvent.target = evt.target;
-                    evt.target.SendEvent(cancelEvent);
-                }
-
-                evt.target.ReleasePointer(evt.pointerId);
-            }
-
-            contentContainer.CapturePointer(evt.pointerId);
-            evt.StopPropagation();
-        }
-
-        void ReleaseScrolling<T>(T evt) where T : PointerEventBase<T>, new()
-        {
-            if (evt.pointerId != m_ScrollingPointerId)
+            if (pointerId != m_ScrollingPointerId)
                 return;
 
             if (touchScrollBehavior == TouchScrollBehavior.Elastic || hasInertia)
@@ -1072,7 +1065,7 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            contentContainer.ReleasePointer(evt.pointerId);
+            contentContainer.ReleasePointer(pointerId);
             m_ScrollingPointerId = PointerId.invalidPointerId;
         }
 
@@ -1126,6 +1119,7 @@ namespace UnityEngine.UIElements
         // TODO: Same behaviour as IMGUI Scroll view
         void OnScrollWheel(WheelEvent evt)
         {
+            var updateContentViewTransform = false;
             if (contentContainer.boundingBox.height - layout.height > 0)
             {
                 var oldVerticalValue = verticalScroller.value;
@@ -1138,6 +1132,7 @@ namespace UnityEngine.UIElements
                 if (verticalScroller.value != oldVerticalValue)
                 {
                     evt.StopPropagation();
+                    updateContentViewTransform = true;
                 }
             }
 
@@ -1153,8 +1148,12 @@ namespace UnityEngine.UIElements
                 if (horizontalScroller.value != oldHorizontalValue)
                 {
                     evt.StopPropagation();
+                    updateContentViewTransform = true;
                 }
             }
+
+            if (updateContentViewTransform)
+                UpdateContentViewTransform();
         }
     }
 }

@@ -84,9 +84,12 @@ namespace UnityEngine
             // many times.
             gos = gos.OrderBy(g =>
             {
-                var r = StaticBatcherGOSorter.GetRenderer(g);
-                return sorter.GetMaterialId(r);
+                return StaticBatcherGOSorter.GetScaleFlip(g);
             }).ThenBy(g =>
+                {
+                    var r = StaticBatcherGOSorter.GetRenderer(g);
+                    return sorter.GetMaterialId(r);
+                }).ThenBy(g =>
                 {
                     var r = StaticBatcherGOSorter.GetRenderer(g);
                     return sorter.GetLightmapIndex(r);
@@ -120,6 +123,7 @@ namespace UnityEngine
                 gos = SortGameObjectsForStaticBatching(gos, sorter ?? new StaticBatcherGOSorter());
 
             uint prevMeshFormatHash = 0;
+            bool prevWinding = false;
             foreach (GameObject go in gos)
             {
                 MeshFilter filter = go.GetComponent(typeof(MeshFilter)) as MeshFilter;
@@ -174,12 +178,18 @@ namespace UnityEngine
 
                 var meshFormatHash = GetMeshFormatHash(instanceMesh);
 
-                // flush previous batch if it got large enough, or the mesh vertex format has changed
-                if (verticesInBatch + vertexCount > MaxVerticesInBatch || meshFormatHash != prevMeshFormatHash)
+                var winding = StaticBatcherGOSorter.GetScaleFlip(go);
+
+                // flush previous batch if it got large enough, the mesh vertex format has changed,
+                // or the winding order changed due to negative scaling
+                if (verticesInBatch + vertexCount > MaxVerticesInBatch ||
+                    meshFormatHash != prevMeshFormatHash ||
+                    winding != prevWinding)
                 {
                     MakeBatch(meshes, staticBatchRootTransform, batchIndex++);
                     meshes.Clear();
                     verticesInBatch = 0;
+                    prevWinding = winding;
                 }
 
                 prevMeshFormatHash = meshFormatHash;
@@ -336,6 +346,17 @@ namespace UnityEngine
                 if (renderer == null)
                     return -1;
                 return renderer.GetInstanceID();
+            }
+
+            public static bool GetScaleFlip(GameObject go)
+            {
+                // We can't batch objects with an odd number of negative space together with
+                // objects that has an even number, since they have different tangent space
+                // winding order. This equivalent to checking if the determinant of the
+                // local to world matrix is less than one
+                var t = go.transform;
+                var d = t.localToWorldMatrix.determinant;
+                return d < 0.0f;
             }
         }
     }

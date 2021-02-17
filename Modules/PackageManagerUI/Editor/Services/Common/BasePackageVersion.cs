@@ -13,6 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal abstract class BasePackageVersion : IPackageVersion, ISerializationCallbackReceiver
     {
+        private const string k_NoSubscriptionErrorMessage = "You do not have a subscription for this package";
         public string name => packageInfo?.name ?? string.Empty;
 
         [SerializeField]
@@ -51,6 +52,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         public bool HasTag(PackageTag tag)
         {
             return (m_Tag & tag) != 0;
+        }
+
+        public bool hasEntitlements => entitlements != null && entitlements.licenseType != EntitlementLicenseType.Public;
+
+        public bool hasEntitlementsError
+        {
+            get
+            {
+                if (!hasEntitlements || !entitlements.isAllowed)
+                    return false;
+
+                return packageInfo?.errors.Any(error =>
+                    error.errorCode == ErrorCode.Forbidden ||
+                    error.message.IndexOf(k_NoSubscriptionErrorMessage, StringComparison.InvariantCultureIgnoreCase) >= 0) ?? false;
+            }
         }
 
         public virtual PackageInfo packageInfo => null;

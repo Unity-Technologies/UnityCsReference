@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -12,7 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public static T Get<T>(this IDictionary<string, object> dict, string key) where T : class
         {
             object result;
-            return dict.TryGetValue(key, out result)  ? result as T : null;
+            return dict.TryGetValue(key, out result)  ? (T)result : null;
         }
 
         public static T Get<T>(this IDictionary<string, object> dict, string key, T fallbackValue = default(T)) where T : struct
@@ -40,7 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static IEnumerable<T> GetList<T>(this IDictionary<string, object> dict, string key)
         {
-            return Get<IList<object>>(dict, key)?.OfType<T>();
+            return Get<IList>(dict, key)?.OfType<T>();
         }
 
         public static string GetString(this IDictionary<string, object> dict, string key)

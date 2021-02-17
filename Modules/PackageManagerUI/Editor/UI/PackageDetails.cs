@@ -2,13 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
-using UnityEngine.Networking;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
 
@@ -146,41 +144,32 @@ namespace UnityEditor.PackageManager.UI.Internal
             PackageTag.ReleaseCandidate
         };
 
-        private static Texture2D s_LoadingTexture;
-
         // We limit the number of entries shown so as to not overload the dialog.
         // The relevance of results beyond this limit is also questionable.
         private const int MaxDependentList = 10;
 
-        // Keep track of the width breakpoints at which images were hidden so we know
-        //  when to add them back in
-        private Stack<float> detailImagesWidthsWhenImagesRemoved;
-
+        internal bool descriptionExpanded => m_DescriptionExpanded;
         private bool m_DescriptionExpanded;
 
         private ResourceLoader m_ResourceLoader;
         private ApplicationProxy m_Application;
-        private AssetDatabaseProxy m_AssetDatabase;
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
-        private AssetStoreCache m_AssetStoreCache;
         private PackageManagerPrefs m_PackageManagerPrefs;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
-        private IOProxy m_IOProxy;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
+        private UnityConnectProxy m_UnityConnectProxy;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_Application = container.Resolve<ApplicationProxy>();
-            m_AssetDatabase = container.Resolve<AssetDatabaseProxy>();
             m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
-            m_AssetStoreCache = container.Resolve<AssetStoreCache>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
-            m_IOProxy = container.Resolve<IOProxy>();
+            m_UnityConnectProxy = container.Resolve<UnityConnectProxy>();
         }
 
         public PackageDetails()
@@ -212,11 +201,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             detailDescLess.clickable.clicked += DescLessClick;
             okButton.clickable.clicked += ClearError;
 
+            signInButton.clickable.clicked += m_UnityConnectProxy.ShowLogin;
+
             detailDesc.RegisterCallback<GeometryChangedEvent>(DescriptionGeometryChangeEvent);
-            detailImages?.RegisterCallback<GeometryChangedEvent>(ImagesGeometryChangeEvent);
 
             scopedRegistryInfoBox.Q<Button>().clickable.clicked += OnInfoBoxClickMore;
             detailScrollView.verticalScroller.valueChanged += OnDetailScroll;
+
+            errorMessage.ShowTextTooltipOnSizeChange();
 
             RefreshContent();
         }
@@ -228,7 +220,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnEnable()
         {
-            detailImagesWidthsWhenImagesRemoved = new Stack<float>();
             m_Application.onFinishCompiling += RefreshPackageActionButtons;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
 
@@ -245,11 +236,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_SettingsProxy.onEnablePackageDependenciesChanged += (value) => RefreshDependencies();
 
+            m_UnityConnectProxy.onUserLoginStateChange += OnUserLoginStateChange;
+
             RefreshUI(m_PageManager.GetSelectedVersion());
         }
 
         public void OnDisable()
         {
+            detailsImages.OnDisable();
+
             m_Application.onFinishCompiling -= RefreshPackageActionButtons;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
 
@@ -261,7 +256,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_PageManager.onSelectionChanged -= OnSelectionChanged;
 
-            ClearSupportingImages();
+            m_UnityConnectProxy.onUserLoginStateChange -= OnUserLoginStateChange;
         }
 
         private void OnInternetReachabilityChange(bool value)
@@ -274,6 +269,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (value)
                 RefreshErrorDisplay();
+
+            if (package?.hasEntitlementsError ?? false)
+                RefreshEntitlement();
+        }
+
+        private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
+        {
+            if (!userInfoReady || package == null)
+                return;
+
+            RefreshEntitlement();
         }
 
         private void OnInfoBoxClickMore()
@@ -319,7 +325,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SetContentVisibility(bool visible)
         {
-            UIUtils.SetElementDisplay(detailContainer, visible);
+            UIUtils.SetElementDisplay(detail, visible);
             UIUtils.SetElementDisplay(packageToolbarContainer, visible);
 
             SetToolBarVisibility(visible);
@@ -383,8 +389,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var detailVisible = package != null && displayVersion != null && !inProgressView.Refresh(package);
             var detailEnabled = displayVersion == null || displayVersion.isFullyFetched;
+
             if (!detailVisible)
             {
+                UIUtils.SetElementDisplay(signInButton, false);
                 UIUtils.SetElementDisplay(customContainer, false);
                 RefreshExtensions(null);
             }
@@ -392,7 +400,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 detailTitle.SetValueWithoutNotify(displayVersion.displayName);
 
-                RefreshLinks();
+                RefreshEntitlement();
+
+                detailsLinks.Refresh(package, displayVersion);
 
                 RefreshDescription();
 
@@ -414,13 +424,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 foreach (var tag in k_VisibleTags)
                     UIUtils.SetElementDisplay(GetTagLabel(tag.ToString()), displayVersion.HasTag(tag));
-
-                // if not developer build, hide the Release Candidate tag and show Pre-Release instead
-                if (!m_Application.isDeveloperBuild && displayVersion.HasTag(PackageTag.ReleaseCandidate))
-                {
-                    UIUtils.SetElementDisplay(GetTagLabel(PackageTag.ReleaseCandidate.ToString()), false);
-                    UIUtils.SetElementDisplay(GetTagLabel(PackageTag.PreRelease.ToString()), true);
-                }
 
                 var scopedRegistryTagLabel = GetTagLabel("ScopedRegistry");
                 if ((displayVersion as UpmPackageVersion)?.isUnityPackage == false && !string.IsNullOrEmpty(displayVersion.version?.Prerelease))
@@ -449,7 +452,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 RefreshSizeAndSupportedUnityVersions();
 
-                RefreshSupportingImages();
+                detailsImages.Refresh(package);
 
                 RefreshPackageActionButtons();
                 RefreshSourcePath();
@@ -469,6 +472,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void DescriptionGeometryChangeEvent(GeometryChangedEvent evt)
         {
+            if (package == null || !package.Is(PackageType.AssetStore))
+            {
+                UIUtils.SetElementDisplay(detailDescMore, false);
+                UIUtils.SetElementDisplay(detailDescLess, false);
+                return;
+            }
+
             var minTextHeight = (int)detailDesc.MeasureTextSize("|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).y*3 + 1;
             var textHeight = (int)detailDesc.MeasureTextSize(detailDesc.text, evt.newRect.width, MeasureMode.AtMost, float.MaxValue, MeasureMode.Undefined).y + 1;
             if (!m_DescriptionExpanded && textHeight > minTextHeight)
@@ -486,32 +496,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else if (m_DescriptionExpanded && evt.newRect.width < evt.oldRect.width && textHeight > minTextHeight)
             {
+                UIUtils.SetElementDisplay(detailDescMore, false);
                 UIUtils.SetElementDisplay(detailDescLess, true);
-            }
-        }
-
-        private void ImagesGeometryChangeEvent(GeometryChangedEvent evt)
-        {
-            // hide or show the last image depending on whether it fits on the screen
-            var images = detailImages.Children();
-            var visibleImages = images.Where(elem => UIUtils.IsElementVisible(elem));
-
-            var firstInvisibleImage = images.FirstOrDefault(elem => !UIUtils.IsElementVisible(elem));
-            var visibleImagesWidth = visibleImages.Sum(elem => elem.rect.width);
-            var lastVisibleImage = visibleImages.LastOrDefault();
-
-            var widthWhenLastImageRemoved = detailImagesWidthsWhenImagesRemoved.Any() ? detailImagesWidthsWhenImagesRemoved.Peek() : float.MaxValue;
-
-            // if the container approximately doubles in height, that indicates the last image was wrapped around to another row
-            if (lastVisibleImage != null && (evt.newRect.height >= 2 * lastVisibleImage.rect.height || visibleImagesWidth >= evt.newRect.width))
-            {
-                UIUtils.SetElementDisplay(lastVisibleImage, false);
-                detailImagesWidthsWhenImagesRemoved.Push(evt.newRect.width);
-            }
-            else if (firstInvisibleImage != null && evt.newRect.width > widthWhenLastImageRemoved)
-            {
-                UIUtils.SetElementDisplay(firstInvisibleImage, true);
-                detailImagesWidthsWhenImagesRemoved.Pop();
             }
         }
 
@@ -523,7 +509,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             detailDesc.SetValueWithoutNotify(hasDescription ? displayVersion.description : L10n.Tr("There is no description for this package."));
             UIUtils.SetElementDisplay(detailDescMore, false);
             UIUtils.SetElementDisplay(detailDescLess, false);
-            m_DescriptionExpanded = false;
+            m_DescriptionExpanded = !package.Is(PackageType.AssetStore);
         }
 
         private void RefreshAuthor()
@@ -626,39 +612,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(detailReleaseDetailsContainer, detailReleaseDetails.Children().Any());
         }
 
-        private void RefreshLinks()
+        private void RefreshEntitlement()
         {
-            detailLinksContainer.Clear();
-            // add links from the package
-            foreach (var link in package.links)
-            {
-                AddToLinks(new Button(() => { m_Application.OpenURL(link.url); })
-                {
-                    text = link.name,
-                    tooltip = link.url,
-                    classList = { "unity-button", "link" }
-                });
-            }
+            var showEntitlement = package.hasEntitlements;
+            UIUtils.SetElementDisplay(detailEntitlement, showEntitlement);
+            detailEntitlement.text = showEntitlement ? "E" : string.Empty;
+            detailEntitlement.tooltip = showEntitlement ? L10n.Tr("This is an Entitlement package.") : string.Empty;
 
-            // add links related to the upm version
-            if (UpmPackageDocs.HasDocs(displayVersion))
-                AddToLinks(new Button(ViewDocClick) { text = L10n.Tr("View documentation"), classList = { "unity-button", "link" } });
-
-            if (UpmPackageDocs.HasChangelog(displayVersion))
-                AddToLinks(new Button(ViewChangelogClick) { text = L10n.Tr("View changelog"), classList = { "unity-button", "link" } });
-
-            if (UpmPackageDocs.HasLicenses(displayVersion))
-                AddToLinks(new Button(ViewLicensesClick) { text = L10n.Tr("View licenses"), classList = { "unity-button", "link" } });
-
-            UIUtils.SetElementDisplay(detailLinksContainer, detailLinksContainer.childCount != 0);
-        }
-
-        private void AddToLinks(VisualElement item)
-        {
-            // Add a seperator between links to make them less crowded together
-            if (detailLinksContainer.childCount > 0)
-                detailLinksContainer.Add(new Label("·") { classList = { "interpunct" } });
-            detailLinksContainer.Add(item);
+            var hasEntitlementsError = package.hasEntitlementsError;
+            detailContainer.SetEnabled(!hasEntitlementsError);
+            UIUtils.SetElementDisplay(signInButton, hasEntitlementsError && !m_UnityConnectProxy.isUserLoggedIn);
+            RefreshButtonStatusAndTooltip(signInButton, disableIfNoNetwork);
         }
 
         private void RefreshSizeAndSupportedUnityVersions()
@@ -720,58 +684,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             return showSizes;
-        }
-
-        private void ClearSupportingImages()
-        {
-            foreach (var elt in detailImages.Children())
-            {
-                if (elt is Label &&
-                    elt.style.backgroundImage.value.texture != null &&
-                    elt.style.backgroundImage.value.texture != s_LoadingTexture)
-                {
-                    UnityEngine.Object.DestroyImmediate(elt.style.backgroundImage.value.texture);
-                }
-            }
-            detailImages.Clear();
-            detailImagesMoreLink.clicked -= OnMoreImagesClicked;
-        }
-
-        private void RefreshSupportingImages()
-        {
-            UIUtils.SetElementDisplay(detailImagesContainer, package.images.Any());
-            ClearSupportingImages();
-
-            if (s_LoadingTexture == null)
-                s_LoadingTexture = (Texture2D)EditorGUIUtility.LoadRequired("Icons/UnityLogo.png");
-
-            long id;
-            if (long.TryParse(package.uniqueId, out id))
-            {
-                foreach (var packageImage in package.images)
-                {
-                    var image = new Label { classList = { "image" } };
-                    image.OnLeftClick(() => { m_Application.OpenURL(packageImage.url); });
-                    image.style.backgroundImage = s_LoadingTexture;
-                    detailImages.Add(image);
-
-                    m_AssetStoreCache.DownloadImageAsync(id, packageImage.thumbnailUrl, (retId, texture) =>
-                    {
-                        if (retId.ToString() == package?.uniqueId)
-                        {
-                            texture.hideFlags = HideFlags.HideAndDontSave;
-                            image.style.backgroundImage = texture;
-                        }
-                    });
-                }
-            }
-
-            detailImagesMoreLink.clicked += OnMoreImagesClicked;
-        }
-
-        private void OnMoreImagesClicked()
-        {
-            m_Application.OpenURL((package as AssetStorePackage).assetStoreLink);
         }
 
         public void SetPackage(IPackage package, IPackageVersion version = null)
@@ -838,7 +750,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var error = displayVersion?.errors?.FirstOrDefault() ?? package?.errors?.FirstOrDefault();
             if (error != null)
+            {
                 package?.ClearErrors(e => e.HasAttribute(UIError.Attribute.IsClearable));
+                RefreshEntitlement();
+                RefreshAddButton();
+            }
 
             SetToolBarVisibility(true);
         }
@@ -890,7 +806,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var currentPackageInstallInProgress = m_PackageDatabase.IsInstallInProgress(displayVersion);
                 updateButton.text = GetButtonText(action, currentPackageInstallInProgress, versionToUpdateTo);
 
-                RefreshButtonStatusAndTooltip(updateButton, action, disableIfInstallOrUninstallInProgress, disableIfCompiling);
+                RefreshButtonStatusAndTooltip(updateButton, action, disableIfInstallOrUninstallInProgress, disableIfCompiling, disableIfEntitlementsError);
             }
             UIUtils.SetElementDisplay(updateButton, visibleFlag);
         }
@@ -1015,6 +931,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             new ButtonDisableCondition(m_Application.isCompiling, L10n.Tr("You need to wait until the compilation is finished to perform this action."));
         private ButtonDisableCondition disableIfInstallOrUninstallInProgress =>
             new ButtonDisableCondition(m_PackageDatabase.isInstallOrUninstallInProgress, L10n.Tr("You need to wait until other install or uninstall operations are finished to perform this action."));
+        private ButtonDisableCondition disableIfNoNetwork =>
+            new ButtonDisableCondition(!m_Application.isInternetReachable, L10n.Tr("You need to be online."));
+        private ButtonDisableCondition disableIfEntitlementsError =>
+            new ButtonDisableCondition(package?.hasEntitlementsError ?? false, L10n.Tr("You need to sign in with a licensed account to perform this action."));
 
         private static void RefreshButtonStatusAndTooltip(Button button, PackageAction action, params ButtonDisableCondition[] disableConditions)
         {
@@ -1031,6 +951,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             button.SetEnabled(true);
             button.parent.tooltip = GetButtonTooltip(action);
+        }
+
+        private static void RefreshButtonStatusAndTooltip(Button button, params ButtonDisableCondition[] disableConditions)
+        {
+            foreach (var condition in disableConditions)
+            {
+                if (condition.value)
+                {
+                    button.SetEnabled(false);
+                    button.parent.tooltip = condition.tooltip;
+                    return;
+                }
+            }
+            button.SetEnabled(true);
+            button.parent.tooltip = string.Empty;
         }
 
         private void RefreshSourcePath()
@@ -1203,60 +1138,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             PackageManagerWindowAnalytics.SendEvent("uninstall", displayVersion?.uniqueId);
         }
 
-        private void ViewOfflineDocs(IPackageVersion version, Func<IOProxy, IPackageVersion, bool, string> getUrl, string messageOnNotFound)
-        {
-            if (!version.isAvailableOnDisk)
-            {
-                EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), L10n.Tr("This package is not available offline."), L10n.Tr("Ok"));
-                return;
-            }
-            var offlineUrl = getUrl(m_IOProxy, version, true);
-            if (!string.IsNullOrEmpty(offlineUrl))
-                m_Application.RevealInFinder(offlineUrl);
-            else
-                EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), messageOnNotFound, L10n.Tr("Ok"));
-        }
-
-        private void ViewUrl(IPackageVersion version, Func<IOProxy, IPackageVersion, bool, string> getUrl, string messageOnNotFound)
-        {
-            if (m_Application.isInternetReachable)
-            {
-                var onlineUrl = getUrl(m_IOProxy, version, false);
-                var request = UnityWebRequest.Head(onlineUrl);
-                var operation = request.SendWebRequest();
-                operation.completed += (op) =>
-                {
-                    if (request.responseCode != 404)
-                    {
-                        m_Application.OpenURL(onlineUrl);
-                    }
-                    else
-                    {
-                        ViewOfflineDocs(version, getUrl, messageOnNotFound);
-                    }
-                };
-            }
-            else
-            {
-                ViewOfflineDocs(version, getUrl, messageOnNotFound);
-            }
-        }
-
-        private void ViewDocClick()
-        {
-            ViewUrl(displayVersion, UpmPackageDocs.GetDocumentationUrl, L10n.Tr("This package does not contain offline documentation."));
-        }
-
-        private void ViewChangelogClick()
-        {
-            ViewUrl(displayVersion, UpmPackageDocs.GetChangelogUrl, L10n.Tr("This package does not contain offline changelog."));
-        }
-
-        private void ViewLicensesClick()
-        {
-            ViewUrl(displayVersion, UpmPackageDocs.GetLicensesUrl, L10n.Tr("This package does not contain offline licenses."));
-        }
-
         private void ImportClick()
         {
             m_PackageDatabase.Import(package);
@@ -1312,11 +1193,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         private SelectableLabel detailDesc { get { return cache.Get<SelectableLabel>("detailDesc"); } }
         private Button detailDescMore { get { return cache.Get<Button>("detailDescMore"); } }
         private Button detailDescLess { get { return cache.Get<Button>("detailDescLess"); } }
-        private VisualElement detailLinksContainer => cache.Get<VisualElement>("detailLinksContainer");
         internal override IAlert detailError { get { return cache.Get<Alert>("detailError"); } }
         private ScrollView detailScrollView { get { return cache.Get<ScrollView>("detailScrollView"); } }
-        private VisualElement detailContainer { get { return cache.Get<VisualElement>("detail"); } }
+        private VisualElement detail { get { return cache.Get<VisualElement>("detail"); } }
         private SelectableLabel detailTitle { get { return cache.Get<SelectableLabel>("detailTitle"); } }
+        private Label detailEntitlement { get { return cache.Get<Label>("detailEntitlement"); } }
         private SelectableLabel detailVersion { get { return cache.Get<SelectableLabel>("detailVersion"); } }
         private VisualElement versionInfoIcon => cache.Get<VisualElement>("versionInfoIcon");
         private HelpBox disabledInfoBox { get { return cache.Get<HelpBox>("disabledInfoBox"); } }
@@ -1341,17 +1222,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Button cancelButton { get { return cache.Get<Button>("cancel"); } }
         internal Button pauseButton { get { return cache.Get<Button>("pause"); } }
         internal Button resumeButton { get { return cache.Get<Button>("resume"); } }
+        private Button signInButton { get { return cache.Get<Button>("signIn"); } }
         private ProgressBar downloadProgress { get { return cache.Get<ProgressBar>("downloadProgress"); } }
         private VisualElement detailSizesAndSupportedVersionsContainer { get { return cache.Get<VisualElement>("detailSizesAndSupportedVersionsContainer"); } }
         private VisualElement detailUnityVersionsContainer { get { return cache.Get<VisualElement>("detailUnityVersionsContainer"); } }
         private SelectableLabel detailUnityVersions { get { return cache.Get<SelectableLabel>("detailUnityVersions"); } }
         private VisualElement detailSizesContainer { get { return cache.Get<VisualElement>("detailSizesContainer"); } }
         private VisualElement detailSizes { get { return cache.Get<VisualElement>("detailSizes"); } }
-        private VisualElement detailImagesContainer { get { return cache.Get<VisualElement>("detailImagesContainer"); } }
-        private VisualElement detailImages { get { return cache.Get<VisualElement>("detailImages"); } }
         private VisualElement detailReleaseDetailsContainer { get { return cache.Get<VisualElement>("detailReleaseDetailsContainer"); } }
         private VisualElement detailReleaseDetails { get { return cache.Get<VisualElement>("detailReleaseDetails"); } }
-        private Button detailImagesMoreLink { get { return cache.Get<Button>("detailImagesMoreLink"); } }
         private VisualElement detailLabelsContainer { get { return cache.Get<VisualElement>("detailLabelsContainer"); } }
         private VisualElement detailLabels { get { return cache.Get<VisualElement>("detailLabels"); } }
         private VisualElement detailSourcePathContainer { get { return cache.Get<VisualElement>("detailSourcePathContainer"); } }
@@ -1361,5 +1240,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Label errorMessage { get { return cache.Get<Label>("message"); } }
         private Label errorStatus { get { return cache.Get<Label>("state"); } }
         private Button okButton { get { return cache.Get<Button>("ok"); } }
+
+        private VisualElement detailContainer { get { return cache.Get<VisualElement>("detailContainer"); } }
+
+        private PackageDetailsLinks detailsLinks => cache.Get<PackageDetailsLinks>("detailLinksContainer");
+        private PackageDetailsImages detailsImages => cache.Get<PackageDetailsImages>("detailImagesContainer");
     }
 }

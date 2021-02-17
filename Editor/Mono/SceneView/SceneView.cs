@@ -20,7 +20,6 @@ using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UnityEditor.EditorTools;
-using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.Profiling;
 using UnityEditor.Snap;
 using UnityEngine.Serialization;
@@ -93,8 +92,8 @@ namespace UnityEditor
 
         public static SceneView currentDrawingSceneView { get { return s_CurrentDrawingSceneView; } }
 
-        internal static readonly PrefColor kSceneViewBackground = new PrefColor("Scene/Background", 0.278431f, 0.278431f, 0.278431f, 0);
-        internal static readonly PrefColor kSceneViewPrefabBackground = new PrefColor("Scene/Background for Prefabs", 0.132f, 0.231f, 0.330f, 0);
+        internal static readonly PrefColor kSceneViewBackground = new PrefColor("Scene/Background", 0.278431f, 0.278431f, 0.278431f, 1);
+        internal static readonly PrefColor kSceneViewPrefabBackground = new PrefColor("Scene/Background for Prefabs", 0.132f, 0.231f, 0.330f, 1);
         static readonly PrefColor kSceneViewWire = new PrefColor("Scene/Wireframe", 0.0f, 0.0f, 0.0f, 0.5f);
         static readonly PrefColor kSceneViewWireOverlay = new PrefColor("Scene/Wireframe Overlay", 0.0f, 0.0f, 0.0f, 0.25f);
         static readonly PrefColor kSceneViewSelectedOutline = new PrefColor("Scene/Selected Outline", 255.0f / 255.0f, 102.0f / 255.0f, 0.0f / 255.0f, 0.0f / 255.0f);
@@ -554,7 +553,7 @@ namespace UnityEditor
             get
             {
                 return (this.cameraMode.drawMode == DrawCameraMode.BakedEmissive || this.cameraMode.drawMode == DrawCameraMode.BakedLightmap ||
-                    this.cameraMode.drawMode == DrawCameraMode.RealtimeEmissive || this.cameraMode.drawMode == DrawCameraMode.RealtimeIndirect);
+                    this.cameraMode.drawMode == DrawCameraMode.RealtimeEmissive || this.cameraMode.drawMode == DrawCameraMode.RealtimeIndirect || this.cameraMode.drawMode == DrawCameraMode.LitClustering);
             }
         }
 
@@ -600,11 +599,10 @@ namespace UnityEditor
         public class CameraSettings
         {
             const float defaultEasingDuration = .4f;
-            const float kAbsoluteSpeedMin = .001f;
-            const float kAbsoluteSpeedMax = 99f;
+            internal const float kAbsoluteSpeedMin = .0001f;
+            internal const float kAbsoluteSpeedMax = 10000f;
             const float kAbsoluteEasingDurationMin = .1f;
             const float kAbsoluteEasingDurationMax = 2f;
-            const float kMinSpeedMinMaxRange = .001f;
 
             [SerializeField]
             float m_Speed;
@@ -636,7 +634,7 @@ namespace UnityEditor
             {
                 m_Speed = 1f;
                 m_SpeedNormalized = .5f;
-                m_SpeedMin = kAbsoluteSpeedMin;
+                m_SpeedMin = .01f;
                 m_SpeedMax = 2f;
                 m_EasingEnabled = true;
                 m_EasingDuration = defaultEasingDuration;
@@ -691,28 +689,14 @@ namespace UnityEditor
 
             public float speedMin
             {
-                get
-                {
-                    return m_SpeedMin;
-                }
-                set
-                {
-                    float[] m_Vector2Floats = { value, m_SpeedMax };
-                    SetSpeedMinMax(m_Vector2Floats);
-                }
+                get => m_SpeedMin;
+                set => SetSpeedMinMax(value, m_SpeedMax);
             }
 
             public float speedMax
             {
-                get
-                {
-                    return m_SpeedMax;
-                }
-                set
-                {
-                    float[] m_Vector2Floats = { m_SpeedMin, value };
-                    SetSpeedMinMax(m_Vector2Floats);
-                }
+                get => m_SpeedMax;
+                set => SetSpeedMinMax(m_SpeedMin, value);
             }
 
             // Easing is applied when starting and stopping movement. When enabled, the camera will lerp from it's
@@ -757,17 +741,17 @@ namespace UnityEditor
                     return speedMax;
 
                 float rng = speedMax - speedMin;
-                int min_rnd = speedMin < .01f ? 3 : speedMin < .1f ? 2 : speedMin < 1f ? 1 : 0;
-                int rng_rnd = rng < 1f ? 2 : rng < 10f ? 1 : 0;
+                int min_rnd = speedMin < .001f ? 4 : speedMin < .01f ? 3 : speedMin < .1f ? 2 : speedMin < 1f ? 1 : 0;
+                int rng_rnd = rng < .1f ? 3 : rng < 1f ? 2 : rng < 10f ? 1 : 0;
                 return (float)Math.Round(value, Mathf.Max(min_rnd, rng_rnd));
             }
 
-            internal void SetSpeedMinMax(float[] floatValues)
+            internal void SetSpeedMinMax(float min, float max)
             {
                 // Clamp min to valid ranges
-                float min = Mathf.Clamp(floatValues[0], kAbsoluteSpeedMin, kAbsoluteSpeedMax - kMinSpeedMinMaxRange);
-                float minRange = min < .1f ? .01f : min < 1f ? .1f : 1f;
-                float max = Mathf.Clamp(floatValues[1], min + minRange, kAbsoluteSpeedMax);
+                float minRange = min < .001f ? .0001f : min < .01f ? .001f : min < .1f ? .01f : min < 1f ? .1f : 1f;
+                min = Mathf.Clamp(min, kAbsoluteSpeedMin, kAbsoluteSpeedMax - minRange);
+                max = Mathf.Clamp(max, min + minRange, kAbsoluteSpeedMax);
 
                 m_SpeedMin = min;
                 m_SpeedMax = max;
@@ -1679,12 +1663,52 @@ namespace UnityEditor
             }
         }
 
+        private static bool ValidateMenuMoveToFrontOrBack(Transform[] transforms, bool isFront)
+        {
+            if (transforms.Length == 0)
+            {
+                return false;
+            }
+
+            int alreadyInPlaceCounter = 0;
+            foreach (Transform transform in transforms)
+            {
+                if (transform == null || transform.parent == null || PrefabUtility.IsPartOfNonAssetPrefabInstance(transform))
+                {
+                    return false;
+                }
+
+                int alreadyInPlaceSiblingIndex = isFront ? 0 : transform.parent.childCount - 1;
+                if (transform.GetSiblingIndex() == alreadyInPlaceSiblingIndex)
+                {
+                    alreadyInPlaceCounter += 1;
+                }
+            }
+
+            return alreadyInPlaceCounter < transforms.Length;
+        }
+
+        private static void RegisterMenuMoveChildrenUndo(Transform[] transforms, string message)
+        {
+            var parents = new HashSet<Transform>();
+            foreach (Transform t in transforms)
+            {
+                if (!parents.Contains(t.parent))
+                {
+                    Undo.RegisterChildrenOrderUndo(t.parent, message);
+                    parents.Add(t.parent);
+                }
+            }
+        }
+
         [MenuItem("GameObject/Set as first sibling %=")]
         internal static void MenuMoveToFront()
         {
-            foreach (Transform t in Selection.transforms)
+            var selectedTransforms = Selection.transforms;
+
+            RegisterMenuMoveChildrenUndo(selectedTransforms, "Set as first sibling");
+            foreach (Transform t in selectedTransforms)
             {
-                Undo.SetTransformParent(t, t.parent, "Set as first sibling");
                 t.SetAsFirstSibling();
             }
         }
@@ -1692,20 +1716,17 @@ namespace UnityEditor
         [MenuItem("GameObject/Set as first sibling %=", true)]
         internal static bool ValidateMenuMoveToFront()
         {
-            if (Selection.activeTransform != null)
-            {
-                Transform parent = Selection.activeTransform.parent;
-                return (parent != null && parent.GetChild(0) != Selection.activeTransform);
-            }
-            return false;
+            return ValidateMenuMoveToFrontOrBack(Selection.transforms, true);
         }
 
         [MenuItem("GameObject/Set as last sibling %-")]
         internal static void MenuMoveToBack()
         {
-            foreach (Transform t in Selection.transforms)
+            var selectedTransforms = Selection.transforms;
+
+            RegisterMenuMoveChildrenUndo(selectedTransforms, "Set as last sibling");
+            foreach (Transform t in selectedTransforms)
             {
-                Undo.SetTransformParent(t, t.parent, "Set as last sibling");
                 t.SetAsLastSibling();
             }
         }
@@ -1713,12 +1734,7 @@ namespace UnityEditor
         [MenuItem("GameObject/Set as last sibling %-", true)]
         internal static bool ValidateMenuMoveToBack()
         {
-            if (Selection.activeTransform != null)
-            {
-                Transform parent = Selection.activeTransform.parent;
-                return (parent != null && parent.GetChild(parent.childCount - 1) != Selection.activeTransform);
-            }
-            return false;
+            return ValidateMenuMoveToFrontOrBack(Selection.transforms, false);
         }
 
         [MenuItem("GameObject/Move To View %&f")]
@@ -3017,11 +3033,7 @@ namespace UnityEditor
         {
             var repaint = false;
             if (m_lastRenderedTime + 0.033f < EditorApplication.timeSinceStartup)
-            {
-                if (sceneViewState.visualEffectGraphsEnabled)
-                    UnityEngine.VFX.VFXManager.RequestRepaint();
                 repaint = sceneViewState.alwaysRefreshEnabled;
-            }
             repaint |= LODUtility.IsLODAnimating(m_Camera);
 
             if (repaint)

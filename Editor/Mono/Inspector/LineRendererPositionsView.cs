@@ -89,14 +89,18 @@ namespace UnityEditor
 
         int GetArraySize()
         {
-            int arraySize = m_Positions.arraySize;
+            int arraySize;
             if (m_Positions.serializedObject.isEditingMultipleObjects)
             {
-                foreach (LineRenderer lineRend in m_Positions.serializedObject.targetObjects)
-                {
-                    arraySize = Mathf.Min(arraySize, lineRend.positionCount);
-                    m_Positions.serializedObject.maxArraySizeForMultiEditing = Mathf.Max(m_Positions.serializedObject.maxArraySizeForMultiEditing, lineRend.positionCount);
-                }
+                arraySize = m_Positions.minArraySize;
+
+                // Make sure maxArraySizeForMultiEditing is set large enough to expose the array indexes that are present on all targets.
+                if (m_Positions.serializedObject.maxArraySizeForMultiEditing < arraySize)
+                    m_Positions.serializedObject.maxArraySizeForMultiEditing = arraySize;
+            }
+            else
+            {
+                arraySize = m_Positions.arraySize;
             }
             return arraySize;
         }
@@ -156,7 +160,6 @@ namespace UnityEditor
             DragAndDrop.PrepareStartDrag();
             var draggedRows = args.draggedItemIDs;
             DragAndDrop.SetGenericData(k_DragId, draggedRows);
-            DragAndDrop.objectReferences = new UnityEngine.Object[] {};  // this is required for dragging to work
             DragAndDrop.StartDrag("Move Positions");
         }
 

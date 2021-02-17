@@ -8,13 +8,14 @@ using UnityEngine;
 namespace UnityEditor.PackageManager.UI
 {
     [Serializable]
-    internal class UIError
+    internal class UIError : Error
     {
-        [SerializeField]
-        private UIErrorCode m_ErrorCode;
+        private const string k_EntitlementErrorMessage = "This package is not available to use because there is no license registered for your user. Please sign in with a licensed account. If the problem persists, please contact your administrator.";
+        public static readonly UIError k_EntitlementError = new UIError(UIErrorCode.Forbidden, L10n.Tr(k_EntitlementErrorMessage), Attribute.IsDetailInConsole);
+        public static readonly UIError k_EntitlementWarning = new UIError(UIErrorCode.Forbidden, L10n.Tr(k_EntitlementErrorMessage), Attribute.IsDetailInConsole | Attribute.IsWarning);
 
         [SerializeField]
-        private string m_Message;
+        private UIErrorCode m_UIErrorCode;
 
         [SerializeField]
         private Attribute m_Attribute;
@@ -28,16 +29,13 @@ namespace UnityEditor.PackageManager.UI
             IsClearable         = 1 << 2
         }
 
-        public UIError(UIErrorCode errorCode, string message, Attribute attribute = Attribute.None)
+        public UIError(UIErrorCode errorCode, string message, Attribute attribute = Attribute.None) : base(NativeErrorCode.Unknown, message)
         {
-            m_ErrorCode = errorCode;
-            m_Message = message;
+            m_UIErrorCode = errorCode;
             m_Attribute = attribute;
         }
 
-        public UIErrorCode errorCode => m_ErrorCode;
-
-        public string message => m_Message;
+        public new UIErrorCode errorCode => m_UIErrorCode;
 
         public Attribute attribute => m_Attribute;
 

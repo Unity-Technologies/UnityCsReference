@@ -682,7 +682,8 @@ namespace Unity.UI.Builder
                 {
                     var asset = styleSheet.GetAsset(styleProperty.values[0]);
                     imageStyleField.SetValueWithoutNotify(asset);
-                    imageStyleField.SetTypePopupValueWithoutNotify(asset.GetType());
+                    if (asset != null)
+                        imageStyleField.SetTypePopupValueWithoutNotify(asset.GetType());
                 }
                 else
                 {
@@ -992,7 +993,7 @@ namespace Unity.UI.Builder
 
             evt.menu.AppendSeparator();
             evt.menu.AppendAction(
-                BuilderSharedStyles.IsSelectorElement(currentVisualElement) ? BuilderConstants.ContextMenuEditVariableMessage : BuilderConstants.ContextMenuViewVariableMessage,
+                BuilderSharedStyles.IsSelectorElement(currentVisualElement) ? BuilderConstants.ContextMenuSetVariableMessage : BuilderConstants.ContextMenuViewVariableMessage,
                 ViewVariableViaContextMenu,
                 VariableActionStatus,
                 evt.target);
@@ -1615,11 +1616,6 @@ namespace Unity.UI.Builder
             PostStyleFieldSteps(e.target as VisualElement, styleName, isNewValue);
         }
 
-        void OnFieldValueChange(ChangeEvent<object> e, string styleName)
-        {
-            OnFieldValueChangeImpl(e.target, (Object)e.newValue, (Object)e.previousValue, styleName);
-        }
-
         void OnFieldValueChange(ChangeEvent<Object> e, string styleName)
         {
             OnFieldValueChangeImpl(e.target, e.newValue, e.previousValue, styleName);
@@ -1651,7 +1647,7 @@ namespace Unity.UI.Builder
                 Builder.ShowWarning(BuilderConstants.BuiltInAssetPathsNotSupportedMessage);
 
                 // Revert the change.
-                ((BaseField<object>)target).SetValueWithoutNotify(previousValue);
+                ((BaseField<Object>)target).SetValueWithoutNotify(previousValue);
                 return;
             }
 

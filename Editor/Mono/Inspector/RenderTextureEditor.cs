@@ -126,6 +126,7 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_EnableCompatibleFormat, styles.enableCompatibleFormat);
 
             EditorGUILayout.PropertyField(m_ColorFormat, styles.colorFormat);
+            m_sRGB.boolValue = GraphicsFormatUtility.IsSRGBFormat((GraphicsFormat)m_ColorFormat.intValue);
 
             if (compatibleFormat != format)
             {
@@ -142,8 +143,6 @@ namespace UnityEditor
 
             if ((guiElements & GUIElements.RenderTargetDepthGUI) != 0)
                 EditorGUILayout.PropertyField(m_DepthFormat, styles.depthBuffer);
-
-            m_sRGB.boolValue = GraphicsFormatUtility.IsSRGBFormat(format);
 
             using (new EditorGUI.DisabledScope(isTexture3D))
             {
@@ -183,6 +182,8 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox("RenderTextures with depth must have an Aniso Level of 0.", MessageType.Info);
             }
 
+            serializedObject.ApplyModifiedProperties();
+
             if (EditorGUI.EndChangeCheck())
                 ApplySettingsToTextures();
         }
@@ -192,8 +193,6 @@ namespace UnityEditor
             serializedObject.Update();
 
             OnRenderTextureGUI(s_AllGUIElements);
-
-            serializedObject.ApplyModifiedProperties();
         }
 
         public override void OnPreviewSettings()

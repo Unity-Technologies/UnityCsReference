@@ -144,7 +144,10 @@ namespace UnityEditor
             if (showMode == ShowMode.AuxWindow)
                 showMode = ShowMode.Utility;
 
-            if (showMode == ShowMode.Utility || showMode == ShowMode.ModalUtility || IsPopup(showMode))
+            if (showMode == ShowMode.Utility
+                || showMode == ShowMode.ModalUtility
+                || showMode == ShowMode.AuxWindow
+                || IsPopup(showMode))
                 m_DontSaveToLayout = true;
 
             m_ShowMode = (int)showMode;
@@ -162,6 +165,7 @@ namespace UnityEditor
             // Tell the main view its now in this window (quick hack to get platform-specific code to move its views to the right window)
             if (m_RootView)
                 m_RootView.SetWindowRecurse(this);
+
             Internal_SetTitle(m_Title);
 
             SetBackgroundColor(skinBackgroundColor);

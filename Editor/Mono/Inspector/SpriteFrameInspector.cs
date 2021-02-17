@@ -100,7 +100,7 @@ namespace UnityEditor
                 EditorGUILayout.LabelField(Styles.borderLabel, Styles.multiValueText);
         }
 
-        public static Texture2D BuildPreviewTexture(int width, int height, Sprite sprite, Material spriteRendererMaterial, bool isPolygon)
+        public static Texture2D BuildPreviewTexture(Sprite sprite, Material spriteRendererMaterial, bool isPolygon)
         {
             if (!ShaderUtil.hardwareSupportsRectRenderTexture)
             {
@@ -110,6 +110,8 @@ namespace UnityEditor
             float spriteWidth = sprite.rect.width;
             float spriteHeight = sprite.rect.height;
 
+            int width = (int)spriteWidth;
+            int height = (int)spriteHeight;
             Texture2D texture = UnityEditor.Sprites.SpriteUtility.GetSpriteTexture(sprite, false);
 
             // only adjust the preview texture size if the sprite is not in polygon mode.
@@ -245,7 +247,7 @@ namespace UnityEditor
                 isPolygonSpriteAsset = textureImporter.spriteImportMode == SpriteImportMode.Polygon;
             }
 
-            return BuildPreviewTexture(width, height, sprite, null, isPolygonSpriteAsset);
+            return BuildPreviewTexture(sprite, null, isPolygonSpriteAsset);
         }
 
         public override bool HasPreviewGUI()
@@ -282,7 +284,7 @@ namespace UnityEditor
             Rect wantedRect = new Rect(r.x, r.y, frame.rect.width * zoomLevel, frame.rect.height * zoomLevel);
             wantedRect.center = r.center;
 
-            Texture2D previewTexture = BuildPreviewTexture((int)wantedRect.width, (int)wantedRect.height, frame, spriteRendererMaterial, isPolygon);
+            Texture2D previewTexture = BuildPreviewTexture(frame, spriteRendererMaterial, isPolygon);
             EditorGUI.DrawTextureTransparent(wantedRect, previewTexture, ScaleMode.ScaleToFit);
 
             var border = frame.border;

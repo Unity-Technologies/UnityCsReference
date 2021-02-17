@@ -26,6 +26,7 @@ namespace UnityEditorInternal
         {
             Disabled = 0,
             SnapToFrame = 1,
+            [Obsolete("SnapToClipFrame has been made redundant with SnapToFrame, SnapToFrame will behave the same.")]
             SnapToClipFrame = 2
         }
 

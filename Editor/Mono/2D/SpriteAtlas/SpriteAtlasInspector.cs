@@ -58,7 +58,7 @@ namespace UnityEditor.U2D
 
             public readonly GUIContent generateMipMapLabel = EditorGUIUtility.TrTextContent("Generate Mip Maps");
             public readonly GUIContent sRGBLabel = EditorGUIUtility.TrTextContent("sRGB", "Texture content is stored in gamma space.");
-            public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write Enabled", "Enable to be able to access the raw pixel data from code.");
+            public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write", "Enable to be able to access the raw pixel data from code.");
             public readonly GUIContent variantMultiplierLabel = EditorGUIUtility.TrTextContent("Scale", "Down scale ratio.");
             public readonly GUIContent packButton = EditorGUIUtility.TrTextContent("Pack Preview", "Pack this atlas.");
 
@@ -212,12 +212,13 @@ namespace UnityEditor.U2D
             PopulatePlatformSettingsOptions();
 
             m_Packables = serializedObject.FindProperty("m_EditorData.packables");
-            m_PackableList = new ReorderableList(serializedObject, m_Packables, true, false, true, true);
+            m_PackableList = new ReorderableList(serializedObject, m_Packables, true, true, true, true);
+            m_PackableList.drawHeaderCallback = DrawPackablesHeader;
             m_PackableList.onAddCallback = AddPackable;
             m_PackableList.onRemoveCallback = RemovePackable;
             m_PackableList.drawElementCallback = DrawPackableElement;
             m_PackableList.elementHeight = EditorGUIUtility.singleLineHeight;
-            m_PackableList.headerHeight = 3f;
+            m_PackableList.headerHeight = 3f + EditorGUIUtility.singleLineHeight;
 
             SyncPlatformSettings();
 
@@ -303,6 +304,11 @@ namespace UnityEditor.U2D
                     sa.SetSecondaryPlatformSettings(platformSettings[i], newName);
                 }
             }
+        }
+
+        void DrawPackablesHeader(Rect headerRect)
+        {
+            EditorGUI.LabelField(headerRect, EditorGUIUtility.TempContent("Packables"));
         }
 
         void AddPackable(ReorderableList list)

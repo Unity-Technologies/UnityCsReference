@@ -73,6 +73,7 @@ namespace UnityEditor
             public static readonly GUIContent applicationFrameThrottling = EditorGUIUtility.TrTextContent("Frame Throttling (milliseconds)", "The number of milliseconds the Editor can idle between frames.");
             public static readonly GUIContent inputMaxProcessTime = EditorGUIUtility.TrTextContent("Input Throttling (milliseconds)", "The maximum number of milliseconds the Editor will take to process user inputs.");
             public static readonly GUIContent interactionMode = EditorGUIUtility.TrTextContent("Interaction Mode", "Specifies how long the Editor can idle before it updates.");
+            public static readonly GUIContent enterPlayModeSettingsFocusGameView = EditorGUIUtility.TrTextContent("Create Game View On Play", "If enabled, a Game View window will be created when entering play mode if none exists");
             public static readonly GUIContent[] interactionModes =
             {
                 EditorGUIUtility.TrTextContent("Default", "The Editor can idle up to 4 ms per frame."),
@@ -612,6 +613,8 @@ namespace UnityEditor
             m_GraphSnapping = EditorGUILayout.Toggle(GeneralProperties.enableSnapping, m_GraphSnapping);
 
             m_EnterSafeModeDialog = EditorGUILayout.Toggle(GeneralProperties.enterSafeModeDialog, m_EnterSafeModeDialog);
+
+            GameView.openWindowOnEnteringPlayMode = EditorGUILayout.Toggle(GeneralProperties.enterPlayModeSettingsFocusGameView, GameView.openWindowOnEnteringPlayMode);
 
             ApplyChangesToPrefs();
 

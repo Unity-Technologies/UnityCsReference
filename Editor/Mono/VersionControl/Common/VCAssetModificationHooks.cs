@@ -44,7 +44,7 @@ namespace UnityEditorInternal.VersionControl
                     UnityEngine.Profiling.Profiler.BeginSample("VersionControl.GetCachedStatus");
                     // Fetch status
                     Task statusTask = Provider.Status(fromPath, false);
-                    statusTask.Wait();
+                    Provider.WaitForRelatedTasks(fromPath);
                     if (statusTask.success)
                         asset = Provider.CacheStatus(fromPath);
                     else

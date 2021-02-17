@@ -939,14 +939,8 @@ namespace UnityEngine.UIElements
         // Set and pass in values to be used for layout
         internal YogaNode yogaNode { get; private set; }
 
-        // shared style object, cannot be changed by the user
-        internal ComputedStyle m_SharedStyle = InitialStyle.Get();
-        // user-defined style object, if not set, is the same reference as m_SharedStyles
-        internal ComputedStyle m_Style = InitialStyle.Get();
-
-        internal ComputedStyle sharedStyle => m_SharedStyle;
-
-        internal ComputedStyle computedStyle => m_Style;
+        internal ComputedStyle m_Style = InitialStyle.Acquire();
+        internal ref ComputedStyle computedStyle => ref m_Style;
 
         // Variables that children inherit
         internal StyleVariableContext variableContext = StyleVariableContext.none;
@@ -954,7 +948,7 @@ namespace UnityEngine.UIElements
         // Hash of the inherited style data values
         internal int inheritedStylesHash = 0;
 
-        internal bool hasInlineStyle => m_Style != m_SharedStyle;
+        internal bool hasInlineStyle => inlineStyleAccess != null;
 
         // Opacity is not fully supported so it's hidden from public API for now
         internal float opacity
@@ -1078,6 +1072,7 @@ namespace UnityEngine.UIElements
                 }
 
                 BaseVisualElementPanel previousPanel = elementPanel;
+                var previousHierarchyVersion = previousPanel?.hierarchyVersion ?? 0;
 
                 using (pDispatcherGate)
                 using (panelDispatcherGate)
@@ -1086,29 +1081,26 @@ namespace UnityEngine.UIElements
                     {
                         e.WillChangePanel(p);
                     }
+                    
+                    var hierarchyVersion = previousPanel?.hierarchyVersion ?? 0;
+                    if (previousHierarchyVersion != hierarchyVersion)
+                    {
+                        // Update the elements list since the hierarchy has changed after sending the detach events
+                        elements.Clear();
+                        elements.Add(this);
+                        GatherAllChildren(elements);
+                    }
 
                     VisualElementFlags flagToAdd = p != null ? VisualElementFlags.NeedsAttachToPanelEvent : 0;
 
                     foreach (var e in elements)
                     {
-                        // this can happen if the elements gets re-parented during a user callback
-                        // in this case another SetPanel() call should already have notified the element
-                        // so we simply ignore it
-                        if (previousPanel != e.elementPanel)
-                            continue;
-
                         e.elementPanel = p;
                         e.m_Flags |= flagToAdd;
                     }
 
                     foreach (var e in elements)
                     {
-                        // this can happen if the elements gets re-parented during a user callback
-                        // in this case another SetPanel() call should already have notified the element
-                        // so we simply ignore it
-                        if (p != e.elementPanel)
-                            continue;
-
                         e.HasChangedPanel(previousPanel);
                     }
                 }
@@ -1143,6 +1135,9 @@ namespace UnityEngine.UIElements
             {
                 yogaNode.Config = elementPanel.yogaConfig;
                 RegisterRunningAnimations();
+
+                //We need to reset any visual pseudo state
+                pseudoStates &= ~(PseudoStates.Focus | PseudoStates.Active | PseudoStates.Hover);
 
                 // Only send this event if the element hasn't received it yet
                 if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == VisualElementFlags.NeedsAttachToPanelEvent)
@@ -1181,6 +1176,11 @@ namespace UnityEngine.UIElements
             elementPanel?.SendEvent(e);
         }
 
+        internal sealed override void SendEvent(EventBase e, DispatchMode dispatchMode)
+        {
+            elementPanel?.SendEvent(e, dispatchMode);
+        }
+
         internal void IncrementVersion(VersionChangeType changeType)
         {
             elementPanel?.OnVersionChanged(this, changeType);
@@ -1198,31 +1198,54 @@ namespace UnityEngine.UIElements
         private bool SetEnabledFromHierarchyPrivate(bool state)
         {
             var initialState = enabledInHierarchy;
+            bool disable = false;
             if (state)
             {
                 if (isParentEnabledInHierarchy)
                 {
                     if (enabledSelf)
                     {
-                        pseudoStates &= ~PseudoStates.Disabled;
                         RemoveFromClassList(disabledUssClassName);
                     }
                     else
                     {
-                        pseudoStates |= PseudoStates.Disabled;
+                        disable = true;
                         AddToClassList(disabledUssClassName);
                     }
                 }
                 else
                 {
-                    pseudoStates |= PseudoStates.Disabled;
+                    disable = true;
                     RemoveFromClassList(disabledUssClassName);
                 }
             }
             else
             {
-                pseudoStates |= PseudoStates.Disabled;
+                disable = true;
                 EnableInClassList(disabledUssClassName, isParentEnabledInHierarchy);
+            }
+
+            if (disable)
+            {
+                if (focusController != null && focusController.IsFocused(this))
+                {
+                    EventDispatcherGate? dispatcherGate = null;
+                    if (panel?.dispatcher != null)
+                    {
+                        dispatcherGate = new EventDispatcherGate(panel.dispatcher);
+                    }
+
+                    using (dispatcherGate)
+                    {
+                        BlurImmediately();
+                    }
+                }
+
+                pseudoStates |= PseudoStates.Disabled;
+            }
+            else
+            {
+                pseudoStates &= ~PseudoStates.Disabled;
             }
 
             return initialState != enabledInHierarchy;
@@ -1569,14 +1592,13 @@ namespace UnityEngine.UIElements
             inlineStyleAccess.SetInlineRule(sheet, rule);
         }
 
-        internal void SetSharedStyles(ComputedStyle sharedStyle)
+        internal void SetComputedStyle(ref ComputedStyle style)
         {
-            Debug.Assert(sharedStyle.isShared);
-
-            if (sharedStyle == m_SharedStyle)
-            {
+            // When a parent class list change all children get their styles recomputed.
+            // A lot of time the children won't change and the same style will get computed so we can early exit in that case
+            // except if the element has inline style we may need to apply them again (happens when inline style get removed).
+            if (m_Style.matchingRulesHash == style.matchingRulesHash && !hasInlineStyle)
                 return;
-            }
 
             var previousOverflow = m_Style.overflow;
             var previousBorderBottomLeftRadius = m_Style.borderBottomLeftRadius;
@@ -1589,16 +1611,16 @@ namespace UnityEngine.UIElements
             var previousBorderBottomWidth = m_Style.borderBottomWidth;
             var previousOpacity = m_Style.opacity;
 
+            // Here we do a "smart" copy of the style instead of just acquiring them to prevent additional GC alloc.
+            // If this element has no inline styles it will release the current style data group and acquire the new one.
+            // However, when there a inline styles the style data group that is inline will have a ref count of 1
+            // so instead of releasing it and acquiring a new one we just copy the data to save on GC alloc.
+            m_Style.CopyFrom(ref style);
+
             if (hasInlineStyle)
             {
-                inlineStyleAccess.ApplyInlineStyles(sharedStyle);
+                inlineStyleAccess.ApplyInlineStyles();
             }
-            else
-            {
-                m_Style = sharedStyle;
-            }
-
-            m_SharedStyle = sharedStyle;
 
             FinalizeLayout();
 
@@ -1650,9 +1672,18 @@ namespace UnityEngine.UIElements
             style.width = StyleKeyword.Null;
             style.height = StyleKeyword.Null;
 
-            FinalizeLayout();
-
-            IncrementVersion(VersionChangeType.Layout);
+            // Reapply computed style here because GraphView expect the resolved style to be
+            // up to date after ResetPositionProperties is called
+            if (StyleCache.TryGetValue(m_Style.matchingRulesHash, out var sharedStyle))
+            {
+                SetComputedStyle(ref sharedStyle);
+            }
+            else
+            {
+                // If it's not in the cache it must be the initial styles
+                Debug.Assert(m_Style.matchingRulesHash == 0);
+                SetComputedStyle(ref InitialStyle.Get());
+            }
         }
 
         public override string ToString()

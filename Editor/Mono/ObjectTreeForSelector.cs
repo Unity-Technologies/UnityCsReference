@@ -119,6 +119,8 @@ namespace UnityEditor
             m_TreeViewState = null;
             m_ErrorCounter = 0;
             m_FocusSearchFilter = false;
+
+            m_Debounce?.Dispose();
             m_Debounce = null;
         }
 

@@ -39,11 +39,11 @@ namespace UnityEngine.UIElements
             return StylePropertyId.Unknown;
         }
 
-        public static object GetComputedStyleActualValue(ComputedStyle computedStyle, string name)
+        public static object GetComputedStyleValue(in ComputedStyle computedStyle, string name)
         {
             StylePropertyId id;
             if (StylePropertyUtil.s_NameToId.TryGetValue(name, out id))
-                return GetComputedStyleActualValue(computedStyle, id);
+                return GetComputedStyleValue(computedStyle, id);
 
             return null;
         }
@@ -93,12 +93,9 @@ namespace UnityEngine.UIElements
             return null;
         }
 
-        public static void FindSpecifiedStyles(ComputedStyle computedStyle, IEnumerable<SelectorMatchRecord> matchRecords, Dictionary<StylePropertyId, int> result)
+        public static void FindSpecifiedStyles(in ComputedStyle computedStyle, IEnumerable<SelectorMatchRecord> matchRecords, Dictionary<StylePropertyId, int> result)
         {
             result.Clear();
-
-            if (computedStyle == null)
-                return;
 
             // Find matched styles
             foreach (var record in matchRecords)
@@ -137,8 +134,8 @@ namespace UnityEngine.UIElements
                 if (result.ContainsKey(id))
                     continue;
 
-                var value = StyleDebug.GetComputedStyleActualValue(computedStyle, id);
-                var initialValue = StyleDebug.GetComputedStyleActualValue(InitialStyle.Get(), id);
+                var value = StyleDebug.GetComputedStyleValue(computedStyle, id);
+                var initialValue = StyleDebug.GetComputedStyleValue(InitialStyle.Get(), id);
 
                 if (value != null && !value.Equals(initialValue))
                 {

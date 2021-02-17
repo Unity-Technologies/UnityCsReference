@@ -17,6 +17,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private bool m_HasAccessToken;
 
+        [SerializeField]
+        private string m_UserId = string.Empty;
+
         public virtual event Action<bool, bool> onUserLoginStateChange = delegate {};
         public virtual bool isUserInfoReady => m_IsUserInfoReady;
         public virtual bool isUserLoggedIn => m_IsUserInfoReady && m_HasAccessToken;
@@ -45,14 +48,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnUserStateChanged(UserInfo newInfo)
         {
-            var isUerInfoReadyOld = isUserInfoReady;
-            var isUserLoggedInOld = isUserLoggedIn;
+            var prevIsUserInfoReady = isUserInfoReady;
+            var prevIsUserLoggedIn = isUserLoggedIn;
 
             m_IsUserInfoReady = UnityConnect.instance.isUserInfoReady;
             m_HasAccessToken = !string.IsNullOrEmpty(UnityConnect.instance.userInfo.accessToken);
 
-            if (isUerInfoReadyOld != isUserInfoReady || isUserLoggedIn != isUserLoggedInOld)
+            if (isUserInfoReady != prevIsUserInfoReady || isUserLoggedIn != prevIsUserLoggedIn || newInfo.userId != m_UserId)
                 onUserLoginStateChange?.Invoke(isUserInfoReady, isUserLoggedIn);
+
+            m_UserId = newInfo.userId;
         }
     }
 }

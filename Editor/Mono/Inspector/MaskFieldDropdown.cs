@@ -8,20 +8,24 @@ using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
 using static UnityEditor.MaskDropDownUtils;
+using System.Reflection;
 
 namespace UnityEditor
 {
     internal class MaskFieldDropDown : PopupWindowContent
     {
+        internal const int m_LayerCount = 32;
+
         SerializedProperty m_SerializedProperty;
-        int m_LayerCount = 32;
-        int m_MaxMaskValue = 0;
 
         SelectionModes[] m_SelectionMatch;
         string[] m_OptionNames;
-        int[] m_OptionMaskValues;
-        int[] m_SelectionMaskValues;
+        uint[] m_OptionMaskValues;
+        uint[] m_SelectionMaskValues;
 
+        int m_AllLayersMask = 0;
+
+        float m_windowSize = 100.0f;
         public MaskFieldDropDown(SerializedProperty property)
         {
             m_SerializedProperty = property;
@@ -36,8 +40,8 @@ namespace UnityEditor
                 if (s != string.Empty)
                     rowCount++;
             }
-            var size = Styles.menuItem.CalcSize(new GUIContent("TransparentFX"));
-            return new Vector2(size.x, (EditorGUI.kSingleLineHeight + 2) * rowCount);
+
+            return new Vector2(m_windowSize, (EditorGUI.kSingleLineHeight + 2) * rowCount);
         }
 
         void DrawEverythingOrNothingSelectedToggle(bool state, string label, GUIStyle style, int value)
@@ -94,7 +98,6 @@ namespace UnityEditor
             for (int i = 0; i < m_OptionNames.Length; i++)
             {
                 var index = (int)Math.Log(m_OptionMaskValues[i], 2);
-
                 bool toggleVal = m_SelectionMatch[index] == SelectionModes.All || m_SelectionMatch[index] == SelectionModes.Mixed ? true : false;
                 toggleStyle = m_SelectionMatch[index] == SelectionModes.Mixed ? Styles.menuItemMixed : Styles.menuItem;
 
@@ -117,7 +120,7 @@ namespace UnityEditor
         {
             var selectionCount = m_SerializedProperty.serializedObject.targetObjects.Length;
 
-            m_SelectionMaskValues = new int[selectionCount];
+            m_SelectionMaskValues = new uint[selectionCount];
             for (int i = 0; i < selectionCount; i++)
             {
                 var serializedObject = new SerializedObject(m_SerializedProperty.serializedObject.targetObjects[i]);
@@ -132,11 +135,7 @@ namespace UnityEditor
                         property.intValue |= 1 << slotsToShift;
                     }
                 }
-                else if ((property.intValue |= 1 << maskIndex) == m_MaxMaskValue && add)
-                {
-                    property.intValue = int.MaxValue;
-                }
-                else if (add)
+                if (add)
                     property.intValue = property.intValue |= 1 << maskIndex;
                 else
                 {
@@ -144,19 +143,34 @@ namespace UnityEditor
                     property.intValue = property.intValue &= ~(1 << maskIndex);
                 }
 
-                m_SelectionMaskValues[i] = property.intValue;
+                if (property.intValue == m_AllLayersMask)
+                    property.intValue = int.MaxValue;
+
+                m_SelectionMaskValues[i] = (uint)property.intValue;
                 serializedObject.ApplyModifiedProperties();
             }
+
+            m_SerializedProperty.serializedObject.SetIsDifferentCacheDirty();
+            m_SerializedProperty.serializedObject.Update();
         }
 
         public override void OnOpen()
         {
             m_SelectionMatch = new SelectionModes[m_LayerCount];
             GetMultiSelectionValues(m_SerializedProperty, out m_SelectionMaskValues, out m_SelectionMatch, m_LayerCount);
-            TagManager.GetDefinedLayers(ref m_OptionNames, ref m_OptionMaskValues);
-
+            int[] definedLayers = new int[m_SelectionMaskValues.Length];
+            TagManager.GetDefinedLayers(ref m_OptionNames, ref definedLayers);
+            m_OptionMaskValues = definedLayers.Select(v => (uint)v).ToArray();
             for (int i = 0; i < m_OptionMaskValues.Length; i++)
-                m_MaxMaskValue += m_OptionMaskValues[i];
+                m_AllLayersMask |= (int)m_OptionMaskValues[i];
+
+            for (int i = 0; i < m_OptionNames.Length; i++)
+            {
+                var size = Styles.menuItem.CalcSize(new GUIContent(m_OptionNames[i]));
+                if (size.x > m_windowSize)
+                    m_windowSize = size.x;
+            }
+            m_windowSize = Mathf.Clamp(m_windowSize, 100, 386);
 
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
         }
@@ -179,12 +193,14 @@ namespace UnityEditor
 
         SelectionModes[] m_SelectionMatch;
         string[] m_OptionNames;
-        int[] m_SelectionMaskValues;
+        uint[] m_SelectionMaskValues;
         int m_OptionCount;
+        int m_AllLayersMask;
 
-        public StaticFieldDropdown(SerializedProperty property)
+        public StaticFieldDropdown(UnityEngine.Object[] targetObjects, string propertyPath)
         {
-            m_SerializedProperty = property;
+            var so = new SerializedObject(targetObjects);
+            m_SerializedProperty = so.FindProperty(propertyPath);
         }
 
         public override Vector2 GetWindowSize()
@@ -203,7 +219,6 @@ namespace UnityEditor
                 var valueToPopulate = changedTo ? SelectionModes.All : SelectionModes.None;
                 m_SelectionMatch = new SelectionModes[m_OptionCount];
                 m_SelectionMatch = m_SelectionMatch.Select(el => el = valueToPopulate).ToArray();
-                m_SerializedProperty.serializedObject.SetIsDifferentCacheDirty();
             }
         }
 
@@ -222,7 +237,7 @@ namespace UnityEditor
             }
 
             var isNothing = m_SerializedProperty.intValue == 0;
-            var isEverything = m_SerializedProperty.intValue == int.MaxValue;
+            var isEverything = ((uint)m_SerializedProperty.intValue & m_AllLayersMask) == m_AllLayersMask;
 
             GUILayout.Space(Styles.menuItem.margin.bottom);
 
@@ -251,23 +266,41 @@ namespace UnityEditor
         void ChangeMaskValues(int maskIndex, bool add)
         {
             var selectionCount = m_SerializedProperty.serializedObject.targetObjects.Length;
-            m_SelectionMaskValues = new int[selectionCount];
+            m_SelectionMaskValues = new uint[selectionCount];
 
             SceneModeUtility.SetStaticFlags(m_SerializedProperty.serializedObject.targetObjects, maskIndex, add);
 
             for (int i = 0; i < selectionCount; i++)
-                m_SelectionMaskValues[i] = m_SerializedProperty.intValue;
+                m_SelectionMaskValues[i] = (uint)m_SerializedProperty.intValue;
+
+            m_SerializedProperty.serializedObject.ApplyModifiedProperties();
+            m_SerializedProperty.serializedObject.SetIsDifferentCacheDirty();
+            m_SerializedProperty.serializedObject.Update();
+            editorWindow.Repaint();
         }
 
         public override void OnOpen()
         {
-            m_OptionCount = Enum.GetValues(typeof(StaticEditorFlags)).Length - 1;
-            m_OptionNames = new string[m_OptionCount];
+            m_OptionCount = 0;
+            List<FieldInfo> filteredFields = new List<FieldInfo>();
+            var fields = typeof(StaticEditorFlags).GetFields();
+            foreach (var field in fields)
+            {
+                if (!field.IsDefined(typeof(ObsoleteAttribute), true) && !field.IsSpecialName)
+                {
+                    filteredFields.Add(field);
+                    m_OptionCount++;
+                }
+            }
 
+            m_OptionNames = new string[m_OptionCount];
             for (int i = 0; i < m_OptionCount; i++)
             {
-                int flagIndex = (int)Math.Pow(2, i);
-                m_OptionNames[i] = ObjectNames.NicifyVariableName(((StaticEditorFlags)(flagIndex)).ToString());
+                var val = (int)(filteredFields[i].GetValue(null));
+                var index = (int)Math.Log(val, 2);
+
+                m_OptionNames[index] = ObjectNames.NicifyVariableName(filteredFields[i].Name);
+                m_AllLayersMask |= val;
             }
 
             GetMultiSelectionValues(m_SerializedProperty, out m_SelectionMaskValues, out m_SelectionMatch, m_OptionCount);
@@ -309,20 +342,20 @@ namespace UnityEditor
             Mixed = 2
         };
 
-        internal static void GetSelected(int maskValue, out int[] selected, int size)
+        internal static void GetSelected(int maskValue, out uint[] selected, int size)
         {
             if (maskValue == 0)
-                selected = new int[0];
+                selected = new uint[0];
             else if (maskValue == int.MaxValue)
-                selected = Enumerable.Range(1, size).ToArray();
+                selected = Enumerable.Range(1, size).Select(i => (uint)i).ToArray();
             else
             {
-                List<int> selectedMaskToIndex = new List<int>();
+                List<uint> selectedMaskToIndex = new List<uint>();
                 for (int i = 0; i < size; i++)
                 {
-                    if (((1 << i) & maskValue) > 0)
+                    if (((1 << i) & (uint)maskValue) > 0)
                     {
-                        selectedMaskToIndex.Add(i + 1);
+                        selectedMaskToIndex.Add((uint)(i + 1));
                     }
                 }
 
@@ -333,7 +366,7 @@ namespace UnityEditor
         internal static void GetSingleSelectionValues(int maskValue, out SelectionModes[] selectionMatch, int layerCount)
         {
             selectionMatch = new SelectionModes[layerCount];
-            int[] selected;
+            uint[] selected;
             GetSelected(maskValue, out selected, layerCount);
 
             for (int i = 0; i < selectionMatch.Length; i++)
@@ -343,32 +376,32 @@ namespace UnityEditor
             }
         }
 
-        internal static void GetMultiSelectionValues(SerializedProperty serializedProperty, out int[] selectionMaskValues, out SelectionModes[] selectionMatch, int layerCount)
+        internal static void GetMultiSelectionValues(SerializedProperty serializedProperty, out uint[] selectionMaskValues, out SelectionModes[] selectionMatch, int layerCount)
         {
             var selectionCount = serializedProperty.serializedObject.targetObjects.Length;
-            selectionMaskValues = new int[selectionCount];
+            selectionMaskValues = new uint[selectionCount];
             selectionMatch = new SelectionModes[layerCount];
 
             for (int i = 0; i < selectionCount; i++)
             {
                 var serializedObject = new SerializedObject(serializedProperty.serializedObject.targetObjects[i]);
                 var property = serializedObject.FindProperty(serializedProperty.propertyPath);
-                selectionMaskValues[i] = property.intValue;
+                selectionMaskValues[i] = (uint)property.intValue;
             }
 
             if (selectionCount == 1)
             {
-                GetSingleSelectionValues(selectionMaskValues[0], out selectionMatch, layerCount);
+                GetSingleSelectionValues((int)selectionMaskValues[0], out selectionMatch, layerCount);
                 return;
             }
 
-            int[] firstSelected;
-            GetSelected(selectionMaskValues[0], out firstSelected, layerCount);
+            uint[] firstSelected;
+            GetSelected((int)selectionMaskValues[0], out firstSelected, layerCount);
 
             for (int i = 1; i < selectionCount; i++)
             {
-                int[] secondSelected;
-                GetSelected(selectionMaskValues[i], out secondSelected, layerCount);
+                uint[] secondSelected;
+                GetSelected((int)selectionMaskValues[i], out secondSelected, layerCount);
 
                 for (int j = 0; j < layerCount; j++)
                 {

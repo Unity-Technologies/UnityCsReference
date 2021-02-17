@@ -1146,7 +1146,7 @@ namespace UnityEditor
 
         private void SynchronizeLayout()
         {
-            m_HorizontalSplitter.realSizes[1] = (int)Mathf.Min(m_Position.width - m_HorizontalSplitter.realSizes[0], m_HorizontalSplitter.realSizes[1]);
+            m_HorizontalSplitter.realSizes[1] = (int)Mathf.Max(Mathf.Min(m_Position.width - m_HorizontalSplitter.realSizes[0], m_HorizontalSplitter.realSizes[1]), 0);
 
             // Synchronize frame rate
             if (selection.animationClip != null)

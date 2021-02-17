@@ -12,6 +12,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.U2D.Interface;
 using Object = UnityEngine.Object;
 using UnityTexture2D = UnityEngine.Texture2D;
+using UnityEditor.SceneManagement;
 
 namespace UnityEditor
 {
@@ -444,13 +445,27 @@ namespace UnityEditor
             SpriteRenderer spriteRenderer = go.GetComponent<SpriteRenderer>();
             spriteRenderer.sprite = frame;
             go.transform.position = position;
-            go.hideFlags = HideFlags.HideAndDontSave;
+            go.hideFlags = HideFlags.HideInHierarchy;
 
-            // Ensure that the dragged gameobjects gets the correct scene culling mask so it can be rendered in the SceneView (when the SceneView camera is culling on a custom scene)
-            if (sceneView.customScene.IsValid())
-                SceneManager.MoveGameObjectToScene(go, sceneView.customScene);
+            Scene destinationScene = GetDestinationSceneForNewGameObjectsForSceneView(sceneView);
+            // According to how GameOjectInspector.cs moves the object into scene
+            if (EditorApplication.isPlaying && !EditorSceneManager.IsPreviewScene(destinationScene))
+            {
+                SceneManager.MoveGameObjectToScene(go, destinationScene);
+            }
 
             return go;
+        }
+
+        static Scene GetDestinationSceneForNewGameObjectsForSceneView(SceneView sceneView)
+        {
+            if (sceneView.customParentForNewGameObjects != null)
+                return sceneView.customParentForNewGameObjects.gameObject.scene;
+
+            if (sceneView.customScene.IsValid())
+                return sceneView.customScene;
+
+            return SceneManager.GetActiveScene();
         }
 
         public static bool AddAnimationToGO(GameObject go, Sprite[] frames, ShowFileDialogDelegate saveFileDialog)

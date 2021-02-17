@@ -144,6 +144,9 @@ namespace UnityEditor.UIElements.Bindings
             //we first remove any binding that were already present
             RemoveBinding(field);
 
+            // Set enabled state before sending the event because element like PropertyField may stop the event
+            fieldElement.SetEnabled(property.editable);
+
             using (var evt = SerializedPropertyBindEvent.GetPooled(property))
             {
                 if (SendBindingEvent(evt, fieldElement))
@@ -844,7 +847,7 @@ namespace UnityEditor.UIElements.Bindings
                 }
             }
         }
-        
+
         static Dictionary<object, object> GetTemporaryCache(VisualElement element)
         {
             var updater = element.elementPanel?.GetUpdater(VisualTreeUpdatePhase.Bindings) as VisualTreeBindingsUpdater;
@@ -1341,6 +1344,7 @@ namespace UnityEditor.UIElements.Bindings
                 UpdateLastFieldValue();
                 if (IsPropertyValid())
                 {
+                    SerializedPropertyHelper.ForceSync(boundProperty);
                     if (SyncFieldValueToProperty())
                     {
                         bindingContext.UpdateRevision();     //we make sure to Poll the ChangeTracker here
@@ -1387,6 +1391,9 @@ namespace UnityEditor.UIElements.Bindings
                     if (bindingContext.IsValid() && IsPropertyValid())
                     {
                         lastUpdatedRevision = bindingContext.lastRevision;
+                        // Here we somehow need to make sure the property internal object version is synced with its serializedObject
+                        SerializedPropertyHelper.ForceSync(boundProperty);
+
                         SyncPropertyToField(field, boundProperty);
                         BindingsStyleHelpers.UpdateElementStyle(field as VisualElement, boundProperty);
                         return;
@@ -1428,9 +1435,6 @@ namespace UnityEditor.UIElements.Bindings
                 throw new ArgumentNullException(nameof(c));
             }
 
-            // Here we somehow need to make sure the property internal object version is synced with its serializedObject
-            SerializedPropertyHelper.ForceSync(p);
-
             if (!propCompareValues(lastFieldValue, p, propGetValue))
             {
                 lastFieldValue = propGetValue(p);
@@ -1440,7 +1444,6 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override bool SyncFieldValueToProperty()
         {
-            SerializedPropertyHelper.ForceSync(boundProperty);
             if (!propCompareValues(lastFieldValue, boundProperty, propGetValue))
             {
                 propSetValue(boundProperty, lastFieldValue);
@@ -1667,9 +1670,6 @@ namespace UnityEditor.UIElements.Bindings
                 throw new ArgumentNullException(nameof(c));
             }
 
-            // Here we somehow need to make sure the property internal object version is synced with its serializedObject
-            SerializedPropertyHelper.ForceSync(p);
-
             int enumValueAsInt = p.intValue;
             if (enumValueAsInt != lastEnumValue)
             {
@@ -1775,7 +1775,19 @@ namespace UnityEditor.UIElements.Bindings
             this.field = c;
             this.originalChoices = field.choices;
             this.originalIndex = field.index;
-            this.field.choices = property.enumLocalizedDisplayNames.ToList();
+
+            Type enumType;
+            ScriptAttributeUtility.GetFieldInfoFromProperty(property, out enumType);
+            if (enumType != null)
+            {
+                var enumData = EnumDataUtility.GetCachedEnumData(enumType, true);
+                this.field.choices = enumData.displayNames.ToList();
+            }
+            else
+            {
+                this.field.choices = property.enumLocalizedDisplayNames.ToList();
+            }
+
             var originalValue = this.lastFieldValueIndex = c.index;
 
             BindingsStyleHelpers.RegisterRightClickMenu(c, property);
@@ -1805,9 +1817,6 @@ namespace UnityEditor.UIElements.Bindings
             {
                 throw new ArgumentNullException(nameof(c));
             }
-
-            // Here we somehow need to make sure the property internal object version is synced with its serializedObject
-            SerializedPropertyHelper.ForceSync(p);
 
             int propValueIndex = p.enumValueIndex;
             if (propValueIndex != lastFieldValueIndex)

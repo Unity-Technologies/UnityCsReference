@@ -4,7 +4,6 @@
 
 using UnityEngine;
 using UnityEditor.AssetImporters;
-using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
 using System.Collections.Generic;
 

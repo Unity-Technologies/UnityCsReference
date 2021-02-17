@@ -95,10 +95,6 @@ namespace UnityEditor.TreeViewExamples
                     labelRect.y += 16f;
                     GUI.Label(labelRect, "Ut tincidunt tortor. Donec nonummy, enim in lacinia pulvinar", EditorStyles.miniLabel);
                 }
-
-                // Show marker below this Item
-                if (m_TreeView.dragging != null && m_TreeView.dragging.GetRowMarkerControlID() == itemControlID)
-                    m_DraggingInsertionMarkerRect = new Rect(rowRect.x + indent , rowRect.y, rowRect.width - indent, rowRect.height);
             }
 
             // Draw foldout (after text content above to ensure drop down icon is rendered above selection highlight)

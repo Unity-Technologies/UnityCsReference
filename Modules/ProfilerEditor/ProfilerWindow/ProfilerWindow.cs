@@ -22,6 +22,7 @@ using Unity.Profiling;
 using Debug = UnityEngine.Debug;
 using System.Net;
 using UnityEditor.Collaboration;
+using UnityEditor.MPE;
 
 namespace UnityEditor
 {
@@ -30,8 +31,6 @@ namespace UnityEditor
     {
         static class Markers
         {
-            public static readonly ProfilerMarker updateModulesCharts = new ProfilerMarker("ProfilerWindow.UpdateModules");
-            public static readonly ProfilerMarker drawCharts = new ProfilerMarker("ProfilerWindow.DrawCharts");
             public static readonly ProfilerMarker drawDetailsView = new ProfilerMarker("ProfilerWindow.DrawDetailsView");
         }
 
@@ -150,7 +149,6 @@ namespace UnityEditor
 
         int m_CurrentFrame = FrameDataView.invalidOrCurrentFrameIndex;
         int m_LastFrameFromTick = FrameDataView.invalidOrCurrentFrameIndex;
-        int m_PrevLastFrame = FrameDataView.invalidOrCurrentFrameIndex;
 
         bool m_CurrentFrameEnabled = false;
 
@@ -161,6 +159,8 @@ namespace UnityEditor
 
         const float kNameColumnSize = 350;
 
+        const int k_MainThreadIndex = 0;
+
         HierarchyFrameDataView m_FrameDataView;
 
         public const string cpuModuleName = CPUProfilerModule.k_UnlocalizedName;
@@ -170,6 +170,8 @@ namespace UnityEditor
         List<ProfilerModuleBase> m_Modules;
 
         internal IEnumerable<ProfilerModuleBase> Modules => m_Modules;
+        // This is used by our performance tests to prevent the Profiler window from automatically repainting whilst profiling so we can control the repaints more precisely.
+        internal bool IgnoreRepaintAllProfilerWindowsTick { get; set; }
 
         // Used by ProfilerEditorTests/ProfilerAreaReferenceCounterTests through reflection.
         ProfilerAreaReferenceCounter m_AreaReferenceCounter;
@@ -192,6 +194,7 @@ namespace UnityEditor
         const string kProfilerDeepProfilingWarningSessionKey = "ProfilerDeepProfilingWarning";
 
         internal event Action<int, bool> currentFrameChanged = delegate {};
+        internal event Action frameDataViewAboutToBeDisposed = delegate {};
 
         internal event Action<bool> recordingStateChanged = delegate {};
         internal event Action<bool> deepProfileChanged = delegate {};
@@ -264,7 +267,7 @@ namespace UnityEditor
                 if (value < firstAvailableFrameIndex)
                     throw new ArgumentOutOfRangeException("value", $"Can't set a value smaller than {nameof(firstAvailableFrameIndex)} which is currently {firstAvailableFrameIndex}.");
                 if (value > lastAvailableFrameIndex)
-                    throw new ArgumentOutOfRangeException("value", $"Can't set a value smaller than {nameof(lastAvailableFrameIndex)} which is currently {lastAvailableFrameIndex}.");
+                    throw new ArgumentOutOfRangeException("value", $"Can't set a value greater than {nameof(lastAvailableFrameIndex)} which is currently {lastAvailableFrameIndex}.");
                 SetActiveVisibleFrameIndex((int)value);
             }
         }
@@ -300,6 +303,11 @@ namespace UnityEditor
             // Update the current frame only at fixed intervals,
             // otherwise it looks weird when it is rapidly jumping around when we have a lot of repaints
             return m_CurrentFrame == FrameDataView.invalidOrCurrentFrameIndex ? m_LastFrameFromTick : m_CurrentFrame;
+        }
+
+        internal bool ProfilerWindowOverheadIsAffectingProfilingRecordingData()
+        {
+            return ProcessService.level == ProcessLevel.Main && IsSetToRecord() && ProfilerDriver.IsConnectionEditor() && ((EditorApplication.isPlaying && !EditorApplication.isPaused) || ProfilerDriver.profileEditor);
         }
 
         internal bool IsRecording()
@@ -392,6 +400,7 @@ namespace UnityEditor
             UserAccessiblitySettings.colorBlindConditionChanged += OnSettingsChanged;
             ProfilerUserSettings.settingsChanged += OnSettingsChanged;
             ProfilerDriver.profileLoaded += OnProfileLoaded;
+            ProfilerDriver.profileCleared += OnProfileCleared;
             ProfilerDriver.profilerCaptureSaved += ProfilerWindowAnalytics.SendSaveLoadEvent;
             ProfilerDriver.profilerCaptureLoaded += ProfilerWindowAnalytics.SendSaveLoadEvent;
             ProfilerDriver.profilerConnected += ProfilerWindowAnalytics.SendConnectionEvent;
@@ -544,16 +553,52 @@ namespace UnityEditor
             Repaint();
         }
 
+        void Clear()
+        {
+            // Clear All Frames calls ProfilerDriver.profileCleared which in turn calls OnProfileCleared
+            ProfilerDriver.ClearAllFrames();
+        }
+
+        void OnProfileCleared()
+        {
+            ResetForClearedOrLoaded(true);
+        }
+
         void OnProfileLoaded()
         {
-            // Reset frame state to trigger a redraw.
-            m_PrevLastFrame = FrameDataView.invalidOrCurrentFrameIndex;
+            ResetForClearedOrLoaded(false);
+        }
+
+        void ResetForClearedOrLoaded(bool cleared)
+        {
+            // Reset frame state
             m_LastFrameFromTick = FrameDataView.invalidOrCurrentFrameIndex;
+            m_FrameCountLabelMinWidth = 0;
+            foreach (var module in m_Modules)
+            {
+                module.Clear();
+            }
             // Reset the cached data view
+            if (m_FrameDataView != null)
+                DisposeFrameDataView();
             m_FrameDataView = null;
 
+            if (cleared)
+            {
+                m_CurrentFrame = FrameDataView.invalidOrCurrentFrameIndex;
+                m_CurrentFrameEnabled = true;
+#pragma warning disable CS0618
+                NetworkDetailStats.m_NetworkOperations.Clear();
+#pragma warning restore
+            }
+
             foreach (var module in m_Modules)
+            {
                 module.Clear();
+                module.Update();
+            }
+
+            RepaintImmediately();
         }
 
         internal ProfilerModuleBase[] GetProfilerModules()
@@ -639,6 +684,7 @@ namespace UnityEditor
             UserAccessiblitySettings.colorBlindConditionChanged -= OnSettingsChanged;
             ProfilerUserSettings.settingsChanged -= OnSettingsChanged;
             ProfilerDriver.profileLoaded -= OnProfileLoaded;
+            ProfilerDriver.profileCleared -= OnProfileCleared;
             ProfilerDriver.profilerCaptureSaved -= ProfilerWindowAnalytics.SendSaveLoadEvent;
             ProfilerDriver.profilerCaptureLoaded -= ProfilerWindowAnalytics.SendSaveLoadEvent;
             ProfilerDriver.profilerConnected -= ProfilerWindowAnalytics.SendConnectionEvent;
@@ -838,14 +884,17 @@ namespace UnityEditor
         {
             foreach (ProfilerWindow window in s_ProfilerWindows)
             {
-                // This is useful hack when you need to profile in the editor and dont want it to affect your framerate...
-                // NOTE: we should make this an option in the UI somehow...
-                //if (ProfilerDriver.lastFrameIndex != window.m_LastFrameFromTick && EditorWindow.focusedWindow == window)
-
-                if (ProfilerDriver.lastFrameIndex != window.m_LastFrameFromTick)
+                if (!window.IgnoreRepaintAllProfilerWindowsTick)
                 {
-                    window.m_LastFrameFromTick = ProfilerDriver.lastFrameIndex;
-                    window.RepaintImmediately();
+                    // This is useful hack when you need to profile in the editor and dont want it to affect your framerate...
+                    // NOTE: we should make this an option in the UI somehow...
+                    //if (ProfilerDriver.lastFrameIndex != window.m_LastFrameFromTick && EditorWindow.focusedWindow == window)
+
+                    if (ProfilerDriver.lastFrameIndex != window.m_LastFrameFromTick)
+                    {
+                        window.m_LastFrameFromTick = ProfilerDriver.lastFrameIndex;
+                        window.RepaintImmediately();
+                    }
                 }
             }
         }
@@ -929,9 +978,38 @@ namespace UnityEditor
             return GetFrameDataView(foundThreadIndex, viewMode, profilerSortColumn, sortAscending);
         }
 
+        void DisposeFrameDataView()
+        {
+            frameDataViewAboutToBeDisposed();
+            m_FrameDataView.Dispose();
+        }
+
         internal HierarchyFrameDataView GetFrameDataView(int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
         {
             var frameIndex = GetActiveVisibleFrameIndex();
+
+            if (frameIndex < firstAvailableFrameIndex || frameIndex > lastAvailableFrameIndex)
+            {
+                // if the frame index is out of range, invalidate the FrameDataView
+                if (m_FrameDataView != null && m_FrameDataView.valid)
+                    DisposeFrameDataView();
+            }
+            else if (frameIndex != FrameDataView.invalidOrCurrentFrameIndex)
+            {
+                // if the frame is valid but the thread index is not, fallback onto main thread
+                if (threadIndex < 0)
+                    threadIndex = k_MainThreadIndex;
+                else
+                {
+                    using (var iter = new ProfilerFrameDataIterator())
+                    {
+                        iter.SetRoot(frameIndex, k_MainThreadIndex);
+                        if (threadIndex >= iter.GetThreadCount(frameIndex))
+                            threadIndex = k_MainThreadIndex;
+                    }
+                }
+            }
+
             if (m_FrameDataView != null && m_FrameDataView.valid)
             {
                 if (m_FrameDataView.frameIndex == frameIndex && m_FrameDataView.threadIndex == threadIndex && m_FrameDataView.viewMode == viewMode)
@@ -939,17 +1017,16 @@ namespace UnityEditor
             }
 
             if (m_FrameDataView != null)
-                m_FrameDataView.Dispose();
-
+                DisposeFrameDataView();
             m_FrameDataView = new HierarchyFrameDataView(frameIndex, threadIndex, viewMode, profilerSortColumn, sortAscending);
             return m_FrameDataView;
         }
 
         void UpdateModules()
         {
-            using (Markers.updateModulesCharts.Auto())
+            foreach (var module in m_Modules)
             {
-                foreach (var module in m_Modules)
+                if (module.active)
                 {
                     module.Update();
                 }
@@ -1046,6 +1123,7 @@ namespace UnityEditor
                 if (GUILayout.Button(Styles.clearData, EditorStyles.toolbarButton))
                 {
                     Clear();
+                    GUIUtility.ExitGUI();
                 }
             }
 
@@ -1163,24 +1241,6 @@ namespace UnityEditor
             }
         }
 
-        void Clear()
-        {
-            foreach (var module in m_Modules)
-            {
-                module.Clear();
-            }
-
-            ProfilerDriver.ClearAllFrames();
-            m_LastFrameFromTick = FrameDataView.invalidOrCurrentFrameIndex;
-            m_FrameCountLabelMinWidth = 0;
-            m_CurrentFrame = FrameDataView.invalidOrCurrentFrameIndex;
-            m_CurrentFrameEnabled = true;
-
-#pragma warning disable CS0618
-            NetworkDetailStats.m_NetworkOperations.Clear();
-#pragma warning restore
-        }
-
         void FrameNavigationControls()
         {
             if (m_CurrentFrame > ProfilerDriver.lastFrameIndex)
@@ -1256,9 +1316,6 @@ namespace UnityEditor
 
             currentFrameChanged?.Invoke(frame, shouldPause);
 
-            if (ProfilerInstrumentationPopup.InstrumentationEnabled)
-                ProfilerInstrumentationPopup.UpdateInstrumentableFunctions();
-
             SetCurrentFrameDontPause(frame);
         }
 
@@ -1302,30 +1359,16 @@ namespace UnityEditor
 
             m_GraphPos = EditorGUILayout.BeginScrollView(m_GraphPos, Styles.profilerGraphBackground);
 
-            if (m_PrevLastFrame != ProfilerDriver.lastFrameIndex)
-            {
-                UpdateModules();
-                m_PrevLastFrame = ProfilerDriver.lastFrameIndex;
-            }
-
-            int newCurrentFrame = DrawModuleChartViews(m_CurrentFrame, out bool hasNoActiveModules);
+            // Charts are the full width minus the scrollbar's width. An additional pixel is subtracted to prevent the scroll view creating a horizontal scrollbar.
+            var scrollViewContentWidth = position.width - GUI.skin.verticalScrollbar.fixedWidth - 1;
+            var scrollViewViewportHeight = ChartsDetailedViewSplitterState.realSizes[0];
+            int newCurrentFrame = DrawModuleChartViews(new Vector2(scrollViewContentWidth, scrollViewViewportHeight));
             if (newCurrentFrame != m_CurrentFrame)
             {
                 SetCurrentFrame(newCurrentFrame);
                 Repaint();
                 if (Event.current.type != EventType.Repaint)
                     GUIUtility.ExitGUI();
-            }
-
-            if (hasNoActiveModules)
-            {
-                GUILayout.FlexibleSpace();
-                GUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-                GUILayout.Label(Styles.noActiveModules);
-                GUILayout.FlexibleSpace();
-                GUILayout.EndHorizontal();
-                GUILayout.FlexibleSpace();
             }
 
             EditorGUILayout.EndScrollView();
@@ -1346,25 +1389,88 @@ namespace UnityEditor
             SplitterGUILayout.EndVerticalSplit();
         }
 
-        int DrawModuleChartViews(int currentFrame, out bool hasNoActiveModules)
+        int DrawModuleChartViews(Vector2 containerSize)
         {
-            hasNoActiveModules = true;
-
-            using (Markers.drawCharts.Auto())
+            // Calculate the total minimum chart height of all active modules.
+            var totalMinimumChartHeight = 0f;
+            var activeModuleCount = 0;
+            var lastActiveModuleIndex = -1;
+            for (int i = 0; i < m_Modules.Count; ++i)
             {
-                for (int i = 0; i < m_Modules.Count; i++)
+                var module = m_Modules[i];
+                if (module.active)
+                {
+                    totalMinimumChartHeight += module.GetMinimumChartHeight();
+                    activeModuleCount++;
+                    lastActiveModuleIndex = i;
+                }
+            }
+
+            var newCurrentFrame = m_CurrentFrame;
+            if (activeModuleCount > 0)
+            {
+                // If there will be empty space below the charts, calculate how much to expand each chart by to fill this space.
+                var additionalChartHeight = 0f;
+                var requiresChartHeightExpansion = totalMinimumChartHeight < containerSize.y;
+                if (requiresChartHeightExpansion)
+                {
+                    var verticalSpaceToFill = containerSize.y - totalMinimumChartHeight;
+                    additionalChartHeight = GUIUtility.RoundToPixelGrid(verticalSpaceToFill / activeModuleCount);
+                }
+
+                var accumulatedExpandedChartHeight = 0f;
+                for (int i = 0; i < m_Modules.Count; ++i)
                 {
                     var module = m_Modules[i];
                     if (module.active)
                     {
-                        hasNoActiveModules = false;
-                        bool isSelected = (m_SelectedModuleIndex == i);
-                        currentFrame = module.DrawChartView(currentFrame, isSelected);
+                        // Calculate final chart height.
+                        var chartHeight = module.GetMinimumChartHeight();
+                        if (requiresChartHeightExpansion)
+                        {
+                            // Due to rounding additionalChartHeight to the pixel grid, we make the last chart fill the remaining space. This ensures that exactly the whole space is filled whilst maintaining that all expanded charts remain on the pixel grid.
+                            if (i == lastActiveModuleIndex)
+                            {
+                                var remainingHeightToFill = containerSize.y - accumulatedExpandedChartHeight;
+                                chartHeight = remainingHeightToFill;
+                            }
+                            else
+                            {
+                                chartHeight += additionalChartHeight;
+                                accumulatedExpandedChartHeight += chartHeight;
+                            }
+                        }
+
+                        // Reserve a chart rect with the layout system.
+                        var chartRect = GUILayoutUtility.GetRect(containerSize.x, chartHeight);
+
+                        // Don't draw or update any charts during the layout pass, where rects are not computed yet.
+                        if (Event.current.type != EventType.Layout)
+                        {
+                            // Only draw or update modules that will be visible in the scroll view's viewport.
+                            if (GUIClip.visibleRect.Overlaps(chartRect))
+                            {
+                                // DrawChartView also handles interaction so we can't only call it when repainting.
+                                bool isSelected = (m_SelectedModuleIndex == i);
+                                var lastVisibleFrameIndex = ProfilerDriver.lastFrameIndex;
+                                newCurrentFrame = module.DrawChartView(chartRect, newCurrentFrame, isSelected, lastVisibleFrameIndex);
+                            }
+                        }
                     }
                 }
             }
+            else
+            {
+                GUILayout.FlexibleSpace();
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                GUILayout.Label(Styles.noActiveModules);
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+                GUILayout.FlexibleSpace();
+            }
 
-            return currentFrame;
+            return newCurrentFrame;
         }
 
         void DrawDetailsViewForModule(ProfilerModuleBase module)
@@ -1670,6 +1776,13 @@ namespace UnityEditor
             add { currentFrameChanged += value; }
             remove { currentFrameChanged -= value; }
         }
+
+        event Action IProfilerWindowController.frameDataViewAboutToBeDisposed
+        {
+            add { frameDataViewAboutToBeDisposed += value; }
+            remove { frameDataViewAboutToBeDisposed -= value; }
+        }
+
         void IProfilerWindowController.SetClearOnPlay(bool enabled) => SetClearOnPlay(enabled);
         bool IProfilerWindowController.GetClearOnPlay() => GetClearOnPlay();
         HierarchyFrameDataView IProfilerWindowController.GetFrameDataView(string groupName, string threadName, ulong threadId, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
@@ -1677,6 +1790,7 @@ namespace UnityEditor
         HierarchyFrameDataView IProfilerWindowController.GetFrameDataView(int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
             => GetFrameDataView(threadIndex, viewMode, profilerSortColumn, sortAscending);
         bool IProfilerWindowController.IsRecording() => IsRecording();
+        bool IProfilerWindowController.ProfilerWindowOverheadIsAffectingProfilingRecordingData() => ProfilerWindowOverheadIsAffectingProfilingRecordingData();
         string IProfilerWindowController.ConnectedTargetName { get => ConnectedTargetName; }
         bool IProfilerWindowController.ConnectedToEditor { get => ConnectedToEditor; }
         ProfilerProperty IProfilerWindowController.CreateProperty() => CreateProperty();
@@ -1708,6 +1822,12 @@ namespace UnityEditor
             {
                 add { m_ProfilerWindowController.currentFrameChanged += value; }
                 remove { m_ProfilerWindowController.currentFrameChanged -= value; }
+            }
+
+            public event Action frameDataViewAboutToBeDisposed
+            {
+                add { m_ProfilerWindowController.frameDataViewAboutToBeDisposed += value; }
+                remove { m_ProfilerWindowController.frameDataViewAboutToBeDisposed -= value; }
             }
 
             long IProfilerWindowController.selectedFrameIndex { get => m_ProfilerWindowController.selectedFrameIndex; set => m_ProfilerWindowController.selectedFrameIndex = value; }
@@ -1751,6 +1871,11 @@ namespace UnityEditor
             bool IProfilerWindowController.IsRecording()
             {
                 return m_ProfilerWindowController.IsRecording();
+            }
+
+            bool IProfilerWindowController.ProfilerWindowOverheadIsAffectingProfilingRecordingData()
+            {
+                return m_ProfilerWindowController.ProfilerWindowOverheadIsAffectingProfilingRecordingData();
             }
 
             void IProfilerWindowController.SetAreasInUse(IEnumerable<ProfilerArea> areas, bool inUse)

@@ -95,7 +95,7 @@ namespace UnityEditor.Rendering
         Derivatives                 = (1 << 5), // Derivative (ddx/ddy) instructions in the fragment shader
         SampleLOD                   = (1 << 6), // Ability to sample textures in fragment shader with explicit LOD level
         FragCoord                   = (1 << 7), // Pixel position (VPOS/SV_Position/gl_FragCoord) input in fragment shader
-        //                          = (1 << 8), // unused
+        FragClipDepth               = (1 << 8), // Pixel depth (SV_Position.zw/gl_FragCoord.zw) input in fragment shader
         Interpolators15Integers     = (1 << 9), // Integers + Interpolators15. We bundle them together since extremely unlikely a GPU/API will ever exist that only has part of that.
         Texture2DArray              = (1 << 10), // 2DArray textures
         Instancing                  = (1 << 11), // SV_InstanceID shader input
@@ -107,7 +107,8 @@ namespace UnityEditor.Rendering
         TessellationShaders         = (1 << 17), // Tessellation shaders, i.e. DX11 style (hull/domain shader stages)
         SparseTexelResident         = (1 << 18), // Sparse textures with sampling instructions that return residency info
         FramebufferFetch            = (1 << 19), // Framebuffer fetch (ability to have in+out fragment shader color params)
-        MSAATextureSamples          = (1 << 20) // Access to MSAA'd texture samples in shaders (e.g. HLSL Texture2DMS)
+        MSAATextureSamples          = (1 << 20), // Access to MSAA'd texture samples in shaders (e.g. HLSL Texture2DMS)
+        SetRTArrayIndexFromAnyShader = (1 << 21) // Must support setting the render target array index from any shader and not just the geometry shader
     }
 
     public enum ShaderType

@@ -7,6 +7,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using System.Linq;
 using System;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -97,6 +98,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
         {
+            UpdateOrdering(m_PageManager.GetCurrentPage());
+
             if (m_PackageFiltering.currentFilterTab == PackageFilterTab.MyRegistries)
             {
                 // we can skip the whole database scan to save some time
@@ -113,6 +116,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var page = m_PageManager.GetCurrentPage();
             EnableMenuForCapability(page.capability);
+            UpdateOrdering(page);
         }
 
         private void OnInternetReachabilityChange(bool value)
@@ -236,6 +240,22 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PageManager.Refresh(RefreshOptions.UpmListOffline);
                 PackageManagerWindowAnalytics.SendEvent("resetToDefaults");
             });
+
+            if (Unsupported.IsDeveloperBuild())
+            {
+                toolbarSettingsMenu.menu.AppendSeparator();
+                toolbarSettingsMenu.menu.AppendAction(L10n.Tr("Reset Package Database"), a =>
+                {
+                    PackageManagerWindow.instance?.Close();
+                    m_PageManager.Reload();
+                });
+
+                toolbarSettingsMenu.menu.AppendAction(L10n.Tr("Reset Stylesheets"), a =>
+                {
+                    PackageManagerWindow.instance?.Close();
+                    m_ResourceLoader.Reset();
+                });
+            }
 
             PackageManagerExtensions.ExtensionCallback(() =>
             {
@@ -373,7 +393,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void UpdateOrdering(IPage page)
         {
             orderingMenu.menu.MenuItems().Clear();
-            if (!page?.capability.orderingValues?.Any() ?? true)
+
+            var shouldDisplayOrdering = page?.capability.orderingValues?.Any() ?? false;
+            var shouldDisplayConditionalOrdering = false;
+            if (page?.capability.conditionalOrderingValues?.Any() ?? false)
+            {
+                shouldDisplayConditionalOrdering = page.capability.conditionalOrderingValues.
+                    Aggregate(shouldDisplayConditionalOrdering, (current, ordering) => current || (ordering.condition?.Invoke() ?? false));
+            }
+
+            if (!shouldDisplayOrdering && !shouldDisplayConditionalOrdering)
             {
                 UIUtils.SetElementDisplay(orderingMenu, false);
                 return;
@@ -381,43 +410,77 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             UIUtils.SetElementDisplay(orderingMenu, true);
 
-            foreach (var ordering in page.capability.orderingValues)
+            var matchCurrentFilter = false;
+            if (shouldDisplayOrdering)
             {
-                orderingMenu.menu.AppendAction($"{L10n.Tr(ordering.displayName)} {k_Ascending}", a =>
+                foreach (var ordering in page.capability.orderingValues)
+                    matchCurrentFilter |= AddOrdering(page, ordering);
+            }
+
+            if (shouldDisplayConditionalOrdering)
+            {
+                foreach (var conditionalOrdering in page.capability.conditionalOrderingValues)
                 {
-                    orderingMenu.text = L10n.Tr("Sort: ") + a.name;
-
-                    var filters = page.filters.Clone();
-                    filters.orderBy = ordering.orderBy;
-                    filters.isReverseOrder = false;
-                    page.UpdateFilters(filters);
-                }, a =>
-                    {
-                        return page.filters.orderBy == ordering.orderBy && !page.filters.isReverseOrder
-                        ? DropdownMenuAction.Status.Checked
-                        : DropdownMenuAction.Status.Normal;
-                    });
-
-                orderingMenu.menu.AppendAction($"{L10n.Tr(ordering.displayName)} {k_Descending}", a =>
-                {
-                    orderingMenu.text = L10n.Tr("Sort: ") + a.name;
-
-                    var filters = page.filters.Clone();
-                    filters.orderBy = ordering.orderBy;
-                    filters.isReverseOrder = true;
-                    page.UpdateFilters(filters);
-                }, a =>
-                    {
-                        return page.filters.orderBy == ordering.orderBy && page.filters.isReverseOrder
-                        ? DropdownMenuAction.Status.Checked
-                        : DropdownMenuAction.Status.Normal;
-                    });
-
-                if (page.filters?.orderBy == ordering.orderBy)
-                {
-                    orderingMenu.text = $"Sort: {L10n.Tr(ordering.displayName)} {(page.filters.isReverseOrder?k_Descending:k_Ascending)}";
+                    if (conditionalOrdering.condition?.Invoke() ?? false)
+                        matchCurrentFilter |= AddOrdering(page, conditionalOrdering);
                 }
             }
+
+            if (!matchCurrentFilter)
+            {
+                var filters = page.filters?.Clone();
+                var firstOrdering = page.capability?.orderingValues?.FirstOrDefault();
+                if (filters != null && firstOrdering != null)
+                {
+                    var order = string.Empty;
+                    if (firstOrdering.order == PageCapability.Order.Ascending)
+                        order = $" {k_Ascending}";
+                    else if (firstOrdering.order == PageCapability.Order.Descending)
+                        order = $" {k_Descending}";
+
+                    orderingMenu.text = $"Sort: {L10n.Tr(firstOrdering.displayName)}{order}";
+
+                    filters.orderBy = firstOrdering.orderBy;
+                    filters.isReverseOrder = firstOrdering.order == PageCapability.Order.Descending;
+                    page.UpdateFilters(filters);
+                }
+            }
+        }
+
+        private bool AddOrdering(IPage page, PageCapability.Ordering ordering)
+        {
+            var matchCurrentFilter = false;
+            var order = string.Empty;
+            if (ordering.order == PageCapability.Order.Ascending)
+                order = $" {k_Ascending}";
+            else if (ordering.order == PageCapability.Order.Descending)
+                order = $" {k_Descending}";
+
+            orderingMenu.menu.AppendAction($"{L10n.Tr(ordering.displayName)}{order}", a =>
+            {
+                orderingMenu.text = $"{L10n.Tr("Sort: ")} {a.name}";
+
+                var filters = page.filters.Clone();
+                filters.orderBy = ordering.orderBy;
+                filters.isReverseOrder = ordering.order == PageCapability.Order.Descending;
+                page.UpdateFilters(filters);
+            }, a =>
+                {
+                    return page.filters.orderBy == ordering.orderBy &&
+                    (page.filters.isReverseOrder ? ordering.order == PageCapability.Order.Descending : ordering.order != PageCapability.Order.Descending)
+                    ? DropdownMenuAction.Status.Checked
+                    : DropdownMenuAction.Status.Normal;
+                });
+
+            if (page.filters?.orderBy == ordering.orderBy &&
+                (page.filters?.isReverseOrder ?? false ? ordering.order == PageCapability.Order.Descending : ordering.order != PageCapability.Order.Descending)
+            )
+            {
+                matchCurrentFilter = true;
+                orderingMenu.text = $"Sort: {L10n.Tr(ordering.displayName)}{order}";
+            }
+
+            return matchCurrentFilter;
         }
 
         private void SetupFilters()

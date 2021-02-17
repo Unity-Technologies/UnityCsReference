@@ -45,6 +45,7 @@ namespace UnityEngine.UIElements
             UxmlStringAttributeDescription m_MaskCharacter = new UxmlStringAttributeDescription { name = "mask-character", obsoleteNames = new[] { "maskCharacter" }, defaultValue = kMaskCharDefault.ToString()};
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
             UxmlBoolAttributeDescription m_IsReadOnly = new UxmlBoolAttributeDescription { name = "readonly" };
+            UxmlBoolAttributeDescription m_IsDelayed = new UxmlBoolAttributeDescription {name = "is-delayed"};
 
             /// <summary>
             /// Initialize the traits for this field.
@@ -60,6 +61,7 @@ namespace UnityEngine.UIElements
                 field.maxLength = m_MaxLength.GetValueFromBag(bag, cc);
                 field.isPasswordField = m_Password.GetValueFromBag(bag, cc);
                 field.isReadOnly = m_IsReadOnly.GetValueFromBag(bag, cc);
+                field.isDelayed = m_IsDelayed.GetValueFromBag(bag, cc);
                 string maskCharacter = m_MaskCharacter.GetValueFromBag(bag, cc);
                 if (!string.IsNullOrEmpty(maskCharacter))
                 {
@@ -293,7 +295,7 @@ namespace UnityEngine.UIElements
         {
             iTextHandle = e.destinationPanel.contextType == ContextType.Editor
                 ? TextNativeHandle.New()
-                : TextHandleFactory.GetRuntimeHandle();
+                : TextCoreHandle.New();
         }
 
         private void OnFieldCustomStyleResolved(CustomStyleResolvedEvent e)
@@ -656,8 +658,8 @@ namespace UnityEngine.UIElements
             private void OnAttachToPanel(AttachToPanelEvent e)
             {
                 m_TextHandle = e.destinationPanel.contextType == ContextType.Editor
-                    ? TextHandleFactory.GetEditorHandle()
-                    : TextHandleFactory.GetRuntimeHandle();
+                    ? TextNativeHandle.New()
+                    : TextCoreHandle.New();
             }
 
             internal virtual void SyncTextEngine()

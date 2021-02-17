@@ -55,7 +55,6 @@ namespace UnityEditor.DeviceSimulation
         public string overlayPath;
         public Vector4 borderSize;
         public float cornerRadius;
-        [NonSerialized] public Texture overlay;
     }
 
     [Serializable]

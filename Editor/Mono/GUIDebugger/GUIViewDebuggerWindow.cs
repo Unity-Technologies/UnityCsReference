@@ -181,7 +181,7 @@ namespace UnityEditor
         readonly SplitterState m_InstructionListDetailSplitter = SplitterState.FromRelative(new float[] { 30, 70 }, new float[] { 32, 32 }, null);
 
         //Internal Tool for now. Uncomment it to enable it.
-        [MenuItem("Window/Analysis/IMGUI Debugger &5", false, 102, false)] // TODO: DEBUG ONLY - REVERT ME
+        [MenuItem("Window/Analysis/IMGUI Debugger &5", false, 20002, false)] // TODO: DEBUG ONLY - REVERT ME
         static void Init()
         {
             // Get existing open window or if none, make a new one:

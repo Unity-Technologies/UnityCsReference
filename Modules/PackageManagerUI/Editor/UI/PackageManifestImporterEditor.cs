@@ -31,6 +31,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private const float kMinHeightDescriptionScrollView = 96f;
         private const int kMinimalUnityMajorVersionSupported = 2017;
+        private const long kMaxVersion = 999999999L;
+        private const long kRecommendedMaxVersion = 999999L;
 
         private static List<string> s_MajorUnityVersions;
         private static List<string> MajorUnityVersions
@@ -169,9 +171,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     return string.Format(s_LocalizedMultipleTitle, targets.Length);
                 }
-                return string.Format(s_LocalizedTitle, packageState != null && packageState.isValidFile ?
-                    !IsNullOrEmptyTrim(packageState.info.displayName) ? packageState.info.displayName.Trim() : packageState.info.packageName.completeName :
-                    s_LocalizedInvalidPackageManifest);
+
+                return string.Format(s_LocalizedTitle,
+                    packageState != null && packageState.isValidFile ? !string.IsNullOrWhiteSpace(packageState.info.displayName) ? packageState.info.displayName.Trim() : packageState.info.packageName.completeName : s_LocalizedInvalidPackageManifest);
             }
         }
 
@@ -249,18 +251,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             rect.height -= EditorGUIUtility.standardVerticalSpacing;
             packageName.stringValue = EditorGUI.DelayedTextField(rect, packageName.stringValue);
 
-            if (!IsNullOrEmptyTrim(packageName.stringValue) && !PackageValidation.ValidateName(packageName.stringValue))
+            if (!string.IsNullOrWhiteSpace(packageName.stringValue) && !PackageValidation.ValidateName(packageName.stringValue))
                 errorMessages.Add($"Invalid Dependency Package Name '{packageName.stringValue}'");
 
-            using (new EditorGUI.DisabledScope(IsNullOrEmptyTrim(packageName.stringValue)))
+            using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(packageName.stringValue)))
             {
                 rect.x += w / 3 * 2;
                 rect.width = w / 3 - 4;
                 version.stringValue = EditorGUI.DelayedTextField(rect, version.stringValue);
 
-                if (!IsNullOrEmptyTrim(version.stringValue) && !PackageValidation.ValidateVersion(version.stringValue))
-                    errorMessages.Add(
-                        $"Invalid Dependency Version '{version.stringValue}' for '{packageName.stringValue}'");
+                if (!string.IsNullOrWhiteSpace(version.stringValue))
+                    ValidateVersion(packageName.stringValue, version.stringValue, errorMessages, warningMessages);
             }
         }
 
@@ -337,7 +338,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void PerformValidation()
         {
             var canBuildCompleteName = true;
-            if (!PackageValidation.ValidateOrganizationName(m_OrganizationName.stringValue) && !IsNullOrEmptyTrim(m_OrganizationName.stringValue))
+            if (!PackageValidation.ValidateOrganizationName(m_OrganizationName.stringValue) && !string.IsNullOrWhiteSpace(m_OrganizationName.stringValue))
             {
                 canBuildCompleteName = false;
                 errorMessages.Add($"Invalid Package Organization Name '{m_OrganizationName.stringValue}'");
@@ -354,8 +355,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     errorMessages.Add($"Invalid Complete Package Name '{completePackageName}'");
             }
 
-            if (!PackageValidation.ValidateVersion(m_Version.stringValue))
-                errorMessages.Add($"Invalid Version '{m_Version.stringValue}'");
+            ValidateVersion(null, m_Version.stringValue, errorMessages, warningMessages);
 
             if (m_UnityVersionEnabled.boolValue)
             {
@@ -363,19 +363,19 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_UnityRelease.stringValue))
                 {
                     var unityVersion = string.Join(".", new[] {m_UnityMajor.stringValue, m_UnityMinor.stringValue});
-                    if (!IsNullOrEmptyTrim(m_UnityRelease.stringValue))
+                    if (!string.IsNullOrWhiteSpace(m_UnityRelease.stringValue))
                         unityVersion += "." + m_UnityRelease.stringValue.Trim();
 
                     errorMessages.Add($"Invalid Unity Version '{unityVersion}'");
                 }
             }
 
-            if (IsNullOrEmptyTrim(m_DisplayName.stringValue) || m_DisplayName.stringValue.Trim().Length == 0)
+            if (string.IsNullOrWhiteSpace(m_DisplayName.stringValue) || m_DisplayName.stringValue.Trim().Length == 0)
             {
                 warningMessages.Add("Display name should be provided.");
             }
 
-            if (IsNullOrEmptyTrim(m_Description.stringValue) || m_Description.stringValue.Trim().Length == 0)
+            if (string.IsNullOrWhiteSpace(m_Description.stringValue) || m_Description.stringValue.Trim().Length == 0)
             {
                 warningMessages.Add("Package description should be provided.");
             }
@@ -390,7 +390,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else
             {
-                if (IsNullOrEmptyTrim(packageState.info.type))
+                if (string.IsNullOrWhiteSpace(packageState.info.type))
                     warningMessages.Add("This package and all its assets will be hidden by default in Editor because its type is empty");
                 else if (PackageInfo.GetPredefinedHiddenByDefaultPackageTypes().Contains(packageState.info.type))
                     warningMessages.Add($"This package and all its assets will be hidden by default in Editor because its type is '{packageState.info.type}'");
@@ -593,22 +593,22 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var completePackageName = BuildCompletePackageName(packageState.info.packageName);
-            if (!IsNullOrEmptyTrim(completePackageName))
+            if (!string.IsNullOrWhiteSpace(completePackageName))
                 json["name"] = completePackageName;
 
-            if (!IsNullOrEmptyTrim(packageState.info.displayName))
+            if (!string.IsNullOrWhiteSpace(packageState.info.displayName))
                 json["displayName"] = packageState.info.displayName.Trim();
             else
                 json.Remove("displayName");
 
             json["version"] = packageState.info.version;
 
-            if (!IsNullOrEmptyTrim(packageState.info.description))
+            if (!string.IsNullOrWhiteSpace(packageState.info.description))
                 json["description"] = packageState.info.description.Trim();
             else
                 json.Remove("description");
 
-            if (!IsNullOrEmptyTrim(packageState.info.type))
+            if (!string.IsNullOrWhiteSpace(packageState.info.type))
                 json["type"] = packageState.info.type.Trim();
             else
                 json.Remove("type");
@@ -620,13 +620,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (packageState.info.unity.isEnable)
             {
-                if (!IsNullOrEmptyTrim(packageState.info.unity.major) &&
-                    !IsNullOrEmptyTrim(packageState.info.unity.minor))
+                if (!string.IsNullOrWhiteSpace(packageState.info.unity.major) &&
+                    !string.IsNullOrWhiteSpace(packageState.info.unity.minor))
                 {
                     json["unity"] = string.Join(".",
                         new[] {packageState.info.unity.major.Trim(), packageState.info.unity.minor.Trim()});
 
-                    if (!IsNullOrEmptyTrim(packageState.info.unity.release))
+                    if (!string.IsNullOrWhiteSpace(packageState.info.unity.release))
                         json["unityRelease"] = packageState.info.unity.release.Trim();
                     else
                         json.Remove("unityRelease");
@@ -643,7 +643,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var dependencies = new Dictionary<string, string>();
                 foreach (var dependency in packageState.dependencies)
                 {
-                    if (!IsNullOrEmptyTrim(dependency.packageName))
+                    if (!string.IsNullOrWhiteSpace(dependency.packageName))
                         dependencies.Add(dependency.packageName.Trim(), dependency.version);
                 }
 
@@ -703,9 +703,34 @@ namespace UnityEditor.PackageManager.UI.Internal
             return null;
         }
 
-        private static bool IsNullOrEmptyTrim(string str)
+        internal static void ValidateVersion(string packageName, string version, List<string> errorMessages, List<string> warningMessages)
         {
-            return str == null || str.Trim().Length == 0;
+            if (!PackageValidation.ValidateVersion(version, out var majorStr, out var minorStr, out var patchStr))
+            {
+                if (string.IsNullOrEmpty(packageName))
+                    errorMessages.Add($"Invalid version '{version}'");
+                else
+                    errorMessages.Add($"Invalid version '{version}' for dependency '{packageName}'");
+            }
+            else
+            {
+                if (!long.TryParse(majorStr, out var major) || major > kMaxVersion ||
+                    !long.TryParse(minorStr, out var minor) || minor > kMaxVersion ||
+                    !long.TryParse(patchStr, out var patch) || patch > kMaxVersion)
+                {
+                    if (string.IsNullOrEmpty(packageName))
+                        errorMessages.Add($"Each component of version '{version}' must be an integer less than or equal to {kMaxVersion}.");
+                    else
+                        errorMessages.Add($"Each component of version '{version}' for dependency '{packageName}' must be an integer less than or equal to {kMaxVersion}.");
+                }
+                else if (major > kRecommendedMaxVersion || minor > kRecommendedMaxVersion || patch > kRecommendedMaxVersion)
+                {
+                    if (string.IsNullOrEmpty(packageName))
+                        warningMessages.Add($"Consider to use an integer less than or equal to {kRecommendedMaxVersion} for each component of version '{version}'.");
+                    else
+                        warningMessages.Add($"Consider to use an integer less than or equal to {kRecommendedMaxVersion} for each component of version '{version}' for dependency '{packageName}'.");
+                }
+            }
         }
     }
 }

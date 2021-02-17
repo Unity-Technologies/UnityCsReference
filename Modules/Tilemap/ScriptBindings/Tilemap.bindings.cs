@@ -132,6 +132,16 @@ namespace UnityEngine.Tilemaps
             return tiles;
         }
 
+        public extern int GetTilesRangeCount(Vector3Int startPosition, Vector3Int endPosition);
+
+        [FreeFunction(Name = "TilemapBindings::GetTileAssetsRangeNonAlloc", HasExplicitThis = true)]
+        internal extern int GetTileAssetsRangeNonAlloc(Vector3Int startPosition, Vector3Int endPosition, Vector3Int[] positions, Object[] tiles);
+
+        public int GetTilesRangeNonAlloc(Vector3Int startPosition, Vector3Int endPosition, Vector3Int[] positions, TileBase[] tiles)
+        {
+            return GetTileAssetsRangeNonAlloc(startPosition, endPosition, positions, tiles);
+        }
+
         internal extern void SetTileAsset(Vector3Int position, Object tile);
         public void SetTile(Vector3Int position, TileBase tile) { SetTileAsset(position, tile); }
 
@@ -204,6 +214,18 @@ namespace UnityEngine.Tilemaps
         public extern void SetColliderType(Vector3Int position, Tile.ColliderType colliderType);
         [NativeMethod(Name = "GetTileColliderType")]
         public extern Tile.ColliderType GetColliderType(Vector3Int position);
+
+        [NativeMethod(Name = "GetTileAnimationFrameCount")]
+        public extern int GetAnimationFrameCount(Vector3Int position);
+        [NativeMethod(Name = "GetTileAnimationFrame")]
+        public extern int GetAnimationFrame(Vector3Int position);
+        [NativeMethod(Name = "SetTileAnimationFrame")]
+        public extern void SetAnimationFrame(Vector3Int position, int frame);
+
+        [NativeMethod(Name = "GetTileAnimationTime")]
+        public extern float GetAnimationTime(Vector3Int position);
+        [NativeMethod(Name = "SetTileAnimationTime")]
+        public extern void SetAnimationTime(Vector3Int position, float time);
 
         public void FloodFill(Vector3Int position, TileBase tile)
         {

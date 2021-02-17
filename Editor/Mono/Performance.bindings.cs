@@ -31,6 +31,9 @@ namespace UnityEditor.Profiling
             StopTracker(m_WatchHandle);
         }
 
+        internal static extern ulong GetOrCreateTrackerHandle(string trackerName);
+        internal static extern bool TryStartTrackerByHandle(ulong trackerHandle, out int trackerToken);
+
         public static extern string[] GetAvailableTrackers();
         public static extern bool Exists(string trackerName);
         public static extern void Reset(string trackerName);

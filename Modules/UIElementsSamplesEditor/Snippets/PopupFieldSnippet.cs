@@ -14,7 +14,7 @@ namespace UnityEditor.UIElements.Samples
         internal override void Apply(VisualElement container)
         {
             /// <sample>
-            // Note: PopupField has no UXML support because it is a generic type.
+            // Note: PopupField has no UXML support because it is a generic type. See DropdownField instead.
 
             var choices = new List<string> { "First", "Second", "Third" };
 

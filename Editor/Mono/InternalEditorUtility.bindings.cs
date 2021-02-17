@@ -166,6 +166,9 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::GetEngineCoreModuleAssemblyPath")]
         public extern static string GetEngineCoreModuleAssemblyPath();
 
+        [FreeFunction("InternalEditorUtilityBindings::GetBuildSystemVariationArgs")]
+        internal extern static string GetBuildSystemVariationArgs();
+
         [FreeFunction("InternalEditorUtilityBindings::CalculateHashForObjectsAndDependencies")]
         public extern static string CalculateHashForObjectsAndDependencies(Object[] objects);
 
@@ -428,8 +431,7 @@ namespace UnityEditorInternal
 
         public static void ReloadWindowLayoutMenu()
         {
-            WindowLayout.ReloadWindowLayoutMenu();
-            EditorUtility.Internal_UpdateAllMenus();
+            WindowLayout.UpdateWindowLayoutMenu();
         }
 
         public static void RevertFactoryLayoutSettings(bool quitOnCancel)
@@ -933,6 +935,9 @@ namespace UnityEditorInternal
 
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
         internal static extern bool IsScriptReloadRequested();
+
+        [FreeFunction("HandleProjectWindowFileDrag")]
+        internal static extern DragAndDropVisualMode HandleProjectWindowFileDrag(string newParentPath, string[] paths, bool perform, int defaultPromptAction);
 
         [FreeFunction]
         [NativeHeader("Editor/Src/Undo/DefaultParentObjectUndo.h")]

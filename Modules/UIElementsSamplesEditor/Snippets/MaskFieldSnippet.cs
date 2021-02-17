@@ -14,13 +14,15 @@ namespace UnityEditor.UIElements.Samples
         internal override void Apply(VisualElement container)
         {
             /// <sample>
+            var choices = new List<string> { "First", "Second", "Third" };
+
             // Get a reference to the field from UXML and assign it its value.
             var uxmlField = container.Q<MaskField>("the-uxml-field");
             uxmlField.value = 1;
-            uxmlField.choices = new List<string> { "First", "Second", "Third" };
+            uxmlField.choices = choices;
 
             // Create a new field, disable it, and give it a style class.
-            var csharpField = new MaskField("C# Field");
+            var csharpField = new MaskField("C# Field", choices, 0);
             csharpField.SetEnabled(false);
             csharpField.AddToClassList("some-styled-field");
             csharpField.value = uxmlField.value;

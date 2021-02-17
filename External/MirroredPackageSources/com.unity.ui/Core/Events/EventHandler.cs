@@ -50,6 +50,7 @@ namespace UnityEngine.UIElements
             }
 
             m_CallbackRegistry.RegisterCallback<TEventType>(callback, useTrickleDown);
+
             GlobalCallbackRegistry.RegisterListeners<TEventType>(this, callback, useTrickleDown);
         }
 
@@ -67,6 +68,7 @@ namespace UnityEngine.UIElements
             }
 
             m_CallbackRegistry.RegisterCallback<TEventType, TUserArgsType>(callback, userArgs, useTrickleDown);
+
             GlobalCallbackRegistry.RegisterListeners<TEventType>(this, callback, useTrickleDown);
         }
 
@@ -117,6 +119,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="e">The event to send.</param>
         public abstract void SendEvent(EventBase e);
+
+        internal abstract void SendEvent(EventBase e, DispatchMode dispatchMode);
 
         internal void HandleEventAtTargetPhase(EventBase evt)
         {

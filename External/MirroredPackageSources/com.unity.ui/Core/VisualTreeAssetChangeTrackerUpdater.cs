@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
+using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
 {
@@ -15,19 +16,34 @@ namespace UnityEngine.UIElements
 
         private bool m_HasAnyTextAssetChanged;
 
+        private readonly Action<bool, Object> m_TextAssetChange;
+        private readonly Action<Object> m_ColorGradientChange;
+
         public VisualTreeAssetChangeTrackerUpdater()
         {
-            TextDelegates.OnTextAssetChange += OnTextAssetChange;
+            m_TextAssetChange = OnTextAssetChange;
+            m_ColorGradientChange = OnTextAssetChange;
+
+            TextEventManager.FONT_PROPERTY_EVENT.Add(m_TextAssetChange);
+            TextEventManager.SPRITE_ASSET_PROPERTY_EVENT.Add(m_TextAssetChange);
+            TextEventManager.COLOR_GRADIENT_PROPERTY_EVENT.Add(m_ColorGradientChange);
         }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                TextDelegates.OnTextAssetChange -= OnTextAssetChange;
+                TextEventManager.FONT_PROPERTY_EVENT.Remove(m_TextAssetChange);
+                TextEventManager.SPRITE_ASSET_PROPERTY_EVENT.Remove(m_TextAssetChange);
+                TextEventManager.COLOR_GRADIENT_PROPERTY_EVENT.Remove(m_ColorGradientChange);
 
                 m_TextElements.Clear();
             }
+        }
+
+        void OnTextAssetChange(bool b, Object o)
+        {
+            OnTextAssetChange(o);
         }
 
         void OnTextAssetChange(Object asset)
@@ -43,10 +59,16 @@ namespace UnityEngine.UIElements
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
-            // Nothing to be done, we only need the Update
+            // If a change is done to a Runtime Panel and the Editor is not playing (i.e. it's in Edit Mode), the Game
+            // View may not update itself to reflect the changes in the visual tree, so here we make sure it does that.
+            if (panel.contextType == ContextType.Player && !IsEditorPlaying.Invoke())
+            {
+                UpdateGameView.Invoke();
+            }
         }
 
         internal static Func<bool> IsEditorPlaying;
+        internal static Action UpdateGameView;
 
         private int m_PreviousInMemoryAssetsVersion = 0;
 
@@ -66,16 +88,14 @@ namespace UnityEngine.UIElements
         {
             tracker.StartTrackingAsset(visualElementUsingAsset.m_VisualTreeAssetSource);
 
-            if (m_TrackerToVisualElementMap.TryGetValue(tracker, out var visualElements))
-            {
-                visualElements.Add(visualElementUsingAsset);
-            }
-            else
+            if (!m_TrackerToVisualElementMap.TryGetValue(tracker, out var visualElements))
             {
                 visualElements = new HashSet<VisualElement>();
                 m_TrackerToVisualElementMap[tracker] = visualElements;
                 m_LiveReloadVisualTreeAssetTrackers.Add(tracker);
             }
+
+            visualElements.Add(visualElementUsingAsset);
         }
 
         internal void StopVisualTreeAssetTracking(VisualElement visualElementUsingAsset)
@@ -122,6 +142,11 @@ namespace UnityEngine.UIElements
 
         public override void Update()
         {
+            if (!panel.enableAssetReload)
+            {
+                return;
+            }
+
             UpdateTextElements();
 
             // Early out: no tracker found for panel.

@@ -132,7 +132,7 @@ namespace UnityEditor.UIElements
         {
             if (s_RenderTexture == null)
             {
-                s_RenderTexture = new RenderTexture(1, 1, 0, RenderTextureFormat.ARGB32);
+                s_RenderTexture = new RenderTexture(1, 1, 0, RenderTextureFormat.ARGB32) { name = "EditorAtlasMonitorRT" };
                 s_RenderTexture.Create();
                 return true;
             }

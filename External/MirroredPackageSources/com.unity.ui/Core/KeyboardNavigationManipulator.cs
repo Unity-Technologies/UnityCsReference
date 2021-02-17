@@ -15,7 +15,7 @@ namespace UnityEngine.UIElements
         Begin,
         End,
     }
-    
+
     public class KeyboardNavigationManipulator : Manipulator
     {
         readonly Action<KeyboardNavigationOperation, EventBase> m_Action;

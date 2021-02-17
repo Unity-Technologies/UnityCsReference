@@ -254,6 +254,9 @@ namespace Unity.UI.Builder
         public static StyleComplexSelector Swallow(this StyleSheet toStyleSheet, StyleSheet fromStyleSheet, StyleComplexSelector fromSelector)
         {
             var toSelector = toStyleSheet.AddSelector(StyleSheetToUss.ToUssSelector(fromSelector));
+            if (toSelector == null)
+                return null;
+
             SwallowStyleRule(toStyleSheet, toSelector, fromStyleSheet, fromSelector);
             return toSelector;
         }

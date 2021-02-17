@@ -18,19 +18,26 @@ namespace UnityEditor
         {
             public static readonly GUIContent kPlatformTooltip = EditorGUIUtility.TrTextContent("", "Allow quality setting on platform");
             public static readonly GUIContent kAddQualityLevel = EditorGUIUtility.TrTextContent("Add Quality Level");
-            public static readonly GUIContent kStreamingMipmapsActive = EditorGUIUtility.TrTextContent("Texture Streaming", "Enable to use texture mipmap streaming.");
-            public static readonly GUIContent kStreamingMipmapsMemoryBudget = EditorGUIUtility.TrTextContent("Memory Budget", "Texture Streaming Budget in MB.");
-            public static readonly GUIContent kStreamingMipmapsRenderersPerFrame = EditorGUIUtility.TrTextContent("Renderers Per Frame", "Number of renderers to process each frame. A lower number will decrease the CPU load at the cost of delaying the mipmap loading.");
-            public static readonly GUIContent kStreamingMipmapsAddAllCameras = EditorGUIUtility.TrTextContent("Add All Cameras", "Adds all cameras to texture streaming system even if it lacks a StreamingController component. If a camera has the StreamingController component, that will control whether it is processed or not.");
-            public static readonly GUIContent kStreamingMipmapsMaxLevelReduction = EditorGUIUtility.TrTextContent("Max Level Reduction", "This is the maximum number of mipmap levels a texture should drop.");
-            public static readonly GUIContent kStreamingMipmapsMaxFileIORequests = EditorGUIUtility.TrTextContent("Max IO Requests", "Maximum number of texture file IO calls active from the texture streaming system at any time.");
+            public static readonly GUIContent kStreamingMipmapsActive = EditorGUIUtility.TrTextContent("Texture Streaming", "When enabled, Unity only streams texture mipmaps relevant to the current Camera's position in a Scene. This reduces the total amount of memory Unity needs for textures. Individual textures must also have 'Streaming Mip Maps' enabled in their Import Settings.");
+            public static readonly GUIContent kStreamingMipmapsMemoryBudget = EditorGUIUtility.TrTextContent("Memory Budget", "The amount of memory (in megabytes) to allocate for all loaded textures.");
+            public static readonly GUIContent kStreamingMipmapsRenderersPerFrame = EditorGUIUtility.TrTextContent("Renderers Per Frame", "The number of renderers to process each frame. A lower number decreases the CPU load but delays mipmap loading.");
+            public static readonly GUIContent kStreamingMipmapsAddAllCameras = EditorGUIUtility.TrTextContent("Add All Cameras", "When enabled, Unity uses texture streaming for every Camera in the Scene. Otherwise, Unity only uses texture streaming for Cameras that have an attached Streaming Controller component.");
+            public static readonly GUIContent kStreamingMipmapsMaxLevelReduction = EditorGUIUtility.TrTextContent("Max Level Reduction", "The maximum number of mipmap levels a texture can drop.");
+            public static readonly GUIContent kStreamingMipmapsMaxFileIORequests = EditorGUIUtility.TrTextContent("Max IO Requests", "The maximum number of texture file requests from the Texture Streaming system that can be active at the same time.");
 
             public static readonly GUIContent kIconTrash = EditorGUIUtility.TrIconContent("TreeEditor.Trash", "Delete Level");
-            public static readonly GUIContent kSoftParticlesHint = EditorGUIUtility.TrTextContent("Soft Particles require using Deferred Lighting or making camera render the depth texture.");
-            public static readonly GUIContent kBillboardsFaceCameraPos = EditorGUIUtility.TrTextContent("Billboards Face Camera Position", "Make billboards face towards camera position. Otherwise they face towards camera plane. This makes billboards look nicer when camera rotates but is more expensive to render.");
-            public static readonly GUIContent kVSyncCountLabel = EditorGUIUtility.TrTextContent("VSync Count");
-            public static readonly GUIContent kLODBiasLabel = EditorGUIUtility.TrTextContent("LOD Bias");
-            public static readonly GUIContent kMipStrippingHint = EditorGUIUtility.TrTextContent("Where maximum possible texture mip resolution for a platform is less than full, package size can be reduced by enabling Texture MipMap Stripping in Player Settings.");
+            public static readonly GUIContent kSoftParticlesHint = EditorGUIUtility.TrTextContent("Soft Particles require either the Deferred Shading rendering path or Cameras that render depth textures.");
+            public static readonly GUIContent kBillboardsFaceCameraPos = EditorGUIUtility.TrTextContent("Billboards Face Camera Position", "When enabled, terrain billboards face towards the camera position. Otherwise, they face towards the camera plane. This makes billboards look nicer when the camera rotates but it is more resource intensive to process.");
+            public static readonly GUIContent kVSyncCountLabel = EditorGUIUtility.TrTextContent("VSync Count", "Specifies how Unity synchronizes rendering with the refresh rate of the display device.");
+            public static readonly GUIContent kLODBiasLabel = EditorGUIUtility.TrTextContent("LOD Bias", "The bias Unity uses to determine which model to render when a GameObject’s on-screen size is between two LOD levels. Values between 0 and 1 favor the less detailed model. Values greater than 1 favor the more detailed model.");
+            public static readonly GUIContent kMaximumLODLevelLabel = EditorGUIUtility.TrTextContent("Maximum LOD Level", "The highest LOD to use in the application.");
+            public static readonly GUIContent kMipStrippingHint = EditorGUIUtility.TrTextContent("Where the maximum possible texture mip resolution for a platform is less than full, enabling Texture MipMap Stripping in Player Settings can reduce the package size.");
+
+            public static readonly GUIContent kAsyncUploadTimeSlice = EditorGUIUtility.TrTextContent("Time Slice", "The amount of time (in milliseconds) Unity spends uploading Texture and Mesh data to the GPU per frame.");
+            public static readonly GUIContent kAsyncUploadBufferSize = EditorGUIUtility.TrTextContent("Buffer Size", "The size (in megabytes) of the upload buffer Unity uses to stream Texture and Mesh data to GPU.");
+            public static readonly GUIContent kAsyncUploadPersistentBuffer = EditorGUIUtility.TrTextContent("Persistent Buffer", "When enabled, the upload buffer persists even when there is nothing left to upload.");
+
+            public static readonly GUIContent kRenderPipelineObject = EditorGUIUtility.TrTextContent("Render Pipeline Asset", "Specifies the Render Pipeline Asset to use for this quality level.");
         }
 
         private class Styles
@@ -537,7 +544,7 @@ namespace UnityEditor
 
             GUILayout.Label(EditorGUIUtility.TempContent("Rendering"), EditorStyles.boldLabel);
 
-            customRenderPipeline.objectReferenceValue = EditorGUILayout.ObjectField(customRenderPipeline.objectReferenceValue, typeof(RenderPipelineAsset), false);
+            customRenderPipeline.objectReferenceValue = EditorGUILayout.ObjectField(Content.kRenderPipelineObject, customRenderPipeline.objectReferenceValue, typeof(RenderPipelineAsset), false);
             if (!usingSRP && customRenderPipeline.objectReferenceValue != null)
                 EditorGUILayout.HelpBox("Missing a Scriptable Render Pipeline in Graphics: \"Scriptable Render Pipeline Settings\" to use Scriptable Render Pipeline from Quality: \"Custom Render Pipeline\".", MessageType.Warning);
 
@@ -545,6 +552,31 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(pixelLightCountProperty);
 
             // still valid with SRP
+            if (!usingSRP)
+            {
+                EditorGUILayout.PropertyField(antiAliasingProperty);
+            }
+
+            if (!SupportedRenderingFeatures.active.overridesRealtimeReflectionProbes)
+                EditorGUILayout.PropertyField(realtimeReflectionProbes);
+            EditorGUILayout.PropertyField(resolutionScalingFixedDPIFactorProperty);
+
+            EditorGUILayout.PropertyField(vSyncCountProperty, Content.kVSyncCountLabel);
+
+            if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android ||
+                EditorUserBuildSettings.activeBuildTarget == BuildTarget.iOS ||
+                EditorUserBuildSettings.activeBuildTarget == BuildTarget.tvOS)
+            {
+                if (vSyncCountProperty.intValue > 0)
+                    EditorGUILayout.HelpBox(EditorGUIUtility.TrTextContent($"VSync Count '{vSyncCountProperty.enumLocalizedDisplayNames[vSyncCountProperty.enumValueIndex]}' is ignored on Android, iOS and tvOS.", EditorGUIUtility.GetHelpIcon(MessageType.Warning)));
+            }
+
+            bool shadowMaskSupported = SupportedRenderingFeatures.IsMixedLightingModeSupported(MixedLightingMode.Shadowmask);
+            bool showShadowMaskUsage = shadowMaskSupported && !SupportedRenderingFeatures.active.overridesShadowmask;
+
+            GUILayout.Space(10);
+            GUILayout.Label(EditorGUIUtility.TempContent("Textures"), EditorStyles.boldLabel);
+
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(textureQualityProperty);
             if (EditorGUI.EndChangeCheck() && usingSRP)
@@ -556,19 +588,6 @@ namespace UnityEditor
                 MipStrippingHintGUI();
             }
             EditorGUILayout.PropertyField(anisotropicTexturesProperty);
-
-            if (!usingSRP)
-            {
-                EditorGUILayout.PropertyField(antiAliasingProperty);
-                EditorGUILayout.PropertyField(softParticlesProperty);
-                if (softParticlesProperty.boolValue)
-                    SoftParticlesHintGUI();
-            }
-
-            if (!SupportedRenderingFeatures.active.overridesRealtimeReflectionProbes)
-                EditorGUILayout.PropertyField(realtimeReflectionProbes);
-            EditorGUILayout.PropertyField(billboardsFaceCameraPosition, Content.kBillboardsFaceCameraPos);
-            EditorGUILayout.PropertyField(resolutionScalingFixedDPIFactorProperty);
 
             var streamingMipmapsActiveProperty = currentSettings.FindPropertyRelative("streamingMipmapsActive");
             EditorGUILayout.PropertyField(streamingMipmapsActiveProperty, Content.kStreamingMipmapsActive);
@@ -587,8 +606,20 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(streamingMipmapsMaxFileIORequestsProperty, Content.kStreamingMipmapsMaxFileIORequests);
                 EditorGUI.indentLevel--;
             }
-            bool shadowMaskSupported = SupportedRenderingFeatures.IsMixedLightingModeSupported(MixedLightingMode.Shadowmask);
-            bool showShadowMaskUsage = shadowMaskSupported && !SupportedRenderingFeatures.active.overridesShadowmask;
+
+            GUILayout.Space(10);
+            GUILayout.Label(EditorGUIUtility.TempContent("Particles"), EditorStyles.boldLabel);
+            if (!usingSRP)
+            {
+                EditorGUILayout.PropertyField(softParticlesProperty);
+                if (softParticlesProperty.boolValue)
+                    SoftParticlesHintGUI();
+            }
+            EditorGUILayout.PropertyField(particleRaycastBudgetProperty);
+
+            GUILayout.Space(10);
+            GUILayout.Label(EditorGUIUtility.TempContent("Terrain"), EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(billboardsFaceCameraPosition, Content.kBillboardsFaceCameraPos);
 
             if (!usingSRP || showShadowMaskUsage)
             {
@@ -616,29 +647,26 @@ namespace UnityEditor
             }
 
             GUILayout.Space(10);
-            GUILayout.Label(EditorGUIUtility.TempContent("Other"), EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(skinWeightsProperty);
-            EditorGUILayout.PropertyField(vSyncCountProperty, Content.kVSyncCountLabel);
+            GUILayout.Label(EditorGUIUtility.TempContent("Async Asset Upload"), EditorStyles.boldLabel);
 
-            if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android ||
-                EditorUserBuildSettings.activeBuildTarget == BuildTarget.iOS ||
-                EditorUserBuildSettings.activeBuildTarget == BuildTarget.tvOS)
-            {
-                if (vSyncCountProperty.intValue > 0)
-                    EditorGUILayout.HelpBox(EditorGUIUtility.TrTextContent($"VSync Count '{vSyncCountProperty.enumLocalizedDisplayNames[vSyncCountProperty.enumValueIndex]}' is ignored on Android, iOS and tvOS.", EditorGUIUtility.GetHelpIcon(MessageType.Warning)));
-            }
+            EditorGUILayout.PropertyField(asyncUploadTimeSliceProperty, Content.kAsyncUploadTimeSlice);
+            EditorGUILayout.PropertyField(asyncUploadBufferSizeProperty, Content.kAsyncUploadBufferSize);
+            EditorGUILayout.PropertyField(asyncUploadPersistentBufferProperty, Content.kAsyncUploadPersistentBuffer);
+
+            asyncUploadTimeSliceProperty.intValue = Mathf.Clamp(asyncUploadTimeSliceProperty.intValue, kMinAsyncUploadTimeSlice, kMaxAsyncUploadTimeSlice);
+            asyncUploadBufferSizeProperty.intValue = Mathf.Clamp(asyncUploadBufferSizeProperty.intValue, kMinAsyncRingBufferSize, kMaxAsyncRingBufferSize);
+
+            GUILayout.Space(10);
+            GUILayout.Label(EditorGUIUtility.TempContent("Level of Detail"), EditorStyles.boldLabel);
 
             if (!SupportedRenderingFeatures.active.overridesLODBias)
                 EditorGUILayout.PropertyField(lodBiasProperty, Content.kLODBiasLabel);
             if (!SupportedRenderingFeatures.active.overridesMaximumLODLevel)
-                EditorGUILayout.PropertyField(maximumLODLevelProperty);
-            EditorGUILayout.PropertyField(particleRaycastBudgetProperty);
-            EditorGUILayout.PropertyField(asyncUploadTimeSliceProperty);
-            EditorGUILayout.PropertyField(asyncUploadBufferSizeProperty);
-            EditorGUILayout.PropertyField(asyncUploadPersistentBufferProperty);
+                EditorGUILayout.PropertyField(maximumLODLevelProperty, Content.kMaximumLODLevelLabel);
 
-            asyncUploadTimeSliceProperty.intValue = Mathf.Clamp(asyncUploadTimeSliceProperty.intValue, kMinAsyncUploadTimeSlice, kMaxAsyncUploadTimeSlice);
-            asyncUploadBufferSizeProperty.intValue = Mathf.Clamp(asyncUploadBufferSizeProperty.intValue, kMinAsyncRingBufferSize, kMaxAsyncRingBufferSize);
+            GUILayout.Space(10);
+            GUILayout.Label(EditorGUIUtility.TempContent("Meshes"), EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(skinWeightsProperty);
 
             if (m_Dragging != null && m_Dragging.m_Position != m_Dragging.m_StartPosition)
             {

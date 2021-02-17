@@ -1,6 +1,8 @@
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace UnityEngine.UIElements
 {
@@ -31,9 +33,20 @@ namespace UnityEngine.UIElements
         internal static readonly Dictionary<CallbackEventHandler, Dictionary<Type, List<ListenerRecord>>> s_Listeners =
             new Dictionary<CallbackEventHandler, Dictionary<Type, List<ListenerRecord>>>();
 
+        public static void CleanListeners(IPanel panel)
+        {
+            var listeners = s_Listeners.ToList();
+            foreach (var eventRegistrationListener in listeners)
+            {
+                var key = eventRegistrationListener.Key as VisualElement; // VE that sends events
+                if (key?.panel == null)
+                    s_Listeners.Remove(eventRegistrationListener.Key);
+            }
+        }
+
         public static void RegisterListeners<TEventType>(CallbackEventHandler ceh, Delegate callback, TrickleDown useTrickleDown)
         {
-            if (!IsEventDebuggerConnected)
+            if (!IsEventDebuggerConnected || typeof(TEventType) == typeof(GeometryChangedEvent))
                 return;
             Dictionary<Type, List<ListenerRecord>> dict;
             if (!s_Listeners.TryGetValue(ceh, out dict))
@@ -86,6 +99,9 @@ namespace UnityEngine.UIElements
                     callbackRecords.RemoveAt(i);
                 }
             }
+
+            s_Listeners.Remove(ceh);
         }
     }
 }
+

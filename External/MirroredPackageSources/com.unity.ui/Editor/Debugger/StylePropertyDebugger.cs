@@ -9,6 +9,7 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.Debugger;
 using UnityEngine.Assertions;
+using UnityEngine.TextCore.Text;
 using Cursor = UnityEngine.UIElements.Cursor;
 using Toolbar = UnityEditor.UIElements.Toolbar;
 
@@ -147,7 +148,7 @@ namespace UnityEditor.UIElements.Debugger
             FindInlineStyles();
 
             m_CustomPropertyFieldsContainer.Clear();
-            var customProperties = m_SelectedElement.computedStyle.m_CustomProperties;
+            var customProperties = m_SelectedElement.computedStyle.customProperties;
             if (customProperties != null && customProperties.Any())
             {
                 foreach (KeyValuePair<string, StylePropertyValue> customProperty in customProperties)
@@ -172,7 +173,7 @@ namespace UnityEditor.UIElements.Debugger
                     continue;
 
                 var id = propertyInfo.id;
-                object val = StyleDebug.GetComputedStyleActualValue(m_SelectedElement.computedStyle, id);
+                object val = StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, id);
                 Type type = propertyInfo.type;
 
                 int specificity = 0;
@@ -285,7 +286,10 @@ namespace UnityEditor.UIElements.Debugger
                 {
                     if (childCount == 0)
                     {
-                        field = TextEditorDelegates.GetObjectFieldOfTypeFontAsset();
+                        var o = new ObjectField();
+                        o.objectType = typeof(FontAsset);
+                        field = o;
+
                         SetField(field);
                     }
                     else
@@ -295,7 +299,7 @@ namespace UnityEditor.UIElements.Debugger
                     field = GetOrCreateObjectField<Font>();
 
                 if (!IsFocused(field))
-                    field.SetValueWithoutNotify(fontDefinition.fontAsset != null ? fontDefinition.fontAsset : fontDefinition.font);
+                    field.SetValueWithoutNotify(fontDefinition.fontAsset != null ? (UnityEngine.Object)fontDefinition.fontAsset : (UnityEngine.Object)fontDefinition.font);
             }
             else if (val is Background bgValue)
             {
@@ -326,7 +330,7 @@ namespace UnityEditor.UIElements.Debugger
                     var uiTextureField = new ObjectField(m_PropertyName) { value = cursorValue.texture };
                     uiTextureField.RegisterValueChangedCallback(e =>
                     {
-                        var currentCursor = (Cursor)StyleDebug.GetComputedStyleActualValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
+                        var currentCursor = (Cursor)StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
                         currentCursor.texture = e.newValue as Texture2D;
                         SetPropertyValue(new StyleCursor(currentCursor));
                     });
@@ -335,7 +339,7 @@ namespace UnityEditor.UIElements.Debugger
                     var uiHotspotField = new Vector2Field("hotspot") { value = cursorValue.hotspot };
                     uiHotspotField.RegisterValueChangedCallback(e =>
                     {
-                        var currentCursor = (Cursor)StyleDebug.GetComputedStyleActualValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
+                        var currentCursor = (Cursor)StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
                         currentCursor.hotspot = e.newValue;
                         SetPropertyValue(new StyleCursor(currentCursor));
                     });
@@ -484,7 +488,7 @@ namespace UnityEditor.UIElements.Debugger
 
         private void SetPropertyValue(object newValue)
         {
-            object val = StyleDebug.GetComputedStyleActualValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
+            object val = StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
             Type type = m_PropertyInfo.type;
 
             if (newValue == null)

@@ -97,6 +97,7 @@ namespace UnityEditor
         private AnimBool m_ShowCompute = new AnimBool();
         private AnimBool m_ShowAdjust = new AnimBool();
         private bool m_ShowGraphValue = false;
+        private bool m_BlendValueManipulated = false;
 
         private float[] m_Weights;
         private const int kVisResolution = 64;
@@ -506,6 +507,12 @@ namespace UnityEditor
                         GUIUtility.keyboardControl = id;
                         EditorGUIUtility.editingTextField = false;
                     }
+                    else
+                    {
+                        GUIUtility.keyboardControl = 0;
+                        GUIUtility.hotControl = 0;
+                        s_ClickDragFloatDragged = false;
+                    }
                     break;
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl != id || EditorGUIUtility.editingTextField)
@@ -640,7 +647,7 @@ namespace UnityEditor
                     {
                         evt.Use();
                         GUIUtility.hotControl = sliderId;
-                        m_ReorderableList.index = -1;
+                        m_BlendValueManipulated = true;
 
                         // Get current blend value.
                         curBlendValue = GetParameterValue(currentAnimator, m_BlendTree, currentParameter);
@@ -655,7 +662,7 @@ namespace UnityEditor
                         float clickPosition = evt.mousePosition.x;
                         float distance = Mathf.Infinity;
 
-                        m_ReorderableList.index = -1;
+                        m_BlendValueManipulated = true;
                         for (int i = 0; i < points.Length; i++)
                         {
                             float last = (i == 0) ? points[i] : points[i - 1];
@@ -666,6 +673,7 @@ namespace UnityEditor
                                 {
                                     distance = Mathf.Abs(clickPosition - points[i]);
                                     m_ReorderableList.index = i;
+                                    m_BlendValueManipulated = false;
                                 }
                             }
                         }
@@ -674,7 +682,7 @@ namespace UnityEditor
                         m_UseAutomaticThresholds.boolValue = false;
 
                         // Get current blend value.
-                        if (m_ReorderableList.index != -1)
+                        if (!m_BlendValueManipulated)
                         {
                             SerializedProperty child = m_Childs.GetArrayElementAtIndex(m_ReorderableList.index);
                             SerializedProperty threshold = child.FindPropertyRelative("m_Threshold");
@@ -700,7 +708,7 @@ namespace UnityEditor
                     newMouseBlendValue = Mathf.LerpUnclamped(m_OriginMin, m_OriginMax, newMouseBlendValue);
                     float newBlendValue = newMouseBlendValue - m_DragAndDropDelta;
 
-                    if (m_ReorderableList.index == -1)
+                    if (m_BlendValueManipulated)
                     {
                         // the user is dragging the blend position
                         newBlendValue = Mathf.Clamp(newBlendValue, min, max);
@@ -752,7 +760,7 @@ namespace UnityEditor
                     {
                         evt.Use();
                         GUIUtility.hotControl = 0;
-                        m_ReorderableList.index = -1;
+                        m_BlendValueManipulated = true;
                     }
                     break;
             }
@@ -791,7 +799,7 @@ namespace UnityEditor
             watch.Start();
             Texture2D[] textures = m_WeightTexs.ToArray();
             // While dragging, only update the weight texture that's being dragged.
-            if (GUIUtility.hotControl != 0 && m_ReorderableList.index >= 0)
+            if (GUIUtility.hotControl != 0 && !m_BlendValueManipulated)
             {
                 int[] indices = GetMotionToActiveMotionIndices();
                 for (int i = 0; i < textures.Length; i++)
@@ -958,7 +966,7 @@ namespace UnityEditor
                     GUI.DrawTexture(area, EditorGUIUtility.whiteTexture);
 
                     // Draw weight texture
-                    if (m_ReorderableList.index < 0 || m_ReorderableList.index >= presences.Length)
+                    if (m_BlendValueManipulated || m_ReorderableList.index >= presences.Length)
                     {
                         Color col = styles.visWeightColor;
                         col.a *= 0.75f;
@@ -1020,7 +1028,7 @@ namespace UnityEditor
                     }
                     else if (area.Contains(evt.mousePosition))
                     {
-                        m_ReorderableList.index = -1;
+                        m_BlendValueManipulated = true;
 
                         for (int i = 0; i < points.Length; i++)
                         {
@@ -1031,6 +1039,7 @@ namespace UnityEditor
                                 GUIUtility.hotControl = drag2dId;
                                 m_SelectedPoint = i;
                                 m_ReorderableList.index = i;
+                                m_BlendValueManipulated = false;
                             }
                         }
 

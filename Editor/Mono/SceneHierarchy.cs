@@ -8,7 +8,6 @@ using UnityEditor.SceneManagement;
 using System.Collections.Generic;
 using System.Linq;
 using System;
-using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.ShortcutManagement;
 using UnityEditorInternal;
@@ -350,8 +349,6 @@ namespace UnityEditor
             }
 
             currentSortingName = sortTypeName;
-            //if (treeView.GetSelection().Any())
-            //    treeView.Frame(treeView.GetSelection().First(), true, false);
             ReloadData();
         }
 
@@ -720,6 +717,7 @@ namespace UnityEditor
         }
 
         GameObjectTreeViewDataSource dataSource { get { return (GameObjectTreeViewDataSource)treeView.data; } }
+        GameObjectsTreeViewDragging dragging { get { return (GameObjectsTreeViewDragging)treeView.dragging; } }
 
         public void SetSearchFilter(string searchString, SearchableEditorWindow.SearchModeHierarchyWindow searchMode)
         {
@@ -834,10 +832,13 @@ namespace UnityEditor
          */
         void AddCreateGameObjectItemsToMenu(GenericMenu menu, UnityEngine.Object[] context, bool includeCreateEmptyChild, bool useCreateEmptyParentMenuItem, bool includeGameObjectInPath, int targetSceneHandle, MenuUtils.ContextMenuOrigin origin)
         {
-            string[] menus = Unsupported.GetSubmenus("GameObject");
+            ScriptingMenuItem[] menus = Menu.GetMenuItems("GameObject", false, false);
+            int previousMenuItemPosition = -1;
 
-            foreach (string path in menus)
+            foreach (var menuItem in menus)
             {
+                string path = menuItem.path;
+
                 UnityEngine.Object[] tempContext = context;
                 if (!includeCreateEmptyChild && path.ToLower() == "GameObject/Create Empty Child".ToLower())
                     continue;
@@ -854,9 +855,22 @@ namespace UnityEditor
                     continue;
 
                 string menupath = path;
+
+                // cut away "GameObject/"
                 if (!includeGameObjectInPath)
-                    menupath = path.Substring(11); // cut away "GameObject/"
-                MenuUtils.ExtractOnlyEnabledMenuItem(path, menu, menupath, tempContext, targetSceneHandle, BeforeCreateGameObjectMenuItemWasExecuted, AfterCreateGameObjectMenuItemWasExecuted, origin);
+                    menupath = path.Substring(11);
+
+                MenuUtils.ExtractOnlyEnabledMenuItem(menuItem,
+                    menu,
+                    menupath,
+                    tempContext,
+                    targetSceneHandle,
+                    BeforeCreateGameObjectMenuItemWasExecuted,
+                    AfterCreateGameObjectMenuItemWasExecuted,
+                    origin,
+                    previousMenuItemPosition);
+
+                previousMenuItemPosition = menuItem.priority;
             }
         }
 
@@ -1241,11 +1255,21 @@ namespace UnityEditor
             {
                 menu.AddSeparator("");
 
-                int targetSceneForCreation = selectedGameObjects.Length > 0 ? selectedGameObjects.Last().scene.handle : SceneManager.GetActiveScene().handle;
+                int targetSceneForCreation = selectedGameObjects.Length > 0
+                    ? selectedGameObjects.Last().scene.handle
+                    : SceneManager.GetActiveScene().handle;
 
                 // Set the context of each MenuItem to the current selection, so the created gameobjects will be added as children
                 // Sets includeCreateEmptyChild to false, since that item is superfluous here (the normal "Create Empty" is added as a child anyway)
-                AddCreateGameObjectItemsToMenu(menu, selectedGameObjects, false, false, false, targetSceneForCreation, contextClickedItemID == 0 ? MenuUtils.ContextMenuOrigin.None : MenuUtils.ContextMenuOrigin.GameObject);
+                AddCreateGameObjectItemsToMenu(menu,
+                    selectedGameObjects,
+                    false,
+                    false,
+                    false,
+                    targetSceneForCreation,
+                    contextClickedItemID == 0
+                    ? MenuUtils.ContextMenuOrigin.None
+                    : MenuUtils.ContextMenuOrigin.GameObject);
             }
 
             SceneHierarchyHooks.AddCustomGameObjectContextMenuItems(menu, contextClickedItemID == 0 ? null : (GameObject)EditorUtility.InstanceIDToObject(contextClickedItemID));
@@ -1614,12 +1638,17 @@ namespace UnityEditor
             GameObjectTreeViewGUI.UpdateActiveParentObjectValuesForScene(sceneGUID, id);
         }
 
-        internal static void SetDefaultParentObject(bool toggle)
+        internal static void SetDefaultParentObject(bool toggle, GameObject defaultParentObject = null)
         {
             UnityEngine.GameObject lastSelectedObject = null;
             int id = 0;
 
-            if (Selection.objects.Length > 0)
+            if (defaultParentObject != null)
+            {
+                lastSelectedObject = defaultParentObject;
+                id = lastSelectedObject.GetInstanceID();
+            }
+            else if (Selection.objects.Length > 0)
             {
                 lastSelectedObject = Selection.objects[Selection.objects.Length - 1] as GameObject;
                 if (lastSelectedObject != null && !PrefabStageUtility.IsGameObjectThePrefabRootInAnyPrefabStage(lastSelectedObject))
@@ -1657,15 +1686,16 @@ namespace UnityEditor
             UpdateSessionStateInfoAndActiveParentObjectValuesForScene(sceneGUID, id);
         }
 
-        internal static void ClearDefaultParentObject()
+        internal static void ClearDefaultParentObject(string sceneGUID = "")
         {
             UnityEngine.GameObject lastSelectedObject = null;
-            var sceneGUID = "";
 
-            if (Selection.objects.Length > 0)
+            if (sceneGUID == "")
             {
-                lastSelectedObject = Selection.objects[Selection.objects.Length - 1] as GameObject;
-
+                if (Selection.objects.Length > 0)
+                {
+                    lastSelectedObject = Selection.objects[Selection.objects.Length - 1] as GameObject;
+                }
                 if (lastSelectedObject)
                     sceneGUID = lastSelectedObject.scene.guid;
                 else

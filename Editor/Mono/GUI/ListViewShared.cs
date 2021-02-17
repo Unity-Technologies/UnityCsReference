@@ -444,9 +444,6 @@ namespace UnityEditor
                         {
                             DragAndDrop.PrepareStartDrag();
 
-                            DragAndDrop.objectReferences = new UnityEngine.Object[] {};  // this IS required for dragging to work
-                            DragAndDrop.paths = null;
-
                             if (ilvState.wantsReordering)
                             {
                                 ilvState.state.dropHereRect = new Rect(ilvState.rect.x, 0, ilvState.rect.width, ilvState.state.rowHeight * 2);

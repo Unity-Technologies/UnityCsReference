@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
+using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements.UIR.Implementation
 {
@@ -347,10 +348,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (currentElement.panel.contextType == ContextType.Editor)
                 textParams.fontColor *= textParams.playmodeTintColor;
 
-            handle.DrawText(this, textParams, pixelsPerPoint);
+            if (handle.IsLegacy())
+                DrawTextNative(textParams, pixelsPerPoint);
+            else
+                DrawTextCore(textParams, handle, pixelsPerPoint);
         }
 
-        internal void DrawTextNative(MeshGenerationContextUtils.TextParams textParams, ITextHandle handle, float pixelsPerPoint)
+        internal void DrawTextNative(MeshGenerationContextUtils.TextParams textParams, float pixelsPerPoint)
         {
             float scaling = TextUtilities.ComputeTextScaling(currentElement.worldTransform, pixelsPerPoint);
             TextNativeSettings textSettings = MeshGenerationContextUtils.TextParams.GetTextNativeSettings(textParams, scaling);
@@ -377,25 +381,25 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         internal void DrawTextCore(MeshGenerationContextUtils.TextParams textParams, ITextHandle handle, float pixelsPerPoint)
         {
-            var textInfo = handle.Update(textParams, pixelsPerPoint);
+            TextInfo textInfo = handle.Update(textParams, pixelsPerPoint);
             for (int i = 0; i < textInfo.materialCount; i++)
             {
-                if (textInfo.meshInfos[i].vertexCount == 0)
+                if (textInfo.meshInfo[i].vertexCount == 0)
                     continue;
 
-                if (textInfo.meshInfos[i].material.name.Contains("Sprite"))
+                if (textInfo.meshInfo[i].material.name.Contains("Sprite"))
                 {
                     // Assume a sprite asset
                     m_CurrentEntry.clipRectID = m_ClipRectID;
                     m_CurrentEntry.isStencilClipped = m_StencilClip;
 
-                    var texture = textInfo.meshInfos[i].material.mainTexture;
+                    var texture = textInfo.meshInfo[i].material.mainTexture;
                     TextureId id = TextureRegistry.instance.Acquire(texture);
                     m_CurrentEntry.texture = id;
                     m_Owner.AppendTexture(currentElement, texture, id, false);
 
                     MeshBuilder.MakeText(
-                        textInfo.meshInfos[i],
+                        textInfo.meshInfo[i],
                         textParams.rect.min,
                         new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate },
                         VertexFlags.IsTextured);
@@ -405,11 +409,11 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     m_CurrentEntry.isTextEntry = true;
                     m_CurrentEntry.clipRectID = m_ClipRectID;
                     m_CurrentEntry.isStencilClipped = m_StencilClip;
-                    m_CurrentEntry.fontTexSDFScale = textInfo.meshInfos[i].material.GetFloat(TextDelegates.GetIDGradientScaleSafe());
-                    m_CurrentEntry.font = textInfo.meshInfos[i].material.mainTexture;
+                    m_CurrentEntry.fontTexSDFScale = textInfo.meshInfo[i].material.GetFloat(TextShaderUtilities.ID_GradientScale);
+                    m_CurrentEntry.font = textInfo.meshInfo[i].material.mainTexture;
 
                     MeshBuilder.MakeText(
-                        textInfo.meshInfos[i],
+                        textInfo.meshInfo[i],
                         textParams.rect.min,
                         new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate });
                 }

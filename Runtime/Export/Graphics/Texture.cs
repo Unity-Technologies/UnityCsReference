@@ -86,6 +86,7 @@ namespace UnityEngine
         {
         }
 
+        [uei.ExcludeFromDocs]
         public RenderTextureDescriptor(int width, int height, GraphicsFormat colorFormat, int depthBufferBits)
             : this(width, height, colorFormat, depthBufferBits, Texture.GenerateAllMips)
         {
@@ -96,6 +97,7 @@ namespace UnityEngine
         {
         }
 
+        [uei.ExcludeFromDocs]
         public RenderTextureDescriptor(int width, int height, GraphicsFormat colorFormat, int depthBufferBits, int mipCount) : this()
         {
             _flags = RenderTextureCreationFlags.AutoGenerateMips | RenderTextureCreationFlags.AllowVerticalFlip; // Set before graphicsFormat to avoid erasing the flag set by graphicsFormat
@@ -185,11 +187,13 @@ namespace UnityEngine
             SetRenderTextureDescriptor(textureToCopy.descriptor);
         }
 
+        [uei.ExcludeFromDocs]
         public RenderTexture(int width, int height, int depth, DefaultFormat format)
             : this(width, height, depth, SystemInfo.GetGraphicsFormat(format))
         {
         }
 
+        [uei.ExcludeFromDocs]
         public RenderTexture(int width, int height, int depth, GraphicsFormat format)
         {
             if (!ValidateFormat(format, FormatUsage.Render))
@@ -201,6 +205,7 @@ namespace UnityEngine
             SetSRGBReadWrite(GraphicsFormatUtility.IsSRGBFormat(format));
         }
 
+        [uei.ExcludeFromDocs]
         public RenderTexture(int width, int height, int depth, GraphicsFormat format, int mipCount)
         {
             // Note: the code duplication here is because you can't set a descriptor with
@@ -398,26 +403,30 @@ namespace UnityEngine
     public sealed partial class CustomRenderTexture : RenderTexture
     {
         // Be careful. We can't call base constructor here because it would create the native object twice.
-        public CustomRenderTexture(int width, int height, RenderTextureFormat format, RenderTextureReadWrite readWrite)
+        public CustomRenderTexture(int width, int height, RenderTextureFormat format, [uei.DefaultValue("RenderTextureReadWrite.Default")] RenderTextureReadWrite readWrite)
             : this(width, height, GetCompatibleFormat(format, readWrite))
         {
         }
 
+        [uei.ExcludeFromDocs]
         public CustomRenderTexture(int width, int height, RenderTextureFormat format)
             : this(width, height, GetCompatibleFormat(format, RenderTextureReadWrite.Default))
         {
         }
 
+        [uei.ExcludeFromDocs]
         public CustomRenderTexture(int width, int height)
             : this(width, height, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR))
         {
         }
 
-        public CustomRenderTexture(int width, int height, DefaultFormat defaultFormat)
+        [uei.ExcludeFromDocs]
+        public CustomRenderTexture(int width, int height, [uei.DefaultValue("DefaultFormat.LDR")] DefaultFormat defaultFormat)
             : this(width, height, SystemInfo.GetGraphicsFormat(defaultFormat))
         {
         }
 
+        [uei.ExcludeFromDocs]
         public CustomRenderTexture(int width, int height, GraphicsFormat format)
         {
             if (!ValidateFormat(format, FormatUsage.Render))
@@ -497,16 +506,19 @@ namespace UnityEngine
                 Internal_Create(this, width, height, mipCount, format, flags, nativeTex);
         }
 
+        [uei.ExcludeFromDocs]
         public Texture2D(int width, int height, DefaultFormat format, TextureCreationFlags flags)
             : this(width, height, SystemInfo.GetGraphicsFormat(format), flags)
         {
         }
 
+        [uei.ExcludeFromDocs]
         public Texture2D(int width, int height, GraphicsFormat format, TextureCreationFlags flags)
             : this(width, height, format, flags, Texture.GenerateAllMips, IntPtr.Zero)
         {
         }
 
+        [uei.ExcludeFromDocs]
         public Texture2D(int width, int height, GraphicsFormat format, int mipCount, TextureCreationFlags flags)
             : this(width, height, format, flags, mipCount, IntPtr.Zero)
         {
@@ -534,11 +546,13 @@ namespace UnityEngine
         {
         }
 
+        [uei.ExcludeFromDocs]
         public Texture2D(int width, int height, TextureFormat textureFormat, bool mipChain)
             : this(width, height, textureFormat, mipChain ? -1 : 1, false, IntPtr.Zero)
         {
         }
 
+        [uei.ExcludeFromDocs]
         public Texture2D(int width, int height)
             : this(width, height, TextureFormat.RGBA32, Texture.GenerateAllMips, false, IntPtr.Zero)
         {
@@ -551,16 +565,17 @@ namespace UnityEngine
             return new Texture2D(width, height, format, mipChain ? -1 : 1, linear, nativeTex);
         }
 
+        [uei.ExcludeFromDocs]
         public void SetPixel(int x, int y, Color color)
         {
             if (!isReadable) throw CreateNonReadableException(this);
-            SetPixelImpl(0, x, y, color);
+            SetPixelImpl(0, 0, x, y, color);
         }
 
-        public void SetPixel(int x, int y, Color color, int mipLevel)
+        public void SetPixel(int x, int y, Color color, [uei.DefaultValue("0")] int mipLevel)
         {
             if (!isReadable) throw CreateNonReadableException(this);
-            SetPixelImpl(mipLevel, x, y, color);
+            SetPixelImpl(0, mipLevel, x, y, color);
         }
 
         public void SetPixels(int x, int y, int blockWidth, int blockHeight, Color[] colors, [uei.DefaultValue("0")] int miplevel)
@@ -569,6 +584,7 @@ namespace UnityEngine
             SetPixelsImpl(x, y, blockWidth, blockHeight, colors, miplevel, 0);
         }
 
+        [uei.ExcludeFromDocs]
         public void SetPixels(int x, int y, int blockWidth, int blockHeight, Color[] colors)
         {
             SetPixels(x, y, blockWidth, blockHeight, colors, 0);
@@ -581,33 +597,36 @@ namespace UnityEngine
             SetPixels(0, 0, w, h, colors, miplevel);
         }
 
+        [uei.ExcludeFromDocs]
         public void SetPixels(Color[] colors)
         {
             SetPixels(0, 0, width, height, colors, 0);
         }
 
+        [uei.ExcludeFromDocs]
         public Color GetPixel(int x, int y)
         {
             if (!isReadable) throw CreateNonReadableException(this);
-            return GetPixelImpl(0, x, y);
+            return GetPixelImpl(0,  0, x, y);
         }
 
-        public Color GetPixel(int x, int y, int mipLevel)
+        public Color GetPixel(int x, int y, [uei.DefaultValue("0")] int mipLevel)
         {
             if (!isReadable) throw CreateNonReadableException(this);
-            return GetPixelImpl(mipLevel, x, y);
+            return GetPixelImpl(0, mipLevel, x, y);
         }
 
+        [uei.ExcludeFromDocs]
         public Color GetPixelBilinear(float u, float v)
         {
             if (!isReadable) throw CreateNonReadableException(this);
-            return GetPixelBilinearImpl(0, u, v);
+            return GetPixelBilinearImpl(0, 0, u, v);
         }
 
-        public Color GetPixelBilinear(float u, float v, int mipLevel)
+        public Color GetPixelBilinear(float u, float v, [uei.DefaultValue("0")] int mipLevel)
         {
             if (!isReadable) throw CreateNonReadableException(this);
-            return GetPixelBilinearImpl(mipLevel, u, v);
+            return GetPixelBilinearImpl(0, mipLevel, u, v);
         }
 
         public void LoadRawTextureData(IntPtr data, int size)
@@ -634,7 +653,7 @@ namespace UnityEngine
                 throw new UnityException("LoadRawTextureData: not enough data provided (will result in overread).");
         }
 
-        public void SetPixelData<T>(T[] data, int mipLevel, int sourceDataStartIndex = 0)
+        public void SetPixelData<T>(T[] data, int mipLevel, [uei.DefaultValue("0")] int sourceDataStartIndex = 0)
         {
             if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
 
@@ -643,7 +662,7 @@ namespace UnityEngine
             SetPixelDataImplArray(data, mipLevel, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
         }
 
-        unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, int sourceDataStartIndex = 0) where T : struct
+        unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, [uei.DefaultValue("0")] int sourceDataStartIndex = 0) where T : struct
         {
             if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
 
@@ -684,8 +703,8 @@ namespace UnityEngine
             ApplyImpl(updateMipmaps, makeNoLongerReadable);
         }
 
-        public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
-        public void Apply() { Apply(true, false); }
+        [uei.ExcludeFromDocs] public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
+        [uei.ExcludeFromDocs] public void Apply() { Apply(true, false); }
 
         public bool Resize(int width, int height)
         {
@@ -734,33 +753,36 @@ namespace UnityEngine
             return results.Count != 0;
         }
 
-        public void SetPixels32(Color32[] colors, int miplevel)
+        public void SetPixels32(Color32[] colors, [uei.DefaultValue("0")] int miplevel)
         {
             SetAllPixels32(colors, miplevel);
         }
 
+        [uei.ExcludeFromDocs]
         public void SetPixels32(Color32[] colors)
         {
             SetPixels32(colors, 0);
         }
 
-        public void SetPixels32(int x, int y, int blockWidth, int blockHeight, Color32[] colors, int miplevel)
+        public void SetPixels32(int x, int y, int blockWidth, int blockHeight, Color32[] colors, [uei.DefaultValue("0")] int miplevel)
         {
             SetBlockOfPixels32(x, y, blockWidth, blockHeight, colors, miplevel);
         }
 
+        [uei.ExcludeFromDocs]
         public void SetPixels32(int x, int y, int blockWidth, int blockHeight, Color32[] colors)
         {
             SetPixels32(x, y, blockWidth, blockHeight, colors, 0);
         }
 
-        public Color[] GetPixels(int miplevel)
+        public Color[] GetPixels([uei.DefaultValue("0")] int miplevel)
         {
             int w = width >> miplevel; if (w < 1) w = 1;
             int h = height >> miplevel; if (h < 1) h = 1;
             return GetPixels(0, 0, w, h, miplevel);
         }
 
+        [uei.ExcludeFromDocs]
         public Color[] GetPixels()
         {
             return GetPixels(0);
@@ -780,11 +802,13 @@ namespace UnityEngine
 
     public sealed partial class Cubemap : Texture
     {
+        [uei.ExcludeFromDocs]
         public Cubemap(int width, DefaultFormat format, TextureCreationFlags flags)
             : this(width, SystemInfo.GetGraphicsFormat(format), flags)
         {
         }
 
+        [uei.ExcludeFromDocs]
         [RequiredByNativeCode] // used to create builtin textures
         public Cubemap(int width, GraphicsFormat format, TextureCreationFlags flags)
         {
@@ -797,6 +821,7 @@ namespace UnityEngine
         {
         }
 
+        [uei.ExcludeFromDocs]
         public Cubemap(int width, GraphicsFormat format, TextureCreationFlags flags, int mipCount)
         {
             if (!ValidateFormat(format, FormatUsage.Sample))
@@ -837,7 +862,7 @@ namespace UnityEngine
             return new Cubemap(width, format, mipmap, nativeTex);
         }
 
-        public void SetPixelData<T>(T[] data, int mipLevel, CubemapFace face, int sourceDataStartIndex = 0)
+        public void SetPixelData<T>(T[] data, int mipLevel, CubemapFace face, [uei.DefaultValue("0")] int sourceDataStartIndex = 0)
         {
             if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
 
@@ -846,7 +871,7 @@ namespace UnityEngine
             SetPixelDataImplArray(data, mipLevel, (int)face, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
         }
 
-        unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, CubemapFace face, int sourceDataStartIndex = 0) where T : struct
+        unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, CubemapFace face, [uei.DefaultValue("0")] int sourceDataStartIndex = 0) where T : struct
         {
             if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
 
@@ -872,16 +897,28 @@ namespace UnityEngine
             return array;
         }
 
+        [uei.ExcludeFromDocs]
         public void SetPixel(CubemapFace face, int x, int y, Color color)
         {
-            if (!isReadable) throw CreateNonReadableException(this);
-            SetPixelImpl((int)face, x, y, color);
+            SetPixel(face, x, y, color, 0);
         }
 
-        public Color GetPixel(CubemapFace face, int x, int y)
+        public void SetPixel(CubemapFace face, int x, int y, Color color, [uei.DefaultValue("0")] int mip)
         {
             if (!isReadable) throw CreateNonReadableException(this);
-            return GetPixelImpl((int)face, x, y);
+            SetPixelImpl((int)face, mip, x, y, color);
+        }
+
+        [uei.ExcludeFromDocs]
+        public Color GetPixel(CubemapFace face, int x, int y)
+        {
+            return GetPixel(face, x, y, 0);
+        }
+
+        public Color GetPixel(CubemapFace face, int x, int y, [uei.DefaultValue("0")] int mip)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            return GetPixelImpl((int)face, mip, x, y);
         }
 
         public void Apply([uei.DefaultValue("true")] bool updateMipmaps, [uei.DefaultValue("false")] bool makeNoLongerReadable)
@@ -889,8 +926,8 @@ namespace UnityEngine
             ApplyImpl(updateMipmaps, makeNoLongerReadable);
         }
 
-        public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
-        public void Apply() { Apply(true, false); }
+        [uei.ExcludeFromDocs]  public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
+        [uei.ExcludeFromDocs]  public void Apply() { Apply(true, false); }
 
         private static void ValidateIsNotCrunched(TextureCreationFlags flags)
         {
@@ -901,18 +938,21 @@ namespace UnityEngine
 
     public sealed partial class Texture3D : Texture
     {
+        [uei.ExcludeFromDocs]
         public Texture3D(int width, int height, int depth, DefaultFormat format, TextureCreationFlags flags)
             : this(width, height, depth, SystemInfo.GetGraphicsFormat(format), flags)
         {
         }
 
+        [uei.ExcludeFromDocs]
         [RequiredByNativeCode] // used to create builtin textures
         public Texture3D(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags)
             : this(width, height, depth, format, flags, Texture.GenerateAllMips)
         {
         }
 
-        public Texture3D(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags, int mipCount)
+        [uei.ExcludeFromDocs]
+        public Texture3D(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags, [uei.DefaultValue("-1")] int mipCount)
         {
             if (!ValidateFormat(format, FormatUsage.Sample))
                 return;
@@ -921,6 +961,7 @@ namespace UnityEngine
             Internal_Create(this, width, height, depth, mipCount, format, flags, IntPtr.Zero);
         }
 
+        [uei.ExcludeFromDocs]
         public Texture3D(int width, int height, int depth, TextureFormat textureFormat, int mipCount)
         {
             if (!ValidateFormat(textureFormat))
@@ -934,7 +975,7 @@ namespace UnityEngine
             Internal_Create(this, width, height, depth, mipCount, format, flags, IntPtr.Zero);
         }
 
-        public Texture3D(int width, int height, int depth, TextureFormat textureFormat, int mipCount, IntPtr nativeTex)
+        public Texture3D(int width, int height, int depth, TextureFormat textureFormat, int mipCount, [uei.DefaultValue("IntPtr.Zero")] IntPtr nativeTex)
         {
             if (!ValidateFormat(textureFormat))
                 return;
@@ -947,12 +988,13 @@ namespace UnityEngine
             Internal_Create(this, width, height, depth, mipCount, format, flags, nativeTex);
         }
 
+        [uei.ExcludeFromDocs]
         public Texture3D(int width, int height, int depth, TextureFormat textureFormat, bool mipChain)
             : this(width, height, depth, textureFormat, mipChain ? -1 : 1)
         {
         }
 
-        public Texture3D(int width, int height, int depth, TextureFormat textureFormat, bool mipChain, IntPtr nativeTex)
+        public Texture3D(int width, int height, int depth, TextureFormat textureFormat, bool mipChain, [uei.DefaultValue("IntPtr.Zero")] IntPtr nativeTex)
             : this(width, height, depth, textureFormat, mipChain ? -1 : 1, nativeTex)
         {
         }
@@ -971,46 +1013,49 @@ namespace UnityEngine
             ApplyImpl(updateMipmaps, makeNoLongerReadable);
         }
 
-        public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
-        public void Apply() { Apply(true, false); }
+        [uei.ExcludeFromDocs]  public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
+        [uei.ExcludeFromDocs]  public void Apply() { Apply(true, false); }
 
+        [uei.ExcludeFromDocs]
         public void SetPixel(int x, int y, int z, Color color)
         {
             if (!isReadable) throw CreateNonReadableException(this);
             SetPixelImpl(0, x, y, z, color);
         }
 
-        public void SetPixel(int x, int y, int z, Color color, int mipLevel)
+        public void SetPixel(int x, int y, int z, Color color, [uei.DefaultValue("0")] int mipLevel)
         {
             if (!isReadable) throw CreateNonReadableException(this);
             SetPixelImpl(mipLevel, x, y, z, color);
         }
 
+        [uei.ExcludeFromDocs]
         public Color GetPixel(int x, int y, int z)
         {
             if (!isReadable) throw CreateNonReadableException(this);
             return GetPixelImpl(0, x, y, z);
         }
 
-        public Color GetPixel(int x, int y, int z, int mipLevel)
+        public Color GetPixel(int x, int y, int z, [uei.DefaultValue("0")] int mipLevel)
         {
             if (!isReadable) throw CreateNonReadableException(this);
             return GetPixelImpl(mipLevel, x, y, z);
         }
 
+        [uei.ExcludeFromDocs]
         public Color GetPixelBilinear(float u, float v, float w)
         {
             if (!isReadable) throw CreateNonReadableException(this);
             return GetPixelBilinearImpl(0, u, v, w);
         }
 
-        public Color GetPixelBilinear(float u, float v, float w, int mipLevel)
+        public Color GetPixelBilinear(float u, float v, float w, [uei.DefaultValue("0")] int mipLevel)
         {
             if (!isReadable) throw CreateNonReadableException(this);
             return GetPixelBilinearImpl(mipLevel, u, v, w);
         }
 
-        public void SetPixelData<T>(T[] data, int mipLevel, int sourceDataStartIndex = 0)
+        public void SetPixelData<T>(T[] data, int mipLevel, [uei.DefaultValue("0")] int sourceDataStartIndex = 0)
         {
             if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
 
@@ -1019,7 +1064,7 @@ namespace UnityEngine
             SetPixelDataImplArray(data, mipLevel, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
         }
 
-        unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, int sourceDataStartIndex = 0) where T : struct
+        unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, [uei.DefaultValue("0")] int sourceDataStartIndex = 0) where T : struct
         {
             if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
 
@@ -1053,17 +1098,20 @@ namespace UnityEngine
 
     public sealed partial class Texture2DArray : Texture
     {
+        [uei.ExcludeFromDocs]
         public Texture2DArray(int width, int height, int depth, DefaultFormat format, TextureCreationFlags flags)
             : this(width, height, depth, SystemInfo.GetGraphicsFormat(format), flags)
         {
         }
 
+        [uei.ExcludeFromDocs]
         [RequiredByNativeCode] // used to create builtin textures
         public Texture2DArray(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags)
             : this(width, height, depth, format, flags, Texture.GenerateAllMips)
         {
         }
 
+        [uei.ExcludeFromDocs]
         public Texture2DArray(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags, int mipCount)
         {
             if (!ValidateFormat(format, FormatUsage.Sample))
@@ -1072,7 +1120,7 @@ namespace UnityEngine
             Internal_Create(this, width, height, depth, mipCount, format, flags);
         }
 
-        public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, int mipCount, [uei.DefaultValue("true")] bool linear)
+        public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, int mipCount, bool linear)
         {
             if (!ValidateFormat(textureFormat))
                 return;
@@ -1085,11 +1133,12 @@ namespace UnityEngine
             Internal_Create(this, width, height, depth, mipCount, format, flags);
         }
 
-        public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, bool mipChain, [uei.DefaultValue("true")] bool linear)
+        public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, bool mipChain, [uei.DefaultValue("false")] bool linear)
             : this(width, height, depth, textureFormat, mipChain ? -1 : 1, linear)
         {
         }
 
+        [uei.ExcludeFromDocs]
         public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, bool mipChain)
             : this(width, height, depth, textureFormat, mipChain ? -1 : 1, false)
         {
@@ -1101,7 +1150,10 @@ namespace UnityEngine
             ApplyImpl(updateMipmaps, makeNoLongerReadable);
         }
 
-        public void SetPixelData<T>(T[] data, int mipLevel, int element, int sourceDataStartIndex = 0)
+        [uei.ExcludeFromDocs] public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
+        [uei.ExcludeFromDocs] public void Apply() { Apply(true, false); }
+
+        public void SetPixelData<T>(T[] data, int mipLevel, int element, [uei.DefaultValue("0")] int sourceDataStartIndex = 0)
         {
             if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
 
@@ -1110,7 +1162,7 @@ namespace UnityEngine
             SetPixelDataImplArray(data, mipLevel, element, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
         }
 
-        unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, int element, int sourceDataStartIndex = 0) where T : struct
+        unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, int element, [uei.DefaultValue("0")] int sourceDataStartIndex = 0) where T : struct
         {
             if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
 
@@ -1136,9 +1188,6 @@ namespace UnityEngine
             return array;
         }
 
-        public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
-        public void Apply() { Apply(true, false); }
-
         private static void ValidateIsNotCrunched(TextureCreationFlags flags)
         {
             if ((flags &= TextureCreationFlags.Crunch) != 0)
@@ -1148,18 +1197,21 @@ namespace UnityEngine
 
     public sealed partial class CubemapArray : Texture
     {
+        [uei.ExcludeFromDocs]
         public CubemapArray(int width, int cubemapCount, DefaultFormat format, TextureCreationFlags flags)
             : this(width, cubemapCount, SystemInfo.GetGraphicsFormat(format), flags)
         {
         }
 
+        [uei.ExcludeFromDocs]
         [RequiredByNativeCode]
         public CubemapArray(int width, int cubemapCount, GraphicsFormat format, TextureCreationFlags flags)
             : this(width, cubemapCount, format, flags, Texture.GenerateAllMips)
         {
         }
 
-        public CubemapArray(int width, int cubemapCount, GraphicsFormat format, TextureCreationFlags flags, int mipCount)
+        [uei.ExcludeFromDocs]
+        public CubemapArray(int width, int cubemapCount, GraphicsFormat format, TextureCreationFlags flags, [uei.DefaultValue("-1")] int mipCount)
         {
             if (!ValidateFormat(format, FormatUsage.Sample))
                 return;
@@ -1168,7 +1220,7 @@ namespace UnityEngine
             Internal_Create(this, width, cubemapCount, mipCount, format, flags);
         }
 
-        public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, int mipCount, [uei.DefaultValue("true")] bool linear)
+        public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, int mipCount, bool linear)
         {
             if (!ValidateFormat(textureFormat))
                 return;
@@ -1181,11 +1233,12 @@ namespace UnityEngine
             Internal_Create(this, width, cubemapCount, mipCount, format, flags);
         }
 
-        public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, bool mipChain, [uei.DefaultValue("true")] bool linear)
+        public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, bool mipChain, [uei.DefaultValue("false")] bool linear)
             : this(width, cubemapCount, textureFormat, mipChain ? -1 : 1, linear)
         {
         }
 
+        [uei.ExcludeFromDocs]
         public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, bool mipChain)
             : this(width, cubemapCount, textureFormat, mipChain ? -1 : 1, false)
         {
@@ -1197,10 +1250,10 @@ namespace UnityEngine
             ApplyImpl(updateMipmaps, makeNoLongerReadable);
         }
 
-        public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
-        public void Apply() { Apply(true, false); }
+        [uei.ExcludeFromDocs] public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
+        [uei.ExcludeFromDocs] public void Apply() { Apply(true, false); }
 
-        public void SetPixelData<T>(T[] data, int mipLevel, CubemapFace face, int element, int sourceDataStartIndex = 0)
+        public void SetPixelData<T>(T[] data, int mipLevel, CubemapFace face, int element, [uei.DefaultValue("0")] int sourceDataStartIndex = 0)
         {
             if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
 
@@ -1210,7 +1263,7 @@ namespace UnityEngine
             SetPixelDataImplArray(data, mipLevel, (int)face, element, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
         }
 
-        unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, CubemapFace face, int element, int sourceDataStartIndex = 0) where T : struct
+        unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, CubemapFace face, int element, [uei.DefaultValue("0")] int sourceDataStartIndex = 0) where T : struct
         {
             if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
 
@@ -1262,11 +1315,13 @@ namespace UnityEngine
                 throw new ArgumentException("Crunched SparseTexture is not supported.");
         }
 
+        [uei.ExcludeFromDocs]
         public SparseTexture(int width, int height, DefaultFormat format, int mipCount)
             : this(width, height, SystemInfo.GetGraphicsFormat(format), mipCount)
         {
         }
 
+        [uei.ExcludeFromDocs]
         public SparseTexture(int width, int height, GraphicsFormat format, int mipCount)
         {
             if (!ValidateFormat(format, FormatUsage.Sample))
@@ -1278,12 +1333,13 @@ namespace UnityEngine
             Internal_Create(this, width, height, format, mipCount);
         }
 
+        [uei.ExcludeFromDocs]
         public SparseTexture(int width, int height, TextureFormat textureFormat, int mipCount)
             : this(width, height, textureFormat, mipCount, false)
         {
         }
 
-        public SparseTexture(int width, int height, TextureFormat textureFormat, int mipCount, bool linear)
+        public SparseTexture(int width, int height, TextureFormat textureFormat, int mipCount, [uei.DefaultValue("false")] bool linear)
         {
             if (!ValidateFormat(textureFormat))
                 return;

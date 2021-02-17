@@ -566,7 +566,6 @@ namespace UnityEditor
         public void Cleanup()
         {
             // if I'm a one-view splitview, I can propagate my child up and kill myself
-
             SplitView sp = parent as SplitView;
 
             if (children.Length == 1 && sp != null)

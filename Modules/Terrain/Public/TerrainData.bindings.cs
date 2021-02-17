@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
+using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
@@ -59,6 +60,12 @@ namespace UnityEngine
 
             return equals;
         }
+
+        internal bool Validate(out string errorMessage)
+            => ValidateTreePrototype(this, out errorMessage);
+
+        [FreeFunction("TerrainDataScriptingInterface::ValidateTreePrototype")]
+        extern internal static bool ValidateTreePrototype([NotNull] TreePrototype prototype, out string errorMessage);
     }
 
     public enum DetailRenderMode
@@ -74,18 +81,23 @@ namespace UnityEngine
     [UsedByNativeCode]
     public sealed partial class DetailPrototype
     {
+        internal static readonly Color DefaultHealthColor = new Color(67 / 255F, 249 / 255F, 42 / 255F, 1);
+        internal static readonly Color DefaultDryColor = new Color(205 / 255.0F, 188 / 255.0F, 26 / 255.0F, 1.0F);
+
         internal GameObject m_Prototype = null;
         internal Texture2D m_PrototypeTexture = null;
-        internal Color m_HealthyColor = new Color(67 / 255F, 249 / 255F, 42 / 255F, 1);
-        internal Color m_DryColor = new Color(205 / 255.0F, 188 / 255.0F, 26 / 255.0F, 1.0F);
+        internal Color m_HealthyColor = DefaultHealthColor;
+        internal Color m_DryColor = DefaultDryColor;
         internal float m_MinWidth = 1.0F;
         internal float m_MaxWidth = 2.0F;
         internal float m_MinHeight = 1F;
         internal float m_MaxHeight = 2F;
+        internal int m_NoiseSeed = 0;
         internal float m_NoiseSpread = 0.1F;
         internal float m_HoleEdgePadding = 0.0F;
         internal int m_RenderMode = 2;
         internal int m_UsePrototypeMesh = 0;
+        internal int m_UseInstancing = 0;
 
         public GameObject prototype { get { return m_Prototype; } set { m_Prototype = value; } }
 
@@ -98,6 +110,8 @@ namespace UnityEngine
         public float minHeight { get { return m_MinHeight; } set { m_MinHeight = value; } }
 
         public float maxHeight { get { return m_MaxHeight; } set { m_MaxHeight = value; } }
+
+        public int noiseSeed { get { return m_NoiseSeed; } set { m_NoiseSeed = value; } }
 
         public float noiseSpread { get { return m_NoiseSpread; } set { m_NoiseSpread = value; } }
 
@@ -114,6 +128,8 @@ namespace UnityEngine
 
         public bool usePrototypeMesh { get { return m_UsePrototypeMesh != 0; } set { m_UsePrototypeMesh = value ? 1 : 0; } }
 
+        public bool useInstancing { get { return m_UseInstancing != 0; } set { m_UseInstancing = value ? 1 : 0; } }
+
         public DetailPrototype() {}
 
         public DetailPrototype(DetailPrototype other)
@@ -126,10 +142,12 @@ namespace UnityEngine
             m_MaxWidth = other.m_MaxWidth;
             m_MinHeight = other.m_MinHeight;
             m_MaxHeight = other.m_MaxHeight;
+            m_NoiseSeed = other.m_NoiseSeed;
             m_NoiseSpread = other.m_NoiseSpread;
             m_HoleEdgePadding = other.m_HoleEdgePadding;
             m_RenderMode = other.m_RenderMode;
             m_UsePrototypeMesh = other.m_UsePrototypeMesh;
+            m_UseInstancing = other.m_UseInstancing;
         }
 
         public override bool Equals(object obj)
@@ -153,20 +171,20 @@ namespace UnityEngine
             if (GetType() != other.GetType())
                 return false;
 
-            bool equals = m_Prototype == other.m_Prototype &&
-                m_PrototypeTexture == other.m_PrototypeTexture &&
-                m_HealthyColor == other.m_HealthyColor &&
-                m_DryColor == other.m_DryColor &&
-                m_MinWidth == other.m_MinWidth &&
-                m_MaxWidth == other.m_MaxWidth &&
-                m_MinHeight == other.m_MinHeight &&
-                m_MaxHeight == other.m_MaxHeight &&
-                m_NoiseSpread == other.m_NoiseSpread &&
-                m_HoleEdgePadding == other.m_HoleEdgePadding &&
-                m_RenderMode == other.m_RenderMode &&
-                m_UsePrototypeMesh == other.m_UsePrototypeMesh;
-
-            return equals;
+            return m_Prototype == other.m_Prototype
+                && m_PrototypeTexture == other.m_PrototypeTexture
+                && m_HealthyColor == other.m_HealthyColor
+                && m_DryColor == other.m_DryColor
+                && m_MinWidth == other.m_MinWidth
+                && m_MaxWidth == other.m_MaxWidth
+                && m_MinHeight == other.m_MinHeight
+                && m_MaxHeight == other.m_MaxHeight
+                && m_NoiseSeed == other.m_NoiseSeed
+                && m_NoiseSpread == other.m_NoiseSpread
+                && m_HoleEdgePadding == other.m_HoleEdgePadding
+                && m_RenderMode == other.m_RenderMode
+                && m_UsePrototypeMesh == other.m_UsePrototypeMesh
+                && m_UseInstancing == other.m_UseInstancing;
         }
 
         public bool Validate()
@@ -177,6 +195,30 @@ namespace UnityEngine
 
         [FreeFunction("TerrainDataScriptingInterface::ValidateDetailPrototype")]
         extern internal static bool ValidateDetailPrototype([NotNull] DetailPrototype prototype, out string errorMessage);
+
+        internal static bool IsModeSupportedByRenderPipeline(DetailRenderMode renderMode, bool useInstancing, out string errorMessage)
+        {
+            if (GraphicsSettings.currentRenderPipeline != null)
+            {
+                if (renderMode == DetailRenderMode.GrassBillboard && GraphicsSettings.currentRenderPipeline.terrainDetailGrassBillboardShader == null)
+                {
+                    errorMessage = "The current render pipeline does not support Billboard details. Details will not be rendered.";
+                    return false;
+                }
+                else if (renderMode == DetailRenderMode.VertexLit && !useInstancing && GraphicsSettings.currentRenderPipeline.terrainDetailLitShader == null)
+                {
+                    errorMessage = "The current render pipeline does not support VertexLit details. Details will be rendered using the default shader.";
+                    return false;
+                }
+                else if (renderMode == DetailRenderMode.Grass && GraphicsSettings.currentRenderPipeline.terrainDetailGrassShader == null)
+                {
+                    errorMessage = "The current render pipeline does not support Grass details. Details will be rendered using the default shader without alpha test and animation.";
+                    return false;
+                }
+            }
+            errorMessage = string.Empty;
+            return true;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -243,6 +285,18 @@ namespace UnityEngine
         None = 0,
         HeightOnly,
         HeightAndLod
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    [UsedByNativeCode]
+    public struct DetailInstanceTransform
+    {
+        public float posX;
+        public float posY;
+        public float posZ;
+        public float scaleXZ;
+        public float scaleY;
+        public float rotationY;
     }
 
     [NativeHeader("TerrainScriptingClasses.h")]
@@ -696,6 +750,9 @@ namespace UnityEngine
 
         [FreeFunction(k_ScriptingInterfacePrefix + "GetDetailLayer", HasExplicitThis = true)]
         extern public int[,] GetDetailLayer(int xBase, int yBase, int width, int height, int layer);
+
+        [FreeFunction(k_ScriptingInterfacePrefix + "ComputeDetailInstanceTransforms", HasExplicitThis = true)]
+        extern public DetailInstanceTransform[] ComputeDetailInstanceTransforms(int patchX, int patchY, int layer, float density, out Bounds bounds);
 
         public void SetDetailLayer(int xBase, int yBase, int layer, int[,] details)
         {

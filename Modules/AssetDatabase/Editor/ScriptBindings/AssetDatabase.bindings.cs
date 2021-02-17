@@ -96,6 +96,10 @@ namespace UnityEditor
         extern internal static void RegisterRedirectedAssetFolder(string mountPoint, string folder, string physicalPath, bool immutable, string guid);
         extern internal static void UnregisterRedirectedAssetFolder(string mountPoint, string folder);
 
+        // This will return all registered roots, i.e. Assets/, Packages/** (all registered package roots), Workspaces/, etc.
+        [FreeFunction("AssetDatabase::GetAssetRootFolders")]
+        extern internal static string[] GetAssetRootFolders();
+
         // returns true if the folder is known by the asset database
         // rootFolder is true if the path is a registered root folder
         // immutable is true when the root of the path was registered with the immutable flag (e.g. shared package)
@@ -685,6 +689,26 @@ namespace UnityEditor
         public extern static UInt32 GlobalArtifactProcessedVersion
         {
             [FreeFunction("AssetDatabase::GetGlobalArtifactProcessedVersion")] get;
+        }
+
+        [NativeThrows]
+        internal extern static void GetArtifactInfos_Internal(GUID guid, [Out] ArtifactInfo[] artifactInfos);
+
+        [NativeThrows]
+        internal extern static int GetArtifactInfoCount_Internal(GUID guid);
+
+        internal static ArtifactInfo[] GetArtifactInfos(GUID guid)
+        {
+            var count = GetArtifactInfoCount_Internal(guid);
+            var artifactInfos = new ArtifactInfo[count];
+            for (int i = 0; i < count; ++i)
+            {
+                artifactInfos[i] = new ArtifactInfo();
+            }
+
+            GetArtifactInfos_Internal(guid, artifactInfos);
+
+            return artifactInfos;
         }
 
         [FreeFunction("AssetDatabase::ClearImporterOverride")]

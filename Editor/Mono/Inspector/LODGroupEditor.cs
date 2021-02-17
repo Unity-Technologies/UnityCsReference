@@ -44,6 +44,7 @@ namespace UnityEditor
         private SavedBool[] m_LODGroupFoldoutHeaderValues = null;
 
         private ReorderableList[] m_RendererMeshLists;
+        private int[] m_ReoderableMeshListCounts;
         private int m_ReorderableListIndex = 0;
 
         private Transform m_TargetTransform;
@@ -70,6 +71,7 @@ namespace UnityEditor
 
             ResetValuesAfterLODObjectIsModified();
             InitAndSetFoldoutLabelTextures();
+            UpdateRendererMeshListCounts();
         }
 
         void OnEnable()
@@ -98,6 +100,7 @@ namespace UnityEditor
             CalculatePrimitiveCountForRenderers();
             m_PrimitiveCountLabel = LODGroupGUI.GUIStyles.m_TriangleCountLabel;
             ResetFoldoutLists();
+            UpdateRendererMeshListCounts();
             // reset all foldouts after object selection changes
             Array.ForEach(m_LODGroupFoldoutHeaderValues, val => val.value = false);
 
@@ -107,10 +110,21 @@ namespace UnityEditor
             Repaint();
         }
 
+        void UpdateRendererMeshListCounts()
+        {
+            m_ReoderableMeshListCounts = m_RendererMeshLists.Select(i => i.count).ToArray();
+        }
+
         protected virtual void DrawLODRendererMeshListItems(Rect rect, int index, bool isActive, bool isFocused)
         {
             Rect objectFieldRect = new Rect(rect.x, rect.y, rect.width * 0.6f, EditorGUI.kSingleLineHeight);
             rect.height = EditorGUI.kSingleLineHeight;
+
+            if (m_RendererMeshLists[m_ReorderableListIndex].count != m_ReoderableMeshListCounts[m_ReorderableListIndex])
+            {
+                CalculatePrimitiveCountForRenderers();
+                UpdateRendererMeshListCounts();
+            }
 
             var prop = m_RendererMeshLists[m_ReorderableListIndex].serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("renderer");
 
@@ -347,7 +361,10 @@ namespace UnityEditor
             triangleChangeLabel = wideInspector ? triangleChangeLabel : "";
             var submeshCountLabel = wideInspector ? $"- {m_SubmeshCounts[lodGroupIndex]} Sub Mesh(es)" : "";
 
-            LODGroupGUI.DrawRoundedBoxAroundLODDFoldout(lodGroupIndex, activeLOD);
+            if (activeLOD == lodGroupIndex)
+                LODGroupGUI.DrawRoundedBoxAroundLODDFoldout(lodGroupIndex, activeLOD);
+            else
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
             foldoutState.value = LODGroupGUI.FoldoutHeaderGroupInternal(GUILayoutUtility.GetRect(GUIContent.none, LODGroupGUI.GUIStyles.m_InspectorTitlebarFlat), foldoutState.value, $"LOD {lodGroupIndex}", m_Textures[lodGroupIndex],
                 LODGroupGUI.kLODColors[lodGroupIndex] * 0.6f, $"{totalTriCount} {m_PrimitiveCountLabel.text} {triangleChangeLabel} {submeshCountLabel}");
@@ -379,7 +396,10 @@ namespace UnityEditor
                 }
             }
 
-            GUILayoutUtility.EndLayoutGroup();
+            if (activeLOD == lodGroupIndex)
+                GUILayoutUtility.EndLayoutGroup();
+            else
+                EditorGUILayout.EndVertical();
         }
 
         void DrawLODTransitionPropertyField(Camera camera, int lodGroupIndex, int maxLOD)

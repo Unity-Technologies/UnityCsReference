@@ -10,14 +10,11 @@ using UnityEditorInternal;
 using UnityEditorInternal.VersionControl;
 using System.Linq;
 using System.Reflection;
-
-[Obsolete("Use UnityEditor.AssetModificationProcessor")]
-public class AssetModificationProcessor
-{
-}
+using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEditor
 {
+    [MovedFrom("")]
     public class AssetModificationProcessor
     {
     }
@@ -90,7 +87,6 @@ namespace UnityEditor
                 {
                     List<Type> processors = new List<Type>();
                     processors.AddRange(TypeCache.GetTypesDerivedFrom<AssetModificationProcessor>());
-                    processors.AddRange(TypeCache.GetTypesDerivedFrom<global::AssetModificationProcessor>());
                     assetModificationProcessors = processors.ToArray();
                 }
                 return assetModificationProcessors;

@@ -15,6 +15,7 @@ using System.Reflection;
 using UnityEditor.ShortcutManagement;
 using UnityEngine.Experimental.TerrainAPI;
 using UnityEditor.Experimental.TerrainAPI;
+using UnityEditor.Rendering;
 
 namespace UnityEditor
 {
@@ -50,6 +51,44 @@ namespace UnityEditor
             }
 
             internal TerrainInspector terrainEditor { get; }
+        }
+
+        public static class TerrainInspectorUtility
+        {
+            public static void TerrainShaderValidationGUI(Material material)
+            {
+                if (material == null)
+                    return;
+
+                bool isShaderValid;
+                bool.TryParse(material.GetTag("TerrainCompatible", false), out isShaderValid);
+                RenderPipelineAsset renderPipeline = GraphicsSettings.defaultRenderPipeline;
+                string shaderPath = renderPipeline?.defaultTerrainMaterial.shader.name;
+                string pipelineShaderTag = material.GetTag("RenderPipeline", false);
+                switch (renderPipeline?.name)
+                {
+                    case "HDRenderPipelineAsset":
+                        isShaderValid = pipelineShaderTag.Equals("HDRenderPipeline") && isShaderValid;
+                        break;
+                    case "UniversalRenderPipelineAsset":
+                        isShaderValid = pipelineShaderTag.Equals("UniversalPipeline") && isShaderValid;
+                        break;
+                    default:
+                        shaderPath = "a shader from Nature/Terrain";
+                        isShaderValid = pipelineShaderTag.Equals("") && isShaderValid;
+                        break;
+                }
+
+                if (!isShaderValid)
+                {
+                    EditorGUILayout.HelpBox($"The provided Material's shader might be unsuitable for use with Terrain in the active render pipeline. We recommend you use {shaderPath} instead.\n\n" +
+                        $"If this isn't the case, add the \"TerrainCompatible\" = \"True\" tag in your shader's property block to suppress this warning.", MessageType.Warning, false);
+                }
+                else if (ShaderUtil.HasTangentChannel(material.shader))
+                {
+                    EditorGUILayout.HelpBox($"The selected Material's shader uses tangent geometry, which Terrain doesn't support. We recommend you use {shaderPath} instead.", MessageType.Warning, false);
+                }
+            }
         }
     }
 
@@ -335,7 +374,7 @@ namespace UnityEditor
         static internal ITerrainPaintTool m_CreateTool = null;
         static OnPaintContext onPaintEditContext = new OnPaintContext(new RaycastHit(), null, Vector2.zero, 0.0f, 0.0f);
         static OnInspectorGUIContext onInspectorGUIEditContext = new OnInspectorGUIContext();
-        static OnSceneGUIContext onSceneGUIEditContext = new OnSceneGUIContext(null, new RaycastHit(), null, 0.0f, 0.0f);
+        static OnSceneGUIContext onSceneGUIEditContext = new OnSceneGUIContext(null, new RaycastHit(), null, 0.0f, 0.0f, 0);
 
         ITerrainPaintTool GetActiveTool()
         {
@@ -770,13 +809,14 @@ namespace UnityEditor
             EditorPrefs.SetString("TerrainActivePaintToolName", m_ToolNames[m_ActivePaintToolIndex]);
         }
 
-        static bool ShouldShowCreateMaterialButton(Material material)
+        static bool ShouldShowCreateMaterialButton(Material material, UnityEngine.Object target)
         {
-            return material == null
+            return (material == null
                 || GraphicsSettings.currentRenderPipeline != null && material == GraphicsSettings.currentRenderPipeline.defaultTerrainMaterial
                 || material == AssetDatabase.GetBuiltinExtraResource<Material>("Default-Terrain-Standard.mat")
                 || material == AssetDatabase.GetBuiltinExtraResource<Material>("Default-Terrain-Diffuse.mat")
-                || material == AssetDatabase.GetBuiltinExtraResource<Material>("Default-Terrain-Specular.mat");
+                || material == AssetDatabase.GetBuiltinExtraResource<Material>("Default-Terrain-Specular.mat"))
+                && !Presets.PresetEditor.IsPreset(target);
         }
 
         public void OnEnable()
@@ -804,7 +844,7 @@ namespace UnityEditor
             EditorApplication.update += ForceRepaintOnHotkeys;
             m_ShowReflectionProbesGUI.valueChanged.AddListener(Repaint);
             m_ShowReflectionProbesGUI.value = terrain.reflectionProbeUsage != ReflectionProbeUsage.Off;
-            m_ShowCreateMaterialButton = ShouldShowCreateMaterialButton(terrain.materialTemplate);
+            m_ShowCreateMaterialButton = ShouldShowCreateMaterialButton(terrain.materialTemplate, serializedObject.targetObject);
 
             if (m_Tools == null || m_CreateTool == null)
             {
@@ -946,29 +986,27 @@ namespace UnityEditor
             }
         }
 
-        static Rect GetAspectRect(int elementCount, int approxSize, int extraLineHeight, out int xCount)
+        static Rect GetAspectRect(int elementCount, int approxSize, int extraLineHeight, out int itemsPerRow)
         {
-            xCount = (int)Mathf.Ceil((EditorGUIUtility.currentViewWidth - 20) / approxSize);
-            int yCount = elementCount / xCount;
-            if (elementCount % xCount != 0)
-                yCount++;
-            Rect r1 = GUILayoutUtility.GetAspectRect(xCount / (float)yCount);
+            itemsPerRow = (int)Mathf.Ceil((EditorGUIUtility.currentViewWidth - 20) / approxSize);
+            int yCount = (elementCount + itemsPerRow - 1) / itemsPerRow;
+            Rect r1 = GUILayoutUtility.GetAspectRect(itemsPerRow / (float)yCount);
             Rect r2 = GUILayoutUtility.GetRect(10, extraLineHeight * yCount);
             r1.height += r2.height;
             return r1;
         }
 
-        public static int AspectSelectionGridImageAndText(int selected, GUIContent[] textures, int approxSize, GUIContent emptyString, out bool doubleClick)
+        public static int AspectSelectionGridImageAndText(int selected, int itemCount, GUI.CustomSelectionGridItemGUI itemGUI, int approxSize, GUIContent emptyString, out bool doubleClick)
         {
             EditorGUILayout.BeginVertical(GUIContent.none, EditorStyles.helpBox, GUILayout.MinHeight(10));
             int retval = 0;
 
             doubleClick = false;
 
-            if (textures.Length != 0)
+            if (itemCount > 0)
             {
-                int xCount = 0;
-                Rect rect = GetAspectRect(textures.Length, approxSize, 12, out xCount);
+                int itemsPerRow = 0;
+                Rect rect = GetAspectRect(itemCount, approxSize, 12, out itemsPerRow);
 
                 Event evt = Event.current;
                 if (evt.type == EventType.MouseDown && evt.clickCount == 2 && rect.Contains(evt.mousePosition))
@@ -976,7 +1014,7 @@ namespace UnityEditor
                     doubleClick = true;
                     evt.Use();
                 }
-                retval = GUI.SelectionGrid(rect, System.Math.Min(selected, textures.Length - 1), textures, xCount, styles.gridListText);
+                retval = GUI.DoCustomSelectionGrid(rect, Math.Min(selected, itemCount - 1), itemCount, itemGUI, itemsPerRow, styles.gridListText);
             }
             else
             {
@@ -985,6 +1023,24 @@ namespace UnityEditor
 
             GUILayout.EndVertical();
             return retval;
+        }
+
+        public static int AspectSelectionGridImageAndText(int selected, GUIContent[] textures, int approxSize, GUIContent emptyString, out bool doubleClick)
+        {
+            return AspectSelectionGridImageAndText(selected, textures.Length, (i, rect, style, controlID) =>
+            {
+                if (Event.current.type == EventType.Repaint)
+                {
+                    bool mouseHover = rect.Contains(Event.current.mousePosition);
+                    style.Draw(rect, textures[i], GUI.enabled && mouseHover && (GUIUtility.hotControl == 0 || GUIUtility.hotControl == controlID), GUI.enabled && GUIUtility.hotControl == controlID, i == selected, false);
+                    if (mouseHover)
+                    {
+                        GUIUtility.mouseUsed = true;
+                        if (!String.IsNullOrEmpty(textures[i].tooltip))
+                            GUIStyle.SetMouseTooltip(textures[i].tooltip, rect);
+                    }
+                }
+            }, approxSize, emptyString, out doubleClick);
         }
 
         void LoadTreeIcons()
@@ -1012,8 +1068,7 @@ namespace UnityEditor
             ShowUpgradeTreePrototypeScaleUI();
 
             GUILayout.Label(styles.trees, EditorStyles.boldLabel);
-            bool doubleClick;
-            PaintTreesTool.instance.selectedTree = AspectSelectionGridImageAndText(PaintTreesTool.instance.selectedTree, m_TreeContents, 64, styles.noTreesDefined, out doubleClick);
+            PaintTreesTool.instance.selectedTree = AspectSelectionGridImageAndText(PaintTreesTool.instance.selectedTree, m_TreeContents, 64, styles.noTreesDefined, out var doubleClick);
 
             if (PaintTreesTool.instance.selectedTree >= m_TreeContents.Length)
                 PaintTreesTool.instance.selectedTree = PaintTreesTool.kInvalidTree;
@@ -1111,23 +1166,22 @@ namespace UnityEditor
             GUILayout.Space(5);
 
             GameObject prefab = m_Terrain.terrainData.treePrototypes[PaintTreesTool.instance.selectedTree].m_Prefab;
-
-            bool randomRotationEnabled = TerrainEditorUtility.IsLODTreePrototype(prefab);
-            using (new EditorGUI.DisabledScope(!randomRotationEnabled))
+            string treePrototypeWarning;
+            m_Terrain.terrainData.treePrototypes[PaintTreesTool.instance.selectedTree].Validate(out treePrototypeWarning);
+            bool isLodTreePrototype = TerrainEditorUtility.IsLODTreePrototype(prefab);
+            using (new EditorGUI.DisabledScope(!isLodTreePrototype))
             {
                 PaintTreesTool.instance.randomRotation = EditorGUILayout.Toggle(styles.treeRotation, PaintTreesTool.instance.randomRotation);
             }
-            if (!randomRotationEnabled)
-                EditorGUILayout.HelpBox(styles.treeRotationDisabled.text, MessageType.Info);
 
-            if (prefab != null)
+            if (!isLodTreePrototype)
             {
-                MeshRenderer[] meshRenderers = prefab.GetComponentsInChildren<MeshRenderer>();
-                if (meshRenderers != null && meshRenderers.Length > 0)
-                {
-                    if (meshRenderers.Length > 1 || !prefab.GetComponent<MeshRenderer>())
-                        EditorGUILayout.HelpBox(styles.treeHasChildRenderers.text, MessageType.Warning);
-                }
+                EditorGUILayout.HelpBox(styles.treeRotationDisabled.text, MessageType.Info);
+            }
+
+            if (!string.IsNullOrEmpty(treePrototypeWarning))
+            {
+                EditorGUILayout.HelpBox(treePrototypeWarning, MessageType.Warning);
             }
 
             // TODO: we should check if the shaders assigned to this 'tree' support _TreeInstanceColor or not..  complicated check though
@@ -1261,7 +1315,7 @@ namespace UnityEditor
                 EditorGUI.BeginChangeCheck();
                 var materialTemplate = EditorGUILayout.ObjectField("Material", m_Terrain.materialTemplate, typeof(Material), false) as Material;
                 if (EditorGUI.EndChangeCheck())
-                    m_ShowCreateMaterialButton = ShouldShowCreateMaterialButton(materialTemplate);
+                    m_ShowCreateMaterialButton = ShouldShowCreateMaterialButton(materialTemplate, serializedObject.targetObject);
                 if (m_ShowCreateMaterialButton && GUILayout.Button(styles.createMaterial, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                 {
                     string defaultPath = "New Terrain Material.mat";
@@ -1292,15 +1346,7 @@ namespace UnityEditor
                 EditorGUILayout.EndHorizontal();
 
                 // Warn if shader needs tangent basis
-                if (materialTemplate != null)
-                {
-                    Shader s = materialTemplate.shader;
-                    if (ShaderUtil.HasTangentChannel(s))
-                    {
-                        GUIContent c = EditorGUIUtility.TrTextContent("Can't use materials with shaders which need tangent geometry on terrain, use " + GetTerrainShaderName() + " instead.");
-                        EditorGUILayout.HelpBox(c.text, MessageType.Warning, false);
-                    }
-                }
+                TerrainInspectorUtility.TerrainShaderValidationGUI(materialTemplate);
 
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -2203,6 +2249,9 @@ namespace UnityEditor
             float minDist = float.MaxValue;
             hitTerrain = null;
             raycastHit = new RaycastHit();
+
+            if (mouseRay.direction == Vector3.zero) return false;
+
             foreach (Terrain terrain in Terrain.activeTerrains)
             {
                 RaycastHit hit;
@@ -2257,13 +2306,22 @@ namespace UnityEditor
                 HotkeyApply(raycastHit.distance);
             }
 
+            int id = GUIUtility.GetControlID(s_TerrainEditorHash, FocusType.Passive);
             Terrain lastActiveTerrain = hitValidTerrain ? hitTerrain : s_LastActiveTerrain;
             if (lastActiveTerrain)
             {
-                activeTool.OnSceneGUI(lastActiveTerrain, onSceneGUIEditContext.Set(sceneView, hitValidTerrain, raycastHit, brushTexture, m_Strength, brushSize));
+                activeTool.OnSceneGUI(lastActiveTerrain, onSceneGUIEditContext.Set(sceneView, hitValidTerrain, raycastHit, brushTexture, m_Strength, brushSize, id));
+
+                var mousePos = Event.current.mousePosition;
+                var cameraRect = sceneView.cameraRect;
+                cameraRect.y = 0;
+                var isMouseInSceneView = cameraRect.Contains(mousePos);
+                if (EditorGUIUtility.hotControl == id || (isMouseInSceneView && EditorGUIUtility.hotControl == 0))
+                {
+                    activeTool.OnRenderBrushPreview(lastActiveTerrain, onSceneGUIEditContext);
+                }
             }
 
-            int id = GUIUtility.GetControlID(s_TerrainEditorHash, FocusType.Passive);
             var eventType = e.GetTypeForControl(id);
             if (!hitValidTerrain)
             {

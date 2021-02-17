@@ -238,6 +238,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct UpdateCustomRenderTextures {}
         [RequiredByNativeCode]
+        public struct XRPostLateUpdate {}
+        [RequiredByNativeCode]
         public struct UpdateAllRenderers {}
         [RequiredByNativeCode]
         public struct UpdateLightProbeProxyVolumes {}
@@ -287,6 +289,8 @@ namespace UnityEngine.PlayerLoop
         public struct MemoryFrameMaintenance {}
         [RequiredByNativeCode]
         public struct ExecuteGameCenterCallbacks {}
+        [RequiredByNativeCode]
+        public struct XRPreEndFrame {}
         [RequiredByNativeCode]
         public struct ProfilerEndFrame {}
         [RequiredByNativeCode]

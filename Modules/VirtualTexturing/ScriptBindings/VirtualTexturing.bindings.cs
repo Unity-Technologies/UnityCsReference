@@ -23,6 +23,9 @@ namespace UnityEngine.Rendering
 
             [NativeThrows] extern public static void Update();
 
+            [NativeThrows] internal static void SetDebugFlag(Guid guid, bool enabled) { SetDebugFlag(guid.ToByteArray(), enabled); }
+            [NativeThrows] extern private static void SetDebugFlag(byte[] guid, bool enabled);
+
             public const int AllMips = int.MaxValue;
         }
 
@@ -182,10 +185,14 @@ namespace UnityEngine.Rendering
             // Set the size of the CPU cache(s). This can cause a noticeable hiccup as a lot of system memory needs to be reallocated.
             [NativeThrows]
             extern public static void SetCPUCacheSize(int sizeInMegabytes);
+            [NativeThrows]
+            extern public static int GetCPUCacheSize();
 
             // Apply settings to the streaming GPU caches. In the worst case this triggers a recreation of all streaming GPU caches which takes several frames to be fully applied.
             [NativeThrows]
             extern public static void SetGPUCacheSettings(GPUCacheSetting[] cacheSettings);
+            [NativeThrows]
+            extern public static GPUCacheSetting[] GetGPUCacheSettings();
         }
 
         [NativeHeader("Modules/VirtualTexturing/ScriptBindings/VirtualTexturing.bindings.h")]
@@ -290,7 +297,8 @@ namespace UnityEngine.Rendering
                         GraphicsFormat.R8G8_SRGB,
                         GraphicsFormat.R8G8_UNorm,
                         GraphicsFormat.R32_SFloat,
-                        GraphicsFormat.A2B10G10R10_UNormPack32
+                        GraphicsFormat.A2B10G10R10_UNormPack32,
+                        GraphicsFormat.R16_UNorm
                     };
 
                     //GPU PVT relies on Render usage to not cause fallback behaviour.
@@ -318,7 +326,8 @@ namespace UnityEngine.Rendering
 
                         if (valid == false)
                         {
-                            throw new ArgumentException($"Invalid textureformat on layer: {i}. Supported formats are: {supportedFormats}");
+                            string cpuGpu = (gpuGeneration == 1) ? "GPU" : "CPU";
+                            throw new ArgumentException($"{cpuGpu} Procedural Virtual Texturing doesn't support GraphicsFormat {layers[i]} for stack layer {i}");
                         }
                     }
                     if (maxActiveRequests > MaxRequestsPerFrameSupported || maxActiveRequests <= 0)

@@ -5,6 +5,12 @@ namespace UnityEditor.UIElements
 {
     static class EditorMenuExtensions
     {
+        [InitializeOnLoadMethod]
+        private static void RegisterEditorDropdown()
+        {
+            DropdownUtility.RegisterMakeDropdownFunc(() => new GenericOSMenu());
+        }
+
         static IGenericMenu PrepareMenu(DropdownMenu menu, EventBase triggerEvent)
         {
             menu.PrepareForDisplay(triggerEvent);

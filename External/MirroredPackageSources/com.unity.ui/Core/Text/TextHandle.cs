@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine.UIElements.UIR.Implementation;
-using UnityEngine.TextCore;
-using UnityEngine.TextCore.LowLevel;
+using UnityEngine.TextCore.Text;
+using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
@@ -15,210 +15,10 @@ namespace UnityEngine.UIElements
         float GetLineHeight(int characterIndex, MeshGenerationContextUtils.TextParams textParams, float textScaling,
             float pixelPerPoint);
 
-        void DrawText(UIRStylePainter painter, MeshGenerationContextUtils.TextParams textParams, float pixelsPerPoint);
         TextInfo Update(MeshGenerationContextUtils.TextParams parms, float pixelsPerPoint);
         int VerticesCount(MeshGenerationContextUtils.TextParams parms, float pixelPerPoint);
         ITextHandle New();
-    }
-
-    internal struct TextCoreHandle : ITextHandle
-    {
-        public static ITextHandle New()
-        {
-            TextCoreHandle h = new TextCoreHandle();
-            h.m_CurrentGenerationSettings = new TextCore.TextGenerationSettings();
-            h.m_CurrentLayoutSettings = new TextCore.TextGenerationSettings();
-            return h;
-        }
-
-        // At the moment, FontAssets are not part of Styles. They're created on runtime and cached
-        static Dictionary<Font, FontAsset> fontAssetCache = new Dictionary<Font, FontAsset>();
-        static FontAsset GetFontAsset(Font font)
-        {
-            FontAsset fontAsset = null;
-            if (fontAssetCache.TryGetValue(font, out fontAsset) && fontAsset != null)
-                return fontAsset;
-            fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024,
-                FontAsset.AtlasPopulationMode.Dynamic);
-            return fontAssetCache[font] = fontAsset;
-        }
-
-        Vector2 m_PreferredSize;
-        int m_PreviousGenerationSettingsHash;
-        TextCore.TextGenerationSettings m_CurrentGenerationSettings;
-        int m_PreviousLayoutSettingsHash;
-        TextCore.TextGenerationSettings m_CurrentLayoutSettings;
-        /// <summary>
-        /// DO NOT USE m_TextInfo directly, use textInfo to guarantee lazy allocation.
-        /// </summary>
-        private TextCore.TextInfo m_TextInfo;
-        /// <summary>
-        /// The TextInfo instance, use from this instead of the m_TextInfo member to guarantee lazy allocation.
-        /// </summary>
-        internal TextCore.TextInfo textInfo
-        {
-            get
-            {
-                if (m_TextInfo == null)
-                {
-                    m_TextInfo = new TextCore.TextInfo();
-                }
-                return m_TextInfo;
-            }
-        }
-        /// <summary>
-        /// DO NOT USE m_UITKTextInfo directly, use uITKTextInfo to guarantee lazy allocation.
-        /// </summary>
-        private TextInfo m_UITKTextInfo;
-        /// <summary>
-        /// The TextInfo instance, use from this instead of the m_UITKTextInfo member to guarantee lazy allocation.
-        /// </summary>
-        internal TextInfo uITKTextInfo
-        {
-            get
-            {
-                if (m_UITKTextInfo == null)
-                {
-                    m_UITKTextInfo = new TextInfo();
-                }
-                return m_UITKTextInfo;
-            }
-        }
-        internal bool IsTextInfoAllocated()
-        {
-            return m_TextInfo != null;
-        }
-
-        public Vector2 GetCursorPosition(CursorPositionStylePainterParameters parms, float scaling)
-        {
-            return TextCore.TextGenerator.GetCursorPosition(textInfo, parms.rect, parms.cursorIndex);
-        }
-
-        public float ComputeTextWidth(MeshGenerationContextUtils.TextParams parms, float scaling)
-        {
-            UpdatePreferredValues(parms);
-            return m_PreferredSize.x;
-        }
-
-        public float ComputeTextHeight(MeshGenerationContextUtils.TextParams parms, float scaling)
-        {
-            UpdatePreferredValues(parms);
-            return m_PreferredSize.y;
-        }
-
-        public void DrawText(UIRStylePainter painter, MeshGenerationContextUtils.TextParams textParams, float pixelsPerPoint)
-        {
-            painter.DrawTextCore(textParams, this, pixelsPerPoint);
-        }
-
-        public int VerticesCount(MeshGenerationContextUtils.TextParams parms, float pixelPerPoint)
-        {
-            Update(parms, pixelPerPoint);
-            var verticesCount = 0;
-            foreach (var meshInfo in textInfo.meshInfo)
-                verticesCount += meshInfo.vertexCount;
-            return verticesCount;
-        }
-
-        ITextHandle ITextHandle.New()
-        {
-            return New();
-        }
-
-        public TextInfo Update(MeshGenerationContextUtils.TextParams parms, float pixelsPerPoint)
-        {
-            // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
-            parms.rect = new Rect(Vector2.zero, parms.rect.size);
-            int paramsHash = parms.GetHashCode();
-            if (m_PreviousGenerationSettingsHash == paramsHash)
-                return uITKTextInfo;
-            UpdateGenerationSettingsCommon(parms, m_CurrentGenerationSettings);
-            m_CurrentGenerationSettings.color = parms.fontColor;
-            m_CurrentGenerationSettings.inverseYAxis = true;
-            m_CurrentGenerationSettings.scale = pixelsPerPoint;
-            m_CurrentGenerationSettings.overflowMode = GetTextOverflowMode(parms);
-            textInfo.isDirty = true;
-            TextCore.TextGenerator.GenerateText(m_CurrentGenerationSettings, textInfo);
-            m_PreviousGenerationSettingsHash = paramsHash;
-            return ConvertTo(textInfo);
-        }
-
-        public float GetLineHeight(int characterIndex, MeshGenerationContextUtils.TextParams textParams, float textScaling, float pixelPerPoint)
-        {
-            Update(textParams, pixelPerPoint);
-            var character = m_TextInfo.textElementInfo[m_TextInfo.characterCount - 1];
-            var line = m_TextInfo.lineInfo[character.lineNumber];
-            return line.lineHeight;
-        }
-
-        private TextMeshInfo ConvertTo(UnityEngine.TextCore.MeshInfo meshInfo)
-        {
-            TextMeshInfo result;
-            result.vertexCount = meshInfo.vertexCount;
-            result.vertices = meshInfo.vertices;
-            result.uvs0 = meshInfo.uvs0;
-            result.uvs2 = meshInfo.uvs2;
-            result.colors32 = meshInfo.colors32;
-            result.triangles = meshInfo.triangles;
-            result.material = meshInfo.material;
-            return result;
-        }
-
-        private void ConvertTo(MeshInfo[] meshInfos, List<TextMeshInfo> result)
-        {
-            result.Clear();
-            for (int i = 0; i < meshInfos.Length; i++)
-                result.Add(ConvertTo(meshInfos[i]));
-        }
-
-        private TextInfo ConvertTo(UnityEngine.TextCore.TextInfo textInfo)
-        {
-            uITKTextInfo.materialCount = textInfo.materialCount;
-            ConvertTo(textInfo.meshInfo, uITKTextInfo.meshInfos);
-            return uITKTextInfo;
-        }
-
-        void UpdatePreferredValues(MeshGenerationContextUtils.TextParams parms)
-        {
-            // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
-            parms.rect = new Rect(Vector2.zero, parms.rect.size);
-            int paramsHash = parms.GetHashCode();
-            if (m_PreviousLayoutSettingsHash == paramsHash)
-                return;
-            UpdateGenerationSettingsCommon(parms, m_CurrentLayoutSettings);
-            m_PreferredSize = TextCore.TextGenerator.GetPreferredValues(m_CurrentLayoutSettings, textInfo);
-            m_PreviousLayoutSettingsHash = paramsHash;
-        }
-
-        private static TextOverflowMode GetTextOverflowMode(MeshGenerationContextUtils.TextParams textParams)
-        {
-            if (textParams.textOverflow == TextOverflow.Clip)
-                return TextOverflowMode.Masking;
-            if (textParams.textOverflow != TextOverflow.Ellipsis)
-                return TextOverflowMode.Overflow;
-            if (!textParams.wordWrap && textParams.overflow == OverflowInternal.Hidden)
-                return TextOverflowMode.Ellipsis;
-            return TextOverflowMode.Overflow;
-        }
-
-        static void UpdateGenerationSettingsCommon(MeshGenerationContextUtils.TextParams painterParams,
-            TextCore.TextGenerationSettings settings)
-        {
-            settings.fontAsset = GetFontAsset(painterParams.font);
-            settings.material = settings.fontAsset.material;
-            // in case rect is not properly set (ex: style has not been resolved), make sure its width at least matches wordWrapWidth
-            var screenRect = painterParams.rect;
-            if (float.IsNaN(screenRect.width))
-                screenRect.width = painterParams.wordWrapWidth;
-            settings.screenRect = screenRect;
-            settings.text = string.IsNullOrEmpty(painterParams.text) ? " " : painterParams.text;
-            settings.fontSize = painterParams.fontSize > 0 ? painterParams.fontSize : painterParams.font.fontSize;
-            settings.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(painterParams.fontStyle);
-            settings.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(painterParams.anchor);
-            settings.wordWrap = painterParams.wordWrap;
-            settings.richText = false;
-            settings.overflowMode = TextOverflowMode.Overflow;
-        }
+        bool IsLegacy();
     }
 
     /// <summary>
@@ -247,11 +47,6 @@ namespace UnityEngine.UIElements
             return textHandle.ComputeTextHeight(parms, scaling);
         }
 
-        public void DrawText(UIRStylePainter painter, MeshGenerationContextUtils.TextParams textParams, float pixelsPerPoint)
-        {
-            textHandle.DrawText(painter, textParams, pixelsPerPoint);
-        }
-
         public TextInfo Update(MeshGenerationContextUtils.TextParams parms, float pixelsPerPoint)
         {
             return textHandle.Update(parms, pixelsPerPoint);
@@ -266,8 +61,177 @@ namespace UnityEngine.UIElements
         {
             return textHandle.New();
         }
+
+        public bool IsLegacy()
+        {
+            return textHandle.IsLegacy();
+        }
     }
 
+    internal struct TextCoreHandle : ITextHandle
+    {
+        public static ITextHandle New()
+        {
+            TextCoreHandle h = new TextCoreHandle();
+            h.m_CurrentGenerationSettings = new UnityEngine.TextCore.Text.TextGenerationSettings();
+            h.m_CurrentLayoutSettings = new UnityEngine.TextCore.Text.TextGenerationSettings();
+            return h;
+        }
+
+        public bool IsLegacy()
+        {
+            return false;
+        }
+
+        Vector2 m_PreferredSize;
+        int m_PreviousGenerationSettingsHash;
+        UnityEngine.TextCore.Text.TextGenerationSettings m_CurrentGenerationSettings;
+        int m_PreviousLayoutSettingsHash;
+        UnityEngine.TextCore.Text.TextGenerationSettings m_CurrentLayoutSettings;
+
+        /// <summary>
+        /// DO NOT USE m_TextInfo directly, use textInfo to guarantee lazy allocation.
+        /// </summary>
+        private TextInfo m_TextInfo;
+
+        /// <summary>
+        /// The TextInfo instance, use from this instead of the m_TextInfo member to guarantee lazy allocation.
+        /// </summary>
+        internal TextInfo textInfo
+        {
+            get
+            {
+                if (m_TextInfo == null)
+                {
+                    m_TextInfo = new TextInfo();
+                }
+
+                return m_TextInfo;
+            }
+        }
+
+        // For testing purposes
+        internal bool IsTextInfoAllocated()
+        {
+            return m_TextInfo != null;
+        }
+
+        public Vector2 GetCursorPosition(CursorPositionStylePainterParameters parms, float scaling)
+        {
+            return UnityEngine.TextCore.Text.TextGenerator.GetCursorPosition(textInfo, parms.rect, parms.cursorIndex);
+        }
+
+        public float ComputeTextWidth(MeshGenerationContextUtils.TextParams parms, float scaling)
+        {
+            UpdatePreferredValues(parms);
+            return m_PreferredSize.x;
+        }
+
+        public float ComputeTextHeight(MeshGenerationContextUtils.TextParams parms, float scaling)
+        {
+            UpdatePreferredValues(parms);
+            return m_PreferredSize.y;
+        }
+
+        public float GetLineHeight(int characterIndex, MeshGenerationContextUtils.TextParams textParams, float textScaling, float pixelPerPoint)
+        {
+            Update(textParams, pixelPerPoint);
+            var character = m_TextInfo.textElementInfo[m_TextInfo.characterCount - 1];
+            var line = m_TextInfo.lineInfo[character.lineNumber];
+            return line.lineHeight;
+        }
+
+        public int VerticesCount(MeshGenerationContextUtils.TextParams parms, float pixelPerPoint)
+        {
+            Update(parms, pixelPerPoint);
+            var verticesCount = 0;
+            foreach (var meshInfo in textInfo.meshInfo)
+                verticesCount += meshInfo.vertexCount;
+            return verticesCount;
+        }
+
+        ITextHandle ITextHandle.New()
+        {
+            return New();
+        }
+
+        public TextInfo Update(MeshGenerationContextUtils.TextParams parms, float pixelsPerPoint)
+        {
+            // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
+            parms.rect = new Rect(Vector2.zero, parms.rect.size);
+            int paramsHash = parms.GetHashCode();
+            if (m_PreviousGenerationSettingsHash == paramsHash)
+                return textInfo;
+
+            UpdateGenerationSettingsCommon(parms, m_CurrentGenerationSettings);
+
+            m_CurrentGenerationSettings.color = parms.fontColor;
+            m_CurrentGenerationSettings.inverseYAxis = true;
+            m_CurrentGenerationSettings.scale = pixelsPerPoint;
+
+            textInfo.isDirty = true;
+            UnityEngine.TextCore.Text.TextGenerator.GenerateText(m_CurrentGenerationSettings, textInfo);
+            m_PreviousGenerationSettingsHash = paramsHash;
+            return textInfo;
+        }
+
+        void UpdatePreferredValues(MeshGenerationContextUtils.TextParams parms)
+        {
+            // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
+            parms.rect = new Rect(Vector2.zero, parms.rect.size);
+            int paramsHash = parms.GetHashCode();
+            if (m_PreviousLayoutSettingsHash == paramsHash)
+                return;
+
+            UpdateGenerationSettingsCommon(parms, m_CurrentLayoutSettings);
+            m_PreferredSize = UnityEngine.TextCore.Text.TextGenerator.GetPreferredValues(m_CurrentLayoutSettings, textInfo);
+            m_PreviousLayoutSettingsHash = paramsHash;
+        }
+
+        private static TextOverflowMode GetTextOverflowMode(MeshGenerationContextUtils.TextParams textParams)
+        {
+            if (textParams.textOverflow == TextOverflow.Clip)
+                return TextOverflowMode.Masking;
+
+            if (textParams.textOverflow != TextOverflow.Ellipsis)
+                return TextOverflowMode.Overflow;
+
+            if (!textParams.wordWrap && textParams.overflow == OverflowInternal.Hidden)
+                return TextOverflowMode.Ellipsis;
+
+            return TextOverflowMode.Overflow;
+        }
+
+        static void UpdateGenerationSettingsCommon(MeshGenerationContextUtils.TextParams painterParams,
+            UnityEngine.TextCore.Text.TextGenerationSettings settings)
+        {
+            if (settings.textSettings == null)
+            {
+                settings.textSettings = TextUtilities.GetTextSettingsFrom(painterParams);
+                if (settings.textSettings == null)
+                    return;
+            }
+
+            settings.fontAsset = TextUtilities.GetFontAsset(painterParams);
+            settings.material = settings.fontAsset.material;
+
+            
+            settings.screenRect = painterParams.rect;
+            settings.text = string.IsNullOrEmpty(painterParams.text) ? " " : painterParams.text;
+            settings.fontSize = painterParams.fontSize > 0
+                ? painterParams.fontSize
+                : settings.fontAsset.faceInfo.pointSize;
+            settings.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(painterParams.fontStyle);
+            settings.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(painterParams.anchor);
+            settings.wordWrap = painterParams.wordWrap;
+            settings.wordWrappingRatio = 0.4f;
+            settings.richText = painterParams.richText;
+            settings.overflowMode = GetTextOverflowMode(painterParams);
+            settings.characterSpacing = painterParams.letterSpacing.value;
+            settings.wordSpacing = painterParams.wordSpacing.value;
+            settings.paragraphSpacing = painterParams.paragraphSpacing.value;
+        }
+    }
 
     internal struct TextNativeHandle : ITextHandle
     {
@@ -282,6 +246,11 @@ namespace UnityEngine.UIElements
             return h;
         }
 
+        public bool IsLegacy()
+        {
+            return true;
+        }
+
         ITextHandle ITextHandle.New()
         {
             return New();
@@ -293,11 +262,6 @@ namespace UnityEngine.UIElements
             textParams.wordWrap = false;
 
             return ComputeTextHeight(textParams, textScaling);
-        }
-
-        public void DrawText(UIRStylePainter painter, MeshGenerationContextUtils.TextParams parms, float pixelsPerPoint)
-        {
-            painter.DrawTextNative(parms, this, pixelsPerPoint);
         }
 
         public TextInfo Update(MeshGenerationContextUtils.TextParams parms, float pixelsPerPoint)
@@ -377,6 +341,8 @@ namespace UnityEngine.UIElements
             {
                 var textParams = MeshGenerationContextUtils.TextParams.MakeStyleBased(ve, textToMeasure);
                 textParams.wordWrap = false;
+                textParams.rect = new Rect(textParams.rect.x, textParams.rect.y, width, height);
+
 
                 // Case 1215962: round up as yoga could decide to round down and text would start wrapping
                 measuredWidth = textHandle.ComputeTextWidth(textParams, pixelsPerPoint);
@@ -396,6 +362,7 @@ namespace UnityEngine.UIElements
             {
                 var textParams = MeshGenerationContextUtils.TextParams.MakeStyleBased(ve, textToMeasure);
                 textParams.wordWrapWidth = measuredWidth;
+                textParams.rect = new Rect(textParams.rect.x, textParams.rect.y, width, height);
 
                 measuredHeight = textHandle.ComputeTextHeight(textParams, pixelsPerPoint);
                 measuredHeight = measuredHeight < pointOffset ? 0 : AlignmentUtils.CeilToPixelGrid(measuredHeight, pixelsPerPoint, pixelOffset);
@@ -407,6 +374,71 @@ namespace UnityEngine.UIElements
             }
 
             return new Vector2(measuredWidth, measuredHeight);
+        }
+
+        internal static FontAsset GetFontAsset(MeshGenerationContextUtils.TextParams textParam)
+        {
+            var textSettings = GetTextSettingsFrom(textParam);
+            if (textParam.fontDefinition.fontAsset != null)
+                return textParam.fontDefinition.fontAsset;
+            if (textParam.fontDefinition.font != null)
+                return textSettings.GetCachedFontAsset(textParam.fontDefinition.font);
+            return textSettings.GetCachedFontAsset(textParam.font);
+        }
+
+        internal static FontAsset GetFontAsset(VisualElement ve)
+        {
+            var textSettings = GetTextSettingsFrom(ve);
+            if (ve.computedStyle.unityFontDefinition.fontAsset != null)
+                return ve.computedStyle.unityFontDefinition.fontAsset as FontAsset;
+            if (ve.computedStyle.unityFontDefinition.font != null)
+                return textSettings.GetCachedFontAsset(ve.computedStyle.unityFontDefinition.font);
+            return textSettings.GetCachedFontAsset(ve.computedStyle.unityFont);
+        }
+
+        internal static PanelTextSettings GetTextSettingsFrom(VisualElement ve)
+        {
+            if (ve.panel is RuntimePanel runtimePanel)
+                return runtimePanel.panelSettings.textSettings ?? PanelTextSettings.defaultPanelTextSettings;
+            return PanelTextSettings.defaultPanelTextSettings;
+        }
+
+        internal static PanelTextSettings GetTextSettingsFrom(MeshGenerationContextUtils.TextParams textParam)
+        {
+            if (textParam.panel is RuntimePanel runtimePanel)
+                return runtimePanel.panelSettings.textSettings ?? PanelTextSettings.defaultPanelTextSettings;
+            return PanelTextSettings.defaultPanelTextSettings;
+        }
+
+        internal static TextCoreSettings GetTextCoreSettingsForElement(VisualElement ve)
+        {
+            var fontAsset = GetFontAsset(ve);
+            if (fontAsset == null)
+                return new TextCoreSettings();
+
+            var resolvedStyle = ve.resolvedStyle;
+            var computedStyle = ve.computedStyle;
+
+            // Convert the text settings pixel units to TextCore relative units
+            float paddingPercent = 1.0f / fontAsset.atlasPadding;
+            float pointSizeRatio = ((float)fontAsset.faceInfo.pointSize) / ve.computedStyle.fontSize.value;
+            float factor = paddingPercent * pointSizeRatio;
+
+            float outlineWidth = Mathf.Max(0.0f, resolvedStyle.unityTextOutlineWidth * factor);
+            float underlaySoftness = Mathf.Max(0.0f, computedStyle.textShadow.blurRadius * factor);
+            Vector2 underlayOffset = computedStyle.textShadow.offset * factor;
+
+            var outlineColor = resolvedStyle.unityTextOutlineColor;
+            if (outlineWidth < Mathf.Epsilon)
+                outlineColor.a = 0.0f;
+
+            return new TextCoreSettings() {
+                outlineColor = outlineColor,
+                outlineWidth = outlineWidth,
+                underlayColor = computedStyle.textShadow.color,
+                underlayOffset = underlayOffset,
+                underlaySoftness = underlaySoftness
+            };
         }
     }
 }

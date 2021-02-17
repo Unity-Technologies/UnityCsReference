@@ -6,16 +6,18 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
-using UnityEditor.SceneManagement;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEditor.Experimental.SceneManagement
+
+namespace UnityEditor.SceneManagement
 {
-    public class PrefabStageUtility
+    [MovedFrom("UnityEditor.Experimental.SceneManagement")]
+    public static class PrefabStageUtility
     {
         [Shortcut("Stage/Enter Prefab Mode", KeyCode.P, displayName = "Stage/Edit Prefab in Context")]
         static void EnterInContextPrefabModeShortcut()
@@ -650,5 +652,24 @@ namespace UnityEditor.Experimental.SceneManagement
             m_PrefabButtonContents[instanceID] = result;
             return result;
         }
+    }
+}
+
+
+// We keep a dummy UnityEditor.Experimental.SceneManagement namespace declared because the API Updater does
+// not yet support removing the 'using some.namespace.xyz' declarations in files if there is no usage of
+// classes of that namespace in the file. E.g consider this user script which currently is not updated:
+//
+// using UnityEditor.Experimental.SceneManagement;
+// public class SomeClass: MonoBehaviour
+// {
+//      void Update() { };
+// }
+//
+// We can remove the UnityEditor.Experimental.SceneManagement namespace below when the APIUpdater supports updating the above test script
+namespace UnityEditor.Experimental.SceneManagement
+{
+    class Dummy
+    {
     }
 }

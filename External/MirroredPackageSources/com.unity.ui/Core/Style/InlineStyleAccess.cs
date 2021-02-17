@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.Yoga;
 
@@ -147,14 +148,6 @@ namespace UnityEngine.UIElements
         public InlineStyleAccess(VisualElement ve)
         {
             this.ve = ve;
-
-            if (ve.computedStyle.isShared)
-            {
-                var inlineStyle = ComputedStyle.CreateUninitialized(false);
-                inlineStyle.CopyShared(ve.m_SharedStyle);
-
-                ve.m_Style = inlineStyle;
-            }
         }
 
         ~InlineStyleAccess()
@@ -178,26 +171,22 @@ namespace UnityEngine.UIElements
             m_InlineRule.properties = rule.properties;
             m_InlineRule.propertyIds = StyleSheetCache.GetPropertyIds(rule);
 
-            ApplyInlineStyles(ve.sharedStyle);
+            ApplyInlineStyles();
         }
 
-        public void ApplyInlineStyles(ComputedStyle sharedStyle)
+        public void ApplyInlineStyles()
         {
-            Debug.Assert(!ve.m_Style.isShared);
-
-            // Recreate the computed style in 3 steps
-            // 1- Init from shared styles
-            ve.m_Style.CopyShared(sharedStyle);
-
-            // 2- Apply inline rule coming from UXML if any
+            // Apply inline rule coming from UXML if any
             if (m_InlineRule.sheet != null)
             {
-                var parentStyle = ve.hierarchy.parent?.computedStyle;
+                var parent = ve.hierarchy.parent;
+                ref var parentStyle = ref parent?.computedStyle != null ? ref parent.computedStyle : ref InitialStyle.Get();
+
                 s_StylePropertyReader.SetInlineContext(m_InlineRule.sheet, m_InlineRule.properties, m_InlineRule.propertyIds);
-                ve.m_Style.ApplyProperties(s_StylePropertyReader, parentStyle);
+                ve.computedStyle.ApplyProperties(s_StylePropertyReader, ref parentStyle);
             }
 
-            // 3- Apply values coming from IStyle if any
+            // Apply values coming from IStyle if any
             foreach (var sv in m_Values)
             {
                 ApplyStyleValue(sv);
@@ -220,9 +209,10 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                if (SetInlineCursor(value, ve.sharedStyle.cursor))
+                var changeType = VersionChangeType.Styles;
+                if (SetInlineCursor(value, ref changeType))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles);
+                    ve.IncrementVersion(changeType);
                 }
             }
         }
@@ -238,14 +228,15 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                if (SetInlineTextShadow(value, ve.sharedStyle.textShadow))
+                var changeType = VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint;
+                if (SetInlineTextShadow(value, ref changeType))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
+                    ve.IncrementVersion(changeType);
                 }
             }
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleLength inlineValue, Length sharedValue)
+        private bool SetStyleValue(StylePropertyId id, StyleLength inlineValue, ref VersionChangeType versionChangeType)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
@@ -266,14 +257,17 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                sv.length = sharedValue;
+                versionChangeType |= VersionChangeType.InlineStyleRemove;
+            }
+            else
+            {
+                ApplyStyleValue(sv);
             }
 
-            ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleFloat inlineValue, float sharedValue)
+        private bool SetStyleValue(StylePropertyId id, StyleFloat inlineValue, ref VersionChangeType versionChangeType)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
@@ -294,14 +288,17 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                sv.number = sharedValue;
+                versionChangeType |= VersionChangeType.InlineStyleRemove;
+            }
+            else
+            {
+                ApplyStyleValue(sv);
             }
 
-            ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleInt inlineValue, int sharedValue)
+        private bool SetStyleValue(StylePropertyId id, StyleInt inlineValue, ref VersionChangeType versionChangeType)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
@@ -322,14 +319,17 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                sv.number = sharedValue;
+                versionChangeType |= VersionChangeType.InlineStyleRemove;
+            }
+            else
+            {
+                ApplyStyleValue(sv);
             }
 
-            ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleColor inlineValue, Color sharedValue)
+        private bool SetStyleValue(StylePropertyId id, StyleColor inlineValue, ref VersionChangeType versionChangeType)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
@@ -350,14 +350,17 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                sv.color = sharedValue;
+                versionChangeType |= VersionChangeType.InlineStyleRemove;
+            }
+            else
+            {
+                ApplyStyleValue(sv);
             }
 
-            ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetStyleValue<T>(StylePropertyId id, StyleEnum<T> inlineValue, T sharedValue) where T : struct, IConvertible
+        private bool SetStyleValue<T>(StylePropertyId id, StyleEnum<T> inlineValue, ref VersionChangeType versionChangeType) where T : struct, IConvertible
         {
             var sv = new StyleValue();
             int intValue = UnsafeUtility.EnumToInt(inlineValue.value);
@@ -379,14 +382,17 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                sv.number = UnsafeUtility.EnumToInt(sharedValue);
+                versionChangeType |= VersionChangeType.InlineStyleRemove;
+            }
+            else
+            {
+                ApplyStyleValue(sv);
             }
 
-            ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleBackground inlineValue, Background sharedValue)
+        private bool SetStyleValue(StylePropertyId id, StyleBackground inlineValue, ref VersionChangeType versionChangeType)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
@@ -426,30 +432,24 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                if (sharedValue.texture != null)
-                    sv.resource = GCHandle.Alloc(sharedValue.texture);
-                else if (sharedValue.sprite != null)
-                    sv.resource = GCHandle.Alloc(sharedValue.sprite);
-                else if (sharedValue.renderTexture != null)
-                    sv.resource = GCHandle.Alloc(sharedValue.renderTexture);
-                else if (sharedValue.vectorImage != null)
-                    sv.resource = GCHandle.Alloc(sharedValue.vectorImage);
-                else
-                    sv.resource = new GCHandle();
+                versionChangeType |= VersionChangeType.InlineStyleRemove;
+            }
+            else
+            {
+                ApplyStyleValue(sv);
             }
 
-            ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleFontDefinition inlineValue, FontDefinition sharedValue)
+        private bool SetStyleValue(StylePropertyId id, StyleFontDefinition inlineValue, ref VersionChangeType versionChangeType)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
             {
                 var font = sv.resource.IsAllocated ? sv.resource.Target as Font : null;
                 var obj = sv.resource.Target as Object;
-                var fontAsset = sv.resource.IsAllocated && TextDelegates.IsFontAssetSafe(obj) ? obj : null;
+                var fontAsset = sv.resource.IsAllocated ? obj as FontAsset : null;
                 if ((font == inlineValue.value.font && fontAsset == inlineValue.value.fontAsset) && sv.keyword == inlineValue.keyword)
                     return false;
 
@@ -474,19 +474,16 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                if (sharedValue.font != null)
-                    sv.resource = GCHandle.Alloc(sharedValue.font);
-                else if (sharedValue.fontAsset != null)
-                    sv.resource = GCHandle.Alloc(sharedValue.fontAsset);
-                else
-                    sv.resource = new GCHandle();
+                versionChangeType |= VersionChangeType.InlineStyleRemove;
             }
-
-            ApplyStyleValue(sv);
+            else
+            {
+                ApplyStyleValue(sv);
+            }
             return true;
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleFont inlineValue, Font sharedValue)
+        private bool SetStyleValue(StylePropertyId id, StyleFont inlineValue, ref VersionChangeType versionChangeType)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
@@ -514,14 +511,17 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                sv.resource = sharedValue != null ? GCHandle.Alloc(sharedValue) : new GCHandle();
+                versionChangeType |= VersionChangeType.InlineStyleRemove;
+            }
+            else
+            {
+                ApplyStyleValue(sv);
             }
 
-            ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetInlineCursor(StyleCursor inlineValue, Cursor sharedValue)
+        private bool SetInlineCursor(StyleCursor inlineValue, ref VersionChangeType versionChangeType)
         {
             var styleCursor = new StyleCursor();
             if (TryGetInlineCursor(ref styleCursor))
@@ -539,16 +539,19 @@ namespace UnityEngine.UIElements
 
             SetInlineCursor(styleCursor);
 
-            if (styleCursor.keyword == StyleKeyword.Null)
+            if (inlineValue.keyword == StyleKeyword.Null)
             {
-                styleCursor.value = sharedValue;
+                versionChangeType |= VersionChangeType.InlineStyleRemove;
+            }
+            else
+            {
+                ve.computedStyle.ApplyStyleCursor(styleCursor.value);
             }
 
-            ve.computedStyle.ApplyStyleCursor(styleCursor.value);
             return true;
         }
 
-        private bool SetInlineTextShadow(StyleTextShadow inlineValue, StyleTextShadow sharedValue)
+        private bool SetInlineTextShadow(StyleTextShadow inlineValue, ref VersionChangeType versionChangeType)
         {
             var styleTextShadow = new StyleTextShadow();
             if (TryGetInlineTextShadow(ref styleTextShadow))
@@ -566,20 +569,23 @@ namespace UnityEngine.UIElements
 
             SetInlineTextShadow(styleTextShadow);
 
-            if (styleTextShadow.keyword == StyleKeyword.Null)
+            if (inlineValue.keyword == StyleKeyword.Null)
             {
-                styleTextShadow.keyword = sharedValue.keyword;
-                styleTextShadow.value = sharedValue.value;
+                versionChangeType |= VersionChangeType.InlineStyleRemove;
+            }
+            else
+            {
+                ve.computedStyle.ApplyStyleTextShadow(styleTextShadow.value);
             }
 
-            ve.computedStyle.ApplyStyleTextShadow(styleTextShadow.value);
             return true;
         }
 
         private void ApplyStyleValue(StyleValue value)
         {
-            var parentStyle = ve.hierarchy.parent?.computedStyle;
-            ve.computedStyle.ApplyStyleValue(value, parentStyle);
+            var parent = ve.hierarchy.parent;
+            ref var parentStyle = ref parent?.computedStyle != null ? ref parent.computedStyle : ref InitialStyle.Get();
+            ve.computedStyle.ApplyStyleValue(value, ref parentStyle);
         }
 
         public bool TryGetInlineCursor(ref StyleCursor value)

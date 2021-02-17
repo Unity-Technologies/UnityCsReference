@@ -94,4 +94,16 @@ namespace UnityEditor.SearchService
             k_EngineImp.UnregisterEngine(engine);
         }
     }
+
+    class SceneSearchSessionHandler : SearchSessionHandler
+    {
+        public SceneSearchSessionHandler()
+            : base(SearchEngineScope.Scene) {}
+
+        public bool Filter(string query, HierarchyProperty objectToFilter)
+        {
+            using (new SearchSessionOptionsApplicator(m_Api, m_Options))
+                return SceneSearch.Filter(query, objectToFilter, (SceneSearchContext)context);
+        }
+    }
 }

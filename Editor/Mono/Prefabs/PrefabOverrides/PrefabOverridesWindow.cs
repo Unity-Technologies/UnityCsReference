@@ -8,7 +8,6 @@ using UnityEditor;
 using UnityEngine;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
-using UnityEditor.Experimental.SceneManagement;
 
 namespace UnityEditor
 {

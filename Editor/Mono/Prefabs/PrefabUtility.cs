@@ -305,6 +305,21 @@ namespace UnityEditor
                 throw new ArgumentException("Calling apply methods on an instance which is part of a Prefab Asset is not supported.", nameof(prefabInstanceObject));
         }
 
+        public static GameObject[] FindAllInstancesOfPrefab(GameObject prefabRoot)
+        {
+            return FindAllInstancesOfPrefab_internal(prefabRoot, 0);
+        }
+
+        public static GameObject[] FindAllInstancesOfPrefab(GameObject prefabRoot, Scene scene)
+        {
+            if (!scene.IsValid())
+            {
+                throw new ArgumentException("Input scene is not valid: Could not be found.");
+            }
+
+            return FindAllInstancesOfPrefab_internal(prefabRoot, scene.handle);
+        }
+
         public static void RevertPrefabInstance(GameObject instanceRoot, InteractionMode action)
         {
             ThrowExceptionIfNotValidPrefabInstanceObject(instanceRoot, false);
@@ -1466,6 +1481,39 @@ namespace UnityEditor
                 throw new ArgumentNullException("Parameter root is null");
 
             ValidatePath(root, path);
+        }
+
+        [RequiredByNativeCode]
+        private static GameObject ReplacePrefabAndRegisterUndo_Internal(GameObject instanceRoot, GameObject existingPrefabRoot, bool connectedAfterwards, string actionName)
+        {
+            if (existingPrefabRoot == null)
+            {
+                throw new ArgumentNullException("Parameter existingPrefabRoot is null");
+            }
+
+            if (!IsPartOfPrefabAsset(existingPrefabRoot))
+            {
+                throw new ArgumentException("Parameter existingPrefabRoot is not a Prefab asset");
+            }
+
+            string assetPath = AssetDatabase.GetAssetPath(existingPrefabRoot);
+            ReplacePrefabArgumentCheck(instanceRoot, assetPath);
+
+            HashSet<int> hierarchy = new HashSet<int>();
+            GetObjectListFromHierarchy(hierarchy, existingPrefabRoot);
+            Undo.RegisterFullObjectHierarchyUndo(existingPrefabRoot, actionName);
+
+            bool success;
+            var prefabInstanceRoot = SavePrefab_Internal(instanceRoot, assetPath, connectedAfterwards, out success);
+            if (!success)
+            {
+                return null;
+            }
+
+            RegisterNewObjects(prefabInstanceRoot, hierarchy, actionName);
+            Undo.RegisterCreatedObjectUndo(prefabInstanceRoot, actionName);
+
+            return prefabInstanceRoot;
         }
 
         public static GameObject SaveAsPrefabAsset(GameObject instanceRoot, string assetPath, out bool success)

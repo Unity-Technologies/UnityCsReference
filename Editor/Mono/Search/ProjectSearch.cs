@@ -92,4 +92,16 @@ namespace UnityEditor.SearchService
             k_EngineImp.UnregisterEngine(engine);
         }
     }
+
+    class ProjectSearchSessionHandler : SearchSessionHandler
+    {
+        public ProjectSearchSessionHandler()
+            : base(SearchEngineScope.Project) {}
+
+        public IEnumerable<string> Search(string query, Action<IEnumerable<string>> asyncItemsReceived)
+        {
+            using (new SearchSessionOptionsApplicator(m_Api, m_Options))
+                return ProjectSearch.Search(query, (ProjectSearchContext)context, asyncItemsReceived);
+        }
+    }
 }

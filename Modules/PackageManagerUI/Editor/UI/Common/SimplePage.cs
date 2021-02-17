@@ -77,17 +77,52 @@ namespace UnityEditor.PackageManager.UI.Internal
             var packages = m_PackageDatabase.allPackages
                 .Where(p => m_PackageFiltering.FilterByCurrentTab(p));
 
+            var orderBy = m_Filters?.orderBy ?? string.Empty;
+            var isReversOrder = m_Filters?.isReverseOrder ?? false;
             IOrderedEnumerable<IPackage> orderedPackages;
-            if (m_Filters?.orderBy == "name")
-                orderedPackages = packages.OrderBy(p => p.name);
-            else if (m_Filters?.orderBy == "publishedDate")
-                orderedPackages = packages.OrderBy(p => p.versions.primary?.publishedDate ?? new DateTime(1, 1, 1));
+            if (orderBy == "name")
+            {
+                orderedPackages = !isReversOrder? packages.OrderBy(p => p.name) : packages.OrderByDescending(p => p.name);
+            }
+            else if (orderBy == "publishedDate")
+            {
+                if (!isReversOrder)
+                    orderedPackages = packages.
+                        OrderBy(p => p.versions.primary?.publishedDate ?? DateTime.MinValue).
+                        ThenBy(p => p.versions.primary?.displayName ?? p.name);
+                else
+                    orderedPackages = packages.
+                        OrderByDescending(p => p.versions.primary?.publishedDate ?? DateTime.MinValue).
+                        ThenBy(p => p.versions.primary?.displayName ?? p.name);
+            }
+            else if (orderBy == "entitlements")
+            {
+                if (!isReversOrder)
+                    orderedPackages = packages.
+                        OrderBy(p => p.hasEntitlements ? 0 : 1).
+                        ThenBy(p => p.versions.primary?.displayName ?? p.name);
+                else
+                    orderedPackages = packages.
+                        OrderByDescending(p => p.hasEntitlements ? 0 : 1).
+                        ThenBy(p => p.versions.primary?.displayName ?? p.name);
+            }
+            else if (orderBy == "hasUpdate")
+            {
+                if (!isReversOrder)
+                    orderedPackages = packages.
+                        OrderBy(p => p.state == PackageState.UpdateAvailable ? 0 : 1).
+                        ThenBy(p => p.versions.primary?.displayName ?? p.name);
+                else
+                    orderedPackages = packages.
+                        OrderByDescending(p => p.state == PackageState.UpdateAvailable ? 0 : 1).
+                        ThenBy(p => p.versions.primary?.displayName ?? p.name);
+            }
             else // displayName
-                orderedPackages = packages.OrderBy(p => p.versions.primary?.displayName ?? p.name);
+            {
+                orderedPackages = !isReversOrder? packages.OrderBy(p => p.versions.primary?.displayName ?? p.name) : packages.OrderByDescending(p => p.versions.primary?.displayName ?? p.name);
+            }
 
-            var orderedPackageIdAndGroups = m_Filters?.isReverseOrder ?? false ?
-                orderedPackages.Reverse().Select(p => new Tuple<string, string>(p.uniqueId, GetGroupName(p))) :
-                orderedPackages.Select(p => new Tuple<string, string>(p.uniqueId, GetGroupName(p)));
+            var orderedPackageIdAndGroups = orderedPackages.Select(p => new Tuple<string, string>(p.uniqueId, GetGroupName(p)));
             m_VisualStateList.Rebuild(orderedPackageIdAndGroups);
         }
 

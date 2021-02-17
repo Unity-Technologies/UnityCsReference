@@ -137,7 +137,7 @@ namespace UnityEditor.UIElements.Debugger
 
     internal class HighlightOverlayPainter : BaseOverlayPainter
     {
-        private static readonly float kDefaultHighlightAlpha = 0.4f;
+        private const float kDefaultHighlightAlpha = 0.4f;
         private static readonly Color kHighlightContentColor = new Color(0.1f, 0.6f, 0.9f);
         private static readonly Color kHighlightPaddingColor = new Color(0.1f, 0.9f, 0.1f);
         private static readonly Color kHighlightBorderColor = new Color(1.0f, 1.0f, 0.4f);
@@ -147,12 +147,12 @@ namespace UnityEditor.UIElements.Debugger
         private Rect[] m_BorderRects = new Rect[4];
         private Rect[] m_PaddingRects = new Rect[4];
 
-        public void AddOverlay(VisualElement ve, OverlayContent content = OverlayContent.All)
+        public void AddOverlay(VisualElement ve, OverlayContent content = OverlayContent.All, float alpha = kDefaultHighlightAlpha)
         {
             OverlayData overlayData = null;
             if (!m_OverlayData.TryGetValue(ve, out overlayData))
             {
-                overlayData = new OverlayData(ve, kDefaultHighlightAlpha);
+                overlayData = new OverlayData(ve, alpha);
                 m_OverlayData[ve] = overlayData;
             }
 

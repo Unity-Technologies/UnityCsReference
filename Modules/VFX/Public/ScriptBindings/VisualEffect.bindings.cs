@@ -222,6 +222,7 @@ namespace UnityEngine.VFX
         [FreeFunction(Name = "VisualEffectBindings::HasSystemFromScript", HasExplicitThis = true)] extern public bool HasSystem(int nameID);
         [FreeFunction(Name = "VisualEffectBindings::GetParticleSystemInfo", HasExplicitThis = true, ThrowsException = true)] extern public VFXParticleSystemInfo GetParticleSystemInfo(int nameID);
         [FreeFunction(Name = "VisualEffectBindings::GetSpawnSystemInfo", HasExplicitThis = true, ThrowsException = true)] extern private void GetSpawnSystemInfo(int nameID, IntPtr spawnerState);
+        extern public bool HasAnySystemAwake();
 
         public void GetSpawnSystemInfo(int nameID, VFXSpawnerState spawnState)
         {

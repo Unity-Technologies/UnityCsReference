@@ -235,6 +235,10 @@ namespace UnityEditor
         internal static GUIStyle toolbarDropDownToggle { get { return s_Current.m_ToolbarDropDownToggle; } }
         private GUIStyle m_ToolbarDropDownToggle;
 
+        // Toolbar Dropdown Toggle Button
+        internal static GUIStyle toolbarDropDownToggleButton { get { return s_Current.m_ToolbarDropDownToggleButton; } }
+        private GUIStyle m_ToolbarDropDownToggleButton;
+
         // Toolbar Dropdown Toggle Right
         internal static GUIStyle toolbarDropDownToggleRight { get { return s_Current.m_ToolbarDropDownToggleRight; } }
         private GUIStyle m_ToolbarDropDownToggleRight;
@@ -463,6 +467,7 @@ namespace UnityEditor
             m_ToolbarDropDownLeft = GetStyle("toolbarDropDownLeft");
             m_ToolbarDropDownRight = GetStyle("toolbarDropDownRight");
             m_ToolbarDropDownToggle = GetStyle("toolbarDropDownToggle");
+            m_ToolbarDropDownToggleButton = GetStyle("ToolbarDropDownToggleButton");
             m_ToolbarDropDownToggleRight = GetStyle("toolbarDropDownToggleRight");
             m_ToolbarCreateAddNewDropDown = GetStyle("ToolbarCreateAddNewDropDown");
             m_ToolbarTextField = GetStyle("toolbarTextField");

@@ -632,7 +632,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache.ClearProductCache();
         }
 
-        public void Resolve()
+        public virtual void Resolve()
         {
             Client.Resolve();
         }

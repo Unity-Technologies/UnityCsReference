@@ -18,10 +18,10 @@ namespace UnityEditorInternal
 
         private static int s_ChartHash = "Charts".GetHashCode();
         public const float kSideWidth = 180.0f;
-        private const int kDistFromTopToFirstLabel = 38;
-        private const int kLabelHeight = 14;
-        private const float kLabelOffset = 5f;
-        private const float kChartMinHeight = 130;
+        protected const int k_DistanceFromTopToFirstLegendLabel = 38;
+        protected const int k_LegendSeriesLabelHeight = 14;
+        protected const int k_LegendSeriesLabelOffset = 5;
+        protected const int k_MinimumHeight = 130;
         private const float k_LineWidth = 2f;
         private const int k_LabelLayoutMaxIterations = 5;
         const string k_Ellipsis = "...";
@@ -204,22 +204,17 @@ namespace UnityEditorInternal
             GUI.Label(headerRect, headerLabel, Styles.legendHeaderLabel);
 
             position.yMin += headerRect.height + Styles.legendHeaderLabel.margin.bottom;
-            position.xMin += kLabelOffset;
-            position.xMax -= kLabelOffset;
+            position.xMin += k_LegendSeriesLabelOffset;
+            position.xMax -= k_LegendSeriesLabelOffset;
             DoSeriesList(position, m_chartControlID, type, cdata);
         }
 
-        public int DoGUI(ChartType type, int selectedFrame, ChartViewData cdata, bool active)
+        public int DoGUI(Rect chartRect, ChartType type, int selectedFrame, ChartViewData cdata, bool active)
         {
             if (cdata == null)
                 return selectedFrame;
 
             m_chartControlID = GUIUtility.GetControlID(s_ChartHash, FocusType.Keyboard);
-
-            var chartHeight = GUILayout.MinHeight(
-                Math.Max(kLabelOffset + ((cdata.numSeries + 1) * kLabelHeight) + kDistFromTopToFirstLabel, kChartMinHeight)
-            );
-            Rect chartRect = GUILayoutUtility.GetRect(GUIContent.none, Styles.background, chartHeight);
 
             Rect r = chartRect;
 
@@ -245,8 +240,7 @@ namespace UnityEditorInternal
 
             DoLegendGUI(sideRect, type, cdata, evtType, active);
 
-            // Drawing the chart is expensive, so only draw it when it is visible
-            if (evt.type == EventType.Repaint && GUIClip.visibleRect.Overlaps(chartRect))
+            if (evt.type == EventType.Repaint)
             {
                 Styles.rightPane.Draw(r, false, false, active, false);
 
@@ -835,6 +829,7 @@ namespace UnityEditorInternal
                 color *= s_OverlayBackgroundDimFactor;
 
             GL.Begin(GL.TRIANGLE_STRIP);
+            GL.Color(color);
 
             float x = r.x + step * 0.5f;
             float rangeScale = cdata.series[0].rangeAxis.sqrMagnitude == 0f ?
@@ -864,7 +859,6 @@ namespace UnityEditorInternal
                 if (y - val < r.yMin)
                     val = y - r.yMin; // Clamp the values to be inside drawrect
 
-                GL.Color(color);
                 GL.Vertex3(x, y - val, 0f); // clip chart top
                 GL.Vertex3(x, y, 0f);
 
@@ -1178,6 +1172,15 @@ namespace UnityEditorInternal
 
     internal class ChartViewData
     {
+        static readonly float[] k_ChartGridValues1ms = { 1000, 250, 100 };
+        static readonly string[] k_ChartGridLabels1ms = { "1ms (1000FPS)", "0.25ms (4000FPS)", "0.1ms (10000FPS)" };
+        static readonly float[] k_ChartGridValues8ms = { 8333, 4000, 1000 };
+        static readonly string[] k_ChartGridLabels8ms = { "8ms (120FPS)", "4ms (250FPS)", "1ms (1000FPS)" };
+        static readonly float[] k_ChartGridValues16ms = { 16667, 10000, 5000 };
+        static readonly string[] k_ChartGridLabels16ms = { "16ms (60FPS)", "10ms (100FPS)", "5ms (200FPS)" };
+        static readonly float[] k_ChartGridValues66ms = { 66667, 33333, 16667 };
+        static readonly string[] k_ChartGridLabels66ms = { "66ms (15FPS)", "33ms (30FPS)", "16ms (60FPS)" };
+
         public ChartSeriesViewData[] series { get; private set; }
         public ChartSeriesViewData[] overlays { get; private set; }
         public int[] order { get; private set; }
@@ -1259,23 +1262,19 @@ namespace UnityEditorInternal
         {
             if (timeMax < 1500)
             {
-                SetGrid(new float[] { 1000, 250, 100 }, new[] { "1ms (1000FPS)", "0.25ms (4000FPS)", "0.1ms (10000FPS)" });
+                SetGrid(k_ChartGridValues1ms, k_ChartGridLabels1ms);
             }
             else if (timeMax < 10000)
             {
-                SetGrid(new float[] { 8333, 4000, 1000 }, new[] { "8ms (120FPS)", "4ms (250FPS)", "1ms (1000FPS)" });
+                SetGrid(k_ChartGridValues8ms, k_ChartGridLabels8ms);
             }
             else if (timeMax < 30000)
             {
-                SetGrid(new float[] { 16667, 10000, 5000 }, new[] { "16ms (60FPS)", "10ms (100FPS)", "5ms (200FPS)" });
-            }
-            else if (timeMax < 100000)
-            {
-                SetGrid(new float[] { 66667, 33333, 16667 }, new[] { "66ms (15FPS)", "33ms (30FPS)", "16ms (60FPS)" });
+                SetGrid(k_ChartGridValues16ms, k_ChartGridLabels16ms);
             }
             else
             {
-                SetGrid(new float[] { 500000, 200000, 66667 }, new[] { "500ms (2FPS)", "200ms (5FPS)", "66ms (15FPS)" });
+                SetGrid(k_ChartGridValues66ms, k_ChartGridLabels66ms);
             }
         }
     }

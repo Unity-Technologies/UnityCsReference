@@ -40,10 +40,24 @@ namespace UnityEditor
         public static extern string[] GetSubmenus(string menuPath);
 
         // Extracts a list of all submenus that can be executed
-        internal static extern string[] GetSubmenusLocalized(string menuPath);
+        internal static string[] GetSubmenusLocalized(string menuPath)
+        {
+            var menuItems = Menu.GetMenuItems(menuPath, false, true);
+            var paths = new string[menuItems.Length];
+            for (int i = 0, c = paths.Length; i < c; ++i)
+                paths[i] = menuItems[i].path;
+            return paths;
+        }
 
         // Extracts a list of all submenus
-        public static extern string[] GetSubmenusIncludingSeparators(string menuPath);
+        public static string[] GetSubmenusIncludingSeparators(string menuPath)
+        {
+            var menuItems = Menu.GetMenuItems(menuPath, true, false);
+            var paths = new string[menuItems.Length];
+            for (int i = 0, c = paths.Length; i < c; ++i)
+                paths[i] = menuItems[i].path;
+            return paths;
+        }
 
         public static extern void PrepareObjectContextMenu(UnityEngine.Object c, int contextUserData);
 
@@ -192,7 +206,7 @@ namespace UnityEditor
         [FreeFunction("ResolveSymlinks")]
         public static extern string ResolveSymlinks(string path);
 
-        [FreeFunction("ResolveRedirectedPath")]
+        [FreeFunction("GetPhysicalPath")]
         public static extern string ResolveRedirectedPath(string path);
 
         [FreeFunction("AssetDatabaseDeprecated::SetApplicationSettingCompressAssetsOnImport")]
@@ -262,5 +276,24 @@ namespace UnityEditor
         {
             return RenderSettings.GetRenderSettings();
         }
+
+        private static bool s_registryValidationDisabled;
+
+        public static bool IsRegistryValidationDisabled
+        {
+            get
+            {
+                if (!IsSourceBuild())
+                    return false;
+                return s_registryValidationDisabled;
+            }
+            set { s_registryValidationDisabled = value; }
+        }
+
+        [FreeFunction("GetEditorPlayerLoop().GetFrameTimeForEachLoop")]
+        internal static extern float GetFrameTimeCalculatedForEachEditorPlayerLoop();
+
+        [FreeFunction("GetEditorPlayerLoop().IsLoopWaiting")]
+        internal static extern bool IsEditorPlayerLoopWaiting();
     }
 }

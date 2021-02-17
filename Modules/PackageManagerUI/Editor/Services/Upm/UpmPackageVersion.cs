@@ -24,10 +24,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override string category => m_PackageInfo.category;
 
-        UIError entitlementsError => !entitlements.isAllowed && isInstalled ?
-        new UIError(UIErrorCode.UpmError, L10n.Tr("You do not have entitlements for this package."), UIError.Attribute.IsWarning) : null;
-        public override IEnumerable<UIError> errors =>
-            m_PackageInfo.errors.Select(e => new UIError((UIErrorCode)e.errorCode, e.message, UIError.Attribute.None)).Concat(entitlementsError != null ? new List<UIError> { entitlementsError } : new List<UIError>());
+        public override IEnumerable<UIError> errors => hasEntitlementsError ? new[] { UIError.k_EntitlementError } : m_PackageInfo.errors.Select(error => new UIError((UIErrorCode)error.errorCode, error.message));
+
         public override bool isDirectDependency => isFullyFetched && m_PackageInfo.isDirectDependency;
 
         [SerializeField]
@@ -64,10 +62,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (m_PackageInfo.source == PackageSource.Local || m_PackageInfo.source == PackageSource.LocalTarball)
                     return m_PackageInfo.packageId.Substring(m_PackageInfo.packageId.IndexOf("@file:") + 6);
-                else if (m_PackageInfo.source == PackageSource.Git)
+                if (m_PackageInfo.source == PackageSource.Git)
                     return m_PackageInfo.packageId.Split(new[] {'@'}, 2)[1];
-                else
-                    return null;
+                return null;
             }
         }
 

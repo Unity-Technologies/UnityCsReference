@@ -7,7 +7,7 @@ namespace UnityEngine.UIElements
     internal class UIRRepaintUpdater : BaseVisualTreeUpdater
     {
         BaseVisualElementPanel attachedPanel;
-        internal RenderChain renderChain;
+        internal RenderChain renderChain; // May be recreated any time.
 
         static ProfilerMarker s_MarkerDrawChain = new ProfilerMarker("DrawChain");
 
@@ -19,6 +19,8 @@ namespace UnityEngine.UIElements
         private static readonly string s_Description = "UIRepaint";
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
+        public bool drawStats { get; set; }
+        public bool breakBatches { get; set; }
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
@@ -67,11 +69,13 @@ namespace UnityEngine.UIElements
                         clearSettings.clearColor, clearColor, UIRUtility.k_ClearZ);
                 }
 
+                // Apply these debug values every frame because the render chain may have been recreated.
+                renderChain.drawStats = drawStats;
+                renderChain.device.breakBatches = breakBatches;
+
                 renderChain.Render();
             }
         }
-
-        internal RenderChain DebugGetRenderChain() { return renderChain; }
 
         // Overriden in tests
         protected virtual RenderChain CreateRenderChain() { return new RenderChain(panel); }

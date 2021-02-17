@@ -114,7 +114,6 @@ namespace UnityEditor.Experimental.TerrainAPI
             System.Array.Copy(terrain.terrainData.detailPrototypes, newDetailPrototypesArray, terrain.terrainData.detailPrototypes.Length);
             newDetailPrototypesArray[newDetailPrototypesArray.Length - 1] = new DetailPrototype(sourceDetailPrototype);
             terrain.terrainData.detailPrototypes = newDetailPrototypesArray;
-            terrain.terrainData.RefreshPrototypes();
             return newDetailPrototypesArray.Length - 1;
         }
 
@@ -130,10 +129,8 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             public readonly GUIContent brushSize = EditorGUIUtility.TrTextContent("Brush Size", "Size of the brush used to paint.");
             public readonly GUIContent details = EditorGUIUtility.TrTextContent("Details");
-            public readonly GUIContent detailShadersUnsupported = EditorGUIUtility.TrTextContent("The current render pipeline does not support Detail shaders", EditorGUIUtility.GetHelpIcon(MessageType.Error));
-            public readonly GUIContent detailShadersMissing = EditorGUIUtility.TrTextContent("The current render pipeline does not have all Detail shaders", EditorGUIUtility.GetHelpIcon(MessageType.Error));
             public readonly GUIContent detailTargetStrength = EditorGUIUtility.TrTextContent("Target Strength", "Target amount");
-            public readonly GUIContent detailVertexWarning = EditorGUIUtility.TrTextContent("The currently selected detail will not render at full strength. Either paint with low opacity, or lower the terrain detail density. Alternatively use a mesh with fewer vertices.");
+            public readonly GUIContent detailVertexWarning = EditorGUIUtility.TrTextContent("The currently selected detail will not render at full strength. Either paint with low opacity, or lower the terrain detail density. Alternatively consider use instanced rendering by setting \"Use GPU Instancing\" to true.");
             public readonly GUIContent editDetails = EditorGUIUtility.TrTextContent("Edit Details...", "Add or remove detail meshes");
             public readonly GUIContent noDetailObjectDefined = EditorGUIUtility.TrTextContent("No Detail objects defined.");
             public readonly GUIContent opacity = EditorGUIUtility.TrTextContent("Opacity", "Strength of the applied effect.");
@@ -148,6 +145,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         private BrushRep m_BrushRep;
 
         private float m_DetailsStrength = 0.8f;
+        private int m_MouseOnPatchIndex = -1;
 
         public float detailOpacity { get; set; }
         public float detailStrength
@@ -361,13 +359,15 @@ namespace UnityEditor.Experimental.TerrainAPI
             return guiContents;
         }
 
-        private void ShowDetailPrototypeWarnings(DetailPrototype detailPrototype, Terrain terrain)
+        private void ShowDetailPrototypeMessages(DetailPrototype detailPrototype, Terrain terrain)
         {
-            if (!detailPrototype.Validate(out var msg))
+            if (!DetailPrototype.IsModeSupportedByRenderPipeline(detailPrototype.renderMode, detailPrototype.useInstancing, out var msg)
+                || !detailPrototype.Validate(out msg))
             {
                 EditorGUILayout.HelpBox(msg, MessageType.Error);
             }
-            else if (detailPrototype.usePrototypeMesh && detailPrototype.prototype != null
+            else if ((detailPrototype.renderMode != DetailRenderMode.VertexLit || !detailPrototype.useInstancing)
+                     && detailPrototype.usePrototypeMesh && detailPrototype.prototype != null
                      && detailPrototype.prototype.TryGetComponent<MeshFilter>(out var meshFilter)
                      && meshFilter.sharedMesh != null)
             {
@@ -385,25 +385,36 @@ namespace UnityEditor.Experimental.TerrainAPI
             DetailPrototype[] prototypes = terrain.terrainData.detailPrototypes;
             var detailIcons = LoadDetailIcons(prototypes);
 
-            RenderPipelineAsset renderPipelineAsset = GraphicsSettings.currentRenderPipeline;
-            if (renderPipelineAsset != null)
-            {
-                if (SupportedRenderingFeatures.active.terrainDetailUnsupported)
-                {
-                    EditorGUILayout.HelpBox(s_Styles.detailShadersUnsupported);
-                }
-                else if (renderPipelineAsset.terrainDetailLitShader == null
-                         || renderPipelineAsset.terrainDetailGrassShader == null
-                         || renderPipelineAsset.terrainDetailGrassBillboardShader == null)
-                {
-                    EditorGUILayout.HelpBox(s_Styles.detailShadersMissing);
-                }
-            }
-
             // Detail picker
             GUILayout.Label(s_Styles.details, EditorStyles.boldLabel);
-            bool doubleClick = false;
-            selectedDetail = TerrainInspector.AspectSelectionGridImageAndText(selectedDetail, detailIcons, 64, s_Styles.noDetailObjectDefined, out doubleClick);
+
+            selectedDetail = TerrainInspector.AspectSelectionGridImageAndText(selectedDetail, prototypes.Length, (i, rect, style, controlID) =>
+            {
+                bool renderModeSupported = DetailPrototype.IsModeSupportedByRenderPipeline(prototypes[i].renderMode, prototypes[i].useInstancing, out var errorMessage);
+                bool mouseHover = rect.Contains(Event.current.mousePosition);
+
+                if (Event.current.type == EventType.Repaint)
+                {
+                    bool wasEnabled = GUI.enabled;
+                    GUI.enabled &= renderModeSupported;
+                    style.Draw(rect, detailIcons[i], GUI.enabled && mouseHover && (GUIUtility.hotControl == 0 || GUIUtility.hotControl == controlID), GUI.enabled && GUIUtility.hotControl == controlID, i == selectedDetail, false);
+                    GUI.enabled = wasEnabled;
+                }
+
+                if (!renderModeSupported)
+                {
+                    var tmpContent = EditorGUIUtility.TempContent(EditorGUIUtility.GetHelpIcon(MessageType.Error));
+                    tmpContent.tooltip = errorMessage;
+                    GUI.Label(new Rect(rect.xMax - 16, rect.yMin + 1, 19, 19), tmpContent);
+                }
+
+                if (mouseHover)
+                {
+                    GUIUtility.mouseUsed = true;
+                    GUIStyle.SetMouseTooltip(detailIcons[i].tooltip, rect);
+                }
+            }, 64, s_Styles.noDetailObjectDefined, out var doubleClick);
+
             if (doubleClick)
             {
                 TerrainDetailContextMenus.EditDetail(new MenuCommand(terrain, selectedDetail));
@@ -411,7 +422,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
 
             if (selectedDetail >= 0 && selectedDetail < prototypes.Length)
-                ShowDetailPrototypeWarnings(prototypes[selectedDetail], terrain);
+                ShowDetailPrototypeMessages(prototypes[selectedDetail], terrain);
 
             var terrainInspector = TerrainInspector.s_activeTerrainInspectorInstance;
 
@@ -690,17 +701,21 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public override void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
         {
-            int mouseOnPatchIndex = ClampedDetailPatchesGUI(terrain, out var detailMinMaxHeight, out var clampedDetailPatchIconScreenPositions);
+            // grab m_MouseOnPatchIndex here to avoid calling again in OnRenderBrushPreview
+            m_MouseOnPatchIndex = ClampedDetailPatchesGUI(terrain, out var detailMinMaxHeight, out var clampedDetailPatchIconScreenPositions);
 
-            if (mouseOnPatchIndex == -1 && editContext.hitValidTerrain && Event.current.type == EventType.Repaint)
+            DrawClampedDetailPatchGUI(m_MouseOnPatchIndex, clampedDetailPatchIconScreenPositions, detailMinMaxHeight, terrain, editContext);
+        }
+
+        public override void OnRenderBrushPreview(Terrain terrain, IOnSceneGUI editContext)
+        {
+            if (m_MouseOnPatchIndex == -1 && editContext.hitValidTerrain && Event.current.type == EventType.Repaint)
             {
                 BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, editContext.raycastHit.textureCoord, editContext.brushSize, 0.0f);
                 PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
                 TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, editContext.brushTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
                 TerrainPaintUtility.ReleaseContextResources(ctx);
             }
-
-            DrawClampedDetailPatchGUI(mouseOnPatchIndex, clampedDetailPatchIconScreenPositions, detailMinMaxHeight, terrain, editContext);
         }
     }
 }

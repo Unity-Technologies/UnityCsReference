@@ -4,7 +4,7 @@
 
 using System.Linq;
 using UnityEditor;
-using UnityEditor.Experimental.SceneManagement;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -21,17 +21,14 @@ namespace UnityEditorInternal
         }
 
         internal ReorderableList m_ReorderableList;
-        GUIContent m_Header;
         float m_HeaderHeight;
-        string m_DisplayName;
         bool m_Reorderable = false;
         bool m_IsNotInPrefabContextModeWithOverrides = false;
 
         SerializedProperty m_OriginalProperty;
         SerializedProperty m_ArraySize;
 
-        int m_lastArraySize = -1;
-        int m_lastTargetHash = -1;
+        int m_LastArraySize = -1;
         internal SerializedProperty Property
         {
             get
@@ -45,27 +42,19 @@ namespace UnityEditorInternal
 
                 if (m_ReorderableList != null)
                 {
+                    bool versionChanged = !SerializedProperty.VersionEquals(m_ReorderableList.serializedProperty, m_OriginalProperty);
+
                     m_ReorderableList.serializedProperty = m_OriginalProperty;
-                    int targetHash = GetTargetHash(m_ReorderableList.serializedProperty.serializedObject);
-                    if (m_lastArraySize != m_ArraySize.intValue || m_lastTargetHash != targetHash)
+
+                    if (versionChanged || m_ArraySize != null && m_LastArraySize != m_ArraySize.intValue)
                     {
                         m_ReorderableList.ClearCacheRecursive();
-                        m_lastArraySize = m_ArraySize.intValue;
-                        m_lastTargetHash = targetHash;
                         ReorderableList.InvalidateParentCaches(m_ReorderableList.serializedProperty.propertyPath);
+
+                        if (m_ArraySize != null) m_LastArraySize = m_ArraySize.intValue;
                     }
                 }
             }
-        }
-
-        int GetTargetHash(SerializedObject obj)
-        {
-            int hash = 0;
-            for (int i = 0; i < obj.targetObjectsCount; i++)
-            {
-                hash ^= obj.targetObjects[i].GetInstanceID();
-            }
-            return hash;
         }
 
         public static string GetPropertyIdentifier(SerializedProperty serializedProperty)
@@ -75,11 +64,9 @@ namespace UnityEditorInternal
 
         ReorderableListWrapper() {}
 
-        public ReorderableListWrapper(SerializedProperty property, bool reorderable = true)
+        public ReorderableListWrapper(SerializedProperty property, GUIContent label, bool reorderable = true)
         {
             Property = property;
-            m_DisplayName = Property.displayName;
-            m_Header = new GUIContent(m_DisplayName);
             m_HeaderHeight = Constants.kDefaultFoldoutHeaderHeight;
             Init(reorderable);
         }
@@ -118,14 +105,14 @@ namespace UnityEditorInternal
             return m_HeaderHeight + (Property.isExpanded && m_ReorderableList != null ? Constants.kHeaderPadding + m_ReorderableList.GetHeight() : 0.0f);
         }
 
-        public void Draw(Rect r)
+        public void Draw(GUIContent label, Rect r)
         {
-            Draw(r, ReorderableList.Defaults.infinityRect);
+            Draw(label, r, ReorderableList.Defaults.infinityRect);
         }
 
-        public void Draw(Rect r, Rect visibleArea)
+        public void Draw(GUIContent label, Rect r, Rect visibleArea)
         {
-            r.xMin += EditorGUI.indent * (EditorGUI.indentLevel - 1);
+            r.xMin += EditorGUI.indent;
             var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
             m_IsNotInPrefabContextModeWithOverrides = prefabStage == null || prefabStage.mode != PrefabStage.Mode.InContext || !PrefabStage.s_PatchAllOverriddenProperties
                 || Selection.objects.All(obj => PrefabUtility.IsPartOfAnyPrefab(obj) && !AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(obj)).Equals(AssetDatabase.AssetPathToGUID(prefabStage.assetPath)));
@@ -144,8 +131,12 @@ namespace UnityEditorInternal
             bool prevEnabled = GUI.enabled;
             GUI.enabled = true;
             EditorGUI.BeginChangeCheck();
-            Property.isExpanded = EditorGUI.BeginFoldoutHeaderGroup(headerRect, Property.isExpanded, m_Header);
+
+            if (!m_OriginalProperty.hasMultipleDifferentValues) EditorGUI.BeginProperty(headerRect, GUIContent.none, m_OriginalProperty);
+            Property.isExpanded = EditorGUI.BeginFoldoutHeaderGroup(headerRect, Property.isExpanded, label ?? GUIContent.Temp(Property.displayName));
             EditorGUI.EndFoldoutHeaderGroup();
+            if (!m_OriginalProperty.hasMultipleDifferentValues) EditorGUI.EndProperty();
+
             if (EditorGUI.EndChangeCheck())
             {
                 if (Event.current.alt)

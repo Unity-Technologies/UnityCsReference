@@ -6,10 +6,10 @@ using System;
 
 namespace UnityEditor
 {
-    internal class Delayer
+    class Delayer
     {
         private double m_LastExecutionTime;
-        private readonly Action<object> m_Action;
+        private Action<object> m_Action;
         private readonly double m_DebounceDelay;
         private object m_Context;
         private readonly bool m_IsThrottle;
@@ -46,13 +46,21 @@ namespace UnityEditor
             m_IsThrottle = isThrottle;
         }
 
+        public void Dispose()
+        {
+            EditorApplication.delayCall -= Debounce;
+            EditorApplication.delayCall -= Throttle;
+            m_Context = null;
+            m_Action = null;
+        }
+
         private void Debounce()
         {
             EditorApplication.delayCall -= Debounce;
             var currentTime = EditorApplication.timeSinceStartup;
             if (m_LastExecutionTime != 0 && currentTime - m_LastExecutionTime > m_DebounceDelay)
             {
-                m_Action(m_Context);
+                m_Action?.Invoke(m_Context);
                 m_LastExecutionTime = 0;
             }
             else
@@ -67,7 +75,7 @@ namespace UnityEditor
             var currentTime = EditorApplication.timeSinceStartup;
             if (m_LastExecutionTime != 0 && currentTime - m_LastExecutionTime > m_DebounceDelay)
             {
-                m_Action(m_Context);
+                m_Action?.Invoke(m_Context);
                 m_LastExecutionTime = 0;
             }
             else

@@ -54,7 +54,6 @@ namespace UnityEditor.Experimental.TerrainAPI
             System.Array.Copy(terrain.terrainData.treePrototypes, newTreePrototypesArray, terrain.terrainData.treePrototypes.Length);
             newTreePrototypesArray[newTreePrototypesArray.Length - 1] = new TreePrototype(sourceTreePrototype);
             terrain.terrainData.treePrototypes = newTreePrototypesArray;
-            terrain.terrainData.RefreshPrototypes();
             return newTreePrototypesArray.Length - 1;
         }
 
@@ -350,7 +349,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Paints the selected tree prototype onto the terrain";
         }
 
-        public override void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
+        public override void OnRenderBrushPreview(Terrain terrain, IOnSceneGUI editContext)
         {
             // We're only doing painting operations, early out if it's not a repaint
             if (Event.current.type != EventType.Repaint)

@@ -135,8 +135,8 @@ namespace UnityEditor
         Quality32BitDownscaled = 2,
     }
 
-    // Keep in sync with WSASubtarget in SerializationMetaFlags.h
     [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+    [Obsolete("WSASubtarget is obsolete and has no effect. It will be removed in a subsequent Unity release.")]
     public enum WSASubtarget
     {
         AnyDevice = 0,
@@ -310,8 +310,8 @@ namespace UnityEditor
         // Should we write out submission materials when building?
         public static extern bool needSubmissionMaterials { get; set; }
 
-        // Should we write out compressed archives (Sony PsArc)
-        public static extern bool compressWithPsArc { get; set; }
+        [Obsolete("EditorUserBuildSettings.compressWithPsArc is obsolete and has no effect. It will be removed in a subsequent Unity release.")]
+        public static bool compressWithPsArc { get => false; set {} }
 
         // Should we force an install on the build package, even if there are validation errors
         public static extern bool forceInstallation { get; set; }
@@ -433,12 +433,11 @@ namespace UnityEditor
 
         internal static extern string androidCurrentDeploymentTargetId { get; set; }
 
-        public static extern WSASubtarget wsaSubtarget
+        [Obsolete("EditorUserBuildSettings.wsaSubtarget is obsolete and has no effect. It will be removed in a subsequent Unity release.")]
+        public static WSASubtarget wsaSubtarget
         {
-            [NativeMethod("GetSelectedWSABuildSubtarget")]
-            get;
-            [NativeMethod("SetSelectedWSABuildSubtarget")]
-            set;
+            get => WSASubtarget.AnyDevice;
+            set {}
         }
 
         [Obsolete("EditorUserBuildSettings.wsaSDK is obsolete and has no effect.It will be removed in a subsequent Unity release.")]
@@ -597,7 +596,15 @@ namespace UnityEditor
         public static extern bool buildAppBundle { get; set; }
 
         // Symlink runtime libraries with an iOS Xcode project.
-        public static extern bool symlinkLibraries { get; set; }
+        [Obsolete("EditorUserBuildSettings.symlinkLibraries is obsolete. Use EditorUserBuildSettings.symlinkSources instead (UnityUpgradable) -> [UnityEditor] EditorUserBuildSettings.symlinkSources", true)]
+
+        public static bool symlinkLibraries
+        {
+            get => symlinkSources;
+            set => symlinkSources = value;
+        }
+
+        public static extern bool symlinkSources { get; set; }
 
         // Symlink trampoline for iOS Xcode project.
         internal static extern bool symlinkTrampoline { get; set; }
@@ -696,6 +703,14 @@ namespace UnityEditor
             [NativeMethod("GetHTCSScriptDebuggingForSwitch")]
             get;
             [NativeMethod("SetHTCSScriptDebuggingForSwitch")]
+            set;
+        }
+
+        public static extern bool switchUseLegacyNvnPoolAllocator
+        {
+            [NativeMethod("GetUseLegacyNvnPoolAllocatorForSwitch")]
+            get;
+            [NativeMethod("SetUseLegacyNvnPoolAllocatorForSwitch")]
             set;
         }
 

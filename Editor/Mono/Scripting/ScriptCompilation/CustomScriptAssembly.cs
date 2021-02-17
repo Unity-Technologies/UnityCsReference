@@ -258,13 +258,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 assemblyFlags = AssemblyFlags.UserAssembly;
 
-                // A custom script assembly contains user-written code if and only if AssetPathMetaData is null.
-                bool isUserWrittenCode = AssetPathMetaData == null;
-                if (isUserWrittenCode)
-                {
-                    assemblyFlags |= AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers;
-                }
-
                 if (IncludePlatforms != null && IncludePlatforms.Length == 1 && IncludePlatforms[0].BuildTarget == BuildTarget.NoTarget)
                     assemblyFlags |= AssemblyFlags.EditorOnly;
 

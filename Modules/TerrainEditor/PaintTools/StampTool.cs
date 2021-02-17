@@ -97,7 +97,11 @@ namespace UnityEditor.Experimental.TerrainAPI
                 evt.Use();
                 editContext.Repaint();
             }
+        }
 
+        public override void OnRenderBrushPreview(Terrain terrain, IOnSceneGUI editContext)
+        {
+            Event evt = Event.current;
             // We're only doing painting operations, early out if it's not a repaint
             if (evt.type != EventType.Repaint)
                 return;

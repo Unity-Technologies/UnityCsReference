@@ -149,6 +149,8 @@ namespace UnityEngine.UIElements.UIR
 
     internal struct UIRVEShaderInfoAllocator
     {
+        static readonly RectInt k_FirstPixelRect = new RectInt(0, 0, 1, 1);
+
         DynamicAtlasCore m_Atlas;
         BitmapAllocator32 m_TransformAllocator, m_ClipRectAllocator, m_OpacityAllocator, m_TextSettingsAllocator; // All allocators take pages from the same atlas
         bool m_AtlasReallyCreated;
@@ -368,9 +370,9 @@ namespace UnityEngine.UIElements.UIR
             if (m_VertexTexturingEnabled)
             {
                 var allocXY = AllocToTexelCoord(ref m_TransformAllocator, alloc);
-                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, allocXY.x, allocXY.y + 0, false, xform.GetRow(0));
-                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, allocXY.x, allocXY.y + 1, false, xform.GetRow(1));
-                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, allocXY.x, allocXY.y + 2, false, xform.GetRow(2));
+                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y + 0, false, xform.GetRow(0));
+                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y + 1, false, xform.GetRow(1));
+                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y + 2, false, xform.GetRow(2));
             }
             else
                 m_Transforms[AllocToConstantBufferIndex(alloc)] = new Transform3x4()
@@ -387,7 +389,7 @@ namespace UnityEngine.UIElements.UIR
             if (m_VertexTexturingEnabled)
             {
                 var allocXY = AllocToTexelCoord(ref m_ClipRectAllocator, alloc);
-                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, allocXY.x, allocXY.y, false, clipRect);
+                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y, false, clipRect);
             }
             else m_ClipRects[AllocToConstantBufferIndex(alloc)] = clipRect;
         }
@@ -396,7 +398,7 @@ namespace UnityEngine.UIElements.UIR
         {
             Debug.Assert(alloc.IsValid());
             var allocXY = AllocToTexelCoord(ref m_OpacityAllocator, alloc);
-            m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, allocXY.x, allocXY.y, false, new Color(1, 1, 1, opacity));
+            m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y, false, new Color(1, 1, 1, opacity));
         }
 
         public void SetTextCoreSettingValue(BMPAlloc alloc, TextCoreSettings settings)
@@ -405,9 +407,9 @@ namespace UnityEngine.UIElements.UIR
 
             var allocXY = AllocToTexelCoord(ref m_TextSettingsAllocator, alloc);
             var settingValues = new Color(-settings.underlayOffset.x, settings.underlayOffset.y, settings.underlaySoftness, settings.outlineWidth);
-            m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, allocXY.x, allocXY.y + 0, false, settings.outlineColor);
-            m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, allocXY.x, allocXY.y + 1, false, settings.underlayColor);
-            m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, allocXY.x, allocXY.y + 2, false, settingValues);
+            m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y + 0, false, settings.outlineColor);
+            m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y + 1, false, settings.underlayColor);
+            m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y + 2, false, settingValues);
         }
 
         public void FreeTransform(BMPAlloc alloc)

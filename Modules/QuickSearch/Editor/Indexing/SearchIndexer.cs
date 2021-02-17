@@ -808,6 +808,11 @@ namespace UnityEditor.Search
             return m_Documents.FindIndex(d => d.valid && d.id.Equals(id, StringComparison.Ordinal));
         }
 
+        private int FindDocumentIndexByPath(string path)
+        {
+            return m_Documents.FindIndex(d => d.valid && d.path.Equals(path, StringComparison.Ordinal));
+        }
+
         internal void Merge(string[] removeDocuments, SearchIndexer si, int baseScore = 0,
             Action<int, SearchIndexer, int> documentIndexing = null)
         {
@@ -816,10 +821,10 @@ namespace UnityEditor.Search
             List<SearchIndexEntry> indexes = null;
             lock (this)
             {
-                removeDocIndexes = removeDocuments.Select(FindDocumentIndex).Where(i => i != -1).ToArray();
+                removeDocIndexes = removeDocuments.Select(FindDocumentIndexByPath).Where(i => i != -1).ToArray();
                 foreach (var idi in removeDocIndexes)
                     m_Documents[idi] = default;
-                updatedDocIndexes = si.m_Documents.Select(d => FindDocumentIndex(d.id)).ToArray();
+                updatedDocIndexes = si.m_Documents.Select(d => FindDocumentIndexByPath(d.id)).ToArray();
 
                 var ignoreDocuments = removeDocIndexes.Concat(updatedDocIndexes.Where(i => i != -1)).OrderBy(i => i).ToArray();
                 indexes = new List<SearchIndexEntry>(m_Indexes.Where(e => m_Documents[e.index].valid && Array.BinarySearch(ignoreDocuments, e.index) < 0));

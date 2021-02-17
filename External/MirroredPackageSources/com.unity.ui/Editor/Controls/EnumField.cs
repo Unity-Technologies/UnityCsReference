@@ -156,6 +156,11 @@ namespace UnityEditor.UIElements
             Initialize(defaultValue);
 
             RegisterCallback<PointerDownEvent>(OnPointerDownEvent);
+            RegisterCallback<MouseDownEvent>(e =>
+            {
+                if (e.button == (int) MouseButton.LeftMouse)
+                    e.StopPropagation();
+            });
         }
 
         /// <summary>
@@ -249,7 +254,7 @@ namespace UnityEditor.UIElements
             }
             else
             {
-                menu = elementPanel?.contextType == ContextType.Player ? new GenericDropdownMenu() : DropdownMenu.CreateDropdown();
+                menu = elementPanel?.contextType == ContextType.Player ? new GenericDropdownMenu() : DropdownUtility.CreateDropdown();
             }
 
             int selectedIndex = Array.IndexOf(m_EnumData.values, value);

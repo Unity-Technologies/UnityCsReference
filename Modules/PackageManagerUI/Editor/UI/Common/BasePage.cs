@@ -104,7 +104,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             onVisualStateChange?.Invoke(visualStates);
         }
 
-        protected void TriggerOnSelectionChanged(IPackageVersion version)
+        public void TriggerOnSelectionChanged(IPackageVersion version)
         {
             onSelectionChanged?.Invoke(version);
         }
@@ -162,6 +162,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             TriggerOnSelectionChanged(GetSelectedVersion());
             TriggerOnVisualStateChange(new[] { GetVisualState(oldPackageUniqueId), GetVisualState(packageUniqueId) }.Where(s => s != null));
+        }
+
+        public virtual void RefreshSelected()
+        {
+            TriggerOnSelectionChanged(GetSelectedVersion());
         }
 
         public void SetExpanded(IPackage package, bool value)

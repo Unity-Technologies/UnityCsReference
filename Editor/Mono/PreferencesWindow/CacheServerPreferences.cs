@@ -69,7 +69,7 @@ namespace UnityEditor
             get
             {
                 EnsurePreferencesRead();
-                return AssetDatabase.IsV2Enabled() && s_CacheServer2Mode == CacheServer2Mode.Enabled;
+                return s_CacheServer2Mode == CacheServer2Mode.Enabled;
             }
         }
 
@@ -132,10 +132,7 @@ namespace UnityEditor
             EditorPrefs.SetBool(LocalCacheServer.CustomPathKey, s_EnableCustomPath);
             LocalCacheServer.Setup();
 
-            if (AssetDatabase.IsV2Enabled())
-            {
-                AssetDatabase.RefreshSettings();
-            }
+            AssetDatabase.RefreshSettings();
 
             if (changedDir)
             {
@@ -261,29 +258,24 @@ namespace UnityEditor
 
             GUILayout.Space(5);
 
-            using (new EditorGUI.DisabledScope(AssetDatabase.IsV1Enabled()))
+            if (GUILayout.Button("Check Connection", GUILayout.Width(150)))
             {
-                if (GUILayout.Button("Check Connection", GUILayout.Width(150)))
-                {
-                    var address = s_CacheServer2IPAddress.Split(':');
-                    var ip = address[0];
-                    UInt16 port = 0;
-                    if (address.Length == 2)
-                        port = Convert.ToUInt16(address[1]);
+                var address = s_CacheServer2IPAddress.Split(':');
+                var ip = address[0];
+                UInt16 port = 0;
+                if (address.Length == 2)
+                    port = Convert.ToUInt16(address[1]);
 
-                    if (AssetDatabase.CanConnectToCacheServer(ip, port))
-                        s_ConnectionState = ConnectionState.Success;
-                    else
-                        s_ConnectionState = ConnectionState.Failure;
+                if (AssetDatabase.CanConnectToCacheServer(ip, port))
+                    s_ConnectionState = ConnectionState.Success;
+                else
+                    s_ConnectionState = ConnectionState.Failure;
 
-                }
             }
 
             GUILayout.Space(-25);
 
-            var s = AssetDatabase.IsV2Enabled() ? s_ConnectionState : ConnectionState.Unknown;
-
-            switch (s)
+            switch (s_ConnectionState)
             {
                 case ConnectionState.Success:
                     EditorGUILayout.HelpBox("Connection successful.", MessageType.Info, false);
@@ -309,24 +301,12 @@ namespace UnityEditor
         private static void OnPreferencesReadGUI()
         {
             bool shouldTryConnect = s_ConnectionState == ConnectionState.Unknown &&
-                (AssetDatabase.IsV1Enabled() ? s_CacheServerMode != CacheServerMode.Disabled : s_CacheServer2Mode != CacheServer2Mode.Disabled);
+                s_CacheServer2Mode != CacheServer2Mode.Disabled;
 
             if (shouldTryConnect)
             {
-                var canConnect = false;
-                if (AssetDatabase.IsV1Enabled())
-                {
-                    canConnect = InternalEditorUtility.CanConnectToCacheServer();
-                }
-                else
-                {
-                    canConnect = AssetDatabase.IsConnectedToCacheServer();
-                }
-
-                if (canConnect)
-                    s_ConnectionState = ConnectionState.Success;
-                else
-                    s_ConnectionState = ConnectionState.Failure;
+                var isConnected = AssetDatabase.IsConnectedToCacheServer();
+                s_ConnectionState = isConnected ? ConnectionState.Success : ConnectionState.Failure;
             }
         }
     }

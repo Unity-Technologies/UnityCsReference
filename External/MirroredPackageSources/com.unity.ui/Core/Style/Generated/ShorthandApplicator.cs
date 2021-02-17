@@ -9,71 +9,71 @@ namespace UnityEngine.UIElements.StyleSheets
 {
     internal static partial class ShorthandApplicator
     {
-        public static void ApplyBorderColor(StylePropertyReader reader, ComputedStyle computedStyle)
+        public static void ApplyBorderColor(StylePropertyReader reader, ref ComputedStyle computedStyle)
         {
             CompileBoxArea(reader, out Color borderTopColor, out Color borderRightColor, out Color borderBottomColor, out Color borderLeftColor);
 
-            computedStyle.nonInheritedData.borderTopColor = borderTopColor;
-            computedStyle.nonInheritedData.borderRightColor = borderRightColor;
-            computedStyle.nonInheritedData.borderBottomColor = borderBottomColor;
-            computedStyle.nonInheritedData.borderLeftColor = borderLeftColor;
+            computedStyle.visualData.Write().borderTopColor = borderTopColor;
+            computedStyle.visualData.Write().borderRightColor = borderRightColor;
+            computedStyle.visualData.Write().borderBottomColor = borderBottomColor;
+            computedStyle.visualData.Write().borderLeftColor = borderLeftColor;
         }
 
-        public static void ApplyBorderRadius(StylePropertyReader reader, ComputedStyle computedStyle)
+        public static void ApplyBorderRadius(StylePropertyReader reader, ref ComputedStyle computedStyle)
         {
             CompileBorderRadius(reader, out Length borderTopLeftRadius, out Length borderTopRightRadius, out Length borderBottomRightRadius, out Length borderBottomLeftRadius);
 
-            computedStyle.nonInheritedData.borderTopLeftRadius = borderTopLeftRadius;
-            computedStyle.nonInheritedData.borderTopRightRadius = borderTopRightRadius;
-            computedStyle.nonInheritedData.borderBottomRightRadius = borderBottomRightRadius;
-            computedStyle.nonInheritedData.borderBottomLeftRadius = borderBottomLeftRadius;
+            computedStyle.visualData.Write().borderTopLeftRadius = borderTopLeftRadius;
+            computedStyle.visualData.Write().borderTopRightRadius = borderTopRightRadius;
+            computedStyle.visualData.Write().borderBottomRightRadius = borderBottomRightRadius;
+            computedStyle.visualData.Write().borderBottomLeftRadius = borderBottomLeftRadius;
         }
 
-        public static void ApplyBorderWidth(StylePropertyReader reader, ComputedStyle computedStyle)
+        public static void ApplyBorderWidth(StylePropertyReader reader, ref ComputedStyle computedStyle)
         {
             CompileBoxArea(reader, out float borderTopWidth, out float borderRightWidth, out float borderBottomWidth, out float borderLeftWidth);
 
-            computedStyle.nonInheritedData.borderTopWidth = borderTopWidth;
-            computedStyle.nonInheritedData.borderRightWidth = borderRightWidth;
-            computedStyle.nonInheritedData.borderBottomWidth = borderBottomWidth;
-            computedStyle.nonInheritedData.borderLeftWidth = borderLeftWidth;
+            computedStyle.layoutData.Write().borderTopWidth = borderTopWidth;
+            computedStyle.layoutData.Write().borderRightWidth = borderRightWidth;
+            computedStyle.layoutData.Write().borderBottomWidth = borderBottomWidth;
+            computedStyle.layoutData.Write().borderLeftWidth = borderLeftWidth;
         }
 
-        public static void ApplyFlex(StylePropertyReader reader, ComputedStyle computedStyle)
+        public static void ApplyFlex(StylePropertyReader reader, ref ComputedStyle computedStyle)
         {
             CompileFlexShorthand(reader, out float flexGrow, out float flexShrink, out Length flexBasis);
 
-            computedStyle.nonInheritedData.flexGrow = flexGrow;
-            computedStyle.nonInheritedData.flexShrink = flexShrink;
-            computedStyle.nonInheritedData.flexBasis = flexBasis;
+            computedStyle.layoutData.Write().flexGrow = flexGrow;
+            computedStyle.layoutData.Write().flexShrink = flexShrink;
+            computedStyle.layoutData.Write().flexBasis = flexBasis;
         }
 
-        public static void ApplyMargin(StylePropertyReader reader, ComputedStyle computedStyle)
+        public static void ApplyMargin(StylePropertyReader reader, ref ComputedStyle computedStyle)
         {
             CompileBoxArea(reader, out Length marginTop, out Length marginRight, out Length marginBottom, out Length marginLeft);
 
-            computedStyle.nonInheritedData.marginTop = marginTop;
-            computedStyle.nonInheritedData.marginRight = marginRight;
-            computedStyle.nonInheritedData.marginBottom = marginBottom;
-            computedStyle.nonInheritedData.marginLeft = marginLeft;
+            computedStyle.layoutData.Write().marginTop = marginTop;
+            computedStyle.layoutData.Write().marginRight = marginRight;
+            computedStyle.layoutData.Write().marginBottom = marginBottom;
+            computedStyle.layoutData.Write().marginLeft = marginLeft;
         }
 
-        public static void ApplyPadding(StylePropertyReader reader, ComputedStyle computedStyle)
+        public static void ApplyPadding(StylePropertyReader reader, ref ComputedStyle computedStyle)
         {
             CompileBoxArea(reader, out Length paddingTop, out Length paddingRight, out Length paddingBottom, out Length paddingLeft);
 
-            computedStyle.nonInheritedData.paddingTop = paddingTop;
-            computedStyle.nonInheritedData.paddingRight = paddingRight;
-            computedStyle.nonInheritedData.paddingBottom = paddingBottom;
-            computedStyle.nonInheritedData.paddingLeft = paddingLeft;
+            computedStyle.layoutData.Write().paddingTop = paddingTop;
+            computedStyle.layoutData.Write().paddingRight = paddingRight;
+            computedStyle.layoutData.Write().paddingBottom = paddingBottom;
+            computedStyle.layoutData.Write().paddingLeft = paddingLeft;
         }
 
-        public static void ApplyUnityTextOutline(StylePropertyReader reader, ComputedStyle computedStyle)
+        public static void ApplyUnityTextOutline(StylePropertyReader reader, ref ComputedStyle computedStyle)
         {
             CompileTextOutline(reader, out Color unityTextOutlineColor, out float unityTextOutlineWidth);
 
-            computedStyle.inheritedData.unityTextOutlineColor = unityTextOutlineColor;
-            computedStyle.inheritedData.unityTextOutlineWidth = unityTextOutlineWidth;
+            computedStyle.inheritedData.Write().unityTextOutlineColor = unityTextOutlineColor;
+            computedStyle.inheritedData.Write().unityTextOutlineWidth = unityTextOutlineWidth;
         }
     }
 }

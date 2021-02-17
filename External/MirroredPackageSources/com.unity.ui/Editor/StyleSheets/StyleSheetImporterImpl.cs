@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,6 +10,8 @@ using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using ExCSS;
 using UnityEditor.AssetImporters;
+using UnityEngine.TextCore.Text;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements.StyleSheets
 {
@@ -29,7 +30,7 @@ namespace UnityEditor.UIElements.StyleSheets
         public StyleValueImporter(UnityEditor.AssetImporters.AssetImportContext context)
         {
             if (context == null)
-                throw new ArgumentNullException(nameof(context));
+                throw new System.ArgumentNullException(nameof(context));
 
             m_Context = context;
             m_AssetPath = context.assetPath;
@@ -64,6 +65,35 @@ namespace UnityEditor.UIElements.StyleSheets
         // Allow overriding this in tests
         public virtual UnityEngine.Object DeclareDependencyAndLoad(string path, string subAssetPath)
         {
+            var prefix = $"{ThemeRegistry.kThemeScheme}://";
+            var themeName = path.Substring(prefix.Length);
+
+            if (path.StartsWith(prefix))
+            {
+                if (!ThemeRegistry.themes.ContainsKey(themeName))
+                    return null;
+
+                var themePath = ThemeRegistry.themes[themeName];
+                var themeAssetToCopy = EditorGUIUtility.Load(themePath);
+                Debug.Assert(themeAssetToCopy != null, $"Theme not found searching for '{themeName}' at <{themePath}>.");
+
+                if (themeAssetToCopy != null)
+                {
+                    var clonedAssets = DeepCopyAsset(themeAssetToCopy);
+
+                    if (clonedAssets.Count > 0)
+                    {
+                        clonedAssets[0].name = themeName;
+                        int assetIndex = 0;
+                        foreach (var clonedAsset in clonedAssets)
+                            m_Context.AddObjectToAsset($"asset {assetIndex++}: clonedAsset.name", clonedAsset);
+
+                        return clonedAssets[0];
+                    }
+                }
+                return null;
+            }
+
             m_Context?.DependsOnSourceAsset(path);
 
             if (string.IsNullOrEmpty(subAssetPath))
@@ -78,8 +108,250 @@ namespace UnityEditor.UIElements.StyleSheets
                 if (o.name == subAssetPath)
                     return o;
             }
-
             return null;
+        }
+
+        private static UnityEngine.Object LoadResource(string path)
+        {
+            return StyleSheetResourceUtil.LoadResource(path, typeof(UnityEngine.Object));
+        }
+
+        private struct StoredAsset
+        {
+            public Object resource;
+            public ScalableImage si;
+            public int index;
+        };
+
+        internal static List<UnityEngine.Object> DeepCopyAsset(UnityEngine.Object original)
+        {
+            var originalStylesheet = original as UnityEngine.UIElements.StyleSheet;
+            if (originalStylesheet == null)
+                return new List<UnityEngine.Object>();
+
+            var clonedStylesheet = ScriptableObject.Instantiate(originalStylesheet) as UnityEngine.UIElements.StyleSheet;
+
+            var addedAssets = new Dictionary<UnityEngine.Object, List<UnityEngine.Object>>();
+            var newAssets = new List<UnityEngine.Object>();
+            var newScalableImages = new List<ScalableImage>();
+
+            // Clone assets
+            for (int i = 0; i < clonedStylesheet.assets.Length; ++i)
+            {
+                var asset = clonedStylesheet.assets[i];
+
+                // The first cloned asset is the "main" asset that should be added to the stylesheet's list
+                List<UnityEngine.Object> clonedAssets = null;
+                if (!addedAssets.TryGetValue(asset, out clonedAssets))
+                {
+                    clonedAssets = CloneAsset(asset);
+                    if (clonedAssets.Count > 0)
+                        addedAssets[asset] = clonedAssets;
+                }
+
+                if (clonedAssets?.Count > 0)
+                    newAssets.Add(clonedAssets[0]);
+            }
+
+            // Clone scalable images
+            for (int i = 0; i < clonedStylesheet.scalableImages.Length; ++i)
+            {
+                var si = clonedStylesheet.scalableImages[i];
+
+                List<UnityEngine.Object> clonedImages = null;
+                if (!addedAssets.TryGetValue(si.normalImage, out clonedImages))
+                {
+                    var tex = CloneAsset(si.normalImage);
+                    var texHighRes = CloneAsset(si.highResolutionImage);
+                    if (tex.Count > 0 && texHighRes.Count > 0)
+                    {
+                        clonedImages = new List<UnityEngine.Object> { tex[0], texHighRes[0] };
+                        addedAssets[si.normalImage] = clonedImages;
+                    }
+                }
+
+                if (clonedImages?.Count > 0)
+                    newScalableImages.Add(new ScalableImage() {
+                        normalImage = clonedImages[0] as Texture2D,
+                        highResolutionImage = clonedImages[1] as Texture2D
+                    });
+            }
+
+            // Scan through resource paths and convert them to asset references
+            var assetPaths = new Dictionary<string, StoredAsset>();
+            var scalableImagePaths = new Dictionary<string, StoredAsset>();
+
+            foreach (var rule in clonedStylesheet.rules)
+            {
+                foreach (var prop in rule.properties)
+                {
+                    for (int valueIndex = 0; valueIndex < prop.values.Length; ++valueIndex)
+                    {
+                        var value = prop.values[valueIndex];
+                        if (value.valueType != StyleValueType.ResourcePath)
+                            continue;
+
+                        var path = clonedStylesheet.strings[value.valueIndex];
+
+                        bool isResource = false;
+                        int assetIndex = -1;
+                        bool isScalableImage = false;
+                        int scalableImageIndex = -1;
+
+                        StoredAsset sa;
+                        if (scalableImagePaths.TryGetValue(path, out sa))
+                        {
+                            scalableImageIndex = sa.index;
+                            isScalableImage = true;
+                        }
+                        else if (assetPaths.TryGetValue(path, out sa))
+                        {
+                            assetIndex = sa.index;
+                            isResource = true;
+                        }
+                        else
+                        {
+                            var asset = LoadResource(path);
+                            var clonedAssets = CloneAsset(asset);
+                            addedAssets[asset] = clonedAssets;
+
+                            if (asset is Texture2D)
+                            {
+                                // Try to load the @2x version
+                                var highResPath = Path.Combine(
+                                    Path.GetDirectoryName(path),
+                                    Path.GetFileNameWithoutExtension(path) + "@2x" + Path.GetExtension(path));
+                                var highResTex = LoadResource(highResPath);
+
+                                if (highResTex != null)
+                                {
+                                    scalableImageIndex = newScalableImages.Count;
+                                    var highResClones = CloneAsset(highResTex);
+                                    newScalableImages.Add(new ScalableImage() {
+                                        normalImage = clonedAssets[0] as Texture2D,
+                                        highResolutionImage = highResClones[0] as Texture2D
+                                    });
+                                    scalableImagePaths[path] = new StoredAsset() {
+                                        si = newScalableImages[newScalableImages.Count - 1],
+                                        index = scalableImageIndex
+                                    };
+                                    clonedAssets.Add(highResClones[0]);
+                                    addedAssets[asset] = clonedAssets;
+                                    isScalableImage = true;
+                                }
+                            }
+
+                            if (!isScalableImage && clonedAssets.Count > 0)
+                            {
+                                assetIndex = newAssets.Count;
+                                newAssets.AddRange(clonedAssets);
+                                Object resource = clonedAssets[0];
+                                assetPaths[path] = new StoredAsset()
+                                {
+                                    resource = resource,
+                                    index = assetIndex
+                                };
+                                isResource = true;
+                            }
+                        }
+
+                        if ( isResource)
+                        {
+                            value.valueType = StyleValueType.AssetReference;
+                            value.valueIndex = assetIndex;
+                            prop.values[valueIndex] = value;
+                        }
+                        else if (isScalableImage)
+                        {
+                            value.valueType = StyleValueType.ScalableImage;
+                            value.valueIndex = scalableImageIndex;
+                            prop.values[valueIndex] = value;
+                        }
+                        else
+                        {
+                            Debug.LogError( "ResourcePath was not converted to AssetReference when converting stylesheet :  " + path);
+                        }
+                    }
+                }
+            }
+
+            clonedStylesheet.assets = newAssets.ToArray();
+            clonedStylesheet.scalableImages = newScalableImages.ToArray();
+
+            // Store all added assets in a hashset to avoid duplicates
+            var cleanAssets = new HashSet<UnityEngine.Object>();
+            foreach (var assets in addedAssets.Values)
+                foreach (var a in assets)
+                    cleanAssets.Add(a);
+
+            // The cloned stylesheet should be the first item in the list, since it is the "main" asset
+            var result = cleanAssets.ToList();
+            result.Insert(0, clonedStylesheet);
+
+            return result;
+        }
+
+        private static List<UnityEngine.Object> CloneAsset(UnityEngine.Object o)
+        {
+            if (o == null)
+                return null;
+
+            var clonedAssets = new List<UnityEngine.Object>();
+
+            if (o is Texture2D)
+            {
+                var tex = new Texture2D(0, 0);
+                EditorUtility.CopySerialized(o, tex);
+                clonedAssets.Add(tex);
+            }
+            else if (o is Font)
+            {
+                var font = new Font();
+                EditorUtility.CopySerialized(o, font);
+                font.hideFlags = HideFlags.None;
+                clonedAssets.Add(font);
+
+
+                if (font.material != null)
+                {
+                    var mat = new Material(font.material.shader);
+                    EditorUtility.CopySerialized(font.material, mat);
+                    mat.hideFlags = HideFlags.None;
+                    font.material = mat;
+                    clonedAssets.Add(mat);
+
+                    if (mat.mainTexture != null)
+                    {
+                        var tex = new Texture2D(0, 0);
+                        EditorUtility.CopySerialized(mat.mainTexture, tex);
+                        tex.hideFlags = HideFlags.None;
+                        mat.mainTexture = tex;
+                        clonedAssets.Add(tex);
+                    }
+                }
+
+                {
+                    var so = new SerializedObject(font);
+                    var oldTex = so.FindProperty("m_Texture").objectReferenceValue;
+                    if (oldTex != null)
+                    {
+                        //Reuse the same texture if the reference was equal
+                        if (font.material != null && oldTex == (o as Font).material.mainTexture)
+                            so.FindProperty("m_Texture").objectReferenceValue = font.material.mainTexture;
+                        else
+                        {
+                            var tex = new Texture2D(0, 0);
+                            EditorUtility.CopySerialized(oldTex, tex);
+                            tex.hideFlags = HideFlags.None;
+                            so.FindProperty("m_Texture").objectReferenceValue = font.material.mainTexture;
+                            clonedAssets.Add(tex);
+                        }
+                        so.ApplyModifiedProperties();
+                    }
+                }
+            }
+
+            return clonedAssets;
         }
 
         protected void VisitResourceFunction(GenericFunction funcTerm)
@@ -110,11 +382,6 @@ namespace UnityEditor.UIElements.StyleSheets
             }
         }
 
-        bool IsFontAssetInternal(UnityEngine.Object fontAsset)
-        {
-            return TextDelegates.IsFontAsset?.Invoke(fontAsset) ?? false;
-        }
-
         protected void VisitUrlFunction(PrimitiveTerm term)
         {
             string path = (string)term.Value;
@@ -133,18 +400,17 @@ namespace UnityEditor.UIElements.StyleSheets
                 UnityEngine.Object asset = DeclareDependencyAndLoad(projectRelativePath, subAssetPath);
 
                 bool isTexture = asset is Texture2D;
+                Sprite spriteAsset = asset as Sprite;
 
                 if (isTexture && string.IsNullOrEmpty(subAssetPath))
                 {
                     // Try to load a sprite sub-asset associated with this texture.
                     // Sprites have extra data, such as slices and tight-meshes that
                     // aren't stored in plain textures.
-                    var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(projectRelativePath);
-                    if (sprite != null)
-                        asset = sprite;
+                    spriteAsset = AssetDatabase.LoadAssetAtPath<Sprite>(projectRelativePath);
                 }
 
-                if (isTexture || asset is Sprite || asset is Font || IsFontAssetInternal(asset) || asset is VectorImage || asset is RenderTexture)
+                if (isTexture || asset is Sprite || asset is Font || asset is FontAsset || asset is VectorImage || asset is RenderTexture)
                 {
                     // Looking suffixed images files only
                     if (isTexture)
@@ -166,9 +432,11 @@ namespace UnityEditor.UIElements.StyleSheets
                             return;
                         }
                         // If we didn't find an high res variant, tell ADB we depend on that potential file existing
-                        DeclareDependencyAndLoad(hiResImageLocation);
+                        if (spriteAsset != null)
+                            DeclareDependencyAndLoad(hiResImageLocation);
                     }
-                    m_Builder.AddValue(asset);
+
+                    m_Builder.AddValue(spriteAsset != null ? spriteAsset : asset);
                 }
                 else
                 {
@@ -196,7 +464,7 @@ namespace UnityEditor.UIElements.StyleSheets
             {
                 func = StyleValueFunctionExtension.FromUssString(term.Name);
             }
-            catch (Exception)
+            catch (System.Exception)
             {
                 var prop = m_Builder.currentProperty;
                 m_Errors.AddValidationWarning($"Unknown function {term.Name} in declaration {prop.name}: {term.Name}", prop.line);
@@ -387,7 +655,7 @@ namespace UnityEditor.UIElements.StyleSheets
             if (s_NameCache == null)
             {
                 s_NameCache = new Dictionary<string, StyleValueKeyword>();
-                foreach (StyleValueKeyword kw in Enum.GetValues(typeof(StyleValueKeyword)))
+                foreach (StyleValueKeyword kw in System.Enum.GetValues(typeof(StyleValueKeyword)))
                 {
                     s_NameCache[kw.ToString().ToLower()] = kw;
                 }
@@ -511,7 +779,7 @@ namespace UnityEditor.UIElements.StyleSheets
                 {
                     VisitSheet(styleSheet);
                 }
-                catch (Exception exc)
+                catch (System.Exception exc)
                 {
                     Debug.LogException(exc);
                     m_Errors.AddInternalError(exc.StackTrace);
@@ -600,7 +868,7 @@ namespace UnityEditor.UIElements.StyleSheets
                 // Note: we must rely on recursion to correctly handle parser types here
                 VisitBaseSelector(rule.Selector);
 
-                foreach (Property property in  rule.Declarations)
+                foreach (Property property in rule.Declarations)
                 {
                     ValidateProperty(property);
 

@@ -194,6 +194,8 @@ namespace UnityEngine.UIElements
             get { return m_Immediate || m_GateCount == 0; }
         }
 
+        internal bool processingEvents { get; private set; }
+
         internal void Dispatch(EventBase evt, IPanel panel, DispatchMode dispatchMode)
         {
             evt.MarkReceivedByDispatcher();
@@ -285,6 +287,7 @@ namespace UnityEngine.UIElements
 
             try
             {
+                processingEvents = true;
                 while (queueToProcess.Count > 0)
                 {
                     EventRecord eventRecord = queueToProcess.Dequeue();
@@ -308,6 +311,7 @@ namespace UnityEngine.UIElements
             }
             finally
             {
+                processingEvents = false;
                 k_EventQueuePool.Release(queueToProcess);
             }
 

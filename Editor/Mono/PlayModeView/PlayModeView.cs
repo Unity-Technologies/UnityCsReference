@@ -30,6 +30,7 @@ namespace UnityEditor
         static PlayModeView s_RenderingView;
 
         private readonly string m_ViewsCache = Path.GetFullPath(Directory.GetCurrentDirectory() + "/Library/PlayModeViewStates/");
+        private static readonly string m_OpenGameViewOnPlay = "OpenGameViewOnEnteringPlayMode";
 
         [SerializeField] private List<string> m_SerializedViewNames = new List<string>();
         [SerializeField] private List<string> m_SerializedViewValues = new List<string>();
@@ -41,7 +42,7 @@ namespace UnityEditor
         [SerializeField] FilterMode m_TextureFilterMode = FilterMode.Point;
         [SerializeField] HideFlags m_TextureHideFlags = HideFlags.HideAndDontSave;
         [SerializeField] bool m_RenderIMGUI;
-        [SerializeField] bool m_MaximizeOnPlay;
+        [SerializeField] EnterPlayModeBehavior m_EnterPlayModeBehavior;
         [SerializeField] bool m_UseMipMap;
 
         private Dictionary<Type, string> m_AvailableWindowTypes;
@@ -112,16 +113,36 @@ namespace UnityEditor
             set { m_RenderIMGUI = value; }
         }
 
+        public EnterPlayModeBehavior enterPlayModeBehavior
+        {
+            get => m_EnterPlayModeBehavior;
+            set => SetPlayModeWindowsStates(value);
+        }
+
+        [Obsolete("PlayModeView.maximizeOnPlay is obsolete. Use PlayModeView.enterPlayModeBehavior instead")]
         public bool maximizeOnPlay
         {
-            get { return m_MaximizeOnPlay; }
-            set { m_MaximizeOnPlay = value; }
+            get { return m_EnterPlayModeBehavior == EnterPlayModeBehavior.PlayMaximized; }
+            set { m_EnterPlayModeBehavior = value ? EnterPlayModeBehavior.PlayMaximized : EnterPlayModeBehavior.PlayFocused; }
         }
 
         protected bool useMipMap
         {
             get { return m_UseMipMap; }
             set { m_UseMipMap = value; }
+        }
+
+        public static bool openWindowOnEnteringPlayMode
+        {
+            get => EditorPrefs.GetBool(m_OpenGameViewOnPlay, true);
+            set
+            {
+                if (EditorPrefs.GetBool(m_OpenGameViewOnPlay) != value)
+                {
+                    EditorPrefs.SetBool(m_OpenGameViewOnPlay, value);
+                    RepaintAll();
+                }
+            }
         }
 
         RenderTexture m_TargetTexture;
@@ -264,11 +285,15 @@ namespace UnityEditor
 
                 window.SetSerializedViews(serializedViews);
 
-                var da = m_Parent as DockArea;
-                if (da)
+                if (m_Parent is DockArea dockAreaParent)
                 {
-                    da.AddTab(window);
-                    da.RemoveTab(this);
+                    dockAreaParent.AddTab(window);
+                    dockAreaParent.RemoveTab(this);
+                    DestroyImmediate(this, true);
+                }
+                else if (m_Parent is MaximizedHostView maximizedParent)
+                {
+                    maximizedParent.actualView = window;
                     DestroyImmediate(this, true);
                 }
             }
@@ -344,6 +369,23 @@ namespace UnityEditor
             return s_LastFocused;
         }
 
+        internal static PlayModeView GetCorrectPlayModeViewToFocus()
+        {
+            if (s_PlayModeViews != null)
+            {
+                RemoveDisabledWindows();
+                foreach (var view in s_PlayModeViews)
+                {
+                    if (view.enterPlayModeBehavior == EnterPlayModeBehavior.PlayFocused || view.enterPlayModeBehavior == EnterPlayModeBehavior.PlayMaximized)
+                    {
+                        s_LastFocused = view;
+                        return view;
+                    }
+                }
+            }
+            return GetMainPlayModeView();
+        }
+
         internal static PlayModeView GetLastFocusedPlayModeView()
         {
             return s_LastFocused;
@@ -374,7 +416,10 @@ namespace UnityEditor
         {
             RemoveDisabledWindows();
             if (!s_PlayModeViews.Contains(this))
+            {
                 s_PlayModeViews.Add(this);
+                m_EnterPlayModeBehavior = s_PlayModeViews.Count == 1 ? EnterPlayModeBehavior.PlayFocused : EnterPlayModeBehavior.PlayUnfocused;
+            }
         }
 
         public bool IsShowingGizmos()
@@ -424,5 +469,27 @@ namespace UnityEditor
             foreach (PlayModeView playModeView in s_PlayModeViews)
                 playModeView.Repaint();
         }
+
+        public enum EnterPlayModeBehavior
+        {
+            PlayFocused,
+            PlayMaximized,
+            PlayUnfocused
+        }
+
+        void SetPlayModeWindowsStates(EnterPlayModeBehavior behavior)
+        {
+            if (m_EnterPlayModeBehavior == behavior)
+                return;
+
+            foreach (var view in s_PlayModeViews)
+            {
+                view.m_EnterPlayModeBehavior = view == this ? behavior : EnterPlayModeBehavior.PlayUnfocused;
+                view.OnEnterPlayModeBehaviorChange();
+                view.Repaint();
+            }
+        }
+
+        protected virtual void OnEnterPlayModeBehaviorChange() {}
     }
 }

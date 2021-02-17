@@ -15,7 +15,7 @@ namespace UnityEditor
         // Unknown target.
         Unknown = 0,
 
-        // PC, Mac & Linux standalone target.
+        // PC (Windows, Mac, Linux).
         Standalone = 1,
 
         //*undocumented*

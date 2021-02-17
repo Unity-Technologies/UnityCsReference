@@ -373,6 +373,17 @@ namespace UnityEditor
             return DataEqualsInternal(x, y);
         }
 
+        // See if versions inside both property serialized objects are equal.
+        internal static bool VersionEquals(SerializedProperty x, SerializedProperty y)
+        {
+            if (x == null)
+                return (y == null || y.m_NativePropertyPtr == IntPtr.Zero);
+            if (y == null)
+                return (x == null || x.m_NativePropertyPtr == IntPtr.Zero);
+
+            return SerializedObject.VersionEquals(x.serializedObject, y.serializedObject);
+        }
+
         [FreeFunction("SerializedPropertyBindings::DataEqualsInternal")]
         private extern static bool DataEqualsInternal(SerializedProperty x, SerializedProperty y);
 
@@ -1483,7 +1494,7 @@ namespace UnityEditor
             get
             {
                 Verify(VerifyFlags.IteratorNotAtEnd);
-                return GetArraySize();
+                return GetInspectableArraySize();
             }
             set
             {
@@ -1492,7 +1503,17 @@ namespace UnityEditor
             }
         }
 
-        extern private int GetArraySize();
+        public int minArraySize
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return GetMinArraySize();
+            }
+        }
+
+        extern private int GetMinArraySize();
+        extern private int GetInspectableArraySize();
         extern private void ResizeArray(int value);
 
         private bool GetArrayElementAtIndexInternal(int index)

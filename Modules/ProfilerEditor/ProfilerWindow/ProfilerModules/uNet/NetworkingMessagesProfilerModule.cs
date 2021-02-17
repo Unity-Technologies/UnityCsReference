@@ -38,6 +38,13 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
+        protected override List<ProfilerCounterData> CollectDefaultChartCounters()
+        {
+            if (GetCustomChartCounters != null)
+                return GetCustomChartCounters.Invoke();
+            return base.CollectDefaultChartCounters();
+        }
+
         public override ProfilerArea area => ProfilerArea.NetworkMessages;
         public override bool usesCounters => false;
 

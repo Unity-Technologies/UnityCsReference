@@ -99,6 +99,20 @@ namespace UnityEditor
 
         internal const string k_DefaultModeId = "default";
         internal const string k_ModeCurrentIdKeyName = "mode-current-id";
+        internal const string k_MenuKeyChecked = "checked";
+        internal const string k_MenuKeyChildren = "children";
+        internal const string k_MenuKeyCommandId = "command_id";
+        internal const string k_MenuKeyExclude = "exclude";
+        internal const string k_MenuKeyInternal = "internal";
+        internal const string k_MenuKeyItemId = "menu_item_id";
+        internal const string k_MenuKeyName = "name";
+        internal const string k_MenuKeyNotExclude = "include";
+        internal const string k_MenuKeyOriginalFullName = "original_full_name";
+        internal const string k_MenuKeyOriginalName = "original_name";
+        internal const string k_MenuKeyPlatform = "platform";
+        internal const string k_MenuKeyPriority = "priority";
+        internal const string k_MenuKeyShortcut = "shortcut";
+        internal const string k_MenuKeyValidateCommandId = "validate_command_id";
 
         public static string[] modeNames => modes.Select(m => m.name).ToArray();
         public static int modeCount => modes.Length;
@@ -125,9 +139,6 @@ namespace UnityEditor
             modeChanged += OnModeChangeLayouts;
 
             ModeDescriptorImporter.allowExplicitModeRefresh = true;
-
-            if (initialModeChanged && IsMainWindowLoaded())
-                EditorApplication.CallDelayed(RefreshMenus);
         }
 
         private static bool IsMainWindowLoaded()
@@ -303,13 +314,6 @@ namespace UnityEditor
             Log($"RaiseModeChanged({GetModeId(prevIndex) ?? k_DefaultModeId}, {GetModeId(nextIndex)})");
 
             modeChanged?.Invoke(new ModeChangedArgs { prevIndex = prevIndex, nextIndex = nextIndex });
-
-            // Not required when you start the editor in the default mode.
-            if ((prevIndex != -1 || nextIndex != 0) && IsMainWindowLoaded())
-            {
-                EditorUtility.Internal_UpdateAllMenus();
-                ShortcutIntegration.instance.RebuildShortcuts();
-            }
 
             initialModeChanged = true;
         }
@@ -512,36 +516,6 @@ namespace UnityEditor
             return key;
         }
 
-        internal static void RefreshMenus()
-        {
-            Log("RefreshMenus");
-            // Version Control menus might be added later and that would mess up with the menu items that are filtered from the mode. To avoid that we wait them to be added
-            UnityEditor.VersionControl.Provider.UpdateSettings().Wait();
-            Menu.ResetMenus(true);
-            UpdateModeMenus(currentIndex);
-            EditorUtility.Internal_UpdateAllMenus();
-        }
-
-        private static void UpdateModeMenus(int modeIndex)
-        {
-            Log("UpdateModeMenus");
-
-            var items = GetModeDataSection(modeIndex, ModeDescriptor.MenusKey);
-            if (items == null || (items is string && (string)items == "*"))
-            {
-                // Reload default menus
-                Menu.ResetMenus(true);
-                return;
-            }
-
-            var menus = items as IList;
-            if (menus == null)
-                return;
-
-            Menu.ResetMenus(false);
-            LoadMenu(menus);
-        }
-
         public static bool HasContextMenu(string menuId)
         {
             return GetContextMenu(menuId) != null;
@@ -574,14 +548,6 @@ namespace UnityEditor
 
         private static void BuildContextMenu(IList menus, string menuId, GenericMenu contextMenu, string prefix = "")
         {
-            const string k_MenuKeyName = "name";
-            const string k_MenuKeyItemId = "menu_item_id";
-            const string k_MenuKeyCommandId = "command_id";
-            const string k_MenuKeyChildren = "children";
-            const string k_MenuKeyPriority = "priority";
-            const string k_MenuKeyInternal = "internal";
-            const string k_MenuKeyPlatform = "platform";
-
             if (menus == null)
                 return;
 
@@ -649,96 +615,6 @@ namespace UnityEditor
             }
         }
 
-        private static void LoadMenu(IList menus, string prefix = "", int priority = 100)
-        {
-            const string k_MenuKeyName = "name";
-            const string k_MenuKeyItemId = "menu_item_id";
-            const string k_MenuKeyCommandId = "command_id";
-            const string k_MenuKeyValidateCommandId = "validate_command_id";
-            const string k_MenuKeyChildren = "children";
-            const string k_MenuKeyPriority = "priority";
-            const string k_MenuKeyInternal = "internal";
-            const string k_MenuKeyShortcut = "shortcut";
-            const string k_MenuKeyChecked = "checked";
-            const string k_MenuKeyPlatform = "platform";
-            const string k_MenuKeyRename = "rename";
-
-            if (menus == null)
-                return;
-
-            foreach (var menuData in menus)
-            {
-                if (menuData != null)
-                {
-                    var menu = menuData as JSONObject;
-                    if (menu == null)
-                        continue;
-                    var isInternal = JsonUtils.JsonReadBoolean(menu, k_MenuKeyInternal);
-                    if (isInternal && !Unsupported.IsDeveloperMode())
-                        continue;
-                    var menuName = JsonUtils.JsonReadString(menu, k_MenuKeyName);
-                    var fullMenuName = prefix + menuName;
-                    var platform = JsonUtils.JsonReadString(menu, k_MenuKeyPlatform);
-                    var hasExplicitPriority = menu.Contains(k_MenuKeyPriority);
-                    priority = JsonUtils.JsonReadInt(menu, k_MenuKeyPriority, priority + 1);
-
-                    // Check the menu item platform
-                    if (!String.IsNullOrEmpty(platform) && !Application.platform.ToString().ToLowerInvariant().StartsWith(platform.ToLowerInvariant()))
-                        continue;
-
-                    // Check if we are a submenu
-                    if (menu.Contains(k_MenuKeyChildren))
-                    {
-                        if (menu[k_MenuKeyChildren] is IList)
-                            LoadMenu(menu[k_MenuKeyChildren] as IList, fullMenuName + "/", priority);
-                        else if (menu[k_MenuKeyChildren] is string && (string)menu[k_MenuKeyChildren] == "*")
-                        {
-                            var whitelistedItems = Menu.ExtractSubmenus(fullMenuName);
-                            var renamedTo = prefix + JsonUtils.JsonReadString(menu, k_MenuKeyRename, menuName);
-                            for (int i = 0; i < whitelistedItems.Length; ++i)
-                            {
-                                // if the menu is in a deeper level then we can't use "priority" for the parentPriority because it will mess with the ordering. In that case we just use "i" since every submenus are ordered correctly
-                                // there can be some jumps between 2 children if there are some children with deeper level but it doesn't matter since they are added in the right order
-                                string menuNamePart = whitelistedItems[i].Remove(0, fullMenuName.Length + 1);
-                                int parentPriority = priority;
-                                if (menuNamePart.Contains("/"))
-                                    parentPriority = i;
-                                Menu.AddExistingMenuItem(whitelistedItems[i].Replace(fullMenuName, renamedTo), whitelistedItems[i], i, parentPriority); // we can use "i" for the priority, it might cause jumps again but same thing, it doesn't matter since they are added in the right order
-                            }
-                        }
-                    }
-                    else
-                    {
-                        var commandId = JsonUtils.JsonReadString(menu, k_MenuKeyCommandId);
-                        if (String.IsNullOrEmpty(commandId))
-                        {
-                            // We are re-using a default menu item
-                            var menuItemId = JsonUtils.JsonReadString(menu, k_MenuKeyItemId, fullMenuName);
-                            if (fullMenuName.Contains('/'))
-                                Menu.AddExistingMenuItem(fullMenuName, menuItemId, priority, 100);
-                        }
-                        else if (CommandService.Exists(commandId))
-                        {
-                            // Create a new menu item pointing to a command handler
-                            var shortcut = JsonUtils.JsonReadString(menu, k_MenuKeyShortcut);
-                            var @checked = JsonUtils.JsonReadBoolean(menu, k_MenuKeyChecked);
-
-                            Func<bool> validateHandler = null;
-                            var validateCommandId = JsonUtils.JsonReadString(menu, k_MenuKeyValidateCommandId);
-                            if (!String.IsNullOrEmpty(validateCommandId))
-                                validateHandler = () => (bool)CommandService.Execute(validateCommandId, CommandHint.Menu | CommandHint.Validate);
-
-                            Menu.AddMenuItem(fullMenuName, shortcut, @checked, priority, () => CommandService.Execute(commandId, CommandHint.Menu), validateHandler);
-                        }
-                    }
-                }
-                else
-                {
-                    priority += 100;
-                }
-            }
-        }
-
         [RequiredByNativeCode]
         internal static string GetCurrentModeId()
         {
@@ -785,11 +661,7 @@ namespace UnityEditor
                 }
             }
 
-            if (HasCapability(ModeCapability.LayoutWindowMenu, true))
-            {
-                WindowLayout.ReloadWindowLayoutMenu();
-                EditorUtility.Internal_UpdateAllMenus();
-            }
+            WindowLayout.UpdateWindowLayoutMenu();
         }
 
         private static void OnModeChangeUpdate(ModeChangedArgs args)
@@ -803,10 +675,12 @@ namespace UnityEditor
 
         private static void OnModeChangeMenus(ModeChangedArgs args)
         {
-            if (IsMainWindowLoaded())
-                UpdateModeMenus(args.nextIndex);
-            else
-                EditorApplication.CallDelayed(RefreshMenus);
+            if (args.prevIndex == -1 || !IsMainWindowLoaded())
+                return;
+
+            EditorUtility.RebuildAllMenus();
+
+            ShortcutIntegration.instance.RebuildShortcuts();
         }
 
         private static void Log(string actionName)
@@ -815,7 +689,7 @@ namespace UnityEditor
             Console.WriteLine(debugMsg);
         }
 
-        static class JsonUtils
+        internal static class JsonUtils
         {
             public static string JsonReadString(JSONObject data, string fieldName, string defaultValue = "")
             {

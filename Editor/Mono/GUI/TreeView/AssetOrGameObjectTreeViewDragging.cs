@@ -114,8 +114,6 @@ namespace UnityEditor
                 }
                 DragAndDrop.paths = paths.ToArray();
             }
-            else
-                DragAndDrop.paths = new string[0];
 
             string title;
             if (draggedItemIDs.Count > 1)
@@ -313,6 +311,9 @@ namespace UnityEditor
 
         static bool IsDropTargetUserModifiable(GameObjectTreeViewItem targetItem, DropPosition dropPos)
         {
+            if (targetItem.isSceneHeader && !targetItem.scene.isLoaded)
+                return false;
+
             switch (dropPos)
             {
                 case DropPosition.Upon:

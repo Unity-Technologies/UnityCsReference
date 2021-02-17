@@ -8,6 +8,8 @@ namespace UnityEditor.DeviceSimulation
 {
     public abstract class DeviceSimulatorPlugin
     {
+        internal string resolvedTitle;
+
         public DeviceSimulator deviceSimulator { get; internal set; }
         public abstract string title { get; }
 

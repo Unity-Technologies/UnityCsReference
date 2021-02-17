@@ -4,7 +4,6 @@
 
 using System;
 using System.Linq;
-using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -39,7 +38,7 @@ namespace UnityEditor
                 ObjectFactory.AddComponent<RectTransform>(go);
         }
 
-        internal static void Place(GameObject go, GameObject parent)
+        internal static void Place(GameObject go, GameObject parent, bool ignoreSceneViewPosition = true)
         {
             Transform defaultObjectTransform = SceneView.GetDefaultParentObjectIfSet();
 
@@ -56,7 +55,7 @@ namespace UnityEditor
                 // When creating a 3D object without a parent, this option puts it at the world origin instead of scene pivot.
                 if (placeObjectsAtWorldOrigin)
                     go.transform.position = Vector3.zero;
-                else
+                else if (ignoreSceneViewPosition)
                     SceneView.PlaceGameObjectInFrontOfSceneView(go);
 
                 StageUtility.PlaceGameObjectInCurrentStage(go); // may change parent
@@ -119,6 +118,16 @@ namespace UnityEditor
             // Selection.transform does not provide correct list order, so we have to do it manually
             selected = selected.ToList().OrderBy(g => g.GetSiblingIndex()).ToArray();
 
+            GameObject go = ObjectFactory.CreateGameObject("GameObject");
+
+            if (Selection.activeGameObject == null && Selection.gameObjects != null)
+            {
+                Selection.activeGameObject = Selection.gameObjects[0];
+            }
+
+            if (Selection.activeGameObject != null)
+                go.transform.position = Selection.activeGameObject.transform.position;
+
             GameObject parent = Selection.activeTransform != null ? Selection.activeTransform.gameObject : null;
             Transform sibling = null;
 
@@ -128,9 +137,7 @@ namespace UnityEditor
                 parent = parent.transform.parent != null ? parent.transform.parent.gameObject : null;
             }
 
-            GameObject go = ObjectFactory.CreateGameObject("GameObject");
-
-            Place(go, parent);
+            Place(go, parent, false);
 
             if (parent == null && sibling != null)
             {

@@ -9,6 +9,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor.Experimental.TerrainAPI;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -498,6 +499,33 @@ namespace UnityEditor
         }
     }
 
+    internal class DetailWizardSharedStyles
+    {
+        public readonly GUIStyle helpBoxBig;
+        public readonly GUIContent noiseSeed = EditorGUIUtility.TrTextContent("Noise Seed", "Specifies the random seed value for detail object placement.");
+        public readonly GUIContent noiseSpread = EditorGUIUtility.TrTextContent("Noise Spread", "Controls the spatial frequency of the noise pattern used to vary the scale and color of the detail objects.");
+        public readonly GUIContent holeEdgePadding = EditorGUIUtility.TrTextContent("Hole Edge Padding (%)", "Controls how far away detail objects are from the edge of the hole area.\n\nSpecify this value as a percentage of the detail width, which determines the radius of the circular area around the detail object used for hole testing.");
+
+        public DetailWizardSharedStyles()
+        {
+            helpBoxBig = new GUIStyle("HelpBox")
+            {
+                fontSize = EditorStyles.label.fontSize
+            };
+        }
+
+        private static DetailWizardSharedStyles s_Styles = null;
+
+        public static DetailWizardSharedStyles Instance
+        {
+            get
+            {
+                if (s_Styles == null)
+                    s_Styles = new DetailWizardSharedStyles();
+                return s_Styles;
+            }
+        }
+    };
 
     enum DetailMeshRenderMode
     {
@@ -505,54 +533,21 @@ namespace UnityEditor
         Grass
     }
 
-    class TerrainDataReference : PropertyAttribute
-    {}
-
-    [CustomPropertyDrawer(typeof(TerrainDataReference))]
-    class TerrainDataReferenceDrawer : PropertyDrawer
-    {
-        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
-        {
-            var allowSceneObjects = !(property.serializedObject.targetObject as TerrainWizard).TerrainDataIsPersistent;
-            EditorGUI.BeginChangeCheck();
-            var obj = EditorGUI.ObjectField(position, label, property.objectReferenceValue, fieldInfo.FieldType, allowSceneObjects);
-            if (EditorGUI.EndChangeCheck())
-                property.objectReferenceValue = obj;
-        }
-    }
-
-    class HoleEdgePaddingAttribute : PropertyAttribute
-    {}
-
-    [CustomPropertyDrawer(typeof(HoleEdgePaddingAttribute))]
-    class HoleEdgePaddingDrawer : PropertyDrawer
-    {
-        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
-        {
-            var tmpContent = EditorGUIUtility.TrTempContent("Hole Edge Padding (%)");
-            tmpContent.tooltip = "Controls how far away detail objects are from the edge of the hole area.\n\nSpecify this value as a percentage of the detail width, which determines the radius of the circular area around the detail object used for hole testing.";
-            EditorGUI.BeginChangeCheck();
-            var floatValue = EditorGUI.Slider(position, tmpContent, property.floatValue, 0, 100);
-            if (EditorGUI.EndChangeCheck())
-                property.floatValue = floatValue;
-        }
-    }
-
     class DetailMeshWizard : TerrainWizard
     {
-        [TerrainDataReference]
-        public GameObject   m_Detail;
+        public GameObject   m_DetailPrefab;
         public float        m_MinWidth;
         public float        m_MaxWidth;
         public float        m_MinHeight;
         public float        m_MaxHeight;
-        [Tooltip("Specify how drastically details vary in a noise pattern over the world space.")]
+        public int          m_NoiseSeed;
         public float        m_NoiseSpread;
-        [HoleEdgePadding]
         public float        m_HoleEdgePadding;
         public Color        m_HealthyColor;
         public Color        m_DryColor;
         public DetailMeshRenderMode m_RenderMode;
+        public bool         m_UseInstancing;
+
         private int     m_PrototypeIndex = -1;
 
         public void OnEnable()
@@ -567,16 +562,23 @@ namespace UnityEditor
             m_PrototypeIndex = index;
             DetailPrototype prototype;
             if (m_PrototypeIndex == -1)
-                prototype = new DetailPrototype();
+            {
+                prototype = new DetailPrototype()
+                {
+                    renderMode = DetailRenderMode.VertexLit,
+                    noiseSeed = UnityEngine.Random.Range(1, int.MaxValue),
+                    useInstancing = true
+                };
+            }
             else
                 prototype = m_Terrain.terrainData.detailPrototypes[m_PrototypeIndex];
 
-            m_Detail = prototype.prototype;
-
+            m_DetailPrefab = prototype.prototype;
             m_MinWidth = prototype.minWidth;
             m_MaxWidth = prototype.maxWidth;
             m_MinHeight = prototype.minHeight;
             m_MaxHeight = prototype.maxHeight;
+            m_NoiseSeed = prototype.noiseSeed;
             m_NoiseSpread = prototype.noiseSpread;
             m_HoleEdgePadding = Mathf.Clamp01(prototype.holeEdgePadding) * 100.0f;
             m_HealthyColor = prototype.healthyColor;
@@ -594,46 +596,53 @@ namespace UnityEditor
                     m_RenderMode = DetailMeshRenderMode.VertexLit;
                     break;
             }
+            m_UseInstancing = prototype.useInstancing;
 
             OnWizardUpdate();
+        }
+
+        private DetailRenderMode ComputeRenderMode()
+            => m_RenderMode == DetailMeshRenderMode.Grass && !m_UseInstancing ? DetailRenderMode.Grass : DetailRenderMode.VertexLit;
+
+        DetailPrototype MakePrototype()
+        {
+            return new DetailPrototype
+            {
+                prototype = m_DetailPrefab,
+                prototypeTexture = null,
+                minWidth = m_MinWidth,
+                maxWidth = m_MaxWidth,
+                minHeight = m_MinHeight,
+                maxHeight = m_MaxHeight,
+                noiseSeed = m_NoiseSeed,
+                noiseSpread = m_NoiseSpread,
+                holeEdgePadding = m_HoleEdgePadding / 100.0f,
+                healthyColor = m_HealthyColor,
+                dryColor = m_DryColor,
+                renderMode = ComputeRenderMode(),
+                usePrototypeMesh = true,
+                useInstancing = m_UseInstancing,
+            };
         }
 
         void DoApply()
         {
             if (terrainData == null)
                 return;
-            DetailPrototype[] prototypes = m_Terrain.terrainData.detailPrototypes;
 
+            DetailPrototype[] prototypes = terrainData.detailPrototypes;
             if (m_PrototypeIndex == -1)
             {
                 // Add a new detailprototype to the prototype arrays
                 DetailPrototype[] newarray = new DetailPrototype[prototypes.Length + 1];
                 System.Array.Copy(prototypes, 0, newarray, 0, prototypes.Length);
                 m_PrototypeIndex = prototypes.Length;
-
                 prototypes = newarray;
-                prototypes[m_PrototypeIndex] = new DetailPrototype();
             }
-            prototypes[m_PrototypeIndex].renderMode = DetailRenderMode.VertexLit;
-            prototypes[m_PrototypeIndex].usePrototypeMesh = true;
-            prototypes[m_PrototypeIndex].prototype = m_Detail;
-            prototypes[m_PrototypeIndex].prototypeTexture = null;
-            prototypes[m_PrototypeIndex].minWidth = m_MinWidth;
-            prototypes[m_PrototypeIndex].maxWidth = m_MaxWidth;
-            prototypes[m_PrototypeIndex].minHeight = m_MinHeight;
-            prototypes[m_PrototypeIndex].maxHeight = m_MaxHeight;
-            prototypes[m_PrototypeIndex].noiseSpread = m_NoiseSpread;
-            prototypes[m_PrototypeIndex].holeEdgePadding = m_HoleEdgePadding / 100.0f;
-            prototypes[m_PrototypeIndex].healthyColor = m_HealthyColor;
-            prototypes[m_PrototypeIndex].dryColor = m_DryColor;
+            prototypes[m_PrototypeIndex] = MakePrototype();
 
-            if (m_RenderMode == DetailMeshRenderMode.Grass)
-                prototypes[m_PrototypeIndex].renderMode = DetailRenderMode.Grass;
-            else
-                prototypes[m_PrototypeIndex].renderMode = DetailRenderMode.VertexLit;
-
-            m_Terrain.terrainData.detailPrototypes = prototypes;
-            EditorUtility.SetDirty(m_Terrain);
+            terrainData.detailPrototypes = prototypes;
+            EditorUtility.SetDirty(terrainData);
         }
 
         void OnWizardCreate()
@@ -650,9 +659,12 @@ namespace UnityEditor
         {
             base.OnWizardUpdate();
 
-            if (m_Detail == null)
+            if (!isValid)
+                return;
+
+            if (!MakePrototype().Validate(out var errorMessage))
             {
-                errorString = "Please assign a detail prefab";
+                errorString = errorMessage;
                 isValid = false;
             }
             else if (m_PrototypeIndex != -1)
@@ -660,24 +672,60 @@ namespace UnityEditor
                 DoApply();
             }
         }
-    }
 
+        protected override bool DrawWizardGUI()
+        {
+            EditorGUI.BeginChangeCheck();
+
+            m_DetailPrefab = EditorGUILayout.ObjectField("Detail Prefab", m_DetailPrefab, typeof(GameObject), !TerrainDataIsPersistent) as GameObject;
+            m_MinWidth = EditorGUILayout.FloatField("Min Width", m_MinWidth);
+            m_MaxWidth = EditorGUILayout.FloatField("Max Width", m_MaxWidth);
+            m_MinHeight = EditorGUILayout.FloatField("Min Height", m_MinHeight);
+            m_MaxHeight = EditorGUILayout.FloatField("Max Height", m_MaxHeight);
+            m_NoiseSeed = EditorGUILayout.IntField(DetailWizardSharedStyles.Instance.noiseSeed, m_NoiseSeed);
+            m_NoiseSpread = EditorGUILayout.FloatField(DetailWizardSharedStyles.Instance.noiseSpread, m_NoiseSpread);
+            m_HoleEdgePadding = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.holeEdgePadding, m_HoleEdgePadding, 0, 100);
+
+            if (!m_UseInstancing)
+            {
+                m_HealthyColor = EditorGUILayout.ColorField("Healthy Color", m_HealthyColor);
+                m_DryColor = EditorGUILayout.ColorField("Dry Color", m_DryColor);
+            }
+
+            if (m_UseInstancing)
+            {
+                EditorGUI.BeginDisabled(true);
+                EditorGUILayout.EnumPopup("Render Mode", DetailMeshRenderMode.VertexLit);
+                EditorGUI.EndDisabled();
+            }
+            else
+                m_RenderMode = (DetailMeshRenderMode)EditorGUILayout.EnumPopup("Render Mode", m_RenderMode);
+
+            m_UseInstancing = EditorGUILayout.Toggle("Use GPU Instancing", m_UseInstancing);
+            if (m_UseInstancing)
+                EditorGUILayout.HelpBox("Using GPU Instancing would enable using the Material you set on the prefab.", MessageType.Info);
+
+            if (!DetailPrototype.IsModeSupportedByRenderPipeline(ComputeRenderMode(), m_UseInstancing, out var message))
+                EditorGUILayout.LabelField(EditorGUIUtility.TempContent(message, EditorGUIUtility.GetHelpIcon(MessageType.Error)), DetailWizardSharedStyles.Instance.helpBoxBig);
+
+            return EditorGUI.EndChangeCheck();
+        }
+    }
 
     class DetailTextureWizard : TerrainWizard
     {
-        [TerrainDataReference]
         public Texture2D    m_DetailTexture;
         public float        m_MinWidth;
         public float        m_MaxWidth;
         public float        m_MinHeight;
         public float        m_MaxHeight;
-        [Tooltip("Specify how drastically details vary in a noise pattern over the world space.")]
+        public int          m_NoiseSeed;
         public float        m_NoiseSpread;
-        [HoleEdgePadding]
         public float        m_HoleEdgePadding;
         public Color        m_HealthyColor;
         public Color        m_DryColor;
         public bool         m_Billboard;
+
         private int      m_PrototypeIndex = -1;
 
         public void OnEnable()
@@ -694,7 +742,10 @@ namespace UnityEditor
             if (m_PrototypeIndex == -1)
             {
                 prototype = new DetailPrototype();
+                prototype.noiseSeed = UnityEngine.Random.Range(1, int.MaxValue);
                 prototype.renderMode = DetailRenderMode.GrassBillboard;
+                if (GraphicsSettings.currentRenderPipeline != null && GraphicsSettings.currentRenderPipeline.terrainDetailGrassBillboardShader == null)
+                    prototype.renderMode = DetailRenderMode.Grass;
             }
             else
                 prototype = m_Terrain.terrainData.detailPrototypes[m_PrototypeIndex];
@@ -704,6 +755,7 @@ namespace UnityEditor
             m_MaxWidth = prototype.maxWidth;
             m_MinHeight = prototype.minHeight;
             m_MaxHeight = prototype.maxHeight;
+            m_NoiseSeed = prototype.noiseSeed;
             m_NoiseSpread = prototype.noiseSpread;
             m_HoleEdgePadding = Mathf.Clamp01(prototype.holeEdgePadding) * 100.0f;
             m_HealthyColor = prototype.healthyColor;
@@ -713,12 +765,36 @@ namespace UnityEditor
             OnWizardUpdate();
         }
 
+        DetailRenderMode ComputeRenderMode()
+            => m_Billboard ? DetailRenderMode.GrassBillboard : DetailRenderMode.Grass;
+
+        DetailPrototype MakePrototype()
+        {
+            return new DetailPrototype
+            {
+                prototype = null,
+                prototypeTexture = m_DetailTexture,
+                minWidth = m_MinWidth,
+                maxWidth = m_MaxWidth,
+                minHeight = m_MinHeight,
+                maxHeight = m_MaxHeight,
+                noiseSeed = m_NoiseSeed,
+                noiseSpread = m_NoiseSpread,
+                holeEdgePadding = m_HoleEdgePadding / 100.0f,
+                healthyColor = m_HealthyColor,
+                dryColor = m_DryColor,
+                renderMode = ComputeRenderMode(),
+                usePrototypeMesh = false,
+                useInstancing = false,
+            };
+        }
+
         void DoApply()
         {
             if (terrainData == null)
                 return;
 
-            DetailPrototype[] prototypes = m_Terrain.terrainData.detailPrototypes;
+            DetailPrototype[] prototypes = terrainData.detailPrototypes;
             if (m_PrototypeIndex == -1)
             {
                 // Add a new detailprototype to the prototype arrays
@@ -726,24 +802,11 @@ namespace UnityEditor
                 System.Array.Copy(prototypes, 0, newarray, 0, prototypes.Length);
                 m_PrototypeIndex = prototypes.Length;
                 prototypes = newarray;
-                prototypes[m_PrototypeIndex] = new DetailPrototype();
             }
+            prototypes[m_PrototypeIndex] = MakePrototype();
 
-            prototypes[m_PrototypeIndex].prototype = null;
-            prototypes[m_PrototypeIndex].prototypeTexture = m_DetailTexture;
-            prototypes[m_PrototypeIndex].minWidth = m_MinWidth;
-            prototypes[m_PrototypeIndex].maxWidth = m_MaxWidth;
-            prototypes[m_PrototypeIndex].minHeight = m_MinHeight;
-            prototypes[m_PrototypeIndex].maxHeight = m_MaxHeight;
-            prototypes[m_PrototypeIndex].noiseSpread = m_NoiseSpread;
-            prototypes[m_PrototypeIndex].holeEdgePadding = m_HoleEdgePadding / 100.0f;
-            prototypes[m_PrototypeIndex].healthyColor = m_HealthyColor;
-            prototypes[m_PrototypeIndex].dryColor = m_DryColor;
-            prototypes[m_PrototypeIndex].renderMode = m_Billboard ? DetailRenderMode.GrassBillboard : DetailRenderMode.Grass;
-            prototypes[m_PrototypeIndex].usePrototypeMesh = false;
-
-            m_Terrain.terrainData.detailPrototypes = prototypes;
-            EditorUtility.SetDirty(m_Terrain);
+            terrainData.detailPrototypes = prototypes;
+            EditorUtility.SetDirty(terrainData);
         }
 
         void OnWizardCreate()
@@ -762,10 +825,15 @@ namespace UnityEditor
             m_MaxHeight = Mathf.Max(m_MinHeight, m_MaxHeight);
             m_MinWidth = Mathf.Max(0f, m_MinWidth);
             m_MaxWidth = Mathf.Max(m_MinWidth, m_MaxWidth);
+
             base.OnWizardUpdate();
-            if (m_DetailTexture == null)
+
+            if (!isValid)
+                return;
+
+            if (!MakePrototype().Validate(out var errorMessage))
             {
-                errorString = "Please assign a detail texture";
+                errorString = errorMessage;
                 isValid = false;
             }
             else if (m_PrototypeIndex != -1)
@@ -773,8 +841,32 @@ namespace UnityEditor
                 DoApply();
             }
         }
-    }
 
+        protected override bool DrawWizardGUI()
+        {
+            EditorGUI.BeginChangeCheck();
+
+            Rect r = EditorGUILayout.GetControlRect(true, EditorGUIUtility.singleLineHeight);
+            m_DetailTexture = EditorGUI.ObjectField(r, "Detail Texture", m_DetailTexture, typeof(Texture2D), !TerrainDataIsPersistent) as Texture2D;
+            m_MinWidth = EditorGUILayout.FloatField("Min Width", m_MinWidth);
+            m_MaxWidth = EditorGUILayout.FloatField("Max Width", m_MaxWidth);
+            m_MinHeight = EditorGUILayout.FloatField("Min Height", m_MinHeight);
+            m_MaxHeight = EditorGUILayout.FloatField("Max Height", m_MaxHeight);
+            m_NoiseSeed = EditorGUILayout.IntField(DetailWizardSharedStyles.Instance.noiseSeed, m_NoiseSeed);
+            m_NoiseSpread = EditorGUILayout.FloatField(DetailWizardSharedStyles.Instance.noiseSpread, m_NoiseSpread);
+            m_HoleEdgePadding = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.holeEdgePadding, m_HoleEdgePadding, 0, 100);
+
+            m_HealthyColor = EditorGUILayout.ColorField("Healthy Color", m_HealthyColor);
+            m_DryColor = EditorGUILayout.ColorField("Dry Color", m_DryColor);
+
+            m_Billboard = EditorGUILayout.Toggle("Billboard", m_Billboard);
+
+            if (!DetailPrototype.IsModeSupportedByRenderPipeline(ComputeRenderMode(), false, out var message))
+                EditorGUILayout.LabelField(EditorGUIUtility.TempContent(message, EditorGUIUtility.GetHelpIcon(MessageType.Error)), DetailWizardSharedStyles.Instance.helpBoxBig);
+
+            return EditorGUI.EndChangeCheck();
+        }
+    }
 
     class PlaceTreeWizard : TerrainWizard
     {

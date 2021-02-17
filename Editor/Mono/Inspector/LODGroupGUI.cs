@@ -303,7 +303,7 @@ namespace UnityEditor
             GUIUtility.CheckOnGUI();
             if (Event.current.type == EventType.Repaint)
             {
-                GUI.DrawTexture(g.rect, borderTexture, ScaleMode.StretchToFill, true, 1, Color.white, Vector4.one * 1, Vector4.one * 4, true);
+                GUI.DrawTexture(g.rect, borderTexture, ScaleMode.StretchToFill, true, 1, Color.white, Vector4.one * 1, Vector4.one * 3, true);
             }
         }
 

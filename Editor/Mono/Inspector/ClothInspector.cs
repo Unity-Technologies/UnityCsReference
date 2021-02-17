@@ -96,7 +96,6 @@ namespace UnityEditor
 
         SkinnedMeshRenderer m_Smr;
         Transform m_TransformOverride;
-        Matrix4x4 m_CachedTransformState;
         WeakReference m_CachedMesh;
         private static class Styles
         {
@@ -263,10 +262,9 @@ namespace UnityEditor
                     reinitInspector = true;
                     m_TransformOverride = actualRootBone;
                 }
-                else if (actualRootBone.localToWorldMatrix != m_CachedTransformState)
+                else if (actualRootBone.hasChanged)
                 {
                     reinitInspector = true;
-                    m_CachedTransformState = actualRootBone.localToWorldMatrix;
                 }
 
                 if (m_Smr.sharedMesh != m_CachedMesh.Target as Mesh)
@@ -342,11 +340,13 @@ namespace UnityEditor
         {
             Ray mouseRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
 
-            RaycastHit hit;
-            bool hasHit = cloth.Raycast(mouseRay, out hit, Mathf.Infinity);
+            bool hasHit = false;
+            RaycastHit hit = cloth.Raycast(mouseRay, Mathf.Infinity, ref hasHit);
 
             if (!hasHit)
             {
+                m_BrushPos = new Vector3(Mathf.Infinity, Mathf.Infinity, Mathf.Infinity);
+                m_BrushNorm = m_BrushPos;
                 m_BrushFace = -1; // set invalid face index in case of no hit
                 return;
             }
@@ -432,7 +432,7 @@ namespace UnityEditor
             Vector3 position = m_TransformOverride.position;
             for (int i = 0; i < m_NumVerts; i++)
             {
-                m_ClothParticlesInWorldSpace[i] = rotation * vertices[i] + position;
+                m_ClothParticlesInWorldSpace[i] = (rotation * vertices[i]) + position;
             }
         }
 
@@ -442,8 +442,6 @@ namespace UnityEditor
             int length = normals.Length;
             m_ClothNormalsInWorldSpace = new Vector3[length];
 
-            Quaternion rotation = m_TransformOverride.rotation;
-            Vector3 position = m_TransformOverride.position;
             for (int i = 0; i < length; i++)
             {
                 m_ClothNormalsInWorldSpace[i] = (m_TransformOverride.localToWorldMatrix * normals[i]).normalized;
@@ -454,13 +452,9 @@ namespace UnityEditor
         {
             float size = state.SelfCollisionDistance;
             if (state.VisualizeSelfOrInterCollision == CollisionVisualizationMode.SelfCollision)
-            {
                 size = state.SelfCollisionDistance;
-            }
             else if (state.VisualizeSelfOrInterCollision == CollisionVisualizationMode.InterCollision)
-            {
                 size = state.InterCollisionDistance;
-            }
 
             int length = m_SelfAndInterCollisionSelection.Length;
             for (int i = 0; i < length; i++)
@@ -512,7 +506,6 @@ namespace UnityEditor
 
             m_Smr = cloth.GetComponent<SkinnedMeshRenderer>();
             m_TransformOverride = m_Smr.actualRootBone;
-            m_CachedTransformState = m_TransformOverride.localToWorldMatrix;
             m_CachedMesh = new WeakReference(m_Smr.sharedMesh);
             InitInspector();
 
@@ -671,9 +664,7 @@ namespace UnityEditor
         void SelectionGUI()
         {
             if (m_ParticleSelection == null)
-            {
                 return;
-            }
 
             ClothSkinningCoefficient[] coefficients = cloth.coefficients;
 
@@ -718,8 +709,8 @@ namespace UnityEditor
                     if (m_ParticleSelection[i])
                         coefficients[i].maxDistance = maxDistanceNew;
                 }
-                cloth.coefficients = coefficients;
                 Undo.RegisterCompleteObjectUndo(target, "Change Cloth Coefficients");
+                cloth.coefficients = coefficients;
             }
 
             float collisionSphereDistanceNew = CoefficientField(collisionSphereDistance, useCollisionSphereDistance, numSelection > 0, DrawMode.CollisionSphereDistance);
@@ -730,8 +721,8 @@ namespace UnityEditor
                     if (m_ParticleSelection[i])
                         coefficients[i].collisionSphereDistance = collisionSphereDistanceNew;
                 }
-                cloth.coefficients = coefficients;
                 Undo.RegisterCompleteObjectUndo(target, "Change Cloth Coefficients");
+                cloth.coefficients = coefficients;
             }
 
             using (new EditorGUI.DisabledScope(true))
@@ -767,6 +758,7 @@ namespace UnityEditor
                         }
                     }
                 }
+                Undo.RegisterCompleteObjectUndo(target, "Change Cloth Coefficients");
                 cloth.coefficients = coefficients;
             }
 
@@ -776,9 +768,7 @@ namespace UnityEditor
         void GradientToolGUI()
         {
             if (m_ParticleSelection == null)
-            {
                 return;
-            }
 
             ClothSkinningCoefficient[] coefficients = cloth.coefficients;
 
@@ -822,8 +812,8 @@ namespace UnityEditor
                             coefficients[i].maxDistance = distanceNew;
                         }
                     }
-                    cloth.coefficients = coefficients;
                     Undo.RegisterCompleteObjectUndo(target, "Change Cloth Coefficients");
+                    cloth.coefficients = coefficients;
                 }
 
                 EditorGUILayout.LabelField(Styles.setMaxDistanceString);
@@ -1232,6 +1222,9 @@ namespace UnityEditor
 
         void SelectionPreSceneGUI(int id)
         {
+            if (m_ParticleSelection == null)
+                return;
+
             Event e = Event.current;
             switch (e.GetTypeForControl(id))
             {
@@ -1243,7 +1236,9 @@ namespace UnityEditor
                     if (found != -1)
                     {
                         if (e.shift)
+                        {
                             m_ParticleSelection[found] = !m_ParticleSelection[found];
+                        }
                         else
                         {
                             int length = m_ParticleSelection.Length;
@@ -1542,7 +1537,7 @@ namespace UnityEditor
             if (state.ToolMode == (ToolMode)(-1))
                 state.ToolMode = ToolMode.Select;
 
-            if ((m_ParticleSelection == null) || (m_LastVertices.Length != cloth.vertices.Length))
+            if (m_ParticleSelection == null || m_LastVertices.Length != cloth.vertices.Length)
             {
                 GenerateSelectionMesh();
             }
@@ -1804,31 +1799,34 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
 
-            switch (state.ToolMode)
+            if (cloth != null)
             {
-                case ToolMode.Select:
-                    Tools.current = Tool.None;
-                    SelectionGUI();
-                    break;
+                switch (state.ToolMode)
+                {
+                    case ToolMode.Select:
+                        Tools.current = Tool.None;
+                        SelectionGUI();
+                        break;
 
-                case ToolMode.Paint:
-                    Tools.current = Tool.None;
-                    PaintGUI();
-                    break;
+                    case ToolMode.Paint:
+                        Tools.current = Tool.None;
+                        PaintGUI();
+                        break;
 
-                case ToolMode.GradientTool:
-                    Tools.current = Tool.None;
-                    GradientToolGUI();
-                    break;
-            }
+                    case ToolMode.GradientTool:
+                        Tools.current = Tool.None;
+                        GradientToolGUI();
+                        break;
+                }
 
-            if (m_CachedMesh.Target == null)
-            {
-                EditorGUILayout.HelpBox("No mesh has been selected to use with cloth, please select a mesh for the skinned mesh renderer.", MessageType.Info);
-            }
-            else if (!IsConstrained())
-            {
-                EditorGUILayout.HelpBox("No constraints have been set up, so the cloth will move freely. Set up vertex constraints here to restrict it.", MessageType.Info);
+                if (m_CachedMesh.Target == null)
+                {
+                    EditorGUILayout.HelpBox("No mesh has been selected to use with cloth, please select a mesh for the skinned mesh renderer.", MessageType.Info);
+                }
+                else if (!IsConstrained())
+                {
+                    EditorGUILayout.HelpBox("No constraints have been set up, so the cloth will move freely. Set up vertex constraints here to restrict it.", MessageType.Info);
+                }
             }
 
             GUILayout.EndVertical();
@@ -1891,50 +1889,55 @@ namespace UnityEditor
                 SceneView.RepaintAll();
             }
 
-            switch (state.CollToolMode)
+            if (cloth != null)
             {
-                case CollToolMode.Select:
-                    Tools.current = Tool.None;
-                    CollSelectionGUI();
-                    break;
-
-                case CollToolMode.Paint:
-                case CollToolMode.Erase:
-                    Tools.current = Tool.None;
-                    ResetParticleSelection();
-                    EditBrushSize();
-                    break;
-            }
-
-            SelectManipulateBackFaces();
-
-            int countIndices = 0;
-            int length = m_SelfAndInterCollisionSelection.Length;
-            for (int i = 0; i < length; i++)
-            {
-                if (m_SelfAndInterCollisionSelection[i] == true)
+                switch (state.CollToolMode)
                 {
-                    countIndices++;
-                }
-            }
+                    case CollToolMode.Select:
+                        Tools.current = Tool.None;
+                        CollSelectionGUI();
+                        break;
 
-            List<UInt32> selfAndInterCollisionIndices = new List<UInt32>();
-            if (countIndices > 0)
-            {
-                selfAndInterCollisionIndices.Capacity = countIndices;
-                for (uint i = 0; i < length; ++i)
+                    case CollToolMode.Paint:
+                    case CollToolMode.Erase:
+                        Tools.current = Tool.None;
+                        ResetParticleSelection();
+                        EditBrushSize();
+                        break;
+                }
+
+                SelectManipulateBackFaces();
+                int countIndices = 0;
+                int length = m_SelfAndInterCollisionSelection.Length;
+
+                for (int i = 0; i < length; i++)
                 {
                     if (m_SelfAndInterCollisionSelection[i] == true)
                     {
-                        selfAndInterCollisionIndices.Add(i);
+                        countIndices++;
                     }
                 }
-            }
-            cloth.SetSelfAndInterCollisionIndices(selfAndInterCollisionIndices);
 
-            if (m_CachedMesh.Target == null)
-            {
-                EditorGUILayout.HelpBox("No mesh has been selected to use with cloth, please select a mesh for the skinned mesh renderer.", MessageType.Info);
+                List<UInt32> selfAndInterCollisionIndices = new List<UInt32>();
+                if (countIndices > 0)
+                {
+                    selfAndInterCollisionIndices.Capacity = countIndices;
+                    for (uint i = 0; i < length; ++i)
+                    {
+                        if (m_SelfAndInterCollisionSelection[i] == true)
+                        {
+                            selfAndInterCollisionIndices.Add(i);
+                        }
+                    }
+                }
+
+                Undo.RecordObject(cloth, "SetSelfAndInterCollisionIndices");
+                cloth.SetSelfAndInterCollisionIndices(selfAndInterCollisionIndices);
+
+                if (m_CachedMesh.Target == null)
+                {
+                    EditorGUILayout.HelpBox("No mesh has been selected to use with cloth, please select a mesh for the skinned mesh renderer.", MessageType.Info);
+                }
             }
 
             GUILayout.EndVertical();

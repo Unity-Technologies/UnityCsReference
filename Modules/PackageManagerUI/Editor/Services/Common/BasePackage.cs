@@ -80,12 +80,22 @@ namespace UnityEditor.PackageManager.UI.Internal
             get
             {
                 var versionErrors = versions.Select(v => v.errors).FirstOrDefault(e => e?.Any() ?? false) ?? Enumerable.Empty<UIError>();
-                return versionErrors.Concat(m_Errors ?? Enumerable.Empty<UIError>());
+                return m_Errors == null ? versionErrors : m_Errors.Concat(versionErrors);
             }
         }
 
+        public bool hasEntitlements => Is(PackageType.Unity) && versions.Any(version => version.hasEntitlements);
+
+        public bool hasEntitlementsError => m_Errors.Any(error => error.errorCode == UIErrorCode.Forbidden) || versions.Any(version => version.hasEntitlementsError);
+
         public void AddError(UIError error)
         {
+            if (error.errorCode == UIErrorCode.Forbidden)
+            {
+                m_Errors.Add(versions?.primary.isInstalled == true ? UIError.k_EntitlementError : UIError.k_EntitlementWarning);
+                return;
+            }
+
             m_Errors.Add(error);
         }
 

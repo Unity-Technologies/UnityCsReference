@@ -305,7 +305,8 @@ namespace UnityEditor
                     errors,
                     assemblyDefinitions,
                     assemblyDefinitionNameToIndex,
-                    assembliesAndReferencesArray);
+                    assembliesAndReferencesArray,
+                    assemblyPath);
             }
 
             // Check assemblies for references to assemblies with errors
@@ -366,7 +367,8 @@ namespace UnityEditor
             Error[] errors,
             AssemblyDefinition[] assemblyDefinitions,
             Dictionary<string, int> assemblyDefinitionNameToIndex,
-            AssemblyAndReferences[] assemblyAndReferences)
+            AssemblyAndReferences[] assemblyAndReferences,
+            string assemblyPath)
         {
             var assemblyDefinition = assemblyDefinitions[index];
             var assemblyResolver = assemblyDefinition.MainModule.AssemblyResolver;
@@ -380,16 +382,25 @@ namespace UnityEditor
 
             var assemblyVersionValidation = PlayerSettings.assemblyVersionValidation;
 
+            bool isReferencingUnityAssemblies = false;
             foreach (var reference in assemblyReferences)
             {
+                if (!isReferencingUnityAssemblies && (Utility.FastStartsWith(reference.Name, "UnityEngine.", "unityengine.") || Utility.FastStartsWith(reference.Name, "UnityEditor.", "unityeditor.")))
+                {
+                    isReferencingUnityAssemblies = true;
+                }
+
                 try
                 {
                     var referenceAssemblyDefinition = assemblyResolver.Resolve(reference);
 
-                    int referenceAssemblyDefinitionIndex;
+                    if (reference.Name == assemblyDefinition.Name.Name)
+                    {
+                        errors[index].Add(ErrorFlags.ReferenceHasErrors, $"{reference.Name} references itself.");
+                    }
 
                     if (assemblyVersionValidation && assemblyDefinitionNameToIndex.TryGetValue(referenceAssemblyDefinition.Name.Name,
-                        out referenceAssemblyDefinitionIndex))
+                        out int referenceAssemblyDefinitionIndex))
                     {
                         bool isSigned = IsSigned(reference);
                         if (isSigned)
@@ -411,6 +422,15 @@ namespace UnityEditor
                     errors[index].Add(ErrorFlags.UnresolvableReference,
                         string.Format("Unable to resolve reference '{0}'. Is the assembly missing or incompatible with the current platform?\nReference validation can be disabled in the Plugin Inspector.",
                             reference.Name));
+                }
+            }
+
+            if (isReferencingUnityAssemblies)
+            {
+                var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(assemblyPath);
+                if (assemblyDefinitions[index].Name.Name != fileNameWithoutExtension)
+                {
+                    errors[index].Add(ErrorFlags.ReferenceHasErrors, $"Assembly name '{assemblyDefinitions[index].Name.Name}' does not match file name '{fileNameWithoutExtension}'");
                 }
             }
 

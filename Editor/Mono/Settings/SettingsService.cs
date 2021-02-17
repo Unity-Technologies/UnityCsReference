@@ -36,16 +36,6 @@ namespace UnityEditor
             repaintAllSettingsWindow?.Invoke();
         }
 
-        const string k_ProjectSettings = "Edit/Project Settings";
-        static SettingsService()
-        {
-            if (UnityEditor.MPE.ProcessService.level == UnityEditor.MPE.ProcessLevel.Main)
-            {
-                EditorApplication.update -= CheckProjectSettings;
-                EditorApplication.update += CheckProjectSettings;
-            }
-        }
-
         internal static event Action settingsProviderChanged;
         internal static SettingsProvider[] FetchSettingsProviders()
         {
@@ -60,22 +50,6 @@ namespace UnityEditor
         internal static EditorWindow OpenUserPreferenceWindow()
         {
             return SettingsWindow.Show(SettingsScope.User);
-        }
-
-        private static void CheckProjectSettings()
-        {
-            EditorApplication.update -= CheckProjectSettings;
-
-            var deprecatedMenuItems = Menu.ExtractSubmenus(k_ProjectSettings);
-            if (deprecatedMenuItems.Length > 0)
-            {
-                var sb = new StringBuilder();
-                sb.Append("There are menu items registered under Edit/Project Settings: ");
-                sb.Append(string.Join(", ", deprecatedMenuItems.Select(item => item.Replace(k_ProjectSettings + "/", "")).ToArray()));
-                sb.Append("\n");
-                sb.AppendLine("Consider using [SettingsProvider] attribute to register in the Unified Settings Window.");
-                Debug.LogWarning(sb);
-            }
         }
 
         private static IEnumerable<SettingsProvider> FetchPreferenceItems()

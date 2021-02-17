@@ -117,8 +117,7 @@ namespace UnityEditor
                 if (m_DropData != null)
                 {
                     // Ensure no rendering of target items
-                    m_DropData.dropTargetControlID = 0;
-                    m_DropData.rowMarkerControlID = 0;
+                    m_DropData.ClearPerEventState();
                 }
 
                 if (Event.current.type == EventType.DragPerform)

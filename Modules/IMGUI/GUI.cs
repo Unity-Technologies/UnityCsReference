@@ -1020,40 +1020,126 @@ namespace UnityEngine
             return DoControl(position, id, false, position.Contains(Event.current.mousePosition), content, style);
         }
 
-        // Make a button grid
-        private static int DoButtonGrid(Rect position, int selected, GUIContent[] contents, string[] controlNames, int xCount, GUIStyle style, GUIStyle firstStyle, GUIStyle midStyle, GUIStyle lastStyle, ToolbarButtonSize buttonSize, bool[] contentsEnabled = null)
+        internal delegate void CustomSelectionGridItemGUI(int item, Rect rect, GUIStyle style, int controlID);
+
+        private static Rect[] CalcGridRectsFixedWidthFixedMargin(Rect position, int itemCount, int itemsPerRow, float elemWidth, float elemHeight, float spacingHorizontal, float spacingVertical)
+        {
+            int x = 0;
+            float xPos = position.xMin, yPos = position.yMin;
+            Rect[] retval = new Rect[itemCount];
+            for (int i = 0; i < itemCount; i++)
+            {
+                retval[i] = new Rect(xPos, yPos, elemWidth, elemHeight);
+
+                //we round the values to the dpi-aware pixel grid
+                retval[i] = GUIUtility.AlignRectToDevice(retval[i]);
+
+                xPos = retval[i].xMax + spacingHorizontal;
+
+                if (++x >= itemsPerRow)
+                {
+                    x = 0;
+                    yPos += elemHeight + spacingVertical;
+                    xPos = position.xMin;
+                }
+            }
+            return retval;
+        }
+
+        internal static int DoCustomSelectionGrid(Rect position, int selected, int itemCount, CustomSelectionGridItemGUI itemGUI, int itemsPerRow, GUIStyle style)
         {
             GUIUtility.CheckOnGUI();
-            int count = contents.Length;
-            if (count == 0)
+            if (itemCount == 0)
                 return selected;
-            if (xCount <= 0)
+            if (itemsPerRow <= 0)
             {
-                Debug.LogWarning("You are trying to create a SelectionGrid with zero or less elements to be displayed in the horizontal direction. Set xCount to a positive value.");
+                Debug.LogWarning("You are trying to create a SelectionGrid with zero or less elements to be displayed in the horizontal direction. Set itemsPerRow to a positive value.");
                 return selected;
             }
 
-            if (contentsEnabled != null && contentsEnabled.Length != count)
+            // Figure out how large each element should be
+            int rows = (itemCount + itemsPerRow - 1) / itemsPerRow;
+            float horizontalSpacing = Mathf.Max(style.margin.left, style.margin.right);
+            float verticalSpacing = Mathf.Max(style.margin.top, style.margin.bottom);
+            float elemWidth = style.fixedWidth != 0 ? style.fixedWidth : (position.width - CalcTotalHorizSpacing(itemsPerRow, style, style, style, style)) / itemsPerRow;
+            float elemHeight = style.fixedHeight != 0 ? style.fixedHeight : (position.height - verticalSpacing * (rows - 1)) / rows;
+
+            Rect[] buttonRects = CalcGridRectsFixedWidthFixedMargin(position, itemCount, itemsPerRow, elemWidth, elemHeight, horizontalSpacing, verticalSpacing);
+            int selectedButtonControlID = 0;
+            for (int buttonIndex = 0; buttonIndex < itemCount; ++buttonIndex)
+            {
+                var buttonRect = buttonRects[buttonIndex];
+
+                var id = GUIUtility.GetControlID(s_ButtonGridHash, FocusType.Passive, buttonRect);
+                if (buttonIndex == selected)
+                    selectedButtonControlID = id;
+
+                var evtType = Event.current.GetTypeForControl(id);
+                switch (evtType)
+                {
+                    case EventType.MouseDown:
+                        if (GUIUtility.HitTest(buttonRect, Event.current))
+                        {
+                            GUIUtility.hotControl = id;
+                            Event.current.Use();
+                        }
+                        break;
+                    case EventType.MouseDrag:
+                        if (GUIUtility.hotControl == id)
+                            Event.current.Use();
+                        break;
+                    case EventType.MouseUp:
+                        if (GUIUtility.hotControl == id)
+                        {
+                            GUIUtility.hotControl = 0;
+                            Event.current.Use();
+
+                            GUI.changed = true;
+                            return buttonIndex;
+                        }
+                        break;
+                    case EventType.Repaint:
+                        if (selected != buttonIndex)
+                            itemGUI(buttonIndex, buttonRect, style, id);
+                        break;
+                }
+
+                if (evtType != EventType.Repaint || selected != buttonIndex)
+                    itemGUI(buttonIndex, buttonRect, style, id);
+            }
+
+            // draw selected button at the end so it overflows nicer
+            if (selected >= 0 && selected < itemCount && Event.current.type == EventType.Repaint)
+                itemGUI(selected, buttonRects[selected], style, selectedButtonControlID);
+
+            return selected;
+        }
+
+        // Make a button grid
+        private static int DoButtonGrid(Rect position, int selected, GUIContent[] contents, string[] controlNames, int itemsPerRow, GUIStyle style, GUIStyle firstStyle, GUIStyle midStyle, GUIStyle lastStyle, ToolbarButtonSize buttonSize, bool[] contentsEnabled = null)
+        {
+            GUIUtility.CheckOnGUI();
+            int itemCount = contents.Length;
+            if (itemCount == 0)
+                return selected;
+            if (itemsPerRow <= 0)
+            {
+                Debug.LogWarning("You are trying to create a SelectionGrid with zero or less elements to be displayed in the horizontal direction. Set itemsPerRow to a positive value.");
+                return selected;
+            }
+
+            if (contentsEnabled != null && contentsEnabled.Length != itemCount)
                 throw new ArgumentException("contentsEnabled");
 
             // Figure out how large each element should be
-            int rows = count / xCount;
-            if (count % xCount != 0)
-                rows++;
-            float totalHorizSpacing = CalcTotalHorizSpacing(xCount, style, firstStyle, midStyle, lastStyle);
-            float totalVerticalSpacing = Mathf.Max(style.margin.top, style.margin.bottom) * (rows - 1);
-            float elemWidth = (position.width - totalHorizSpacing) / xCount;
-            float elemHeight = (position.height - totalVerticalSpacing) / rows;
+            int rows = (itemCount + itemsPerRow - 1) / itemsPerRow;
+            float elemWidth = style.fixedWidth != 0 ? style.fixedWidth : (position.width - CalcTotalHorizSpacing(itemsPerRow, style, firstStyle, midStyle, lastStyle)) / itemsPerRow;
+            float elemHeight = style.fixedHeight != 0 ? style.fixedHeight : (position.height - Mathf.Max(style.margin.top, style.margin.bottom) * (rows - 1)) / rows;
 
-            if (style.fixedWidth != 0)
-                elemWidth = style.fixedWidth;
-            if (style.fixedHeight != 0)
-                elemHeight = style.fixedHeight;
-
-            Rect[] buttonRects = CalcMouseRects(position, contents, xCount, elemWidth, elemHeight, style, firstStyle, midStyle, lastStyle, false, buttonSize);
+            Rect[] buttonRects = CalcGridRects(position, contents, itemsPerRow, elemWidth, elemHeight, style, firstStyle, midStyle, lastStyle, buttonSize);
             GUIStyle selectedButtonStyle = null;
-            int selectedButtonID = 0;
-            for (int buttonIndex = 0; buttonIndex < count; ++buttonIndex)
+            int selectedButtonControlID = 0;
+            for (int buttonIndex = 0; buttonIndex < itemCount; ++buttonIndex)
             {
                 bool wasEnabled = enabled;
                 enabled &= (contentsEnabled == null || contentsEnabled[buttonIndex]);
@@ -1064,7 +1150,7 @@ namespace UnityEngine
                     GUI.SetNextControlName(controlNames[buttonIndex]);
                 var id = GUIUtility.GetControlID(s_ButtonGridHash, FocusType.Passive, buttonRect);
                 if (buttonIndex == selected)
-                    selectedButtonID = id;
+                    selectedButtonControlID = id;
 
                 switch (Event.current.GetTypeForControl(id))
                 {
@@ -1090,13 +1176,13 @@ namespace UnityEngine
                         }
                         break;
                     case EventType.Repaint:
-                        var buttonStyle = count == 1 ? style : (buttonIndex == 0 ? firstStyle : (buttonIndex == count - 1 ? lastStyle : midStyle));
+                        var buttonStyle = itemCount == 1 ? style : (buttonIndex == 0 ? firstStyle : (buttonIndex == itemCount - 1 ? lastStyle : midStyle));
                         var isMouseOver = buttonRect.Contains(Event.current.mousePosition);
                         var isHotControl = GUIUtility.hotControl == id;
                         var isSelected = selected == buttonIndex;
 
                         if (!isSelected)
-                            buttonStyle.Draw(buttonRect, content, isMouseOver && (enabled || isHotControl) && (isHotControl || GUIUtility.hotControl == 0), enabled && isHotControl, false, false);
+                            buttonStyle.Draw(buttonRect, content, enabled && isMouseOver && (isHotControl || GUIUtility.hotControl == 0), enabled && isHotControl, false, false);
                         else
                             selectedButtonStyle = buttonStyle;
 
@@ -1118,11 +1204,10 @@ namespace UnityEngine
                 var buttonRect = buttonRects[selected];
                 var content = contents[selected];
                 var isMouseOver = buttonRect.Contains(Event.current.mousePosition);
-                var isHotControl = GUIUtility.hotControl == selectedButtonID;
+                var isHotControl = GUIUtility.hotControl == selectedButtonControlID;
                 var wasEnabled = enabled;
                 enabled &= (contentsEnabled == null || contentsEnabled[selected]);
-
-                selectedButtonStyle.Draw(buttonRect, content, isMouseOver && (enabled || isHotControl) && (isHotControl || GUIUtility.hotControl == 0), enabled && isHotControl, true, false);
+                selectedButtonStyle.Draw(buttonRect, content, enabled && isMouseOver && (isHotControl || GUIUtility.hotControl == 0), enabled && isHotControl, true, false);
                 enabled = wasEnabled;
             }
 
@@ -1130,7 +1215,7 @@ namespace UnityEngine
         }
 
         // Helper function: Get all mouse rects
-        private static Rect[] CalcMouseRects(Rect position, GUIContent[] contents, int xCount, float elemWidth, float elemHeight, GUIStyle style, GUIStyle firstStyle, GUIStyle midStyle, GUIStyle lastStyle, bool addBorders, ToolbarButtonSize buttonSize)
+        private static Rect[] CalcGridRects(Rect position, GUIContent[] contents, int xCount, float elemWidth, float elemHeight, GUIStyle style, GUIStyle firstStyle, GUIStyle midStyle, GUIStyle lastStyle, ToolbarButtonSize buttonSize)
         {
             int count = contents.Length;
             int x = 0;
@@ -1152,10 +1237,7 @@ namespace UnityEngine
                         break;
                 }
 
-                if (!addBorders)
-                    retval[i] = new Rect(xPos, yPos, w, elemHeight);
-                else
-                    retval[i] = currentStyle.margin.Add(new Rect(xPos, yPos, w, elemHeight));
+                retval[i] = new Rect(xPos, yPos, w, elemHeight);
 
                 //we round the values to the dpi-aware pixel grid
                 retval[i] = GUIUtility.AlignRectToDevice(retval[i]);

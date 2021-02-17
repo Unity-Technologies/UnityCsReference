@@ -37,11 +37,7 @@ namespace UnityEditor
 
         static PropertyHandler()
         {
-            Undo.undoRedoPerformed += () =>
-            {
-                ReorderableList.ClearExistingListCaches();
-                ReorderableList.ClearSelections();
-            };
+            Undo.undoRedoPerformed += () => ReorderableList.ClearExistingListCaches();
         }
 
         public static void ClearCache()
@@ -176,14 +172,9 @@ namespace UnityEditor
                 // Draw with custom drawer - retrieve it BEFORE increasing nesting.
                 PropertyDrawer drawer = propertyDrawer;
 
-                try
+                using (var nestingContext = IncrementNestingContext())
                 {
-                    m_NestingLevel++;
-                    drawer.OnGUISafe(position, property.Copy(), label ?? EditorGUIUtility.TempContent(property.localizedDisplayName));
-                }
-                finally
-                {
-                    m_NestingLevel--;
+                    drawer.OnGUISafe(position, property.Copy(), label ?? EditorGUIUtility.TempContent(property.localizedDisplayName, tooltip));
                 }
 
                 // Restore widths
@@ -202,12 +193,12 @@ namespace UnityEditor
                     if (!s_reorderableLists.TryGetValue(key, out reorderableList))
                     {
                         // Manual layout controls don't call GetHeight() method so we need to have a way to initialized list as we prepare to render it here
-                        reorderableList = new ReorderableListWrapper(property, true);
+                        reorderableList = new ReorderableListWrapper(property, label, true);
                         s_reorderableLists[key] = reorderableList;
                     }
 
                     reorderableList.Property = property;
-                    reorderableList.Draw(position, visibleArea);
+                    reorderableList.Draw(label, position, visibleArea);
                     return false;
                 }
 
@@ -290,7 +281,7 @@ namespace UnityEditor
                 // If collection doesn't have a ReorderableList assigned to it, create one and assign it
                 if (!s_reorderableLists.TryGetValue(key, out reorderableList))
                 {
-                    reorderableList = new ReorderableListWrapper(property, true);
+                    reorderableList = new ReorderableListWrapper(property, label, true);
                     s_reorderableLists[key] = reorderableList;
                 }
 
@@ -303,14 +294,9 @@ namespace UnityEditor
             {
                 // Retrieve drawer BEFORE increasing nesting.
                 PropertyDrawer drawer = propertyDrawer;
-                try
+                using (var nestingContext = IncrementNestingContext())
                 {
-                    m_NestingLevel++;
-                    height += drawer.GetPropertyHeightSafe(property.Copy(), label ?? EditorGUIUtility.TempContent(property.displayName));
-                }
-                finally
-                {
-                    m_NestingLevel--;
+                    height += drawer.GetPropertyHeightSafe(property.Copy(), label ?? EditorGUIUtility.TempContent(property.localizedDisplayName, tooltip));
                 }
             }
             else if (!includeChildren)
@@ -326,7 +312,7 @@ namespace UnityEditor
                 bool childrenAreExpanded = property.isExpanded && EditorGUI.HasVisibleChildFields(property);
 
                 // Loop through all child properties
-                var tc = EditorGUIUtility.TempContent(property.displayName);
+                var tc = EditorGUIUtility.TempContent(property.localizedDisplayName, tooltip);
                 if (childrenAreExpanded)
                 {
                     SerializedProperty endProperty = property.GetEndProperty();
@@ -353,15 +339,9 @@ namespace UnityEditor
             {
                 // Retrieve drawer BEFORE increasing nesting.
                 PropertyDrawer drawer = propertyDrawer;
-                try
+                using (var nestingContext = IncrementNestingContext())
                 {
-                    m_NestingLevel++;
-                    bool canCache = drawer.CanCacheInspectorGUISafe(property.Copy());
-                    return canCache;
-                }
-                finally
-                {
-                    m_NestingLevel--;
+                    return drawer.CanCacheInspectorGUISafe(property.Copy());
                 }
             }
 
@@ -432,32 +412,97 @@ namespace UnityEditor
 
         internal static bool IsArrayReorderable(SerializedProperty property)
         {
+            const BindingFlags fieldFilter = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
             if (property == null) return false;
             if (property.IsReorderable()) return true;
 
             FieldInfo listInfo = null;
             Queue<string> propertyName = new Queue<string>(property.propertyPath.Split(".".ToCharArray(), StringSplitOptions.RemoveEmptyEntries));
-            listInfo = property.serializedObject.targetObject.GetType().GetField(propertyName.Dequeue(), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var type = property.serializedObject.targetObject.GetType();
+            var name = propertyName.Dequeue();
+            listInfo = type.GetField(name, fieldFilter);
 
-            if (listInfo == null) return false;
+            if (listInfo == null)
+            {
+                // it may be private in any parent and still serializable
+                type = type.BaseType;
+                while (listInfo == null && type != null)
+                {
+                    listInfo = type.GetField(name, fieldFilter);
+                    type = type.BaseType;
+                }
+                if (listInfo == null) return false;
+            }
 
             // If we have a nested property we need to find it via reflection in order to verify
             // if it has a non-reorderable attribute
             while (propertyName.Count > 0)
             {
                 Type t = listInfo.FieldType;
-                if (t.IsArray) t = t.GetElementType();
-                else if (t.IsArrayOrList()) t = t.GetGenericArguments().Single();
-                FieldInfo f = t.GetField(propertyName.Dequeue());
-                if (f != null)
+
+                // if the current type is an Array or List, the next two elements in the queue
+                // are Array and data[], we can skip them directly to test against the field name.
+                if (t.IsArray)
                 {
-                    listInfo = f;
+                    t = t.GetElementType();
+                    propertyName.Dequeue();
+                    propertyName.Dequeue();
                 }
+                else if (t.IsArrayOrList())
+                {
+                    t = t.GetGenericArguments().Single();
+                    propertyName.Dequeue();
+                    propertyName.Dequeue();
+                }
+
+                FieldInfo f = t.GetField(propertyName.Dequeue(), fieldFilter);
+                if (f != null) listInfo = f;
             }
 
             return !TypeCache.GetFieldsWithAttribute(typeof(NonReorderableAttribute)).Any(f => f.Equals(listInfo));
         }
 
         internal static bool UseReorderabelListControl(SerializedProperty property) => IsNonStringArray(property) && IsArrayReorderable(property);
+
+        public NestingContext ApplyNestingContext(int nestingLevel)
+        {
+            return NestingContext.Get(this, nestingLevel);
+        }
+
+        public NestingContext IncrementNestingContext()
+        {
+            return NestingContext.Get(this, m_NestingLevel + 1);
+        }
+
+        public struct NestingContext : IDisposable
+        {
+            private PropertyHandler m_Handler;
+            private int m_NestingLevel;
+            private int m_OldNestingLevel;
+
+            public static NestingContext Get(PropertyHandler handler, int nestingLevel)
+            {
+                var result = new NestingContext {m_Handler = handler, m_NestingLevel = nestingLevel};
+                result.Open();
+                return result;
+            }
+
+            public void Dispose()
+            {
+                Close();
+            }
+
+            private void Open()
+            {
+                m_OldNestingLevel = m_Handler.m_NestingLevel;
+                m_Handler.m_NestingLevel = m_NestingLevel;
+            }
+
+            private void Close()
+            {
+                m_Handler.m_NestingLevel = m_OldNestingLevel;
+            }
+        }
     }
 }

@@ -4,6 +4,8 @@
 
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine.SceneManagement;
 
 namespace UnityEditor
 {
@@ -65,7 +67,7 @@ namespace UnityEditor
                 directions[i] = directions[i].normalized;
         }
 
-        public static void CalcSoftOcclusion(Mesh mesh)
+        public static void CalcSoftOcclusion(Mesh mesh, PhysicsScene physicsScene)
         {
             // Create the helper object
             GameObject go = new GameObject("Test");
@@ -95,7 +97,7 @@ namespace UnityEditor
 
                 for (int j = 0; j < directions.Length; j++)
                 {
-                    float occ = CountIntersections(v, go.transform.TransformDirection(directions[j]), 3);
+                    float occ = CountIntersections(physicsScene, v, go.transform.TransformDirection(directions[j]), 3);
                     occ = Mathf.Pow(occlusion, occ);
 
                     result += weights[j] * occ;
@@ -112,32 +114,36 @@ namespace UnityEditor
             Object.DestroyImmediate(go);
         }
 
-        static int CountIntersections(Vector3 v, Vector3 dist, float length)
+        static RaycastHit[] s_RayCastHits = new RaycastHit[100];
+
+        static int CountIntersections(PhysicsScene physicsScene, Vector3 v, Vector3 dist, float length)
         {
             v += dist * .01f;
+
             if (!kDebug)
             {
-                return Physics.RaycastAll(v, dist, length, 1 << kWorkLayer).Length +
-                    Physics.RaycastAll(v + dist * length, -dist, length, 1 << kWorkLayer).Length;
+                var hitCount = physicsScene.Raycast(v, dist, s_RayCastHits, length, 1 << kWorkLayer);
+                hitCount += physicsScene.Raycast(v + dist * length, -dist, s_RayCastHits, length, 1 << kWorkLayer);
+                return hitCount;
             }
 
-            RaycastHit[] hits = Physics.RaycastAll(v, dist, length, 1 << kWorkLayer);
-            int hitLength = hits.Length;
+            physicsScene.Raycast(v, dist, s_RayCastHits, length, 1 << kWorkLayer);
+            int hitLength = s_RayCastHits.Length;
             float maxDist = 0;
             if (hitLength > 0)
-                maxDist = hits[hits.Length - 1].distance;
+                maxDist = s_RayCastHits[s_RayCastHits.Length - 1].distance;
 
-            hits = Physics.RaycastAll(v + dist * length, -dist, length, 1 << kWorkLayer);
-            if (hits.Length > 0)
+            physicsScene.Raycast(v + dist * length, -dist, s_RayCastHits, length, 1 << kWorkLayer);
+            if (s_RayCastHits.Length > 0)
             {
-                float len = length - hits[0].distance;
+                float len = length - s_RayCastHits[0].distance;
                 if (len > maxDist)
                 {
                     maxDist = len;
                 }
             }
 
-            return hitLength + hits.Length;
+            return hitLength + s_RayCastHits.Length;
         }
 
         static float GetWeight(int coeff, Vector3 dir)
@@ -166,6 +172,8 @@ namespace UnityEditor
             string lowerPath = assetPath.ToLower();
             if (lowerPath.IndexOf("ambient-occlusion") != -1)
             {
+                var physicsScene = root.scene.GetPhysicsScene();
+
                 Component[] filters = root.GetComponentsInChildren(typeof(MeshFilter));
                 foreach (MeshFilter filter in filters)
                 {
@@ -174,7 +182,7 @@ namespace UnityEditor
                         Mesh mesh = filter.sharedMesh;
 
                         // Calculate AO
-                        TreeAO.CalcSoftOcclusion(mesh);
+                        TreeAO.CalcSoftOcclusion(mesh, physicsScene);
 
                         // Calculate vertex colors for tree waving
                         Bounds bounds = mesh.bounds;

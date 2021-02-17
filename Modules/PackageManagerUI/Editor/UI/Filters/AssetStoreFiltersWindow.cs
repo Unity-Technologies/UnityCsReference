@@ -28,6 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal static readonly string[] k_Statuses =
         {
+            "Downloaded",
             "Unlabeled",
             "Hidden",
             "Deprecated"

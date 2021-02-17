@@ -167,7 +167,8 @@ namespace UnityEditorInternal
 
         void OnPlayModeStateChanged(PlayModeStateChange state)
         {
-            if (state == PlayModeStateChange.ExitingPlayMode)
+            if (state == PlayModeStateChange.ExitingPlayMode ||
+                state == PlayModeStateChange.ExitingEditMode)
             {
                 StopPreview();
                 StopPlayback();
@@ -222,7 +223,7 @@ namespace UnityEditorInternal
             List<AnimationWindowCurve> curves = (state.showCurveEditor && state.activeCurves.Count > 0) ? state.activeCurves : state.allCurves;
 
             float newTime = AnimationWindowUtility.GetPreviousKeyframeTime(curves.ToArray(), time.time, state.clipFrameRate);
-            SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToClipFrame));
+            SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToFrame));
         }
 
         public void GoToPreviousKeyframe(PropertyModification[] modifications)
@@ -240,7 +241,7 @@ namespace UnityEditorInternal
             }
 
             float newTime = AnimationWindowUtility.GetPreviousKeyframeTime(curves.ToArray(), time.time, state.clipFrameRate);
-            SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToClipFrame));
+            SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToFrame));
 
             state.Repaint();
         }
@@ -250,7 +251,7 @@ namespace UnityEditorInternal
             List<AnimationWindowCurve> curves = (state.showCurveEditor && state.activeCurves.Count > 0) ? state.activeCurves : state.allCurves;
 
             float newTime = AnimationWindowUtility.GetNextKeyframeTime(curves.ToArray(), time.time, state.clipFrameRate);
-            SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToClipFrame));
+            SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToFrame));
         }
 
         public void GoToNextKeyframe(PropertyModification[] modifications)
@@ -268,7 +269,7 @@ namespace UnityEditorInternal
             }
 
             float newTime = AnimationWindowUtility.GetNextKeyframeTime(curves.ToArray(), time.time, state.clipFrameRate);
-            SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToClipFrame));
+            SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToFrame));
 
             state.Repaint();
         }

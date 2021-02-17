@@ -247,7 +247,7 @@ namespace UnityEditor
 
             //Sometimes we dont want to start at the 0th index, this is where we're editing a clip - see
             m_ClipList.index = EditorPrefs.GetInt(ActiveClipIndex, 0);
-            EditorPrefs.SetInt(ActiveClipIndex, m_ClipList.index);
+            EditorPrefs.DeleteKey(ActiveClipIndex);
             //Reset the Model Importer to its serialized copy
             DeserializeClips();
 
@@ -287,10 +287,14 @@ namespace UnityEditor
             m_AnimationType = m_DefaultClipsSerializedObject.FindProperty("m_AnimationType");
             m_ClipAnimations.arraySize = 0;
 
+            int clipListIndex = m_ClipList.index;
             foreach (TakeInfo takeInfo in singleImporter.importedTakeInfos)
             {
                 AddClip(takeInfo);
             }
+
+            //Attempt to maintain the previous clip index, now we've reverted to default clips
+            m_ClipList.index = Mathf.Min(clipListIndex, m_ClipList.list.Count);
         }
 
         // When switching to explicitly defined clips, we must fix up the internalID's to not lose AnimationClip references.

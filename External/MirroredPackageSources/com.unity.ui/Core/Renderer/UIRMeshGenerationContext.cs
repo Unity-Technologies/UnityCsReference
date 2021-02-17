@@ -43,6 +43,10 @@ namespace UnityEngine.UIElements
         internal Color32 opacityPageSettingIndex; //XY (ZW SVG setting index)
         internal float textureId;
 
+        // For backward-compatibility. Before 2021.1, the ids and flags were merged
+        // in an idsFlags field where idsFlags.rgb contained the ids, and idsFlags.a held the flags.
+        internal Color32 idsFlags;
+
         // Winding order of vertices matters. CCW is for clipped meshes.
     }
 
@@ -679,7 +683,7 @@ namespace UnityEngine.UIElements
 
             internal static TextNativeSettings GetTextNativeSettings(TextParams textParams, float scaling)
             {
-                var settings = new TextNativeSettings
+                return new TextNativeSettings
                 {
                     text = textParams.text,
                     font = textParams.font,
@@ -692,10 +696,6 @@ namespace UnityEngine.UIElements
                     wordWrapWidth = textParams.wordWrapWidth,
                     richText = textParams.richText
                 };
-
-                settings.color *= textParams.playmodeTintColor;
-
-                return settings;
             }
         }
 

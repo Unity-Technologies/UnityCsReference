@@ -48,6 +48,7 @@ namespace UnityEditor
         internal extern void SetPlayModeView(bool value);
         internal extern void ClearStartView();
         internal extern void MakeVistaDWMHappyDance();
+        internal extern void SetEyeDropperOpen(bool isOpen);
         internal extern void StealMouseCapture();
         internal extern void ClearKeyboardControl();
         internal extern void SetKeyboardControl(int id);
@@ -72,6 +73,7 @@ namespace UnityEditor
         private extern void Internal_SetWantsMouseEnterLeaveWindow(bool wantIt);
         private extern void Internal_SetAutoRepaint(bool doit);
         private extern void Internal_SetWindow(ScriptableObject win);
+        private extern void Internal_UnsetWindow(ScriptableObject win);
         private extern void Internal_SetPosition(Rect windowPosition);
     }
 }

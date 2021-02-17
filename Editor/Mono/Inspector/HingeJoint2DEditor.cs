@@ -80,13 +80,14 @@ namespace UnityEditor
             if (!hingeJoint2D.enabled)
                 return;
 
+            // Fetch the reference angle which acts as an offset to the absolute angles this gizmo is displaying/editing.
+            var referenceAngle = hingeJoint2D.referenceAngle;
+
             m_AngularLimitHandle.xMotion = hingeJoint2D.useLimits ? ConfigurableJointMotion.Limited : ConfigurableJointMotion.Free;
 
-            JointAngleLimits2D limit;
-
-            limit = hingeJoint2D.limits;
-            m_AngularLimitHandle.xMin = limit.min;
-            m_AngularLimitHandle.xMax = limit.max;
+            JointAngleLimits2D limit = hingeJoint2D.limits;
+            m_AngularLimitHandle.xMin = limit.min + referenceAngle;
+            m_AngularLimitHandle.xMax = limit.max + referenceAngle;
 
             // only display control handles on manipulator if in edit mode
             var editMode = EditMode.editMode == EditMode.SceneViewEditMode.JointAngularLimits && EditMode.IsOwner(this);
@@ -148,8 +149,8 @@ namespace UnityEditor
                 Undo.RecordObject(hingeJoint2D, Styles.editAngularLimitsUndoMessage);
 
                 limit = hingeJoint2D.limits;
-                limit.min = m_AngularLimitHandle.xMin;
-                limit.max = m_AngularLimitHandle.xMax;
+                limit.min = m_AngularLimitHandle.xMin - referenceAngle;
+                limit.max = m_AngularLimitHandle.xMax - referenceAngle;
                 hingeJoint2D.limits = limit;
 
                 dynamicBody.WakeUp();

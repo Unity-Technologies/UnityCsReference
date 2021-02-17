@@ -11,6 +11,7 @@ using System.Linq;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.StyleSheets;
 using UnityEditor.UIElements;
+using UnityEditorInternal;
 
 namespace UnityEditor
 {
@@ -98,6 +99,23 @@ namespace UnityEditor
                 m_ShowButton = (EditorWindowShowButtonDelegate)Delegate.CreateDelegate(typeof(EditorWindowShowButtonDelegate), m_ActualView, methodInfo);
             else
                 m_ShowButton = null;
+        }
+
+        private void ClearDelegates()
+        {
+            m_OnGUI = null;
+            m_OnFocus = null;
+            m_OnLostFocus = null;
+            m_OnProjectChange = null;
+            m_OnSelectionChange = null;
+            m_OnDidOpenScene = null;
+            m_OnInspectorUpdate = null;
+            m_OnHierarchyChange = null;
+            m_OnBecameVisible = null;
+            m_OnBecameInvisible = null;
+            m_Update = null;
+            m_ModifierKeysChanged = null;
+            m_ShowButton = null;
         }
 
         internal void ResetActiveView()
@@ -417,9 +435,15 @@ namespace UnityEditor
             bool isExitGUIException = false;
             try
             {
+                GUILayoutUtility.unbalancedgroupscount = 0;
                 using (new EditorPerformanceTracker($"{GetActualViewName()}.OnGUI.{Event.current.type}"))
                 {
                     m_OnGUI?.Invoke();
+                }
+                if (GUILayoutUtility.unbalancedgroupscount > 0)
+                {
+                    Debug.LogError("GUI Error: Invalid GUILayout state in " + GetActualViewName() + " view. Verify that all layout Begin/End calls match");
+                    GUILayoutUtility.unbalancedgroupscount = 0;
                 }
             }
             catch (TargetInvocationException e)
@@ -540,11 +564,13 @@ namespace UnityEditor
                 var onBecameInvisible = m_OnBecameInvisible;
 
                 m_ActualView = null;
+
                 if (sendEvents)
                 {
                     onLostFocus?.Invoke();
                     onBecameInvisible?.Invoke();
                 }
+                ClearDelegates();
             }
         }
 
@@ -727,11 +753,8 @@ namespace UnityEditor
             if (window == null)
                 return;
 
-            // Get some info on the existing window.
-            Type windowType = window.GetType();
-
-            // Save what we can of the window.
-            string windowJson = EditorJsonUtility.ToJson(window);
+            var saveWindowPath = $"Temp/{Guid.NewGuid().ToString("N")}";
+            InternalEditorUtility.SaveToSerializedFileAndForget(new[] { window }, saveWindowPath, true);
 
             DockArea dockArea = window.m_Parent as DockArea;
             if (dockArea != null)
@@ -742,23 +765,23 @@ namespace UnityEditor
                 dockArea.RemoveTab(window, false); // Don't kill dock if empty.
                 DestroyImmediate(window, true);
 
-                // Create window.
-                window = EditorWindow.CreateInstance(windowType) as EditorWindow;
-                dockArea.AddTab(windowIndex, window);
+                // Reload window.
+                var objs = InternalEditorUtility.LoadSerializedFileAndForget(saveWindowPath);
+                if (objs[0] is EditorWindow win)
+                    dockArea.AddTab(windowIndex, win);
             }
             else
             {
                 // Close the existing window.
                 window.Close();
 
-                // Recreate window.
-                window = EditorWindow.CreateInstance(windowType) as EditorWindow;
-                if (window != null)
-                    window.Show();
+                // Reload window
+                var objs = InternalEditorUtility.LoadSerializedFileAndForget(saveWindowPath);
+                if (objs[0] is EditorWindow win)
+                    win.Show();
             }
 
-            // Restore what we can of the window.
-            EditorJsonUtility.FromJsonOverwrite(windowJson, window);
+            System.IO.File.Delete(saveWindowPath);
         }
 
         protected virtual void AddDefaultItemsToMenu(GenericMenu menu, EditorWindow window)

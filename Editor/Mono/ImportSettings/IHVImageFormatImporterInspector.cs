@@ -25,7 +25,7 @@ namespace UnityEditor
         internal class Styles
         {
             // copy pasted from TextureImporterInspector.TextureSettingsGUI()
-            public static readonly GUIContent readWrite     = EditorGUIUtility.TrTextContent("Read/Write Enabled", "Enable to be able to access the raw pixel data from code.");
+            public static readonly GUIContent readWrite     = EditorGUIUtility.TrTextContent("Read/Write", "Enable to be able to access the raw pixel data from code.");
             public static readonly GUIContent sRGBTexture   = EditorGUIUtility.TrTextContent("sRGB (Color Texture)", "Texture content is stored in gamma space. Non-HDR color textures should enable this flag (except if used for IMGUI).");
             public static readonly GUIContent wrapMode      = EditorGUIUtility.TrTextContent("Wrap Mode");
             public static readonly GUIContent filterMode    = EditorGUIUtility.TrTextContent("Filter Mode");
@@ -66,8 +66,7 @@ namespace UnityEditor
             Rect rect = EditorGUILayout.GetControlRect();
             EditorGUI.BeginProperty(rect, Styles.filterMode, m_FilterMode);
             EditorGUI.BeginChangeCheck();
-            FilterMode filter = m_FilterMode.intValue == -1 ? FilterMode.Bilinear : (FilterMode)m_FilterMode.intValue;
-            filter = (FilterMode)EditorGUI.IntPopup(rect, Styles.filterMode, (int)filter, Styles.filterModeOptions, Styles.filterModeValues);
+            FilterMode filter = (FilterMode)EditorGUI.IntPopup(rect, Styles.filterMode, m_FilterMode.intValue, Styles.filterModeOptions, Styles.filterModeValues);
             if (EditorGUI.EndChangeCheck())
                 m_FilterMode.intValue = (int)filter;
             EditorGUI.EndProperty();
@@ -89,10 +88,9 @@ namespace UnityEditor
                     Texture tex = AssetDatabase.LoadMainAssetAtPath(importer.assetPath) as Texture;
                     if (tex != null)
                     {
-                        if (m_FilterMode.intValue != -1)
-                            TextureUtil.SetFilterModeNoDirty(tex, (FilterMode)m_FilterMode.intValue);
-                        if ((m_WrapU.intValue != -1 || m_WrapV.intValue != -1 || m_WrapW.intValue != -1) &&
-                            !m_WrapU.hasMultipleDifferentValues && !m_WrapV.hasMultipleDifferentValues && !m_WrapW.hasMultipleDifferentValues)
+                        TextureUtil.SetFilterModeNoDirty(tex, (FilterMode)m_FilterMode.intValue);
+
+                        if (!m_WrapU.hasMultipleDifferentValues && !m_WrapV.hasMultipleDifferentValues && !m_WrapW.hasMultipleDifferentValues)
                         {
                             TextureUtil.SetWrapModeNoDirty(tex, (TextureWrapMode)m_WrapU.intValue, (TextureWrapMode)m_WrapV.intValue, (TextureWrapMode)m_WrapW.intValue);
                         }

@@ -101,7 +101,14 @@ namespace UnityEngine
         }
 
         public static event Action<ReflectionProbe, ReflectionProbeEvent> reflectionProbeChanged;
+
+        //temporarly disable "event is never used" warning as that is the point...
+#pragma warning disable 67
+        [Obsolete("ReflectionProbe.defaultReflectionSet has been deprecated. Use ReflectionProbe.defaultReflectionTexture. (UnityUpgradable) -> UnityEngine.ReflectionProbe.defaultReflectionTexture", true)]
         public static event Action<Cubemap> defaultReflectionSet;
+#pragma warning restore 67
+
+        public static event Action<Texture> defaultReflectionTexture;
 
         [UnityEngine.Scripting.RequiredByNativeCode]
         private static void CallReflectionProbeEvent(ReflectionProbe probe, ReflectionProbeEvent probeEvent)
@@ -112,9 +119,9 @@ namespace UnityEngine
         }
 
         [UnityEngine.Scripting.RequiredByNativeCode]
-        private static void CallSetDefaultReflection(Cubemap defaultReflectionCubemap)
+        private static void CallSetDefaultReflection(Texture defaultReflectionCubemap)
         {
-            var callback = defaultReflectionSet;
+            var callback = defaultReflectionTexture;
             if (callback != null)
                 callback(defaultReflectionCubemap);
         }

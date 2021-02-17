@@ -92,6 +92,7 @@ namespace UnityEngine.UIElements
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
+            target.RegisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOut);
         }
 
         /// <summary>
@@ -102,6 +103,7 @@ namespace UnityEngine.UIElements
             target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+            target.UnregisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOut);
         }
 
         /// <summary>
@@ -141,6 +143,12 @@ namespace UnityEngine.UIElements
         {
             if (active && CanStopManipulation(evt))
                 ProcessUpEvent(evt, evt.localMousePosition, PointerId.mousePointerId);
+        }
+
+        void OnMouseCaptureOut(MouseCaptureOutEvent evt)
+        {
+            if (active)
+                ProcessCancelEvent(evt, PointerId.mousePointerId);
         }
 
         internal void SimulateSingleClick(EventBase evt, int delayMs = 100)

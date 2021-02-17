@@ -389,6 +389,14 @@ namespace UnityEditor
                 showSpriteEditorWindow = spriteEditorWindow;
         }
 
+        internal static void SetApplySpriteEditorWindow(Action action)
+        {
+            if (action != null)
+                applySpriteEditorWindow = action;
+            else
+                applySpriteEditorWindow = () => {};
+        }
+
         internal static bool ShowSpriteEditorWindow(UnityEngine.Object obj = null)
         {
             return showSpriteEditorWindow(obj != null ? obj : Selection.activeObject);
@@ -399,5 +407,12 @@ namespace UnityEditor
             EditorUtility.DisplayDialog(Styles.noSpriteEditorWindowTitle.text, Styles.noSpriteEditorWindow.text, Styles.okText.text);
             return false;
         };
+
+        internal static void ApplySpriteEditorWindow()
+        {
+            applySpriteEditorWindow();
+        }
+
+        static Action applySpriteEditorWindow = () => {};
     } // class
 }

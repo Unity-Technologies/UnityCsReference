@@ -11,21 +11,32 @@ namespace UnityEngine.Experimental.Rendering
     [UsedByNativeCode]
     [NativeHeader("Runtime/Shaders/RayTracingAccelerationStructure.h")]
     [NativeHeader("Runtime/Export/Graphics/RayTracingAccelerationStructure.bindings.h")]
+
+    [Flags]
+    public enum RayTracingSubMeshFlags
+    {
+        Disabled            = 0,
+        Enabled             = (1 << 0),
+        ClosestHitOnly      = (1 << 1),
+        UniqueAnyHitCalls   = (1 << 2),
+    }
+
     public sealed class RayTracingAccelerationStructure : IDisposable
     {
         [Flags]
         public enum RayTracingModeMask
         {
-            Nothing            = 0,
-            Static             = (1 << RayTracingMode.Static),
-            DynamicTransform   = (1 << RayTracingMode.DynamicTransform),
-            DynamicGeometry    = (1 << RayTracingMode.DynamicGeometry),
-            Everything         = (Static | DynamicTransform | DynamicGeometry)
+            Nothing             = 0,
+            Static              = (1 << RayTracingMode.Static),
+            DynamicTransform    = (1 << RayTracingMode.DynamicTransform),
+            DynamicGeometry     = (1 << RayTracingMode.DynamicGeometry),
+            Everything          = (Static | DynamicTransform | DynamicGeometry)
         }
+
         public enum ManagementMode
         {
-            Manual    = 0,    // Manual management of Renderers in the Raytracing Acceleration Structure.
-            Automatic = 1,    // New renderers are added automatically based on a RayTracingModeMask.
+            Manual      = 0,    // Manual management of Renderers in the Raytracing Acceleration Structure.
+            Automatic   = 1,    // New renderers are added automatically based on a RayTracingModeMask.
         }
 
         public struct RASSettings
@@ -115,8 +126,16 @@ namespace UnityEngine.Experimental.Rendering
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::Update", HasExplicitThis = true)]
         extern public void Update(Vector3 relativeOrigin);
 
-        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddInstance", HasExplicitThis = true)]
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddInstanceDeprecated", HasExplicitThis = true)]
         extern public void AddInstance([NotNull] Renderer targetRenderer, bool[] subMeshMask = null, bool[] subMeshTransparencyFlags = null, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF);
+
+        public void AddInstance(Renderer targetRenderer, RayTracingSubMeshFlags[] subMeshFlags, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF)
+        {
+            AddInstanceSubMeshFlagsArray(targetRenderer, subMeshFlags, enableTriangleCulling, frontTriangleCounterClockwise, mask);
+        }
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::RemoveInstance", HasExplicitThis = true)]
+        extern public void RemoveInstance([NotNull] Renderer targetRenderer);
 
         public void AddInstance(GraphicsBuffer aabbBuffer, uint numElements, Material material, bool isCutOff, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, bool reuseBounds = false)
         {
@@ -134,7 +153,13 @@ namespace UnityEngine.Experimental.Rendering
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceTransform", HasExplicitThis = true)]
         extern public void UpdateInstanceTransform([NotNull] Renderer renderer);
 
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceMask", HasExplicitThis = true)]
+        extern public void UpdateInstanceMask([NotNull] Renderer renderer, uint mask);
+
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::GetSize", HasExplicitThis = true)]
         extern public UInt64 GetSize();
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddInstanceSubMeshFlagsArray", HasExplicitThis = true)]
+        extern private void AddInstanceSubMeshFlagsArray([NotNull] Renderer targetRenderer, RayTracingSubMeshFlags[] subMeshFlags, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF);
     }
 }

@@ -1317,7 +1317,7 @@ namespace UnityEditorInternal
             if (typeof(Renderer).IsAssignableFrom(binding.type))
             {
                 string group = GetPropertyGroupName(binding.propertyName);
-                return group == "material._Color";
+                return group == "material._Color" || group == "material._BaseColor";
             }
             return false;
         }

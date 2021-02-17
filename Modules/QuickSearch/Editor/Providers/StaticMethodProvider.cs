@@ -44,15 +44,19 @@ namespace UnityEditor.Search.Providers
             if (methods == null)
                 methods = FetchStaticAPIMethodInfo();
 
-            var lowerCasePattern = context.searchQuery.ToLowerInvariant();
+            var lowerCasePattern = context.searchQuery.ToLowerInvariant().Replace(" ", "");
             var matches = new List<int>();
             foreach (var m in methods)
             {
+                if (!m.IsPublic && !context.options.HasFlag(SearchFlags.WantsMore))
+                    continue;
                 long score = 0;
-                if (FuzzySearch.FuzzyMatch(lowerCasePattern, m.Name.ToLowerInvariant(), ref score, matches))
+                var fullName = $"{m.DeclaringType.FullName}.{m.Name}";
+                var fullNameLower = fullName.ToLowerInvariant();
+                if (FuzzySearch.FuzzyMatch(lowerCasePattern, fullNameLower, ref score, matches) && score > 300)
                 {
-                    var visibilityString = !m.IsPublic ? "<i>Internal</i> - " : string.Empty;
-                    yield return provider.CreateItem(context, m.Name, m.IsPublic ? ~(int)score - 999 : ~(int)score, m.Name, $"{visibilityString}{m.DeclaringType} - {m}", null, m);
+                    var visibilityString = m.IsPublic ? string.Empty : "(Non Public)";
+                    yield return provider.CreateItem(context, m.Name, m.IsPublic ? ~(int)score - 999 : ~(int)score, m.Name, $"{fullName} {visibilityString}", null, m);
                 }
                 else
                     yield return null;
@@ -80,9 +84,6 @@ namespace UnityEditor.Search.Providers
                     var methods = type.GetMethods(bindingFlags);
                     foreach (var m in methods)
                     {
-                        if (m.IsPrivate)
-                            continue;
-
                         if (m.IsGenericMethod)
                             continue;
 

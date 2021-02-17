@@ -339,10 +339,18 @@ namespace UnityEditor.UIElements
 
         private Editor GetOrCreateEditor(SerializedObject serializedObject)
         {
-            if (editor != null)
-                return editor;
-
             var target = serializedObject?.targetObject;
+
+            if (editor != null)
+            {
+                if(editor.target == target || editor.serializedObject == serializedObject)
+                    return editor;
+
+                if (ownsEditor)
+                {
+                    DestroyOwnedEditor();
+                }
+            }
 
             foreach (var inspectorWindow in InspectorWindow.GetInspectors())
             {

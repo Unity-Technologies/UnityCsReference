@@ -133,7 +133,9 @@ namespace UnityEditor
         {
             base.SearchChanged(newSearch);
             var rows = GetRows();
-            if (rows.Count == 1 || (rows.Count > 1 && !GetSelection().Any(selectedId => rows.Any(r => r.id == selectedId))))
+            if (rows.Count == 0)
+                return;
+            if (!GetSelection().Any(selectedId => rows.Any(r => r.id == selectedId)))
                 SetSelection(new[] { rows[0].id }, TreeViewSelectionOptions.FireSelectionChanged);
         }
 

@@ -5,326 +5,381 @@
 //              See ComputedStyleCsGenerator class for details
 //
 /******************************************************************************/
+using System;
+using System.Collections.Generic;
 using UnityEngine.UIElements.StyleSheets;
+using UnityEngine.Yoga;
 
 namespace UnityEngine.UIElements
 {
-    internal partial class ComputedStyle
+    internal partial struct ComputedStyle
     {
-        public InheritedData inheritedData = new InheritedData();
-        public NonInheritedData nonInheritedData = new NonInheritedData();
+        public StyleDataRef<InheritedData> inheritedData;
+        public StyleDataRef<LayoutData> layoutData;
+        public StyleDataRef<RareData> rareData;
+        public StyleDataRef<VisualData> visualData;
 
-        public Align alignContent => nonInheritedData.alignContent;
-        public Align alignItems => nonInheritedData.alignItems;
-        public Align alignSelf => nonInheritedData.alignSelf;
-        public Color backgroundColor => nonInheritedData.backgroundColor;
-        public Background backgroundImage => nonInheritedData.backgroundImage;
-        public Color borderBottomColor => nonInheritedData.borderBottomColor;
-        public Length borderBottomLeftRadius => nonInheritedData.borderBottomLeftRadius;
-        public Length borderBottomRightRadius => nonInheritedData.borderBottomRightRadius;
-        public float borderBottomWidth => nonInheritedData.borderBottomWidth;
-        public Color borderLeftColor => nonInheritedData.borderLeftColor;
-        public float borderLeftWidth => nonInheritedData.borderLeftWidth;
-        public Color borderRightColor => nonInheritedData.borderRightColor;
-        public float borderRightWidth => nonInheritedData.borderRightWidth;
-        public Color borderTopColor => nonInheritedData.borderTopColor;
-        public Length borderTopLeftRadius => nonInheritedData.borderTopLeftRadius;
-        public Length borderTopRightRadius => nonInheritedData.borderTopRightRadius;
-        public float borderTopWidth => nonInheritedData.borderTopWidth;
-        public Length bottom => nonInheritedData.bottom;
-        public Color color => inheritedData.color;
-        public Cursor cursor => nonInheritedData.cursor;
-        public DisplayStyle display => nonInheritedData.display;
-        public Length flexBasis => nonInheritedData.flexBasis;
-        public FlexDirection flexDirection => nonInheritedData.flexDirection;
-        public float flexGrow => nonInheritedData.flexGrow;
-        public float flexShrink => nonInheritedData.flexShrink;
-        public Wrap flexWrap => nonInheritedData.flexWrap;
-        public Length fontSize => inheritedData.fontSize;
-        public Length height => nonInheritedData.height;
-        public Justify justifyContent => nonInheritedData.justifyContent;
-        public Length left => nonInheritedData.left;
-        public Length letterSpacing => inheritedData.letterSpacing;
-        public Length marginBottom => nonInheritedData.marginBottom;
-        public Length marginLeft => nonInheritedData.marginLeft;
-        public Length marginRight => nonInheritedData.marginRight;
-        public Length marginTop => nonInheritedData.marginTop;
-        public Length maxHeight => nonInheritedData.maxHeight;
-        public Length maxWidth => nonInheritedData.maxWidth;
-        public Length minHeight => nonInheritedData.minHeight;
-        public Length minWidth => nonInheritedData.minWidth;
-        public float opacity => nonInheritedData.opacity;
-        public OverflowInternal overflow => nonInheritedData.overflow;
-        public Length paddingBottom => nonInheritedData.paddingBottom;
-        public Length paddingLeft => nonInheritedData.paddingLeft;
-        public Length paddingRight => nonInheritedData.paddingRight;
-        public Length paddingTop => nonInheritedData.paddingTop;
-        public Position position => nonInheritedData.position;
-        public Length right => nonInheritedData.right;
-        public TextOverflow textOverflow => nonInheritedData.textOverflow;
-        public TextShadow textShadow => inheritedData.textShadow;
-        public Length top => nonInheritedData.top;
-        public Color unityBackgroundImageTintColor => nonInheritedData.unityBackgroundImageTintColor;
-        public ScaleMode unityBackgroundScaleMode => nonInheritedData.unityBackgroundScaleMode;
-        public Font unityFont => inheritedData.unityFont;
-        public FontDefinition unityFontDefinition => inheritedData.unityFontDefinition;
-        public FontStyle unityFontStyleAndWeight => inheritedData.unityFontStyleAndWeight;
-        public OverflowClipBox unityOverflowClipBox => nonInheritedData.unityOverflowClipBox;
-        public Length unityParagraphSpacing => inheritedData.unityParagraphSpacing;
-        public int unitySliceBottom => nonInheritedData.unitySliceBottom;
-        public int unitySliceLeft => nonInheritedData.unitySliceLeft;
-        public int unitySliceRight => nonInheritedData.unitySliceRight;
-        public int unitySliceTop => nonInheritedData.unitySliceTop;
-        public TextAnchor unityTextAlign => inheritedData.unityTextAlign;
-        public Color unityTextOutlineColor => inheritedData.unityTextOutlineColor;
-        public float unityTextOutlineWidth => inheritedData.unityTextOutlineWidth;
-        public TextOverflowPosition unityTextOverflowPosition => nonInheritedData.unityTextOverflowPosition;
-        public Visibility visibility => inheritedData.visibility;
-        public WhiteSpace whiteSpace => inheritedData.whiteSpace;
-        public Length width => nonInheritedData.width;
-        public Length wordSpacing => inheritedData.wordSpacing;
+        public YogaNode yogaNode;
+        public Dictionary<string, StylePropertyValue> customProperties;
+        public Int64 matchingRulesHash;
+        public float dpiScaling;
 
-        public void CopyFrom(ComputedStyle other)
+        public Align alignContent => layoutData.Read().alignContent;
+        public Align alignItems => layoutData.Read().alignItems;
+        public Align alignSelf => layoutData.Read().alignSelf;
+        public Color backgroundColor => visualData.Read().backgroundColor;
+        public Background backgroundImage => visualData.Read().backgroundImage;
+        public Color borderBottomColor => visualData.Read().borderBottomColor;
+        public Length borderBottomLeftRadius => visualData.Read().borderBottomLeftRadius;
+        public Length borderBottomRightRadius => visualData.Read().borderBottomRightRadius;
+        public float borderBottomWidth => layoutData.Read().borderBottomWidth;
+        public Color borderLeftColor => visualData.Read().borderLeftColor;
+        public float borderLeftWidth => layoutData.Read().borderLeftWidth;
+        public Color borderRightColor => visualData.Read().borderRightColor;
+        public float borderRightWidth => layoutData.Read().borderRightWidth;
+        public Color borderTopColor => visualData.Read().borderTopColor;
+        public Length borderTopLeftRadius => visualData.Read().borderTopLeftRadius;
+        public Length borderTopRightRadius => visualData.Read().borderTopRightRadius;
+        public float borderTopWidth => layoutData.Read().borderTopWidth;
+        public Length bottom => layoutData.Read().bottom;
+        public Color color => inheritedData.Read().color;
+        public Cursor cursor => rareData.Read().cursor;
+        public DisplayStyle display => layoutData.Read().display;
+        public Length flexBasis => layoutData.Read().flexBasis;
+        public FlexDirection flexDirection => layoutData.Read().flexDirection;
+        public float flexGrow => layoutData.Read().flexGrow;
+        public float flexShrink => layoutData.Read().flexShrink;
+        public Wrap flexWrap => layoutData.Read().flexWrap;
+        public Length fontSize => inheritedData.Read().fontSize;
+        public Length height => layoutData.Read().height;
+        public Justify justifyContent => layoutData.Read().justifyContent;
+        public Length left => layoutData.Read().left;
+        public Length letterSpacing => inheritedData.Read().letterSpacing;
+        public Length marginBottom => layoutData.Read().marginBottom;
+        public Length marginLeft => layoutData.Read().marginLeft;
+        public Length marginRight => layoutData.Read().marginRight;
+        public Length marginTop => layoutData.Read().marginTop;
+        public Length maxHeight => layoutData.Read().maxHeight;
+        public Length maxWidth => layoutData.Read().maxWidth;
+        public Length minHeight => layoutData.Read().minHeight;
+        public Length minWidth => layoutData.Read().minWidth;
+        public float opacity => visualData.Read().opacity;
+        public OverflowInternal overflow => visualData.Read().overflow;
+        public Length paddingBottom => layoutData.Read().paddingBottom;
+        public Length paddingLeft => layoutData.Read().paddingLeft;
+        public Length paddingRight => layoutData.Read().paddingRight;
+        public Length paddingTop => layoutData.Read().paddingTop;
+        public Position position => layoutData.Read().position;
+        public Length right => layoutData.Read().right;
+        public TextOverflow textOverflow => rareData.Read().textOverflow;
+        public TextShadow textShadow => inheritedData.Read().textShadow;
+        public Length top => layoutData.Read().top;
+        public Color unityBackgroundImageTintColor => rareData.Read().unityBackgroundImageTintColor;
+        public ScaleMode unityBackgroundScaleMode => rareData.Read().unityBackgroundScaleMode;
+        public Font unityFont => inheritedData.Read().unityFont;
+        public FontDefinition unityFontDefinition => inheritedData.Read().unityFontDefinition;
+        public FontStyle unityFontStyleAndWeight => inheritedData.Read().unityFontStyleAndWeight;
+        public OverflowClipBox unityOverflowClipBox => rareData.Read().unityOverflowClipBox;
+        public Length unityParagraphSpacing => inheritedData.Read().unityParagraphSpacing;
+        public int unitySliceBottom => rareData.Read().unitySliceBottom;
+        public int unitySliceLeft => rareData.Read().unitySliceLeft;
+        public int unitySliceRight => rareData.Read().unitySliceRight;
+        public int unitySliceTop => rareData.Read().unitySliceTop;
+        public TextAnchor unityTextAlign => inheritedData.Read().unityTextAlign;
+        public Color unityTextOutlineColor => inheritedData.Read().unityTextOutlineColor;
+        public float unityTextOutlineWidth => inheritedData.Read().unityTextOutlineWidth;
+        public TextOverflowPosition unityTextOverflowPosition => rareData.Read().unityTextOverflowPosition;
+        public Visibility visibility => inheritedData.Read().visibility;
+        public WhiteSpace whiteSpace => inheritedData.Read().whiteSpace;
+        public Length width => layoutData.Read().width;
+        public Length wordSpacing => inheritedData.Read().wordSpacing;
+
+        public static ComputedStyle Create(ref ComputedStyle parentStyle)
         {
-            inheritedData = other.inheritedData;
-            nonInheritedData = other.nonInheritedData;
+            ref var initialStyle = ref InitialStyle.Get();
+            var cs = new ComputedStyle {dpiScaling = 1f};
+            cs.inheritedData = parentStyle.inheritedData.Acquire();
+            cs.layoutData = initialStyle.layoutData.Acquire();
+            cs.rareData = initialStyle.rareData.Acquire();
+            cs.visualData = initialStyle.visualData.Acquire();
+            return cs;
         }
 
-        public void ApplyProperties(StylePropertyReader reader, ComputedStyle parentStyle)
+        public static ComputedStyle CreateInitial()
+        {
+            var cs = new ComputedStyle {dpiScaling = 1f};
+            cs.inheritedData = StyleDataRef<InheritedData>.Create();
+            cs.layoutData = StyleDataRef<LayoutData>.Create();
+            cs.rareData = StyleDataRef<RareData>.Create();
+            cs.visualData = StyleDataRef<VisualData>.Create();
+            return cs;
+        }
+
+        public ComputedStyle Acquire()
+        {
+            inheritedData.Acquire();
+            layoutData.Acquire();
+            rareData.Acquire();
+            visualData.Acquire();
+            return this;
+        }
+
+        public void Release()
+        {
+            inheritedData.Release();
+            layoutData.Release();
+            rareData.Release();
+            visualData.Release();
+        }
+
+        public void CopyFrom(ref ComputedStyle other)
+        {
+            inheritedData.CopyFrom(other.inheritedData);
+            layoutData.CopyFrom(other.layoutData);
+            rareData.CopyFrom(other.rareData);
+            visualData.CopyFrom(other.visualData);
+
+            yogaNode = other.yogaNode;
+            customProperties = other.customProperties;
+            matchingRulesHash = other.matchingRulesHash;
+            dpiScaling = other.dpiScaling;
+        }
+
+        public void ApplyProperties(StylePropertyReader reader, ref ComputedStyle parentStyle)
         {
             for (var id = reader.propertyId; id != StylePropertyId.Unknown; id = reader.MoveNextProperty())
             {
-                if (ApplyGlobalKeyword(reader, parentStyle))
+                if (ApplyGlobalKeyword(reader, ref parentStyle))
                     continue;
                 switch (id)
                 {
                     case StylePropertyId.AlignContent:
-                        nonInheritedData.alignContent = (Align)reader.ReadEnum(StyleEnumType.Align, 0);
+                        layoutData.Write().alignContent = (Align)reader.ReadEnum(StyleEnumType.Align, 0);
                         break;
                     case StylePropertyId.AlignItems:
-                        nonInheritedData.alignItems = (Align)reader.ReadEnum(StyleEnumType.Align, 0);
+                        layoutData.Write().alignItems = (Align)reader.ReadEnum(StyleEnumType.Align, 0);
                         break;
                     case StylePropertyId.AlignSelf:
-                        nonInheritedData.alignSelf = (Align)reader.ReadEnum(StyleEnumType.Align, 0);
+                        layoutData.Write().alignSelf = (Align)reader.ReadEnum(StyleEnumType.Align, 0);
                         break;
                     case StylePropertyId.BackgroundColor:
-                        nonInheritedData.backgroundColor = reader.ReadColor(0);
+                        visualData.Write().backgroundColor = reader.ReadColor(0);
                         break;
                     case StylePropertyId.BackgroundImage:
-                        nonInheritedData.backgroundImage = reader.ReadBackground(0);
+                        visualData.Write().backgroundImage = reader.ReadBackground(0);
                         break;
                     case StylePropertyId.BorderBottomColor:
-                        nonInheritedData.borderBottomColor = reader.ReadColor(0);
+                        visualData.Write().borderBottomColor = reader.ReadColor(0);
                         break;
                     case StylePropertyId.BorderBottomLeftRadius:
-                        nonInheritedData.borderBottomLeftRadius = reader.ReadLength(0);
+                        visualData.Write().borderBottomLeftRadius = reader.ReadLength(0);
                         break;
                     case StylePropertyId.BorderBottomRightRadius:
-                        nonInheritedData.borderBottomRightRadius = reader.ReadLength(0);
+                        visualData.Write().borderBottomRightRadius = reader.ReadLength(0);
                         break;
                     case StylePropertyId.BorderBottomWidth:
-                        nonInheritedData.borderBottomWidth = reader.ReadFloat(0);
+                        layoutData.Write().borderBottomWidth = reader.ReadFloat(0);
                         break;
                     case StylePropertyId.BorderColor:
-                        ShorthandApplicator.ApplyBorderColor(reader, this);
+                        ShorthandApplicator.ApplyBorderColor(reader, ref this);
                         break;
                     case StylePropertyId.BorderLeftColor:
-                        nonInheritedData.borderLeftColor = reader.ReadColor(0);
+                        visualData.Write().borderLeftColor = reader.ReadColor(0);
                         break;
                     case StylePropertyId.BorderLeftWidth:
-                        nonInheritedData.borderLeftWidth = reader.ReadFloat(0);
+                        layoutData.Write().borderLeftWidth = reader.ReadFloat(0);
                         break;
                     case StylePropertyId.BorderRadius:
-                        ShorthandApplicator.ApplyBorderRadius(reader, this);
+                        ShorthandApplicator.ApplyBorderRadius(reader, ref this);
                         break;
                     case StylePropertyId.BorderRightColor:
-                        nonInheritedData.borderRightColor = reader.ReadColor(0);
+                        visualData.Write().borderRightColor = reader.ReadColor(0);
                         break;
                     case StylePropertyId.BorderRightWidth:
-                        nonInheritedData.borderRightWidth = reader.ReadFloat(0);
+                        layoutData.Write().borderRightWidth = reader.ReadFloat(0);
                         break;
                     case StylePropertyId.BorderTopColor:
-                        nonInheritedData.borderTopColor = reader.ReadColor(0);
+                        visualData.Write().borderTopColor = reader.ReadColor(0);
                         break;
                     case StylePropertyId.BorderTopLeftRadius:
-                        nonInheritedData.borderTopLeftRadius = reader.ReadLength(0);
+                        visualData.Write().borderTopLeftRadius = reader.ReadLength(0);
                         break;
                     case StylePropertyId.BorderTopRightRadius:
-                        nonInheritedData.borderTopRightRadius = reader.ReadLength(0);
+                        visualData.Write().borderTopRightRadius = reader.ReadLength(0);
                         break;
                     case StylePropertyId.BorderTopWidth:
-                        nonInheritedData.borderTopWidth = reader.ReadFloat(0);
+                        layoutData.Write().borderTopWidth = reader.ReadFloat(0);
                         break;
                     case StylePropertyId.BorderWidth:
-                        ShorthandApplicator.ApplyBorderWidth(reader, this);
+                        ShorthandApplicator.ApplyBorderWidth(reader, ref this);
                         break;
                     case StylePropertyId.Bottom:
-                        nonInheritedData.bottom = reader.ReadLength(0);
+                        layoutData.Write().bottom = reader.ReadLength(0);
                         break;
                     case StylePropertyId.Color:
-                        inheritedData.color = reader.ReadColor(0);
+                        inheritedData.Write().color = reader.ReadColor(0);
                         break;
                     case StylePropertyId.Cursor:
-                        nonInheritedData.cursor = reader.ReadCursor(0);
+                        rareData.Write().cursor = reader.ReadCursor(0);
                         break;
                     case StylePropertyId.Display:
-                        nonInheritedData.display = (DisplayStyle)reader.ReadEnum(StyleEnumType.DisplayStyle, 0);
+                        layoutData.Write().display = (DisplayStyle)reader.ReadEnum(StyleEnumType.DisplayStyle, 0);
                         break;
                     case StylePropertyId.Flex:
-                        ShorthandApplicator.ApplyFlex(reader, this);
+                        ShorthandApplicator.ApplyFlex(reader, ref this);
                         break;
                     case StylePropertyId.FlexBasis:
-                        nonInheritedData.flexBasis = reader.ReadLength(0);
+                        layoutData.Write().flexBasis = reader.ReadLength(0);
                         break;
                     case StylePropertyId.FlexDirection:
-                        nonInheritedData.flexDirection = (FlexDirection)reader.ReadEnum(StyleEnumType.FlexDirection, 0);
+                        layoutData.Write().flexDirection = (FlexDirection)reader.ReadEnum(StyleEnumType.FlexDirection, 0);
                         break;
                     case StylePropertyId.FlexGrow:
-                        nonInheritedData.flexGrow = reader.ReadFloat(0);
+                        layoutData.Write().flexGrow = reader.ReadFloat(0);
                         break;
                     case StylePropertyId.FlexShrink:
-                        nonInheritedData.flexShrink = reader.ReadFloat(0);
+                        layoutData.Write().flexShrink = reader.ReadFloat(0);
                         break;
                     case StylePropertyId.FlexWrap:
-                        nonInheritedData.flexWrap = (Wrap)reader.ReadEnum(StyleEnumType.Wrap, 0);
+                        layoutData.Write().flexWrap = (Wrap)reader.ReadEnum(StyleEnumType.Wrap, 0);
                         break;
                     case StylePropertyId.FontSize:
-                        inheritedData.fontSize = reader.ReadLength(0);
+                        inheritedData.Write().fontSize = reader.ReadLength(0);
                         break;
                     case StylePropertyId.Height:
-                        nonInheritedData.height = reader.ReadLength(0);
+                        layoutData.Write().height = reader.ReadLength(0);
                         break;
                     case StylePropertyId.JustifyContent:
-                        nonInheritedData.justifyContent = (Justify)reader.ReadEnum(StyleEnumType.Justify, 0);
+                        layoutData.Write().justifyContent = (Justify)reader.ReadEnum(StyleEnumType.Justify, 0);
                         break;
                     case StylePropertyId.Left:
-                        nonInheritedData.left = reader.ReadLength(0);
+                        layoutData.Write().left = reader.ReadLength(0);
                         break;
                     case StylePropertyId.LetterSpacing:
-                        inheritedData.letterSpacing = reader.ReadLength(0);
+                        inheritedData.Write().letterSpacing = reader.ReadLength(0);
                         break;
                     case StylePropertyId.Margin:
-                        ShorthandApplicator.ApplyMargin(reader, this);
+                        ShorthandApplicator.ApplyMargin(reader, ref this);
                         break;
                     case StylePropertyId.MarginBottom:
-                        nonInheritedData.marginBottom = reader.ReadLength(0);
+                        layoutData.Write().marginBottom = reader.ReadLength(0);
                         break;
                     case StylePropertyId.MarginLeft:
-                        nonInheritedData.marginLeft = reader.ReadLength(0);
+                        layoutData.Write().marginLeft = reader.ReadLength(0);
                         break;
                     case StylePropertyId.MarginRight:
-                        nonInheritedData.marginRight = reader.ReadLength(0);
+                        layoutData.Write().marginRight = reader.ReadLength(0);
                         break;
                     case StylePropertyId.MarginTop:
-                        nonInheritedData.marginTop = reader.ReadLength(0);
+                        layoutData.Write().marginTop = reader.ReadLength(0);
                         break;
                     case StylePropertyId.MaxHeight:
-                        nonInheritedData.maxHeight = reader.ReadLength(0);
+                        layoutData.Write().maxHeight = reader.ReadLength(0);
                         break;
                     case StylePropertyId.MaxWidth:
-                        nonInheritedData.maxWidth = reader.ReadLength(0);
+                        layoutData.Write().maxWidth = reader.ReadLength(0);
                         break;
                     case StylePropertyId.MinHeight:
-                        nonInheritedData.minHeight = reader.ReadLength(0);
+                        layoutData.Write().minHeight = reader.ReadLength(0);
                         break;
                     case StylePropertyId.MinWidth:
-                        nonInheritedData.minWidth = reader.ReadLength(0);
+                        layoutData.Write().minWidth = reader.ReadLength(0);
                         break;
                     case StylePropertyId.Opacity:
-                        nonInheritedData.opacity = reader.ReadFloat(0);
+                        visualData.Write().opacity = reader.ReadFloat(0);
                         break;
                     case StylePropertyId.Overflow:
-                        nonInheritedData.overflow = (OverflowInternal)reader.ReadEnum(StyleEnumType.OverflowInternal, 0);
+                        visualData.Write().overflow = (OverflowInternal)reader.ReadEnum(StyleEnumType.OverflowInternal, 0);
                         break;
                     case StylePropertyId.Padding:
-                        ShorthandApplicator.ApplyPadding(reader, this);
+                        ShorthandApplicator.ApplyPadding(reader, ref this);
                         break;
                     case StylePropertyId.PaddingBottom:
-                        nonInheritedData.paddingBottom = reader.ReadLength(0);
+                        layoutData.Write().paddingBottom = reader.ReadLength(0);
                         break;
                     case StylePropertyId.PaddingLeft:
-                        nonInheritedData.paddingLeft = reader.ReadLength(0);
+                        layoutData.Write().paddingLeft = reader.ReadLength(0);
                         break;
                     case StylePropertyId.PaddingRight:
-                        nonInheritedData.paddingRight = reader.ReadLength(0);
+                        layoutData.Write().paddingRight = reader.ReadLength(0);
                         break;
                     case StylePropertyId.PaddingTop:
-                        nonInheritedData.paddingTop = reader.ReadLength(0);
+                        layoutData.Write().paddingTop = reader.ReadLength(0);
                         break;
                     case StylePropertyId.Position:
-                        nonInheritedData.position = (Position)reader.ReadEnum(StyleEnumType.Position, 0);
+                        layoutData.Write().position = (Position)reader.ReadEnum(StyleEnumType.Position, 0);
                         break;
                     case StylePropertyId.Right:
-                        nonInheritedData.right = reader.ReadLength(0);
+                        layoutData.Write().right = reader.ReadLength(0);
                         break;
                     case StylePropertyId.TextOverflow:
-                        nonInheritedData.textOverflow = (TextOverflow)reader.ReadEnum(StyleEnumType.TextOverflow, 0);
+                        rareData.Write().textOverflow = (TextOverflow)reader.ReadEnum(StyleEnumType.TextOverflow, 0);
                         break;
                     case StylePropertyId.TextShadow:
-                        inheritedData.textShadow = reader.ReadTextShadow(0);
+                        inheritedData.Write().textShadow = reader.ReadTextShadow(0);
                         break;
                     case StylePropertyId.Top:
-                        nonInheritedData.top = reader.ReadLength(0);
+                        layoutData.Write().top = reader.ReadLength(0);
                         break;
                     case StylePropertyId.UnityBackgroundImageTintColor:
-                        nonInheritedData.unityBackgroundImageTintColor = reader.ReadColor(0);
+                        rareData.Write().unityBackgroundImageTintColor = reader.ReadColor(0);
                         break;
                     case StylePropertyId.UnityBackgroundScaleMode:
-                        nonInheritedData.unityBackgroundScaleMode = (ScaleMode)reader.ReadEnum(StyleEnumType.ScaleMode, 0);
+                        rareData.Write().unityBackgroundScaleMode = (ScaleMode)reader.ReadEnum(StyleEnumType.ScaleMode, 0);
                         break;
                     case StylePropertyId.UnityFont:
-                        inheritedData.unityFont = reader.ReadFont(0);
+                        inheritedData.Write().unityFont = reader.ReadFont(0);
                         break;
                     case StylePropertyId.UnityFontDefinition:
-                        inheritedData.unityFontDefinition = reader.ReadFontDefinition(0);
+                        inheritedData.Write().unityFontDefinition = reader.ReadFontDefinition(0);
                         break;
                     case StylePropertyId.UnityFontStyleAndWeight:
-                        inheritedData.unityFontStyleAndWeight = (FontStyle)reader.ReadEnum(StyleEnumType.FontStyle, 0);
+                        inheritedData.Write().unityFontStyleAndWeight = (FontStyle)reader.ReadEnum(StyleEnumType.FontStyle, 0);
                         break;
                     case StylePropertyId.UnityOverflowClipBox:
-                        nonInheritedData.unityOverflowClipBox = (OverflowClipBox)reader.ReadEnum(StyleEnumType.OverflowClipBox, 0);
+                        rareData.Write().unityOverflowClipBox = (OverflowClipBox)reader.ReadEnum(StyleEnumType.OverflowClipBox, 0);
                         break;
                     case StylePropertyId.UnityParagraphSpacing:
-                        inheritedData.unityParagraphSpacing = reader.ReadLength(0);
+                        inheritedData.Write().unityParagraphSpacing = reader.ReadLength(0);
                         break;
                     case StylePropertyId.UnitySliceBottom:
-                        nonInheritedData.unitySliceBottom = reader.ReadInt(0);
+                        rareData.Write().unitySliceBottom = reader.ReadInt(0);
                         break;
                     case StylePropertyId.UnitySliceLeft:
-                        nonInheritedData.unitySliceLeft = reader.ReadInt(0);
+                        rareData.Write().unitySliceLeft = reader.ReadInt(0);
                         break;
                     case StylePropertyId.UnitySliceRight:
-                        nonInheritedData.unitySliceRight = reader.ReadInt(0);
+                        rareData.Write().unitySliceRight = reader.ReadInt(0);
                         break;
                     case StylePropertyId.UnitySliceTop:
-                        nonInheritedData.unitySliceTop = reader.ReadInt(0);
+                        rareData.Write().unitySliceTop = reader.ReadInt(0);
                         break;
                     case StylePropertyId.UnityTextAlign:
-                        inheritedData.unityTextAlign = (TextAnchor)reader.ReadEnum(StyleEnumType.TextAnchor, 0);
+                        inheritedData.Write().unityTextAlign = (TextAnchor)reader.ReadEnum(StyleEnumType.TextAnchor, 0);
                         break;
                     case StylePropertyId.UnityTextOutline:
-                        ShorthandApplicator.ApplyUnityTextOutline(reader, this);
+                        ShorthandApplicator.ApplyUnityTextOutline(reader, ref this);
                         break;
                     case StylePropertyId.UnityTextOutlineColor:
-                        inheritedData.unityTextOutlineColor = reader.ReadColor(0);
+                        inheritedData.Write().unityTextOutlineColor = reader.ReadColor(0);
                         break;
                     case StylePropertyId.UnityTextOutlineWidth:
-                        inheritedData.unityTextOutlineWidth = reader.ReadFloat(0);
+                        inheritedData.Write().unityTextOutlineWidth = reader.ReadFloat(0);
                         break;
                     case StylePropertyId.UnityTextOverflowPosition:
-                        nonInheritedData.unityTextOverflowPosition = (TextOverflowPosition)reader.ReadEnum(StyleEnumType.TextOverflowPosition, 0);
+                        rareData.Write().unityTextOverflowPosition = (TextOverflowPosition)reader.ReadEnum(StyleEnumType.TextOverflowPosition, 0);
                         break;
                     case StylePropertyId.Visibility:
-                        inheritedData.visibility = (Visibility)reader.ReadEnum(StyleEnumType.Visibility, 0);
+                        inheritedData.Write().visibility = (Visibility)reader.ReadEnum(StyleEnumType.Visibility, 0);
                         break;
                     case StylePropertyId.WhiteSpace:
-                        inheritedData.whiteSpace = (WhiteSpace)reader.ReadEnum(StyleEnumType.WhiteSpace, 0);
+                        inheritedData.Write().whiteSpace = (WhiteSpace)reader.ReadEnum(StyleEnumType.WhiteSpace, 0);
                         break;
                     case StylePropertyId.Width:
-                        nonInheritedData.width = reader.ReadLength(0);
+                        layoutData.Write().width = reader.ReadLength(0);
                         break;
                     case StylePropertyId.WordSpacing:
-                        inheritedData.wordSpacing = reader.ReadLength(0);
+                        inheritedData.Write().wordSpacing = reader.ReadLength(0);
                         break;
                     case StylePropertyId.Custom:
                         ApplyCustomStyleProperty(reader);
@@ -336,220 +391,220 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public void ApplyStyleValue(StyleValue sv, ComputedStyle parentStyle)
+        public void ApplyStyleValue(StyleValue sv, ref ComputedStyle parentStyle)
         {
-            if (ApplyGlobalKeyword(sv, parentStyle))
+            if (ApplyGlobalKeyword(sv, ref parentStyle))
                 return;
             switch (sv.id)
             {
                 case StylePropertyId.AlignContent:
-                    nonInheritedData.alignContent = (Align)sv.number;
+                    layoutData.Write().alignContent = (Align)sv.number;
                     if (sv.keyword == StyleKeyword.Auto)
-                        nonInheritedData.alignContent = Align.Auto;
+                        layoutData.Write().alignContent = Align.Auto;
                     break;
                 case StylePropertyId.AlignItems:
-                    nonInheritedData.alignItems = (Align)sv.number;
+                    layoutData.Write().alignItems = (Align)sv.number;
                     if (sv.keyword == StyleKeyword.Auto)
-                        nonInheritedData.alignItems = Align.Auto;
+                        layoutData.Write().alignItems = Align.Auto;
                     break;
                 case StylePropertyId.AlignSelf:
-                    nonInheritedData.alignSelf = (Align)sv.number;
+                    layoutData.Write().alignSelf = (Align)sv.number;
                     if (sv.keyword == StyleKeyword.Auto)
-                        nonInheritedData.alignSelf = Align.Auto;
+                        layoutData.Write().alignSelf = Align.Auto;
                     break;
                 case StylePropertyId.BackgroundColor:
-                    nonInheritedData.backgroundColor = sv.color;
+                    visualData.Write().backgroundColor = sv.color;
                     break;
                 case StylePropertyId.BackgroundImage:
-                    nonInheritedData.backgroundImage = sv.resource.IsAllocated ? Background.FromObject(sv.resource.Target) : new Background();
+                    visualData.Write().backgroundImage = sv.resource.IsAllocated ? Background.FromObject(sv.resource.Target) : new Background();
                     break;
                 case StylePropertyId.BorderBottomColor:
-                    nonInheritedData.borderBottomColor = sv.color;
+                    visualData.Write().borderBottomColor = sv.color;
                     break;
                 case StylePropertyId.BorderBottomLeftRadius:
-                    nonInheritedData.borderBottomLeftRadius = sv.length;
+                    visualData.Write().borderBottomLeftRadius = sv.length;
                     break;
                 case StylePropertyId.BorderBottomRightRadius:
-                    nonInheritedData.borderBottomRightRadius = sv.length;
+                    visualData.Write().borderBottomRightRadius = sv.length;
                     break;
                 case StylePropertyId.BorderBottomWidth:
-                    nonInheritedData.borderBottomWidth = sv.number;
+                    layoutData.Write().borderBottomWidth = sv.number;
                     break;
                 case StylePropertyId.BorderLeftColor:
-                    nonInheritedData.borderLeftColor = sv.color;
+                    visualData.Write().borderLeftColor = sv.color;
                     break;
                 case StylePropertyId.BorderLeftWidth:
-                    nonInheritedData.borderLeftWidth = sv.number;
+                    layoutData.Write().borderLeftWidth = sv.number;
                     break;
                 case StylePropertyId.BorderRightColor:
-                    nonInheritedData.borderRightColor = sv.color;
+                    visualData.Write().borderRightColor = sv.color;
                     break;
                 case StylePropertyId.BorderRightWidth:
-                    nonInheritedData.borderRightWidth = sv.number;
+                    layoutData.Write().borderRightWidth = sv.number;
                     break;
                 case StylePropertyId.BorderTopColor:
-                    nonInheritedData.borderTopColor = sv.color;
+                    visualData.Write().borderTopColor = sv.color;
                     break;
                 case StylePropertyId.BorderTopLeftRadius:
-                    nonInheritedData.borderTopLeftRadius = sv.length;
+                    visualData.Write().borderTopLeftRadius = sv.length;
                     break;
                 case StylePropertyId.BorderTopRightRadius:
-                    nonInheritedData.borderTopRightRadius = sv.length;
+                    visualData.Write().borderTopRightRadius = sv.length;
                     break;
                 case StylePropertyId.BorderTopWidth:
-                    nonInheritedData.borderTopWidth = sv.number;
+                    layoutData.Write().borderTopWidth = sv.number;
                     break;
                 case StylePropertyId.Bottom:
-                    nonInheritedData.bottom = sv.length;
+                    layoutData.Write().bottom = sv.length;
                     break;
                 case StylePropertyId.Color:
-                    inheritedData.color = sv.color;
+                    inheritedData.Write().color = sv.color;
                     break;
                 case StylePropertyId.Display:
-                    nonInheritedData.display = (DisplayStyle)sv.number;
+                    layoutData.Write().display = (DisplayStyle)sv.number;
                     if (sv.keyword == StyleKeyword.None)
-                        nonInheritedData.display = DisplayStyle.None;
+                        layoutData.Write().display = DisplayStyle.None;
                     break;
                 case StylePropertyId.FlexBasis:
-                    nonInheritedData.flexBasis = sv.length;
+                    layoutData.Write().flexBasis = sv.length;
                     break;
                 case StylePropertyId.FlexDirection:
-                    nonInheritedData.flexDirection = (FlexDirection)sv.number;
+                    layoutData.Write().flexDirection = (FlexDirection)sv.number;
                     break;
                 case StylePropertyId.FlexGrow:
-                    nonInheritedData.flexGrow = sv.number;
+                    layoutData.Write().flexGrow = sv.number;
                     break;
                 case StylePropertyId.FlexShrink:
-                    nonInheritedData.flexShrink = sv.number;
+                    layoutData.Write().flexShrink = sv.number;
                     break;
                 case StylePropertyId.FlexWrap:
-                    nonInheritedData.flexWrap = (Wrap)sv.number;
+                    layoutData.Write().flexWrap = (Wrap)sv.number;
                     break;
                 case StylePropertyId.FontSize:
-                    inheritedData.fontSize = sv.length;
+                    inheritedData.Write().fontSize = sv.length;
                     break;
                 case StylePropertyId.Height:
-                    nonInheritedData.height = sv.length;
+                    layoutData.Write().height = sv.length;
                     break;
                 case StylePropertyId.JustifyContent:
-                    nonInheritedData.justifyContent = (Justify)sv.number;
+                    layoutData.Write().justifyContent = (Justify)sv.number;
                     break;
                 case StylePropertyId.Left:
-                    nonInheritedData.left = sv.length;
+                    layoutData.Write().left = sv.length;
                     break;
                 case StylePropertyId.LetterSpacing:
-                    inheritedData.letterSpacing = sv.length;
+                    inheritedData.Write().letterSpacing = sv.length;
                     break;
                 case StylePropertyId.MarginBottom:
-                    nonInheritedData.marginBottom = sv.length;
+                    layoutData.Write().marginBottom = sv.length;
                     break;
                 case StylePropertyId.MarginLeft:
-                    nonInheritedData.marginLeft = sv.length;
+                    layoutData.Write().marginLeft = sv.length;
                     break;
                 case StylePropertyId.MarginRight:
-                    nonInheritedData.marginRight = sv.length;
+                    layoutData.Write().marginRight = sv.length;
                     break;
                 case StylePropertyId.MarginTop:
-                    nonInheritedData.marginTop = sv.length;
+                    layoutData.Write().marginTop = sv.length;
                     break;
                 case StylePropertyId.MaxHeight:
-                    nonInheritedData.maxHeight = sv.length;
+                    layoutData.Write().maxHeight = sv.length;
                     break;
                 case StylePropertyId.MaxWidth:
-                    nonInheritedData.maxWidth = sv.length;
+                    layoutData.Write().maxWidth = sv.length;
                     break;
                 case StylePropertyId.MinHeight:
-                    nonInheritedData.minHeight = sv.length;
+                    layoutData.Write().minHeight = sv.length;
                     break;
                 case StylePropertyId.MinWidth:
-                    nonInheritedData.minWidth = sv.length;
+                    layoutData.Write().minWidth = sv.length;
                     break;
                 case StylePropertyId.Opacity:
-                    nonInheritedData.opacity = sv.number;
+                    visualData.Write().opacity = sv.number;
                     break;
                 case StylePropertyId.Overflow:
-                    nonInheritedData.overflow = (OverflowInternal)sv.number;
+                    visualData.Write().overflow = (OverflowInternal)sv.number;
                     break;
                 case StylePropertyId.PaddingBottom:
-                    nonInheritedData.paddingBottom = sv.length;
+                    layoutData.Write().paddingBottom = sv.length;
                     break;
                 case StylePropertyId.PaddingLeft:
-                    nonInheritedData.paddingLeft = sv.length;
+                    layoutData.Write().paddingLeft = sv.length;
                     break;
                 case StylePropertyId.PaddingRight:
-                    nonInheritedData.paddingRight = sv.length;
+                    layoutData.Write().paddingRight = sv.length;
                     break;
                 case StylePropertyId.PaddingTop:
-                    nonInheritedData.paddingTop = sv.length;
+                    layoutData.Write().paddingTop = sv.length;
                     break;
                 case StylePropertyId.Position:
-                    nonInheritedData.position = (Position)sv.number;
+                    layoutData.Write().position = (Position)sv.number;
                     break;
                 case StylePropertyId.Right:
-                    nonInheritedData.right = sv.length;
+                    layoutData.Write().right = sv.length;
                     break;
                 case StylePropertyId.TextOverflow:
-                    nonInheritedData.textOverflow = (TextOverflow)sv.number;
+                    rareData.Write().textOverflow = (TextOverflow)sv.number;
                     break;
                 case StylePropertyId.Top:
-                    nonInheritedData.top = sv.length;
+                    layoutData.Write().top = sv.length;
                     break;
                 case StylePropertyId.UnityBackgroundImageTintColor:
-                    nonInheritedData.unityBackgroundImageTintColor = sv.color;
+                    rareData.Write().unityBackgroundImageTintColor = sv.color;
                     break;
                 case StylePropertyId.UnityBackgroundScaleMode:
-                    nonInheritedData.unityBackgroundScaleMode = (ScaleMode)sv.number;
+                    rareData.Write().unityBackgroundScaleMode = (ScaleMode)sv.number;
                     break;
                 case StylePropertyId.UnityFont:
-                    inheritedData.unityFont = sv.resource.IsAllocated ? sv.resource.Target as Font : null;
+                    inheritedData.Write().unityFont = sv.resource.IsAllocated ? sv.resource.Target as Font : null;
                     break;
                 case StylePropertyId.UnityFontDefinition:
-                    inheritedData.unityFontDefinition = sv.resource.IsAllocated ? FontDefinition.FromObject(sv.resource.Target) : new FontDefinition();
+                    inheritedData.Write().unityFontDefinition = sv.resource.IsAllocated ? FontDefinition.FromObject(sv.resource.Target) : new FontDefinition();
                     break;
                 case StylePropertyId.UnityFontStyleAndWeight:
-                    inheritedData.unityFontStyleAndWeight = (FontStyle)sv.number;
+                    inheritedData.Write().unityFontStyleAndWeight = (FontStyle)sv.number;
                     break;
                 case StylePropertyId.UnityOverflowClipBox:
-                    nonInheritedData.unityOverflowClipBox = (OverflowClipBox)sv.number;
+                    rareData.Write().unityOverflowClipBox = (OverflowClipBox)sv.number;
                     break;
                 case StylePropertyId.UnityParagraphSpacing:
-                    inheritedData.unityParagraphSpacing = sv.length;
+                    inheritedData.Write().unityParagraphSpacing = sv.length;
                     break;
                 case StylePropertyId.UnitySliceBottom:
-                    nonInheritedData.unitySliceBottom = (int)sv.number;
+                    rareData.Write().unitySliceBottom = (int)sv.number;
                     break;
                 case StylePropertyId.UnitySliceLeft:
-                    nonInheritedData.unitySliceLeft = (int)sv.number;
+                    rareData.Write().unitySliceLeft = (int)sv.number;
                     break;
                 case StylePropertyId.UnitySliceRight:
-                    nonInheritedData.unitySliceRight = (int)sv.number;
+                    rareData.Write().unitySliceRight = (int)sv.number;
                     break;
                 case StylePropertyId.UnitySliceTop:
-                    nonInheritedData.unitySliceTop = (int)sv.number;
+                    rareData.Write().unitySliceTop = (int)sv.number;
                     break;
                 case StylePropertyId.UnityTextAlign:
-                    inheritedData.unityTextAlign = (TextAnchor)sv.number;
+                    inheritedData.Write().unityTextAlign = (TextAnchor)sv.number;
                     break;
                 case StylePropertyId.UnityTextOutlineColor:
-                    inheritedData.unityTextOutlineColor = sv.color;
+                    inheritedData.Write().unityTextOutlineColor = sv.color;
                     break;
                 case StylePropertyId.UnityTextOutlineWidth:
-                    inheritedData.unityTextOutlineWidth = sv.number;
+                    inheritedData.Write().unityTextOutlineWidth = sv.number;
                     break;
                 case StylePropertyId.UnityTextOverflowPosition:
-                    nonInheritedData.unityTextOverflowPosition = (TextOverflowPosition)sv.number;
+                    rareData.Write().unityTextOverflowPosition = (TextOverflowPosition)sv.number;
                     break;
                 case StylePropertyId.Visibility:
-                    inheritedData.visibility = (Visibility)sv.number;
+                    inheritedData.Write().visibility = (Visibility)sv.number;
                     break;
                 case StylePropertyId.WhiteSpace:
-                    inheritedData.whiteSpace = (WhiteSpace)sv.number;
+                    inheritedData.Write().whiteSpace = (WhiteSpace)sv.number;
                     break;
                 case StylePropertyId.Width:
-                    nonInheritedData.width = sv.length;
+                    layoutData.Write().width = sv.length;
                     break;
                 case StylePropertyId.WordSpacing:
-                    inheritedData.wordSpacing = sv.length;
+                    inheritedData.Write().wordSpacing = sv.length;
                     break;
                 default:
                     Debug.LogAssertion($"Unexpected property id {sv.id}");
@@ -559,12 +614,12 @@ namespace UnityEngine.UIElements
 
         public void ApplyStyleCursor(Cursor cursor)
         {
-            nonInheritedData.cursor = cursor;
+            rareData.Write().cursor = cursor;
         }
 
         public void ApplyStyleTextShadow(TextShadow st)
         {
-            inheritedData.textShadow = st;
+            inheritedData.Write().textShadow = st;
         }
 
         public void ApplyInitialValue(StylePropertyReader reader)
@@ -585,250 +640,250 @@ namespace UnityEngine.UIElements
             switch (id)
             {
                 case StylePropertyId.AlignContent:
-                    nonInheritedData.alignContent = InitialStyle.alignContent;
+                    layoutData.Write().alignContent = InitialStyle.alignContent;
                     break;
                 case StylePropertyId.AlignItems:
-                    nonInheritedData.alignItems = InitialStyle.alignItems;
+                    layoutData.Write().alignItems = InitialStyle.alignItems;
                     break;
                 case StylePropertyId.AlignSelf:
-                    nonInheritedData.alignSelf = InitialStyle.alignSelf;
+                    layoutData.Write().alignSelf = InitialStyle.alignSelf;
                     break;
                 case StylePropertyId.BackgroundColor:
-                    nonInheritedData.backgroundColor = InitialStyle.backgroundColor;
+                    visualData.Write().backgroundColor = InitialStyle.backgroundColor;
                     break;
                 case StylePropertyId.BackgroundImage:
-                    nonInheritedData.backgroundImage = InitialStyle.backgroundImage;
+                    visualData.Write().backgroundImage = InitialStyle.backgroundImage;
                     break;
                 case StylePropertyId.BorderBottomColor:
-                    nonInheritedData.borderBottomColor = InitialStyle.borderBottomColor;
+                    visualData.Write().borderBottomColor = InitialStyle.borderBottomColor;
                     break;
                 case StylePropertyId.BorderBottomLeftRadius:
-                    nonInheritedData.borderBottomLeftRadius = InitialStyle.borderBottomLeftRadius;
+                    visualData.Write().borderBottomLeftRadius = InitialStyle.borderBottomLeftRadius;
                     break;
                 case StylePropertyId.BorderBottomRightRadius:
-                    nonInheritedData.borderBottomRightRadius = InitialStyle.borderBottomRightRadius;
+                    visualData.Write().borderBottomRightRadius = InitialStyle.borderBottomRightRadius;
                     break;
                 case StylePropertyId.BorderBottomWidth:
-                    nonInheritedData.borderBottomWidth = InitialStyle.borderBottomWidth;
+                    layoutData.Write().borderBottomWidth = InitialStyle.borderBottomWidth;
                     break;
                 case StylePropertyId.BorderColor:
-                    nonInheritedData.borderTopColor = InitialStyle.borderTopColor;
-                    nonInheritedData.borderRightColor = InitialStyle.borderRightColor;
-                    nonInheritedData.borderBottomColor = InitialStyle.borderBottomColor;
-                    nonInheritedData.borderLeftColor = InitialStyle.borderLeftColor;
+                    visualData.Write().borderTopColor = InitialStyle.borderTopColor;
+                    visualData.Write().borderRightColor = InitialStyle.borderRightColor;
+                    visualData.Write().borderBottomColor = InitialStyle.borderBottomColor;
+                    visualData.Write().borderLeftColor = InitialStyle.borderLeftColor;
                     break;
                 case StylePropertyId.BorderLeftColor:
-                    nonInheritedData.borderLeftColor = InitialStyle.borderLeftColor;
+                    visualData.Write().borderLeftColor = InitialStyle.borderLeftColor;
                     break;
                 case StylePropertyId.BorderLeftWidth:
-                    nonInheritedData.borderLeftWidth = InitialStyle.borderLeftWidth;
+                    layoutData.Write().borderLeftWidth = InitialStyle.borderLeftWidth;
                     break;
                 case StylePropertyId.BorderRadius:
-                    nonInheritedData.borderTopLeftRadius = InitialStyle.borderTopLeftRadius;
-                    nonInheritedData.borderTopRightRadius = InitialStyle.borderTopRightRadius;
-                    nonInheritedData.borderBottomRightRadius = InitialStyle.borderBottomRightRadius;
-                    nonInheritedData.borderBottomLeftRadius = InitialStyle.borderBottomLeftRadius;
+                    visualData.Write().borderTopLeftRadius = InitialStyle.borderTopLeftRadius;
+                    visualData.Write().borderTopRightRadius = InitialStyle.borderTopRightRadius;
+                    visualData.Write().borderBottomRightRadius = InitialStyle.borderBottomRightRadius;
+                    visualData.Write().borderBottomLeftRadius = InitialStyle.borderBottomLeftRadius;
                     break;
                 case StylePropertyId.BorderRightColor:
-                    nonInheritedData.borderRightColor = InitialStyle.borderRightColor;
+                    visualData.Write().borderRightColor = InitialStyle.borderRightColor;
                     break;
                 case StylePropertyId.BorderRightWidth:
-                    nonInheritedData.borderRightWidth = InitialStyle.borderRightWidth;
+                    layoutData.Write().borderRightWidth = InitialStyle.borderRightWidth;
                     break;
                 case StylePropertyId.BorderTopColor:
-                    nonInheritedData.borderTopColor = InitialStyle.borderTopColor;
+                    visualData.Write().borderTopColor = InitialStyle.borderTopColor;
                     break;
                 case StylePropertyId.BorderTopLeftRadius:
-                    nonInheritedData.borderTopLeftRadius = InitialStyle.borderTopLeftRadius;
+                    visualData.Write().borderTopLeftRadius = InitialStyle.borderTopLeftRadius;
                     break;
                 case StylePropertyId.BorderTopRightRadius:
-                    nonInheritedData.borderTopRightRadius = InitialStyle.borderTopRightRadius;
+                    visualData.Write().borderTopRightRadius = InitialStyle.borderTopRightRadius;
                     break;
                 case StylePropertyId.BorderTopWidth:
-                    nonInheritedData.borderTopWidth = InitialStyle.borderTopWidth;
+                    layoutData.Write().borderTopWidth = InitialStyle.borderTopWidth;
                     break;
                 case StylePropertyId.BorderWidth:
-                    nonInheritedData.borderTopWidth = InitialStyle.borderTopWidth;
-                    nonInheritedData.borderRightWidth = InitialStyle.borderRightWidth;
-                    nonInheritedData.borderBottomWidth = InitialStyle.borderBottomWidth;
-                    nonInheritedData.borderLeftWidth = InitialStyle.borderLeftWidth;
+                    layoutData.Write().borderTopWidth = InitialStyle.borderTopWidth;
+                    layoutData.Write().borderRightWidth = InitialStyle.borderRightWidth;
+                    layoutData.Write().borderBottomWidth = InitialStyle.borderBottomWidth;
+                    layoutData.Write().borderLeftWidth = InitialStyle.borderLeftWidth;
                     break;
                 case StylePropertyId.Bottom:
-                    nonInheritedData.bottom = InitialStyle.bottom;
+                    layoutData.Write().bottom = InitialStyle.bottom;
                     break;
                 case StylePropertyId.Color:
-                    inheritedData.color = InitialStyle.color;
+                    inheritedData.Write().color = InitialStyle.color;
                     break;
                 case StylePropertyId.Cursor:
-                    nonInheritedData.cursor = InitialStyle.cursor;
+                    rareData.Write().cursor = InitialStyle.cursor;
                     break;
                 case StylePropertyId.Display:
-                    nonInheritedData.display = InitialStyle.display;
+                    layoutData.Write().display = InitialStyle.display;
                     break;
                 case StylePropertyId.Flex:
-                    nonInheritedData.flexGrow = InitialStyle.flexGrow;
-                    nonInheritedData.flexShrink = InitialStyle.flexShrink;
-                    nonInheritedData.flexBasis = InitialStyle.flexBasis;
+                    layoutData.Write().flexGrow = InitialStyle.flexGrow;
+                    layoutData.Write().flexShrink = InitialStyle.flexShrink;
+                    layoutData.Write().flexBasis = InitialStyle.flexBasis;
                     break;
                 case StylePropertyId.FlexBasis:
-                    nonInheritedData.flexBasis = InitialStyle.flexBasis;
+                    layoutData.Write().flexBasis = InitialStyle.flexBasis;
                     break;
                 case StylePropertyId.FlexDirection:
-                    nonInheritedData.flexDirection = InitialStyle.flexDirection;
+                    layoutData.Write().flexDirection = InitialStyle.flexDirection;
                     break;
                 case StylePropertyId.FlexGrow:
-                    nonInheritedData.flexGrow = InitialStyle.flexGrow;
+                    layoutData.Write().flexGrow = InitialStyle.flexGrow;
                     break;
                 case StylePropertyId.FlexShrink:
-                    nonInheritedData.flexShrink = InitialStyle.flexShrink;
+                    layoutData.Write().flexShrink = InitialStyle.flexShrink;
                     break;
                 case StylePropertyId.FlexWrap:
-                    nonInheritedData.flexWrap = InitialStyle.flexWrap;
+                    layoutData.Write().flexWrap = InitialStyle.flexWrap;
                     break;
                 case StylePropertyId.FontSize:
-                    inheritedData.fontSize = InitialStyle.fontSize;
+                    inheritedData.Write().fontSize = InitialStyle.fontSize;
                     break;
                 case StylePropertyId.Height:
-                    nonInheritedData.height = InitialStyle.height;
+                    layoutData.Write().height = InitialStyle.height;
                     break;
                 case StylePropertyId.JustifyContent:
-                    nonInheritedData.justifyContent = InitialStyle.justifyContent;
+                    layoutData.Write().justifyContent = InitialStyle.justifyContent;
                     break;
                 case StylePropertyId.Left:
-                    nonInheritedData.left = InitialStyle.left;
+                    layoutData.Write().left = InitialStyle.left;
                     break;
                 case StylePropertyId.LetterSpacing:
-                    inheritedData.letterSpacing = InitialStyle.letterSpacing;
+                    inheritedData.Write().letterSpacing = InitialStyle.letterSpacing;
                     break;
                 case StylePropertyId.Margin:
-                    nonInheritedData.marginTop = InitialStyle.marginTop;
-                    nonInheritedData.marginRight = InitialStyle.marginRight;
-                    nonInheritedData.marginBottom = InitialStyle.marginBottom;
-                    nonInheritedData.marginLeft = InitialStyle.marginLeft;
+                    layoutData.Write().marginTop = InitialStyle.marginTop;
+                    layoutData.Write().marginRight = InitialStyle.marginRight;
+                    layoutData.Write().marginBottom = InitialStyle.marginBottom;
+                    layoutData.Write().marginLeft = InitialStyle.marginLeft;
                     break;
                 case StylePropertyId.MarginBottom:
-                    nonInheritedData.marginBottom = InitialStyle.marginBottom;
+                    layoutData.Write().marginBottom = InitialStyle.marginBottom;
                     break;
                 case StylePropertyId.MarginLeft:
-                    nonInheritedData.marginLeft = InitialStyle.marginLeft;
+                    layoutData.Write().marginLeft = InitialStyle.marginLeft;
                     break;
                 case StylePropertyId.MarginRight:
-                    nonInheritedData.marginRight = InitialStyle.marginRight;
+                    layoutData.Write().marginRight = InitialStyle.marginRight;
                     break;
                 case StylePropertyId.MarginTop:
-                    nonInheritedData.marginTop = InitialStyle.marginTop;
+                    layoutData.Write().marginTop = InitialStyle.marginTop;
                     break;
                 case StylePropertyId.MaxHeight:
-                    nonInheritedData.maxHeight = InitialStyle.maxHeight;
+                    layoutData.Write().maxHeight = InitialStyle.maxHeight;
                     break;
                 case StylePropertyId.MaxWidth:
-                    nonInheritedData.maxWidth = InitialStyle.maxWidth;
+                    layoutData.Write().maxWidth = InitialStyle.maxWidth;
                     break;
                 case StylePropertyId.MinHeight:
-                    nonInheritedData.minHeight = InitialStyle.minHeight;
+                    layoutData.Write().minHeight = InitialStyle.minHeight;
                     break;
                 case StylePropertyId.MinWidth:
-                    nonInheritedData.minWidth = InitialStyle.minWidth;
+                    layoutData.Write().minWidth = InitialStyle.minWidth;
                     break;
                 case StylePropertyId.Opacity:
-                    nonInheritedData.opacity = InitialStyle.opacity;
+                    visualData.Write().opacity = InitialStyle.opacity;
                     break;
                 case StylePropertyId.Overflow:
-                    nonInheritedData.overflow = InitialStyle.overflow;
+                    visualData.Write().overflow = InitialStyle.overflow;
                     break;
                 case StylePropertyId.Padding:
-                    nonInheritedData.paddingTop = InitialStyle.paddingTop;
-                    nonInheritedData.paddingRight = InitialStyle.paddingRight;
-                    nonInheritedData.paddingBottom = InitialStyle.paddingBottom;
-                    nonInheritedData.paddingLeft = InitialStyle.paddingLeft;
+                    layoutData.Write().paddingTop = InitialStyle.paddingTop;
+                    layoutData.Write().paddingRight = InitialStyle.paddingRight;
+                    layoutData.Write().paddingBottom = InitialStyle.paddingBottom;
+                    layoutData.Write().paddingLeft = InitialStyle.paddingLeft;
                     break;
                 case StylePropertyId.PaddingBottom:
-                    nonInheritedData.paddingBottom = InitialStyle.paddingBottom;
+                    layoutData.Write().paddingBottom = InitialStyle.paddingBottom;
                     break;
                 case StylePropertyId.PaddingLeft:
-                    nonInheritedData.paddingLeft = InitialStyle.paddingLeft;
+                    layoutData.Write().paddingLeft = InitialStyle.paddingLeft;
                     break;
                 case StylePropertyId.PaddingRight:
-                    nonInheritedData.paddingRight = InitialStyle.paddingRight;
+                    layoutData.Write().paddingRight = InitialStyle.paddingRight;
                     break;
                 case StylePropertyId.PaddingTop:
-                    nonInheritedData.paddingTop = InitialStyle.paddingTop;
+                    layoutData.Write().paddingTop = InitialStyle.paddingTop;
                     break;
                 case StylePropertyId.Position:
-                    nonInheritedData.position = InitialStyle.position;
+                    layoutData.Write().position = InitialStyle.position;
                     break;
                 case StylePropertyId.Right:
-                    nonInheritedData.right = InitialStyle.right;
+                    layoutData.Write().right = InitialStyle.right;
                     break;
                 case StylePropertyId.TextOverflow:
-                    nonInheritedData.textOverflow = InitialStyle.textOverflow;
+                    rareData.Write().textOverflow = InitialStyle.textOverflow;
                     break;
                 case StylePropertyId.TextShadow:
-                    inheritedData.textShadow = InitialStyle.textShadow;
+                    inheritedData.Write().textShadow = InitialStyle.textShadow;
                     break;
                 case StylePropertyId.Top:
-                    nonInheritedData.top = InitialStyle.top;
+                    layoutData.Write().top = InitialStyle.top;
                     break;
                 case StylePropertyId.UnityBackgroundImageTintColor:
-                    nonInheritedData.unityBackgroundImageTintColor = InitialStyle.unityBackgroundImageTintColor;
+                    rareData.Write().unityBackgroundImageTintColor = InitialStyle.unityBackgroundImageTintColor;
                     break;
                 case StylePropertyId.UnityBackgroundScaleMode:
-                    nonInheritedData.unityBackgroundScaleMode = InitialStyle.unityBackgroundScaleMode;
+                    rareData.Write().unityBackgroundScaleMode = InitialStyle.unityBackgroundScaleMode;
                     break;
                 case StylePropertyId.UnityFont:
-                    inheritedData.unityFont = InitialStyle.unityFont;
+                    inheritedData.Write().unityFont = InitialStyle.unityFont;
                     break;
                 case StylePropertyId.UnityFontDefinition:
-                    inheritedData.unityFontDefinition = InitialStyle.unityFontDefinition;
+                    inheritedData.Write().unityFontDefinition = InitialStyle.unityFontDefinition;
                     break;
                 case StylePropertyId.UnityFontStyleAndWeight:
-                    inheritedData.unityFontStyleAndWeight = InitialStyle.unityFontStyleAndWeight;
+                    inheritedData.Write().unityFontStyleAndWeight = InitialStyle.unityFontStyleAndWeight;
                     break;
                 case StylePropertyId.UnityOverflowClipBox:
-                    nonInheritedData.unityOverflowClipBox = InitialStyle.unityOverflowClipBox;
+                    rareData.Write().unityOverflowClipBox = InitialStyle.unityOverflowClipBox;
                     break;
                 case StylePropertyId.UnityParagraphSpacing:
-                    inheritedData.unityParagraphSpacing = InitialStyle.unityParagraphSpacing;
+                    inheritedData.Write().unityParagraphSpacing = InitialStyle.unityParagraphSpacing;
                     break;
                 case StylePropertyId.UnitySliceBottom:
-                    nonInheritedData.unitySliceBottom = InitialStyle.unitySliceBottom;
+                    rareData.Write().unitySliceBottom = InitialStyle.unitySliceBottom;
                     break;
                 case StylePropertyId.UnitySliceLeft:
-                    nonInheritedData.unitySliceLeft = InitialStyle.unitySliceLeft;
+                    rareData.Write().unitySliceLeft = InitialStyle.unitySliceLeft;
                     break;
                 case StylePropertyId.UnitySliceRight:
-                    nonInheritedData.unitySliceRight = InitialStyle.unitySliceRight;
+                    rareData.Write().unitySliceRight = InitialStyle.unitySliceRight;
                     break;
                 case StylePropertyId.UnitySliceTop:
-                    nonInheritedData.unitySliceTop = InitialStyle.unitySliceTop;
+                    rareData.Write().unitySliceTop = InitialStyle.unitySliceTop;
                     break;
                 case StylePropertyId.UnityTextAlign:
-                    inheritedData.unityTextAlign = InitialStyle.unityTextAlign;
+                    inheritedData.Write().unityTextAlign = InitialStyle.unityTextAlign;
                     break;
                 case StylePropertyId.UnityTextOutline:
-                    inheritedData.unityTextOutlineColor = InitialStyle.unityTextOutlineColor;
-                    inheritedData.unityTextOutlineWidth = InitialStyle.unityTextOutlineWidth;
+                    inheritedData.Write().unityTextOutlineColor = InitialStyle.unityTextOutlineColor;
+                    inheritedData.Write().unityTextOutlineWidth = InitialStyle.unityTextOutlineWidth;
                     break;
                 case StylePropertyId.UnityTextOutlineColor:
-                    inheritedData.unityTextOutlineColor = InitialStyle.unityTextOutlineColor;
+                    inheritedData.Write().unityTextOutlineColor = InitialStyle.unityTextOutlineColor;
                     break;
                 case StylePropertyId.UnityTextOutlineWidth:
-                    inheritedData.unityTextOutlineWidth = InitialStyle.unityTextOutlineWidth;
+                    inheritedData.Write().unityTextOutlineWidth = InitialStyle.unityTextOutlineWidth;
                     break;
                 case StylePropertyId.UnityTextOverflowPosition:
-                    nonInheritedData.unityTextOverflowPosition = InitialStyle.unityTextOverflowPosition;
+                    rareData.Write().unityTextOverflowPosition = InitialStyle.unityTextOverflowPosition;
                     break;
                 case StylePropertyId.Visibility:
-                    inheritedData.visibility = InitialStyle.visibility;
+                    inheritedData.Write().visibility = InitialStyle.visibility;
                     break;
                 case StylePropertyId.WhiteSpace:
-                    inheritedData.whiteSpace = InitialStyle.whiteSpace;
+                    inheritedData.Write().whiteSpace = InitialStyle.whiteSpace;
                     break;
                 case StylePropertyId.Width:
-                    nonInheritedData.width = InitialStyle.width;
+                    layoutData.Write().width = InitialStyle.width;
                     break;
                 case StylePropertyId.WordSpacing:
-                    inheritedData.wordSpacing = InitialStyle.wordSpacing;
+                    inheritedData.Write().wordSpacing = InitialStyle.wordSpacing;
                     break;
                 default:
                     Debug.LogAssertion($"Unexpected property id {id}");
@@ -836,7 +891,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public void ApplyUnsetValue(StylePropertyReader reader, ComputedStyle parentStyle)
+        public void ApplyUnsetValue(StylePropertyReader reader, ref ComputedStyle parentStyle)
         {
             switch (reader.propertyId)
             {
@@ -844,56 +899,56 @@ namespace UnityEngine.UIElements
                     RemoveCustomStyleProperty(reader);
                     break;
                 default:
-                    ApplyUnsetValue(reader.propertyId, parentStyle);
+                    ApplyUnsetValue(reader.propertyId, ref parentStyle);
                     break;
             }
         }
 
-        public void ApplyUnsetValue(StylePropertyId id, ComputedStyle parentStyle)
+        public void ApplyUnsetValue(StylePropertyId id, ref ComputedStyle parentStyle)
         {
             switch (id)
             {
                 case StylePropertyId.Color:
-                    inheritedData.color = parentStyle.color;
+                    inheritedData.Write().color = parentStyle.color;
                     break;
                 case StylePropertyId.FontSize:
-                    inheritedData.fontSize = parentStyle.fontSize;
+                    inheritedData.Write().fontSize = parentStyle.fontSize;
                     break;
                 case StylePropertyId.LetterSpacing:
-                    inheritedData.letterSpacing = parentStyle.letterSpacing;
+                    inheritedData.Write().letterSpacing = parentStyle.letterSpacing;
                     break;
                 case StylePropertyId.TextShadow:
-                    inheritedData.textShadow = parentStyle.textShadow;
+                    inheritedData.Write().textShadow = parentStyle.textShadow;
                     break;
                 case StylePropertyId.UnityFont:
-                    inheritedData.unityFont = parentStyle.unityFont;
+                    inheritedData.Write().unityFont = parentStyle.unityFont;
                     break;
                 case StylePropertyId.UnityFontDefinition:
-                    inheritedData.unityFontDefinition = parentStyle.unityFontDefinition;
+                    inheritedData.Write().unityFontDefinition = parentStyle.unityFontDefinition;
                     break;
                 case StylePropertyId.UnityFontStyleAndWeight:
-                    inheritedData.unityFontStyleAndWeight = parentStyle.unityFontStyleAndWeight;
+                    inheritedData.Write().unityFontStyleAndWeight = parentStyle.unityFontStyleAndWeight;
                     break;
                 case StylePropertyId.UnityParagraphSpacing:
-                    inheritedData.unityParagraphSpacing = parentStyle.unityParagraphSpacing;
+                    inheritedData.Write().unityParagraphSpacing = parentStyle.unityParagraphSpacing;
                     break;
                 case StylePropertyId.UnityTextAlign:
-                    inheritedData.unityTextAlign = parentStyle.unityTextAlign;
+                    inheritedData.Write().unityTextAlign = parentStyle.unityTextAlign;
                     break;
                 case StylePropertyId.UnityTextOutlineColor:
-                    inheritedData.unityTextOutlineColor = parentStyle.unityTextOutlineColor;
+                    inheritedData.Write().unityTextOutlineColor = parentStyle.unityTextOutlineColor;
                     break;
                 case StylePropertyId.UnityTextOutlineWidth:
-                    inheritedData.unityTextOutlineWidth = parentStyle.unityTextOutlineWidth;
+                    inheritedData.Write().unityTextOutlineWidth = parentStyle.unityTextOutlineWidth;
                     break;
                 case StylePropertyId.Visibility:
-                    inheritedData.visibility = parentStyle.visibility;
+                    inheritedData.Write().visibility = parentStyle.visibility;
                     break;
                 case StylePropertyId.WhiteSpace:
-                    inheritedData.whiteSpace = parentStyle.whiteSpace;
+                    inheritedData.Write().whiteSpace = parentStyle.whiteSpace;
                     break;
                 case StylePropertyId.WordSpacing:
-                    inheritedData.wordSpacing = parentStyle.wordSpacing;
+                    inheritedData.Write().wordSpacing = parentStyle.wordSpacing;
                     break;
                 default:
                     ApplyInitialValue(id);

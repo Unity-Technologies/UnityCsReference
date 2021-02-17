@@ -49,6 +49,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         IEnumerable<UIError> errors { get; }
 
+        bool hasEntitlements { get; }
+
+        bool hasEntitlementsError { get; }
+
         SemVersion? version { get; }
 
         DateTime? publishedDate { get; }

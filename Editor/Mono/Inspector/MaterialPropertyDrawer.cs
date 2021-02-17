@@ -165,6 +165,8 @@ namespace UnityEditor
 
         private static MaterialPropertyHandler GetShaderPropertyHandler(Shader shader, string name)
         {
+            if (name == null)
+                return null;
             int propertyIndex = shader.FindPropertyIndex(name);
             if (propertyIndex < 0)
                 return null;
@@ -201,7 +203,7 @@ namespace UnityEditor
 
         internal static MaterialPropertyHandler GetHandler(Shader shader, string name)
         {
-            if (shader == null)
+            if (shader == null || name == null)
                 return null;
 
             // Use cached handler if available
@@ -215,6 +217,11 @@ namespace UnityEditor
             if (handler != null && handler.IsEmpty())
                 handler = null;
             //Debug.Log ("drawer " + drawer);
+
+            // Special exception for KeywordEnums, as the cache doesn't have a way to
+            // determine whether a KeywordEnum has been changed or not.
+            if (handler != null && handler.propertyDrawer is MaterialKeywordEnumDrawer)
+                return handler;
 
             // Cache the handler and return. Cache even if it was null, so we can return
             // later requests fast as well.

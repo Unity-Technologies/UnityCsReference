@@ -55,7 +55,10 @@ namespace UnityEditor
             float renderTime = UnityStats.renderTime;
             m_ClientTimeAccumulator += frameTime;
             m_RenderTimeAccumulator += renderTime;
-            m_MaxTimeAccumulator += Mathf.Max(frameTime, renderTime);
+            if (Application.targetFrameRate <= 0 || !Unsupported.IsEditorPlayerLoopWaiting())
+                m_MaxTimeAccumulator += Mathf.Max(frameTime, renderTime);
+            else
+                m_MaxTimeAccumulator += Unsupported.GetFrameTimeCalculatedForEachEditorPlayerLoop();
             ++m_FrameCounter;
 
             bool needsTime = m_ClientFrameTime == 0.0f && m_RenderFrameTime == 0.0f;
@@ -119,8 +122,12 @@ namespace UnityEditor
             // Time stats
             UpdateFrameTime();
 
-            string timeStats = UnityString.Format("{0:F1} FPS ({1:F1}ms)",
-                1.0f / Mathf.Max(m_MaxFrameTime, 1.0e-5f), m_MaxFrameTime * 1000.0f);
+            string timeStats = UnityString.Format("- FPS (Playmode Off)");
+            if (EditorApplication.isPlaying)
+            {
+                timeStats = UnityString.Format("{0:F1} FPS ({1:F1}ms)",
+                    1.0f / Mathf.Max(m_MaxFrameTime, 1.0e-5f), m_MaxFrameTime * 1000.0f);
+            }
             GUI.Label(new Rect(170, graphicsLabelRect.y, 120, 20), timeStats);
 
             int screenBytes = UnityStats.screenBytes;

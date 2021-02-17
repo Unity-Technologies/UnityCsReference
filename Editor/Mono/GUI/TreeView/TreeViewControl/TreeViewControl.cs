@@ -126,6 +126,9 @@ namespace UnityEditor.IMGUI.Controls
         public TreeViewState state { get { return m_TreeView.state; } }
         public MultiColumnHeader multiColumnHeader { get { return m_MultiColumnHeader; } set { m_MultiColumnHeader = value; }}
 
+        // internal for testing
+        internal TreeViewController controller => m_TreeView;
+
         protected TreeViewItem rootItem
         {
             get { return m_TreeView.data.root; }

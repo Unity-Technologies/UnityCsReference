@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-
 using UnityEditor.AssetImporters;
 
 namespace UnityEditor.Search
@@ -40,6 +39,21 @@ namespace UnityEditor.Search
     },
     ""baseScore"": 100
 }";
+
+        public static readonly string packages =
+@"{
+    ""roots"": [""Packages""],
+    ""includes"": [],
+    ""excludes"": [],
+    ""options"": {
+        ""types"": true,
+        ""properties"": false,
+        ""extended"": false,
+        ""dependencies"": false
+    },
+    ""baseScore"": 9999
+}";
+
         public static readonly string prefabs = @"{
     ""type"": ""prefab"",
     ""roots"": [],
@@ -70,6 +84,7 @@ namespace UnityEditor.Search
         public static readonly Dictionary<string, string> all = new Dictionary<string, string>()
         {
             { "Assets", assets },
+            { "Packages", packages },
             { "Prefabs", prefabs },
             { "Scenes", scenes },
             { "_Default", @default }
@@ -145,37 +160,37 @@ namespace UnityEditor.Search
             return folderPath;
         }
 
-        [MenuItem("Assets/Create/Search/Project Index")]
+        [MenuItem("Assets/Create/Search/Assets Index")]
         internal static void CreateIndexProject()
         {
             CreateTemplateIndex("Assets", GetSelectionFolderPath());
         }
 
-        [MenuItem("Assets/Create/Search/Project Index", validate = true)]
+        [MenuItem("Assets/Create/Search/Assets Index", validate = true)]
         internal static bool CreateIndexProjectValidation()
         {
             return Directory.Exists(GetSelectionFolderPath());
         }
 
-        [MenuItem("Assets/Create/Search/Prefab Index")]
+        [MenuItem("Assets/Create/Search/Prefabs Index")]
         internal static void CreateIndexPrefab()
         {
             CreateTemplateIndex("Prefabs", GetSelectionFolderPath());
         }
 
-        [MenuItem("Assets/Create/Search/Prefab Index", validate = true)]
+        [MenuItem("Assets/Create/Search/Prefabs Index", validate = true)]
         internal static bool CreateIndexPrefabValidation()
         {
             return ValidateTemplateIndexCreation<GameObject>();
         }
 
-        [MenuItem("Assets/Create/Search/Scene Index")]
+        [MenuItem("Assets/Create/Search/Scenes Index")]
         internal static void CreateIndexScene()
         {
             CreateTemplateIndex("Scenes", GetSelectionFolderPath());
         }
 
-        [MenuItem("Assets/Create/Search/Scene Index", validate = true)]
+        [MenuItem("Assets/Create/Search/Scenes Index", validate = true)]
         internal static bool CreateIndexSceneValidation()
         {
             return ValidateTemplateIndexCreation<SceneAsset>();

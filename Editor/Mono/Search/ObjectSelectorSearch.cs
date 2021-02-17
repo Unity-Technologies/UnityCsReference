@@ -143,4 +143,22 @@ namespace UnityEditor.SearchService
             k_EngineImp.UnregisterEngine(engine);
         }
     }
+
+    class ObjectSelectorSearchSessionHandler : SearchSessionHandler
+    {
+        public ObjectSelectorSearchSessionHandler()
+            : base(SearchEngineScope.ObjectSelector) {}
+
+        public bool SelectObject(Action<Object, bool> onObjectSelectorClosed, Action<Object> onObjectSelectedUpdated)
+        {
+            using (new SearchSessionOptionsApplicator(m_Api, m_Options))
+                return ObjectSelectorSearch.SelectObject((ObjectSelectorSearchContext)context, onObjectSelectorClosed, onObjectSelectedUpdated);
+        }
+
+        public void SetSearchFilter(string searchFilter)
+        {
+            using (new SearchSessionOptionsApplicator(m_Api, m_Options))
+                ObjectSelectorSearch.SetSearchFilter(searchFilter, (ObjectSelectorSearchContext)context);
+        }
+    }
 }

@@ -39,7 +39,6 @@ namespace UnityEditor
         {
             GUILayout.Label(s_Styles.terrainLayers, EditorStyles.boldLabel);
             GUI.changed = false;
-            bool doubleClick;
             int selectedTerrainLayer = activeTerrainLayer;
 
             if (terrain.terrainData.terrainLayers.Length > 0)
@@ -55,7 +54,7 @@ namespace UnityEditor
                         tooltip = layers[i] == null ? "Missing" : layers[i].name
                     };
                 }
-                selectedTerrainLayer = TerrainInspector.AspectSelectionGridImageAndText(activeTerrainLayer, layerGUIContents, 64, s_Styles.errNoLayersFound, out doubleClick);
+                selectedTerrainLayer = TerrainInspector.AspectSelectionGridImageAndText(activeTerrainLayer, layerGUIContents, 64, s_Styles.errNoLayersFound, out _);
             }
             else
                 selectedTerrainLayer = -1;

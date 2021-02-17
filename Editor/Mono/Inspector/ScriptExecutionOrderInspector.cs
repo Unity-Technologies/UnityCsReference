@@ -92,6 +92,7 @@ namespace UnityEditor
             public static GUIContent iconToolbarPlus = EditorGUIUtility.TrIconContent("Toolbar Plus", "Add script to custom order");
             public static GUIContent iconToolbarMinus = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove script from custom order");
             public static GUIContent defaultTimeContent = EditorGUIUtility.TrTextContent("Default Time", "All scripts not in the custom order are executed at the default time.");
+            public static GUIContent[] emptyMenuOptions = { EditorGUIUtility.TrTextContent("Empty") };
         }
 
         public static class Styles
@@ -274,26 +275,25 @@ namespace UnityEditor
         private void Apply()
         {
             var changedIndices = new List<int>();
-            var changedScripts = new List<MonoScript>();
+            var changedPaths = new List<string>();
+
             for (var i = 0; i < m_AllScripts.Length; i++)
             {
-                if (MonoImporter.GetExecutionOrder(m_AllScripts[i]) != m_AllOrders[i])
-                {
-                    changedIndices.Add(i);
-                    changedScripts.Add(m_AllScripts[i]);
-                }
-            }
+                var script = m_AllScripts[i];
+                if (MonoImporter.GetExecutionOrder(script) == m_AllOrders[i])
+                    continue;
 
-            var changedPaths = new List<string>(changedScripts.Count);
-            foreach (var script in changedScripts)
-            {
                 var assetPath = AssetDatabase.GetAssetPath(script);
                 if (string.IsNullOrEmpty(assetPath)) // Script might be outside of the project (e.g. in a package).
                     continue;
+
                 var metaPath = AssetDatabase.GetTextMetaFilePathFromAssetPath(assetPath);
-                if (AssetDatabase.IsOpenForEdit(metaPath))
-                    continue; // No VCS enabled, not connected, already checked out, etc.
-                changedPaths.Add(metaPath);
+                if (!AssetDatabase.CanOpenForEdit(metaPath))
+                    continue;
+
+                changedIndices.Add(i);
+                if (!AssetDatabase.IsOpenForEdit(metaPath)) // No VCS enabled, not connected, already checked out, etc.
+                    changedPaths.Add(metaPath);
             }
 
             if (!AssetDatabase.MakeEditable(changedPaths.ToArray()))
@@ -364,43 +364,30 @@ namespace UnityEditor
         private void ShowScriptPopup(Rect r)
         {
             var length = m_DefaultTimeScripts.Count;
-            var names = new string[length];
-            var enabled = new bool[length];
-            var metaPaths = new string[length];
+            var names = new List<string>(length);
 
             for (var i = 0; i < length; ++i)
             {
-                names[i] = m_DefaultTimeScripts[i].GetClass().FullName; // todo: Localization with a proper database.
-                enabled[i] = true;
-
                 var assetPath = AssetDatabase.GetAssetPath(m_DefaultTimeScripts[i]);
-                if (!string.IsNullOrEmpty(assetPath))
-                {
-                    enabled[i] = true;
-                    metaPaths[i] = AssetDatabase.GetTextMetaFilePathFromAssetPath(assetPath);
-                }
-                else
-                {
-                    enabled[i] = false;
-                }
+                if (string.IsNullOrEmpty(assetPath))
+                    continue;
+
+                var metaPath = AssetDatabase.GetTextMetaFilePathFromAssetPath(assetPath);
+                if (!AssetDatabase.CanOpenForEdit(metaPath))
+                    continue;
+
+                names.Add(m_DefaultTimeScripts[i].GetClass().FullName); // todo: Localization with a proper database.
             }
 
-            var notEditablePaths = new List<string>();
-            var uniqueMetaPaths = metaPaths.Where(p => !string.IsNullOrEmpty(p)).Distinct().ToArray();
-            AssetDatabase.CanOpenForEdit(uniqueMetaPaths, notEditablePaths);
-
-            foreach (var notEditablePath in notEditablePaths)
+            if (names.Count == 0)
             {
-                for (var i = 0; i < length; ++i)
-                {
-                    if (notEditablePath == metaPaths[i])
-                    {
-                        enabled[i] = false;
-                    }
-                }
+                EditorUtility.DisplayCustomMenu(r, Content.emptyMenuOptions, i => false, -1, null, null);
+                return;
             }
 
-            EditorUtility.DisplayCustomMenu(r, names, enabled, null, MenuSelection, null);
+            var options = names.ToArray();
+            var enabled = Enumerable.Repeat(true, options.Length).ToArray();
+            EditorUtility.DisplayCustomMenu(r, options, enabled, null, MenuSelection, null);
         }
 
         private int RoundBasedOnContext(int val, int lowerBound, int upperBound)

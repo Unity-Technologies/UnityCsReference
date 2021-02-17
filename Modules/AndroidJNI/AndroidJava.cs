@@ -300,6 +300,24 @@ namespace UnityEngine
 
         //===================================================================
 
+        public AndroidJavaObject CloneReference()
+        {
+            if (m_jclass == null)
+                throw new Exception("Cannot clone a disposed reference");
+            // if no object, assume this is AndroidJavaClass
+            if (m_jobject != null)
+            {
+                AndroidJavaObject clone = new AndroidJavaObject();
+                clone.m_jobject = new GlobalJavaObjectRef(m_jobject);
+                clone.m_jclass = new GlobalJavaObjectRef(m_jclass);
+                return clone;
+            }
+            else
+                return new AndroidJavaClass(m_jclass);
+        }
+
+        //===================================================================
+
         // Call a Java method on an object.
         public ReturnType Call<ReturnType, T>(string methodName, T[] args)
         {
@@ -354,6 +372,7 @@ namespace UnityEngine
             if (args == null) args = new object[] { null };
             var clazz = AndroidJNISafe.FindClass(className.Replace('.', '/'));
             m_jclass = new GlobalJavaObjectRef(clazz);
+            AndroidJNISafe.DeleteLocalRef(clazz);
             jvalue[] jniArgs = AndroidJNIHelper.CreateJNIArgArray(args);
             try
             {
@@ -772,7 +791,7 @@ namespace UnityEngine
         }
 
         //===================================================================
-        protected IntPtr _GetRawObject() { return m_jobject; }
+        protected IntPtr _GetRawObject() { return m_jobject == null ? IntPtr.Zero : m_jobject; }
         protected IntPtr _GetRawClass() { return m_jclass; }
 
         internal GlobalJavaObjectRef m_jobject;
@@ -792,7 +811,8 @@ namespace UnityEngine
             DebugPrint("Creating AndroidJavaClass from " + className);
             var clazz = AndroidJNISafe.FindClass(className.Replace('.', '/'));
             m_jclass = new GlobalJavaObjectRef(clazz /*.GetRawObject()*/);
-            m_jobject = new GlobalJavaObjectRef(IntPtr.Zero);
+            m_jobject = null;
+            AndroidJNISafe.DeleteLocalRef(clazz);
         }
 
         internal AndroidJavaClass(IntPtr jclass)  // should be protected and friends with AndroidJNIHelper..
@@ -803,7 +823,7 @@ namespace UnityEngine
             }
 
             m_jclass = new GlobalJavaObjectRef(jclass);
-            m_jobject = new GlobalJavaObjectRef(IntPtr.Zero);
+            m_jobject = null;
         }
     }
 

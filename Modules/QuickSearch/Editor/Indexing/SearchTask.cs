@@ -243,6 +243,7 @@ namespace UnityEditor.Search
         private int StartReport(string title)
         {
             var progressId = Progress.Start(title);
+            Progress.SetPriority(progressId, (int)Progress.Priority.Low);
             status = title;
             return progressId;
         }

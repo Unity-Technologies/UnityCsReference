@@ -3,10 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor.Experimental;
-using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEditor.StyleSheets;
@@ -125,6 +124,8 @@ namespace UnityEditor
 
         public override void OnInitialize()
         {
+            base.OnInitialize();
+
             SceneVisibilityManager.visibilityChanged += SceneVisibilityManagerOnVisibilityChanged;
             dataSource.beforeReloading += SubSceneGUI.FetchSubSceneInfo;
             m_PrevScollPos = m_TreeView.state.scrollPos.y;

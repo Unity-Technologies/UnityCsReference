@@ -99,6 +99,7 @@ namespace UnityEditor.DeviceSimulation
                 if (graphicsSystemInfoArray != null)
                 {
                     var graphicsSystemInfo = graphicsSystemInfoArray.Elements("item").ToArray();
+                    var graphicsTypes = new HashSet<GraphicsDeviceType>();
                     for (int i = 0; i < graphicsSystemInfo.Length; i++)
                     {
                         var graphicsDeviceElement = graphicsSystemInfo[i].Element("graphicsDeviceType");
@@ -107,7 +108,14 @@ namespace UnityEditor.DeviceSimulation
                         else if (!int.TryParse(graphicsDeviceElement.Value, out var typeInt) || !Enum.IsDefined(typeof(GraphicsDeviceType), typeInt))
                             errorList.Add($"[systemInfo -> graphicsDependentData[{i}] -> graphicsDeviceType] is set to a value that could not be parsed as GraphicsDeviceType");
                         else
-                            graphicsTypeElements.Add(new GraphicsTypeElement {element = graphicsSystemInfo[i], type = (GraphicsDeviceType)typeInt});
+                        {
+                            var type = deviceInfo.systemInfo.graphicsDependentData[i].graphicsDeviceType;
+                            if (graphicsTypes.Contains(type))
+                                errorList.Add($"Multiple [systemInfo -> graphicsDependentData] fields have the same GraphicsDeviceType {type}.");
+                            else
+                                graphicsTypes.Add(type);
+                            graphicsTypeElements.Add(new GraphicsTypeElement {element = graphicsSystemInfo[i], type = type});
+                        }
                     }
                 }
             }
@@ -246,13 +254,11 @@ namespace UnityEditor.DeviceSimulation
                 "usesLoadStoreActions"
             };
 
-            asset.availableSystemInfoFields = new HashSet<string>();
             foreach (var field in systemInfoFields)
             {
                 if (systemInfoElement.Element(field) != null)
                     asset.availableSystemInfoFields.Add(field);
             }
-            asset.availableGraphicsSystemInfoFields = new Dictionary<GraphicsDeviceType, HashSet<string>>();
             foreach (var graphicsDataElement in graphicsDataElements)
             {
                 var availableFields = new HashSet<string>();

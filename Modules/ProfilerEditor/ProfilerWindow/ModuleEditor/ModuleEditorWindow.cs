@@ -37,9 +37,9 @@ namespace UnityEditor.Profiling.ModuleEditor
 
         public static ModuleEditorWindow Present(List<ProfilerModuleBase> modules)
         {
-            var window = GetWindow<ModuleEditorWindow>(true);
+            var window = GetWindowDontShow<ModuleEditorWindow>();
             window.Initialize(modules);
-            window.Show();
+            window.ShowUtility();
             return window;
         }
 

@@ -279,9 +279,9 @@ namespace UnityEditor
                                 if (actualTargetObject)
                                 {
                                     AssetDatabase.OpenAsset(actualTargetObject);
+                                    evt.Use();
                                     GUIUtility.ExitGUI();
                                 }
-                                evt.Use();
                             }
                         }
                     }
@@ -299,6 +299,22 @@ namespace UnityEditor
                             break;
                         }
                         return AssignSelectedObject(property, validator, objType, evt);
+                    }
+                    else if ((evt.commandName == EventCommandNames.Delete || evt.commandName == EventCommandNames.SoftDelete) && GUIUtility.keyboardControl == id)
+                    {
+                        if (property != null)
+                            property.objectReferenceValue = null;
+                        else
+                            obj = null;
+
+                        GUI.changed = true;
+                        evt.Use();
+                    }
+                    break;
+                case EventType.ValidateCommand:
+                    if ((evt.commandName == EventCommandNames.Delete || evt.commandName == EventCommandNames.SoftDelete) &&  GUIUtility.keyboardControl == id)
+                    {
+                        evt.Use();
                     }
                     break;
                 case EventType.KeyDown:

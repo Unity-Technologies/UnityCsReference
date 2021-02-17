@@ -272,8 +272,6 @@ namespace UnityEditor
         protected override void SetupDragAndDrop(SetupDragAndDropArgs args)
         {
             DragAndDrop.PrepareStartDrag();
-            DragAndDrop.paths = null;
-            DragAndDrop.objectReferences = new UnityEngine.Object[] {};
             DragAndDrop.SetGenericData("BuildPlayerSceneTreeViewItem", new List<int>(args.draggedItemIDs));
             DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
             DragAndDrop.StartDrag("BuildPlayerSceneTreeView");

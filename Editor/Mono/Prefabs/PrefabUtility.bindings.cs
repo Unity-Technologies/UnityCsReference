@@ -75,6 +75,10 @@ namespace UnityEditor
         [NativeThrows]
         extern public static void MergeAllPrefabInstances(Object targetObject);
 
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
+        extern private static GameObject[] FindAllInstancesOfPrefab_internal([NotNull("NullExceptionObject")] GameObject prefabRoot, int sceneHandle);
+
         // Disconnects the prefab instance from its parent prefab.
         [Obsolete("The concept of disconnecting Prefab instances has been deprecated.")]
         [FreeFunction]

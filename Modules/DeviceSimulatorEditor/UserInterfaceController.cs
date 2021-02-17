@@ -78,6 +78,7 @@ namespace UnityEditor.DeviceSimulation
         private Label m_ScaleValueLabel;
         private ToolbarToggle m_FitToScreenToggle;
         private ToolbarToggle m_HighlightSafeAreaToggle;
+        private ToolbarMenu m_EnterPlayModeMenu;
         private ToolbarToggle m_ControlPanelToggle;
 
         // Controls for inactive message.
@@ -95,7 +96,7 @@ namespace UnityEditor.DeviceSimulation
         private readonly Dictionary<string, Foldout> m_PluginFoldouts = new Dictionary<string, Foldout>();
         private VisualElement m_ControlPanel;
 
-        public UserInterfaceController(DeviceSimulatorMain deviceSimulatorMain, VisualElement rootVisualElement, SimulatorState serializedState, IEnumerable<DeviceSimulatorPlugin> plugins, TouchEventManipulator touchEventManipulator)
+        public UserInterfaceController(DeviceSimulatorMain deviceSimulatorMain, VisualElement rootVisualElement, SimulatorState serializedState, PluginController pluginController, TouchEventManipulator touchEventManipulator)
         {
             m_Main = deviceSimulatorMain;
 
@@ -141,6 +142,21 @@ namespace UnityEditor.DeviceSimulation
             m_HighlightSafeArea = serializedState.highlightSafeAreaEnabled;
             m_HighlightSafeAreaToggle.SetValueWithoutNotify(HighlightSafeArea);
 
+            // Enter Play Mode popup up
+            m_EnterPlayModeMenu = rootVisualElement.Q<ToolbarMenu>("enter-play-mode-menu");
+            UpdateEnterPlayModeBehaviorMsg();
+            foreach (var name in Enum.GetNames(typeof(PlayModeView.EnterPlayModeBehavior)))
+            {
+                m_EnterPlayModeMenu.menu.AppendAction(ObjectNames.NicifyVariableName(name),
+                    a => HandleEnterPlayModeBehaviorSelection(name),
+                    a =>
+                    {
+                        return m_Main.playModeView.enterPlayModeBehavior.ToString() == name
+                        ? DropdownMenuAction.Status.Checked
+                        : DropdownMenuAction.Status.Normal;
+                    });
+            }
+
             // Inactive message set up
             m_InactiveMsgContainer = rootVisualElement.Q<VisualElement>("inactive-msg-container");
             var closeInactiveMsg = rootVisualElement.Q<Image>("close-inactive-msg");
@@ -150,7 +166,6 @@ namespace UnityEditor.DeviceSimulation
 
             // Device view set up
             m_PreviewPanel = rootVisualElement.Q<VisualElement>("preview-panel");
-            m_PreviewPanel.RegisterCallback<WheelEvent>(OnScrollWheel, TrickleDown.TrickleDown);
             m_PreviewPanel.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             m_ScrollView = rootVisualElement.Q<ScrollView>("preview-scroll-view");
             m_DeviceView = new DeviceView(Quaternion.Euler(0, 0, Rotation), Scale / 100f) {ShowSafeArea = HighlightSafeArea};
@@ -180,35 +195,26 @@ namespace UnityEditor.DeviceSimulation
                 m_SplitView.fixedPaneInitialDimension = m_ControlPanelWidth;
             }
 
-            InitPluginUI(plugins, serializedState);
+            InitPluginUI(pluginController, serializedState);
         }
 
-        private void InitPluginUI(IEnumerable<DeviceSimulatorPlugin> plugins, SimulatorState serializedState)
+        private void InitPluginUI(PluginController pluginController, SimulatorState serializedState)
         {
-            foreach (var plugin in plugins)
+            foreach (var plugin in pluginController.CreateUI())
             {
-                var pluginUI = plugin.OnCreateUI();
-                if (pluginUI != null)
+                var foldout = new Foldout()
                 {
-                    if (pluginUI != null)
-                    {
-                        var foldout = new Foldout()
-                        {
-                            text = plugin.title,
-                            value = false
-                        };
-                        foldout.AddToClassList("unity-device-simulator__control-panel_foldout");
-                        foldout.Add(pluginUI);
+                    text = plugin.title,
+                    value = false
+                };
+                foldout.AddToClassList("unity-device-simulator__control-panel_foldout");
+                foldout.Add(plugin.ui);
 
-                        m_ControlPanel.Add(foldout);
-                        m_PluginFoldouts.Add(plugin.GetType().ToString(), foldout);
-                    }
-                }
+                m_ControlPanel.Add(foldout);
+                if (serializedState.controlPanelFoldouts.TryGetValue(plugin.serializationKey, out var state))
+                    foldout.value = state;
+                m_PluginFoldouts.Add(plugin.serializationKey, foldout);
             }
-
-            foreach (var foldout in m_PluginFoldouts)
-                if (serializedState.controlPanelFoldouts.TryGetValue(foldout.Key, out var state))
-                    foldout.Value.value = state;
         }
 
         public void OnSimulationStart(ScreenSimulation screenSimulation)
@@ -316,16 +322,6 @@ namespace UnityEditor.DeviceSimulation
             m_InactiveMsgContainer.style.position = shown ? Position.Relative : Position.Absolute;
         }
 
-        private void OnScrollWheel(WheelEvent evt)
-        {
-            var newScale = (int)(Scale - evt.delta.y);
-            UpdateScale(ClampScale(newScale));
-            evt.StopPropagation();
-
-            m_FitToScreenEnabled = false;
-            m_FitToScreenToggle.SetValueWithoutNotify(m_FitToScreenEnabled);
-        }
-
         private int ClampScale(int scale)
         {
             if (scale < kScaleMin)
@@ -381,6 +377,20 @@ namespace UnityEditor.DeviceSimulation
                 return;
 
             m_ScrollView.style.paddingTop = scrollViewHeight > m_DeviceView.style.height.value.value ? (scrollViewHeight - m_DeviceView.style.height.value.value) / 2 : 0;
+        }
+
+        private void HandleEnterPlayModeBehaviorSelection(string selected)
+        {
+            if (m_Main.playModeView.enterPlayModeBehavior.ToString() != selected)
+            {
+                m_Main.playModeView.enterPlayModeBehavior = (PlayModeView.EnterPlayModeBehavior)Enum.Parse(typeof(PlayModeView.EnterPlayModeBehavior), selected);
+                UpdateEnterPlayModeBehaviorMsg();
+            }
+        }
+
+        public void UpdateEnterPlayModeBehaviorMsg()
+        {
+            m_EnterPlayModeMenu.text = ObjectNames.NicifyVariableName(m_Main.playModeView.enterPlayModeBehavior.ToString());
         }
     }
 }

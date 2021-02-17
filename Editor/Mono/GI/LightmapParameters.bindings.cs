@@ -27,7 +27,7 @@ namespace UnityEditor
             SetLightmapParametersForLightingSettings(this, lightingSettings);
         }
 
-        // Realtime GI (Deprecated)
+        // Realtime GI
         public extern float resolution { get; set; }
         public extern float clusterResolution { get; set; }
         public extern int irradianceBudget { get; set; }

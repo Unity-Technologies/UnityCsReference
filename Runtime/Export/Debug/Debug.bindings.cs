@@ -27,6 +27,10 @@ namespace UnityEngine
     // Class containing methods to ease debugging while developing a game.
     public partial class Debug
     {
+        // This logger is used by CallOverridenDebugHandler in case of an exception occurring
+        // in the default s_Logger. This logger doesn't override ILogger.logHandler
+        internal static readonly ILogger s_DefaultLogger = new Logger(new DebugLogHandler());
+
         internal static ILogger s_Logger = new Logger(new DebugLogHandler());
         public static ILogger unityLogger
         {
@@ -258,7 +262,19 @@ namespace UnityEngine
                 return false;
             }
 
-            s_Logger.LogException(exception, obj);
+            try
+            {
+                s_Logger.LogException(exception, obj);
+            }
+            catch (Exception ex)
+            {
+                // If s_Logger.logHandler.LogException throws an error it would make this method fail and would
+                // generate an infinite loop of exceptions, so we cannot let this method fail.
+                // So we fallback to the default logger.
+                s_DefaultLogger.LogError($"Invalid exception thrown from custom {s_Logger.logHandler.GetType()}.LogException(). Message: {ex}", obj);
+                return false;
+            }
+
             return true;
         }
 

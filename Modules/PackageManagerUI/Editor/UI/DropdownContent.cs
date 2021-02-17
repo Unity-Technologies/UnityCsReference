@@ -21,7 +21,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected void Close()
         {
-            container?.Close();
+            if (container != null)
+                container.Close();
+            else
+            {
+                var dropdownElement = parent as DropdownElement;
+                dropdownElement?.Hide();
+            }
         }
     }
 }

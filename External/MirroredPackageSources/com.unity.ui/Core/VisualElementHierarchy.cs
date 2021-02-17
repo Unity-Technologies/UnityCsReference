@@ -1035,6 +1035,9 @@ namespace UnityEngine.UIElements
             {
                 var attachingPanel = elementPanel ?? ((AttachToPanelEvent)evt).destinationPanel as BaseVisualElementPanel;
 
+                if (!attachingPanel.enableAssetReload)
+                    return;
+
                 if (m_VisualTreeAssetSource != null)
                 {
                     // We can find the tracker either at this level, or some level above - if there is a tracker.

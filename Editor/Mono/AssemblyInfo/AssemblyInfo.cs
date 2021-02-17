@@ -120,9 +120,11 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.UIElements")]
 [assembly: InternalsVisibleTo("Unity.UIElements.Editor")]
 [assembly: InternalsVisibleTo("Unity.UIElements.Tests")]
+[assembly: InternalsVisibleTo("Unity.UIElements.PlayModeTests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
 [assembly: InternalsVisibleTo("UnityEditor.UIElementsGameObjectsModule")]
-[assembly: InternalsVisibleTo("UnityEditor.TextCoreTextModule")]
+[assembly: InternalsVisibleTo("UnityEditor.TextCoreTextEngineModule")]
+[assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.SceneTemplate.Editor")]
 [assembly: InternalsVisibleTo("com.unity.purchasing.udp.Editor")]

@@ -45,7 +45,7 @@ namespace UnityEditor.Toolbars
                 content = EditorToolUtility.GetIcon(ToolManager.activeToolType);
 
             iconElement.style.backgroundImage = new StyleBackground(content.image as Texture2D);
-            tooltip = tool != null ? content.tooltip : string.Empty;
+            tooltip = tool != null ? content.tooltip : "Editor Tools";
         }
 
         protected override void SetToolActive()

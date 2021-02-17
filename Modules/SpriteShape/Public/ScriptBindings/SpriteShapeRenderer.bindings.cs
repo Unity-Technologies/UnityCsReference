@@ -135,6 +135,7 @@ namespace UnityEngine.U2D
         extern private void SetMeshChannelInfo(int vertexCount, int indexCount, int hotChannelMask);
         extern private SpriteChannelInfo GetDataInfo(SpriteShapeDataType arrayType);
         extern private SpriteChannelInfo GetChannelInfo(VertexAttribute channel);
+        extern public void SetLocalAABB(Bounds bounds);
 
         /// <summary>
         /// Returns Bounds of SpriteShapeRenderer in a NativeArray so C# Job can access it.

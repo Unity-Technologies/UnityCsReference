@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
 {
@@ -23,11 +24,11 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private Object m_FontAsset;
+        private FontAsset m_FontAsset;
         /// <summary>
         /// SDF font to use to display text. You cannot set this and <see cref="FontDefinition.font"/> at the same time.
         /// </summary>
-        public Object fontAsset
+        public FontAsset fontAsset
         {
             get { return m_FontAsset; }
             set
@@ -54,13 +55,9 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="f">The SDF font to use to display text.</param>
         /// <returns>A new FontDefinition object.</returns>
-        public static FontDefinition FromSDFFont(Object f)
+        public static FontDefinition FromSDFFont(FontAsset f)
         {
-            if (TextDelegates.IsFontAssetSafe(f))
-                return new FontDefinition() { fontAsset = f };
-
-            Debug.LogError("Cannot create a FontDefinition, the type must be FontAsset");
-            return default;
+            return new FontDefinition() { m_FontAsset = f };
         }
 
         internal static FontDefinition FromObject(object obj)
@@ -69,7 +66,7 @@ namespace UnityEngine.UIElements
             if (font != null)
                 return FromFont(font);
 
-            var fontAsset = obj as Object;
+            var fontAsset = obj as FontAsset;
             if (fontAsset != null)
                 return FromSDFFont(fontAsset);
 

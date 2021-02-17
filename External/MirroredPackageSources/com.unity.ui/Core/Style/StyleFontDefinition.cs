@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
 {
@@ -33,6 +34,13 @@ namespace UnityEngine.UIElements
             : this(f, StyleKeyword.Undefined)
         {}
 
+        /// <summary>
+        /// Creates from either a <see cref="FontDefinition"/> or a <see cref="StyleKeyword"/>.
+        /// </summary>
+        public StyleFontDefinition(FontAsset f)
+            : this(f, StyleKeyword.Undefined)
+        {}
+
         public StyleFontDefinition(Font f)
             : this(f, StyleKeyword.Undefined)
         {}
@@ -43,7 +51,7 @@ namespace UnityEngine.UIElements
         public StyleFontDefinition(StyleKeyword keyword)
             : this(new FontDefinition(), keyword)
         {}
-        
+
         internal StyleFontDefinition(object obj, StyleKeyword keyword)
             : this(FontDefinition.FromObject(obj), keyword)
         {
@@ -53,6 +61,11 @@ namespace UnityEngine.UIElements
             : this(FontDefinition.FromObject(obj), StyleKeyword.Undefined)
         {
         }
+
+        internal StyleFontDefinition(FontAsset f, StyleKeyword keyword)
+            : this(FontDefinition.FromSDFFont(f), keyword)
+        {}
+
 
         internal StyleFontDefinition(Font f, StyleKeyword keyword)
             : this(FontDefinition.FromFont(f), keyword)

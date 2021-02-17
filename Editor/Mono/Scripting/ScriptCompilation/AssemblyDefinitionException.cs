@@ -6,12 +6,26 @@ using System;
 
 namespace UnityEditor.Compilation
 {
+    enum AssemblyDefinitionErrorType
+    {
+        LoadError,
+        CyclicReferences
+    }
+
     public class AssemblyDefinitionException : Exception
     {
+        internal AssemblyDefinitionErrorType errorType { get; }
         public string[] filePaths { get; }
+
+        internal AssemblyDefinitionException(string message, AssemblyDefinitionErrorType errorType, params string[] filePaths) : base(message)
+        {
+            this.errorType = errorType;
+            this.filePaths = filePaths;
+        }
 
         public AssemblyDefinitionException(string message, params string[] filePaths) : base(message)
         {
+            this.errorType = AssemblyDefinitionErrorType.LoadError;
             this.filePaths = filePaths;
         }
     }

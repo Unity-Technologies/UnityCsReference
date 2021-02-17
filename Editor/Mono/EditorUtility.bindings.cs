@@ -121,7 +121,10 @@ namespace UnityEditor
         [FreeFunction("UpdateMenuTitleForLanguage")]
         internal static extern void Internal_UpdateMenuTitleForLanguage(SystemLanguage newloc);
 
+        internal static extern void RebuildAllMenus();
         internal static extern void Internal_UpdateAllMenus();
+        internal static extern void LogAllMenus();
+        internal static extern string ParseMenuName(string menuName);
 
         [FreeFunction("DisplayObjectContextPopupMenu")]
         internal static extern void DisplayObjectContextPopupMenu(Rect position, Object[] context, int contextUserData);

@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using UnityEditor.Experimental.SceneManagement;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -226,7 +226,7 @@ namespace UnityEditor.Search
         /// <param name="pingSelection">If true, will ping the selected objects.</param>
         public static void SelectMultipleItems(IEnumerable<SearchItem> items, bool focusProjectBrowser = false, bool pingSelection = true)
         {
-            Selection.objects = items.Select(i => i.provider.toObject(i, typeof(UnityEngine.Object))).Where(o => o).ToArray();
+            Selection.objects = items.Select(i => i.ToObject()).Where(o => o).ToArray();
             if (Selection.objects.Length == 0)
             {
                 var firstItem = items.FirstOrDefault();
@@ -394,6 +394,36 @@ namespace UnityEditor.Search
             refs.Remove(objPath);
 
             return refs;
+        }
+
+        static readonly Dictionary<string, SearchProvider> s_GroupProviders = new Dictionary<string, SearchProvider>();
+        internal static SearchProvider CreateGroupProvider(SearchProvider templateProvider, string groupId, int groupPriority, bool cacheProvider = false)
+        {
+            if (cacheProvider && s_GroupProviders.TryGetValue(groupId, out var groupProvider))
+                return groupProvider;
+
+            groupProvider = new SearchProvider($"_group_provider_{groupId}", groupId)
+            {
+                type = templateProvider.id,
+                priority = groupPriority,
+                isExplicitProvider = true,
+                actions = templateProvider.actions,
+                showDetails = templateProvider.showDetails,
+                showDetailsOptions = templateProvider.showDetailsOptions,
+                fetchDescription = templateProvider.fetchDescription,
+                fetchItems = templateProvider.fetchItems,
+                fetchLabel = templateProvider.fetchLabel,
+                fetchPreview = templateProvider.fetchPreview,
+                fetchThumbnail = templateProvider.fetchThumbnail,
+                startDrag = templateProvider.startDrag,
+                toObject = templateProvider.toObject,
+                trackSelection = templateProvider.trackSelection
+            };
+
+            if (cacheProvider)
+                s_GroupProviders[groupId] = groupProvider;
+
+            return groupProvider;
         }
     }
 }

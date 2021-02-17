@@ -689,6 +689,39 @@ namespace NiceIO
         }
 
         /// <summary>
+        /// Tests whether this NPath has the provided extension.
+        /// </summary>
+        /// <param name="extension">The extension to test for.</param>
+        /// <returns>True if this NPath has has the provided extension. False otherwise.</returns>
+        /// <remarks>The extension "*" is special, and will return true for all paths if specified.</remarks>
+        public bool HasExtension(string extension)
+        {
+            if (extension == "*")
+                return true;
+
+            if (IsRoot)
+                return false;
+
+            if (extension.Length > _path.Length)
+                return false;
+
+            int extensionOffset = _path.Length - extension.Length;
+            if (extension.Length == 0 || extension[0] != '.')
+            {
+                // Supplied extension doesn't have a dot, so we must check
+                // that there is a dot or a slash before the extension in our path
+                if (extensionOffset < 1)
+                    return false;
+
+                char extensionSeparator = _path[extensionOffset - 1];
+                if (extensionSeparator != '.' && extensionSeparator != '/')
+                    return false;
+            }
+
+            return string.Compare(extension, 0, _path, extensionOffset, extension.Length, StringComparison.OrdinalIgnoreCase) == 0;
+        }
+
+        /// <summary>
         /// Tests whether this NPath has one of the provided extensions, or if no extensions are provided, whether it has any extension at all.
         /// </summary>
         /// <param name="extensions">The possible extensions to test for.</param>
@@ -696,13 +729,16 @@ namespace NiceIO
         /// <remarks>The extension "*" is special, and will return true for all paths if specified.</remarks>
         public bool HasExtension(params string[] extensions)
         {
-            if (extensions.Contains("*"))
-                return true;
             if (extensions.Length == 0)
                 return FileName.Contains(".");
 
-            var extension = ("." + Extension).ToUpperInvariant();
-            return extensions.Any(e => WithDot(e).ToUpperInvariant() == extension);
+            foreach (var e in extensions)
+            {
+                if (HasExtension(e))
+                    return true;
+            }
+
+            return false;
         }
 
         private static string WithDot(string extension)
@@ -984,20 +1020,25 @@ namespace NiceIO
                 throw new NotSupportedException(
                     "Delete is not supported on a root level directory because it would be dangerous:" + ToString());
 
-            if (FileExists())
-                FileSystem.Active.File_Delete(this);
-            else if (DirectoryExists())
-                try
-                {
+            try
+            {
+                if (FileExists())
+                    FileSystem.Active.File_Delete(this);
+                else if (DirectoryExists())
                     FileSystem.Active.Directory_Delete(this, true);
-                }
-                catch (IOException)
-                {
-                    if (deleteMode == DeleteMode.Normal)
-                        throw;
-                }
-            else
-                throw new InvalidOperationException("Trying to delete a path that does not exist: " + ToString());
+                else
+                    throw new InvalidOperationException("Trying to delete a path that does not exist: " + ToString());
+            }
+            catch (IOException)
+            {
+                if (deleteMode == DeleteMode.Normal)
+                    throw;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                if (deleteMode == DeleteMode.Normal)
+                    throw;
+            }
         }
 
         /// <summary>

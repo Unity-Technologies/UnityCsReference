@@ -6,7 +6,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEditor.SearchService;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -21,9 +20,9 @@ namespace UnityEditor.Search
 
         public Action<IEnumerable<string>> onAsyncItemsReceived { get; set; }
 
-        public SearchApiSession(SearchProvider provider)
+        public SearchApiSession(params SearchProvider[] providers)
         {
-            context = new SearchContext(new[] { provider });
+            context = new SearchContext(providers);
         }
 
         ~SearchApiSession()
@@ -138,6 +137,41 @@ namespace UnityEditor.Search
     {
         public override string providerId => "asset";
 
+        static SearchProvider s_AssetDatabaseLegacyProvider;
+
+        public static SearchProvider CreateAssetDatabaseLegacyProvider() => new SearchProvider("adb", FetchItems);
+        private static IEnumerable<SearchItem> FetchItems(SearchContext context, SearchProvider provider)
+        {
+            var searchFilter = new SearchFilter
+            {
+                searchArea = SearchFilter.SearchArea.AllAssets,
+                showAllHits = true,
+                originalText = context.searchQuery
+            };
+            SearchUtility.ParseSearchString(context.searchQuery, searchFilter);
+            searchFilter.originalText = context.searchQuery;
+
+            var rIt = AssetDatabase.EnumerateAllAssets(searchFilter);
+            while (rIt.MoveNext())
+            {
+                if (rIt.Current.pptrValue)
+                    yield return provider.CreateItem(context, GlobalObjectId.GetGlobalObjectIdSlow(rIt.Current.instanceID).ToString());
+            }
+        }
+
+
+        public override void BeginSession(ISearchContext context)
+        {
+            if (searchSessions.ContainsKey(context.guid))
+                return;
+
+            var engineProvider = SearchService.GetProvider(providerId);
+
+            if (s_AssetDatabaseLegacyProvider == null)
+                s_AssetDatabaseLegacyProvider = CreateAssetDatabaseLegacyProvider();
+            searchSessions.Add(context.guid, new SearchApiSession(s_AssetDatabaseLegacyProvider, engineProvider));
+        }
+
         public virtual IEnumerable<string> Search(ISearchContext context, string query, Action<IEnumerable<string>> asyncItemsReceived)
         {
             if (!searchSessions.ContainsKey(context.guid))
@@ -162,7 +196,14 @@ namespace UnityEditor.Search
             }
             searchSession.context.searchText = query;
             var items = SearchService.GetItems(searchSession.context);
-            return items.Select(item => item.id);
+            return items.Select(item => ToPath(item));
+        }
+
+        private string ToPath(SearchItem item)
+        {
+            if (GlobalObjectId.TryParse(item.id, out var gid))
+                return AssetDatabase.GUIDToAssetPath(gid.assetGUID);
+            return item.id;
         }
     }
 
@@ -224,12 +265,13 @@ namespace UnityEditor.Search
         }
     }
 
-    //[ObjectSelectorEngine]
+    // TODO: To renenable when SearchPicker epics is being worked on.
+    // [ObjectSelectorEngine]
     class ObjectSelectorEngine : QuickSearchEngine, IObjectSelectorEngine
     {
         // Internal for tests purposes.
         internal QuickSearch qsWindow;
-        public override string providerId => "res";
+        public override string providerId => "asset";
 
         public override void BeginSearch(ISearchContext context, string query) {}
         public override void BeginSession(ISearchContext context) {}

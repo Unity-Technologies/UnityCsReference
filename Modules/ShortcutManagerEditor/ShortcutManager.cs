@@ -226,25 +226,29 @@ namespace UnityEditor.ShortcutManagement
         public ShortcutBinding GetShortcutBinding(string shortcutId)
         {
             if (shortcutId == null)
-                throw new ArgumentNullException(nameof(shortcutId));
+                throw new ArgumentNullException(nameof(shortcutId) + ":" + shortcutId);
 
             var shortcutEntries = m_ShortcutProfileManager.GetAllShortcuts();
             var shortcutEntry = shortcutEntries.FirstOrDefault(entry => entry.identifier.path == shortcutId);
             if (shortcutEntry == null)
-                throw new ArgumentException("Shortcut not available", nameof(shortcutId));
-
+            {
+                if (MenuService.IsShortcutAvailableInMode(shortcutId))
+                    throw new ArgumentException("Shortcut not available", nameof(shortcutId) + ": " + shortcutId);
+                else
+                    return ShortcutBinding.empty;
+            }
             return new ShortcutBinding(shortcutEntry.combinations);
         }
 
         public void RebindShortcut(string shortcutId, ShortcutBinding binding)
         {
             if (shortcutId == null)
-                throw new ArgumentNullException(nameof(shortcutId));
+                throw new ArgumentNullException(nameof(shortcutId) + ":" + shortcutId);
 
             var shortcutEntries = m_ShortcutProfileManager.GetAllShortcuts();
             var shortcutEntry = shortcutEntries.FirstOrDefault(entry => entry.identifier.path == shortcutId);
             if (shortcutEntry == null)
-                throw new ArgumentException("Shortcut not available", nameof(shortcutId));
+                throw new ArgumentException("Shortcut not available", nameof(shortcutId) + ": " + shortcutId);
 
             if (IsProfileReadOnly(activeProfileId))
                 throw new InvalidOperationException("Cannot rebind shortcut on read-only profile");
@@ -255,12 +259,12 @@ namespace UnityEditor.ShortcutManagement
         public void ClearShortcutOverride(string shortcutId)
         {
             if (shortcutId == null)
-                throw new ArgumentNullException(shortcutId);
+                throw new ArgumentNullException(nameof(shortcutId) + ": " + shortcutId);
 
             var shortcutEntries = m_ShortcutProfileManager.GetAllShortcuts();
             var shortcutEntry = shortcutEntries.FirstOrDefault(entry => entry.identifier.path == shortcutId);
             if (shortcutEntry == null)
-                throw new ArgumentException("Shortcut not available", nameof(shortcutId));
+                throw new ArgumentException("Shortcut not available", nameof(shortcutId) + ": " + shortcutId);
 
             if (IsProfileReadOnly(activeProfileId))
                 throw new InvalidOperationException("Cannot clear shortcut override on read-only profile");
@@ -271,12 +275,12 @@ namespace UnityEditor.ShortcutManagement
         public bool IsShortcutOverridden(string shortcutId)
         {
             if (shortcutId == null)
-                throw new ArgumentNullException(nameof(shortcutId));
+                throw new ArgumentNullException(nameof(shortcutId) + ": " + shortcutId);
 
             var shortcutEntries = m_ShortcutProfileManager.GetAllShortcuts();
             var shortcutEntry = shortcutEntries.FirstOrDefault(entry => entry.identifier.path == shortcutId);
             if (shortcutEntry == null)
-                throw new ArgumentException("Shortcut not available", nameof(shortcutId));
+                throw new ArgumentException("Shortcut not available", nameof(shortcutId) + ": " + shortcutId);
 
             return shortcutEntry.overridden;
         }

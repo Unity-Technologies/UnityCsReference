@@ -79,13 +79,20 @@ namespace UnityEditor
         private static readonly int s_SortingLayerFieldHash = "s_SortingLayerFieldHash".GetHashCode();
         private static readonly int s_TextFieldDropDownHash = "s_TextFieldDropDown".GetHashCode();
 
-        private static int s_DragCandidateState = 0;
+        private enum DragCandidateState
+        {
+            NotDragging,
+            InitiatedDragging,
+            CurrentlyDragging
+        }
+        private static DragCandidateState s_DragCandidateState = DragCandidateState.NotDragging;
         private const float kDragDeadzone = 16;
         private static Vector2 s_DragStartPos;
         private static double s_DragStartValue = 0;
         private static long s_DragStartIntValue = 0;
         private static double s_DragSensitivity = 0;
         private static readonly GUIContent s_LargerChar = EditorGUIUtility.TextContent("W");
+        // kMiniLabelW is used for all the PrefixLabelWidths irrsepective of the character,to fix the case 1297283
         internal static float kMiniLabelW => EditorGUI.CalcPrefixLabelWidth(s_LargerChar);
         internal const float kPrefixPaddingRight = 2;
         internal const float kLabelW = 80;
@@ -600,14 +607,14 @@ namespace UnityEditor
             // Cut
             if (RecycledTextEditor.s_AllowContextCutOrPaste)
             {
-                if (s_RecycledEditor.hasSelection && !s_RecycledEditor.isPasswordField && enabled && !EditorGUI.showMixedValue)
+                if ((s_RecycledEditor.hasSelection || s_DelayedTextEditor.hasSelection) && !s_RecycledEditor.isPasswordField && enabled && !EditorGUI.showMixedValue)
                     pm.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, new PopupMenuEvent(EventCommandNames.Cut, GUIView.current).SendEvent);
                 else
                     pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Cut"));
             }
 
             // Copy -- when GUI is disabled, allow Copy even with no selection (will copy everything)
-            if ((s_RecycledEditor.hasSelection || !enabled) && !s_RecycledEditor.isPasswordField && !EditorGUI.showMixedValue)
+            if (((s_RecycledEditor.hasSelection || s_DelayedTextEditor.hasSelection) || !enabled) && !s_RecycledEditor.isPasswordField && !EditorGUI.showMixedValue)
                 pm.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, new PopupMenuEvent(EventCommandNames.Copy, GUIView.current).SendEvent);
             else
                 pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Copy"));
@@ -2020,7 +2027,7 @@ namespace UnityEditor
                         evt.Use();
                         GUIUtility.keyboardControl = id;
 
-                        s_DragCandidateState = 1;
+                        s_DragCandidateState = DragCandidateState.InitiatedDragging;
                         s_DragStartValue = doubleVal;
                         s_DragStartIntValue = longVal;
                         s_DragStartPos = evt.mousePosition;
@@ -2030,10 +2037,10 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.MouseUp:
-                    if (GUIUtility.hotControl == id && s_DragCandidateState != 0)
+                    if (GUIUtility.hotControl == id && s_DragCandidateState != DragCandidateState.NotDragging)
                     {
                         GUIUtility.hotControl = 0;
-                        s_DragCandidateState = 0;
+                        s_DragCandidateState = DragCandidateState.NotDragging;
                         evt.Use();
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
@@ -2043,15 +2050,15 @@ namespace UnityEditor
                     {
                         switch (s_DragCandidateState)
                         {
-                            case 1:
+                            case DragCandidateState.InitiatedDragging:
                                 if ((Event.current.mousePosition - s_DragStartPos).sqrMagnitude > kDragDeadzone)
                                 {
-                                    s_DragCandidateState = 2;
+                                    s_DragCandidateState = DragCandidateState.CurrentlyDragging;
                                     GUIUtility.keyboardControl = id;
                                 }
                                 evt.Use();
                                 break;
-                            case 2:
+                            case DragCandidateState.CurrentlyDragging:
                                 // Don't change the editor.content.text here.
                                 // Instead, wait for scripting validation to enforce clamping etc. and then
                                 // update the editor.content.text in the repaint event.
@@ -2072,7 +2079,7 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.KeyDown:
-                    if (GUIUtility.hotControl == id && evt.keyCode == KeyCode.Escape && s_DragCandidateState != 0)
+                    if (GUIUtility.hotControl == id && evt.keyCode == KeyCode.Escape && s_DragCandidateState != DragCandidateState.NotDragging)
                     {
                         doubleVal = s_DragStartValue;
                         longVal = s_DragStartIntValue;
@@ -2263,6 +2270,7 @@ namespace UnityEditor
         {
             // Figure out which string should be shown: If we're currently editing we disregard the incoming value
             string str;
+
             if (HasKeyboardFocus(id))
             {
                 // If we just got focus, set up s_RecycledCurrentEditingString
@@ -2332,18 +2340,125 @@ namespace UnityEditor
             EndProperty();
         }
 
+        internal static void DelayedNumberFieldInternal(Rect position, Rect dragHotZone, int id, bool isDouble, ref double doubleVal, ref long longVal, string formatString, GUIStyle style, bool draggable, double dragSensitivity)
+        {
+            string allowedCharacters = isDouble ? s_AllowedCharactersForFloat : s_AllowedCharactersForInt;
+
+            Event evt = Event.current;
+            string str;
+            if (HasKeyboardFocus(id) || (evt.type == EventType.MouseDown && evt.button == 0 && position.Contains(evt.mousePosition)))
+            {
+                if (!s_DelayedTextEditor.IsEditingControl(id) && s_DragCandidateState == DragCandidateState.NotDragging)
+                {
+                    str = s_RecycledCurrentEditingString = isDouble ? doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : longVal.ToString(formatString, CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    str = s_RecycledCurrentEditingString;
+                    if (evt.type == EventType.ValidateCommand && evt.commandName == EventCommandNames.UndoRedoPerformed)
+                    {
+                        str = isDouble ? doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : longVal.ToString(formatString, CultureInfo.InvariantCulture);
+                    }
+                }
+            }
+            else
+            {
+                str = isDouble ? doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : longVal.ToString(formatString, CultureInfo.InvariantCulture);
+            }
+
+            if (draggable)
+            {
+                double dragDouble = 0;
+                long dragLong = 0;
+                bool isConverted = isDouble ? StringToDouble(str, out dragDouble) : StringToLong(str, out dragLong);
+
+                if (isConverted)
+                {
+                    DragNumberValue(dragHotZone, id, isDouble, ref dragDouble, ref dragLong, dragSensitivity);
+                    str = isDouble ? dragDouble.ToString(formatString, CultureInfo.InvariantCulture) : dragLong.ToString(formatString, CultureInfo.InvariantCulture);
+                }
+            }
+
+            bool changed;
+            bool wasChanged = GUI.changed;
+            str = s_DelayedTextEditor.OnGUI(id, str, out changed);
+            GUI.changed = false;
+
+            if (!changed)
+            {
+                str = DoTextField(s_DelayedTextEditor, id, position, str, style, allowedCharacters, out changed, false, false, false);
+                GUI.changed = false;
+
+                // If we are still actively editing, return the input values
+                if (GUIUtility.keyboardControl == id)
+                {
+                    s_RecycledCurrentEditingString = str;
+
+                    if (!s_DelayedTextEditor.IsEditingControl(id) && s_DragCandidateState == DragCandidateState.NotDragging)
+                    {
+                        bool equalValues = isDouble ? str.Equals(doubleVal) : str.Equals(longVal);
+                        if (!equalValues && (!showMixedValue || (showMixedValue && k_MultiEditValueString != str)))
+                        {
+                            GUI.changed = true;
+                            if (isDouble)
+                            {
+                                double newValue;
+                                doubleVal = StringToDouble(str, out newValue) ? newValue : doubleVal;
+                            }
+                            else
+                            {
+                                long newValue;
+                                longVal = StringToLong(str, out newValue) ? newValue : longVal;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // clean up the text
+                        if (isDouble)
+                        {
+                            s_RecycledCurrentEditingFloat = doubleVal;
+                        }
+                        else
+                        {
+                            s_RecycledCurrentEditingInt = longVal;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                GUI.changed = true;
+                if (isDouble)
+                {
+                    double newValue;
+                    doubleVal = StringToDouble(str, out newValue) ? newValue : doubleVal;
+                }
+                else
+                {
+                    long newValue;
+                    longVal = StringToLong(str, out newValue) ? newValue : longVal;
+                }
+            }
+            GUI.changed |= wasChanged;
+        }
+
         internal static float DelayedFloatFieldInternal(Rect position, GUIContent label, float value, GUIStyle style)
         {
             bool wasChanged = GUI.changed;
 
-            BeginChangeCheck();
             int id = GUIUtility.GetControlID(s_DelayedTextFieldHash, FocusType.Keyboard, position);
-            string floatStr = DelayedTextFieldInternal(position, id, label, value.ToString(CultureInfo.InvariantCulture), s_AllowedCharactersForFloat, style);
+            long dummy = 0;
+            double doubleValue = value;
+            Rect dragHotzone = new Rect(0, 0, 0, 0);
+            bool draggable = SetDelayedDraggable(ref position, ref dragHotzone, label, id);
+
+            BeginChangeCheck();
+            DelayedNumberFieldInternal(position, dragHotzone, id, true, ref doubleValue, ref dummy, kFloatFieldFormatString, style, draggable, Event.current.GetTypeForControl(id) == EventType.MouseDown ? (float)NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue) : 0.0f);
             if (EndChangeCheck())
             {
-                double newValue;
-                if (StringToDouble(floatStr, out newValue) && (float)newValue != value)
-                    return (float)newValue;
+                if ((float)doubleValue != value)
+                    return (float)doubleValue;
                 GUI.changed = wasChanged;
             }
             return value;
@@ -2363,17 +2478,20 @@ namespace UnityEditor
 
         internal static double DelayedDoubleFieldInternal(Rect position, GUIContent label, double value, GUIStyle style)
         {
-            if (label != null)
-                position = PrefixLabel(position, label);
-
             bool wasChanged = GUI.changed;
+
+            int id = GUIUtility.GetControlID(s_DelayedTextFieldHash, FocusType.Keyboard, position);
+            long dummy = 0;
+            double newDoubleValue = value;
+            Rect dragHotzone = new Rect(0, 0, 0, 0);
+            bool draggable = SetDelayedDraggable(ref position, ref dragHotzone, label, id);
+
             BeginChangeCheck();
-            string doubleStr = DelayedTextFieldInternal(position, value.ToString(CultureInfo.InvariantCulture), s_AllowedCharactersForFloat, style);
+            DelayedNumberFieldInternal(position, dragHotzone, id, true, ref newDoubleValue, ref dummy, kFloatFieldFormatString, style, draggable, Event.current.GetTypeForControl(id) == EventType.MouseDown ? (float)NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue) : 0.0f);
             if (EndChangeCheck())
             {
-                double newValue;
-                if (StringToDouble(doubleStr, out newValue) && newValue != value)
-                    return newValue;
+                if (newDoubleValue != value)
+                    return newDoubleValue;
                 GUI.changed = wasChanged;
             }
             return value;
@@ -2383,14 +2501,18 @@ namespace UnityEditor
         {
             bool wasChanged = GUI.changed;
 
-            BeginChangeCheck();
             int id = GUIUtility.GetControlID(s_DelayedTextFieldHash, FocusType.Keyboard, position);
-            string intStr = DelayedTextFieldInternal(position, id, label, value.ToString(), s_AllowedCharactersForInt, style);
+            double dummy = 0;
+            long longValue = value;
+            Rect dragHotzone = new Rect(0, 0, 0, 0);
+            bool draggable = SetDelayedDraggable(ref position, ref dragHotzone, label, id);
+
+            BeginChangeCheck();
+            DelayedNumberFieldInternal(position, dragHotzone, id, false, ref dummy, ref longValue, kFloatFieldFormatString, style, draggable, Event.current.GetTypeForControl(id) == EventType.MouseDown ? (float)NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue) : 0.0f);
             if (EndChangeCheck())
             {
-                int newValue;
-                if (ExpressionEvaluator.Evaluate(intStr, out newValue) && newValue != value)
-                    return newValue;
+                if ((int)longValue != value)
+                    return (int)longValue;
                 GUI.changed = wasChanged;
             }
             return value;
@@ -2406,6 +2528,24 @@ namespace UnityEditor
                 property.intValue = newValue;
 
             EndProperty();
+        }
+
+        internal static bool SetDelayedDraggable(ref Rect position, ref Rect dragHotzone, GUIContent label, int id)
+        {
+            //Fields without labels are not considered draggable
+            bool draggable = label != GUIContent.none;
+            if (draggable)
+            {
+                dragHotzone = position;
+                position = PrefixLabel(position, id, label);
+                dragHotzone.xMax = position.x;
+            }
+            else
+            {
+                position = IndentedRect(position);
+            }
+
+            return draggable;
         }
 
         internal static int IntFieldInternal(Rect position, int value, GUIStyle style)
@@ -2602,29 +2742,36 @@ namespace UnityEditor
 
                         pm.AddItem(EditorGUIUtility.TrTextContent("Duplicate Array Element"), false, (a) =>
                         {
-                            ReorderableListWrapper list = PropertyHandler.s_reorderableLists[ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)];
-
-                            // If we have a ReorderableList associated with this property lets use list selection array
-                            // and apply this action to all selected elements thus having better integration with
-                            // ReorderableLists multi-selection features
-                            if (list != null && list.m_ReorderableList.selectedIndices.Count > 0)
+                            if (PropertyHandler.s_reorderableLists.ContainsKey(ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)))
                             {
-                                for (int i = list.m_ReorderableList.selectedIndices.Count - 1; i >= 0; i--)
+                                ReorderableListWrapper list = PropertyHandler.s_reorderableLists[ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)];
+
+                                // If we have a ReorderableList associated with this property lets use list selection array
+                                // and apply this action to all selected elements thus having better integration with
+                                // ReorderableLists multi-selection features
+                                if (list != null && list.m_ReorderableList.selectedIndices.Count > 0)
                                 {
-                                    if (list.m_ReorderableList.selectedIndices[i] >= parentArrayProperty.arraySize) continue;
-
-                                    SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(list.m_ReorderableList.selectedIndices[i]);
-                                    if (resolvedProperty != null)
+                                    for (int i = list.m_ReorderableList.selectedIndices.Count - 1; i >= 0; i--)
                                     {
-                                        if (!TargetChoiceHandler.DuplicateArrayElement(resolvedProperty)) continue;
+                                        if (list.m_ReorderableList.selectedIndices[i] >= parentArrayProperty.arraySize) continue;
+
+                                        SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(list.m_ReorderableList.selectedIndices[i]);
+                                        if (resolvedProperty != null)
+                                        {
+                                            if (!TargetChoiceHandler.DuplicateArrayElement(resolvedProperty)) continue;
+                                        }
+
+                                        for (int j = i; j < list.m_ReorderableList.selectedIndices.Count; j++)
+                                        {
+                                            list.m_ReorderableList.m_Selection[j]++;
+                                        }
                                     }
 
-                                    for (int j = i; j < list.m_ReorderableList.selectedIndices.Count; j++)
-                                    {
-                                        list.m_ReorderableList.m_Selection[j]++;
-                                    }
+                                    if (list.m_ReorderableList.onChangedCallback != null)
+                                        list.m_ReorderableList.onChangedCallback(list.m_ReorderableList);
+
+                                    ReorderableList.ClearExistingListCaches();
                                 }
-                                ReorderableList.ClearExistingListCaches();
                             }
                             else
                             {
@@ -2634,26 +2781,31 @@ namespace UnityEditor
                         }, propertyWithPath);
                         pm.AddItem(EditorGUIUtility.TrTextContent("Delete Array Element"), false, (a) =>
                         {
-                            ReorderableListWrapper list = PropertyHandler.s_reorderableLists[ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)];
-
-                            // If we have a ReorderableList associated with this property lets use list selection array
-                            // and apply this action to all selected elements thus having better integration with
-                            // ReorderableLists multi-selection features
-                            if (list != null && list.m_ReorderableList.selectedIndices.Count > 0)
+                            if (PropertyHandler.s_reorderableLists.ContainsKey(ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)))
                             {
-                                foreach (var selected in list.m_ReorderableList.selectedIndices.Reverse<int>())
+                                ReorderableListWrapper list = PropertyHandler.s_reorderableLists[ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)];
+
+                                // If we have a ReorderableList associated with this property lets use list selection array
+                                // and apply this action to all selected elements thus having better integration with
+                                // ReorderableLists multi-selection features
+                                if (list != null && list.m_ReorderableList.selectedIndices.Count > 0)
                                 {
-                                    if (selected >= parentArrayProperty.arraySize) continue;
-
-                                    SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(selected);
-                                    if (resolvedProperty != null)
+                                    foreach (var selected in list.m_ReorderableList.selectedIndices.Reverse<int>())
                                     {
-                                        if (!TargetChoiceHandler.DeleteArrayElement(resolvedProperty)) continue;
-                                    }
-                                }
+                                        if (selected >= parentArrayProperty.arraySize) continue;
 
-                                list.m_ReorderableList.m_Selection.Clear();
-                                ReorderableList.ClearExistingListCaches();
+                                        SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(selected);
+                                        if (resolvedProperty != null)
+                                        {
+                                            if (!TargetChoiceHandler.DeleteArrayElement(resolvedProperty)) continue;
+                                        }
+                                    }
+
+                                    list.m_ReorderableList.m_Selection.Clear();
+                                    if (list.m_ReorderableList.onChangedCallback != null)
+                                        list.m_ReorderableList.onChangedCallback(list.m_ReorderableList);
+                                    ReorderableList.ClearExistingListCaches();
+                                }
                             }
                             else
                             {
@@ -4185,7 +4337,8 @@ namespace UnityEditor
             BeginChangeCheck();
             // Right align the text
             var oldAlignment = EditorStyles.label.alignment;
-            EditorStyles.label.alignment = TextAnchor.MiddleRight;
+            EditorStyles.label.alignment = TextAnchor.MiddleLeft;
+
             MultiFloatFieldInternal(position, s_XYLabels, s_Vector2Floats, kMiniLabelW);
             if (EndChangeCheck())
             {
@@ -4231,7 +4384,7 @@ namespace UnityEditor
 
             // Right align the text
             var oldAlignment = EditorStyles.label.alignment;
-            EditorStyles.label.alignment = TextAnchor.MiddleRight;
+            EditorStyles.label.alignment = TextAnchor.MiddleLeft;
             MultiPropertyFieldInternal(position, s_XYLabels, cur, PropertyVisibility.All, null, kMiniLabelW);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
 
@@ -4251,7 +4404,7 @@ namespace UnityEditor
                 value.x = s_Vector2Ints[0];
                 value.y = s_Vector2Ints[1];
             }
-            position.y += kSingleLineHeight;
+            position.y += kSingleLineHeight + 2;
             s_Vector2Ints[0] = value.width;
             s_Vector2Ints[1] = value.height;
             BeginChangeCheck();
@@ -4438,6 +4591,15 @@ namespace UnityEditor
             MultiFloatFieldInternal(position, subLabels, values);
         }
 
+        internal static float GetLabelWidth(GUIContent Label, float prefixLabelWidth = -1)
+        {
+            float LabelWidth = EditorGUI.CalcPrefixLabelWidth(Label);
+            if (LabelWidth > kMiniLabelW)
+                return prefixLabelWidth > 0 ? prefixLabelWidth : LabelWidth;
+            else
+                return prefixLabelWidth > 0 ? prefixLabelWidth : kMiniLabelW;
+        }
+
         internal static void MultiFloatFieldInternal(Rect position, GUIContent[] subLabels, float[] values, float prefixLabelWidth = -1)
         {
             int eCount = values.Length;
@@ -4448,7 +4610,7 @@ namespace UnityEditor
             indentLevel = 0;
             for (int i = 0; i < values.Length; i++)
             {
-                EditorGUIUtility.labelWidth = prefixLabelWidth > 0 ? prefixLabelWidth : EditorGUI.CalcPrefixLabelWidth(subLabels[i]);
+                EditorGUIUtility.labelWidth = GetLabelWidth(subLabels[i], prefixLabelWidth);
                 values[i] = FloatField(nr, subLabels[i], values[i]);
                 nr.x += w + kSpacingSubLabel;
             }
@@ -4467,7 +4629,7 @@ namespace UnityEditor
             var guiEnabledState = GUI.enabled;
             for (int i = 0; i < values.Length; i++)
             {
-                EditorGUIUtility.labelWidth = prefixLabelWidth > 0 ? prefixLabelWidth : EditorGUI.CalcPrefixLabelWidth(subLabels[i]);
+                EditorGUIUtility.labelWidth = GetLabelWidth(subLabels[i], prefixLabelWidth);
 
                 if (locked && i > 0)
                 {
@@ -4498,7 +4660,8 @@ namespace UnityEditor
             indentLevel = 0;
             for (int i = 0; i < values.Length; i++)
             {
-                EditorGUIUtility.labelWidth = EditorGUI.CalcPrefixLabelWidth(subLabels[i]);
+                EditorGUIUtility.labelWidth = GetLabelWidth(subLabels[i]);
+
                 values[i] = IntField(nr, subLabels[i], values[i]);
                 nr.x += w + kSpacingSubLabel;
             }
@@ -4535,7 +4698,7 @@ namespace UnityEditor
             indentLevel = 0;
             for (int i = 0; i < subLabels.Length; i++)
             {
-                EditorGUIUtility.labelWidth = prefixLabelWidth > 0 ? prefixLabelWidth : EditorGUI.CalcPrefixLabelWidth(subLabels[i]);
+                EditorGUIUtility.labelWidth = GetLabelWidth(subLabels[i], prefixLabelWidth);
 
                 if (disabledMask != null)
                     BeginDisabled(disabledMask[i]);
@@ -5051,7 +5214,7 @@ namespace UnityEditor
 
                 if (!iconProperty.hasMultipleDifferentValues)
                 {
-                    icon = EditorGUIUtility.GetSkinnedIcon(AssetPreview.GetMiniThumbnail(targets[0]));
+                    icon = AssetPreview.GetMiniThumbnail(targets[0]);
                 }
                 if (icon == null)
                 {
@@ -5162,6 +5325,16 @@ namespace UnityEditor
                 , position.y + (baseStyle.fixedHeight - settingsElementSize.y) / 2 + baseStyle.padding.top, settingsElementSize.x, settingsElementSize.y);
         }
 
+        internal static bool EnableCheckBoxInTitlebar(Object targetObj)
+        {
+            if (targetObj is ScriptableObject && targetObj is StateMachineBehaviour)
+                return true;
+            else if (targetObj is ScriptableObject)
+                return false;
+            else
+                return true;
+        }
+
         // Make an inspector-window-like titlebar.
         internal static void DoInspectorTitlebar(Rect position, int id, bool foldout, Object[] targetObjs, SerializedProperty enabledProperty, GUIStyle baseStyle)
         {
@@ -5195,7 +5368,8 @@ namespace UnityEditor
                 int thisEnabled = EditorUtility.GetObjectEnabled(targetObj);
                 if (enabled == -1)
                 {
-                    enabled = thisEnabled;
+                    if (EnableCheckBoxInTitlebar(targetObj))
+                        enabled = thisEnabled;
                 }
                 else if (enabled != thisEnabled)
                 {
@@ -5284,7 +5458,7 @@ namespace UnityEditor
 
             if (evt.type == EventType.Repaint)
             {
-                var icon = EditorGUIUtility.GetSkinnedIcon(AssetPreview.GetMiniThumbnail(targetObjs[0]));
+                var icon = AssetPreview.GetMiniThumbnail(targetObjs[0]);
                 GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(icon), iconRect.Contains(Event.current.mousePosition), false, false, false);
 
                 if (isAddedComponentAndEventIsRepaint)
@@ -5809,6 +5983,24 @@ namespace UnityEditor
             s_LabelHighlightContext = null;
         }
 
+        internal static bool DrawLabelHighlight(Rect position, GUIContent label, GUIStyle style)
+        {
+            if (!IsLabelHighlightEnabled() || !SearchUtils.MatchSearchGroups(s_LabelHighlightContext, label.text, out var startHighlight, out var endHighlight))
+                return false;
+
+            const bool isActive = false;
+            const bool hasKeyboardFocus = true; // This ensure we draw the selection text over the label.
+            const bool drawAsComposition = false;
+
+            // Override text color when in label highlight regardless of the GUIStyleState
+            var oldFocusedTextColor = style.focused.textColor;
+            style.focused.textColor = s_LabelHighlightColor;
+            style.DrawWithTextSelection(position, label, isActive, hasKeyboardFocus, startHighlight, endHighlight + 1, drawAsComposition, s_LabelHighlightSelectionColor);
+            style.focused.textColor = oldFocusedTextColor;
+
+            return true;
+        }
+
         // Draw a prefix label and select the corresponding control if the label is clicked.
         // If no id or an id of 0 is specified, the id of the next control will be used.
         // For regular inline controls, the PrefixLabel method should be used,
@@ -5842,27 +6034,11 @@ namespace UnityEditor
                 case EventType.Repaint:
                     labelPosition.width += 1;
 
-                    int startHighlight, endHighlight;
                     Color oldColor = GUI.backgroundColor;
-
                     GUI.backgroundColor = Color.white;
 
-                    if (IsLabelHighlightEnabled() && SearchUtils.MatchSearchGroups(s_LabelHighlightContext, label.text, out startHighlight, out endHighlight))
-                    {
-                        const bool isActive = false;
-                        const bool hasKeyboardFocus = true; // This ensure we draw the selection text over the label.
-                        const bool drawAsComposition = false;
-
-                        // Override text color when in label highlight regardless of the GUIStyleState
-                        var oldFocusedTextColor = style.focused.textColor;
-                        style.focused.textColor = s_LabelHighlightColor;
-                        style.DrawWithTextSelection(labelPosition, label, isActive, hasKeyboardFocus, startHighlight, endHighlight + 1, drawAsComposition, s_LabelHighlightSelectionColor);
-                        style.focused.textColor = oldFocusedTextColor;
-                    }
-                    else
-                    {
+                    if (!EditorGUI.DrawLabelHighlight(labelPosition, label, style))
                         style.DrawPrefixLabel(labelPosition, label, id);
-                    }
 
                     GUI.backgroundColor = oldColor;
                     break;
@@ -6072,8 +6248,8 @@ namespace UnityEditor
                 GameObject go = PrefabUtility.GetGameObject(target);
                 if (go != null && go.scene.IsValid() && EditorSceneManager.IsPreviewScene(go.scene))
                 {
-                    var prefabStage = Experimental.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();
-                    if (prefabStage != null && prefabStage.mode == Experimental.SceneManagement.PrefabStage.Mode.InContext)
+                    var prefabStage = SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();
+                    if (prefabStage != null && prefabStage.mode == SceneManagement.PrefabStage.Mode.InContext)
                     {
                         var propertyPath = property.propertyPath;
                         ScriptableObject driver = prefabStage;
@@ -6712,10 +6888,8 @@ namespace UnityEditor
                         TagManager.GetDefinedLayers(ref m_FlagNames, ref m_FlagValues);
                         var toggleLabel = MaskFieldGUI.GetMaskButtonValue(property.intValue, m_FlagNames, m_FlagValues);
                         toggleLabel = property.hasMultipleDifferentValues ? "—" : toggleLabel;
-
-                        GUIContent maskContent = EditorGUIUtility.TrTextContent(property.displayName, "Specifies which layers will be affected or excluded from the light's effect on objects in the scene.");
-
-                        position = PrefixLabel(position, maskContent, EditorStyles.label);
+                        if (label != null)
+                            position = PrefixLabel(position, label, EditorStyles.label);
                         bool toggled = DropdownButton(position, new GUIContent(toggleLabel), FocusType.Keyboard, EditorStyles.layerMaskField);
                         if (toggled)
                         {
@@ -6837,8 +7011,7 @@ namespace UnityEditor
                     newChildrenAreExpanded = Foldout(position, childrenAreExpanded, s_PropertyFieldTempContent, true, foldoutStyle);
                 }
 
-
-                if (childrenAreExpanded && property.isArray && property.arraySize > property.serializedObject.maxArraySizeForMultiEditing && property.serializedObject.isEditingMultipleObjects)
+                if (childrenAreExpanded && property.isArray && property.minArraySize > property.serializedObject.maxArraySizeForMultiEditing && property.serializedObject.isEditingMultipleObjects)
                 {
                     Rect boxRect = position;
                     boxRect.xMin += EditorGUIUtility.labelWidth - indent;
@@ -6987,8 +7160,16 @@ namespace UnityEditor
                 case EventType.MouseDown:
                     if (GUIUtility.HitTest(position, evt) && evt.button == 0)
                     {
+                        GUI.GrabMouseControl(id);
                         Event.current.Use();
                         return true;
+                    }
+                    break;
+                case EventType.MouseUp:
+                    if (GUI.HasMouseControl(id))
+                    {
+                        GUI.ReleaseMouseControl();
+                        Event.current.Use();
                     }
                     break;
                 case EventType.KeyDown:
@@ -10519,15 +10700,42 @@ namespace UnityEditor
         }
 
         // A toggle that returns true on mouse down - like a popup button and returns true if checked
-        internal static bool DropDownToggle(ref bool toggled, GUIContent content, GUIStyle toggleButtonStyle)
+        internal static bool DropDownToggle(ref bool toggled, GUIContent content, GUIStyle toggleStyle)
         {
-            Rect toggleRect = GUILayoutUtility.GetRect(content, toggleButtonStyle);
-            Rect arrowRightRect = new Rect(toggleRect.xMax - toggleButtonStyle.padding.right, toggleRect.y, toggleButtonStyle.padding.right, toggleRect.height);
+            GUIStyle buttonStyle = GUIStyle.none;
+
+            // This is to be compatible with existing code
+            if (toggleStyle == EditorStyles.toolbarDropDownToggle || toggleStyle == EditorStyles.toolbarDropDownToggleRight)
+                buttonStyle = EditorStyles.toolbarDropDownToggleButton;
+
+            return DropDownToggle(ref toggled, content, toggleStyle, buttonStyle);
+        }
+
+        internal static bool DropDownToggle(ref bool toggled, GUIContent content, GUIStyle toggleStyle, GUIStyle toggleDropdownButtonStyle)
+        {
+            Rect toggleRect = GUILayoutUtility.GetRect(content, toggleStyle);
+            Rect arrowRightRect = Rect.zero;
+
+            if (toggleDropdownButtonStyle != null)
+            {
+                arrowRightRect = new Rect(toggleRect.xMax - toggleDropdownButtonStyle.fixedWidth - toggleDropdownButtonStyle.margin.right, toggleRect.y, toggleDropdownButtonStyle.fixedWidth, toggleRect.height);
+            }
+            else
+            {
+                arrowRightRect = new Rect(toggleRect.xMax - toggleStyle.padding.right, toggleRect.y, toggleStyle.padding.right, toggleRect.height);
+            }
+
             bool clicked = EditorGUI.DropdownButton(arrowRightRect, GUIContent.none, FocusType.Passive, GUIStyle.none);
 
             if (!clicked)
             {
-                toggled = GUI.Toggle(toggleRect, toggled, content, toggleButtonStyle);
+                toggled = GUI.Toggle(toggleRect, toggled, content, toggleStyle);
+            }
+
+            // Ensure that the dropdown button is rendered onto of the toggle
+            if (Event.current.type == EventType.Repaint && toggleDropdownButtonStyle != GUIStyle.none)
+            {
+                EditorGUI.DropdownButton(arrowRightRect, GUIContent.none, FocusType.Passive, toggleDropdownButtonStyle);
             }
 
             return clicked;

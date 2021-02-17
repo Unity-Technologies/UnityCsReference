@@ -71,7 +71,7 @@ namespace Unity.UI.Builder
 
             while (current != null)
             {
-                var customStyles = current.computedStyle.m_CustomProperties;
+                var customStyles = current.computedStyle.customProperties;
 
                 if (customStyles != null)
                 {
@@ -138,7 +138,7 @@ namespace Unity.UI.Builder
 
             while (current != null)
             {
-                var customStyles = current.computedStyle.m_CustomProperties;
+                var customStyles = current.computedStyle.customProperties;
                 if (customStyles != null)
                 {
                     foreach (var varPair in customStyles)

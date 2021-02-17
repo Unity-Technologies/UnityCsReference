@@ -167,6 +167,7 @@ namespace UnityEditor
                             kSCustomEditors[inspectAttr.m_InspectedType] = editors;
                         }
                         editors.Add(t);
+                        editors.Sort(SortUnityTypesFirst);
 
                         if (type.GetCustomAttributes(typeof(CanEditMultipleObjects), false).Length > 0)
                         {
@@ -177,10 +178,30 @@ namespace UnityEditor
                                 kSCustomMultiEditors[inspectAttr.m_InspectedType] = multiEditors;
                             }
                             multiEditors.Add(t);
+
+                            multiEditors.Sort(SortUnityTypesFirst);
                         }
                     }
                 }
             }
+        }
+
+        private static int SortUnityTypesFirst(MonoEditorType typeA, MonoEditorType typeB)
+        {
+            if (typeA == null && typeB == null) return 0;
+            else if (typeA == null) return -1;
+            else if (typeB == null) return 1;
+
+            var xAssemblyName = typeA.m_InspectorType.Assembly.GetName().ToString();
+            var yAssemblyName = typeB.m_InspectorType.Assembly.GetName().ToString();
+
+            var xAssemblyIsUnity = xAssemblyName.StartsWith("Unity.") || xAssemblyName.StartsWith("UnityEditor.") || xAssemblyName.StartsWith("UnityEngine.");
+            var yAssemblyIsUnity = yAssemblyName.StartsWith("Unity.") || yAssemblyName.StartsWith("UnityEditor.") || yAssemblyName.StartsWith("UnityEngine.");
+
+            if ((xAssemblyIsUnity && yAssemblyIsUnity) || (!xAssemblyIsUnity && !yAssemblyIsUnity)) return 0;
+            else if (xAssemblyIsUnity && !yAssemblyIsUnity) return 1;
+            else if (!xAssemblyIsUnity && yAssemblyIsUnity) return -1;
+            return xAssemblyName.CompareTo(yAssemblyName);
         }
     }
 }

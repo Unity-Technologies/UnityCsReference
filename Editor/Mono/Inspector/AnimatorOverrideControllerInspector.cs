@@ -18,7 +18,6 @@ namespace UnityEditor
     }
 
     [CustomEditor(typeof(AnimatorOverrideController))]
-    [CanEditMultipleObjects]
     internal class AnimatorOverrideControllerInspector : Editor
     {
         SerializedProperty m_Controller;

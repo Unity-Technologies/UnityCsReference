@@ -382,22 +382,6 @@ namespace UnityEditor.UIElements
         {
             UxmlStringAttributeDescription m_MaskChoices = new UxmlStringAttributeDescription { name = "choices" };
             UxmlIntAttributeDescription m_MaskValue = new UxmlIntAttributeDescription { name = "value" };
-            internal static List<string> ParseChoiceList(string choicesFromBag)
-            {
-                // Here the choices is comma separated in the string...
-                string[] choices = choicesFromBag.Split(',');
-
-                if (choices.Length != 0)
-                {
-                    List<string> listOfChoices = new List<string>();
-                    foreach (var choice in choices)
-                    {
-                        listOfChoices.Add(choice.Trim());
-                    }
-                    return listOfChoices;
-                }
-                return null;
-            }
 
             /// <summary>
             /// Initialize the <see cref="UxmlTraits"/> for <see cref="MaskField"/>.

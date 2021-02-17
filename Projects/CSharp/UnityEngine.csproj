@@ -163,9 +163,6 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\DefaultEventSystem.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\DefaultEventSystem.cs</Link>
     </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Delegates\TextDelegates.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Core\Delegates\TextDelegates.cs</Link>
-    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\DisposeHelper.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\DisposeHelper.cs</Link>
     </Compile>
@@ -198,6 +195,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\DropdownMenu.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\DropdownMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\DropdownUtility.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\DropdownUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\EasingCurves.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\EasingCurves.cs</Link>
@@ -321,6 +321,30 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\FocusController.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\FocusController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\GameObjects\DynamicAtlasSettings.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\GameObjects\DynamicAtlasSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\GameObjects\NavigateFocusRing.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\GameObjects\NavigateFocusRing.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\GameObjects\PanelSettings.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\GameObjects\PanelSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\GameObjects\RuntimeEventDispatcher.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\GameObjects\RuntimeEventDispatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\GameObjects\RuntimePanel.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\GameObjects\RuntimePanel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\GameObjects\RuntimePanelUtils.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\GameObjects\RuntimePanelUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\GameObjects\UIDocument.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\GameObjects\UIDocument.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\GameObjects\UIDocumentHierarchyUtil.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\GameObjects\UIDocumentHierarchyUtil.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\GroupBoxUtility.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\GroupBoxUtility.cs</Link>
@@ -643,6 +667,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleCursor.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleCursor.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleDataRef.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleDataRef.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleDebug.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleDebug.cs</Link>
     </Compile>
@@ -679,14 +706,11 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\TextShadow.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\TextShadow.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Text\PanelTextSettings.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Text\PanelTextSettings.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Text\TextHandle.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Text\TextHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Text\TextInfo.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Core\Text\TextInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Text\TextMeshInfo.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Core\Text\TextMeshInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Transitions.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Transitions.cs</Link>
@@ -1095,6 +1119,9 @@
     </Compile>
     <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleCreateRequest.bindings.cs">
       <Link>Modules\AssetBundle\Managed\AssetBundleCreateRequest.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleLoadingCache.bindings.cs">
+      <Link>Modules\AssetBundle\Managed\AssetBundleLoadingCache.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleManifest.bindings.cs">
       <Link>Modules\AssetBundle\Managed\AssetBundleManifest.bindings.cs</Link>
@@ -1528,107 +1555,122 @@
     <Compile Include="..\..\Modules\Terrain\Public\TerrainUtility.cs">
       <Link>Modules\Terrain\Public\TerrainUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\AssemblyInfo.cs">
-      <Link>Modules\TextCore\Managed\AssemblyInfo.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\AssemblyInfo.cs">
+      <Link>Modules\TextCoreFontEngine\Managed\AssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\Character.cs">
-      <Link>Modules\TextCore\Managed\Character.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\FaceInfo.cs">
+      <Link>Modules\TextCoreFontEngine\Managed\FaceInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\ColorUtilities.cs">
-      <Link>Modules\TextCore\Managed\ColorUtilities.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\FontEngine.bindings.cs">
+      <Link>Modules\TextCoreFontEngine\Managed\FontEngine.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\FaceInfo.cs">
-      <Link>Modules\TextCore\Managed\FaceInfo.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\Glyph.cs">
+      <Link>Modules\TextCoreFontEngine\Managed\Glyph.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\FontAsset.cs">
-      <Link>Modules\TextCore\Managed\FontAsset.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\GlyphMarshallingStruct.cs">
+      <Link>Modules\TextCoreFontEngine\Managed\GlyphMarshallingStruct.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\FontUtilities.cs">
-      <Link>Modules\TextCore\Managed\FontUtilities.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\OpenTypeCommon.cs">
+      <Link>Modules\TextCoreFontEngine\Managed\OpenTypeCommon.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\Glyph.cs">
-      <Link>Modules\TextCore\Managed\Glyph.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\AssemblyInfo.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\AssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\KerningTable.cs">
-      <Link>Modules\TextCore\Managed\KerningTable.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\Character.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\Character.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\LineInfo.cs">
-      <Link>Modules\TextCore\Managed\LineInfo.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\ColorUtilities.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\ColorUtilities.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\LinkInfo.cs">
-      <Link>Modules\TextCore\Managed\LinkInfo.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\FastAction.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\FastAction.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\MaterialManager.cs">
-      <Link>Modules\TextCore\Managed\MaterialManager.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\FontAsset.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\FontAsset.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\MaterialReference.cs">
-      <Link>Modules\TextCore\Managed\MaterialReference.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\FontAssetUtilities.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\FontAssetUtilities.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\MaterialReferenceManager.cs">
-      <Link>Modules\TextCore\Managed\MaterialReferenceManager.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\FontFeatureTable.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\FontFeatureTable.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\MeshInfo.cs">
-      <Link>Modules\TextCore\Managed\MeshInfo.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\LineInfo.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\LineInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\OpenTypeCommon.cs">
-      <Link>Modules\TextCore\Managed\OpenTypeCommon.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\LinkInfo.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\LinkInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\RichTextTagDefinitions.cs">
-      <Link>Modules\TextCore\Managed\RichTextTagDefinitions.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\MaterialManager.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\MaterialManager.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\ShaderUtilities.cs">
-      <Link>Modules\TextCore\Managed\ShaderUtilities.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\MaterialReference.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\MaterialReference.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\SpriteCharacter.cs">
-      <Link>Modules\TextCore\Managed\SpriteCharacter.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\MaterialReferenceManager.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\MaterialReferenceManager.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\SpriteGlyph.cs">
-      <Link>Modules\TextCore\Managed\SpriteGlyph.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\MeshInfo.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\MeshInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\TextElement.cs">
-      <Link>Modules\TextCore\Managed\TextElement.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\SpriteAsset.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\SpriteAsset.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\TextElementInfo.cs">
-      <Link>Modules\TextCore\Managed\TextElementInfo.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\SpriteCharacter.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\SpriteCharacter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\TextGenerator.cs">
-      <Link>Modules\TextCore\Managed\TextGenerator.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\SpriteGlyph.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\SpriteGlyph.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\TextGeneratorCommon.cs">
-      <Link>Modules\TextCore\Managed\TextGeneratorCommon.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAsset.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAsset.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\TextGeneratorUtilities.cs">
-      <Link>Modules\TextCore\Managed\TextGeneratorUtilities.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextColorGradient.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextColorGradient.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\TextGradientPreset.cs">
-      <Link>Modules\TextCore\Managed\TextGradientPreset.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextElement.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextElement.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\TextInfo.cs">
-      <Link>Modules\TextCore\Managed\TextInfo.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextElementInfo.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextElementInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\TextSettings.cs">
-      <Link>Modules\TextCore\Managed\TextSettings.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextEventManager.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextEventManager.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\TextSpriteAsset.cs">
-      <Link>Modules\TextCore\Managed\TextSpriteAsset.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\TextStyle.cs">
-      <Link>Modules\TextCore\Managed\TextStyle.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGeneratorCommon.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGeneratorCommon.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\TextStyleSheet.cs">
-      <Link>Modules\TextCore\Managed\TextStyleSheet.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGeneratorUtilities.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGeneratorUtilities.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\TextTagStack.cs">
-      <Link>Modules\TextCore\Managed\TextTagStack.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextInfo.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\Managed\TextUtilities.cs">
-      <Link>Modules\TextCore\Managed\TextUtilities.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextMarkupTagsCommon.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextMarkupTagsCommon.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\ScriptBindings\FontEngine.bindings.cs">
-      <Link>Modules\TextCore\ScriptBindings\FontEngine.bindings.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextProcessingStacks.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextProcessingStacks.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCore\ScriptBindings\GlyphMarshallingStruct.cs">
-      <Link>Modules\TextCore\ScriptBindings\GlyphMarshallingStruct.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextSettings.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextShaderUtilities.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextShaderUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextStyle.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextStyleSheet.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextStyleSheet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextUtilities.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\UnicodeLineBreakingRules.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\UnicodeLineBreakingRules.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextRendering\FontStyle.cs">
       <Link>Modules\TextRendering\FontStyle.cs</Link>
@@ -3092,7 +3134,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\artifacts\UnityEngine.dll\Debug</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_ASSETPIPELINE_GUI;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
+    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_ASSETPIPELINE_GUI;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoWarn>0626</NoWarn>

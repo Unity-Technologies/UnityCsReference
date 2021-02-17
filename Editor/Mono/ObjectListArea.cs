@@ -140,7 +140,7 @@ namespace UnityEditor
 
         double m_NextDirtyCheck = 0;
 
-        readonly SearchService.SearchSessionHandler m_SearchSessionHandler = new SearchService.SearchSessionHandler(SearchService.SearchEngineScope.Project);
+        readonly SearchService.ProjectSearchSessionHandler m_SearchSessionHandler = new SearchService.ProjectSearchSessionHandler();
 
         // Callbacks
         System.Action m_RepaintWantedCallback;
@@ -196,16 +196,21 @@ namespace UnityEditor
 
         public void Init(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails)
         {
+            Init(rect, hierarchyType, searchFilter, checkThumbnails, SearchService.SearchSessionOptions.Default);
+        }
+
+        public void Init(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, SearchService.SearchSessionOptions searchSessionOptions)
+        {
             // Keep for debugging
             //Debug.Log ("Init ObjectListArea: " + searchFilter);
 
             m_TotalRect = m_VisibleRect = rect;
 
-            m_LocalAssets.UpdateFilter(hierarchyType, searchFilter, foldersFirst);
+            m_LocalAssets.UpdateFilter(hierarchyType, searchFilter, foldersFirst, searchSessionOptions);
             m_LocalAssets.UpdateAssets();
 
             if (checkThumbnails)
-                m_AllowThumbnails = ObjectsHaveThumbnails(hierarchyType, searchFilter);
+                m_AllowThumbnails = ObjectsHaveThumbnails(hierarchyType, searchFilter, searchSessionOptions);
             else
                 m_AllowThumbnails = true;
 
@@ -220,6 +225,11 @@ namespace UnityEditor
 
         internal void InitForSearch(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, Func<string, int> assetToInstanceId)
         {
+            InitForSearch(rect, hierarchyType, searchFilter, checkThumbnails, assetToInstanceId, SearchService.SearchSessionOptions.Default);
+        }
+
+        internal void InitForSearch(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, Func<string, int> assetToInstanceId, SearchService.SearchSessionOptions searchSessionOptions)
+        {
             var searchQuery = searchFilter.originalText;
             if (string.IsNullOrEmpty(searchQuery))
                 searchQuery = searchFilter.FilterToSearchFieldString();
@@ -227,10 +237,9 @@ namespace UnityEditor
             // Override Asset search here. For GameObjects, it is done in CachedFilteredHierarchy.cs
             if (hierarchyType == HierarchyType.GameObjects)
             {
-                Init(rect, hierarchyType, searchFilter, checkThumbnails);
+                Init(rect, hierarchyType, searchFilter, checkThumbnails, searchSessionOptions);
                 return;
             }
-
 
             var allResults = new List<string>();
             if (searchFilter.IsSearching())
@@ -244,18 +253,17 @@ namespace UnityEditor
                             TypeCache.GetTypesDerivedFrom<Object>()
                                 .FirstOrDefault(t => name == t.FullName || name == t.Name))
                     };
-                });
+                }, searchSessionOptions);
                 m_SearchSessionHandler.BeginSearch(searchQuery);
-                var searchContext = (SearchService.ProjectSearchContext)m_SearchSessionHandler.context;
                 // Asynchronous searches return new results. Accumulate those results when using ShowObjectsInList.
-                var results = SearchService.ProjectSearch.Search(searchQuery, searchContext, newResults =>
+                var results = m_SearchSessionHandler.Search(searchQuery, newResults =>
                 {
                     if (newResults == null || !searchFilter.IsSearching())
                         return;
                     allResults.AddRange(newResults);
-                    InitListAreaWithItems(rect, hierarchyType, searchFilter, checkThumbnails, allResults, assetToInstanceId);
+                    InitListAreaWithItems(rect, hierarchyType, searchFilter, checkThumbnails, allResults, assetToInstanceId, searchSessionOptions);
                 });
-                InitListAreaWithItems(rect, hierarchyType, searchFilter, checkThumbnails, results, assetToInstanceId);
+                InitListAreaWithItems(rect, hierarchyType, searchFilter, checkThumbnails, results, assetToInstanceId, searchSessionOptions);
                 if (results != null)
                     allResults.AddRange(results);
                 m_SearchSessionHandler.EndSearch();
@@ -264,14 +272,14 @@ namespace UnityEditor
             {
                 m_SearchSessionHandler.EndSession();
                 // Call default implementation when not searching
-                Init(rect, hierarchyType, searchFilter, checkThumbnails);
+                Init(rect, hierarchyType, searchFilter, checkThumbnails, searchSessionOptions);
             }
         }
 
-        void InitListAreaWithItems(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, IEnumerable<string> items, Func<string, int> assetToInstanceId)
+        void InitListAreaWithItems(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, IEnumerable<string> items, Func<string, int> assetToInstanceId, SearchService.SearchSessionOptions searchSessionOptions)
         {
             // When items is null, we fallback to default implementation. Current default search engine returns null.
-            Init(rect, hierarchyType, items == null ? searchFilter : new SearchFilter(), checkThumbnails);
+            Init(rect, hierarchyType, items == null ? searchFilter : new SearchFilter(), checkThumbnails, searchSessionOptions);
             if (items != null && hierarchyType == HierarchyType.Assets)
             {
                 // We only support assets under "Assets" and "Packages"
@@ -317,7 +325,6 @@ namespace UnityEditor
                 }
                 ShowObjectsInList(uniqueInstanceIds.ToArray(), rootPaths.ToArray());
             }
-            InitSelection(Selection.instanceIDs);
         }
 
         bool HasFocus()
@@ -455,14 +462,14 @@ namespace UnityEditor
             get { return m_LocalAssets.ItemCount; }
         }
 
-        bool ObjectsHaveThumbnails(HierarchyType type, SearchFilter searchFilter)
+        bool ObjectsHaveThumbnails(HierarchyType type, SearchFilter searchFilter, SearchService.SearchSessionOptions searchSessionOptions)
         {
             // Check if we have any built-ins, if so we have thumbs since all builtins have thumbs
             if (m_LocalAssets.HasBuiltinResources)
                 return true;
 
             // Check if current hierarchy have thumbs
-            FilteredHierarchy hierarchy = new FilteredHierarchy(type);
+            FilteredHierarchy hierarchy = new FilteredHierarchy(type, searchSessionOptions);
             hierarchy.searchFilter = searchFilter;
             IHierarchyProperty assetProperty = FilteredHierarchyProperty.CreateHierarchyPropertyForFilter(hierarchy);
             int[] empty = new int[0];

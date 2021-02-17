@@ -41,7 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             ResolveDependencies();
 
             var root = m_ResourceLoader.GetTemplate("PackageManagerFiltersWindow.uxml");
-            root.styleSheets.Add(m_ResourceLoader.GetFiltersWindowStyleSheet());
+            root.styleSheets.Add(m_ResourceLoader.filtersDropdownStyleSheet);
             cache = new VisualElementCache(root);
 
             rootVisualElement.Add(root);

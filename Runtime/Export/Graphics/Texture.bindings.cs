@@ -22,7 +22,7 @@ namespace UnityEngine
     {
         protected Texture() {}
 
-        extern public static int masterTextureLimit { get; set; }
+        [NativeProperty("GlobalMasterTextureLimit")] extern public static int masterTextureLimit { get; set; }
 
         extern public int mipmapCount { [NativeName("GetMipmapCount")] get; }
 
@@ -196,9 +196,9 @@ namespace UnityEngine
         [NativeConditional("ENABLE_VIRTUALTEXTURING && UNITY_EDITOR")][NativeName("VTOnly")] extern public bool vtOnly { get; }
         [NativeName("Apply")] extern private void ApplyImpl(bool updateMipmaps, bool makeNoLongerReadable);
         [NativeName("Resize")] extern private bool ResizeImpl(int width, int height);
-        [NativeName("SetPixel")] extern private void SetPixelImpl(int image, int x, int y, Color color);
-        [NativeName("GetPixel")] extern private Color GetPixelImpl(int image, int x, int y);
-        [NativeName("GetPixelBilinear")] extern private Color GetPixelBilinearImpl(int image, float u, float v);
+        [NativeName("SetPixel")] extern private void SetPixelImpl(int image, int mip, int x, int y, Color color);
+        [NativeName("GetPixel")] extern private Color GetPixelImpl(int image, int mip, int x, int y);
+        [NativeName("GetPixelBilinear")] extern private Color GetPixelBilinearImpl(int image, int mip, float u, float v);
 
         [FreeFunction(Name = "Texture2DScripting::ResizeWithFormat", HasExplicitThis = true)]
         extern private bool ResizeWithFormatImpl(int width, int height, GraphicsFormat format, bool hasMipMap);
@@ -207,7 +207,7 @@ namespace UnityEngine
         extern private void ReadPixelsImpl(Rect source, int destX, int destY, bool recalculateMipMaps);
 
 
-        [FreeFunction(Name = "Texture2DScripting::SetPixels", HasExplicitThis = true)]
+        [FreeFunction(Name = "Texture2DScripting::SetPixels", HasExplicitThis = true, ThrowsException = true)]
         extern private void SetPixelsImpl(int x, int y, int w, int h, Color[] pixel, int miplevel, int frame);
 
         [FreeFunction(Name = "Texture2DScripting::LoadRawData", HasExplicitThis = true)]
@@ -304,16 +304,18 @@ namespace UnityEngine
         extern public byte[] GetRawTextureData();
 
         [FreeFunction("Texture2DScripting::GetPixels", HasExplicitThis = true, ThrowsException = true)]
-        extern public Color[] GetPixels(int x, int y, int blockWidth, int blockHeight, int miplevel);
+        extern public Color[] GetPixels(int x, int y, int blockWidth, int blockHeight, [uei.DefaultValue("0")] int miplevel);
 
+        [uei.ExcludeFromDocs]
         public Color[] GetPixels(int x, int y, int blockWidth, int blockHeight)
         {
             return GetPixels(x, y, blockWidth, blockHeight, 0);
         }
 
         [FreeFunction("Texture2DScripting::GetPixels32", HasExplicitThis = true, ThrowsException = true)]
-        extern public Color32[] GetPixels32(int miplevel);
+        extern public Color32[] GetPixels32([uei.DefaultValue("0")] int miplevel);
 
+        [uei.ExcludeFromDocs]
         public Color32[] GetPixels32()
         {
             return GetPixels32(0);
@@ -359,8 +361,8 @@ namespace UnityEngine
         extern public void UpdateExternalTexture(IntPtr nativeTexture);
 
         extern override public bool isReadable { get; }
-        [NativeName("SetPixel")] extern private void SetPixelImpl(int image, int x, int y, Color color);
-        [NativeName("GetPixel")] extern private Color GetPixelImpl(int image, int x, int y);
+        [NativeName("SetPixel")] extern private void SetPixelImpl(int image, int mip, int x, int y, Color color);
+        [NativeName("GetPixel")] extern private Color GetPixelImpl(int image, int mip, int x, int y);
 
         [NativeName("FixupEdges")] extern public void SmoothEdges([uei.DefaultValue("1")] int smoothRegionWidthInPixels);
         public void SmoothEdges() { SmoothEdges(1); }
@@ -445,9 +447,9 @@ namespace UnityEngine
         extern public TextureFormat format { [NativeName("GetTextureFormat")] get; }
 
         extern override public bool isReadable { get; }
-        [NativeName("SetPixel")] extern private void SetPixelImpl(int image, int x, int y, int z, Color color);
-        [NativeName("GetPixel")] extern private Color GetPixelImpl(int image, int x, int y, int z);
-        [NativeName("GetPixelBilinear")] extern private Color GetPixelBilinearImpl(int image, float u, float v, float w);
+        [NativeName("SetPixel")] extern private void SetPixelImpl(int mip, int x, int y, int z, Color color);
+        [NativeName("GetPixel")] extern private Color GetPixelImpl(int mip, int x, int y, int z);
+        [NativeName("GetPixelBilinear")] extern private Color GetPixelBilinearImpl(int mip, float u, float v, float w);
 
         [FreeFunction("Texture3DScripting::Create")]
         extern private static bool Internal_CreateImpl([Writable] Texture3D mono, int w, int h, int d, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex);

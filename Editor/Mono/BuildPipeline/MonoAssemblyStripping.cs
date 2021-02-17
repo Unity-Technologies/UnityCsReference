@@ -175,42 +175,6 @@ namespace UnityEditor
             }
         }
 
-        public static string GenerateLinkXmlToPreserveDerivedTypes(string librariesFolder, RuntimeClassRegistry usedClasses)
-        {
-            var sb = new StringBuilder();
-            bool wrotePreservations = false;
-
-            sb.AppendLine("<linker>");
-            foreach (var assembly in CollectAllAssemblies(librariesFolder, usedClasses))
-            {
-                if (AssemblyHelper.IsUnityEngineModule(assembly))
-                    continue;
-
-                var typesToPreserve = new HashSet<TypeDefinition>();
-                CollectBlackListTypes(typesToPreserve, assembly.MainModule.Types, usedClasses.GetAllManagedBaseClassesAsString());
-
-                // don't write out xml file for assemblies with no types since link.xml files on disk have special meaning to IL2CPP stripping
-                if (typesToPreserve.Count == 0)
-                    continue;
-
-                wrotePreservations = true;
-
-                sb.AppendLine(string.Format("<assembly fullname=\"{0}\">", assembly.Name.Name));
-                foreach (var typeToPreserve in typesToPreserve)
-                    sb.AppendLine(string.Format("<type fullname=\"{0}\" preserve=\"all\"/>", typeToPreserve.FullName));
-                sb.AppendLine("</assembly>");
-            }
-            sb.AppendLine("</linker>");
-
-            // Don't generate and pass xml files that are empty.  While they are harmless, they are noisey and just cause useless clutter
-            if (!wrotePreservations)
-                return null;
-
-            string path = Path.GetTempFileName();
-            File.WriteAllText(path, sb.ToString());
-            return path;
-        }
-
         // this logic produces similar list of assemblies that IL2CPP will convert (it differs in the way it collects winmd files)
         public static IEnumerable<AssemblyDefinition> CollectAllAssemblies(string librariesFolder, RuntimeClassRegistry usedClasses)
         {

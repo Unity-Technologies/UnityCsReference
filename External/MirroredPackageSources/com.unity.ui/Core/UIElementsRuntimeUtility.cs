@@ -34,8 +34,12 @@ namespace UnityEngine.UIElements
 
         static UIElementsRuntimeUtility()
         {
-            UIElementsRuntimeUtilityNative.RepaintOverlayPanelsCallback = RepaintOverlayPanels;
+            // We no longer need it
+            UIElementsRuntimeUtilityNative.RepaintOverlayPanelsCallback = () => {};  //RepaintOverlayPanels;
 
+            Canvas.externBeginRenderOverlays = BeginRenderOverlays;
+            Canvas.externRenderOverlaysBefore = (displayIndex, sortOrder) => RenderOverlaysBeforePriority(displayIndex, sortOrder);
+            Canvas.externEndRenderOverlays = EndRenderOverlays;
         }
 
         public static EventBase CreateEvent(Event systemEvent)
@@ -82,6 +86,7 @@ namespace UnityEngine.UIElements
             {
                 s_RegisteredPlayerloopCallback = true;
                 RegisterPlayerloopCallback();
+                Canvas.SetExternalCanvasEnabled(true);
             }
         }
 
@@ -101,6 +106,7 @@ namespace UnityEngine.UIElements
             {
                 s_RegisteredPlayerloopCallback = false;
                 UnregisterPlayerloopCallback();
+                Canvas.SetExternalCanvasEnabled(false);
             }
         }
 
@@ -171,9 +177,11 @@ namespace UnityEngine.UIElements
 
         public static void RegisterEventSystem(Object eventSystem)
         {
-            Debug.Assert(activeEventSystem == null || activeEventSystem == eventSystem, "There can be only one active Event System.");
+            if (activeEventSystem != null && activeEventSystem != eventSystem && eventSystem.GetType().Name == "EventSystem")
+                Debug.LogWarning("There can be only one active Event System.");
             activeEventSystem = eventSystem;
         }
+
         public static void UnregisterEventSystem(Object eventSystem)
         {
             if (activeEventSystem == eventSystem)
@@ -183,6 +191,7 @@ namespace UnityEngine.UIElements
         private static DefaultEventSystem s_DefaultEventSystem;
         internal static DefaultEventSystem defaultEventSystem =>
             s_DefaultEventSystem ?? (s_DefaultEventSystem = new DefaultEventSystem());
+
         public static void UpdateRuntimePanels()
         {
             foreach (BaseRuntimePanel panel in GetSortedPlayerPanels())
@@ -190,7 +199,7 @@ namespace UnityEngine.UIElements
                 panel.Update();
             }
 
-            if (useDefaultEventSystem)
+            if (Application.isPlaying && useDefaultEventSystem)
             {
                 defaultEventSystem.Update();
             }

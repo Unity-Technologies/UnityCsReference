@@ -43,6 +43,7 @@ namespace UnityEngine
         [NativeName("collider")] internal int m_Collider;
 
         public Collider collider { get { return Object.FindObjectFromInstanceID(m_Collider) as Collider; } }
+        public int colliderInstanceID { get { return m_Collider; } }
 
         public Vector3 point { get { return m_Point; } set { m_Point = value; } }
         public Vector3 normal { get { return m_Normal; } set { m_Normal = value; } }

@@ -56,15 +56,16 @@ namespace UnityEditor
             if (m_PlayModeView == null)
                 return;
 
-            DockArea da = m_PlayModeView.m_Parent as DockArea;
-            if (da != null)
+            if (m_PlayModeView.enterPlayModeBehavior == PlayModeView.EnterPlayModeBehavior.PlayMaximized)
             {
-                if (m_PlayModeView.maximizeOnPlay)
-                    m_MaximizePending = WindowLayout.MaximizePrepare(da.actualView);
+                if (m_PlayModeView.m_Parent is DockArea dockArea)
+                {
+                    m_MaximizePending = WindowLayout.MaximizePrepare(dockArea.actualView);
 
-                var gv = da.actualView as GameView;
-                if (gv != null)
-                    m_PlayModeView.m_Parent.EnableVSync(gv.vSyncEnabled);
+                    var gameView = dockArea.actualView as GameView;
+                    if (gameView != null)
+                        m_PlayModeView.m_Parent.EnableVSync(gameView.vSyncEnabled);
+                }
             }
 
             // Mark this PlayModeView window as the start view so the backend

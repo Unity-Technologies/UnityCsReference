@@ -44,7 +44,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 var args = new[]
                 {
                     "cs",
-                    EditorApplication.applicationContentsPath,
+                    $"\"{EditorApplication.applicationContentsPath}\"",
                     $"\"{tempOutputDirectory}\"",
                     $"\"{APIUpdaterManager.ConfigurationSourcesFilter}\"",
                     scriptUpdaterRsp.InQuotes()

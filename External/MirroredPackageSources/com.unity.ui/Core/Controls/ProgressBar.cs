@@ -7,8 +7,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// ProgressBar control using UIElements. Supports binding to float and int values.
     /// </summary>
-    [MovedFrom(true, "UnityEditor.UIElements", "UnityEditor.UIElementsModule")]
-    public class ProgressBar : BindableElement, INotifyValueChanged<float>
+    public abstract class AbstractProgressBar : BindableElement, INotifyValueChanged<float>
     {
         /// <summary>
         /// Uss Class Name used to style the <see cref="ProgressBar"/>.
@@ -35,8 +34,6 @@ namespace UnityEngine.UIElements
         /// </summary>
         public static readonly string backgroundUssClassName = ussClassName + "__background";
 
-        public new class UxmlFactory : UxmlFactory<ProgressBar, UxmlTraits> { }
-
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
             UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "low-value", defaultValue = 0 };
@@ -46,7 +43,7 @@ namespace UnityEngine.UIElements
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
-                var bar = ve as ProgressBar;
+                var bar = ve as AbstractProgressBar;
                 bar.lowValue = m_LowValue.GetValueFromBag(bag, cc);
                 bar.highValue = m_HighValue.GetValueFromBag(bag, cc);
                 var title = m_Title.GetValueFromBag(bag, cc);
@@ -70,10 +67,10 @@ namespace UnityEngine.UIElements
             set => m_Title.text = value;
         }
 
-        internal float lowValue { get; private set; }
-        internal float highValue { get; private set; } = 100f;
+        internal float lowValue { get; set; }
+        internal float highValue { get; set; } = 100f;
 
-        public ProgressBar()
+        public AbstractProgressBar()
         {
             AddToClassList(ussClassName);
 
@@ -181,5 +178,12 @@ namespace UnityEngine.UIElements
             var maxWidth = m_Background.layout.width - 2;
             return maxWidth - Mathf.Max((maxWidth) * width / highValue, k_MinVisibleProgress);
         }
+    }
+
+
+    [MovedFrom(true, "UnityEditor.UIElements", "UnityEditor.UIElementsModule")]
+    public class ProgressBar : AbstractProgressBar
+    {
+        public new class UxmlFactory : UxmlFactory<ProgressBar, UxmlTraits> {}
     }
 }

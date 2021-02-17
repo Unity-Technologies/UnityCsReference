@@ -4,9 +4,29 @@
 
 using UnityEngine.Bindings;
 using System.Collections.Generic;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
+    [UsedByNativeCode]
+    struct ScriptingMenuItem
+    {
+        string m_Path;
+        bool m_IsSeparator;
+        int m_Priority;
+
+        public string path => m_Path;
+        public bool isSeparator => m_IsSeparator;
+        public int priority => m_Priority;
+
+        public ScriptingMenuItem(string path, int priority = -1, bool isSeparator = false)
+        {
+            m_Path = path;
+            m_Priority = priority;
+            m_IsSeparator = isSeparator;
+        }
+    }
+
     [NativeHeader("Editor/Src/MenuController.h")]
     public sealed class Menu
     {
@@ -28,11 +48,9 @@ namespace UnityEditor
         [FreeFunction("MenuController::ExtractSubmenus")]
         internal static extern string[] ExtractSubmenus(string menuPath);
 
-        [FreeFunction("MenuController::ResetMenus")]
-        internal static extern void ResetMenus(bool resetToDefault);
-
-        [FreeFunction("MenuController::AddMenuItem")]
-        internal static extern void AddExistingMenuItem(string name, string existingMenuItemId, int priority, int parentPriority);
+        // "separators" in this context means submenu roots, ex "GameObject/" in "GameObject/Cube".
+        [FreeFunction("MenuController::ExtractMenuItems")]
+        internal static extern ScriptingMenuItem[] GetMenuItems(string menuPath, bool includeSeparators, bool localized);
 
         [FreeFunction("MenuController::AddMenuItem")]
         internal static extern void AddMenuItem(string name, string shortcut, bool @checked, int priority, System.Action execute, System.Func<bool> validate);

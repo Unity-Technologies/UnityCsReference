@@ -38,6 +38,8 @@ namespace UnityEditor
 
         private const string k_WarningImmutableSelectionFormat = "The operation \"{0}\" cannot be executed because the selection or package is read-only.";
 
+        private const string k_WarningRootFolderDeletionFormat = "The operation \"{0}\" cannot be executed because the selection is a root folder.";
+
         // Alive ProjectBrowsers
         private static List<ProjectBrowser> s_ProjectBrowsers = new List<ProjectBrowser>();
         public static List<ProjectBrowser> GetAllProjectBrowsers()
@@ -218,7 +220,7 @@ namespace UnityEditor
         [NonSerialized]
         private string m_lastSearchFilter;
         [NonSerialized]
-        private double m_NextSearch = double.MaxValue;
+        private Action m_NextSearchOffDelegate;
 
         ProjectBrowser()
         {
@@ -285,11 +287,13 @@ namespace UnityEditor
                 {
                     m_SyncSearch = false;
                     SetSearch(m_OldSearch);
+                    TopBarSearchSettingsChanged();
                 }
 
                 if (evt == SearchService.SearchService.SyncSearchEvent.EndSession)
                 {
                     m_SyncSearch = false;
+                    TopBarSearchSettingsChanged(false);
                 }
             }
         }
@@ -1490,24 +1494,13 @@ namespace UnityEditor
             m_ListArea.InitForSearch(m_ListAreaRect, HierarchyType.Assets,
                 m_SearchFilter, false,
                 s => AssetDatabase.GetMainAssetInstanceID(s));
+            m_ListArea.InitSelection(Selection.instanceIDs);
         }
 
         void OnInspectorUpdate()
         {
             if (m_ListArea != null)
                 m_ListArea.OnInspectorUpdate();
-
-
-            // if it's time for a search we do it
-            if (EditorApplication.timeSinceStartup > m_NextSearch)
-            {
-                //Perform the Search
-                m_NextSearch = double.MaxValue;
-                m_SearchFilter.SearchFieldStringToFilter(m_SearchFieldText);
-                SyncFilterGUI();
-                TopBarSearchSettingsChanged();
-                Repaint();
-            }
         }
 
         void OnDestroy()
@@ -1630,6 +1623,14 @@ namespace UnityEditor
             return false;
         }
 
+        private static bool ShouldDiscardCommandsEventsForRootFolders()
+        {
+            return ((Event.current.type == EventType.ExecuteCommand || Event.current.type == EventType.ValidateCommand) &&
+                Event.current.commandName == EventCommandNames.Delete ||
+                Event.current.commandName == EventCommandNames.SoftDelete)
+                && !CanDeleteSelectedAssets();
+        }
+
         void HandleCommandEventsForTreeView()
         {
             // Handle all event for tree view
@@ -1650,7 +1651,12 @@ namespace UnityEditor
                 {
                     if (ShouldDiscardCommandsEventsForImmutablePackages())
                     {
-                        Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, k_WarningImmutableSelectionFormat, Event.current.commandName);
+                        EditorUtility.DisplayDialog(L10n.Tr("Invalid Operation"), L10n.Tr("Deleting or modifying an immutable package is not allowed."), L10n.Tr("Ok"));
+                        return;
+                    }
+                    if (ShouldDiscardCommandsEventsForRootFolders())
+                    {
+                        EditorUtility.DisplayDialog(L10n.Tr("Invalid Operation"), L10n.Tr("Deleting a root folder is not allowed."), L10n.Tr("Ok"));
                         return;
                     }
                 }
@@ -1708,6 +1714,12 @@ namespace UnityEditor
             if (ShouldDiscardCommandsEventsForImmutablePackages())
             {
                 Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, k_WarningImmutableSelectionFormat, Event.current.commandName);
+                return;
+            }
+            // Check if event is delete on root folder
+            if (ShouldDiscardCommandsEventsForRootFolders())
+            {
+                Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, k_WarningRootFolderDeletionFormat, Event.current.commandName);
                 return;
             }
 
@@ -2319,7 +2331,7 @@ namespace UnityEditor
             Event evt = Event.current;
             if (GUIUtility.keyboardControl == searchFieldControlID)
             {
-                // On arrow down/up swicth to control selection in list area
+                // On arrow down/up switch to control selection in list area
                 if (evt.type == EventType.KeyDown && (evt.keyCode == KeyCode.DownArrow || evt.keyCode == KeyCode.UpArrow))
                 {
                     if (!m_ListArea.IsLastClickedItemVisible())
@@ -2344,13 +2356,22 @@ namespace UnityEditor
                 // Update filter with string
                 m_SearchFieldText = m_lastSearchFilter;
 
-                m_NextSearch = EditorApplication.timeSinceStartup + SearchableEditorWindow.k_SearchTimerDelaySecs;
+                m_NextSearchOffDelegate?.Invoke();
+                m_NextSearchOffDelegate = EditorApplication.CallDelayed(UpdateSearchDelayed, SearchUtils.debounceThresholdMs / 1000f);
             }
 
             SearchService.SearchService.DrawOpenSearchButton(this, m_SearchFieldText);
         }
 
-        void TopBarSearchSettingsChanged()
+        void UpdateSearchDelayed()
+        {
+            m_SearchFilter.SearchFieldStringToFilter(m_SearchFieldText);
+            SyncFilterGUI();
+            TopBarSearchSettingsChanged();
+            Repaint();
+        }
+
+        void TopBarSearchSettingsChanged(bool keyboardValidation = true)
         {
             if (!m_SearchFilter.IsSearching())
             {
@@ -2358,7 +2379,7 @@ namespace UnityEditor
                 {
                     m_DidSelectSearchResult = false;
                     FrameObjectPrivate(Selection.activeInstanceID, true, false);
-                    if (GUIUtility.keyboardControl == 0)
+                    if (GUIUtility.keyboardControl == 0 && keyboardValidation)
                     {
                         // Ensure item has focus for visual feedback and instant key navigation
                         if (m_ViewMode == ViewMode.OneColumn)
@@ -2370,7 +2391,7 @@ namespace UnityEditor
                 else if (m_ViewMode == ViewMode.TwoColumns)
                 {
                     // Revert to last selected folders
-                    if (GUIUtility.keyboardControl == 0 && m_LastFolders != null && m_LastFolders.Length > 0)
+                    if ((GUIUtility.keyboardControl == 0 || !keyboardValidation) && m_LastFolders != null && m_LastFolders.Length > 0)
                     {
                         m_SearchFilter.folders = m_LastFolders;
                         SetFolderSelection(GetFolderInstanceIDs(m_LastFolders), true);
@@ -2839,7 +2860,7 @@ namespace UnityEditor
                 {
                     var path = AssetDatabase.GetAssetPath(instanceID);
                     bool isRootFolder, isImmutable;
-                    if (string.IsNullOrEmpty(path) || !AssetDatabase.GetAssetFolderInfo(path, out isRootFolder, out isImmutable) || isImmutable)
+                    if (string.IsNullOrEmpty(path) || !AssetDatabase.GetAssetFolderInfo(path, out isRootFolder, out isImmutable) || isRootFolder || isImmutable)
                     {
                         return false;
                     }

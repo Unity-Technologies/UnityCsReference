@@ -563,6 +563,12 @@ namespace UnityEditor
             set;
         }
 
+        public extern bool optimizeBones
+        {
+            get;
+            set;
+        }
+
         public extern bool keepQuads
         {
             get;

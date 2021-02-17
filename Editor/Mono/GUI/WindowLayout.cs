@@ -488,18 +488,14 @@ namespace UnityEditor
 
         static WindowLayout()
         {
-            EditorApplication.update -= DelayReloadWindowLayoutMenu;
-            EditorApplication.update += DelayReloadWindowLayoutMenu;
+            EditorApplication.CallDelayed(UpdateWindowLayoutMenu);
         }
 
-        internal static void DelayReloadWindowLayoutMenu()
+        internal static void UpdateWindowLayoutMenu()
         {
-            EditorApplication.update -= DelayReloadWindowLayoutMenu;
-            if (ModeService.HasCapability(ModeCapability.LayoutWindowMenu, true))
-            {
-                ReloadWindowLayoutMenu();
-                EditorUtility.Internal_UpdateAllMenus();
-            }
+            if (!ModeService.HasCapability(ModeCapability.LayoutWindowMenu, true))
+                return;
+            ReloadWindowLayoutMenu();
         }
 
         internal static void ReloadWindowLayoutMenu()
@@ -619,15 +615,25 @@ namespace UnityEditor
         {
             GameView gameView = (GameView)FindEditorWindowOfType(typeof(GameView));
             if (gameView)
-                gameView.maximizeOnPlay = true;
+                gameView.enterPlayModeBehavior = PlayModeView.EnterPlayModeBehavior.PlayMaximized;
+        }
+
+        internal static void FindFirstGameViewAndSetToPlayFocused()
+        {
+            GameView gameView = (GameView)FindEditorWindowOfType(typeof(GameView));
+            if (gameView)
+                gameView.enterPlayModeBehavior = PlayModeView.EnterPlayModeBehavior.PlayFocused;
         }
 
         internal static EditorWindow TryFocusAppropriateWindow(bool enteringPlaymode)
         {
+            // If PlayModeView behavior is set to 'Do Nothing' ignore focusing windows when entering/exiting PlayMode
+            var playModeView = PlayModeView.GetCorrectPlayModeViewToFocus();
+            bool shouldFocusView = playModeView && playModeView.enterPlayModeBehavior != PlayModeView.EnterPlayModeBehavior.PlayUnfocused;
+
             if (enteringPlaymode)
             {
-                var playModeView = PlayModeView.GetMainPlayModeView();
-                if (playModeView)
+                if (shouldFocusView)
                 {
                     SaveCurrentFocusedWindowInSameDock(playModeView);
                     playModeView.Focus();
@@ -638,11 +644,16 @@ namespace UnityEditor
             else
             {
                 // If we can retrieve what window type was active when we went into play mode,
-                // go back to focus a window of that type.
-                EditorWindow window = TryGetLastFocusedWindowInSameDock();
-                if (window)
-                    window.ShowTab();
-                return window;
+                // go back to focus a window of that type if needed.
+                if (shouldFocusView)
+                {
+                    EditorWindow window = TryGetLastFocusedWindowInSameDock();
+                    if (window)
+                        window.ShowTab();
+                    return window;
+                }
+
+                return EditorWindow.focusedWindow;
             }
         }
 
@@ -668,11 +679,13 @@ namespace UnityEditor
             WindowFocusState.instance.m_CurrentlyInPlayMode = entering;
 
             EditorWindow window = null;
-
             EditorWindow maximized = GetMaximizedWindow();
 
             if (entering)
             {
+                if (!GameView.openWindowOnEnteringPlayMode && !(PlayModeView.GetCorrectPlayModeViewToFocus() is PlayModeView))
+                    return null;
+
                 WindowFocusState.instance.m_WasMaximizedBeforePlay = (maximized != null);
 
                 // If a view is already maximized before entering play mode,
@@ -699,7 +712,7 @@ namespace UnityEditor
                 return window;
 
             // If we are entering Play more and no Game View was found, create one
-            if (entering)
+            if (entering && PlayModeView.openWindowOnEnteringPlayMode)
             {
                 // Try to create and focus a Game View tab docked together with the Scene View tab
                 EditorWindow sceneView = FindEditorWindowOfType(typeof(SceneView));
@@ -1079,14 +1092,13 @@ namespace UnityEditor
                 {
                     UnityObject o = loadedWindows[i];
 
-                    EditorWindow editorWin = o as EditorWindow;
-                    if (editorWin != null)
+                    if (o is EditorWindow editorWin)
                     {
-                        if (editorWin.m_Parent == null)
+                        if (!editorWin || !editorWin.m_Parent || !editorWin.m_Parent.window)
                         {
-                            UnityObject.DestroyImmediate(editorWin, true);
-                            Console.WriteLine("LoadWindowLayout: Removed unparented EditorWindow while reading window layout: window #" + i + ", type=" +
+                            Console.WriteLine("[LAYOUT] Removed unparented EditorWindow while reading window layout: window #" + i + ", type=" +
                                 o.GetType() + ", instanceID=" + o.GetInstanceID());
+                            UnityObject.DestroyImmediate(editorWin, true);
                             layoutLoadingIssue = true;
                             continue;
                         }
@@ -1188,7 +1200,7 @@ namespace UnityEditor
 
                 // Unmaximize maximized PlayModeView window if maximize on play is enabled
                 PlayModeView playModeView = GetMaximizedWindow() as PlayModeView;
-                if (playModeView != null && playModeView.maximizeOnPlay)
+                if (playModeView != null && playModeView.enterPlayModeBehavior == PlayModeView.EnterPlayModeBehavior.PlayMaximized)
                     Unmaximize(playModeView);
             }
             catch (Exception ex)
@@ -1315,46 +1327,53 @@ namespace UnityEditor
 
         public static void SaveWindowLayout(string path)
         {
+            var parentLayoutFolder = Path.GetDirectoryName(path);
+            if (string.IsNullOrEmpty(parentLayoutFolder))
+                return;
+
+            if (!Directory.Exists(parentLayoutFolder))
+                Directory.CreateDirectory(parentLayoutFolder);
+
             Console.WriteLine($"[LAYOUT] About to save layout {path}");
             TooltipView.Close();
 
-            ArrayList all = new ArrayList();
             UnityObject[] windows = Resources.FindObjectsOfTypeAll(typeof(EditorWindow));
             UnityObject[] containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
             UnityObject[] views = Resources.FindObjectsOfTypeAll(typeof(View));
 
+            var all = new List<UnityObject>();
+            var ignoredViews = new List<ScriptableObject>();
             foreach (ContainerWindow w in containers)
             {
                 // skip ContainerWindows that are "dont save me"
-                if (w.m_DontSaveToLayout)
-                    continue;
-                all.Add(w);
+                if (!w || w.m_DontSaveToLayout)
+                    ignoredViews.Add(w);
+                else
+                    all.Add(w);
             }
 
             foreach (View w in views)
             {
                 // skip Views that belong to "dont save me" container
-                if (w.window != null && w.window.m_DontSaveToLayout)
-                    continue;
-                all.Add(w);
+                if (!w || !w.window || ignoredViews.Contains(w.window))
+                    ignoredViews.Add(w);
+                else
+                    all.Add(w);
             }
 
             foreach (EditorWindow w in windows)
             {
                 // skip EditorWindows that belong to "dont save me" container
-                if (w.m_Parent != null && w.m_Parent.window != null && w.m_Parent.window.m_DontSaveToLayout)
+                if (!w || !w.m_Parent || ignoredViews.Contains(w.m_Parent))
+                {
+                    if (w)
+                        Debug.LogWarning($"Cannot save invalid window {w.titleContent.text} {w} to layout.");
                     continue;
+                }
                 all.Add(w);
             }
 
-            var parentLayoutFolder = Path.GetDirectoryName(path);
-
-            if (!String.IsNullOrEmpty(parentLayoutFolder))
-            {
-                if (!Directory.Exists(parentLayoutFolder))
-                    Directory.CreateDirectory(parentLayoutFolder);
-                InternalEditorUtility.SaveToSerializedFileAndForget(all.ToArray(typeof(UnityObject)) as UnityObject[], path, true);
-            }
+            InternalEditorUtility.SaveToSerializedFileAndForget(all.Where(o => o).ToArray(), path, true);
         }
 
         // ReSharper disable once MemberCanBePrivate.Global - used by SaveLayoutTests.cs

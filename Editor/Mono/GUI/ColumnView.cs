@@ -287,9 +287,6 @@ namespace UnityEditor
                         return;
 
                     DragAndDrop.PrepareStartDrag();
-
-                    DragAndDrop.paths = null;
-
                     DragAndDrop.SetGenericData("CustomDragData", data);
                     DragAndDrop.StartDrag(columnViewElements[listView.row].name);
 

@@ -10,6 +10,7 @@ using System.IO;
 using UnityEditor.Audio;
 using UnityEditorInternal;
 using UnityEngine.Networking;
+using System.Text.RegularExpressions;
 
 namespace UnityEditor
 {
@@ -34,6 +35,9 @@ namespace UnityEditor
             "https://docs-redirects.prd.it.unity3d.com",
             "https://docs-redirects.unity.com"
         };
+
+        internal static string k_BetaReleaseNotesUrlBase = "https://unity3d.com/unity/beta/";
+        internal static string k_ReleaseNotesUrlBase = "https://unity3d.com/unity/whats-new/";
 
         internal enum DocRedirectionServer
         {
@@ -221,6 +225,21 @@ namespace UnityEditor
             m_UrlCache.Clear();
         }
 
+        internal static string TranslateURIForRedirection(string uri)
+        {
+            if (docRedirectionServer != DocRedirectionServer.None && IsLocalPath(uri) == false)
+            {
+                var version = InternalEditorUtility.GetUnityVersion();
+                //case 1300346: The redirection server that launched with 2020.2 badly redirects Manual/index.html and ScriptReference/index.html resulting in a 404
+                //Even without the 404, the Manual/index.html and ScriptReference/index.html need the version parameter to be redirected to the matching docs for this version
+                if (uri.Equals(string.Join("/", new string[] { baseDocumentationUrl, "Manual", "index.html" }), StringComparison.OrdinalIgnoreCase))
+                    uri = $"{baseDocumentationUrl}/?section=manual&version={version.Major}.{version.Minor}";
+                if (uri.Equals(string.Join("/", new string[] { baseDocumentationUrl, "ScriptReference", "index.html" }), StringComparison.OrdinalIgnoreCase))
+                    uri = $"{baseDocumentationUrl}/?section=api&version={version.Major}.{version.Minor}";
+            }
+            return uri;
+        }
+
         internal static string FindHelpNamed(string topic)
         {
             if (m_UrlCache.ContainsKey(topic))
@@ -237,7 +256,7 @@ namespace UnityEditor
             {
                 documentPath = topic.Substring(k_AbsoluteFileRef.Length);
             }
-            else if (topic.StartsWith("http://") || topic.StartsWith("https://"))
+            else if (IsLocalPath(topic) == false)
             {
                 documentPath = topic;
             }
@@ -272,6 +291,9 @@ namespace UnityEditor
                     documentPath = "";
                 }
             }
+
+            documentPath = TranslateURIForRedirection(documentPath);
+
             m_UrlCache[topic] = documentPath;
 
             return documentPath;
@@ -311,6 +333,36 @@ namespace UnityEditor
             }
 
             return $"class-{obj.GetType().Name}";
+        }
+
+        [UnityEngine.Scripting.RequiredByNativeCode]
+        internal static void OpenReleaseNotes()
+        {
+            var version = InternalEditorUtility.GetUnityVersion();
+            var releaseNotesUrl = GetReleaseNotesUrl(InternalEditorUtility.IsUnityBeta(), InternalEditorUtility.GetUnityVersionDigits(), InternalEditorUtility.GetUnityDisplayVersion());
+            Application.OpenURL(releaseNotesUrl);
+        }
+
+        internal static string GetReleaseNotesUrl(bool isBeta, string digitsOnlyVersion, string displayVersion)
+        {
+            var url = "http://unity3d.com/whatsnew.html";
+
+            if (isBeta)
+            {
+                var displayVersionWithBuildNumber = new Regex(@"(\d+\.\d+\.[a-z0-9]+)\.\d+");
+                var m = displayVersionWithBuildNumber.Match(displayVersion);
+                if (m.Success)
+                {
+                    displayVersion = m.Groups[1].Value;
+                }
+                url = $"{k_BetaReleaseNotesUrlBase}{displayVersion}";
+            }
+            else
+            {
+                url = $"{k_ReleaseNotesUrlBase}{digitsOnlyVersion}";
+            }
+
+            return url;
         }
 
         private static void InitDocumentation()

@@ -99,6 +99,7 @@ namespace UnityEditorInternal.Profiling
             var content = selectionHighlightLabel;
             var size = EditorStyles.whiteLabel.CalcSize(content);
             const float marginRight = 3;
+            const float textMarginRight = 2;
             // the FPS label could get in the way, "0.1ms (10000FPS)" being the longest.
             const float marginLeft = 120;
             var maxWidth = chartRect.width - (marginRight + marginLeft);
@@ -112,7 +113,7 @@ namespace UnityEditorInternal.Profiling
                     size = EditorStyles.whiteLabel.CalcSize(content);
                 }
             }
-            var r = new Rect(chartRect.x + chartRect.width - size.x - marginRight, chartRect.y + marginRight, size.x, size.y);
+            var r = new Rect(chartRect.x + chartRect.width - size.x - marginRight - textMarginRight, chartRect.y + marginRight, size.x + textMarginRight, size.y);
             EditorGUI.DoDropShadowLabel(r, content, Styles.whiteLabel, Styles.labelDropShadowOpacity);
         }
 

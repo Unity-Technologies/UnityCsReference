@@ -54,7 +54,11 @@ namespace UnityEditorInternal.Profiling
         public override void OnDisable()
         {
             base.OnDisable();
-            sharedUISystemProfiler?.CurrentAreaChanged(null);
+            if (m_UISystemProfiler != null)
+            {
+                m_UISystemProfiler.CurrentAreaChanged(null);
+                m_UISystemProfiler.Dispose();
+            }
         }
 
         public override void DrawToolbar(Rect position)

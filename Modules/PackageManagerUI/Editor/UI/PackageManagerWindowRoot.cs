@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Linq;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -23,6 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private UnityConnectProxy m_UnityConnectProxy;
         private ApplicationProxy m_ApplicationProxy;
+        private UpmClient m_UpmClient;
         private void ResolveDependencies(ResourceLoader resourceLoader,
             SelectionProxy selection,
             PackageFiltering packageFiltering,
@@ -31,7 +33,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             PageManager pageManager,
             PackageManagerProjectSettingsProxy settingsProxy,
             UnityConnectProxy unityConnectProxy,
-            ApplicationProxy applicationProxy)
+            ApplicationProxy applicationProxy,
+            UpmClient upmClient)
         {
             m_ResourceLoader = resourceLoader;
             m_Selection = selection;
@@ -42,6 +45,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SettingsProxy = settingsProxy;
             m_UnityConnectProxy = unityConnectProxy;
             m_ApplicationProxy = applicationProxy;
+            m_UpmClient = upmClient;
         }
 
         public PackageManagerWindowRoot(ResourceLoader resourceLoader,
@@ -52,11 +56,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                                         PageManager pageManager,
                                         PackageManagerProjectSettingsProxy settingsProxy,
                                         UnityConnectProxy unityConnectProxy,
-                                        ApplicationProxy applicationProxy)
+                                        ApplicationProxy applicationProxy,
+                                        UpmClient upmClient)
         {
-            ResolveDependencies(resourceLoader, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy);
+            ResolveDependencies(resourceLoader, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient);
 
-            styleSheets.Add(m_ResourceLoader.GetMainWindowStyleSheet());
+            styleSheets.Add(m_ResourceLoader.packageManagerWindowStyleSheet);
 
             var root = m_ResourceLoader.GetTemplate("PackageManagerWindow.uxml");
             Add(root);
@@ -81,6 +86,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.onRefreshOperationStart += OnRefreshOperationStart;
             m_PageManager.onRefreshOperationError += OnRefreshOperationError;
             m_PackageFiltering.onFilterTabChanged += OnFilterChanged;
+
+            m_UnityConnectProxy.onUserLoginStateChange += OnUserLoginStateChange;
 
             PackageManagerWindowAnalytics.Setup();
 
@@ -174,6 +181,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.onRefreshOperationError -= OnRefreshOperationError;
             m_PackageFiltering.onFilterTabChanged -= OnFilterChanged;
 
+            m_UnityConnectProxy.onUserLoginStateChange -= OnUserLoginStateChange;
+
             packageDetails.OnDisable();
             packageList.OnDisable();
             packageLoadBar.OnDisable();
@@ -184,6 +193,32 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Selection.onSelectionChanged -= RefreshSelectedInInspectorClass;
 
             m_PackageManagerPrefs.splitterFlexGrow = leftColumnContainer.resolvedStyle.flexGrow;
+        }
+
+        private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
+        {
+            if (!userInfoReady || m_PackageDatabase.isEmpty || !m_PageManager.IsInitialFetchingDone())
+                return;
+
+            var entitlements = m_PackageDatabase.allPackages.Where(package =>  package.hasEntitlements);
+            if (loggedIn)
+            {
+                if (entitlements.Any(package => (package.versions?.primary.isInstalled ?? false) && (package.versions?.primary.hasEntitlementsError ?? false)))
+                    m_UpmClient.Resolve();
+                else
+                {
+                    m_PageManager.Refresh(RefreshOptions.UpmList | RefreshOptions.UpmSearch);
+                    m_PageManager.RefreshSelected();
+                }
+            }
+            else
+            {
+                if (entitlements.Any())
+                {
+                    m_PageManager.Refresh(RefreshOptions.UpmList | RefreshOptions.UpmSearch);
+                    m_PageManager.RefreshSelected();
+                }
+            }
         }
 
         public void OnDestroy()
@@ -216,6 +251,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SelectPackageAndFilter()
         {
+            if (!m_PageManager.IsInitialFetchingDone())
+            {
+                return;
+            }
+
             IPackageVersion version = null;
             IPackage package = null;
             if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
@@ -328,6 +368,34 @@ namespace UnityEditor.PackageManager.UI.Internal
                 else
                     SelectPackageAndFilter();
             }
+        }
+
+        public void OpenAddPackageByNameDropdown(string url)
+        {
+            var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_PackageFiltering, m_UpmClient, m_PackageDatabase, m_PageManager, PackageManagerWindow.instance);
+
+            var packageNameAndVersion = url.Replace(PackageManagerWindow.k_UpmUrl, string.Empty);
+            var packageName = string.Empty;
+            var packageVersion = string.Empty;
+
+            if (packageNameAndVersion.Contains("@"))
+            {
+                var values = packageNameAndVersion.Split('@');
+                if (values.Count() > 1)
+                {
+                    packageName = values[0];
+                    packageVersion = values[1];
+                }
+            }
+            else
+                packageName = packageNameAndVersion;
+
+            DropdownElement.ShowDropdown(this, dropdown);
+
+            // We need to set the name and version after the dropdown is shown,
+            // so that the OnTextFieldChange of placeholder gets called
+            dropdown.packageNameField.value = packageName;
+            dropdown.packageVersionField.value = packageVersion;
         }
 
         private VisualElementCache cache { set; get; }

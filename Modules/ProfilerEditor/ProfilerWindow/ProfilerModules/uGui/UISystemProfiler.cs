@@ -13,11 +13,10 @@ using UnityEditor.Profiling;
 
 namespace UnityEditor
 {
-    internal class UISystemProfiler
+    internal class UISystemProfiler : IDisposable
     {
         private readonly SplitterState m_TreePreviewHorizontalSplitState = SplitterState.FromRelative(new[] {70f, 30f}, new[] {100f, 100f}, null);
 
-        private Material m_CompositeOverdrawMaterial;
         private MultiColumnHeaderState m_MulticolumnHeaderState;
         private UISystemProfilerRenderService m_RenderService;
         private UISystemProfilerTreeView m_TreeViewControl;
@@ -28,24 +27,38 @@ namespace UnityEditor
 
         private int currentFrame = 0;
 
-        private Material previewTextureMaterial;
+        private Material m_CompositeOverdrawMaterial;
+        private Material m_PreviewTextureMaterial;
 
-        public UISystemProfiler()
+        bool shouldSetupMaterials { get { return m_CompositeOverdrawMaterial == null || m_PreviewTextureMaterial == null; } }
+
+        internal void SetupMaterials()
         {
-            setupPreviewTextureMaterial();
+            m_CompositeOverdrawMaterial = new Material(Shader.Find("Hidden/UI/CompositeOverdraw"));
+            m_PreviewTextureMaterial = new Material(EditorGUI.transparentMaterial);
+            m_PreviewTextureMaterial.SetColor("_ColorMask", new Color(1, 1, 1, 1));
         }
 
-        internal void setupPreviewTextureMaterial()
+        public void Dispose()
         {
-            if (previewTextureMaterial != null)
-                return;
+            if (m_CompositeOverdrawMaterial != null)
+            {
+                UnityEngine.Object.DestroyImmediate(m_CompositeOverdrawMaterial);
+                m_CompositeOverdrawMaterial = null;
+            }
 
-            previewTextureMaterial = new Material(EditorGUI.transparentMaterial);
-            previewTextureMaterial.SetColor("_ColorMask", new Color(1, 1, 1, 1));
+            if (m_PreviewTextureMaterial != null)
+            {
+                UnityEngine.Object.DestroyImmediate(m_PreviewTextureMaterial);
+                m_PreviewTextureMaterial = null;
+            }
         }
 
         internal void DrawUIPane(IProfilerWindowController win)
         {
+            if (shouldSetupMaterials)
+                SetupMaterials();
+
             InitIfNeeded(win);
 
             EditorGUILayout.BeginVertical();
@@ -144,6 +157,9 @@ namespace UnityEditor
 
         internal void DrawRenderUI()
         {
+            if (shouldSetupMaterials)
+                SetupMaterials();
+
             if (s_PreviewBackground == null)
             {
                 s_PreviewBackground = "OL box flat";
@@ -173,21 +189,12 @@ namespace UnityEditor
                         {
                             image = m_RenderService.GetThumbnail(currentFrame, batch.renderDataIndex, 1, previewRenderMode != Styles.RenderMode.Standard);
                         }
+
                         var canvas = row as UISystemProfilerTreeView.CanvasTreeViewItem;
                         if (canvas != null)
                         {
                             image = m_RenderService.GetThumbnail(currentFrame, canvas.info.renderDataIndex, canvas.info.renderDataCount,
                                 previewRenderMode != Styles.RenderMode.Standard);
-                        }
-
-                        if (previewRenderMode == Styles.RenderMode.CompositeOverdraw)
-                        {
-                            if (m_CompositeOverdrawMaterial == null)
-                            {
-                                Shader shader = Shader.Find("Hidden/UI/CompositeOverdraw");
-                                if (shader)
-                                    m_CompositeOverdrawMaterial = new Material(shader);
-                            }
                         }
 
                         if (image)
@@ -214,7 +221,7 @@ namespace UnityEditor
                             }
 
                             Graphics.DrawTexture(m_ZoomablePreview.drawRect, image, m_ZoomablePreview.shownArea, 0, 0, 0, 0,
-                                previewRenderMode == Styles.RenderMode.CompositeOverdraw ? m_CompositeOverdrawMaterial : previewTextureMaterial);
+                                previewRenderMode == Styles.RenderMode.CompositeOverdraw ? m_CompositeOverdrawMaterial : m_PreviewTextureMaterial);
                         }
                         if (previewRenderMode != Styles.RenderMode.Standard)
                             break;
@@ -449,6 +456,12 @@ namespace UnityEditor
                 Close();
             else
                 profiler.DrawRenderUI();
+        }
+
+        private void OnDisable()
+        {
+            if (profiler != null)
+                profiler.Dispose();
         }
 
         internal override bool CanMaximize()

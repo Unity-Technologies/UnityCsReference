@@ -506,6 +506,24 @@ namespace UnityEditor
             return defines.Distinct().ToArray();
         }
 
+        private List<string> BuildListOfVersionDefineResourceOptions(string preselectedResourceName)
+        {
+            var versionDefineResourceOptions = EditorCompilationInterface.Instance.GetVersionMetaDatas().Keys.ToList();
+
+            if (!string.IsNullOrEmpty(preselectedResourceName) && !versionDefineResourceOptions.Contains(preselectedResourceName))
+            {
+                versionDefineResourceOptions.Add(preselectedResourceName);
+            }
+
+            versionDefineResourceOptions.Insert(0, "Select...");
+
+            bool optionUnityIsInTheList = versionDefineResourceOptions.Remove(UnityVersionTypeName);
+            if (optionUnityIsInTheList)
+                versionDefineResourceOptions.Insert(1, UnityVersionTypeName);
+
+            return versionDefineResourceOptions;
+        }
+
         private void DrawVersionDefineListElement(Rect rect, int index, bool isactive, bool isfocused)
         {
             var list = m_VersionDefineList.serializedProperty;
@@ -516,18 +534,12 @@ namespace UnityEditor
 
             rect.height -= EditorGUIUtility.standardVerticalSpacing;
 
-            var versionMetaDatas = EditorCompilationInterface.Instance.GetVersionMetaDatas().Keys.ToList();
+            var versionedResourceOptions = BuildListOfVersionDefineResourceOptions(nameProp.stringValue);
 
-            if (!string.IsNullOrEmpty(nameProp.stringValue) && !versionMetaDatas.Contains(nameProp.stringValue))
-            {
-                versionMetaDatas.Add(nameProp.stringValue);
-            }
-
-            versionMetaDatas.Insert(0, "Select...");
             int indexOfSelected = 0;
             if (!string.IsNullOrEmpty(nameProp.stringValue))
             {
-                indexOfSelected = versionMetaDatas.IndexOf(nameProp.stringValue);
+                indexOfSelected = versionedResourceOptions.IndexOf(nameProp.stringValue);
             }
 
             bool mixed = versionDefineProp.hasMultipleDifferentValues;
@@ -535,8 +547,8 @@ namespace UnityEditor
 
             var elementRect = new Rect(rect);
             elementRect.height = EditorGUIUtility.singleLineHeight;
-            int popupIndex = EditorGUI.Popup(elementRect, GUIContent.Temp("Resource", "Select the package or module that you want to set a define for."), indexOfSelected, versionMetaDatas.ToArray());
-            nameProp.stringValue = versionMetaDatas[popupIndex];
+            int popupIndex = EditorGUI.Popup(elementRect, GUIContent.Temp("Resource", "Select 'Unity' or the package or module that you want to set a define for."), indexOfSelected, versionedResourceOptions.ToArray());
+            nameProp.stringValue = versionedResourceOptions[popupIndex];
 
             elementRect.y += EditorGUIUtility.singleLineHeight;
             defineProp.stringValue = EditorGUI.TextField(elementRect, GUIContent.Temp("Define", "Specify the name you want this define to have. This define is only set if the expression below returns true."), defineProp.stringValue);

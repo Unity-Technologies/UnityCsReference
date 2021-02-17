@@ -95,6 +95,18 @@ namespace UnityEditorInternal
         NotSupportedWithMetal = 1 << 10,
     }
 
+
+    [Flags]
+    [RequiredByNativeCode]
+    [NativeHeader("Modules/Profiler/Public/ProfilerStats.h")]
+    internal enum GlobalIlluminationProfilingStatisticsAvailabilityStates
+    {
+        DataGathered = 1 << 0,
+        ProfilerModuleEnabled = 1 << 1,
+        GISupported = 1 << 2,
+        GIEnabled = 1 << 3,
+    }
+
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     [System.Serializable]
@@ -157,14 +169,27 @@ namespace UnityEditorInternal
         [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
         static public extern bool IsAreaEnabled(ProfilerArea area);
 
-        [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
-        static public extern bool enabled
+        static public bool enabled
         {
-            [NativeMethod("IsProfilingEnabled")]
-            get;
-            [NativeMethod("SetProfilingEnabled")]
-            set;
+            get
+            {
+                return IsProfilingEnabled();
+            }
+
+            set
+            {
+                ProfilerWindowAnalytics.ProfilingStateChange(value);
+                SetProfilingEnabled(value);
+            }
         }
+
+        [NativeMethod("IsProfilingEnabled")]
+        [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
+        static private extern bool IsProfilingEnabled();
+
+        [NativeMethod("SetProfilingEnabled")]
+        [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
+        static private extern void SetProfilingEnabled(bool enabled);
 
         static public bool profileGPU
         {
@@ -318,6 +343,14 @@ namespace UnityEditorInternal
         static void InvokeProfileLoaded()
         {
             profileLoaded?.Invoke();
+        }
+
+        public static event Action profileCleared;
+
+        [RequiredByNativeCode]
+        static void InvokeProfileCleared()
+        {
+            profileCleared?.Invoke();
         }
 
         internal static event Action<ProfilerAnalyticsSaveLoadData> profilerCaptureLoaded;
@@ -510,11 +543,6 @@ namespace UnityEditorInternal
         [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
         [NativeMethod("SendQueryFunctionCallees")]
         static public extern void QueryFunctionCallees(string fullname);
-
-        [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
-        [NativeMethod("SendSetAutoInstrumentedAssemblies")]
-
-        static public extern void SetAutoInstrumentedAssemblies(InstrumentedAssemblyTypes fullname);
 
         [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
         [NativeMethod("SendSetAudioCaptureFlags")]

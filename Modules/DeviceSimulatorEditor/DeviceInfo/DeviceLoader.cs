@@ -117,37 +117,26 @@ namespace UnityEditor.DeviceSimulation
             return devices.ToArray();
         }
 
-        public static bool LoadOverlay(DeviceInfoAsset device, int screenIndex)
+        public static Texture LoadOverlay(DeviceInfoAsset device, int screenIndex)
         {
             var screen = device.deviceInfo.screens[screenIndex];
             var path = screen.presentation.overlayPath;
 
             if (string.IsNullOrEmpty(path))
-                return false;
+                return null;
 
             if (device.editorResource)
             {
                 var filePath = Path.Combine(device.directory, screen.presentation.overlayPath);
                 var overlay = EditorGUIUtility.Load(filePath) as Texture;
                 Debug.Assert(overlay != null, $"Failed to load built-in device {device.deviceInfo} overlay");
-                screen.presentation.overlay = overlay;
-            }
-            else
-            {
-                if (!path.StartsWith("Assets/") && !path.StartsWith("Packages/"))
-                    path = Path.Combine(device.directory, path);
-                screen.presentation.overlay = AssetDatabase.LoadAssetAtPath<Texture>(path);
+                return overlay;
             }
 
-            return screen.presentation.overlay != null;
-        }
-
-        public static void UnloadOverlays(DeviceInfoAsset device)
-        {
-            foreach (var screen in device.deviceInfo.screens)
-            {
-                screen.presentation.overlay = null;
-            }
+            path = path.Replace("\\", "/");
+            if (!path.StartsWith("Assets/") && !path.StartsWith("Packages/"))
+                path = Path.Combine(device.directory, path);
+            return AssetDatabase.LoadAssetAtPath<Texture>(path);
         }
     }
 }

@@ -250,12 +250,19 @@ namespace UnityEngine
         extern public void SetDriveTargetVelocities(List<float> targetVelocities);
         extern public int GetDofStartIndices(List<int> dofStartIndices);
 
+        extern public CollisionDetectionMode collisionDetectionMode { get; set; }
+
         public void SnapAnchorToClosestContact()
         {
             if (!transform.parent)
                 return;
 
+            // GetComponentInParent returns enabled/disabled components, need to find enabled one.
             ArticulationBody parentBody = transform.parent.GetComponentInParent<ArticulationBody>();
+            while (parentBody && !parentBody.enabled)
+            {
+                parentBody = parentBody.transform.parent.GetComponentInParent<ArticulationBody>();
+            }
 
             if (!parentBody)
                 return;

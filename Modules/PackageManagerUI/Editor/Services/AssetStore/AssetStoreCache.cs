@@ -151,7 +151,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public void DownloadImageAsync(long productID, string url, Action<long, Texture2D> doneCallbackAction = null)
+        public virtual void DownloadImageAsync(long productID, string url, Action<long, Texture2D> doneCallbackAction = null)
         {
             if (m_MissingTexture == null)
             {

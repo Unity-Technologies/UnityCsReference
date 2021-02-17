@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
@@ -14,6 +15,7 @@ using UnityEditorInternal;
 namespace UnityEditor.U2D
 {
     [CustomEditor(typeof(SpriteAtlasImporter))]
+    [ExcludeFromPreset]
     internal class SpriteAtlasImporterInspector : Editor
     {
         class SpriteAtlasInspectorPlatformSettingView : TexturePlatformSettingsView
@@ -57,7 +59,7 @@ namespace UnityEditor.U2D
 
             public readonly GUIContent generateMipMapLabel = EditorGUIUtility.TrTextContent("Generate Mip Maps");
             public readonly GUIContent sRGBLabel = EditorGUIUtility.TrTextContent("sRGB", "Texture content is stored in gamma space.");
-            public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write Enabled", "Enable to be able to access the raw pixel data from code.");
+            public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write", "Enable to be able to access the raw pixel data from code.");
             public readonly GUIContent variantMultiplierLabel = EditorGUIUtility.TrTextContent("Scale", "Down scale ratio.");
             public readonly GUIContent copyMasterButton = EditorGUIUtility.TrTextContent("Copy Master's Settings", "Copy all master's settings into this variant.");
 
@@ -184,6 +186,14 @@ namespace UnityEditor.U2D
         bool IsTargetMaster()
         {
             return !spriteAtlasAsset.isVariant;
+        }
+
+        internal override string targetTitle
+        {
+            get
+            {
+                return Path.GetFileNameWithoutExtension(m_AssetPath) + " (Sprite Atlas)";
+            }
         }
 
         private string LoadSourceAsset()

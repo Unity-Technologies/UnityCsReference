@@ -179,6 +179,7 @@ namespace UnityEditor.UIElements.Debugger
 
             m_TreeView = new TreeView(m_TreeRootItems, 20, makeItem, FillItem);
             m_TreeView.style.flexGrow = 1;
+            m_TreeView.horizontalScrollingEnabled = true;
             m_TreeView.onSelectionChange += items =>
             {
                 if (m_SelectElementCallback == null)
@@ -309,6 +310,14 @@ namespace UnityEditor.UIElements.Debugger
 
                 treeItem.AddChildren(childItems);
             }
+        }
+
+        protected internal void ScrollToSelection()
+        {
+            var item = FindElement(m_TreeRootItems, m_DebuggerSelection?.element);
+            if (item == null)
+                return;
+            m_TreeView.ScrollToItem(item.id);
         }
     }
 }

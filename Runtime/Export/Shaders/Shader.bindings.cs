@@ -582,29 +582,29 @@ namespace UnityEngine.Experimental.Rendering
     public sealed partial class RayTracingShader : Object
     {
         public extern float maxRecursionDepth { get; }
-        // Set uniforms
-        [FreeFunction(Name = "RayTracingShaderScripting::SetValue<float>", HasExplicitThis = true)]
+
+        [FreeFunction(Name = "RayTracingShaderScripting::SetFloat", HasExplicitThis = true)]
         extern public void SetFloat(int nameID, float val);
 
-        [FreeFunction(Name = "RayTracingShaderScripting::SetValue<int>", HasExplicitThis = true)]
+        [FreeFunction(Name = "RayTracingShaderScripting::SetInt", HasExplicitThis = true)]
         extern public void SetInt(int nameID, int val);
 
-        [FreeFunction(Name = "RayTracingShaderScripting::SetValue<Vector4f>", HasExplicitThis = true)]
+        [FreeFunction(Name = "RayTracingShaderScripting::SetVector", HasExplicitThis = true)]
         extern public void SetVector(int nameID, Vector4 val);
 
-        [FreeFunction(Name = "RayTracingShaderScripting::SetValue<Matrix4x4f>", HasExplicitThis = true)]
+        [FreeFunction(Name = "RayTracingShaderScripting::SetMatrix", HasExplicitThis = true)]
         extern public void SetMatrix(int nameID, Matrix4x4 val);
 
-        [FreeFunction(Name = "RayTracingShaderScripting::SetArray<float>", HasExplicitThis = true)]
+        [FreeFunction(Name = "RayTracingShaderScripting::SetFloatArray", HasExplicitThis = true)]
         extern private void SetFloatArray(int nameID, float[] values);
 
-        [FreeFunction(Name = "RayTracingShaderScripting::SetArray<int>", HasExplicitThis = true)]
+        [FreeFunction(Name = "RayTracingShaderScripting::SetIntArray", HasExplicitThis = true)]
         extern private void SetIntArray(int nameID, int[] values);
 
-        [FreeFunction(Name = "RayTracingShaderScripting::SetArray<Vector4f>", HasExplicitThis = true)]
+        [FreeFunction(Name = "RayTracingShaderScripting::SetVectorArray", HasExplicitThis = true)]
         extern public void SetVectorArray(int nameID, Vector4[] values);
 
-        [FreeFunction(Name = "RayTracingShaderScripting::SetArray<Matrix4x4f>", HasExplicitThis = true)]
+        [FreeFunction(Name = "RayTracingShaderScripting::SetMatrixArray", HasExplicitThis = true)]
         extern public void SetMatrixArray(int nameID, Matrix4x4[] values);
 
         [NativeMethod(Name = "RayTracingShaderScripting::SetTexture", HasExplicitThis = true, IsFreeFunction = true)]

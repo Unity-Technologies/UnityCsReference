@@ -3,13 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.IO;
 using UnityEngine;
-using System.Collections.Generic;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    internal class MenuUtils
+    class MenuUtils
     {
         internal enum ContextMenuOrigin
         {
@@ -40,49 +40,37 @@ namespace UnityEditor
                 menuCallBackObject.onAfterExecuteCallback(menuCallBackObject.menuItemPath, menuCallBackObject.temporaryContext, menuCallBackObject.origin, menuCallBackObject.userData);
         }
 
-        public static void ExtractMenuItemWithPath(string menuString,
+        public static void ExtractOnlyEnabledMenuItem(
+            ScriptingMenuItem menuItem,
             GenericMenu menu,
             string replacementMenuString,
             Object[] temporaryContext,
             int userData,
             Action<string, Object[], ContextMenuOrigin, int> onBeforeExecuteCallback,
             Action<string, Object[], ContextMenuOrigin, int> onAfterExecuteCallback,
-            ContextMenuOrigin origin)
+            ContextMenuOrigin origin,
+            int previousMenuItemPriority = -1)
         {
             MenuCallbackObject callbackObject = new MenuCallbackObject();
-            callbackObject.menuItemPath = menuString;
+            callbackObject.menuItemPath = menuItem.path;
             callbackObject.temporaryContext = temporaryContext;
             callbackObject.onBeforeExecuteCallback = onBeforeExecuteCallback;
             callbackObject.onAfterExecuteCallback = onAfterExecuteCallback;
             callbackObject.userData = userData;
             callbackObject.origin = origin;
-            if (EditorApplication.ValidateMenuItem(menuString))
-                menu.AddItem(new GUIContent(L10n.TrPath(replacementMenuString)), false, MenuCallback, callbackObject);
-            else
-                menu.AddDisabledItem(new GUIContent(L10n.TrPath(replacementMenuString)), false);
-        }
 
-        public static void ExtractOnlyEnabledMenuItem(string menuString,
-            GenericMenu menu,
-            string replacementMenuString,
-            Object[] temporaryContext,
-            int userData,
-            Action<string, Object[], ContextMenuOrigin, int> onBeforeExecuteCallback,
-            Action<string, Object[], ContextMenuOrigin, int> onAfterExecuteCallback,
-            ContextMenuOrigin origin)
-        {
-            MenuCallbackObject callbackObject = new MenuCallbackObject();
-            callbackObject.menuItemPath = menuString;
-            callbackObject.temporaryContext = temporaryContext;
-            callbackObject.onBeforeExecuteCallback = onBeforeExecuteCallback;
-            callbackObject.onAfterExecuteCallback = onAfterExecuteCallback;
-            callbackObject.userData = userData;
-            callbackObject.origin = origin;
-            if (EditorApplication.ValidateMenuItem(menuString))
+            // logic should match CocoaMenuController.mm and MenuControllerWin.cpp
+            if (menuItem.priority != -1 && menuItem.priority > previousMenuItemPriority + 10)
+            {
+                var separator = Path.GetDirectoryName(replacementMenuString);
+                menu.AddSeparator($"{separator}/");
+            }
+
+            if (!menuItem.isSeparator && EditorApplication.ValidateMenuItem(menuItem.path))
                 menu.AddItem(new GUIContent(L10n.TrPath(replacementMenuString)), false, MenuCallback, callbackObject);
         }
 
-        private class MenuCallbackObject
+        class MenuCallbackObject
         {
             public string menuItemPath;
             public Object[] temporaryContext;

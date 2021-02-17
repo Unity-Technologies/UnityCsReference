@@ -243,12 +243,14 @@ namespace UnityEditor
 
         private void DelayRepaint()
         {
+            if (!this) // The window could have been destroyed during a reset layout.
+                return;
             Repaint();
         }
 
         private void DrawProgressBar()
         {
-            if (!this || !showProgress)
+            if (!showProgress)
                 return;
 
             GUILayout.Space(k_SpaceBeforeProgress);
@@ -266,7 +268,10 @@ namespace UnityEditor
                 Progress.ShowDetails();
 
             if (globalProgress == -1.0f)
+            {
+                EditorApplication.delayCall -= DelayRepaint;
                 EditorApplication.delayCall += DelayRepaint;
+            }
 
             EditorGUIUtility.AddCursorRect(progressRect, MouseCursor.Link);
             GUILayout.Space(k_SpaceAfterProgress);
@@ -357,15 +362,22 @@ namespace UnityEditor
 
         private void RefreshProgressBar(Progress.Item[] progressItems)
         {
-            if (!this || !showProgress)
+            if (!this)
                 return;
+
+            if (!showProgress)
+            {
+                // If we enter here, it means the last remaining progresses just finished or paused.
+                ClearProgressStatus();
+                RepaintProgress(progressItems);
+                return;
+            }
 
             var idleCount = Progress.EnumerateItems().Count(item => item.running && item.priority == (int)Progress.Priority.Idle);
             var taskCount = Progress.GetRunningProgressCount() - idleCount;
             if (taskCount == 0)
             {
-                m_ProgressStatus.text = String.Empty;
-                m_ProgressPercentageStatus.text = String.Empty;
+                ClearProgressStatus();
             }
             else
             {
@@ -408,6 +420,12 @@ namespace UnityEditor
                 RepaintImmediately();
             else
                 Repaint();
+        }
+
+        private void ClearProgressStatus()
+        {
+            m_ProgressStatus.text = String.Empty;
+            m_ProgressPercentageStatus.text = String.Empty;
         }
 
         private GUILayoutOption GetStatusTextLayoutOption(float consoleIconWidth)

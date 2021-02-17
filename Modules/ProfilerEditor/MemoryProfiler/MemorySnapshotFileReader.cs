@@ -8,6 +8,7 @@ using System.IO;
 
 namespace UnityEditorInternal.Profiling.Memory.Experimental
 {
+    // Note: new entry types should be added directly to the package and not the experimental api, as this one will be deprecated soon
     // keep in sync with MemorySnapshot/MemorySnapshotFileEntryNames.h
     namespace FileFormat
     {

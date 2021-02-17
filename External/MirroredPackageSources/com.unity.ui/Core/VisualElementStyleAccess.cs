@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public partial class VisualElement
     {
+        internal static CustomStyleAccess s_CustomStyleAccess = new CustomStyleAccess();
         internal InlineStyleAccess inlineStyleAccess;
         /// <summary>
         /// Reference to the style object of this element.
@@ -34,7 +35,14 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Returns the custom style properties accessor for this element.
         /// </summary>
-        public ICustomStyle customStyle => computedStyle;
+        public ICustomStyle customStyle
+        {
+            get
+            {
+                s_CustomStyleAccess.SetContext(computedStyle.customProperties, computedStyle.dpiScaling);
+                return s_CustomStyleAccess;
+            }
+        }
 
         /// <summary>
         /// Returns a <see cref="VisualElementStyleSheetSet"/> that manipulates style sheets attached to this element.
@@ -103,6 +111,169 @@ namespace UnityEngine.UIElements
 
             float parentSize = isRow ? parent.resolvedStyle.width : parent.resolvedStyle.height;
             return length.value * parentSize / 100;
+        }
+
+        internal class CustomStyleAccess : ICustomStyle
+        {
+            private Dictionary<string, StylePropertyValue> m_CustomProperties;
+            private float m_DpiScaling;
+
+            public void SetContext(Dictionary<string, StylePropertyValue> customProperties, float dpiScaling)
+            {
+                m_CustomProperties = customProperties;
+                m_DpiScaling = dpiScaling;
+            }
+
+            public bool TryGetValue(CustomStyleProperty<float> property, out float value)
+            {
+                if (TryGetValue(property.name, StyleValueType.Float, out var customProp))
+                {
+                    if (customProp.sheet.TryReadFloat(customProp.handle, out value))
+                        return true;
+                }
+
+                value = 0f;
+                return false;
+            }
+
+            public bool TryGetValue(CustomStyleProperty<int> property, out int value)
+            {
+                if (TryGetValue(property.name, StyleValueType.Float, out var customProp))
+                {
+                    if (customProp.sheet.TryReadFloat(customProp.handle, out var tmp))
+                    {
+                        value = (int)tmp;
+                        return true;
+                    }
+                }
+
+                value = 0;
+                return false;
+            }
+
+            public bool TryGetValue(CustomStyleProperty<bool> property, out bool value)
+            {
+                if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
+                {
+                    value = customProp.sheet.ReadKeyword(customProp.handle) == StyleValueKeyword.True;
+                    return true;
+                }
+
+                value = false;
+                return false;
+            }
+
+            public bool TryGetValue(CustomStyleProperty<Color> property, out Color value)
+            {
+                if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
+                {
+                    var handle = customProp.handle;
+                    switch (handle.valueType)
+                    {
+                        case StyleValueType.Enum:
+                        {
+                            var colorName = customProp.sheet.ReadAsString(handle);
+                            return StyleSheetColor.TryGetColor(colorName.ToLower(), out value);
+                        }
+                        case StyleValueType.Color:
+                        {
+                            if (customProp.sheet.TryReadColor(customProp.handle, out value))
+                                return true;
+                            break;
+                        }
+                        default:
+                            LogCustomPropertyWarning(property.name, StyleValueType.Color, customProp);
+                            break;
+                    }
+                }
+
+                value = Color.clear;
+                return false;
+            }
+
+            public bool TryGetValue(CustomStyleProperty<Texture2D> property, out Texture2D value)
+            {
+                if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
+                {
+                    var source = new ImageSource();
+                    if (StylePropertyReader.TryGetImageSourceFromValue(customProp, m_DpiScaling, out source) && source.texture != null)
+                    {
+                        value = source.texture;
+                        return true;
+                    }
+                }
+
+                value = null;
+                return false;
+            }
+
+            public bool TryGetValue(CustomStyleProperty<Sprite> property, out Sprite value)
+            {
+                if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
+                {
+                    var source = new ImageSource();
+                    if (StylePropertyReader.TryGetImageSourceFromValue(customProp, m_DpiScaling, out source) && source.sprite != null)
+                    {
+                        value = source.sprite;
+                        return true;
+                    }
+                }
+
+                value = null;
+                return false;
+            }
+
+            public bool TryGetValue(CustomStyleProperty<VectorImage> property, out VectorImage value)
+            {
+                if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
+                {
+                    var source = new ImageSource();
+                    if (StylePropertyReader.TryGetImageSourceFromValue(customProp, m_DpiScaling, out source) && source.vectorImage != null)
+                    {
+                        value = source.vectorImage;
+                        return true;
+                    }
+                }
+
+                value = null;
+                return false;
+            }
+
+            public bool TryGetValue(CustomStyleProperty<string> property, out string value)
+            {
+                if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
+                {
+                    value = customProp.sheet.ReadAsString(customProp.handle);
+                    return true;
+                }
+
+                value = string.Empty;
+                return false;
+            }
+
+            private bool TryGetValue(string propertyName, StyleValueType valueType, out StylePropertyValue customProp)
+            {
+                customProp = new StylePropertyValue();
+                if (m_CustomProperties != null && m_CustomProperties.TryGetValue(propertyName, out customProp))
+                {
+                    // CustomProperty only support one value
+                    var handle = customProp.handle;
+                    if (handle.valueType != valueType)
+                    {
+                        LogCustomPropertyWarning(propertyName, valueType, customProp);
+                        return false;
+                    }
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            private static void LogCustomPropertyWarning(string propertyName, StyleValueType valueType, StylePropertyValue customProp)
+            {
+                Debug.LogWarning($"Trying to read custom property {propertyName} value as {valueType} while parsed type is {customProp.handle.valueType}");
+            }
         }
     }
 }

@@ -56,6 +56,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             cache = new VisualElementCache(root);
 
             viewDataKey = "package-list-key";
+            scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             scrollView.viewDataKey = "package-list-scrollview-key";
 
             loginButton.clickable.clicked += OnLoginClicked;
@@ -80,6 +81,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.onVisualStateChange += OnVisualStateChange;
             m_PageManager.onListRebuild += OnListRebuild;
             m_PageManager.onListUpdate += OnListUpdate;
+
+            m_PageManager.onPackageRefreshed += OnPackageRefreshed;
 
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
 
@@ -115,6 +118,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.onListRebuild -= OnListRebuild;
             m_PageManager.onListUpdate -= OnListUpdate;
 
+            m_PageManager.onPackageRefreshed -= OnPackageRefreshed;
+
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
 
             m_SettingsProxy.onSeeAllVersionsChanged -= OnSeeAllPackageVersionsChanged;
@@ -122,6 +127,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             scrollView.UnregisterCallback<GeometryChangedEvent>(OnScrollViewGeometryChanged);
             scrollView.verticalScroller.valueChanged -= OnScrollViewVerticalScrollerValueChanged;
+        }
+
+        private void OnPackageRefreshed(IPackage package)
+        {
+            GetPackageItem(package?.uniqueId)?.RefreshState();
         }
 
         private void OnScrollViewVerticalScrollerValueChanged(float value)
@@ -330,7 +340,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (container == null || target == null)
                 return;
 
-            if (float.IsNaN(target.layout.height))
+            if (float.IsNaN(scrollView.layout.height) || scrollView.layout.height == 0 || float.IsNaN(target.layout.height))
             {
                 EditorApplication.delayCall += () => ScrollIfNeeded(container, target);
                 return;
@@ -431,7 +441,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var hidden = string.IsNullOrEmpty(groupName);
             var expanded = m_PageManager.IsGroupExpanded(groupName);
-            group = new PackageGroup(m_ResourceLoader, m_PageManager, m_SettingsProxy, groupName, GetGroupDisplayName(groupName), m_ApplicationProxy.isDeveloperBuild, expanded, hidden);
+            group = new PackageGroup(m_ResourceLoader, m_PageManager, m_SettingsProxy, groupName, GetGroupDisplayName(groupName), expanded, hidden);
             if (!hidden)
             {
                 group.onGroupToggle += value =>

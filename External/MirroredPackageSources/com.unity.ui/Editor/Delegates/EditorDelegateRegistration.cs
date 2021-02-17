@@ -10,6 +10,7 @@ namespace UnityEditor.UIElements
         {
             VisualTreeAssetChangeTrackerUpdater.IsEditorPlaying = IsEditorPlaying;
             DefaultEventSystem.IsEditorRemoteConnected = IsEditorRemoteConnected;
+            VisualTreeAssetChangeTrackerUpdater.UpdateGameView = EditorApplication.QueuePlayerLoopUpdate;
             AssetOperationsAccess.GetAssetPath = GetAssetPath;
             AssetOperationsAccess.GetAssetDirtyCount = GetAssetDirtyCount;
         }

@@ -37,13 +37,6 @@ namespace UnityEditor
             }
 
             string formattedPath = scriptAssemblyOriginPath.ConvertSeparatorsToUnity().TrimTrailingSlashes();
-
-            if (!formattedPath.StartsWith("assets", StringComparison.InvariantCultureIgnoreCase))
-            {
-                throw new ArgumentException($"'{nameof(scriptAssemblyOriginPath)}' must be either the Assets folder itself, or nested within it. " +
-                    "You may provide either the full path, or the path relative to the project directory, as an argument to this method.");
-            }
-
             string ruleSetFilePath = GetRuleSetFilePathForScriptAssembly(formattedPath);
             return String.IsNullOrEmpty(ruleSetFilePath) ? GetRuleSetFilePathInRootFolder("Default") : ruleSetFilePath;
         }

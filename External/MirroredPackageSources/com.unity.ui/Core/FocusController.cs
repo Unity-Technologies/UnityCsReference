@@ -100,13 +100,12 @@ namespace UnityEngine.UIElements
         /// </summary>
         public virtual void Blur()
         {
-            if (focusController != null)
-            {
-                if (focusController.IsFocused(this))
-                {
-                    focusController.SwitchFocus(null);
-                }
-            }
+            focusController?.Blur(this);
+        }
+
+        internal void BlurImmediately()
+        {
+            focusController?.Blur(this, dispatchMode: DispatchMode.Immediate);
         }
 
         // Use the tree to find the first focusable child.
@@ -311,6 +310,37 @@ namespace UnityEngine.UIElements
         }
 
         private Focusable m_LastFocusedElement;
+        private Focusable m_LastPendingFocusedElement;
+        private int m_PendingFocusCount = 0;
+
+        internal void ValidateInternalState(IPanel panel)
+        {
+            if (m_PendingFocusCount != 0 && !panel.dispatcher.processingEvents)
+            {
+                Debug.LogWarning("FocusController has unprocessed focus events. Clearing.");
+                ClearPendingFocusEvents();
+            }
+        }
+
+
+        internal void ClearPendingFocusEvents()
+        {
+            m_PendingFocusCount = 0;
+            m_LastPendingFocusedElement = null;
+        }
+
+        internal bool IsPendingFocus(Focusable f)
+        {
+            // Search for f in pending focused hierarchy
+            var pending = m_LastPendingFocusedElement as VisualElement;
+            while (pending != null)
+            {
+                if (f == pending)
+                    return true;
+                pending = pending.hierarchy.parent;
+            }
+            return false;
+        }
 
         internal void SetFocusToLastFocusedElement()
         {
@@ -334,8 +364,6 @@ namespace UnityEngine.UIElements
             m_FocusedElements.Clear();
 
             VisualElement ve = f as VisualElement;
-            if (!(f is IMGUIContainer))
-                m_LastFocusedElement = f;
 
             while (ve != null)
             {
@@ -346,81 +374,103 @@ namespace UnityEngine.UIElements
                 }
                 ve = ve.hierarchy.parent;
             }
+
+            m_PendingFocusCount--;
+            if (m_PendingFocusCount == 0)
+                m_LastPendingFocusedElement = null;
         }
 
-        void AboutToReleaseFocus(Focusable focusable, Focusable willGiveFocusTo, FocusChangeDirection direction)
+        void AboutToReleaseFocus(Focusable focusable, Focusable willGiveFocusTo, FocusChangeDirection direction, DispatchMode dispatchMode)
         {
             using (FocusOutEvent e = FocusOutEvent.GetPooled(focusable, willGiveFocusTo, direction, this))
             {
-                focusable.SendEvent(e);
+                focusable.SendEvent(e, dispatchMode);
             }
         }
 
-        void ReleaseFocus(Focusable focusable, Focusable willGiveFocusTo, FocusChangeDirection direction)
+        void ReleaseFocus(Focusable focusable, Focusable willGiveFocusTo, FocusChangeDirection direction, DispatchMode dispatchMode)
         {
             using (BlurEvent e = BlurEvent.GetPooled(focusable, willGiveFocusTo, direction, this))
             {
-                focusable.SendEvent(e);
+                focusable.SendEvent(e, dispatchMode);
             }
         }
 
-        void AboutToGrabFocus(Focusable focusable, Focusable willTakeFocusFrom, FocusChangeDirection direction)
+        void AboutToGrabFocus(Focusable focusable, Focusable willTakeFocusFrom, FocusChangeDirection direction, DispatchMode dispatchMode)
         {
             using (FocusInEvent e = FocusInEvent.GetPooled(focusable, willTakeFocusFrom, direction, this))
             {
-                focusable.SendEvent(e);
+                focusable.SendEvent(e, dispatchMode);
             }
         }
 
-        void GrabFocus(Focusable focusable, Focusable willTakeFocusFrom, FocusChangeDirection direction, bool bIsFocusDelegated = false)
+        void GrabFocus(Focusable focusable, Focusable willTakeFocusFrom, FocusChangeDirection direction, bool bIsFocusDelegated, DispatchMode dispatchMode)
         {
             using (FocusEvent e = FocusEvent.GetPooled(focusable, willTakeFocusFrom, direction, this, bIsFocusDelegated))
             {
-                focusable.SendEvent(e);
+                focusable.SendEvent(e, dispatchMode);
             }
         }
 
-        internal void SwitchFocus(Focusable newFocusedElement, bool bIsFocusDelegated = false)
+        internal void Blur(Focusable focusable, bool bIsFocusDelegated = false, DispatchMode dispatchMode = DispatchMode.Default)
         {
-            SwitchFocus(newFocusedElement, FocusChangeDirection.unspecified, bIsFocusDelegated);
+            var ownsFocus = m_PendingFocusCount > 0 ? IsPendingFocus(focusable) : IsFocused(focusable);
+            if (ownsFocus)
+            {
+                SwitchFocus(null, bIsFocusDelegated, dispatchMode);
+            }
         }
 
-        internal void SwitchFocus(Focusable newFocusedElement, FocusChangeDirection direction, bool bIsFocusDelegated = false)
+        internal void SwitchFocus(Focusable newFocusedElement, bool bIsFocusDelegated = false, DispatchMode dispatchMode = DispatchMode.Default)
         {
-            if (GetLeafFocusedElement() == newFocusedElement)
+            SwitchFocus(newFocusedElement, FocusChangeDirection.unspecified, bIsFocusDelegated, dispatchMode);
+        }
+
+        internal void SwitchFocus(Focusable newFocusedElement, FocusChangeDirection direction, bool bIsFocusDelegated = false, DispatchMode dispatchMode = DispatchMode.Default)
+        {
+            m_LastFocusedElement = newFocusedElement;
+
+            var oldFocusedElement = m_PendingFocusCount > 0 ? m_LastPendingFocusedElement : GetLeafFocusedElement();
+
+            if (oldFocusedElement == newFocusedElement)
             {
                 return;
             }
-
-            var oldFocusedElement = GetLeafFocusedElement();
 
             if (newFocusedElement == null || !newFocusedElement.canGrabFocus)
             {
                 if (oldFocusedElement != null)
                 {
-                    AboutToReleaseFocus(oldFocusedElement, null, direction);
-                    ReleaseFocus(oldFocusedElement, null, direction);
+                    m_LastPendingFocusedElement = null;
+                    m_PendingFocusCount++; // ReleaseFocus will always trigger DoFocusChange
+
+                    AboutToReleaseFocus(oldFocusedElement, null, direction, dispatchMode);
+                    ReleaseFocus(oldFocusedElement, null, direction, dispatchMode);
                 }
             }
             else if (newFocusedElement != oldFocusedElement)
             {
                 // Retarget event.relatedTarget so it is in the same tree as event.target.
-                var retargetedNewFocusedElement = (newFocusedElement as VisualElement)?.RetargetElement(oldFocusedElement as VisualElement);
-                var retargetedOldFocusedElement = (oldFocusedElement as VisualElement)?.RetargetElement(newFocusedElement as VisualElement);
+                var retargetedNewFocusedElement = (newFocusedElement as VisualElement)?.RetargetElement(oldFocusedElement as VisualElement) ?? newFocusedElement;
+                var retargetedOldFocusedElement = (oldFocusedElement as VisualElement)?.RetargetElement(newFocusedElement as VisualElement) ?? oldFocusedElement;
+
+                m_LastPendingFocusedElement = newFocusedElement;
+                m_PendingFocusCount++; // GrabFocus will always trigger DoFocusChange, but ReleaseFocus won't
 
                 if (oldFocusedElement != null)
                 {
-                    AboutToReleaseFocus(oldFocusedElement, retargetedNewFocusedElement, direction);
+                    AboutToReleaseFocus(oldFocusedElement, retargetedNewFocusedElement, direction, dispatchMode);
                 }
 
-                AboutToGrabFocus(newFocusedElement, retargetedOldFocusedElement, direction);
+                AboutToGrabFocus(newFocusedElement, retargetedOldFocusedElement, direction, dispatchMode);
 
                 if (oldFocusedElement != null)
                 {
-                    ReleaseFocus(oldFocusedElement, retargetedNewFocusedElement, direction);
+                    // Since retargetedNewFocusedElement != null, so ReleaseFocus will not trigger DoFocusChange
+                    ReleaseFocus(oldFocusedElement, retargetedNewFocusedElement, direction, dispatchMode);
                 }
 
-                GrabFocus(newFocusedElement, retargetedOldFocusedElement, direction, bIsFocusDelegated);
+                GrabFocus(newFocusedElement, retargetedOldFocusedElement, direction, bIsFocusDelegated, dispatchMode);
             }
         }
 

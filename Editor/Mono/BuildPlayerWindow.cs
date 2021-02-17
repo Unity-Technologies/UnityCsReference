@@ -9,10 +9,10 @@ using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
 using UnityEditor.Build;
 using UnityEditorInternal;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using JetBrains.Annotations;
 using UnityEditor.Modules;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using Object = UnityEngine.Object;
@@ -48,6 +48,8 @@ namespace UnityEditor
             public string infoText = L10n.Tr("{0} is not included in your Unity Pro license. Your {0} build will include a Unity Personal Edition splash screen.\n\nYou must be eligible to use Unity Personal Edition to use this build option. Please refer to our EULA for further information.");
             public GUIContent eula = EditorGUIUtility.TrTextContent("Eula");
             public string addToYourPro = L10n.Tr("Add {0} to your Unity Pro license");
+            public GUIContent installInBuildFolder = EditorGUIUtility.TrTextContent("Install into source code 'build' folder", "Install into source checkout 'build' folder, for debugging with source code");
+            public GUIContent installInBuildFolderHelp = EditorGUIUtility.TrIconContent("_Help", "Open documentation about source code building and debugging");
 
             public Texture2D activePlatformIcon = EditorGUIUtility.IconContent("BuildSettings.SelectedIcon").image as Texture2D;
 
@@ -92,25 +94,27 @@ namespace UnityEditor
 
         Vector2 scrollPosition = new Vector2(0, 0);
         Vector2 buildTargetSettingsScrollPosition = new Vector2(0, 0);
-        private const string kEditorBuildSettingsPath = "ProjectSettings/EditorBuildSettings.asset";
+        const string kEditorBuildSettingsPath = "ProjectSettings/EditorBuildSettings.asset";
 
-        static Styles styles = null;
+        static Styles styles;
 
         static bool isEditorinstalledWithHub = IsEditorInstalledWithHub();
 
+        [UsedImplicitly]
         public static void ShowBuildPlayerWindow()
         {
             EditorUserBuildSettings.selectedBuildTargetGroup = EditorUserBuildSettings.activeBuildTargetGroup;
-            EditorWindow.GetWindow<BuildPlayerWindow>(false, "Build Settings");
+            GetWindow<BuildPlayerWindow>(false, "Build Settings");
         }
 
         static bool BuildLocationIsValid(string path)
         {
-            return path.Length > 0 && System.IO.Directory.Exists(FileUtil.DeleteLastPathNameComponent(path));
+            return path.Length > 0 && Directory.Exists(FileUtil.DeleteLastPathNameComponent(path));
         }
 
         // This overload is used by the Build & Run menu item & hot key - prompt for location only if the configured
         // output location is not valid.
+        [UsedImplicitly]
         static void BuildPlayerAndRun()
         {
             var buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
@@ -135,12 +139,12 @@ namespace UnityEditor
 
         public BuildPlayerWindow()
         {
-            position = new Rect(50, 50, 540, 530);
-            minSize = new Vector2(630, 580);
+            minSize = new Vector2(640, 580);
+            position = new Rect(50, 50, minSize.x, minSize.y);
             titleContent = EditorGUIUtility.TrTextContent("Build Settings");
         }
 
-        BuildPlayerSceneTreeView m_TreeView = null;
+        BuildPlayerSceneTreeView m_TreeView;
         [SerializeField]
         IMGUI.Controls.TreeViewState m_TreeViewState;
         void ActiveScenesGUI()
@@ -198,16 +202,19 @@ namespace UnityEditor
         }
 
         // TODO: Move this into platform extension dll
-        private bool IsBuildTargetCompatibleWithOS(BuildTarget target)
+        bool IsBuildTargetCompatibleWithOS(BuildTarget target)
         {
-            // Windows Store can only be used on Windows
-            if (target == BuildTarget.WSAPlayer && SystemInfo.operatingSystemFamily != OperatingSystemFamily.Windows)
-                return false;
+            // UWP and all consoles require windows
+            if (target == BuildTarget.WSAPlayer || BuildTargetDiscovery.PlatformHasFlag(target, TargetAttributes.IsConsole))
+            {
+                if (SystemInfo.operatingSystemFamily != OperatingSystemFamily.Windows)
+                    return false;
+            }
 
             return true;
         }
 
-        private void ActiveBuildTargetsGUI()
+        void ActiveBuildTargetsGUI()
         {
             GUILayout.BeginVertical();
             GUILayout.BeginVertical(GUILayout.Width(255));
@@ -215,23 +222,25 @@ namespace UnityEditor
             scrollPosition = GUILayout.BeginScrollView(scrollPosition, "OL Box");
 
             // Draw enabled build targets first, then draw disabled build targets
+            bool even = false;
             for (int requireEnabled = 0; requireEnabled < 2; requireEnabled++)
             {
                 bool showRequired = requireEnabled == 0;
-                bool even = false;
                 foreach (BuildPlatform gt in BuildPlatforms.instance.buildPlatforms)
                 {
-                    if (IsBuildTargetGroupSupported(gt.targetGroup, gt.defaultTarget) != showRequired)
+                    var available = IsBuildTargetGroupSupported(gt.targetGroup, gt.defaultTarget) && BuildPipeline.LicenseCheck(gt.defaultTarget);
+                    if (available != showRequired)
                         continue;
 
                     // Some build targets are not publicly available, show them only when they are actually in use
-                    if (!IsBuildTargetGroupSupported(gt.targetGroup, gt.defaultTarget) && !gt.forceShowTarget)
+                    if (!available && !gt.forceShowTarget)
                         continue;
 
                     // Some build targets are only compatible with specific OS
                     if (!IsBuildTargetCompatibleWithOS(gt.defaultTarget))
                         continue;
 
+                    GUI.contentColor = available ? Color.white : new Color(1, 1, 1, 0.5f);
                     ShowOption(gt, gt.title, even ? styles.evenRow : styles.oddRow);
                     even = !even;
                 }
@@ -252,6 +261,7 @@ namespace UnityEditor
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("Player Settings..."), GUILayout.Width(Styles.kButtonWidth)))
             {
                 SettingsService.OpenProjectSettings("Project/Player");
+                GUIUtility.ExitGUI();
             }
 
             GUILayout.EndHorizontal();
@@ -277,8 +287,6 @@ namespace UnityEditor
             Rect r = GUILayoutUtility.GetRect(50, 36);
             r.x += 1;
             r.y += 1;
-            bool valid = BuildPipeline.LicenseCheck(bp.defaultTarget);
-            GUI.contentColor = new Color(1, 1, 1, valid ? 1 : .7f);
             bool selected = EditorUserBuildSettings.selectedBuildTargetGroup == bp.targetGroup;
 
             if (Event.current.type == EventType.Repaint)
@@ -567,11 +575,11 @@ namespace UnityEditor
         {
             bool licensed = BuildPipeline.LicenseCheck(buildTarget);
 
-            string moduleName = Modules.ModuleManager.GetTargetStringFrom(buildTargetGroup, buildTarget);
+            string moduleName = ModuleManager.GetTargetStringFrom(buildTargetGroup, buildTarget);
 
             return licensed &&
                 !string.IsNullOrEmpty(moduleName) &&
-                Modules.ModuleManager.GetBuildPostProcessor(moduleName) == null &&
+                ModuleManager.GetBuildPostProcessor(moduleName) == null &&
                 (BuildTargetGroup.Standalone != EditorUserBuildSettings.selectedBuildTargetGroup ||
                     !IsAnyStandaloneModuleLoaded());
         }
@@ -588,7 +596,7 @@ namespace UnityEditor
             else if (Application.platform == RuntimePlatform.LinuxEditor)
                 path = Path.Combine(Directory.GetParent(applicationFolderPath).FullName, "modules.json");
 
-            return System.IO.File.Exists(path);
+            return File.Exists(path);
         }
 
         void ShowBuildTargetSettings()
@@ -600,28 +608,17 @@ namespace UnityEditor
             BuildPlatform platform = BuildPlatforms.instance.BuildPlatformFromTargetGroup(buildTargetGroup);
             bool licensed = BuildPipeline.LicenseCheck(buildTarget);
 
-            // Draw the group name
-            GUILayout.Space(18);
-
-            // Draw icon and text of title separately so we can control the space between them
-            Rect r = GUILayoutUtility.GetRect(50, 36);
-            r.x += 1;
-            GUI.Label(new Rect(r.x + 3, r.y + 3, 32, 32), platform.title.image, GUIStyle.none);
-            GUI.Toggle(r, false, platform.title.text, styles.platformSelector);
+            // Draw the group name (text & icon separately to have some space between them)
+            var titleIconSize = 16;
+            Rect r = GUILayoutUtility.GetRect(50, titleIconSize);
+            if (Event.current.type == EventType.Repaint)
+                GUI.DrawTexture(new Rect(r.x, r.y, titleIconSize, titleIconSize), platform.smallIcon);
+            r.x += titleIconSize + 5;
+            GUI.Label(r, platform.title.text, styles.title);
 
             GUILayout.Space(10);
 
-            if (platform.targetGroup == BuildTargetGroup.WebGL && !BuildPipeline.IsBuildTargetSupported(platform.targetGroup, buildTarget))
-            {
-                if (IntPtr.Size == 4)
-                {
-                    GUILayout.Label("Building for WebGL requires a 64-bit Unity editor.");
-                    GUIBuildButtons(false, false, false, platform);
-                    return;
-                }
-            }
-
-            string moduleName = Modules.ModuleManager.GetTargetStringFrom(buildTargetGroup, buildTarget);
+            string moduleName = ModuleManager.GetTargetStringFrom(buildTargetGroup, buildTarget);
 
             if (IsModuleNotInstalled(buildTargetGroup, buildTarget))
             {
@@ -829,8 +826,6 @@ namespace UnityEditor
 
                 GUI.enabled = true;
 
-                GUILayout.FlexibleSpace();
-
                 if (postprocessor != null && postprocessor.SupportsLz4Compression())
                 {
                     var cmpIdx = Array.IndexOf(styles.compressionTypes, EditorUserBuildSettings.GetCompressionType(buildTargetGroup));
@@ -889,13 +884,10 @@ namespace UnityEditor
             if (canInstallInBuildFolder)
             {
                 GUILayout.BeginHorizontal();
-                EditorUserBuildSettings.installInBuildFolder = GUILayout.Toggle(EditorUserBuildSettings.installInBuildFolder, "Install in Builds folder\n(for debugging with source code)", GUILayout.ExpandWidth(false));
-
-                var content = new GUIContent(EditorGUI.GUIContents.helpIcon);
-                content.tooltip = "Open documentation for debugging source code";
-                if (GUILayout.Button(content, EditorStyles.iconButton))
+                EditorUserBuildSettings.installInBuildFolder = GUILayout.Toggle(EditorUserBuildSettings.installInBuildFolder, styles.installInBuildFolder, GUILayout.ExpandWidth(false));
+                if (GUILayout.Button(styles.installInBuildFolderHelp, EditorStyles.iconButton))
                 {
-                    var path = Path.Combine(Directory.GetParent(EditorApplication.applicationPath).FullName, "../../Documentation/BuildDocs/view_build_docs");
+                    var path = Path.Combine(Directory.GetParent(EditorApplication.applicationPath).FullName, "../../Documentation/BuildDocs/view");
                     if (Application.platform == RuntimePlatform.WindowsEditor)
                         System.Diagnostics.Process.Start(path + ".cmd");
                     else
@@ -964,6 +956,12 @@ namespace UnityEditor
 
             buildButton = buildButton ?? styles.build;
             buildAndRunButton = buildAndRunButton ?? styles.buildAndRun;
+
+            // Run last build button(s)
+            if (buildWindowExtension != null && buildWindowExtension.ShouldDrawRunLastBuildButton())
+            {
+                buildWindowExtension.DoRunLastBuildButtonGui();
+            }
 
             // Switching build target in the editor
             BuildTarget selectedTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();

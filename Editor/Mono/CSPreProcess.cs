@@ -11,6 +11,7 @@ using UnityEditor.Scripting.Compilers;
 using UnityEngine;
 using UnityEditor.Modules;
 using UnityEngine.Scripting;
+using UnityEditorInternal;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -34,7 +35,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         private static ProcessStartInfo GetJamStartInfo(bool includeModules)
         {
             StringBuilder moduleArgs = new StringBuilder();
-            moduleArgs.Append("jam.pl LiveReloadableEditorAssemblies");
+            moduleArgs.Append("jam.pl LiveReloadableEditorAssemblies " + InternalEditorUtility.GetBuildSystemVariationArgs());
             if (includeModules)
             {
                 foreach (string target in ModuleManager.GetJamTargets())

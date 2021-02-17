@@ -172,7 +172,7 @@ namespace UnityEditor.UIElements.Debugger
                 // Skip this debugger window
                 GUIView view = guiViews.FirstOrDefault(v => v.GetInstanceID() == it.Current.Key);
                 HostView hostView = view as HostView;
-                if (hostView != null && hostView.actualView == m_DebuggerWindow)
+                if (!m_DebuggerWindow.CanDebugView(hostView))
                     continue;
 
                 var p = it.Current.Value;

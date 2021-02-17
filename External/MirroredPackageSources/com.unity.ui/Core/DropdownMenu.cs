@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEngine.UIElements
 {
@@ -198,19 +197,6 @@ namespace UnityEngine.UIElements
     {
         List<DropdownMenuItem> m_MenuItems = new List<DropdownMenuItem>();
         DropdownMenuEventInfo m_DropdownMenuEventInfo;
-
-        static Type s_EditorMenuType = null;
-
-        static DropdownMenu()
-        {
-            var editorAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "UnityEditor.UIElementsModule");
-            s_EditorMenuType = editorAssembly?.GetType("UnityEditor.UIElements.GenericOSMenu");
-        }
-
-        internal static IGenericMenu CreateDropdown()
-        {
-            return Activator.CreateInstance(s_EditorMenuType ?? typeof(GenericDropdownMenu)) as IGenericMenu;
-        }
 
         /// <summary>
         /// Get the list of menu items.

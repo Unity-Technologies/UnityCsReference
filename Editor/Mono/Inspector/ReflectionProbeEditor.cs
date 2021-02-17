@@ -673,6 +673,7 @@ namespace UnityEditor
                 // Tried to use MaterialPropertyBlock in 5.4.0b2, but would get incorrectly set parameters when using with Graphics.DrawMesh
                 if (!m_CachedGizmoMaterials.ContainsKey(p))
                     m_CachedGizmoMaterials.Add(p, Instantiate(reflectiveMaterial));
+
                 Material mat = m_CachedGizmoMaterials[p] as Material;
                 if (!mat)
                     return;
@@ -688,6 +689,16 @@ namespace UnityEditor
                     mat.SetFloat("_Mip", mipLevel);
                     mat.SetFloat("_Alpha", 0.0f);
                     mat.SetFloat("_Intensity", GetProbeIntensity(p));
+                    mat.SetVector("_MainTex_HDR", p.textureHDRDecodeValues);
+
+                    if (PlayerSettings.colorSpace == ColorSpace.Linear)
+                    {
+                        mat.SetInt("_ColorspaceIsGamma", 0);
+                    }
+                    else
+                    {
+                        mat.SetInt("_ColorspaceIsGamma", 1);
+                    }
 
                     // draw a preview sphere that scales with overall GO scale, but always uniformly
                     var scale = p.transform.lossyScale.magnitude * 0.5f;

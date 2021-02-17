@@ -568,14 +568,5 @@ namespace UnityEditor.VFX
         }
 
         internal static Action<VisualEffectResource> onCompileResource;
-
-        [UsedByNativeCode]
-        internal void RevertResource()
-        {
-            if (onRevertResource != null)
-                onRevertResource(this);
-        }
-
-        internal static Action<VisualEffectResource> onRevertResource;
     }
 }

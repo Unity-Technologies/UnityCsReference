@@ -3,15 +3,28 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
-    class EventDebuggerEventRecord
+    [Serializable]
+    internal class EventDebuggerRecordList
     {
+        public List<EventDebuggerEventRecord> eventList;
+    }
+
+    [Serializable]
+    internal class EventDebuggerEventRecord
+    {
+        [field: SerializeField]
         public string eventBaseName { get; private set; }
+        [field: SerializeField]
         public long eventTypeId { get; private set; }
+        [field: SerializeField]
         public ulong eventId { get; private set; }
+        [field: SerializeField]
         private ulong triggerEventId { get; set; }
-        private long timestamp { get; set; }
+        [field: SerializeField]
+        internal long timestamp { get; private set; }
         public IEventHandler target { get; set; }
         private List<IEventHandler> skipElements { get; set; }
+        [field: SerializeField]
         public bool hasUnderlyingPhysicalEvent { get; private set; }
         private bool isPropagationStopped { get; set; }
         private bool isImmediatePropagationStopped { get; set; }
@@ -25,24 +38,33 @@ namespace UnityEngine.UIElements
         public EventModifiers modifiers { get; private set; }
 
         // Mouse events specific
+        [field: SerializeField]
         public Vector2 mousePosition { get; private set; }
+        [field: SerializeField]
         public int clickCount { get; private set; }
+        [field: SerializeField]
         public int button { get; private set; }
+        [field: SerializeField]
         public int pressedButtons { get; private set; }
 
         // Wheel event specific
+        [field: SerializeField]
         public Vector3 delta { get; private set; }
 
         // Keyboard events specific
+        [field: SerializeField]
         public char character { get; private set; }
+        [field: SerializeField]
         public KeyCode keyCode { get; private set; }
 
         // Command events specific
+        [field: SerializeField]
         public string commandName { get; private set; }
 
         void Init(EventBase evt)
         {
-            eventBaseName = evt.GetType().Name;
+            var type = evt.GetType();
+            eventBaseName = EventDebugger.GetTypeDisplayName(type);
             eventTypeId = evt.eventTypeId;
             eventId = evt.eventId;
             triggerEventId = evt.triggerEventId;
@@ -57,8 +79,8 @@ namespace UnityEngine.UIElements
             isImmediatePropagationStopped = evt.isImmediatePropagationStopped;
             isDefaultPrevented = evt.isDefaultPrevented;
 
-            IMouseEvent mouseEvent = evt as IMouseEvent;
-            IMouseEventInternal mouseEventInternal = evt as IMouseEventInternal;
+            var mouseEvent = evt as IMouseEvent;
+            var mouseEventInternal = evt as IMouseEventInternal;
             hasUnderlyingPhysicalEvent = mouseEvent != null &&
                 mouseEventInternal != null &&
                 mouseEventInternal.triggeredByOS;
@@ -77,25 +99,27 @@ namespace UnityEngine.UIElements
                 button = mouseEvent.button;
                 pressedButtons = mouseEvent.pressedButtons;
                 clickCount = mouseEvent.clickCount;
-                // TODO: Scroll Wheel
-                //delta = mouseEvent.delta;
+
+                var wheelEvent = mouseEvent as WheelEvent;
+                if (wheelEvent != null)
+                {
+                    delta = wheelEvent.delta;
+                }
             }
 
-            IPointerEvent pointerEvent = evt as IPointerEvent;
-            IPointerEventInternal pointerEventInternal = evt as IPointerEventInternal;
-            hasUnderlyingPhysicalEvent = pointerEvent != null &&
-                pointerEventInternal != null &&
-                pointerEventInternal.triggeredByOS;
-
+            var pointerEvent = evt as IPointerEvent;
             if (pointerEvent != null)
             {
+                var pointerEventInternal = evt as IPointerEventInternal;
+                hasUnderlyingPhysicalEvent = pointerEvent != null &&
+                    pointerEventInternal != null &&
+                    pointerEventInternal.triggeredByOS;
+
                 modifiers = pointerEvent.modifiers;
                 mousePosition = pointerEvent.position;
                 button = pointerEvent.button;
                 pressedButtons = pointerEvent.pressedButtons;
                 clickCount = pointerEvent.clickCount;
-                // TODO: Scroll Wheel
-                //delta = mouseEvent.delta;
             }
 
             IKeyboardEvent keyboardEvent = evt as IKeyboardEvent;

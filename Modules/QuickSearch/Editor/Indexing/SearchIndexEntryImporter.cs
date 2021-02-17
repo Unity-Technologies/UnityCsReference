@@ -5,7 +5,6 @@
 using System;
 using System.IO;
 using UnityEngine;
-
 using UnityEditor.AssetImporters;
 
 namespace UnityEditor.Search
@@ -25,7 +24,7 @@ namespace UnityEditor.Search
         // 2- Add a dependency on the container folder of the asset so it gets re-indexed when the folder gets renamed
         // 3- Index colors with a # sign instead of just the hexadecimal value.
         // 4- Optimize the scene indexing content
-        public const int version = (4 << 18) ^ SearchIndexEntry.version;
+        public const int version = (5 << 18) ^ SearchIndexEntry.version;
 
         protected abstract string type { get; }
         protected abstract IndexingOptions options { get; }

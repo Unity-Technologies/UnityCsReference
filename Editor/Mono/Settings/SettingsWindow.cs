@@ -21,6 +21,7 @@ namespace UnityEditor
 
         [SerializeField] private SettingsScope m_Scope;
         [SerializeField] public float m_SplitterFlex = 0.2f;
+        [SerializeField] private string m_SearchText;
 
         private SettingsProvider[] m_Providers;
         private SettingsTreeView m_TreeView;
@@ -28,7 +29,7 @@ namespace UnityEditor
         private VisualElement m_SettingsPanel;
         private VisualElement m_TreeViewContainer;
         private VisualElement m_Toolbar;
-        private string m_SearchText;
+
         private bool m_SearchFieldGiveFocus;
         const string k_SearchField = "SearchField";
 
@@ -226,7 +227,7 @@ namespace UnityEditor
 
             m_TreeView = new SettingsTreeView(m_Providers);
             m_TreeView.currentProviderChanged += ProviderChanged;
-            m_SearchText = String.Empty;
+            m_TreeView.searchString = m_SearchText = m_SearchText ?? string.Empty;
 
             RestoreSelection();
         }
@@ -266,6 +267,8 @@ namespace UnityEditor
         private void SetupWindowPosition()
         {
             var minWidth = Styles.window.GetFloat("min-width");
+            // To accomodate some large labels in the settings window, min-width is being increase (case 1282739)
+            minWidth += 10;
             var minHeight = Styles.window.GetFloat("min-height");
             minSize = new Vector2(minWidth, minHeight);
 
@@ -419,7 +422,7 @@ namespace UnityEditor
             GUILayout.BeginHorizontal();
             GUILayout.Space(Styles.settingsPanel.GetFloat(StyleCatalogKeyword.marginLeft));
             var headerContent = new GUIContent(m_TreeView.currentProvider.label, Styles.header.GetBool("-unity-show-icon") ? m_TreeView.currentProvider.icon : null);
-            GUILayout.Label(headerContent, ImguiStyles.header, GUILayout.MaxHeight(Styles.header.GetFloat("max-height")));
+            GUILayout.Label(headerContent, ImguiStyles.header, GUILayout.MaxHeight(Styles.header.GetFloat("max-height")), GUILayout.MinWidth(160));
             GUILayout.FlexibleSpace();
             m_TreeView.currentProvider.OnTitleBarGUI();
             GUILayout.EndHorizontal();

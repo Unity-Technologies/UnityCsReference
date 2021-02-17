@@ -57,7 +57,7 @@ namespace UnityEditor.Modules
         {
             // Max texture size
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = editor.model.overriddenIsDifferent || editor.model.maxTextureSizeIsDifferent;
+            EditorGUI.showMixedValue = editor.model.maxTextureSizeIsDifferent;
             int maxTextureSize = EditorGUILayout.IntPopup(maxSize.text, editor.model.platformTextureSettings.maxTextureSize, kMaxTextureSizeStrings, kMaxTextureSizeValues);
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
@@ -67,7 +67,7 @@ namespace UnityEditor.Modules
 
             // Resize Algorithm
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = editor.model.overriddenIsDifferent || editor.model.resizeAlgorithmIsDifferent;
+            EditorGUI.showMixedValue = editor.model.resizeAlgorithmIsDifferent;
             int resizeAlgorithmVal = EditorGUILayout.IntPopup(kResizeAlgorithm.text, (int)editor.model.platformTextureSettings.resizeAlgorithm, kResizeAlgorithmStrings, kResizeAlgorithmValues);
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())

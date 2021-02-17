@@ -32,7 +32,9 @@ namespace UnityEditor
         public virtual void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             EditorGUI.DefaultPropertyField(position, property, label);
-            EditorGUI.LabelField(position, label, EditorGUIUtility.TempContent("No GUI Implemented"));
+
+            if (!EditorGUI.DrawLabelHighlight(position, label, EditorStyles.label))
+                EditorGUI.LabelField(position, label, EditorGUIUtility.TempContent("No GUI Implemented"));
         }
 
         // Override this method to make your own GUI for the property based on UIElements.

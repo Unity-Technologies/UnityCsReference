@@ -6,7 +6,6 @@ using System;
 using UnityEngine;
 using UnityEditor.EditorTools;
 using UnityEditor.SceneManagement;
-using UnityEditor.Experimental.SceneManagement;
 
 namespace UnityEditor
 {

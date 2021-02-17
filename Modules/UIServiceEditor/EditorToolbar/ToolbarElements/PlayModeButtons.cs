@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
@@ -19,6 +20,9 @@ namespace UnityEditor.Toolbars
         readonly VisualElement m_UIElementsRoot;
         readonly IMGUIContainer m_ImguiOverride;
 
+        static readonly GUIContent s_PlayButtonContextMenuItem =
+            EditorGUIUtility.TrTextContent("Create Game View On Play");
+
         public PlayModeButtons()
         {
             name = "PlayMode";
@@ -27,6 +31,7 @@ namespace UnityEditor.Toolbars
             m_UIElementsRoot.style.flexDirection = FlexDirection.Row;
 
             m_UIElementsRoot.Add(m_PlayButton = new EditorToolbarToggle {name = "Play"});
+            m_PlayButton.RegisterCallback<MouseDownEvent>(evt => OnPlayButtonRMBClick(evt));
             m_PlayButton.RegisterValueChangedCallback(OnPlayButtonValueChanged);
 
             m_UIElementsRoot.Add(m_PauseButton = new EditorToolbarToggle { name = "Pause" });
@@ -101,6 +106,22 @@ namespace UnityEditor.Toolbars
             {
                 EditorApplication.ExitPlaymode();
             }
+        }
+
+        void OnPlayButtonRMBClick(MouseDownEvent evt)
+        {
+            if (evt.button == 1)
+            {
+                GenericMenu menu = new GenericMenu();
+                bool enabled = GameView.openWindowOnEnteringPlayMode;
+                menu.AddItem(s_PlayButtonContextMenuItem, enabled, ChangeOpenGameViewOnPlayModeBehavior);
+                menu.ShowAsContext();
+            }
+        }
+
+        void ChangeOpenGameViewOnPlayModeBehavior()
+        {
+            PlayModeView.openWindowOnEnteringPlayMode = !PlayModeView.openWindowOnEnteringPlayMode;
         }
 
         void OnPauseButtonValueChanged(ChangeEvent<bool> evt)

@@ -41,8 +41,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal IEnumerable<PackageVersionItem> versionItems { get { return versionList.Children().Cast<PackageVersionItem>(); } }
 
-        private bool m_IsDeveloperBuild;
-
         private ResourceLoader m_ResourceLoader;
         private PageManager m_PageManager;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
@@ -53,10 +51,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SettingsProxy = settingsProxy;
         }
 
-        public PackageItem(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, IPackage package, VisualState state, bool isDeveloperBuild)
+        public PackageItem(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, IPackage package, VisualState state)
         {
             ResolveDependencies(resourceLoader, pageManager, settingsProxy);
-            m_IsDeveloperBuild = isDeveloperBuild;
 
             var root = m_ResourceLoader.GetTemplate("PackageItem.uxml");
             Add(root);
@@ -130,7 +127,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             nameLabel.text = displayVersion.displayName;
+            nameLabel.ShowTextTooltipOnSizeChange();
             versionLabel.text = displayVersion.versionString;
+            versionLabel.ShowTextTooltipOnSizeChange();
 
             var expandable = !package.Is(PackageType.BuiltIn);
             UIUtils.SetElementDisplay(arrowExpander, expandable);
@@ -143,13 +142,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(versionList, showVersionList);
 
             tagContainer.Clear();
-            var tagLabel = PackageTagLabel.CreateTagLabel(displayVersion, m_IsDeveloperBuild);
+            var tagLabel = PackageTagLabel.CreateTagLabel(displayVersion);
             if (tagLabel != null)
                 tagContainer.Add(tagLabel);
 
             RefreshState();
             RefreshVersions();
             RefreshSelection();
+            RefreshEntitlement();
         }
 
         public void RefreshState()
@@ -195,7 +195,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 //  if there's more than one version shown
                 var alwaysShowRecommendedLabel = versions.Count > 1;
                 var isLatestVersion = i == versions.Count - 1;
-                versionList.Add(new PackageVersionItem(package, versions[i], alwaysShowRecommendedLabel, isLatestVersion, m_IsDeveloperBuild));
+                versionList.Add(new PackageVersionItem(package, versions[i], alwaysShowRecommendedLabel, isLatestVersion));
             }
 
             var seeAllVersionsLabelVisible = !seeAllVersions && allVersions.Count > keyVersions.Count
@@ -214,6 +214,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             mainItem.EnableInClassList(k_SelectedClassName, selectedVersion != null);
             foreach (var version in versionItems)
                 version.EnableInClassList(k_SelectedClassName, selectedVersion == version.targetVersion);
+        }
+
+        private void RefreshEntitlement()
+        {
+            var showEntitlement = package.hasEntitlements;
+            UIUtils.SetElementDisplay(entitlementLabel, showEntitlement);
+            entitlementLabel.text = showEntitlement ? "E" : string.Empty;
+            entitlementLabel.tooltip = showEntitlement ? L10n.Tr("This is an Entitlement package.") : string.Empty;
         }
 
         public void SelectMainItem()
@@ -271,6 +279,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElement tagContainer => cache.Get<VisualElement>("tagContainer");
         private VisualElement mainItem { get { return cache.Get<VisualElement>("mainItem"); } }
         private VisualElement stateIcon { get { return cache.Get<VisualElement>("stateIcon"); } }
+        private Label entitlementLabel { get { return cache.Get<Label>("entitlementLabel"); } }
         private Label versionLabel { get { return cache.Get<Label>("versionLabel"); } }
         private LoadingSpinner spinner { get { return cache.Get<LoadingSpinner>("packageSpinner"); } }
         private Toggle arrowExpander { get { return cache.Get<Toggle>("arrowExpander"); } }

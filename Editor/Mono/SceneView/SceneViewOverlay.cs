@@ -72,7 +72,7 @@ namespace UnityEditor
         public void End()
         {
             s_Windows.Sort();
-            if (s_Windows.Count > 0)
+            if (s_Windows.Count > 0 && Event.current.type != EventType.Used)
                 WindowTrampoline();
             m_SceneView.EndWindows();
         }

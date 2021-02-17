@@ -83,7 +83,7 @@ namespace UnityEngine
             while (m_CurrentFrameWork.Count > 0)
             {
                 WorkRequest work = m_CurrentFrameWork[0];
-                m_CurrentFrameWork.Remove(work);
+                m_CurrentFrameWork.RemoveAt(0);
                 work.Invoke();
             }
         }

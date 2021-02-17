@@ -74,8 +74,6 @@ namespace UnityEditorInternal.Profiling
 
         [NonSerialized]
         List<ThreadInfo> m_ThreadInfoCache;
-        [NonSerialized]
-        string[] m_ThreadNames;
 
         [SerializeField]
         DetailedViewType m_DetailedViewType = DetailedViewType.None;
@@ -174,6 +172,10 @@ namespace UnityEditorInternal.Profiling
                 m_GroupName = value;
             }
         }
+
+        // This is purely based on (potentially serialized) UI fields.
+        // Use in cases where e.g. no valid Frame data is around to get Update and get all Thread data from ProfilerDriver but you still need something for the UI to show
+        ThreadInfo CreateThreadInfoForCurrentlyShownThread() => new ThreadInfo() { fullName = m_FullThreadName, groupOrder = GetGroupOrder(m_FullThreadName), threadIndex = threadIndex };
 
         public int sortedProfilerColumn
         {
@@ -305,8 +307,15 @@ namespace UnityEditorInternal.Profiling
         public override void OnEnable(CPUOrGPUProfilerModule cpuModule, IProfilerWindowController profilerWindow, bool isGpuView)
         {
             base.OnEnable(cpuModule, profilerWindow, isGpuView);
+            m_FrameIndex = FrameDataView.invalidOrCurrentFrameIndex;
             m_DetailedObjectsView?.OnEnable(cpuModule, this);
             m_DetailedCallsView?.OnEnable(cpuModule, this);
+            profilerWindow.frameDataViewAboutToBeDisposed += OnFrameDataViewAboutToBeDisposed;
+        }
+
+        void OnFrameDataViewAboutToBeDisposed()
+        {
+            m_TreeView?.OnFrameDataViewAboutToBeDisposed();
         }
 
         void OnMultiColumnHeaderChanged(MultiColumnHeader header)
@@ -431,8 +440,7 @@ namespace UnityEditorInternal.Profiling
                 }
                 InitIfNeeded();
 
-                var collectingSamples = ProfilerDriver.enabled && (ProfilerDriver.profileEditor || EditorApplication.isPlaying);
-                var isSearchAllowed = string.IsNullOrEmpty(treeView.searchString) || !(collectingSamples && ProfilerDriver.deepProfiling);
+                var isSearchAllowed = string.IsNullOrEmpty(treeView.searchString) || !(m_ProfilerWindow.ProfilerWindowOverheadIsAffectingProfilingRecordingData() && ProfilerDriver.deepProfiling);
 
                 var isDataAvailable = frameDataView != null && frameDataView.valid;
 
@@ -442,6 +450,9 @@ namespace UnityEditorInternal.Profiling
 
                 // Hierarchy view area
                 GUILayout.BeginVertical();
+
+                if (isDataAvailable && (threadIndex != frameDataView.threadIndex || threadName != frameDataView.threadName))
+                    SetFrameDataView(frameDataView);
 
                 DrawToolbar(frameDataView, showDetailedView, ref updateViewLive, viewType);
 
@@ -465,7 +476,7 @@ namespace UnityEditorInternal.Profiling
                     var rect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandHeight(true), GUILayout.ExpandHeight(true));
 
                     m_TreeView.SetFrameDataView(frameDataView);
-                    m_TreeView.OnGUI(rect);
+                    m_TreeView.OnGUI(rect, updateViewLive);
 
                     if (m_TreeView.HasSelection() && m_TreeView.proxySelectionInfo.hasProxySelection)
                     {
@@ -603,10 +614,7 @@ namespace UnityEditorInternal.Profiling
             DrawLiveUpdateToggle(ref updateViewLive);
             if (!gpuView)
             {
-                using (new EditorGUI.DisabledScope(!(frameDataView != null && frameDataView.valid)))
-                {
-                    DrawThreadPopup(frameDataView);
-                }
+                DrawThreadPopup(frameDataView);
             }
 
 
@@ -629,10 +637,11 @@ namespace UnityEditorInternal.Profiling
             EditorGUILayout.EndHorizontal();
         }
 
-        class ThreadInfo : IComparable<ThreadInfo>
+        class ThreadInfo : IComparable<ThreadInfo>, IEquatable<ThreadInfo>
         {
             public int groupOrder;
             public string fullName;
+            public int threadIndex;
 
             public int CompareTo(ThreadInfo other)
             {
@@ -641,6 +650,63 @@ namespace UnityEditorInternal.Profiling
                 if (groupOrder != other.groupOrder)
                     return groupOrder - other.groupOrder;
                 return EditorUtility.NaturalCompare(fullName, other.fullName);
+            }
+
+            public static bool operator==(ThreadInfo lhs, ThreadInfo rhs) => ReferenceEquals(lhs, null) && ReferenceEquals(rhs, null) || !ReferenceEquals(lhs, null) && lhs.Equals(rhs);
+            public static bool operator!=(ThreadInfo lhs, ThreadInfo rhs) => ReferenceEquals(lhs, null) ? !ReferenceEquals(rhs, null) : !lhs.Equals(rhs);
+            public override int GetHashCode() => (fullName.GetHashCode() * 21 + groupOrder.GetHashCode()) * 21 + threadIndex.GetHashCode();
+            public override bool Equals(object other) => other is ThreadInfo && Equals((ThreadInfo)other);
+            public bool Equals(ThreadInfo other) => !ReferenceEquals(other, null) && (ReferenceEquals(this, other) || (groupOrder == other.groupOrder && fullName == other.fullName && threadIndex == other.threadIndex));
+        }
+
+        class ProfilerThreadSelectionDropdown : AdvancedDropdown
+        {
+            class ProfilerThreadSelectionDropDownItem : AdvancedDropdownItem
+            {
+                public ThreadInfo info;
+                public ProfilerThreadSelectionDropDownItem(ThreadInfo info) : base(info.fullName)
+                {
+                    this.info = info;
+                    id = info.GetHashCode();
+                }
+            }
+
+            int m_SelectedThreadIndexInListOfThreadNames;
+            List<ThreadInfo> m_ThreadInfos;
+            Action<ThreadInfo, int> m_ItemSelectedCallback;
+            public ProfilerThreadSelectionDropdown(List<ThreadInfo> threads, int selectedThreadIndexInListOfThreadNames, Action<ThreadInfo, int> itemSelected) : base(new AdvancedDropdownState())
+            {
+                m_ThreadInfos = threads;
+                m_SelectedThreadIndexInListOfThreadNames = selectedThreadIndexInListOfThreadNames;
+                m_ItemSelectedCallback = itemSelected;
+            }
+
+            protected override AdvancedDropdownItem BuildRoot()
+            {
+                AdvancedDropdownItem root = null;
+                if (m_ThreadInfos != null && m_ThreadInfos.Count > 0)
+                {
+                    if (m_ThreadInfos.Count < m_SelectedThreadIndexInListOfThreadNames || m_SelectedThreadIndexInListOfThreadNames < 0)
+                        m_SelectedThreadIndexInListOfThreadNames = 0;
+
+                    root = new ProfilerThreadSelectionDropDownItem(m_ThreadInfos[m_SelectedThreadIndexInListOfThreadNames]);
+                    for (int i = 0; i < m_ThreadInfos.Count; i++)
+                    {
+                        var child = new ProfilerThreadSelectionDropDownItem(m_ThreadInfos[i]);
+                        child.elementIndex = i;
+                        root.AddChild(child);
+
+                        if (m_SelectedThreadIndexInListOfThreadNames == i)
+                            m_DataSource.selectedIDs.Add(child.id);
+                    }
+                }
+                return root;
+            }
+
+            protected override void ItemSelected(AdvancedDropdownItem item)
+            {
+                base.ItemSelected(item);
+                m_ItemSelectedCallback?.Invoke((item as ProfilerThreadSelectionDropDownItem).info, item.elementIndex);
             }
         }
 
@@ -661,11 +727,21 @@ namespace UnityEditorInternal.Profiling
 
         void UpdateThreadNamesAndThreadIndex(HierarchyFrameDataView frameDataView, bool forceUpdate = false)
         {
-            if (!frameDataView.valid || (m_FrameIndex == frameDataView.frameIndex && !forceUpdate))
+            if (frameDataView == null || !frameDataView.valid || (m_FrameIndex == frameDataView.frameIndex && !forceUpdate && m_ThreadInfoCache != null))
+            {
+                // make sure these caches and the selection have somewhat valid data
+                if (m_ThreadInfoCache == null || m_ThreadInfoCache.Count <= 0)
+                {
+                    m_ThreadInfoCache = new List<ThreadInfo>();
+                    m_ThreadInfoCache.Add(CreateThreadInfoForCurrentlyShownThread());
+                }
+                if (threadIndexInThreadNames < 0 || threadIndexInThreadNames > m_ThreadInfoCache.Count)
+                    threadIndexInThreadNames = 0;
                 return;
+            }
 
             m_FrameIndex = frameDataView.frameIndex;
-            threadIndexInThreadNames = 0;
+            threadIndexInThreadNames = FrameDataView.invalidThreadIndex;
 
             using (var frameIterator = new ProfilerFrameDataIterator())
             {
@@ -681,58 +757,59 @@ namespace UnityEditorInternal.Profiling
                     var groupName = frameIterator.GetGroupName();
                     var threadName = frameIterator.GetThreadName();
                     var name = string.IsNullOrEmpty(groupName) ? threadName : groupName + "." + threadName;
-                    m_ThreadInfoCache.Add(new ThreadInfo() { groupOrder = GetGroupOrder(name), fullName = name });
+                    m_ThreadInfoCache.Add(new ThreadInfo() { groupOrder = GetGroupOrder(name), fullName = name, threadIndex = i });
                 }
 
                 m_ThreadInfoCache.Sort();
 
-                if (m_ThreadNames == null || m_ThreadNames.Length != threadCount)
-                    m_ThreadNames = new string[threadCount];
-                // Make a display list with a current index selected
                 for (var i = 0; i < threadCount; ++i)
                 {
-                    m_ThreadNames[i] = m_ThreadInfoCache[i].fullName;
-                    if (m_FullThreadName == m_ThreadNames[i])
-                        threadIndexInThreadNames = i;
+                    if (m_FullThreadName == m_ThreadInfoCache[i].fullName)
+                    {
+                        // first check if we have a specific index (some names might be douplicates
+                        if (threadIndex == m_ThreadInfoCache[i].threadIndex)
+                        {
+                            threadIndexInThreadNames = i;
+                            break;
+                        }
+                        // otherwise, store the first fit.
+                        else if (threadIndexInThreadNames == FrameDataView.invalidThreadIndex)
+                            threadIndexInThreadNames = i;
+                    }
                 }
             }
-        }
-
-        UnityEditor.Tuple<int, string[]> GetThreadNamesLazy(HierarchyFrameDataView frameDataView)
-        {
-            UpdateThreadNamesAndThreadIndex(frameDataView);
-            return new UnityEditor.Tuple<int, string[]>(threadIndexInThreadNames, m_ThreadNames);
+            // security fallback to avoid index out of bounds
+            if (threadIndexInThreadNames == FrameDataView.invalidThreadIndex)
+                threadIndexInThreadNames = 0;
         }
 
         private void DrawThreadPopup(HierarchyFrameDataView frameDataView)
         {
-            if (!(frameDataView != null && frameDataView.valid))
-            {
-                var disabledValues = new string[] { m_FullThreadName };
-                EditorGUILayout.AdvancedPopup(0, disabledValues, BaseStyles.threadSelectionToolbarDropDown, GUILayout.MinWidth(BaseStyles.detailedViewTypeToolbarDropDown.fixedWidth));
-                return;
-            }
+            var style = BaseStyles.threadSelectionToolbarDropDown;
+            var buttonContent = GUIContent.Temp(m_FullThreadName);
+            float minWidth, maxWidth;
+            BaseStyles.threadSelectionToolbarDropDown.CalcMinMaxWidth(buttonContent, out minWidth, out maxWidth);
+            var position = GUILayoutUtility.GetRect(buttonContent, style, GUILayout.MinWidth(Math.Max(BaseStyles.detailedViewTypeToolbarDropDown.fixedWidth, minWidth)));
 
-            var newThreadIndex = 0;
-            if (threadIndexInThreadNames == 0)
+            var disabled = !(frameDataView != null && frameDataView.valid);
+            using (new EditorGUI.DisabledScope(disabled))
             {
-                newThreadIndex = EditorGUILayout.AdvancedLazyPopup(m_FullThreadName, threadIndexInThreadNames,
-                    (() => GetThreadNamesLazy(frameDataView)),
-                    BaseStyles.threadSelectionToolbarDropDown, GUILayout.MinWidth(BaseStyles.detailedViewTypeToolbarDropDown.fixedWidth));
+                if (EditorGUI.DropdownButton(position, buttonContent, FocusType.Keyboard, style))
+                {
+                    UpdateThreadNamesAndThreadIndex(frameDataView);
+                    var dropdown = new ProfilerThreadSelectionDropdown(m_ThreadInfoCache, threadIndexInThreadNames, OnThreadSelectionChanged);
+                    dropdown.Show(position);
+                    GUIUtility.ExitGUI();
+                }
             }
-            else
-            {
-                float minWidth, maxWidth;
-                var content = new GUIContent(m_FullThreadName);
-                BaseStyles.threadSelectionToolbarDropDown.CalcMinMaxWidth(content, out minWidth, out maxWidth);
-                UpdateThreadNamesAndThreadIndex(frameDataView);
-                newThreadIndex = EditorGUILayout.AdvancedPopup(threadIndexInThreadNames, m_ThreadNames, BaseStyles.threadSelectionToolbarDropDown, GUILayout.MinWidth(Math.Max(BaseStyles.detailedViewTypeToolbarDropDown.fixedWidth, minWidth)));
-            }
+        }
 
+        void OnThreadSelectionChanged(ThreadInfo info, int newThreadIndex)
+        {
             if (newThreadIndex != threadIndexInThreadNames)
             {
                 threadIndexInThreadNames = newThreadIndex;
-                m_FullThreadName = m_ThreadNames[threadIndexInThreadNames];
+                m_FullThreadName = info.fullName;
                 var indexOfGroupNameSeparator = m_FullThreadName.IndexOf('.');
                 if (indexOfGroupNameSeparator > 0)
                 {
@@ -744,9 +821,11 @@ namespace UnityEditorInternal.Profiling
                     m_GroupName = string.Empty;
                     m_ThreadName = m_FullThreadName;
                 }
-                userChangedThread(m_GroupName, m_ThreadName, newThreadIndex);
+                var actualThreadIndex = FrameDataView.invalidThreadIndex;
+                if (m_ThreadInfoCache != null && newThreadIndex < m_ThreadInfoCache.Count)
+                    actualThreadIndex = m_ThreadInfoCache[newThreadIndex].threadIndex;
+                userChangedThread(m_GroupName, m_ThreadName, actualThreadIndex);
                 cpuModule.Repaint();
-                EditorGUIUtility.ExitGUI();
             }
         }
 
@@ -891,6 +970,7 @@ namespace UnityEditorInternal.Profiling
         {
             base.OnDisable();
             SaveViewSettings();
+            m_ProfilerWindow.frameDataViewAboutToBeDisposed -= OnFrameDataViewAboutToBeDisposed;
             if (m_TreeView != null)
             {
                 if (m_TreeView.multiColumnHeader != null)

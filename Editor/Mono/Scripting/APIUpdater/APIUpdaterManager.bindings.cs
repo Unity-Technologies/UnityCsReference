@@ -12,6 +12,7 @@ using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Utils;
 using UnityEditor.VersionControl;
+using UnityEditor.PackageManager;
 
 using System;
 using System.Collections.Generic;
@@ -278,7 +279,8 @@ namespace UnityEditorInternal.APIUpdating
                 return 0;
             }
 
-            if (!AskForConsent(assembliesToUpdate.Select(a => a.Path).ToArray()))
+            var assembliesRequiringConsent = FilterOutLocalAndEmbeddedPackagesWhenAskingForConsent(assembliesToUpdate.Select(a => a.Path)).ToArray();
+            if (assembliesRequiringConsent.Length > 0 && !AskForConsent(assembliesRequiringConsent))
             {
                 APIUpdaterLogger.WriteToFile(L10n.Tr("User declined to run APIUpdater"));
                 return 0;
@@ -297,6 +299,16 @@ namespace UnityEditorInternal.APIUpdating
 
             assembliesToUpdate.Clear();
             return succeededUpdates.Count();
+
+            IEnumerable<string> FilterOutLocalAndEmbeddedPackagesWhenAskingForConsent(IEnumerable<string> ass)
+            {
+                foreach (var path in ass.Select(path => path.Replace("\\", "/"))) // package manager paths are always separated by /
+                {
+                    var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath(path);
+                    if (packageInfo == null || packageInfo.source == PackageSource.Local || packageInfo.source == PackageSource.Embedded)
+                        yield return path;
+                }
+            }
         }
 
         private static void RunAssemblyUpdaterTask(object o)

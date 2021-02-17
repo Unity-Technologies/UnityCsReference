@@ -89,20 +89,24 @@ namespace UnityEditor
 
     class TerrainDetailContextMenus
     {
-        [MenuItem("CONTEXT/TerrainEngineDetails/Add Grass Texture")]
-        static internal void AddDetailTexture(MenuCommand item)
-        {
-            DetailTextureWizard wizard = TerrainWizard.DisplayTerrainWizard<DetailTextureWizard>("Add Grass Texture", "Add");
-            wizard.m_DetailTexture = null;
-            wizard.InitializeDefaults((Terrain)item.context, -1);
-        }
-
         [MenuItem("CONTEXT/TerrainEngineDetails/Add Detail Mesh")]
         static internal void AddDetailMesh(MenuCommand item)
         {
-            DetailMeshWizard wizard = TerrainWizard.DisplayTerrainWizard<DetailMeshWizard>("Add Detail Mesh", "Add");
-            wizard.m_Detail = null;
-            wizard.InitializeDefaults((Terrain)item.context, -1);
+            TerrainWizard.DisplayTerrainWizard<DetailMeshWizard>("Add Detail Mesh", "Add").InitializeDefaults((Terrain)item.context, -1);
+        }
+
+        [MenuItem("CONTEXT/TerrainEngineDetails/Add Grass Texture")]
+        static internal void AddDetailTexture(MenuCommand item)
+        {
+            TerrainWizard.DisplayTerrainWizard<DetailTextureWizard>("Add Grass Texture", "Add").InitializeDefaults((Terrain)item.context, -1);
+        }
+
+        [MenuItem("CONTEXT/TerrainEngineDetails/Add Grass Texture", validate = true)]
+        static internal bool AddDetailTextureValidate(MenuCommand item)
+        {
+            return UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline == null
+                || UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline.terrainDetailGrassBillboardShader != null
+                || UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline.terrainDetailGrassShader != null;
         }
 
         [MenuItem("CONTEXT/TerrainEngineDetails/Edit")]
@@ -113,13 +117,11 @@ namespace UnityEditor
 
             if (prototype.usePrototypeMesh)
             {
-                DetailMeshWizard wizard = TerrainWizard.DisplayTerrainWizard<DetailMeshWizard>("Edit Detail Mesh", "Apply");
-                wizard.InitializeDefaults((Terrain)item.context, item.userData);
+                TerrainWizard.DisplayTerrainWizard<DetailMeshWizard>("Edit Detail Mesh", "Apply").InitializeDefaults((Terrain)item.context, item.userData);
             }
             else
             {
-                DetailTextureWizard wizard = TerrainWizard.DisplayTerrainWizard<DetailTextureWizard>("Edit Grass Texture", "Apply");
-                wizard.InitializeDefaults((Terrain)item.context, item.userData);
+                TerrainWizard.DisplayTerrainWizard<DetailTextureWizard>("Edit Grass Texture", "Apply").InitializeDefaults((Terrain)item.context, item.userData);
             }
         }
 

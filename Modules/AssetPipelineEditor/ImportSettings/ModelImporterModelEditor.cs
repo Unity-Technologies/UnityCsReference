@@ -120,7 +120,7 @@ namespace UnityEditor
 
             public static GUIContent Meshes = EditorGUIUtility.TrTextContent("Meshes", "Global settings for generated meshes");
             public static GUIContent MeshCompressionLabel = EditorGUIUtility.TrTextContent("Mesh Compression" , "Higher compression ratio means lower mesh precision. If enabled, the mesh bounds and a lower bit depth per component are used to compress the mesh data.");
-            public static GUIContent IsReadable = EditorGUIUtility.TrTextContent("Read/Write Enabled", "Allow vertices and indices to be accessed from script.");
+            public static GUIContent IsReadable = EditorGUIUtility.TrTextContent("Read/Write", "Allow vertices and indices to be accessed from script.");
             public static GUIContent OptimizationFlags = EditorGUIUtility.TrTextContent("Optimize Mesh", "Reorder vertices and/or polygons for better GPU performance.");
 
             public static GUIContent GenerateColliders = EditorGUIUtility.TrTextContent("Generate Colliders", "Should Unity generate mesh colliders for all meshes.");

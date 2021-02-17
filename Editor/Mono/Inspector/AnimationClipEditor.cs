@@ -29,11 +29,15 @@ namespace UnityEditor
                 EditorPrefs.SetInt(inspector.GetType().Name + "ActiveEditorIndex", 2);
 
                 int clipIndex = 0;
-                var clipAnimations = importer.clipAnimations;
+                //The ModelImporter handles "ClipAnimations" and "DefaultClipAnimations" independently, where there are no user specified clips, this clip must be a default clip.
+                var clipAnimations = importer.clipAnimations.Any() ? importer.clipAnimations : importer.defaultClipAnimations;
                 for (int i = 0; i < clipAnimations.Length; i++)
                 {
                     if (clipAnimations[i].name == clip.name)
+                    {
                         clipIndex = i;
+                        break;
+                    }
                 }
 
                 EditorPrefs.SetInt(ModelImporterClipEditor.ActiveClipIndex, clipIndex);
@@ -883,9 +887,16 @@ namespace UnityEditor
                         {
                             string orgFormat = EditorGUI.kFloatFieldFormatString;
                             EditorGUI.kFloatFieldFormatString = "n3";
-                            val = curve.Evaluate(time);
-                            newVal = EditorGUILayout.FloatField(val, GUILayout.Width(60));
-                            EditorGUI.kFloatFieldFormatString = orgFormat;
+
+                            try
+                            {
+                                val = curve.Evaluate(time);
+                                newVal = EditorGUILayout.FloatField(val, GUILayout.Width(60));
+                            }
+                            finally
+                            {
+                                EditorGUI.kFloatFieldFormatString = orgFormat;
+                            }
                         }
 
                         bool addKey = false;

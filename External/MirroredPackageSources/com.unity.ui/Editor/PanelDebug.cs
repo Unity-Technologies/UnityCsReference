@@ -29,7 +29,9 @@ namespace UnityEditor.UIElements
             if (debuggerOverlayPanel == null)
             {
                 ownerObject = ScriptableObject.CreateInstance<PanelOwner>();
-                var debuggerOverlayTmpPanel = new Panel(ownerObject, panel.contextType, EventDispatcher.CreateDefault());
+                // All debug panels are context type Editor, even if they are Runtime (Player) panels because the
+                // debug panel itself are in the Editor anyway.
+                var debuggerOverlayTmpPanel = new Panel(ownerObject, ContextType.Editor, EventDispatcher.CreateDefault());
                 debuggerOverlayTmpPanel.clearSettings = new PanelClearSettings();
                 debuggerOverlayPanel = debuggerOverlayTmpPanel;
                 debuggerOverlayPanel.visualTree.layout = panel.visualTree.layout;

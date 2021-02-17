@@ -83,7 +83,8 @@ namespace UnityEditor
         SerializedProperty m_EditedProperty;
 
         int m_LastSelectedInstanceId = 0;
-        readonly SearchService.SearchSessionHandler m_SearchSessionHandler = new SearchService.SearchSessionHandler(SearchService.SearchEngineScope.ObjectSelector);
+        readonly SearchService.ObjectSelectorSearchSessionHandler m_SearchSessionHandler = new SearchService.ObjectSelectorSearchSessionHandler();
+        readonly SearchSessionOptions m_LegacySearchSessionOptions = new SearchSessionOptions { legacyOnly = true };
 
         // Layout
         const float kMinTopSize = 250;
@@ -148,7 +149,8 @@ namespace UnityEditor
             return m_ObjectTreeWithSearch.IsInitialized();
         }
 
-        int GetInternalSelectedInstanceID()
+        // Internal for test purposes only
+        internal int GetInternalSelectedInstanceID()
         {
             if (m_ListArea == null)
                 InitIfNeeded();
@@ -211,6 +213,7 @@ namespace UnityEditor
 
             AssetPreview.ClearTemporaryAssetPreviews();
             HierarchyProperty.ClearSceneObjectsFilter();
+            m_Debounce?.Dispose();
             m_Debounce = null;
         }
 
@@ -243,7 +246,7 @@ namespace UnityEditor
             {
                 if (ObjectSelectorSearch.HasEngineOverride())
                 {
-                    ObjectSelectorSearch.SetSearchFilter(value, (SearchService.ObjectSelectorSearchContext)m_SearchSessionHandler.context);
+                    m_SearchSessionHandler.SetSearchFilter(value);
                     return;
                 }
                 m_SearchFilter = value;
@@ -326,7 +329,7 @@ namespace UnityEditor
             {
                 var asset = AssetDatabase.LoadAssetAtPath(s, requiredType);
                 return asset?.GetInstanceID() ?? 0;
-            });
+            }, m_LegacySearchSessionOptions);
         }
 
         static bool ShouldTreeViewBeUsed(String typeStr)
@@ -430,7 +433,6 @@ namespace UnityEditor
                     };
                 });
 
-                var searchContext = (SearchService.ObjectSelectorSearchContext)m_SearchSessionHandler.context;
                 Action<UnityObject> onSelectionChanged = selectedObj =>
                 {
                     m_LastSelectedInstanceId = selectedObj == null ? 0 : selectedObj.GetInstanceID();
@@ -455,7 +457,7 @@ namespace UnityEditor
                     NotifySelectorClosed(false);
                 };
 
-                if (ObjectSelectorSearch.SelectObject(searchContext, onSelectorClosed, onSelectionChanged))
+                if (m_SearchSessionHandler.SelectObject(onSelectorClosed, onSelectionChanged))
                     return;
             }
 
@@ -915,6 +917,12 @@ namespace UnityEditor
             // Must be after gui so search field can use the Escape event if it has focus
             if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
                 Cancel();
+            else if (Event.current.commandName == EventCommandNames.UndoRedoPerformed && Selection.activeObject == null)
+            {
+                Close();
+                GUI.changed = true;
+                GUIUtility.ExitGUI();
+            }
         }
 
         void OnObjectTreeGUI()

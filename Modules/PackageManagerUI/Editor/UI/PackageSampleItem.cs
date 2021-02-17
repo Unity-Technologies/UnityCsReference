@@ -16,11 +16,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private SelectionProxy m_Selection;
         private AssetDatabaseProxy m_AssetDatabase;
+        private IOProxy m_IOProxy;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_Selection = container.Resolve<SelectionProxy>();
             m_AssetDatabase = container.Resolve<AssetDatabaseProxy>();
+            m_IOProxy = container.Resolve<IOProxy>();
         }
 
         public PackageSampleItem(IPackageVersion version, Sample sample)
@@ -78,8 +80,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (m_Sample.isImported)
                 {
                     // Highlight import path
-                    var currentPath = Directory.GetCurrentDirectory();
-                    var importRelativePath = m_Sample.importPath.Replace(currentPath, "");
+                    var currentPath = m_IOProxy.CurrentDirectory;
+                    var importRelativePath = m_Sample.importPath.Replace(currentPath + Path.DirectorySeparatorChar, "");
                     var obj = m_AssetDatabase.LoadMainAssetAtPath(importRelativePath);
                     m_Selection.activeObject = obj;
                     EditorGUIUtility.PingObject(obj);

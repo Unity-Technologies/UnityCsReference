@@ -83,6 +83,12 @@ namespace UnityEditor.Search
         {
         }
 
+        internal SearchAction(string providerId, string name, Texture2D icon, string tooltip, Action<SearchItem> handler, Func<IReadOnlyCollection<SearchItem>, bool> enabledHandler)
+            : this(providerId, name, icon, tooltip, handler)
+        {
+            enabled = enabledHandler;
+        }
+
         /// <summary>
         /// Extended constructor to build a search action.
         /// </summary>

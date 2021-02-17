@@ -243,8 +243,10 @@ namespace UnityEditor.UIElements
                     if ((kde?.character == 3) ||     // KeyCode.KeypadEnter
                         (kde?.character == '\n'))    // KeyCode.Return
                     {
-                        // Here we should update the value, but it will be done when the blur event will be handled...
+                        // Here we should update the value, but it will be done when the blur event is handled...
                         parent.Focus();
+                        evt.StopPropagation();
+                        evt.PreventDefault();
                     }
                     else if (!isReadOnly)
                     {
@@ -317,6 +319,7 @@ namespace UnityEditor.UIElements
         where TValueUxmlAttributeType : TypedUxmlAttributeDescription<TValueType>, new()
     {
         UxmlBoolAttributeDescription m_IsReadOnly = new UxmlBoolAttributeDescription { name = "readonly" };
+        UxmlBoolAttributeDescription m_IsDelayed = new UxmlBoolAttributeDescription {name = "is-delayed"};
 
         /// <summary>
         /// Initializes the <see cref="TextValueField"/>'s <see cref="UxmlTraits"/>.
@@ -331,6 +334,7 @@ namespace UnityEditor.UIElements
             if (field != null)
             {
                 field.isReadOnly = m_IsReadOnly.GetValueFromBag(bag, cc);
+                field.isDelayed = m_IsDelayed.GetValueFromBag(bag, cc);
             }
         }
     }

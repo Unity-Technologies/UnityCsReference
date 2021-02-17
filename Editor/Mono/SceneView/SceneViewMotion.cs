@@ -313,8 +313,9 @@ namespace UnityEditor
             foreach (MeshFilter mf in meshFil)
             {
                 Mesh mesh = mf.sharedMesh;
-                if (!mesh)
+                if (!mesh || !mesh.canAccess)
                     continue;
+
                 RaycastHit localHit;
                 if (HandleUtility.IntersectRayMesh(mouseRay, mesh, mf.transform.localToWorldMatrix, out localHit))
                 {
@@ -504,6 +505,8 @@ namespace UnityEditor
             }
         }
 
+        static readonly char[] k_TrimChars = new char[] { '0' };
+
         private static void HandleScrollWheel(SceneView view, bool zoomTowardsCenter)
         {
             if (Tools.s_LockedViewTool == ViewTool.FPS)
@@ -512,13 +515,15 @@ namespace UnityEditor
                 view.cameraSettings.speedNormalized -= scrollWheelDelta;
                 float cameraSettingsSpeed = view.cameraSettings.speed;
                 string cameraSpeedDisplayValue = cameraSettingsSpeed.ToString(
-                    cameraSettingsSpeed < 0.01f  ? "F3" :
-                    cameraSettingsSpeed < 0.1f  ? "F2" :
-                    cameraSettingsSpeed < 10f ? "F1" :
+                    cameraSettingsSpeed < 0.0001f  ? "F6" :
+                    cameraSettingsSpeed < 0.001f  ? "F5" :
+                    cameraSettingsSpeed < 0.01f  ? "F4" :
+                    cameraSettingsSpeed < 0.1f  ? "F3" :
+                    cameraSettingsSpeed < 10f ? "F2" :
                     "F0");
 
                 if (cameraSettingsSpeed < 0.1f)
-                    cameraSpeedDisplayValue = cameraSpeedDisplayValue.TrimStart(new Char[] {'0'});
+                    cameraSpeedDisplayValue = cameraSpeedDisplayValue.Trim(k_TrimChars);
 
                 GUIContent cameraSpeedContent = EditorGUIUtility.TempContent(string.Format("{0}{1}",
                     cameraSpeedDisplayValue,
@@ -534,11 +539,11 @@ namespace UnityEditor
                 if (!view.orthographic)
                 {
                     float relativeDelta = Mathf.Abs(view.size) * zoomDelta * .015f;
-                    const float deltaCutoff = .3f;
-                    if (relativeDelta > 0 && relativeDelta < deltaCutoff)
-                        relativeDelta = deltaCutoff;
-                    else if (relativeDelta < 0 && relativeDelta > -deltaCutoff)
-                        relativeDelta = -deltaCutoff;
+                    const float k_MinZoomDelta = .0001f;
+                    if (relativeDelta > 0 && relativeDelta < k_MinZoomDelta)
+                        relativeDelta = k_MinZoomDelta;
+                    else if (relativeDelta < 0 && relativeDelta > -k_MinZoomDelta)
+                        relativeDelta = -k_MinZoomDelta;
 
                     targetSize = view.size + relativeDelta;
                 }
@@ -558,8 +563,9 @@ namespace UnityEditor
                 if (!zoomTowardsCenter && Mathf.Abs(view.cameraDistance) < 1.0e7f)
                 {
                     var percentage = 1f - (view.cameraDistance / initialDistance);
+
                     var mouseRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
-                    var mousePivot = mouseRay.origin + mouseRay.direction * view.cameraDistance;
+                    var mousePivot = mouseRay.origin + mouseRay.direction * initialDistance;
                     var pivotVector = mousePivot - view.pivot;
 
                     view.pivot += pivotVector * percentage;

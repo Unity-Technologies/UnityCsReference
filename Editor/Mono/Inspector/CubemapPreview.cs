@@ -35,6 +35,7 @@ namespace UnityEditor
         // Cached preview data
         private PreviewRenderUtility    m_PreviewUtility;
         private Mesh                    m_Mesh;
+        private Material                m_Material;
         public Vector2                  m_PreviewDir = new Vector2(0, 0);
 
         static class Styles
@@ -94,6 +95,7 @@ namespace UnityEditor
             m_PreviewUtility = new PreviewRenderUtility();
             m_PreviewUtility.camera.fieldOfView = 15f;
             m_Mesh = PreviewRenderUtility.GetPreviewSphere();
+            m_Material = EditorGUIUtility.LoadRequired("Previews/PreviewCubemapMaterial.mat") as Material;
         }
 
         public void OnPreviewSettings(Object[] targets)
@@ -230,20 +232,28 @@ namespace UnityEditor
             m_PreviewUtility.camera.transform.rotation = Quaternion.identity;
             Quaternion rot = Quaternion.Euler(previewDir.y, 0, 0) * Quaternion.Euler(0, previewDir.x, 0);
 
-            var mat = EditorGUIUtility.LoadRequired("Previews/PreviewCubemapMaterial.mat") as Material;
-            mat.mainTexture = t;
+            m_Material.mainTexture = t;
 
-            mat.SetMatrix(s_ShaderCubemapRotation, Matrix4x4.TRS(Vector3.zero, rot, Vector3.one));
+            m_Material.SetMatrix(s_ShaderCubemapRotation, Matrix4x4.TRS(Vector3.zero, rot, Vector3.one));
 
             // -1 indicates "use regular sampling"; mips 0 and larger sample only that mip level for preview
             float mipLevel = GetMipLevelForRendering(t);
-            mat.SetFloat(s_ShaderMip, mipLevel);
-            mat.SetFloat(s_ShaderAlpha, (m_PreviewType == PreviewType.Alpha) ? 1.0f : 0.0f);
-            mat.SetFloat(s_ShaderIntensity, m_Intensity);
-            mat.SetFloat(s_ShaderIsNormalMap, TextureInspector.IsNormalMap(t) ? 1.0f : 0.0f);
-            mat.SetFloat(s_ShaderExposure, GetExposureValueForTexture(t));
+            m_Material.SetFloat(s_ShaderMip, mipLevel);
+            m_Material.SetFloat(s_ShaderAlpha, (m_PreviewType == PreviewType.Alpha) ? 1.0f : 0.0f);
+            m_Material.SetFloat(s_ShaderIntensity, m_Intensity);
+            m_Material.SetFloat(s_ShaderIsNormalMap, TextureInspector.IsNormalMap(t) ? 1.0f : 0.0f);
+            m_Material.SetFloat(s_ShaderExposure, GetExposureValueForTexture(t));
 
-            m_PreviewUtility.DrawMesh(m_Mesh, Vector3.zero, rot, mat, 0);
+            if (PlayerSettings.colorSpace == ColorSpace.Linear)
+            {
+                m_Material.SetInt("_ColorspaceIsGamma", 0);
+            }
+            else
+            {
+                m_Material.SetInt("_ColorspaceIsGamma", 1);
+            }
+
+            m_PreviewUtility.DrawMesh(m_Mesh, Vector3.zero, rot, m_Material, 0);
             m_PreviewUtility.Render();
         }
     }
