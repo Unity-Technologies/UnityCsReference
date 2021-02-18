@@ -174,6 +174,8 @@ namespace UnityEditor
         public event SelectionChangedCallback selectionChanged = delegate {};
         internal delegate void FrameChangedCallback(int i, bool b);
         public event FrameChangedCallback currentFrameChanged = delegate {};
+        public event Action frameDataViewAboutToBeDisposed = delegate {};
+
         internal event Action<bool> recordingStateChanged = delegate {};
         internal event Action<bool> deepProfileChanged = delegate {};
         internal event Action<ProfilerMemoryRecordMode> memoryRecordingModeChanged = delegate {};
@@ -808,6 +810,12 @@ namespace UnityEditor
             return property != null && property.frameDataReady;
         }
 
+        void DisposeFrameDataView()
+        {
+            frameDataViewAboutToBeDisposed();
+            m_FrameDataView.Dispose();
+        }
+
         public HierarchyFrameDataView GetFrameDataView(string threadName, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
         {
             var frameIndex = GetActiveVisibleFrameIndex();
@@ -836,8 +844,7 @@ namespace UnityEditor
             }
 
             if (m_FrameDataView != null)
-                m_FrameDataView.Dispose();
-
+                DisposeFrameDataView();
             m_FrameDataView = new HierarchyFrameDataView(frameIndex, threadIndex, viewMode, profilerSortColumn, sortAscending);
             return m_FrameDataView;
         }
@@ -1613,6 +1620,12 @@ namespace UnityEditor
             {
                 add { m_ProfilerWindowController.currentFrameChanged += value; }
                 remove { m_ProfilerWindowController.currentFrameChanged -= value; }
+            }
+
+            public event Action frameDataViewAboutToBeDisposed
+            {
+                add { m_ProfilerWindowController.frameDataViewAboutToBeDisposed += value; }
+                remove { m_ProfilerWindowController.frameDataViewAboutToBeDisposed -= value; }
             }
 
             void IProfilerWindowController.ClearSelectedPropertyPath()

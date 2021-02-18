@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
+using System.Linq;
 
 namespace UnityEditor.VersionControl
 {
@@ -309,5 +310,15 @@ namespace UnityEditor.VersionControl
         [StaticAccessor("VCProvider", StaticAccessorType.DoubleColon)]
         [NativeMethod("ShouldPathBeVersioned")]
         static internal extern bool PathIsVersioned(string path);
+
+        [NativeThrows]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_WaitForRelatedTasks")]
+        internal static extern void WaitForRelatedTasks(Asset[] assets);
+
+        internal static void WaitForRelatedTasks(string[] assets) => WaitForRelatedTasks(assets.Select(a => new Asset(a)).ToArray());
+
+        internal static void WaitForRelatedTasks(Asset asset) => WaitForRelatedTasks(new[] { asset });
+
+        internal static void WaitForRelatedTasks(string asset) => WaitForRelatedTasks(new[] { new Asset(asset) });
     }
 }
