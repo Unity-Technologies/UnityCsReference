@@ -1196,6 +1196,10 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         public static extern ManagedStrippingLevel GetManagedStrippingLevel(BuildTargetGroup targetGroup);
 
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        internal static extern void ReinitialiseShaderCompiler(string platformSDKEnvVar, string EnvVarValue);
+
         // Strip Engine code
         public static extern bool stripEngineCode { get; set; }
 

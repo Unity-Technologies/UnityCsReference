@@ -333,6 +333,7 @@ namespace UnityEngine.UIElements
 
         internal abstract uint version { get; }
         internal abstract uint repaintVersion { get; }
+        internal abstract uint hierarchyVersion { get; }
 
         internal abstract void OnVersionChanged(VisualElement ele, VersionChangeType changeTypeFlag);
         internal abstract void SetUpdater(IVisualTreeUpdater updater, VisualTreeUpdatePhase phase);
@@ -476,6 +477,7 @@ namespace UnityEngine.UIElements
         private string m_PanelName;
         private uint m_Version = 0;
         private uint m_RepaintVersion = 0;
+        private uint m_HierarchyVersion = 0;
 
         ProfilerMarker m_MarkerBeforeUpdate;
         ProfilerMarker m_MarkerUpdate;
@@ -588,15 +590,9 @@ namespace UnityEngine.UIElements
 
         public override IMGUIContainer rootIMGUIContainer { get; set; }
 
-        internal override uint version
-        {
-            get { return m_Version; }
-        }
-
-        internal override uint repaintVersion
-        {
-            get { return m_RepaintVersion; }
-        }
+        internal override uint version => m_Version;
+        internal override uint repaintVersion => m_RepaintVersion;
+        internal override uint hierarchyVersion => m_HierarchyVersion;
 
         private Shader m_StandardShader;
 
@@ -851,6 +847,9 @@ namespace UnityEngine.UIElements
         {
             ++m_Version;
             m_VisualTreeUpdater.OnVersionChanged(ve, versionChangeType);
+
+            if ((versionChangeType & VersionChangeType.Hierarchy) == VersionChangeType.Hierarchy)
+                ++m_HierarchyVersion;
             panelDebug?.OnVersionChanged(ve, versionChangeType);
         }
 

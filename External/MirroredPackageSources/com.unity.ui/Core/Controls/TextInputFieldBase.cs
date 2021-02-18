@@ -32,6 +32,9 @@ namespace UnityEngine.UIElements
         static CustomStyleProperty<Color> s_SelectionColorProperty = new CustomStyleProperty<Color>("--unity-selection-color");
         static CustomStyleProperty<Color> s_CursorColorProperty = new CustomStyleProperty<Color>("--unity-cursor-color");
 
+        // This is to save the value of the tabindex of the visual input to achieve the IMGUI behaviour of tabbing on focused-non-edit-mode TextFields.
+        int m_VisualInputTabIndex;
+
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for <see cref="TextInputFieldBase"/>.
         /// </summary>
@@ -240,7 +243,8 @@ namespace UnityEngine.UIElements
             : base(label, textInputBase)
         {
             tabIndex = 0;
-            delegatesFocus = false;
+            delegatesFocus = true;
+            labelElement.tabIndex = -1; // To delegate directly to text-input field
 
             AddToClassList(ussClassName);
             labelElement.AddToClassList(labelUssClassName);
@@ -279,6 +283,36 @@ namespace UnityEngine.UIElements
                     (keyDownEvt?.character == '\n'))    // KeyCode.Return
                 {
                     visualInput?.Focus();
+                }
+            }
+            // The following code is to help achieve the following behaviour:
+            // On IMGUI, on any text input field in focused-non-edit-mode, doing a TAB will allow the user to get to the next control...
+            // To mimic that behaviour in UIE, when in focused-non-edit-mode, we have to make sure the input is not "tabbable".
+            //     So, each time, either the main TextField or the Label is receiving the focus, we remove the tabIndex on
+            //     the input, and we put it back when the BlurEvent is received.
+            else if (evt.eventTypeId == FocusInEvent.TypeId())
+            {
+                if (evt.leafTarget == this || evt.leafTarget == labelElement)
+                {
+                    m_VisualInputTabIndex = visualInput.tabIndex;
+                    visualInput.tabIndex = -1;
+                }
+            }
+            // The following code was added to help achieve the following behaviour:
+            // On IMGUI, doing a Return, Shift+Return or Escape will get out of the Edit mode, but stay on the control. To allow a
+            //     focused-non-edit-mode, we remove the delegateFocus when we start editing to allow focusing on the parent,
+            //     and we restore it when we exit the control, to prevent coming in a semi-focused state from outside the control.
+            else if (evt.eventTypeId == FocusEvent.TypeId())
+            {
+                delegatesFocus = false;
+            }
+            else if (evt.eventTypeId == BlurEvent.TypeId())
+            {
+                delegatesFocus = true;
+
+                if (evt.leafTarget == this || evt.leafTarget == labelElement)
+                {
+                    visualInput.tabIndex = m_VisualInputTabIndex;
                 }
             }
         }
@@ -771,7 +805,9 @@ namespace UnityEngine.UIElements
                 }
 
                 if (!editorEngine.m_HasFocus && hasFocus)
+                {
                     editorEngine.OnLostFocus();
+                }
             }
 
             private void OnCursorIndexChange()

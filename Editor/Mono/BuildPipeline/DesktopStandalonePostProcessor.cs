@@ -444,22 +444,25 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
     {
         DeleteDestination(args);
 
-        // Copy entire stagingarea over
-        CopyFilesToDestination(args.stagingArea, GetDestinationFolder(args), filesToNotOverwrite);
-        args.report.RecordFilesMoved(args.stagingArea, GetDestinationFolder(args));
+        string destinationFolder = GetDestinationFolder(args);
+        if (string.IsNullOrEmpty(destinationFolder))
+        {
+            destinationFolder = Directory.GetCurrentDirectory();
+        }
+        // Copy entire staging area over
+        CopyFilesToDestination(args.stagingArea, destinationFolder, filesToNotOverwrite);
+        args.report.RecordFilesMoved(args.stagingArea, destinationFolder);
     }
 
     private static void CopyFilesToDestination(string source, string target, HashSet<string> filesToNotOverwrite)
     {
-        bool createDirectory = !Directory.Exists(target);
+        if (!Directory.Exists(target))
+        {
+            Directory.CreateDirectory(target);
+        }
+
         foreach (string sourceFile in Directory.GetFiles(source))
         {
-            if (createDirectory)
-            {
-                Directory.CreateDirectory(target);
-                createDirectory = false;
-            }
-
             var targetFile = Path.Combine(target, Path.GetFileName(sourceFile));
 
             if (File.Exists(targetFile))

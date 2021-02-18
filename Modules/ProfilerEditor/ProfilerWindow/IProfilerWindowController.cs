@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.Profiling;
@@ -24,6 +25,7 @@ namespace UnityEditorInternal
 
         void SetSelectedPropertyPath(string path);
         void ClearSelectedPropertyPath();
+        event Action frameDataViewAboutToBeDisposed;
 
         void SetClearOnPlay(bool enabled);
         bool GetClearOnPlay();

@@ -239,9 +239,9 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        public void EnqueueBlit(Texture image, int x, int y, bool addBorder, Color tint)
+        public void EnqueueBlit(Texture image, RectInt srcRect, int x, int y, bool addBorder, Color tint)
         {
-            m_Blitter.QueueBlit(image, new RectInt(0, 0, image.width, image.height), new Vector2Int(x, y), addBorder, tint);
+            m_Blitter.QueueBlit(image, srcRect, new Vector2Int(x, y), addBorder, tint);
         }
 
         /// <summary>

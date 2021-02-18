@@ -174,6 +174,8 @@ namespace UnityEditor
         public event SelectionChangedCallback selectionChanged = delegate {};
         internal delegate void FrameChangedCallback(int i, bool b);
         public event FrameChangedCallback currentFrameChanged = delegate {};
+        public event Action frameDataViewAboutToBeDisposed = delegate {};
+
         internal event Action<bool> recordingStateChanged = delegate {};
         internal event Action<bool> deepProfileChanged = delegate {};
         internal event Action<ProfilerMemoryRecordMode> memoryRecordingModeChanged = delegate {};
@@ -808,6 +810,12 @@ namespace UnityEditor
             return property != null && property.frameDataReady;
         }
 
+        void DisposeFrameDataView()
+        {
+            frameDataViewAboutToBeDisposed();
+            m_FrameDataView.Dispose();
+        }
+
         public HierarchyFrameDataView GetFrameDataView(string threadName, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
         {
             var frameIndex = GetActiveVisibleFrameIndex();
@@ -836,8 +844,7 @@ namespace UnityEditor
             }
 
             if (m_FrameDataView != null)
-                m_FrameDataView.Dispose();
-
+                DisposeFrameDataView();
             m_FrameDataView = new HierarchyFrameDataView(frameIndex, threadIndex, viewMode, profilerSortColumn, sortAscending);
             return m_FrameDataView;
         }
@@ -846,7 +853,8 @@ namespace UnityEditor
         {
             foreach (var module in m_Modules)
             {
-                module.Update();
+                if (module.isActive)
+                    module.Update();
             }
         }
 
@@ -1145,9 +1153,6 @@ namespace UnityEditor
 
             currentFrameChanged?.Invoke(frame, shouldPause);
 
-            if (ProfilerInstrumentationPopup.InstrumentationEnabled)
-                ProfilerInstrumentationPopup.UpdateInstrumentableFunctions();
-
             SetCurrentFrameDontPause(frame);
         }
 
@@ -1187,23 +1192,14 @@ namespace UnityEditor
                 m_PrevLastFrame = ProfilerDriver.lastFrameIndex;
             }
 
-            int newCurrentFrame = DrawModuleChartViews(m_CurrentFrame, out bool hasNoActiveModules);
+            var scrollViewContentWidth = position.width - GUI.skin.verticalScrollbar.fixedWidth - GUI.skin.verticalScrollbar.margin.horizontal - GUI.skin.verticalScrollbar.padding.horizontal;
+            var scrollViewViewportHeight = m_VertSplit.realSizes[0];
+            int newCurrentFrame = DrawModuleChartViews(new Vector2(scrollViewContentWidth, scrollViewViewportHeight));
             if (newCurrentFrame != m_CurrentFrame)
             {
                 SetCurrentFrame(newCurrentFrame);
                 Repaint();
                 GUIUtility.ExitGUI();
-            }
-
-            if (hasNoActiveModules)
-            {
-                GUILayout.FlexibleSpace();
-                GUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-                GUILayout.Label(Styles.noActiveModules);
-                GUILayout.FlexibleSpace();
-                GUILayout.EndHorizontal();
-                GUILayout.FlexibleSpace();
             }
 
             EditorGUILayout.EndScrollView();
@@ -1224,21 +1220,88 @@ namespace UnityEditor
             SplitterGUILayout.EndVerticalSplit();
         }
 
-        int DrawModuleChartViews(int currentFrame, out bool hasNoActiveModules)
+        int DrawModuleChartViews(Vector2 containerSize)
         {
-            hasNoActiveModules = true;
-            for (int i = 0; i < m_Modules.Count; i++)
+            // Calculate the total minimum chart height of all active modules.
+            var totalMinimumChartHeight = 0f;
+            var activeModuleCount = 0;
+            var lastActiveModuleIndex = -1;
+            for (int i = 0; i < m_Modules.Count; ++i)
             {
                 var module = m_Modules[i];
                 if (module.isActive)
                 {
-                    hasNoActiveModules = false;
-                    bool isSelected = (m_SelectedModuleIndex == i);
-                    currentFrame = module.DrawChartView(currentFrame, isSelected);
+                    totalMinimumChartHeight += module.GetMinimumChartHeight();
+                    activeModuleCount++;
+                    lastActiveModuleIndex = i;
                 }
             }
 
-            return currentFrame;
+            var newCurrentFrame = m_CurrentFrame;
+            if (activeModuleCount > 0)
+            {
+                // If there will be empty space below the charts, calculate how much to expand each chart by to fill this space.
+                var additionalChartHeight = 0f;
+                var requiresChartHeightExpansion = totalMinimumChartHeight < containerSize.y;
+                if (requiresChartHeightExpansion)
+                {
+                    var verticalSpaceToFill = containerSize.y - totalMinimumChartHeight;
+                    additionalChartHeight = GUIUtility.RoundToPixelGrid(verticalSpaceToFill / activeModuleCount);
+                }
+
+                var accumulatedExpandedChartHeight = 0f;
+                for (int i = 0; i < m_Modules.Count; ++i)
+                {
+                    var module = m_Modules[i];
+                    if (module.isActive)
+                    {
+                        // Calculate final chart height.
+                        var chartHeight = module.GetMinimumChartHeight();
+                        if (requiresChartHeightExpansion)
+                        {
+                            // Due to rounding additionalChartHeight to the pixel grid, we make the last chart fill the remaining space. This ensures that exactly the whole space is filled whilst maintaining that all expanded charts remain on the pixel grid.
+                            if (i == lastActiveModuleIndex)
+                            {
+                                var remainingHeightToFill = containerSize.y - accumulatedExpandedChartHeight;
+                                chartHeight = remainingHeightToFill;
+                            }
+                            else
+                            {
+                                chartHeight += additionalChartHeight;
+                                accumulatedExpandedChartHeight += chartHeight;
+                            }
+                        }
+
+                        // Reserve a chart rect with the layout system.
+                        var chartRect = GUILayoutUtility.GetRect(containerSize.x, chartHeight);
+
+                        // Don't draw or update any charts during the layout pass, where rects are not computed yet.
+                        if (Event.current.type != EventType.Layout)
+                        {
+                            // Only draw or update modules that will be visible in the scroll view's viewport.
+                            var viewport = GUIClip.visibleRect;
+                            if (viewport.Overlaps(chartRect))
+                            {
+                                // DrawChartView also handles interaction so we can't only call it when repainting.
+                                bool isSelected = (m_SelectedModuleIndex == i);
+                                newCurrentFrame = module.DrawChartView(chartRect, newCurrentFrame, isSelected);
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                GUILayout.FlexibleSpace();
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                GUILayout.Label(Styles.noActiveModules);
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+                GUILayout.FlexibleSpace();
+            }
+
+            return newCurrentFrame;
         }
 
         void DrawDetailsViewForModule(ProfilerModuleBase module)
@@ -1557,6 +1620,12 @@ namespace UnityEditor
             {
                 add { m_ProfilerWindowController.currentFrameChanged += value; }
                 remove { m_ProfilerWindowController.currentFrameChanged -= value; }
+            }
+
+            public event Action frameDataViewAboutToBeDisposed
+            {
+                add { m_ProfilerWindowController.frameDataViewAboutToBeDisposed += value; }
+                remove { m_ProfilerWindowController.frameDataViewAboutToBeDisposed -= value; }
             }
 
             void IProfilerWindowController.ClearSelectedPropertyPath()

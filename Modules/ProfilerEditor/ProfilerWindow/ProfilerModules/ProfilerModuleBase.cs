@@ -139,9 +139,14 @@ namespace UnityEditorInternal.Profiling
         public abstract void DrawToolbar(Rect position);
         public abstract void DrawDetailsView(Rect position);
 
-        public int DrawChartView(int currentFrame, bool isSelected)
+        public float GetMinimumChartHeight()
         {
-            return m_Chart.DoChartGUI(currentFrame, isSelected);
+            return m_Chart.GetMinimumHeight();
+        }
+
+        public int DrawChartView(Rect chartRect, int currentFrame, bool isSelected)
+        {
+            return m_Chart.DoChartGUI(chartRect, currentFrame, isSelected);
         }
 
         public void SetActive(bool active)

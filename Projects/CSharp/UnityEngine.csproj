@@ -19,6 +19,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\BindableElement.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\BindableElement.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Bindings\VisualTreeBindingsUpdater.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Bindings\VisualTreeBindingsUpdater.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ClampedDragger.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\ClampedDragger.cs</Link>
     </Compile>
@@ -120,9 +123,6 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\TwoPaneSplitViewResizer.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\TwoPaneSplitViewResizer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\VisualTreeBindingsUpdater.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\VisualTreeBindingsUpdater.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Cursor.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Cursor.cs</Link>

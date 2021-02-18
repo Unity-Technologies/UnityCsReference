@@ -935,6 +935,17 @@ namespace UnityEditor
             OnSceneDragInternal(sceneView, index, evt.type, evt.mousePosition, evt.alt);
         }
 
+        static Scene GetDestinationSceneForNewGameObjectsForSceneView(SceneView sceneView)
+        {
+            if (sceneView.customParentForNewGameObjects != null)
+                return sceneView.customParentForNewGameObjects.gameObject.scene;
+
+            if (sceneView.customScene.IsValid())
+                return sceneView.customScene;
+
+            return SceneManager.GetActiveScene();
+        }
+
         internal void OnSceneDragInternal(SceneView sceneView, int index, EventType type, Vector2 mousePosition, bool alt)
         {
             GameObject go = target as GameObject;
@@ -946,7 +957,7 @@ namespace UnityEditor
             switch (type)
             {
                 case EventType.DragUpdated:
-                    Scene destinationScene = sceneView.customScene.IsValid() ? sceneView.customScene : SceneManager.GetActiveScene();
+
                     if (m_DragObject == null)
                     {
                         // While dragging the instantiated prefab we do not want to record undo for this object
@@ -956,6 +967,7 @@ namespace UnityEditor
                         // StartRecordingUndo() is called on DragExited. Fixes case 1223793.
                         DrivenRectTransformTracker.StopRecordingUndo();
 
+                        Scene destinationScene = GetDestinationSceneForNewGameObjectsForSceneView(sceneView);
                         if (!EditorApplication.isPlaying || EditorSceneManager.IsPreviewScene(destinationScene))
                         {
                             m_DragObject = (GameObject)PrefabUtility.InstantiatePrefab(prefabAssetRoot, destinationScene);

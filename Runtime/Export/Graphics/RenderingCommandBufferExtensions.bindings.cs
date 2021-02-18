@@ -16,22 +16,22 @@ namespace UnityEngine.Rendering
     {
         // Extension calls into the RenderCommandBufferExtensions_Bindings
         [FreeFunction("RenderingCommandBufferExtensions_Bindings::Internal_SwitchIntoFastMemory")]
-        extern private static void Internal_SwitchIntoFastMemory(CommandBuffer cmd, ref UnityEngine.Rendering.RenderTargetIdentifier rt, UnityEngine.Rendering.FastMemoryFlags fastMemoryFlags, float residency, bool copyContents);
+        extern private static void Internal_SwitchIntoFastMemory([NotNull("NullExceptionObject")] CommandBuffer cmd, ref UnityEngine.Rendering.RenderTargetIdentifier rt, UnityEngine.Rendering.FastMemoryFlags fastMemoryFlags, float residency, bool copyContents);
 
         [FreeFunction("RenderingCommandBufferExtensions_Bindings::Internal_SwitchOutOfFastMemory")]
-        extern private static void Internal_SwitchOutOfFastMemory(CommandBuffer cmd, ref UnityEngine.Rendering.RenderTargetIdentifier rt, bool copyContents);
+        extern private static void Internal_SwitchOutOfFastMemory([NotNull("NullExceptionObject")] CommandBuffer cmd, ref UnityEngine.Rendering.RenderTargetIdentifier rt, bool copyContents);
 
 
         // API functions
         // SwitchIntoFastMemory is only relevant on XboxOne, on other platforms it is an empty stub
-        [NativeConditional("UNITY_XBOXONE")]
+        [NativeConditional("UNITY_XBOXONE || UNITY_GAMECORE_XBOXONE")]
         public static void SwitchIntoFastMemory(this CommandBuffer cmd, RenderTargetIdentifier rid, FastMemoryFlags fastMemoryFlags, float residency, bool copyContents)
         {
             Internal_SwitchIntoFastMemory(cmd, ref rid, fastMemoryFlags, residency, copyContents);
         }
 
         // SwitchOutOfFastMemory is only relevant on XboxOne, on other platforms it is an empty stub
-        [NativeConditional("UNITY_XBOXONE")]
+        [NativeConditional("UNITY_XBOXONE || UNITY_GAMECORE_XBOXONE")]
         public static void SwitchOutOfFastMemory(this CommandBuffer cmd, RenderTargetIdentifier rid, bool copyContents)
         {
             Internal_SwitchOutOfFastMemory(cmd, ref rid, copyContents);

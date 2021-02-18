@@ -69,7 +69,6 @@ namespace UnityEditor
         }
 
         private const string kMaximizeRestoreFile = "CurrentMaximizeLayout.dwlt";
-        private const string kLastLayoutName = "LastLayout.dwlt";
         private const string kDefaultLayoutName = "Default.wlt";
         // Backward compatibility: name of the old (non mode specific) per project layout
         internal const string kOldCurrentLayoutPath = "Library/CurrentLayout.dwlt";
@@ -80,7 +79,6 @@ namespace UnityEditor
         // Backward compatibility: property for old global layout (for default mode only)
         internal static string OldGlobalLayoutPath => Path.Combine(layoutsPreferencesPath, "__Current__.dwlt");
         internal static string ProjectLayoutPath => GetProjectLayoutPerMode(ModeService.currentId);
-        internal static string LastLayoutPath => Path.Combine(layoutsModePreferencesPath, kLastLayoutName);
 
         [UsedImplicitly, RequiredByNativeCode]
         public static void LoadDefaultWindowPreferences()
@@ -123,7 +121,7 @@ namespace UnityEditor
             GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref topViewInfo);
             GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref bottomViewInfo);
 
-            var mainWindow = GenerateLayout(keepMainWindow, availableEditorWindowTypes, centerViewInfo, topViewInfo, bottomViewInfo);
+            var mainWindow = GenerateLayout(keepMainWindow, availableEditorWindowTypes, centerViewInfo, topViewInfo, bottomViewInfo, layoutData);
             if (mainWindow)
                 mainWindow.m_DontSaveToLayout = !Convert.ToBoolean(layoutData["restore_saved_layout"]);
 
@@ -208,7 +206,7 @@ namespace UnityEditor
             return null;
         }
 
-        private static ContainerWindow GenerateLayout(bool keepMainWindow, Type[] availableEditorWindowTypes, LayoutViewInfo center, LayoutViewInfo top, LayoutViewInfo bottom)
+        private static ContainerWindow GenerateLayout(bool keepMainWindow, Type[] availableEditorWindowTypes, LayoutViewInfo center, LayoutViewInfo top, LayoutViewInfo bottom, JSONObject layoutData)
         {
             ContainerWindow mainContainerWindow = FindMainWindow();
             if (keepMainWindow && mainContainerWindow == null)
@@ -220,9 +218,29 @@ namespace UnityEditor
             try
             {
                 ContainerWindow.SetFreezeDisplay(true);
-
                 if (!mainContainerWindow)
+                {
                     mainContainerWindow = ScriptableObject.CreateInstance<ContainerWindow>();
+                    var mainWindowMinSize = new Vector2(120, 80);
+                    var mainWindowMaxSize = new Vector2(8192, 8192);
+                    if (layoutData.Contains("min_width"))
+                    {
+                        mainWindowMinSize.x = Convert.ToSingle(layoutData["min_width"]);
+                    }
+                    if (layoutData.Contains("min_height"))
+                    {
+                        mainWindowMinSize.y = Convert.ToSingle(layoutData["min_height"]);
+                    }
+                    if (layoutData.Contains("max_width"))
+                    {
+                        mainWindowMaxSize.x = Convert.ToSingle(layoutData["max_width"]);
+                    }
+                    if (layoutData.Contains("max_height"))
+                    {
+                        mainWindowMaxSize.y = Convert.ToSingle(layoutData["max_height"]);
+                    }
+                    mainContainerWindow.SetMinMaxSizes(mainWindowMinSize, mainWindowMaxSize);
+                }
 
                 mainContainerWindow.windowID = $"MainView_{ModeService.currentId}";
                 mainContainerWindow.LoadGeometry(true);
@@ -370,9 +388,6 @@ namespace UnityEditor
         {
             // Save Project Current Layout
             SaveWindowLayout(FileUtil.CombinePaths(Directory.GetCurrentDirectory(), GetProjectLayoutPerMode(modeId)));
-
-            // Save Global Last Layout
-            SaveWindowLayout(FileUtil.CombinePaths(layoutsPreferencesPath, modeId, kLastLayoutName));
         }
 
         internal static string GetCurrentLayoutPath()
@@ -383,12 +398,7 @@ namespace UnityEditor
             if (!File.Exists(ProjectLayoutPath))
             {
                 currentLayoutPath = GetDefaultLayoutPath();
-                if (File.Exists(LastLayoutPath))
-                {
-                    // First we try to load the last layout (per mode)
-                    currentLayoutPath = LastLayoutPath;
-                }
-                else if (ModeService.currentId == ModeService.k_DefaultModeId)
+                if (ModeService.currentId == ModeService.k_DefaultModeId)
                 {
                     // Backward compatibility check:
                     // Old non mode Library\CurrentLayout.dwlt
@@ -648,7 +658,6 @@ namespace UnityEditor
             WindowFocusState.instance.m_CurrentlyInPlayMode = entering;
 
             EditorWindow window = null;
-
             EditorWindow maximized = GetMaximizedWindow();
 
             if (entering)
@@ -1069,25 +1078,19 @@ namespace UnityEditor
                     }
                     else
                     {
-                        ContainerWindow cw = o as ContainerWindow;
-                        if (cw != null && cw.rootView == null)
+                        if (o is ContainerWindow cw && cw.rootView == null)
                         {
                             cw.Close();
                             UnityObject.DestroyImmediate(cw, true);
                             continue;
                         }
-
-                        DockArea dockArea = o as DockArea;
-                        if (dockArea != null && dockArea.m_Panes.Count == 0)
+                        else if (o is DockArea dockArea && dockArea.m_Panes.Count == 0)
                         {
                             dockArea.Close(null);
                             UnityObject.DestroyImmediate(dockArea, true);
                             continue;
                         }
-
-                        // Host views that do not hold any containers are not desirable at this stage
-                        HostView hostview = o as HostView;
-                        if (hostview != null && hostview.actualView == null)
+                        else if (o is HostView hostview && hostview.actualView == null)
                         {
                             UnityObject.DestroyImmediate(hostview, true);
                             continue;
@@ -1280,11 +1283,11 @@ namespace UnityEditor
                 string output = "";
                 foreach (EditorWindow killme in oldWindows)
                 {
-                    output += "\n" + killme.GetType().Name;
+                    output += $"{killme.GetType().Name} {killme.name} {killme.titleContent.text} [{killme.GetInstanceID()}]\r\n";
                     UnityObject.DestroyImmediate(killme, true);
                 }
 
-                Debug.LogError("Failed to destroy editor windows: #" + oldWindows.Length + output);
+                Debug.LogWarning($"Failed to destroy editor windows: #{oldWindows.Length}\r\n{output}");
             }
 
             UnityObject[] oldViews = Resources.FindObjectsOfTypeAll(typeof(View));

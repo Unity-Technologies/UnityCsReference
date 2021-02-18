@@ -692,7 +692,7 @@ namespace UnityEngine
 
         public void SetConstantBuffer(int nameID, ComputeBuffer buffer, int offset, int size)
         {
-            SetConstantBuffer(nameID, buffer, offset, size);
+            SetConstantComputeBuffer(nameID, buffer, offset, size);
         }
 
         public void SetConstantBuffer(string name, ComputeBuffer buffer, int offset, int size)
@@ -702,7 +702,7 @@ namespace UnityEngine
 
         public void SetConstantBuffer(int nameID, GraphicsBuffer buffer, int offset, int size)
         {
-            SetConstantBuffer(nameID, buffer, offset, size);
+            SetConstantGraphicsBuffer(nameID, buffer, offset, size);
         }
 
         public void SetConstantBuffer(string name, GraphicsBuffer buffer, int offset, int size)

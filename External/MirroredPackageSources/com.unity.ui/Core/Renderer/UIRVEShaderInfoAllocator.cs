@@ -149,6 +149,8 @@ namespace UnityEngine.UIElements.UIR
 
     internal struct UIRVEShaderInfoAllocator
     {
+        static readonly RectInt k_FirstPixelRect = new RectInt(0, 0, 1, 1);
+
         UIRAtlasManager m_Atlas;
         BitmapAllocator32 m_TransformAllocator, m_ClipRectAllocator, m_OpacityAllocator; // All allocators take pages from the same atlas
         bool m_AtlasReallyCreated;
@@ -270,16 +272,16 @@ namespace UnityEngine.UIElements.UIR
             if (m_VertexTexturingEnabled)
             {
                 var allocXY = AllocToTexelCoord(ref m_TransformAllocator, identityTransform);
-                m_Atlas.EnqueueBlit(whiteTexel, allocXY.x, allocXY.y + 0, false, identityTransformRow0Value);
-                m_Atlas.EnqueueBlit(whiteTexel, allocXY.x, allocXY.y + 1, false, identityTransformRow1Value);
-                m_Atlas.EnqueueBlit(whiteTexel, allocXY.x, allocXY.y + 2, false, identityTransformRow2Value);
+                m_Atlas.EnqueueBlit(whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y + 0, false, identityTransformRow0Value);
+                m_Atlas.EnqueueBlit(whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y + 1, false, identityTransformRow1Value);
+                m_Atlas.EnqueueBlit(whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y + 2, false, identityTransformRow2Value);
 
                 allocXY = AllocToTexelCoord(ref m_ClipRectAllocator, infiniteClipRect);
-                m_Atlas.EnqueueBlit(whiteTexel, allocXY.x, allocXY.y, false, infiniteClipRectValue);
+                m_Atlas.EnqueueBlit(whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y, false, infiniteClipRectValue);
             }
             {
                 var allocXY = AllocToTexelCoord(ref m_OpacityAllocator, fullOpacity);
-                m_Atlas.EnqueueBlit(whiteTexel, allocXY.x, allocXY.y, false, fullOpacityValue);
+                m_Atlas.EnqueueBlit(whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y, false, fullOpacityValue);
             }
 
             m_AtlasReallyCreated = true;
@@ -350,9 +352,9 @@ namespace UnityEngine.UIElements.UIR
             if (m_VertexTexturingEnabled)
             {
                 var allocXY = AllocToTexelCoord(ref m_TransformAllocator, alloc);
-                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, allocXY.x, allocXY.y + 0, false, xform.GetRow(0));
-                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, allocXY.x, allocXY.y + 1, false, xform.GetRow(1));
-                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, allocXY.x, allocXY.y + 2, false, xform.GetRow(2));
+                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y + 0, false, xform.GetRow(0));
+                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y + 1, false, xform.GetRow(1));
+                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y + 2, false, xform.GetRow(2));
             }
             else
                 m_Transforms[AllocToConstantBufferIndex(alloc)] = new Transform3x4()
@@ -369,7 +371,7 @@ namespace UnityEngine.UIElements.UIR
             if (m_VertexTexturingEnabled)
             {
                 var allocXY = AllocToTexelCoord(ref m_ClipRectAllocator, alloc);
-                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, allocXY.x, allocXY.y, false, clipRect);
+                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y, false, clipRect);
             }
             else m_ClipRects[AllocToConstantBufferIndex(alloc)] = clipRect;
         }
@@ -378,7 +380,7 @@ namespace UnityEngine.UIElements.UIR
         {
             Debug.Assert(alloc.IsValid());
             var allocXY = AllocToTexelCoord(ref m_OpacityAllocator, alloc);
-            m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, allocXY.x, allocXY.y, false, new Color(1, 1, 1, opacity));
+            m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y, false, new Color(1, 1, 1, opacity));
         }
 
         public void FreeTransform(BMPAlloc alloc)
