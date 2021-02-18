@@ -170,8 +170,12 @@ namespace UnityEditorInternal.Profiling
             m_DetailedCallsView.frameItemEvent += FrameItem;
             if (m_DetailedViewSpliterState == null || m_DetailedViewSpliterState.relativeSizes == null || m_DetailedViewSpliterState.relativeSizes.Length == 0)
                 m_DetailedViewSpliterState = new SplitterState(new[] { 70f, 30f }, new[] { 450, 50 }, null);
-
             m_Initialized = true;
+        }
+
+        internal void OnFrameDataViewAboutToBeDisposed()
+        {
+            m_TreeView?.OnFrameDataViewAboutToBeDisposed();
         }
 
         public static ProfilerFrameDataMultiColumnHeader.Column[] CreateColumns(ProfilerColumn[] profilerColumns)

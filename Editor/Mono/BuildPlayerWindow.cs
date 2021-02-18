@@ -286,7 +286,7 @@ namespace UnityEditor
 
             // Switching build target in the editor
             BuildTarget selectedTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
-            BuildTargetGroup selectedTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
+            BuildTargetGroup selectedTargetGroup = EditorUserBuildSettingsUtils.CalculateSelectedBuildTargetGroup();
 
             GUILayout.BeginHorizontal();
 
@@ -551,7 +551,7 @@ namespace UnityEditor
             EditorGUIUtility.labelWidth = Mathf.Min(180, (position.width - 265) * 0.47f);
 
             BuildTarget buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
-            BuildTargetGroup buildTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
+            BuildTargetGroup buildTargetGroup = EditorUserBuildSettingsUtils.CalculateSelectedBuildTargetGroup();
             BuildPlatform platform = BuildPlatforms.instance.BuildPlatformFromTargetGroup(buildTargetGroup);
             bool licensed = BuildPipeline.LicenseCheck(buildTarget);
 
@@ -877,7 +877,7 @@ namespace UnityEditor
 
             // Switching build target in the editor
             BuildTarget selectedTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
-            BuildTargetGroup selectedTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
+            BuildTargetGroup selectedTargetGroup = EditorUserBuildSettingsUtils.CalculateSelectedBuildTargetGroup();
 
             bool selectedTargetIsActive = EditorUserBuildSettings.activeBuildTarget == selectedTarget &&
                 EditorUserBuildSettings.activeBuildTargetGroup == selectedTargetGroup;

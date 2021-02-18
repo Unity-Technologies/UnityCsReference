@@ -314,6 +314,7 @@ namespace UnityEditor
 
         internal delegate void SelectionChangedCallback(string selectedPropertyPath);
         public event SelectionChangedCallback selectionChanged;
+        event Action frameDataViewAboutToBeDisposed = delegate {};
 
         // use this when iterating over arrays of history length. This + iterationIndex < 0 means no data for this frame, for anything else, this is the same as ProfilerDriver.firstFrame.
         int firstFrameIndexWithHistoryOffset
@@ -386,6 +387,11 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged += OnPlaymodeStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged += Initialize;
             ProfilerDriver.profileLoaded += OnProfileLoaded;
+
+            selectionChanged += m_CPUFrameDataHierarchyView.SetSelectionFromLegacyPropertyPath;
+            frameDataViewAboutToBeDisposed += () => m_CPUFrameDataHierarchyView.OnFrameDataViewAboutToBeDisposed();
+            selectionChanged += m_GPUFrameDataHierarchyView.SetSelectionFromLegacyPropertyPath;
+            frameDataViewAboutToBeDisposed += () => m_GPUFrameDataHierarchyView.OnFrameDataViewAboutToBeDisposed();
         }
 
         void InitializeIfNeeded()
@@ -465,14 +471,12 @@ namespace UnityEditor
             m_CPUFrameDataHierarchyView.gpuView = false;
             m_CPUFrameDataHierarchyView.viewTypeChanged += CPUOrGPUViewTypeChanged;
             m_CPUFrameDataHierarchyView.selectionChanged += CPUOrGPUViewSelectionChanged;
-            selectionChanged += m_CPUFrameDataHierarchyView.SetSelectionFromLegacyPropertyPath;
 
             if (m_GPUFrameDataHierarchyView == null)
                 m_GPUFrameDataHierarchyView = new ProfilerFrameDataHierarchyView();
             m_GPUFrameDataHierarchyView.gpuView = true;
             m_GPUFrameDataHierarchyView.viewTypeChanged += CPUOrGPUViewTypeChanged;
             m_GPUFrameDataHierarchyView.selectionChanged += CPUOrGPUViewSelectionChanged;
-            selectionChanged += m_GPUFrameDataHierarchyView.SetSelectionFromLegacyPropertyPath;
 
             m_CPUTimelineGUI = new ProfilerTimelineGUI(this);
             m_CPUTimelineGUI.viewTypeChanged += CPUOrGPUViewTypeChanged;
@@ -600,6 +604,15 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged -= OnPlaymodeStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged -= Initialize;
             ProfilerDriver.profileLoaded -= OnProfileLoaded;
+
+            // clean up events to avoid their listeners from getting leaked.
+            // In newer Unity versions the livecycle of the modules and the listeners here is handled more cleanly by the Profiler Modules itself.
+            if (m_CPUFrameDataHierarchyView != null)
+                selectionChanged -= m_CPUFrameDataHierarchyView.SetSelectionFromLegacyPropertyPath;
+            if (m_GPUFrameDataHierarchyView != null)
+                selectionChanged -= m_GPUFrameDataHierarchyView.SetSelectionFromLegacyPropertyPath;
+            // this event is private, just nuke its listeners table.
+            frameDataViewAboutToBeDisposed = delegate {};
         }
 
         void Awake()
@@ -811,6 +824,12 @@ namespace UnityEditor
             return m_CPUOrGPUProfilerProperty;
         }
 
+        void DisposeFrameDataView()
+        {
+            frameDataViewAboutToBeDisposed();
+            m_FrameDataView.Dispose();
+        }
+
         public FrameDataView GetFrameDataView(ProfilerViewType viewType, ProfilerColumn profilerSortColumn, FrameViewFilteringModes filteringMode, bool sortAscending)
         {
             var frameIndex = GetActiveVisibleFrameIndex();
@@ -822,7 +841,7 @@ namespace UnityEditor
 
             if (m_FrameDataView != null)
             {
-                m_FrameDataView.Dispose();
+                DisposeFrameDataView();
             }
 
             m_FrameDataView = new FrameDataView(viewType, frameIndex, 0, profilerSortColumn, sortAscending,  filteringMode);

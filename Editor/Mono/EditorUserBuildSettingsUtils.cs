@@ -10,13 +10,16 @@ namespace UnityEditor
     {
         public static BuildTarget CalculateSelectedBuildTarget()
         {
-            BuildTargetGroup targetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
+            BuildTargetGroup targetGroup = CalculateSelectedBuildTargetGroup();
             switch (targetGroup)
             {
                 case BuildTargetGroup.Standalone:
-                    return DesktopStandaloneBuildWindowExtension.GetBestStandaloneTarget(EditorUserBuildSettings.selectedStandaloneTarget);
-                case BuildTargetGroup.Facebook:
-                    return EditorUserBuildSettings.selectedFacebookTarget;
+                {
+                    BuildTarget target = EditorUserBuildSettings.selectedStandaloneTarget;
+                    if (target == BuildTarget.NoTarget)
+                        target = EditorUserBuildSettings.activeBuildTarget;
+                    return DesktopStandaloneBuildWindowExtension.GetBestStandaloneTarget(target);
+                }
                 default:
                     if (BuildPlatforms.instance == null)
                         throw new System.Exception("Build platforms are not initialized.");
@@ -25,6 +28,14 @@ namespace UnityEditor
                         throw new System.Exception("Could not find build platform for target group " + targetGroup);
                     return platform.defaultTarget;
             }
+        }
+
+        public static BuildTargetGroup CalculateSelectedBuildTargetGroup()
+        {
+            BuildTargetGroup targetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
+            if (targetGroup == BuildTargetGroup.Unknown)
+                targetGroup = EditorUserBuildSettings.activeBuildTargetGroup;
+            return targetGroup;
         }
     }
 }
