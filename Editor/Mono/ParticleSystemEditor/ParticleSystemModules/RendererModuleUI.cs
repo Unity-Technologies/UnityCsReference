@@ -22,7 +22,6 @@ namespace UnityEditor
         SerializedProperty m_ShadowBias;
         SerializedProperty m_MotionVectors;
         SerializedProperty m_Material;
-        SerializedProperty m_TrailMaterial;
         SerializedProperty m_SortingOrder;
         SerializedProperty m_SortingLayerID;
         SerializedProperty m_RenderingLayerMask;
@@ -190,7 +189,6 @@ namespace UnityEditor
             m_ShadowBias = GetProperty0("m_ShadowBias");
             m_MotionVectors = GetProperty0("m_MotionVectors");
             m_Material = GetProperty0("m_Materials.Array.data[0]");
-            m_TrailMaterial = GetProperty0("m_Materials.Array.data[1]");
             m_SortingOrder = GetProperty0("m_SortingOrder");
             m_RenderingLayerMask = GetProperty0("m_RenderingLayerMask");
             m_RendererPriority = GetProperty0("m_RendererPriority");
@@ -283,8 +281,9 @@ namespace UnityEditor
                     GUIObject(s_Texts.material, m_Material);
             }
 
-            if (m_TrailMaterial != null) // The renderer's material list could be empty
-                GUIObject(s_Texts.trailMaterial, m_TrailMaterial);
+            var trailMaterial = serializedObject.FindProperty("m_Materials.Array.data[1]"); // Optional - may fail
+            if (trailMaterial != null) // Only show if the system has a second material slot
+                GUIObject(s_Texts.trailMaterial, trailMaterial);
 
             if (renderMode != RenderMode.None)
             {

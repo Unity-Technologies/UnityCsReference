@@ -322,13 +322,13 @@ namespace UnityEngine.Experimental.UIElements
 
                         scheduledItem.startMs = currentTime;
                         scheduledItem.delayMs = scheduledItem.intervalMs;
+                    }
 
-                        if (scheduledItem.ShouldUnschedule() && !m_UnscheduleTransactions.Contains(scheduledItem))
-                        // if the scheduledItem has been unscheduled explicitly in PerformTimerUpdate then it will be in m_UnscheduleTransactions and we shouldn't
-                        // unschedule it again
-                        {
-                            Unschedule(scheduledItem);
-                        }
+                    if (scheduledItem.ShouldUnschedule() && !m_UnscheduleTransactions.Contains(scheduledItem))
+                    // if the scheduledItem has been unscheduled explicitly in PerformTimerUpdate then it will be in m_UnscheduleTransactions and we shouldn't
+                    // unschedule it again
+                    {
+                        Unschedule(scheduledItem);
                     }
 
                     m_LastUpdatedIndex = index;
