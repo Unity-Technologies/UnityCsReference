@@ -274,14 +274,13 @@ namespace UnityEditor
                         ObjectOverride modifiedObjectData = objectModifications.objectOverrides.Find(x => x.instanceObject == component);
                         ObjectOverride modifiedCoupledObjectData = (coupledComponent != null) ? objectModifications.objectOverrides.Find(x => x.instanceObject == coupledComponent) : null;
 
-                        if (modifiedObjectData == null)
+                        if (modifiedObjectData != null || modifiedCoupledObjectData != null)
                         {
-                            modifiedObjectData = modifiedCoupledObjectData;
-                            modifiedCoupledObjectData = null;
-                        }
+                            // If only the coupled component has modifications, create an
+                            // ObjectOverride object for the main component since it doesn't exist yet.
+                            if (modifiedObjectData == null)
+                                modifiedObjectData = new ObjectOverride() { instanceObject = component };
 
-                        if (modifiedObjectData != null)
-                        {
                             modifiedObjectData.coupledOverride = modifiedCoupledObjectData;
 
                             componentItem.singleModification = modifiedObjectData;
@@ -541,6 +540,40 @@ namespace UnityEditor
 
                 if (m_Source == null || m_Instance == null || m_Modification == null)
                     m_PreviewSize.x /= 2;
+
+                if (modification is ObjectOverride)
+                    Undo.postprocessModifications += RecheckOverrideStatus;
+            }
+
+            public override void OnClose()
+            {
+                Undo.postprocessModifications -= RecheckOverrideStatus;
+
+                base.OnClose();
+                if (m_SourceEditor != null)
+                    Object.DestroyImmediate(m_SourceEditor);
+                if (m_InstanceEditor != null)
+                    Object.DestroyImmediate(m_InstanceEditor);
+            }
+
+            UndoPropertyModification[] RecheckOverrideStatus(UndoPropertyModification[] modifications)
+            {
+                if (m_Instance == null || !PrefabUtility.HasObjectOverride(m_Instance))
+                {
+                    // Delay update and close since if there's multiple undo events, RecheckOverrideStatus
+                    // gets called for each, and we only want to recheck after the last one.
+                    // This fixes an issue where the tree view would still show a component with no more
+                    // modifications on it, if it was a component with a coupled component.
+                    EditorApplication.update -= UpdateAndCloseOnNextTick;
+                    EditorApplication.update += UpdateAndCloseOnNextTick;
+                }
+                return modifications;
+            }
+
+            void UpdateAndCloseOnNextTick()
+            {
+                EditorApplication.update -= UpdateAndCloseOnNextTick;
+                UpdateAndClose();
             }
 
             bool UpdatePreviewHeight(float height)
@@ -752,15 +785,6 @@ namespace UnityEditor
             public override Vector2 GetWindowSize()
             {
                 return new Vector2(m_PreviewSize.x, m_PreviewSize.y + k_HeaderHeight + 1f);
-            }
-
-            public override void OnClose()
-            {
-                base.OnClose();
-                if (m_SourceEditor != null)
-                    Object.DestroyImmediate(m_SourceEditor);
-                if (m_InstanceEditor != null)
-                    Object.DestroyImmediate(m_InstanceEditor);
             }
         }
     }

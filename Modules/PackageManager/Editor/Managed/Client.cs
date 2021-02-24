@@ -132,5 +132,10 @@ namespace UnityEditor.PackageManager
             var status = NativeClient.UpdateScopedRegistry(out operationId, registryName, options);
             return new UpdateScopedRegistryRequest(operationId, status);
         }
+
+        internal static void Resolve()
+        {
+            NativeClient.Resolve();
+        }
     }
 }

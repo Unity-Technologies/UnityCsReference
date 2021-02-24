@@ -138,6 +138,8 @@ namespace UnityEngine.TextCore.LowLevel
     [NativeHeader("Modules/TextCore/Native/FontEngine/FontEngine.h")]
     public sealed class FontEngine
     {
+        private static string[] s_FontFaces = new string[16];
+
         private static Glyph[] s_Glyphs = new Glyph[16];
         private static uint[] s_GlyphIndexes_MarshallingArray_A;
         private static uint[] s_GlyphIndexes_MarshallingArray_B;
@@ -219,10 +221,10 @@ namespace UnityEngine.TextCore.LowLevel
 
 
         /// <summary>
-        /// Load the source font file at the given file path.
+        /// Loads the source font file at the given file path.
         /// </summary>
         /// <param name="filePath">The file path of the source font file.</param>
-        /// <returns>Returns a value of zero if the font face was loaded successfully.</returns>
+        /// <returns>A value of zero (0) if the font face was loaded successfully.</returns>
         public static FontEngineError LoadFontFace(string filePath)
         {
             return (FontEngineError)LoadFontFace_Internal(filePath);
@@ -233,11 +235,11 @@ namespace UnityEngine.TextCore.LowLevel
 
 
         /// <summary>
-        /// Load the font file at the given file path and set it size to the specified point size.
+        /// Loads the font file at the given file path and set it size to the specified point size.
         /// </summary>
         /// <param name="filePath">The file path of the source font file.</param>
         /// <param name="pointSize">The point size used to scale the font face.</param>
-        /// <returns>Returns a value of zero if the font face was loaded successfully.</returns>
+        /// <returns>A value of zero if the font face was loaded successfully.</returns>
         public static FontEngineError LoadFontFace(string filePath, int pointSize)
         {
             return (FontEngineError)LoadFontFace_With_Size_Internal(filePath, pointSize);
@@ -246,12 +248,27 @@ namespace UnityEngine.TextCore.LowLevel
         [NativeMethod(Name = "TextCore::FontEngine::LoadFontFace", IsFreeFunction = true)]
         static extern int LoadFontFace_With_Size_Internal(string filePath, int pointSize);
 
+        /// <summary>
+        /// Loads the font file at the given file path and set it size and face index to the specified values.
+        /// </summary>
+        /// <param name="filePath">The file path of the source font file.</param>
+        /// <param name="pointSize">The point size used to scale the font face.</param>
+        /// <param name="faceIndex">The face index of the font face to load. When the font file is a TrueType collection (.TTC), this specifies the face index of the font face to load. If the font file is a TrueType Font (.TTF) or OpenType Font (.OTF) file, the face index is always 0.</param>
+        /// <returns>A value of zero (0) if the font face was loaded successfully.</returns>
+        public static FontEngineError LoadFontFace(string filePath, int pointSize, int faceIndex)
+        {
+            return (FontEngineError)LoadFontFace_With_Size_And_FaceIndex_Internal(filePath, pointSize, faceIndex);
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::LoadFontFace", IsFreeFunction = true)]
+        static extern int LoadFontFace_With_Size_And_FaceIndex_Internal(string filePath, int pointSize, int faceIndex);
+
 
         /// <summary>
-        /// Load the font file from the provided byte array.
+        /// Loads the font file from the provided byte array.
         /// </summary>
-        /// <param name="sourceFontFile">A byte array containing the source font file.</param>
-        /// <returns>Returns a value of zero if the font face was loaded successfully.</returns>
+        /// <param name="sourceFontFile">The byte array that contains the source font file.</param>
+        /// <returns>A value of zero (0) if the font face was loaded successfully.</returns>
         public static FontEngineError LoadFontFace(byte[] sourceFontFile)
         {
             if (sourceFontFile.Length == 0)
@@ -265,11 +282,11 @@ namespace UnityEngine.TextCore.LowLevel
 
 
         /// <summary>
-        /// Load the font file from the provided byte array and set its size to the given point size.
+        /// Loads the font file from the provided byte array and set its size to the given point size.
         /// </summary>
-        /// <param name="sourceFontFile">A byte array containing the source font file.</param>
+        /// <param name="sourceFontFile">The byte array that contains the source font file.</param>
         /// <param name="pointSize">The point size used to scale the font face.</param>
-        /// <returns>Returns a value of zero if the font face was loaded successfully.</returns>
+        /// <returns>A value of zero (0) if the font face was loaded successfully.</returns>
         public static FontEngineError LoadFontFace(byte[] sourceFontFile, int pointSize)
         {
             if (sourceFontFile.Length == 0)
@@ -281,12 +298,30 @@ namespace UnityEngine.TextCore.LowLevel
         [NativeMethod(Name = "TextCore::FontEngine::LoadFontFace", IsFreeFunction = true)]
         static extern int LoadFontFace_With_Size_FromSourceFontFile_Internal(byte[] sourceFontFile, int pointSize);
 
+        /// <summary>
+        /// Loads the font file from the provided byte array and set its size and face index to the specified values.
+        /// </summary>
+        /// <param name="sourceFontFile">The byte array that contains the source font file.</param>
+        /// <param name="pointSize">The point size used to scale the font face.</param>
+        /// <param name="faceIndex">The face index of the font face to load. When the font file is a TrueType collection (.TTC), this specifies the face index of the font face to load. If the font file is a TrueType Font (.TTF) or OpenType Font (.OTF) file, the face index is always 0.</param>
+        /// <returns>A value of zero (0) if the font face was loaded successfully.</returns>
+        public static FontEngineError LoadFontFace(byte[] sourceFontFile, int pointSize, int faceIndex)
+        {
+            if (sourceFontFile.Length == 0)
+                return FontEngineError.Invalid_File;
+
+            return (FontEngineError)LoadFontFace_With_Size_And_FaceIndex_FromSourceFontFile_Internal(sourceFontFile, pointSize, faceIndex);
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::LoadFontFace", IsFreeFunction = true)]
+        static extern int LoadFontFace_With_Size_And_FaceIndex_FromSourceFontFile_Internal(byte[] sourceFontFile, int pointSize, int faceIndex);
+
 
         /// <summary>
-        /// Load the font file from the Unity font's internal font data. Note the Unity font must be set to Dynamic with Include Font Data enabled.
+        /// Loads the font file from the Unity font's internal font data. Note the Unity font must be set to Dynamic with Include Font Data enabled.
         /// </summary>
         /// <param name="font">The font from which to load the data.</param>
-        /// <returns>Returns a value of zero if the font face was loaded successfully.</returns>
+        /// <returns>A value of zero (0) if the font face was loaded successfully.</returns>
         public static FontEngineError LoadFontFace(Font font)
         {
             return (FontEngineError)LoadFontFace_FromFont_Internal(font);
@@ -297,11 +332,11 @@ namespace UnityEngine.TextCore.LowLevel
 
 
         /// <summary>
-        /// Load the font file from the Unity font's internal font data. Note the Unity font must be set to Dynamic with Include Font Data enabled.
+        /// Loads the font file from the Unity font's internal font data. Note the Unity font must be set to Dynamic with Include Font Data enabled.
         /// </summary>
         /// <param name="font">The font from which to load the data.</param>
         /// <param name="pointSize">The point size used to scale the font face.</param>
-        /// <returns>Returns a value of zero if the font face was loaded successfully.</returns>
+        /// <returns>A value of zero (0) if the font face was loaded successfully.</returns>
         public static FontEngineError LoadFontFace(Font font, int pointSize)
         {
             return (FontEngineError)LoadFontFace_With_Size_FromFont_Internal(font, pointSize);
@@ -309,6 +344,45 @@ namespace UnityEngine.TextCore.LowLevel
 
         [NativeMethod(Name = "TextCore::FontEngine::LoadFontFace", IsFreeFunction = true)]
         static extern int LoadFontFace_With_Size_FromFont_Internal(Font font, int pointSize);
+
+        /// <summary>
+        /// Loads the font file from the Unity font's internal font data. Note the Unity font must be set to Dynamic with Include Font Data enabled.
+        /// </summary>
+        /// <param name="font">The font from which to load the data.</param>
+        /// <param name="pointSize">The point size used to scale the font face.</param>
+        /// <param name="faceIndex">The face index of the font face to load. When the font file is a TrueType collection (.TTC), this specifies the face index of the font face to load. If the font file is a TrueType Font (.TTF) or OpenType Font (.OTF) file, the face index is always 0.</param>
+        /// <returns>A value of zero (0) if the font face was loaded successfully.</returns>
+        public static FontEngineError LoadFontFace(Font font, int pointSize, int faceIndex)
+        {
+            return (FontEngineError)LoadFontFace_With_Size_and_FaceIndex_FromFont_Internal(font, pointSize, faceIndex);
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::LoadFontFace", IsFreeFunction = true)]
+        static extern int LoadFontFace_With_Size_and_FaceIndex_FromFont_Internal(Font font, int pointSize, int faceIndex);
+
+        /// <summary>
+        /// Unloads current font face and removes it from the cache.
+        /// </summary>
+        /// <returns>A value of zero (0) if the font face was successfully unloaded and removed from the cache.</returns>
+        public static FontEngineError UnloadFontFace()
+        {
+            return (FontEngineError)UnloadFontFace_Internal();
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::UnloadFontFace", IsFreeFunction = true)]
+        static extern int UnloadFontFace_Internal();
+
+        /// <summary>
+        /// Unloads all currently loaded font faces and removes them from the cache.
+        /// </summary>
+        /// <returns>A value of zero (0) if the font faces were successfully unloaded and removed from the cache.</returns>
+        public static FontEngineError UnloadAllFontFaces()
+        {
+            return (FontEngineError)UnloadAllFontFaces_Internal();
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::UnloadAllFontFaces", IsFreeFunction = true)]
+        static extern int UnloadAllFontFaces_Internal();
 
 
         /// <summary>
@@ -341,6 +415,35 @@ namespace UnityEngine.TextCore.LowLevel
         [NativeMethod(Name = "TextCore::FontEngine::GetFaceInfo", IsThreadSafe = true, IsFreeFunction = true)]
         static extern int GetFaceInfo_Internal(ref FaceInfo faceInfo);
 
+        /// <summary>
+        /// Get the number of faces and styles for the currently loaded font.
+        /// </summary>
+        /// <returns>Returns the number of font faces and styles contained in the font.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetFaceCount", IsThreadSafe = true, IsFreeFunction = true)]
+        internal static extern int GetFaceCount();
+
+        /// <summary>
+        /// Get the font face(s) and style(s) for the currently loaded font.
+        /// </summary>
+        /// <returns>Array containing the names of the font faces and styles.</returns>
+        public static string[] GetFontFaces()
+        {
+            int faceCount = GetFaceCount();
+
+            // Make sure marshalling array is of appropriate size.
+            SetMarshallingArraySize(ref s_FontFaces, faceCount);
+
+            GetFontFaces_Internal(s_FontFaces);
+
+            string[] faces = new string[faceCount];
+            for (int i = 0; i < faceCount; i++)
+                faces[i] = s_FontFaces[i];
+
+            return faces;
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::GetFontFaces", IsThreadSafe = true, IsFreeFunction = true)]
+        static extern int GetFontFaces_Internal([Out] string[] fontFaces);
 
         /// <summary>
         /// Get the index of the glyph for the character mapped at Unicode value.

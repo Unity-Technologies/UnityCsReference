@@ -188,6 +188,7 @@ namespace UnityEditor
         internal delegate void SelectionChangedCallback(string selectedPropertyPath);
         public event SelectionChangedCallback selectionChanged = delegate {};
         internal event Action<int, bool> currentFrameChanged = delegate {};
+        public event Action frameDataViewAboutToBeDisposed = delegate {};
         internal event Action<bool> recordingStateChanged = delegate {};
         internal event Action<bool> deepProfileChanged = delegate {};
         internal event Action<ProfilerMemoryRecordMode> memoryRecordingModeChanged = delegate {};
@@ -717,6 +718,12 @@ namespace UnityEditor
             return property != null && property.frameDataReady;
         }
 
+        void DisposeFrameDataView()
+        {
+            frameDataViewAboutToBeDisposed();
+            m_FrameDataView.Dispose();
+        }
+
         public HierarchyFrameDataView GetFrameDataView(string threadName, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
         {
             var frameIndex = GetActiveVisibleFrameIndex();
@@ -745,8 +752,7 @@ namespace UnityEditor
             }
 
             if (m_FrameDataView != null)
-                m_FrameDataView.Dispose();
-
+                DisposeFrameDataView();
             m_FrameDataView = new HierarchyFrameDataView(frameIndex, threadIndex, viewMode, profilerSortColumn, sortAscending);
             return m_FrameDataView;
         }
@@ -1205,9 +1211,6 @@ namespace UnityEditor
                 EditorApplication.isPaused = true;
 
             currentFrameChanged?.Invoke(frame, shouldPause);
-
-            if (ProfilerInstrumentationPopup.InstrumentationEnabled)
-                ProfilerInstrumentationPopup.UpdateInstrumentableFunctions();
 
             SetCurrentFrameDontPause(frame);
         }

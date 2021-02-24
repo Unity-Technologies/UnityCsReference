@@ -614,6 +614,22 @@ namespace UnityEngine
     {
         private LightProbes() {}
 
+        public static event Action tetrahedralizationCompleted;
+
+        private static void Internal_CallTetrahedralizationCompletedFunction()
+        {
+            if (tetrahedralizationCompleted != null)
+                tetrahedralizationCompleted();
+        }
+
+        public static event Action needsRetetrahedralization;
+
+        private static void Internal_CallNeedsRetetrahedralizationFunction()
+        {
+            if (needsRetetrahedralization != null)
+                needsRetetrahedralization();
+        }
+
         [FreeFunction]
         public static extern void Tetrahedralize();
 

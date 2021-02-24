@@ -56,7 +56,7 @@ namespace UnityEngine
                 // Reset the scrollOffset to force its recomputation.
                 scrollOffset = Vector2.zero;
 
-                m_Position = GUIUtility.AlignRectToDevice(value);
+                m_Position = value;
 
                 UpdateScrollOffset();
             }

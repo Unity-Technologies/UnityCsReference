@@ -58,6 +58,7 @@ namespace UnityEditorInternal
             return MakeKey(sysroot.HostPlatform, sysroot.HostArch, sysroot.TargetPlatform, sysroot.TargetArch);
         }
 
+        [InitializeOnLoadMethod]
         public static void Initialize()
         {
             CreateArchMapping();
@@ -87,7 +88,8 @@ namespace UnityEditorInternal
                 var sysroot = Activator.CreateInstance(type, new object[] {}, new object[] {}) as Sysroot;
                 if (sysroot != null)
                 {
-                    UnityEngine.Debug.Log($"Found sysroot: {sysroot.Name}, hp={sysroot.HostPlatform}, ha={sysroot.HostArch}, tp={sysroot.TargetPlatform}, ta={sysroot.TargetArch}");
+                    if (!String.IsNullOrEmpty(Environment.GetEnvironmentVariable("UNITY_SYSROOT_DEBUG")))
+                        UnityEngine.Debug.Log($"Found sysroot: {sysroot.Name}, hp={sysroot.HostPlatform}, ha={sysroot.HostArch}, tp={sysroot.TargetPlatform}, ta={sysroot.TargetArch}");
                     _knownSysroots.Add(MakeKey(sysroot.HostPlatform, sysroot.HostArch, sysroot.TargetPlatform, sysroot.TargetArch), sysroot);
                 }
             }
@@ -141,7 +143,7 @@ namespace UnityEditorInternal
             switch (Environment.OSVersion.Platform)
             {
                 case PlatformID.Win32NT:
-                    _hostPlatform = "Windows";
+                    _hostPlatform = "windows";
                     _hostArch = MapArch(Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE"));
                     break;
                 case PlatformID.Unix:
@@ -180,6 +182,42 @@ namespace UnityEditorInternal
             }
 
             return sysroot;
+        }
+
+        public static string HostTargetTuple(BuildTarget buildTarget)
+        {
+            if (GetHostPlatformAndArch())
+            {
+                string targetPlatform;
+                string targetArch;
+                if (GetTargetPlatformAndArchFromBuildTarget(buildTarget, out targetPlatform, out targetArch))
+                {
+                    string host;
+                    switch (_hostPlatform)
+                    {
+                        case "darwin":
+                            host = $"macos-{_hostArch}";
+                            break;
+                        case "windows":
+                            host = $"win-{_hostArch}";
+                            break;
+                        default:
+                            host = $"{_hostPlatform}-{_hostArch}";
+                            break;
+                    }
+                    string target = $"{targetPlatform}-{targetArch}";
+                    return host == target ? target : $"{host}-{target}";
+                }
+            }
+            return null;
+        }
+
+        public static IEnumerable<Sysroot> EnumerateSysroots()
+        {
+            foreach (Sysroot sysroot in _knownSysroots.Values)
+            {
+                yield return sysroot;
+            }
         }
     }
 

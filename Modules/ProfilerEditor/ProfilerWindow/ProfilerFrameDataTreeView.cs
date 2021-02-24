@@ -10,6 +10,7 @@ using UnityEditor;
 using UnityEditorInternal.Profiling;
 using UnityEngine;
 using UnityEngine.Assertions;
+using System.Runtime.CompilerServices;
 
 namespace UnityEditorInternal
 {
@@ -40,6 +41,8 @@ namespace UnityEditorInternal
 
         [NonSerialized]
         List<TreeViewItem> m_RowsPool = new List<TreeViewItem>();
+        [NonSerialized]
+        int m_RowsPoolLastItemIndex = -1;
         [NonSerialized]
         Stack<List<TreeViewItem>> m_ChildrenPool = new Stack<List<TreeViewItem>>();
         [NonSerialized]
@@ -104,6 +107,7 @@ namespace UnityEditorInternal
                 m_Initialized = false;
             }
 
+            [MethodImpl((MethodImplOptions)256)]
             internal void Init(HierarchyFrameDataView frameDataView, int id, int depth, TreeViewItem parent)
             {
                 this.id = id;
@@ -180,7 +184,7 @@ namespace UnityEditorInternal
             {
                 var childItem = item.children[i];
                 // Inlining !IsChildListForACollapsedParent without childList.Count == 1 check, as we only create list if we have children
-                if (childItem.children != null && childItem.children[0] != null)
+                if (childItem != null && childItem.children != null && childItem.children[0] != null)
                 {
                     var subHierarchy = new ExpandedMarkerIdHierarchy();
                     if (expandedHierarchy.expandedMarkers == null)
@@ -217,6 +221,14 @@ namespace UnityEditorInternal
 
             m_LegacySelectedItemMarkerNamePath = selectedPropertyPath;
             m_SelectedItemMarkerIdPath = null;
+        }
+
+        public void OnFrameDataViewAboutToBeDisposed()
+        {
+            if (m_FrameDataView == null || !m_FrameDataView.valid)
+                return;
+            StoreExpandedState();
+            StoreSelectedState();
         }
 
         private bool PropertyPathMatchesSelectedIDs(string legacyPropertyPath, List<int> selectedIDs)
@@ -359,6 +371,7 @@ namespace UnityEditorInternal
             m_FrameDataView = null;
 
             m_RowsPool.Clear();
+            m_RowsPoolLastItemIndex = -1;
             m_ChildrenPool.Clear();
             m_ReusableVisitList.Clear();
             m_ReusableChildrenIds.Clear();
@@ -376,7 +389,14 @@ namespace UnityEditorInternal
         protected override IList<TreeViewItem> BuildRows(TreeViewItem root)
         {
             if (m_RowsPool.Count < kMaxPooledRowsCount)
+            {
+                // clean out items in the pool that where currently in use.
+                if (m_RowsPoolLastItemIndex + 1 < m_RowsPool.Count)
+                    m_RowsPool.RemoveRange(m_RowsPoolLastItemIndex + 1, m_RowsPool.Count - (m_RowsPoolLastItemIndex + 1));
+                // pool current rows
                 m_RowsPool.AddRange(m_Rows);
+                m_RowsPoolLastItemIndex += m_Rows.Count;
+            }
             m_Rows.Clear();
 
             if (m_FrameDataView == null || !m_FrameDataView.valid)
@@ -462,6 +482,7 @@ namespace UnityEditorInternal
             public ExpandedMarkerIdHierarchy expandedHierarchy;
         }
 
+        [MethodImpl((MethodImplOptions)256)]
         LinkedListNode<TreeTraversalState> AcquireTreeTraversalStateNode(FrameDataTreeViewItem item, ExpandedMarkerIdHierarchy expandedHierarchy)
         {
             if (m_TreeTraversalStatePool.Count == 0)
@@ -472,16 +493,18 @@ namespace UnityEditorInternal
             return node;
         }
 
+        [MethodImpl((MethodImplOptions)256)]
         FrameDataTreeViewItem AcquireFrameDataTreeViewItem(HierarchyFrameDataView frameDataView, int id, int depth, TreeViewItem parent)
         {
-            if (m_RowsPool.Count > 0)
+            if (m_RowsPoolLastItemIndex > -1)
             {
-                FrameDataTreeViewItem child = (FrameDataTreeViewItem)m_RowsPool[m_RowsPool.Count - 1];
-                m_RowsPool.RemoveAt(m_RowsPool.Count - 1);
+                FrameDataTreeViewItem child = (FrameDataTreeViewItem)m_RowsPool[m_RowsPoolLastItemIndex];
+                --m_RowsPoolLastItemIndex;
                 child.Init(m_FrameDataView, id, depth, parent);
-                if (child.children != null)
+                var children = child.children;
+                if (children != null)
                 {
-                    m_ChildrenPool.Push(child.children);
+                    m_ChildrenPool.Push(children);
                     child.children = null;
                 }
 
@@ -499,19 +522,31 @@ namespace UnityEditorInternal
             // Think of it as an unrolled recursion where stack state is defined by TreeTraversalState.
             while (m_ReusableVisitList.First != null)
             {
-                var currentItem = m_ReusableVisitList.First.Value;
-                m_TreeTraversalStatePool.Push(m_ReusableVisitList.First);
-                m_ReusableVisitList.RemoveFirst();
+                var currentItem = m_ReusableVisitList.First.Value.item;
+                var currentExpandedHierarchy =  m_ReusableVisitList.First.Value.expandedHierarchy;
+                {
+                    // scope firstItem to avoid reusing it accidentally
+                    var firstItem = m_ReusableVisitList.First;
+                    firstItem.Value = new TreeTraversalState();
+                    m_TreeTraversalStatePool.Push(firstItem);
+                    m_ReusableVisitList.RemoveFirst();
+                }
 
-                if (currentItem.item.depth != -1)
-                    newRows.Add(currentItem.item);
+                // This loop can be a bit of a hot path so, micro optimizations like property caching and inlinig have some effect:
+                // So... cache depth
+                var currentItemDepth = currentItem.depth;
+                // and cache children, remember to also set currentItem.children if a new list is assigned
+                var currentItemChildren = currentItem.children;
 
-                m_FrameDataView.GetItemChildren(currentItem.item.id, m_ReusableChildrenIds);
+                if (currentItemDepth != -1)
+                    newRows.Add(currentItem);
+
+                m_FrameDataView.GetItemChildren(currentItem.id, m_ReusableChildrenIds);
                 var childrenCount = m_ReusableChildrenIds.Count;
                 if (childrenCount == 0)
                     continue;
 
-                if (currentItem.item.depth != -1)
+                if (currentItemDepth != -1)
                 {
                     // Check expansion state from a previous frame view state (marker id path) or current tree view state (frame-specific id).
                     bool needsExpansion;
@@ -519,53 +554,68 @@ namespace UnityEditorInternal
                     {
                         // When we alter expansion state of the currently selected frame,
                         // we rely on TreeView's IsExpanded functionality.
-                        needsExpansion = IsExpanded(currentItem.item.id);
+                        needsExpansion = IsExpanded(currentItem.id);
                     }
                     else
                     {
                         // When we switch to another frame, we rebuild expanded state based on stored m_ExpandedMarkersHierarchy
                         // which represents tree of expanded nodes.
-                        needsExpansion = currentItem.expandedHierarchy != null;
+                        needsExpansion = currentExpandedHierarchy != null;
                     }
 
                     if (!needsExpansion)
                     {
-                        if (currentItem.item.children == null)
-                            currentItem.item.children = CreateChildListForCollapsedParent();
+                        if (currentItemChildren == null)
+                        {
+                            // Lets create a fake laze child list.
+                            // Not using CreateChildListForCollapsedParent as that list returns a static list and will cause funkyness later on.
+                            // We have a pool, so we're gonna use that.
+                            if (m_ChildrenPool.Count > 0)
+                            {
+                                currentItem.children = currentItemChildren = m_ChildrenPool.Pop();
+                                currentItemChildren.Clear();
+                            }
+                            else
+                                currentItem.children = currentItemChildren = new List<TreeViewItem>();
+                            currentItemChildren.Add(null);
+                        }
                         continue;
                     }
 
                     if (newExpandedIds != null)
-                        newExpandedIds.Add(currentItem.item.id);
+                        newExpandedIds.Add(currentItem.id);
                 }
 
                 // Generate children based on the view data.
-                if (currentItem.item.children == null)
+                if (currentItemChildren == null)
                 {
                     // Reuse existing list.
                     if (m_ChildrenPool.Count > 0)
-                        currentItem.item.children = m_ChildrenPool.Pop();
+                        currentItem.children = currentItemChildren = m_ChildrenPool.Pop();
                     else
-                        currentItem.item.children = new List<TreeViewItem>();
+                        currentItem.children = currentItemChildren = new List<TreeViewItem>();
                 }
-                currentItem.item.children.Clear();
-                currentItem.item.children.Capacity = childrenCount;
+                currentItemChildren.Clear();
+                const int k_MaxSuperflousCapacity = 32 - 1;
+                // only reset capacity if needed or if too much space would be wasted. Otherwise, what's the point of pooling them?
+                if (currentItemChildren.Capacity < childrenCount || currentItemChildren.Capacity > childrenCount + k_MaxSuperflousCapacity)
+                    currentItemChildren.Capacity = childrenCount;
 
                 for (var i = 0; i < childrenCount; ++i)
                 {
-                    var child = AcquireFrameDataTreeViewItem(m_FrameDataView, m_ReusableChildrenIds[i], currentItem.item.depth + 1, currentItem.item);
-                    currentItem.item.children.Add(child);
+                    var child = AcquireFrameDataTreeViewItem(m_FrameDataView, m_ReusableChildrenIds[i], currentItemDepth + 1, currentItem);
+                    currentItemChildren.Add(child);
                 }
 
                 // Add children to the traversal list.
                 // We add all of them in front, so it is depth search, but with preserved siblings order.
                 LinkedListNode<TreeTraversalState> prev = null;
-                foreach (var child in currentItem.item.children)
+                foreach (var child in currentItemChildren)
                 {
                     var childMarkerId = m_FrameDataView.GetItemMarkerID(child.id);
                     ExpandedMarkerIdHierarchy childExpandedHierarchy = null;
-                    if (currentItem.expandedHierarchy != null && currentItem.expandedHierarchy.expandedMarkers != null)
-                        currentItem.expandedHierarchy.expandedMarkers.TryGetValue(childMarkerId, out childExpandedHierarchy);
+                    if (currentExpandedHierarchy != null && currentExpandedHierarchy.expandedMarkers != null)
+                        currentExpandedHierarchy.expandedMarkers.TryGetValue(childMarkerId, out childExpandedHierarchy);
 
                     var traversalState = AcquireTreeTraversalStateNode((FrameDataTreeViewItem)child, childExpandedHierarchy);
                     if (prev == null)

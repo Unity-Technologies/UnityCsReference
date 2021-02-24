@@ -354,6 +354,7 @@ namespace UnityEngine
             if (args == null) args = new object[] { null };
             var clazz = AndroidJNISafe.FindClass(className.Replace('.', '/'));
             m_jclass = new GlobalJavaObjectRef(clazz);
+            AndroidJNISafe.DeleteLocalRef(clazz);
             jvalue[] jniArgs = AndroidJNIHelper.CreateJNIArgArray(args);
             try
             {
@@ -793,6 +794,7 @@ namespace UnityEngine
             var clazz = AndroidJNISafe.FindClass(className.Replace('.', '/'));
             m_jclass = new GlobalJavaObjectRef(clazz /*.GetRawObject()*/);
             m_jobject = new GlobalJavaObjectRef(IntPtr.Zero);
+            AndroidJNISafe.DeleteLocalRef(clazz);
         }
 
         internal AndroidJavaClass(IntPtr jclass)  // should be protected and friends with AndroidJNIHelper..

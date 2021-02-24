@@ -102,10 +102,10 @@ namespace UnityEngine.UIElements
 
         void OnClickEvent(EventBase evt)
         {
-            if ((evt as MouseUpEvent)?.button == (int)MouseButton.LeftMouse)
+            if (evt.eventTypeId == MouseUpEvent.TypeId())
             {
-                var mue = (MouseUpEvent)evt;
-                if (visualInput.ContainsPoint(visualInput.WorldToLocal(mue.mousePosition)))
+                var ce = (IMouseEvent)evt;
+                if (ce.button == (int)MouseButton.LeftMouse)
                 {
                     OnClick();
                 }

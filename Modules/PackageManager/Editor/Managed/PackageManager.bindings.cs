@@ -30,6 +30,8 @@ namespace UnityEditor.PackageManager
 
         public static extern NativeStatusCode Pack([Out] out long operationId, string packageFolder, string targetFolder);
 
+        public static extern void Resolve();
+
         public static extern NativeStatusCode GetOperationStatus(long operationId);
 
         public static extern NativeStatusCode AddScopedRegistry([Out] out long operationId, string name, string url, string[] scopes);

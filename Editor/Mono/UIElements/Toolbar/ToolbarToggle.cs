@@ -16,6 +16,8 @@ namespace UnityEditor.UIElements
 
         public ToolbarToggle()
         {
+            focusable = false;
+
             Toolbar.SetToolbarStyleSheet(this);
             RemoveFromClassList(Toggle.ussClassName);
             AddToClassList(ussClassName);

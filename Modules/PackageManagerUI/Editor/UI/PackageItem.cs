@@ -274,11 +274,7 @@ namespace UnityEditor.PackageManager.UI
                 if (version.isInstalled)
                     label = "current - " + label;
             }
-            if (version.HasTag(PackageTag.Preview))
-            {
-                var previewLabel = string.IsNullOrEmpty(version.version.Prerelease) ? "preview" : version.version.Prerelease;
-                label = $"{previewLabel} - {label}";
-            }
+
             return label;
         }
     }

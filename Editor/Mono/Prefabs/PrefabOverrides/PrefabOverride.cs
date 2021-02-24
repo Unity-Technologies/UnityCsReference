@@ -73,8 +73,6 @@ namespace UnityEditor.SceneManagement
             PrefabUtility.RevertObjectOverride(
                 instanceObject,
                 InteractionMode.UserAction);
-
-            coupledOverride?.Revert();
         }
 
         public override UnityObject GetAssetObject()
@@ -93,31 +91,13 @@ namespace UnityEditor.SceneManagement
                 instanceComponent,
                 prefabAssetPath,
                 InteractionMode.UserAction);
-
-            var coupledComponent = instanceComponent.GetCoupledComponent();
-            if (coupledComponent != null)
-            {
-                PrefabUtility.ApplyAddedComponent(
-                    coupledComponent,
-                    prefabAssetPath,
-                    InteractionMode.UserAction);
-            }
         }
 
         public override void Revert()
         {
-            var coupledComponent = instanceComponent.GetCoupledComponent();
-
             PrefabUtility.RevertAddedComponent(
                 instanceComponent,
                 InteractionMode.UserAction);
-
-            if (coupledComponent != null)
-            {
-                PrefabUtility.RevertAddedComponent(
-                    coupledComponent,
-                    InteractionMode.UserAction);
-            }
         }
 
         public override UnityObject GetAssetObject()
@@ -145,15 +125,6 @@ namespace UnityEditor.SceneManagement
                 containingInstanceGameObject,
                 assetComponent,
                 InteractionMode.UserAction);
-
-            var coupledComponent = assetComponent.GetCoupledComponent();
-            if (coupledComponent != null)
-            {
-                PrefabUtility.RevertRemovedComponent(
-                    containingInstanceGameObject,
-                    coupledComponent,
-                    InteractionMode.UserAction);
-            }
         }
 
         public override UnityObject GetAssetObject()
