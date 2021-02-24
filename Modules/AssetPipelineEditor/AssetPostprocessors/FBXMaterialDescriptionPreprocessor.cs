@@ -48,9 +48,11 @@ namespace UnityEditor.AssetImporters
         {
             float classIdA;
             float classIdB;
+            string originalMtl;
             description.TryGetProperty("ClassIDa", out classIdA);
             description.TryGetProperty("ClassIDb", out classIdB);
-            return classIdA == 1030429932 && classIdB == -559038463;
+            description.TryGetProperty("ORIGINAL_MTL", out originalMtl);
+            return classIdA == 1030429932 && classIdB == -559038463 || originalMtl == "PHYSICAL_MTL";
         }
 
         static bool Is3DsMaxSimplifiedPhysicalMaterial(MaterialDescription description)
@@ -73,9 +75,11 @@ namespace UnityEditor.AssetImporters
         {
             float classIdA;
             float classIdB;
+            string originalMtl;
             description.TryGetProperty("ClassIDa", out classIdA);
             description.TryGetProperty("ClassIDb", out classIdB);
-            return classIdA == 2121471519 && classIdB == 1660373836;
+            description.TryGetProperty("ORIGINAL_MTL", out originalMtl);
+            return classIdA == 2121471519 && classIdB == 1660373836 && originalMtl != "PHYSICAL_MTL";
         }
 
         static bool IsAutodeskInteractiveMaterial(MaterialDescription description)
@@ -384,15 +388,23 @@ namespace UnityEditor.AssetImporters
                 material.EnableKeyword("_METALLICGLOSSMAP");
             }
 
-            if (description.TryGetProperty("emit_color", out vectorProperty))
+            if (description.TryGetProperty("emission", out floatProperty) && floatProperty > 0.0f)
             {
-                if (description.TryGetProperty("emission", out floatProperty))
-                {
-                    vectorProperty *= floatProperty;
-                }
-                material.SetColor("_EmissionColor", vectorProperty);
                 material.EnableKeyword("_EMISSION");
                 material.globalIlluminationFlags |= MaterialGlobalIlluminationFlags.RealtimeEmissive;
+
+                Color emissiveColor = new Color(1.0f, 1.0f, 1.0f, 1.0f);
+                if (description.TryGetProperty("emit_color_map", out textureProperty))
+                {
+                    emissiveColor *= floatProperty;
+                    SetMaterialTextureProperty("_EmissionMap", material, textureProperty);
+                    material.SetColor("_EmissionColor", emissiveColor);
+                }
+                else if (description.TryGetProperty("emit_color", out vectorProperty))
+                {
+                    emissiveColor = vectorProperty * floatProperty;
+                    material.SetColor("_EmissionColor", emissiveColor);
+                }
             }
         }
 

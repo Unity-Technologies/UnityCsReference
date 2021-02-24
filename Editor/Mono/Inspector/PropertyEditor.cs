@@ -1696,8 +1696,10 @@ namespace UnityEditor
                         editor.isInspectorDirty = false;
 
                         // Adds an empty IMGUIContainer to prevent infinite repainting (case 1264833).
-                        if (mapping == null || !mapping.TryGetValue(editor.target.GetInstanceID(),
-                            out var culledEditorContainer))
+                        // EXCEPT for the ParticleSystemRenderer, because it prevents the ParticleSystem inspector
+                        // from working correctly when setting the Material for its renderer (case 1308966).
+                        if (!(editor.target is ParticleSystemRenderer) && (mapping == null || !mapping.TryGetValue(editor.target.GetInstanceID(),
+                            out var culledEditorContainer)))
                         {
                             string editorTitle = editorTarget == null
                                 ? "Nothing Selected"
@@ -2040,7 +2042,14 @@ namespace UnityEditor
 
                 if (ShouldCullEditor(editors, newEditorsIndex))
                 {
-                    currentElement.ReinitCulled(newEditorsIndex);
+                    // Reinit culled when editor is culled to avoid NullPointerException (case 1281347)
+                    // EXCEPT for the ParticleSystemRenderer, because it prevents the ParticleSystem inspector
+                    // from working correctly when setting the Material for its renderer (case 1308966).
+                    if (!(ed.target is ParticleSystemRenderer))
+                    {
+                        currentElement.ReinitCulled(newEditorsIndex);
+                    }
+
                     ++newEditorsIndex;
                     continue;
                 }

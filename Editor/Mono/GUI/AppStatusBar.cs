@@ -362,15 +362,22 @@ namespace UnityEditor
 
         private void RefreshProgressBar(Progress.Item[] progressItems)
         {
-            if (!this || !showProgress)
+            if (!this)
                 return;
+
+            if (!showProgress)
+            {
+                // If we enter here, it means the last remaining progresses just finished or paused.
+                ClearProgressStatus();
+                RepaintProgress(progressItems);
+                return;
+            }
 
             var idleCount = Progress.EnumerateItems().Count(item => item.running && item.priority == (int)Progress.Priority.Idle);
             var taskCount = Progress.GetRunningProgressCount() - idleCount;
             if (taskCount == 0)
             {
-                m_ProgressStatus.text = String.Empty;
-                m_ProgressPercentageStatus.text = String.Empty;
+                ClearProgressStatus();
             }
             else
             {
@@ -413,6 +420,12 @@ namespace UnityEditor
                 RepaintImmediately();
             else
                 Repaint();
+        }
+
+        private void ClearProgressStatus()
+        {
+            m_ProgressStatus.text = String.Empty;
+            m_ProgressPercentageStatus.text = String.Empty;
         }
 
         private GUILayoutOption GetStatusTextLayoutOption(float consoleIconWidth)

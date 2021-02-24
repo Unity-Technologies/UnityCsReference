@@ -171,7 +171,7 @@ namespace UnityEngine.UIElements
 
         public static void RegisterEventSystem(Object eventSystem)
         {
-            if (activeEventSystem != null && activeEventSystem != eventSystem)
+            if (activeEventSystem != null && activeEventSystem != eventSystem && eventSystem.GetType().Name == "EventSystem")
                 Debug.LogWarning("There can be only one active Event System.");
             activeEventSystem = eventSystem;
         }

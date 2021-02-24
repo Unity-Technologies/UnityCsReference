@@ -149,7 +149,8 @@ namespace UnityEditor
             return m_ObjectTreeWithSearch.IsInitialized();
         }
 
-        int GetInternalSelectedInstanceID()
+        // Internal for test purposes only
+        internal int GetInternalSelectedInstanceID()
         {
             if (m_ListArea == null)
                 InitIfNeeded();

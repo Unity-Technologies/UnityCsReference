@@ -200,7 +200,7 @@ namespace Unity.UI.Builder
                 var selectorLabelCont = new VisualElement();
                 selectorLabelCont.AddToClassList(BuilderConstants.ExplorerItemSelectorLabelContClassName);
                 labelCont.Add(selectorLabelCont);
-                
+
                 // Register right-click events for context menu actions.
                 m_ContextMenuManipulator.RegisterCallbacksOnTarget(explorerItem);
 
@@ -221,6 +221,12 @@ namespace Unity.UI.Builder
 
                         // Add ellipsis if the class name is too long.
                         var partStrShortened = BuilderNameUtilities.CapStringLengthAndAddEllipsis(partStr, BuilderConstants.ClassNameInPillMaxLength);
+
+                        if (partStrShortened != partStr)
+                        {
+                            pillLabel.tooltip = partStr;
+                        }
+
                         pillLabel.text = partStrShortened;
 
                         m_ClassDragger.RegisterCallbacksOnTarget(pill);

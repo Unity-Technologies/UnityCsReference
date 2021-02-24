@@ -101,7 +101,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             this.projectDirectory = projectDirectory;
         }
 
-        internal void SetAssetPathsMetaData(AssetPathMetaData[] assetPathMetaDatas)
+        internal Exception[] SetAssetPathsMetaData(AssetPathMetaData[] assetPathMetaDatas)
         {
             m_AssetPathsMetaData = assetPathMetaDatas;
 
@@ -113,10 +113,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 .Distinct(versionMetaDataComparer)
                 .ToDictionary(x => x.Name, x => x);
 
-            UpdateCustomTargetAssembliesAssetPathsMetaData(
+            return UpdateCustomTargetAssembliesAssetPathsMetaData(
                 loadingAssemblyDefinition.CustomScriptAssemblies,
                 assetPathMetaDatas,
-                exceptions: new List<Exception>(),
                 forceUpdate: true);
         }
 
@@ -418,11 +417,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        public static void UpdateCustomScriptAssemblies(CustomScriptAssembly[] customScriptAssemblies,
+        public static Exception[] UpdateCustomScriptAssemblies(CustomScriptAssembly[] customScriptAssemblies,
             List<CustomScriptAssemblyReference> customScriptAssemblyReferences,
             AssetPathMetaData[] assetPathsMetaData,
-            ResponseFileProvider responseFileProvider,
-            List<Exception> exceptions)
+            ResponseFileProvider responseFileProvider)
         {
             var asmrefLookup = customScriptAssemblyReferences.ToLookup(x => x.Reference);
 
@@ -436,7 +434,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             UpdateCustomTargetAssembliesResponseFileData(customScriptAssemblies, responseFileProvider);
-            UpdateCustomTargetAssembliesAssetPathsMetaData(customScriptAssemblies, assetPathsMetaData, exceptions);
+            return UpdateCustomTargetAssembliesAssetPathsMetaData(customScriptAssemblies, assetPathsMetaData);
         }
 
         static void UpdateCustomTargetAssembliesResponseFileData(CustomScriptAssembly[] customScriptAssemblies, ResponseFileProvider responseFileProvider)
@@ -454,15 +452,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        static void UpdateCustomTargetAssembliesAssetPathsMetaData(
+        static Exception[] UpdateCustomTargetAssembliesAssetPathsMetaData(
             CustomScriptAssembly[] customScriptAssemblies,
             AssetPathMetaData[] assetPathsMetaData,
-            List<Exception> exceptions,
             bool forceUpdate = false)
         {
             if (assetPathsMetaData == null)
             {
-                return;
+                return new Exception[0];
             }
 
             var assetMetaDataPaths = new string[assetPathsMetaData.Length];
@@ -475,6 +472,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 lowerAssetMetaDataPaths[i] = Utility.FastToLower(assetMetaDataPaths[i]);
             }
 
+            var exceptions = new List<Exception>();
             foreach (var assembly in customScriptAssemblies)
             {
                 if (assembly.AssetPathMetaData != null && !forceUpdate)
@@ -501,18 +499,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     exceptions.Add(e);
                 }
             }
+
+            return exceptions.ToArray();
         }
 
-        void UpdateCustomTargetAssemblies(List<Exception> exceptions)
+        Exception[] UpdateCustomTargetAssemblies()
         {
-            UpdateCustomScriptAssemblies(
+            var exceptions = UpdateCustomScriptAssemblies(
                 loadingAssemblyDefinition.CustomScriptAssemblies,
                 loadingAssemblyDefinition.CustomScriptAssemblyReferences,
                 m_AssetPathsMetaData,
-                ResponseFileProvider,
-                exceptions);
+                ResponseFileProvider);
 
-            if (exceptions.Count > 0)
+            if (exceptions.Length > 0)
             {
                 CompilationSetupErrorsTracker.SetCompilationSetupErrors(CompilationSetupErrors.LoadError);
             }
@@ -520,6 +519,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             customTargetAssemblies = EditorBuildRules.CreateTargetAssemblies(loadingAssemblyDefinition.CustomScriptAssemblies);
 
             CompilationSetupErrorsTracker.ClearCompilationSetupErrors(CompilationSetupErrors.CyclicReferences);
+            return exceptions;
         }
 
         public void SkipCustomScriptAssemblyGraphValidation(bool skipChecks)
@@ -553,10 +553,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         Exception[] GetLoadingExceptions()
         {
-            var exceptions = loadingAssemblyDefinition.Exceptions;
-            UpdateCustomTargetAssemblies(exceptions);
-
-            return exceptions.ToArray();
+            return loadingAssemblyDefinition.Exceptions.Concat(UpdateCustomTargetAssemblies()).ToArray();
         }
 
         void RefreshLoadingAssemblyDefinition()

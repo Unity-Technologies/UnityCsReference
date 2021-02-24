@@ -1341,6 +1341,7 @@ namespace UnityEditor.UIElements.Bindings
                 UpdateLastFieldValue();
                 if (IsPropertyValid())
                 {
+                    SerializedPropertyHelper.ForceSync(boundProperty);
                     if (SyncFieldValueToProperty())
                     {
                         bindingContext.UpdateRevision();     //we make sure to Poll the ChangeTracker here
@@ -1387,6 +1388,9 @@ namespace UnityEditor.UIElements.Bindings
                     if (bindingContext.IsValid() && IsPropertyValid())
                     {
                         lastUpdatedRevision = bindingContext.lastRevision;
+                        // Here we somehow need to make sure the property internal object version is synced with its serializedObject
+                        SerializedPropertyHelper.ForceSync(boundProperty);
+
                         SyncPropertyToField(field, boundProperty);
                         BindingsStyleHelpers.UpdateElementStyle(field as VisualElement, boundProperty);
                         return;
@@ -1428,9 +1432,6 @@ namespace UnityEditor.UIElements.Bindings
                 throw new ArgumentNullException(nameof(c));
             }
 
-            // Here we somehow need to make sure the property internal object version is synced with its serializedObject
-            SerializedPropertyHelper.ForceSync(p);
-
             if (!propCompareValues(lastFieldValue, p, propGetValue))
             {
                 lastFieldValue = propGetValue(p);
@@ -1440,7 +1441,6 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override bool SyncFieldValueToProperty()
         {
-            SerializedPropertyHelper.ForceSync(boundProperty);
             if (!propCompareValues(lastFieldValue, boundProperty, propGetValue))
             {
                 propSetValue(boundProperty, lastFieldValue);
@@ -1667,9 +1667,6 @@ namespace UnityEditor.UIElements.Bindings
                 throw new ArgumentNullException(nameof(c));
             }
 
-            // Here we somehow need to make sure the property internal object version is synced with its serializedObject
-            SerializedPropertyHelper.ForceSync(p);
-
             int enumValueAsInt = p.intValue;
             if (enumValueAsInt != lastEnumValue)
             {
@@ -1805,9 +1802,6 @@ namespace UnityEditor.UIElements.Bindings
             {
                 throw new ArgumentNullException(nameof(c));
             }
-
-            // Here we somehow need to make sure the property internal object version is synced with its serializedObject
-            SerializedPropertyHelper.ForceSync(p);
 
             int propValueIndex = p.enumValueIndex;
             if (propValueIndex != lastFieldValueIndex)

@@ -250,6 +250,8 @@ namespace UnityEngine
         extern public void SetDriveTargetVelocities(List<float> targetVelocities);
         extern public int GetDofStartIndices(List<int> dofStartIndices);
 
+        extern public CollisionDetectionMode collisionDetectionMode { get; set; }
+
         public void SnapAnchorToClosestContact()
         {
             if (!transform.parent)

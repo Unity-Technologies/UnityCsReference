@@ -21,9 +21,7 @@ namespace UnityEditorInternal
         }
 
         internal ReorderableList m_ReorderableList;
-        GUIContent m_Header;
         float m_HeaderHeight;
-        string m_DisplayName;
         bool m_Reorderable = false;
         bool m_IsNotInPrefabContextModeWithOverrides = false;
 
@@ -66,11 +64,9 @@ namespace UnityEditorInternal
 
         ReorderableListWrapper() {}
 
-        public ReorderableListWrapper(SerializedProperty property, bool reorderable = true)
+        public ReorderableListWrapper(SerializedProperty property, GUIContent label, bool reorderable = true)
         {
             Property = property;
-            m_DisplayName = Property.displayName;
-            m_Header = new GUIContent(m_DisplayName);
             m_HeaderHeight = Constants.kDefaultFoldoutHeaderHeight;
             Init(reorderable);
         }
@@ -109,12 +105,12 @@ namespace UnityEditorInternal
             return m_HeaderHeight + (Property.isExpanded && m_ReorderableList != null ? Constants.kHeaderPadding + m_ReorderableList.GetHeight() : 0.0f);
         }
 
-        public void Draw(Rect r)
+        public void Draw(GUIContent label, Rect r)
         {
-            Draw(r, ReorderableList.Defaults.infinityRect);
+            Draw(label, r, ReorderableList.Defaults.infinityRect);
         }
 
-        public void Draw(Rect r, Rect visibleArea)
+        public void Draw(GUIContent label, Rect r, Rect visibleArea)
         {
             r.xMin += EditorGUI.indent;
             var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
@@ -137,7 +133,7 @@ namespace UnityEditorInternal
             EditorGUI.BeginChangeCheck();
 
             if (!m_OriginalProperty.hasMultipleDifferentValues) EditorGUI.BeginProperty(headerRect, GUIContent.none, m_OriginalProperty);
-            Property.isExpanded = EditorGUI.BeginFoldoutHeaderGroup(headerRect, Property.isExpanded, m_Header);
+            Property.isExpanded = EditorGUI.BeginFoldoutHeaderGroup(headerRect, Property.isExpanded, label ?? GUIContent.Temp(Property.displayName));
             EditorGUI.EndFoldoutHeaderGroup();
             if (!m_OriginalProperty.hasMultipleDifferentValues) EditorGUI.EndProperty();
 

@@ -151,6 +151,7 @@ namespace UnityEditorInternal
             public const int dragHandleWidth = 20;
             internal const int propertyDrawerPadding = 8;
             internal const int minHeaderHeight = 2;
+            const float elementPadding = 2;
             private int ArrayCountInPropertyPath(SerializedProperty prop) => Regex.Matches(prop.propertyPath, ".Array.data").Count;
             private float FieldLabelSize(Rect r, SerializedProperty prop) => r.xMax * 0.45f - 35 - prop.depth * 15 - ArrayCountInPropertyPath(prop) * 10;
             private static readonly GUIContent s_ListIsEmpty = EditorGUIUtility.TrTextContent("List is Empty");
@@ -158,6 +159,7 @@ namespace UnityEditorInternal
             internal static readonly string undoRemove = "Remove Element From Array";
             internal static readonly string undoMove = "Reorder Element In Array";
             internal static readonly Rect infinityRect = new Rect(float.NegativeInfinity, float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity);
+            internal static float ElementPadding(float height) => height != 0 ? elementPadding : 0;
 
             public Defaults()
             {
@@ -375,7 +377,7 @@ namespace UnityEditorInternal
 
             public void DrawElement(Rect rect, SerializedProperty element, System.Object listItem, bool selected, bool focused, bool draggable, bool editable)
             {
-                rect.y += elementPadding / 2;
+                rect.y += ElementPadding(rect.height) / 2;
                 var prop = element ?? listItem as SerializedProperty;
                 if (editable)
                 {
@@ -499,8 +501,6 @@ namespace UnityEditorInternal
         // show default background
         public bool showDefaultBackground = true;
 
-        const float elementPadding = 2;
-
         private float HeaderHeight { get { return Mathf.Max(m_DisplayHeader ? headerHeight : 0, Defaults.minHeaderHeight); } }
 
         private float listElementTopPadding => headerHeight > 5 ? 4 : 1; // headerHeight is usually set to 3px when there is no header content. Therefore, we add a 1px top margin to match the 4px bottom margin
@@ -552,12 +552,12 @@ namespace UnityEditorInternal
                         catch
                         {
                             // Sometimes we find properties that no longer exist so we don't cache them
-                            height = 0;
+                            height = int.MinValue;
                             m_Count--;
                         }
                     }
 
-                    if (height > 0) m_PropertyCache.Add(new PropertyCacheEntry(property, height + elementPadding, offset));
+                    if (height > int.MinValue) m_PropertyCache.Add(new PropertyCacheEntry(property, height + Defaults.ElementPadding(height), offset));
                 }
                 else
                 {
@@ -577,7 +577,7 @@ namespace UnityEditorInternal
                         height = elementHeightCallback(m_PropertyCache.Count);
                     }
 
-                    m_PropertyCache.Add(new PropertyCacheEntry(null, height + elementPadding, offset));
+                    m_PropertyCache.Add(new PropertyCacheEntry(null, height + Defaults.ElementPadding(height), offset));
                 }
             }
         }

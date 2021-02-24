@@ -198,12 +198,12 @@ namespace UnityEditor
                     if (!s_reorderableLists.TryGetValue(key, out reorderableList))
                     {
                         // Manual layout controls don't call GetHeight() method so we need to have a way to initialized list as we prepare to render it here
-                        reorderableList = new ReorderableListWrapper(property, true);
+                        reorderableList = new ReorderableListWrapper(property, label, true);
                         s_reorderableLists[key] = reorderableList;
                     }
 
                     reorderableList.Property = property;
-                    reorderableList.Draw(position, visibleArea);
+                    reorderableList.Draw(label, position, visibleArea);
                     return false;
                 }
 
@@ -286,7 +286,7 @@ namespace UnityEditor
                 // If collection doesn't have a ReorderableList assigned to it, create one and assign it
                 if (!s_reorderableLists.TryGetValue(key, out reorderableList))
                 {
-                    reorderableList = new ReorderableListWrapper(property, true);
+                    reorderableList = new ReorderableListWrapper(property, label, true);
                     s_reorderableLists[key] = reorderableList;
                 }
 

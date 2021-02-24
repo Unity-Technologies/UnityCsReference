@@ -35,7 +35,7 @@ namespace UnityEditor.UIElements
             public UxmlTraits()
             {
                 m_PropertyPath = new UxmlStringAttributeDescription { name = "binding-path" };
-                m_Label = new UxmlStringAttributeDescription { name = "label" };
+                m_Label = new UxmlStringAttributeDescription { name = "label", defaultValue = null };
             }
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)

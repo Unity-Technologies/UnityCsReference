@@ -325,7 +325,6 @@ namespace UnityEditor
                 }
                 ShowObjectsInList(uniqueInstanceIds.ToArray(), rootPaths.ToArray());
             }
-            InitSelection(Selection.instanceIDs);
         }
 
         bool HasFocus()

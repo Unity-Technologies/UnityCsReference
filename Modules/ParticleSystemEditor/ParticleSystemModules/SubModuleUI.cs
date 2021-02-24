@@ -308,16 +308,16 @@ namespace UnityEditor
                     {
                         bool valid = false;
 
-                        var parent = subEmitter.transform.parent;
-                        while (parent != null)
+                        var currentParent = subEmitter.transform.parent;
+                        while (currentParent != null)
                         {
-                            if (parent == ps.transform)
+                            if (currentParent == ps.transform)
                             {
                                 valid = true;
                                 break;
                             }
 
-                            parent = parent.transform;
+                            currentParent = currentParent.parent;
                         }
 
                         if (!valid)
