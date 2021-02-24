@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor
 {
@@ -701,6 +702,18 @@ namespace UnityEditor
         {
             AnnotationUtility.SetGizmoEnabled(ainfo.m_ClassID, ainfo.m_ScriptClass, ainfo.m_GizmoEnabled ? 1 : 0, addToMostRecentChanged);
             SceneView.RepaintAll();
+        }
+
+        [Shortcut("Scene View/Toggle Selection Outline", typeof(SceneView))]
+        static void ToggleSelectionOutline()
+        {
+            AnnotationUtility.showSelectionOutline = !AnnotationUtility.showSelectionOutline;
+        }
+
+        [Shortcut("Scene View/Toggle Selection Wireframe", typeof(SceneView))]
+        static void ToggleSelectionWireframe()
+        {
+            AnnotationUtility.showSelectionWire = !AnnotationUtility.showSelectionWire;
         }
     }
 

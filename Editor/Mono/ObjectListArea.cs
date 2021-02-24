@@ -350,7 +350,7 @@ namespace UnityEditor
             if (s_Styles == null)
                 s_Styles = new Styles();
 
-            s_VCEnabled = Provider.isActive;
+            s_VCEnabled = VersionControlUtils.isVersionControlConnected;
 
             Event evt = Event.current;
 

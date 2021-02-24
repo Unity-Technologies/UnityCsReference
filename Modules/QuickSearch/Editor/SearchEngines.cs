@@ -221,6 +221,9 @@ namespace UnityEditor.Search
             base.BeginSearch(context, query);
 
             var searchSession = searchSessions[context.guid];
+            if (searchSession.context.searchText == query)
+                return;
+
             searchSession.context.searchText = query;
             searchSession.context.wantsMore = true;
             if (context.requiredTypeNames != null && context.requiredTypeNames.Any())
@@ -247,18 +250,21 @@ namespace UnityEditor.Search
         {
             if (!searchSessions.ContainsKey(context.guid))
                 return;
+            base.EndSearch(context);
+        }
+
+        public override void EndSession(ISearchContext context)
+        {
             if (m_SearchItemsBySession.ContainsKey(context.guid))
             {
                 m_SearchItemsBySession[context.guid].Clear();
                 m_SearchItemsBySession.Remove(context.guid);
             }
-            base.EndSearch(context);
+            base.EndSession(context);
         }
 
         public virtual bool Filter(ISearchContext context, string query, HierarchyProperty objectToFilter)
         {
-            if (!searchSessions.ContainsKey(context.guid))
-                return false;
             if (!m_SearchItemsBySession.ContainsKey(context.guid))
                 return false;
             return m_SearchItemsBySession[context.guid].Contains(objectToFilter.instanceID);

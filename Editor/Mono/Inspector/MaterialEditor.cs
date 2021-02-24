@@ -130,6 +130,38 @@ namespace UnityEditor
 
         bool                                m_InsidePropertiesGUI;
         Renderer[]                          m_RenderersForAnimationMode;
+        Component                       m_MeshRendererComp;
+
+        private bool ShouldEditorBeHidden()
+        {
+            //When a MeshRenderer is hidden in the inspector, the MaterialEditor should also be hidden
+            //as showing a Material in the inspector without its supporting component feels wrong.
+            //This is more of a hack than a fix as we shouldnt be creating this editor in the first place when
+            //the supporting component is hidden, as the editor creation is a part of serialization and
+            //making changes at that level causes more issues this seems to be the best way to handle this case.
+            //This fix is for case 1289980
+
+            if (m_MeshRendererComp)
+            {
+                if (m_MeshRendererComp.hideFlags == HideFlags.HideInInspector)
+                    return true;
+                return false;
+            }
+
+            PropertyEditor property = propertyViewer as PropertyEditor;
+            if (!property)
+                return false;
+            GameObject gameObject = property.tracker.activeEditors[0].target as GameObject;
+            if (!gameObject)
+                return false;
+            foreach (Component comp in gameObject.GetComponents<MeshRenderer>())
+            {
+                m_MeshRendererComp = comp;
+                if (comp.hideFlags == HideFlags.HideInInspector)
+                    return true;
+            }
+            return false;
+        }
 
         private Renderer rendererForAnimationMode
         {
@@ -523,6 +555,9 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            if (ShouldEditorBeHidden())
+                return;
+
             serializedObject.Update();
 
             CheckSetup();
@@ -572,6 +607,9 @@ namespace UnityEditor
 
         protected override void OnHeaderGUI()
         {
+            if (ShouldEditorBeHidden())
+                return;
+
             const float spaceForFoldoutArrow = 10f;
             Rect titleRect = DrawHeaderGUI(this, targetTitle, firstInspectedEditor ? 0 : spaceForFoldoutArrow);
             int id = GUIUtility.GetControlID(45678, FocusType.Passive);
@@ -591,6 +629,9 @@ namespace UnityEditor
 
         internal override void OnHeaderControlsGUI()
         {
+            if (ShouldEditorBeHidden())
+                return;
+
             serializedObject.Update();
 
             var oldLabelWidth = EditorGUIUtility.labelWidth;
@@ -1743,17 +1784,6 @@ namespace UnityEditor
 
         public bool PropertiesGUI()
         {
-            // Dont show the properties if hidden flag is enabled for any attached component
-            GameObject currrentGameObject = Selection.activeGameObject;
-            if (currrentGameObject)
-            {
-                foreach (var component in currrentGameObject.GetComponents<Component>())
-                {
-                    if (component.hideFlags == HideFlags.HideInInspector)
-                        return false;
-                }
-            }
-
             // OnInspectorGUI is wrapped inside a BeginVertical/EndVertical block that adds padding,
             // which we don't want here so we could have the VC bar span the entire Material Editor width
             // we stop the vertical block, draw the VC bar, and then start a new vertical block with the same style.

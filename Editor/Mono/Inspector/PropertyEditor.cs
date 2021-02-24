@@ -464,6 +464,9 @@ namespace UnityEditor
 
         internal static void ClearVersionControlBarState()
         {
+            var vco = VersionControlManager.activeVersionControlObject;
+            if (vco != null)
+                vco.GetExtension<IInspectorWindowExtension>()?.InvalidateVersionControlBarState();
             m_VersionControlBarState.Clear();
         }
 
@@ -1351,19 +1354,27 @@ namespace UnityEditor
 
         internal static void VersionControlBar(Editor[] assetEditors)
         {
+            Editor assetEditor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(assetEditors);
+
+            var vco = VersionControlManager.activeVersionControlObject;
+            if (vco != null)
+            {
+                vco.GetExtension<IInspectorWindowExtension>()?.OnVersionControlBar(assetEditor);
+                return;
+            }
+
             if (!Provider.enabled)
                 return;
             var vcsMode = VersionControlSettings.mode;
             if (vcsMode == ExternalVersionControl.Generic || vcsMode == ExternalVersionControl.Disabled || vcsMode == ExternalVersionControl.AutoDetect)
                 return;
 
-            Editor assetEditor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(assetEditors);
             var assetPath = AssetDatabase.GetAssetPath(assetEditor.target);
             Asset asset = Provider.GetAssetByPath(assetPath);
             if (asset == null)
                 return;
 
-            if (!Provider.PathIsVersioned(asset.path))
+            if (!VersionControlUtils.IsPathVersioned(asset.path))
                 return;
 
             var connected = Provider.isActive;

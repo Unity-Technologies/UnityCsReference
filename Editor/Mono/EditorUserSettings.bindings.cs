@@ -53,10 +53,10 @@ namespace UnityEditor
         public static extern bool overlayIcons { get; set; }
 
         [NativeProperty("VCHierarchyOverlayIcons")]
-        internal static extern bool hierarchyOverlayIcons { get; set; }
+        public static extern bool hierarchyOverlayIcons { get; set; }
 
         [NativeProperty("VCOtherOverlayIcons")]
-        internal static extern bool otherOverlayIcons { get; set; }
+        public static extern bool otherOverlayIcons { get; set; }
 
         [NativeProperty("VCAllowAsyncUpdate")]
         public static extern bool allowAsyncStatusUpdate { get; set; }

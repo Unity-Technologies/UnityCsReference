@@ -113,6 +113,8 @@ namespace UnityEditor
             public GUIContent enableGPUInstancing = EditorGUIUtility.TrTextContent("Enable Mesh GPU Instancing", "When rendering mesh particles, use GPU Instancing on platforms where it is supported, and when using shaders that contain a Procedural Instancing pass (#pragma instancing_options procedural).");
             public GUIContent applyActiveColorSpace = EditorGUIUtility.TrTextContent("Apply Active Color Space", "When using Linear Rendering, particle colors will be converted appropriately before being passed to the GPU.");
 
+            public GUIContent meshGPUInstancingTrailsWarning = EditorGUIUtility.TrTextContent("GPU Instancing does not support using the same shader for the Trails. Please use a different shader, or disable the GPU Instancing checkbox.");
+
             // Keep in sync with enum in ParticleSystemRenderer.h
             public GUIContent[] particleTypes = new GUIContent[]
             {
@@ -358,7 +360,24 @@ namespace UnityEditor
                         GUIToggle(s_Texts.allowRoll, m_AllowRoll);
 
                     if (renderMode == RenderMode.Mesh && SupportedRenderingFeatures.active.particleSystemInstancing)
+                    {
                         GUIToggle(s_Texts.enableGPUInstancing, m_EnableGPUInstancing);
+
+                        if (!m_ParticleSystemUI.multiEdit && m_EnableGPUInstancing.boolValue)
+                        {
+                            Material materialAsset = m_Material?.objectReferenceValue as Material;
+                            Material trailMaterialAsset = trailMaterial?.objectReferenceValue as Material;
+
+                            if (materialAsset != null && trailMaterialAsset != null)
+                            {
+                                if (trailMaterialAsset.shader == materialAsset.shader)
+                                {
+                                    if (ShaderUtil.HasProceduralInstancing(materialAsset.shader))
+                                        EditorGUILayout.HelpBox(s_Texts.meshGPUInstancingTrailsWarning.text, MessageType.Error, true);
+                                }
+                            }
+                        }
+                    }
                 }
 
                 GUIVector3Field(s_Texts.pivot, m_Pivot);

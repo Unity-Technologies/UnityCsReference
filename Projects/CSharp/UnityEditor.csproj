@@ -3250,6 +3250,9 @@
     <Compile Include="..\..\Editor\Mono\SelectionCommands\SelectionCommands.cs">
       <Link>Editor\Mono\SelectionCommands\SelectionCommands.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\SerializationDebug.bindings.cs">
+      <Link>Editor\Mono\SerializationDebug.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\SerializedObject.bindings.cs">
       <Link>Editor\Mono\SerializedObject.bindings.cs</Link>
     </Compile>
@@ -3523,6 +3526,18 @@
     <Compile Include="..\..\Editor\Mono\VersionControlSettings.bindings.cs">
       <Link>Editor\Mono\VersionControlSettings.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\VersionControl\Common\IIconOverlayExtension.cs">
+      <Link>Editor\Mono\VersionControl\Common\IIconOverlayExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\VersionControl\Common\IInspectorWindowExtension.cs">
+      <Link>Editor\Mono\VersionControl\Common\IInspectorWindowExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\VersionControl\Common\IPopupMenuExtension.cs">
+      <Link>Editor\Mono\VersionControl\Common\IPopupMenuExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\VersionControl\Common\ISettingsInspectorExtension.cs">
+      <Link>Editor\Mono\VersionControl\Common\ISettingsInspectorExtension.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\VersionControl\Common\VCAsset.cs">
       <Link>Editor\Mono\VersionControl\Common\VCAsset.cs</Link>
     </Compile>
@@ -3546,6 +3561,21 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\VersionControl\Common\VCTask.cs">
       <Link>Editor\Mono\VersionControl\Common\VCTask.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\VersionControl\Common\VCUtils.cs">
+      <Link>Editor\Mono\VersionControl\Common\VCUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\VersionControl\Common\VersionControlAttribute.cs">
+      <Link>Editor\Mono\VersionControl\Common\VersionControlAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\VersionControl\Common\VersionControlDescriptor.cs">
+      <Link>Editor\Mono\VersionControl\Common\VersionControlDescriptor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\VersionControl\Common\VersionControlManager.cs">
+      <Link>Editor\Mono\VersionControl\Common\VersionControlManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\VersionControl\Common\VersionControlObject.cs">
+      <Link>Editor\Mono\VersionControl\Common\VersionControlObject.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\VersionControl\UI\VCListControl.cs">
       <Link>Editor\Mono\VersionControl\UI\VCListControl.cs</Link>
@@ -3603,6 +3633,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\VersionControl\VCTask.bindings.cs">
       <Link>Editor\Mono\VersionControl\VCTask.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\VersionControl\VersionControlManager.bindings.cs">
+      <Link>Editor\Mono\VersionControl\VersionControlManager.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\VertexChannelCompressionFlags.cs">
       <Link>Editor\Mono\VertexChannelCompressionFlags.cs</Link>

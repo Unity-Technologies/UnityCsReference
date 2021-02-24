@@ -2602,6 +2602,9 @@
     <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderPipelineAsset.cs">
       <Link>Runtime\Export\RenderPipeline\RenderPipelineAsset.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderPipelineDefaultSettings.cs">
+      <Link>Runtime\Export\RenderPipeline\RenderPipelineDefaultSettings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderPipelineManager.cs">
       <Link>Runtime\Export\RenderPipeline\RenderPipelineManager.cs</Link>
     </Compile>

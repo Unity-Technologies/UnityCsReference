@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Scripting;
 using UnityEditor.VersionControl;
 using UnityEditorInternal;
 using UnityEditorInternal.VersionControl;
@@ -94,6 +95,7 @@ namespace UnityEditor
         }
 #pragma warning restore 0618
 
+        [RequiredByNativeCode]
         static void OnWillCreateAsset(string path)
         {
             foreach (var assetModificationProcessorClass in AssetModificationProcessors)
@@ -129,6 +131,7 @@ namespace UnityEditor
 
         // Postprocess on all assets once an automatic import has completed
         // ReSharper disable once UnusedMember.Local - invoked from native code
+        [RequiredByNativeCode]
         static void OnWillSaveAssets(string[] assets, out string[] assetsThatShouldBeSaved, out string[] assetsThatShouldBeReverted, bool explicitlySaveAsset)
         {
             assetsThatShouldBeReverted = new string[0];
@@ -375,7 +378,7 @@ namespace UnityEditor
                 return Editability.Never;
 
             // other paths that are not know to asset database, and not versioned, are considered always editable
-            if (!Provider.PathIsVersioned(assetPath))
+            if (!VersionControlUtils.IsPathVersioned(assetPath))
                 return Editability.Always;
 
             return Editability.Maybe;

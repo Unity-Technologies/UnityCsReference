@@ -13,6 +13,7 @@ using UnityEditorInternal;
 using UnityEditor.Scripting;
 using UnityEngine.TestTools;
 using Unity.Profiling;
+using UnityEditor.VersionControl;
 using UnityEngine.Profiling;
 
 namespace UnityEditor
@@ -114,6 +115,10 @@ namespace UnityEditor
 
         static void Internal_EditorApplicationQuit()
         {
+            // VersionControlObject might depend on packages that cleanup themselves using quitting event.
+            // Therefore it's important to deactivate it beforehand.
+            VersionControlManager.Deactivate();
+
             quitting?.Invoke();
             editorApplicationQuit?.Invoke();
             ScriptCompilers.Cleanup();

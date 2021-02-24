@@ -13,6 +13,7 @@ namespace UnityEditorInternal
         // Used for plane intersection translation
         static Vector3 s_ConstraintOrigin, s_ConstraintDirection, s_HandleOffset;
         static float s_StartHandleSize;
+        static Matrix4x4 s_StartInverseHandleMatrix;
 
         // Used for 2D translation (fallback when ray plane intersection fails)
         static Vector2 s_StartMousePosition;
@@ -60,6 +61,7 @@ namespace UnityEditorInternal
                             : Vector3.zero;
                         evt.Use();
                         s_StartHandleSize = HandleUtility.GetHandleSize(point);
+                        s_StartInverseHandleMatrix = Handles.inverseMatrix;
                     }
 
                     break;
@@ -91,7 +93,8 @@ namespace UnityEditorInternal
                                 worldPosition = Snapping.Snap(worldPosition, GridSettings.size, (SnapAxis) new SnapAxisFilter(s_ConstraintDirection));
                             }
 
-                            position = Handles.inverseMatrix.MultiplyPoint(worldPosition);
+                            position = s_StartInverseHandleMatrix.MultiplyPoint(worldPosition);
+
                             s_StartPosition = position;
                             s_StartMousePosition = evt.mousePosition;
                         }

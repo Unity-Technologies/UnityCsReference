@@ -20,7 +20,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
     internal static class BeeScriptCompilation
     {
         internal static string ExecutableExtension => Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "";
-        private static string CscPath => EditorApplication.applicationContentsPath + $"/Tools/Roslyn/csc{ExecutableExtension}";
 
         public static void AddScriptCompilationData(BeeDriver beeDriver,
             EditorCompilation editorCompilation,
@@ -42,6 +41,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             var movedFromExtractorPath = EditorApplication.applicationContentsPath + $"/Tools/ScriptUpdater/ApiUpdater.MovedFromExtractor.exe";
+            var dotNetRuntimePath = EditorApplication.applicationContentsPath + $"/NetCoreRuntime";
+            var dotNetSdkRoslynPath = EditorApplication.applicationContentsPath + $"/DotNetSdkRoslyn";
             var netcorerunPath = EditorApplication.applicationContentsPath + $"/Tools/netcorerun/netcorerun{ExecutableExtension}";
 
             var localization = "en-US";
@@ -51,7 +52,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             beeDriver.DataForBuildProgram.Add(new ScriptCompilationData
             {
                 outputdirectory = outputDirectory,
-                cscPath = CscPath,
+                dotnetRuntimePath = dotNetRuntimePath,
+                dotnetRoslynPath = dotNetSdkRoslynPath,
                 movedFromExtractorPath = movedFromExtractorPath,
                 netcorerunPath = netcorerunPath,
                 assemblies = cachedAssemblies,

@@ -332,7 +332,10 @@ namespace UnityEditor
                 sceneHierarchy.treeView?.Frame(go.GetInstanceID(), true, false);
             }
 
-            sceneHierarchy.RenameNewGO();
+            if (s_EnterRenameModeForNewGO.value)
+            {
+                sceneHierarchy.RenameNewGO();
+            }
         }
 
         internal static void SwitchEnterRenameModeForNewGO()

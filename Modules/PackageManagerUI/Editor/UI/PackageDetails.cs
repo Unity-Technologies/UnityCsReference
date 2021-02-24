@@ -39,7 +39,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             get
             {
                 var isInstalledVersion = displayVersion?.isInstalled ?? false;
-                return isInstalledVersion ? package.versions.recommended ?? displayVersion : displayVersion;
+
+                if (isInstalledVersion)
+                {
+                    if (displayVersion != package.versions.recommended)
+                        return package.versions.latest ?? displayVersion;
+
+                    return package.versions.recommended ?? displayVersion;
+                }
+                return displayVersion;
             }
         }
 

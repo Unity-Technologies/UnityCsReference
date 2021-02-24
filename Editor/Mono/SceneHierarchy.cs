@@ -39,9 +39,6 @@ namespace UnityEditor
 
         int m_FrameRequestID;
         bool m_FrameRequestPing;
-
-        bool isNewGOInRenameMode { get; set; }
-
         Scene[] m_CustomScenes;
 
         public Scene[] customScenes
@@ -708,12 +705,36 @@ namespace UnityEditor
             }
         }
 
+        bool IsRenaming()
+        {
+            return m_TreeView != null && m_TreeView.state.renameOverlay.IsRenaming();
+        }
+
         public void ReloadData()
         {
+            int rowCountBeforeReloading = 0;
+            if (IsRenaming())
+                rowCountBeforeReloading = m_TreeView.data.rowCount;
+
             if (m_TreeView == null)
                 Init();
             else
                 m_TreeView.ReloadData();
+
+            if (IsRenaming())
+            {
+                // Ensure renaming is ended if the item being renamed is no longer part
+                // of the rows or if the row count changed (new objects deleted/added).
+                // If the renamed item is present then ensure it is visible to the user.
+                int id = m_TreeView.state.renameOverlay.userData;
+                bool endRenaming = m_TreeView.data.rowCount != rowCountBeforeReloading;
+                if (!endRenaming)
+                    endRenaming = m_TreeView.data.GetRows().FirstOrDefault(item => item.id == id) == null;
+                if (endRenaming)
+                    m_TreeView.EndNameEditing(false);
+                else
+                    m_TreeView.Frame(id, true, false);
+            }
         }
 
         GameObjectTreeViewDataSource dataSource { get { return (GameObjectTreeViewDataSource)treeView.data; } }
@@ -784,14 +805,7 @@ namespace UnityEditor
                 return;
             }
 
-            // Avoid end renaming once if gameObject is newly created and is set to enter rename mode
-            if (m_TreeView != null && !isNewGOInRenameMode)
-            {
-                m_TreeView.EndNameEditing(false);
-            }
-
             treeViewReloadNeeded = true;
-            isNewGOInRenameMode = false;
         }
 
         void OnEvent()
@@ -1546,14 +1560,6 @@ namespace UnityEditor
 
         internal void RenameNewGO()
         {
-            if (!SceneHierarchyWindow.s_EnterRenameModeForNewGO.value)
-            {
-                isNewGOInRenameMode = false;
-                return;
-            }
-
-            isNewGOInRenameMode = true;
-
             // end renaming if any GO has active one
             treeView.EndNameEditing(true);
 

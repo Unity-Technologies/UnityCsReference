@@ -23,6 +23,7 @@ namespace UnityEngine.VFX
     public static class VFXManager
     {
         extern public static VisualEffect[] GetComponents();
+        extern internal static ScriptableObject runtimeResources { get; }
 
         extern public static float fixedTimeStep { get; set; }
         extern public static float maxDeltaTime { get; set; }

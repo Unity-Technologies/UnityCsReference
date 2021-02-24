@@ -94,12 +94,12 @@ namespace UnityEditor.Scripting.Compilers
             return true;
         }
 
-        internal static bool CheckoutAndValidateVCSFiles(IEnumerable<string> files)
+        internal static bool MakeEditable(IEnumerable<string> files)
         {
             // We're only interested in files that would be under VCS, i.e. project
             // assets or local packages. Incoming paths might use backward slashes; replace with
             // forward ones as that's what Unity/VCS functions operate on.
-            var versionedFiles = files.Select(f => f.Replace('\\', '/')).Where(Provider.PathIsVersioned).ToArray();
+            var versionedFiles = files.Select(f => f.Replace('\\', '/')).Where(VersionControlUtils.IsPathVersioned).ToArray();
 
             // Fail if the asset database GUID can not be found for the input asset path.
             var assetPath = versionedFiles.FirstOrDefault(f => string.IsNullOrEmpty(AssetDatabase.AssetPathToGUID(f)));

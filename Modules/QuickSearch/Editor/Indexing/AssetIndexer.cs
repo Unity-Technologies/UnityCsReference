@@ -93,126 +93,119 @@ namespace UnityEditor.Search
             AddSourceDocument(path, GetDocumentHash(path));
             IndexWordComponents(documentIndex, GetPartialPath(path));
 
-            try
+            var fileName = Path.GetFileNameWithoutExtension(path).ToLowerInvariant();
+            IndexWord(documentIndex, fileName, fileName.Length, true);
+            IndexProperty(documentIndex, "name", fileName, saveKeyword: false);
+
+            IndexWord(documentIndex, path, path.Length, exact: true);
+            IndexProperty(documentIndex, "id", path, saveKeyword: false, exact: true);
+
+            if (path.StartsWith("Packages/", StringComparison.Ordinal))
+                IndexProperty(documentIndex, "a", "packages", saveKeyword: true, exact: true);
+            else
+                IndexProperty(documentIndex, "a", "assets", saveKeyword: true, exact: true);
+
+            var fi = new FileInfo(path);
+            if (fi.Exists)
             {
-                var fileName = Path.GetFileNameWithoutExtension(path).ToLowerInvariant();
-                IndexWord(documentIndex, fileName, fileName.Length, true);
-                IndexProperty(documentIndex, "name", fileName, saveKeyword: false);
+                IndexNumber(documentIndex, "size", (double)fi.Length);
+                IndexProperty(documentIndex, "ext", fi.Extension.Replace(".", "").ToLowerInvariant(), saveKeyword: false);
+                IndexNumber(documentIndex, "age", (DateTime.Now - fi.LastWriteTime).TotalDays);
 
-                IndexWord(documentIndex, path, path.Length, exact: true);
-                IndexProperty(documentIndex, "id", path, saveKeyword: false, exact: true);
+                foreach (var dir in Path.GetDirectoryName(path).Split(new[] { '/', '\\' }).Skip(1))
+                    IndexProperty(documentIndex, "dir", dir.ToLowerInvariant(), saveKeyword: false, exact: true);
 
-                if (path.StartsWith("Packages/", StringComparison.Ordinal))
-                    IndexProperty(documentIndex, "a", "packages", saveKeyword: true, exact: true);
-                else
-                    IndexProperty(documentIndex, "a", "assets", saveKeyword: true, exact: true);
+                IndexProperty(documentIndex, "t", "file", saveKeyword: true, exact: true);
+            }
+            else if (Directory.Exists(path))
+            {
+                IndexProperty(documentIndex, "t", "folder", saveKeyword: true, exact: true);
+            }
 
-                var fi = new FileInfo(path);
-                if (fi.Exists)
+            var at = AssetDatabase.GetMainAssetTypeAtPath(path);
+            var hasCustomIndexers = HasCustomIndexers(at);
+
+            if (settings.options.types && at != null)
+            {
+                IndexWord(documentIndex, at.Name);
+                IndexTypes(at, documentIndex);
+
+                foreach (var obj in AssetDatabase.LoadAllAssetRepresentationsAtPath(path).Where(o => o))
+                    IndexTypes(obj.GetType(), documentIndex);
+            }
+            else if (at != null)
+            {
+                IndexProperty(documentIndex, "t", at.Name, saveKeyword: true);
+            }
+
+            var guid = AssetDatabase.GUIDFromAssetPath(path);
+            var labels = AssetDatabase.GetLabels(guid);
+            foreach (var label in labels)
+                IndexProperty(documentIndex, "l", label, saveKeyword: true);
+
+            if (settings.options.properties || settings.options.extended)
+            {
+                bool wasLoaded = AssetDatabase.IsMainAssetAtPathLoaded(path);
+                bool isPrefab = path.EndsWith(".prefab");
+
+                var mainAsset = isPrefab ? PrefabUtility.LoadPrefabContents(path) : AssetDatabase.LoadMainAssetAtPath(path);
+                if (!mainAsset)
+                    return;
+
+                if (hasCustomIndexers)
+                    IndexCustomProperties(path, documentIndex, mainAsset);
+
+                if (!String.IsNullOrEmpty(mainAsset.name))
+                    IndexWord(documentIndex, mainAsset.name, true);
+
+                if (settings.options.properties)
+                    IndexObject(documentIndex, mainAsset);
+
+                if (settings.options.extended)
                 {
-                    IndexNumber(documentIndex, "size", (double)fi.Length);
-                    IndexProperty(documentIndex, "ext", fi.Extension.Replace(".", "").ToLowerInvariant(), saveKeyword: false);
-                    IndexNumber(documentIndex, "age", (DateTime.Now - fi.LastWriteTime).TotalDays);
-
-                    foreach (var dir in Path.GetDirectoryName(path).Split(new[] { '/', '\\' }).Skip(1))
-                        IndexProperty(documentIndex, "dir", dir.ToLowerInvariant(), saveKeyword: false, exact: true);
-
-                    IndexProperty(documentIndex, "t", "file", saveKeyword: true, exact: true);
+                    var importSettings = AssetImporter.GetAtPath(path);
+                    if (importSettings)
+                        IndexObject(documentIndex, importSettings, dependencies: settings.options.dependencies, recursive: true);
                 }
-                else if (Directory.Exists(path))
+
+                if (settings.options.properties)
                 {
-                    IndexProperty(documentIndex, "t", "folder", saveKeyword: true, exact: true);
-                }
-
-                var at = AssetDatabase.GetMainAssetTypeAtPath(path);
-                var hasCustomIndexers = HasCustomIndexers(at);
-
-                if (settings.options.types && at != null)
-                {
-                    IndexWord(documentIndex, at.Name);
-                    IndexTypes(at, documentIndex);
-
-                    foreach (var obj in AssetDatabase.LoadAllAssetRepresentationsAtPath(path))
-                        IndexTypes(obj.GetType(), documentIndex);
-                }
-                else if (at != null)
-                {
-                    IndexProperty(documentIndex, "t", at.Name, saveKeyword: true);
-                }
-
-                var guid = AssetDatabase.GUIDFromAssetPath(path);
-                var labels = AssetDatabase.GetLabels(guid);
-                foreach (var label in labels)
-                    IndexProperty(documentIndex, "l", label, saveKeyword: true);
-
-                if (settings.options.properties || settings.options.extended)
-                {
-                    bool wasLoaded = AssetDatabase.IsMainAssetAtPathLoaded(path);
-                    bool isPrefab = path.EndsWith(".prefab");
-
-                    var mainAsset = isPrefab ? PrefabUtility.LoadPrefabContents(path) : AssetDatabase.LoadMainAssetAtPath(path);
-                    if (!mainAsset)
-                        return;
-
-                    if (hasCustomIndexers)
-                        IndexCustomProperties(path, documentIndex, mainAsset);
-
-                    if (!String.IsNullOrEmpty(mainAsset.name))
-                        IndexWord(documentIndex, mainAsset.name, true);
-
-                    if (settings.options.properties)
-                        IndexObject(documentIndex, mainAsset);
-
-                    if (settings.options.extended)
+                    if (mainAsset is GameObject go)
                     {
-                        var importSettings = AssetImporter.GetAtPath(path);
-                        if (importSettings)
-                            IndexObject(documentIndex, importSettings, dependencies: settings.options.dependencies, recursive: true);
-                    }
-
-                    if (settings.options.properties)
-                    {
-                        if (mainAsset is GameObject go)
+                        foreach (var v in go.GetComponents(typeof(Component)))
                         {
-                            foreach (var v in go.GetComponents(typeof(Component)))
-                            {
-                                if (!v || v.GetType() == typeof(Transform))
-                                    continue;
-                                IndexPropertyComponents(documentIndex, "t", v.GetType().Name);
+                            if (!v || v.GetType() == typeof(Transform))
+                                continue;
+                            IndexPropertyComponents(documentIndex, "t", v.GetType().Name);
 
-                                if (settings.options.properties)
-                                    IndexObject(documentIndex, v, dependencies: settings.options.dependencies);
-                            }
-                        }
-                    }
-
-                    if (!wasLoaded)
-                    {
-                        if (isPrefab && mainAsset is GameObject prefabObject)
-                            PrefabUtility.UnloadPrefabContents(prefabObject);
-                        else if (mainAsset && !mainAsset.hideFlags.HasFlag(HideFlags.DontUnloadUnusedAsset) &&
-                                 !(mainAsset is GameObject) &&
-                                 !(mainAsset is Component) &&
-                                 !(mainAsset is AssetBundle))
-                        {
-                            Resources.UnloadAsset(mainAsset);
+                            if (settings.options.properties)
+                                IndexObject(documentIndex, v, dependencies: settings.options.dependencies);
                         }
                     }
                 }
 
-                if (settings.options.dependencies)
+                if (!wasLoaded)
                 {
-                    foreach (var depPath in AssetDatabase.GetDependencies(path, true))
+                    if (isPrefab && mainAsset is GameObject prefabObject)
+                        PrefabUtility.UnloadPrefabContents(prefabObject);
+                    else if (mainAsset && !mainAsset.hideFlags.HasFlag(HideFlags.DontUnloadUnusedAsset) &&
+                             !(mainAsset is GameObject) &&
+                             !(mainAsset is Component) &&
+                             !(mainAsset is AssetBundle))
                     {
-                        if (path == depPath)
-                            continue;
-                        AddReference(documentIndex, depPath);
+                        Resources.UnloadAsset(mainAsset);
                     }
                 }
             }
-            catch (Exception ex)
+
+            if (settings.options.dependencies)
             {
-                Debug.LogException(ex);
+                foreach (var depPath in AssetDatabase.GetDependencies(path, true))
+                {
+                    if (path == depPath)
+                        continue;
+                    AddReference(documentIndex, depPath);
+                }
             }
         }
     }

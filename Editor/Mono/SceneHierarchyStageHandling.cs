@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
+using UnityEditor.VersionControl;
 
 namespace UnityEditor
 {
@@ -96,7 +97,7 @@ namespace UnityEditor
             // We could add spacing by splitting text and icon into two rects and two draw operations,
             // but just adding a space character is a lot simpler and ends up amounting to the same thing.
             // This is cached text so there is minimal overhead.
-            if (VersionControl.Provider.isActive)
+            if (VersionControlUtils.isVersionControlConnected)
                 m_StageHeaderContent.text = " " + m_StageHeaderContent.text;
 
             if (stage.hasUnsavedChanges)
@@ -150,7 +151,7 @@ namespace UnityEditor
             EditorGUIUtility.SetIconSize(Vector2.zero);
 
             // Version control overlay icons
-            if (VersionControl.Provider.isActive && EditorUserSettings.hierarchyOverlayIcons)
+            if (VersionControlUtils.isVersionControlConnected && EditorUserSettings.hierarchyOverlayIcons)
             {
                 Rect overlayRect = labelRect;
                 overlayRect.width = 16;

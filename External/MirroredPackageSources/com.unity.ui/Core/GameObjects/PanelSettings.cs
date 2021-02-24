@@ -489,6 +489,11 @@ namespace UnityEngine.UIElements
 
         private void OnEnable()
         {
+            if (themeUss == null)
+            {
+                Debug.LogWarning("No Theme Style Sheet set to PanelSettings " + name + ", UI will not render properly");
+            }
+
             InitializeShaders();
         }
 

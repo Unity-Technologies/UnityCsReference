@@ -98,7 +98,7 @@ namespace UnityEditorInternal.APIUpdating
                 var failedToConnectToVcs = false;
                 if (WaitForVCSServerConnection(true))
                 {
-                    failedToConnectToVcs = Provider.enabled && !APIUpdaterHelper.CheckoutAndValidateVCSFiles(assemblyPaths);
+                    failedToConnectToVcs = !APIUpdaterHelper.MakeEditable(assemblyPaths);
                 }
 
                 if (failedToConnectToVcs)

@@ -59,6 +59,10 @@ namespace UnityEditor
         private float m_PrevTotalHeight;
         internal delegate float OnHeaderGUIDelegate(Rect availableRect, string scenePath);
         internal static OnHeaderGUIDelegate OnPostHeaderGUI = null;
+
+        // Cache asset paths for managed VCS implementations.
+        private Dictionary<int, string> m_HierarchyPrefabToAssetPathMap;
+        // Cache Asset instances for native VCS implementations which have different API.
         private Dictionary<int, Asset[]> m_HierarchyPrefabToAssetIDMap;
 
         internal event Action<bool, int, string, string> renameEnded;
@@ -134,6 +138,7 @@ namespace UnityEditor
             s_ActiveParentObjectPerSceneGUID = new Dictionary<string, int>();
             GetActiveParentObjectValuesFromSessionInfo();
 
+            m_HierarchyPrefabToAssetPathMap = new Dictionary<int, string>();
             m_HierarchyPrefabToAssetIDMap = new Dictionary<int, Asset[]>();
         }
 
@@ -521,14 +526,31 @@ namespace UnityEditor
 
             if (!EditorApplication.isPlaying)
             {
-                Asset asset = GetAsset(item);
-                if (asset != null && !m_HierarchyPrefabToAssetIDMap.ContainsKey(item.id))
+                var vco = VersionControlManager.activeVersionControlObject;
+                if (vco != null)
                 {
-                    string metaPath = asset.path.Trim('/') + ".meta";
-                    Asset metaAsset = Provider.GetAssetByPath(metaPath);
-                    Asset[] assets = new[] {asset, metaAsset};
+                    if (!m_HierarchyPrefabToAssetPathMap.ContainsKey(item.id))
+                    {
+                        var guid = GetAssetGUID(item);
+                        if (!string.IsNullOrEmpty(guid))
+                        {
+                            var assetPath = AssetDatabase.GUIDToAssetPath(guid);
+                            if (!string.IsNullOrEmpty(assetPath))
+                                m_HierarchyPrefabToAssetPathMap.Add(item.id, assetPath);
+                        }
+                    }
+                }
+                else
+                {
+                    var asset = GetAsset(item);
+                    if (asset != null && !m_HierarchyPrefabToAssetIDMap.ContainsKey(item.id))
+                    {
+                        var metaPath = asset.path.Trim('/') + ".meta";
+                        var metaAsset = Provider.GetAssetByPath(metaPath);
+                        var assets = new[] { asset, metaAsset };
 
-                    m_HierarchyPrefabToAssetIDMap.Add(item.id, assets);
+                        m_HierarchyPrefabToAssetIDMap.Add(item.id, assets);
+                    }
                 }
             }
         }
@@ -650,14 +672,29 @@ namespace UnityEditor
 
                 if (!EditorApplication.isPlaying)
                 {
-                    Asset[] assets;
-                    m_HierarchyPrefabToAssetIDMap.TryGetValue(item.id, out assets);
-                    if (assets != null)
+                    var vco = VersionControlManager.activeVersionControlObject;
+                    if (vco != null)
                     {
-                        iconRect.x -= 10;
-                        iconRect.width += 7 * 2;
+                        var extension = vco.GetExtension<IIconOverlayExtension>();
+                        if (extension != null && m_HierarchyPrefabToAssetPathMap.TryGetValue(item.id, out var assetPath))
+                        {
+                            iconRect.x -= 10;
+                            iconRect.width += 7 * 2;
 
-                        Overlay.DrawHierarchyOverlay(assets[0], assets[1], iconRect);
+                            extension.DrawOverlay(assetPath, IconOverlayType.Hierarchy, iconRect);
+                        }
+                    }
+                    else
+                    {
+                        Asset[] assets;
+                        m_HierarchyPrefabToAssetIDMap.TryGetValue(item.id, out assets);
+                        if (assets != null)
+                        {
+                            iconRect.x -= 10;
+                            iconRect.width += 7 * 2;
+
+                            Overlay.DrawHierarchyOverlay(assets[0], assets[1], iconRect);
+                        }
                     }
                 }
 
@@ -673,16 +710,21 @@ namespace UnityEditor
             if (!Provider.isActive)
                 return null;
 
-            GameObject go = (GameObject)item.objectPPTR;
+            var guid = GetAssetGUID(item);
+
+            Asset vcAsset = string.IsNullOrEmpty(guid) ? null : Provider.GetAssetByGUID(guid);
+            return vcAsset;
+        }
+
+        static string GetAssetGUID(GameObjectTreeViewItem item)
+        {
+            var go = (GameObject)item.objectPPTR;
 
             if (!go || PrefabUtility.GetNearestPrefabInstanceRoot(go) != go)
                 return null;
 
-            string assetPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go);
-            var guid = AssetDatabase.AssetPathToGUID(assetPath);
-
-            Asset vcAsset = string.IsNullOrEmpty(guid) ? null : Provider.GetAssetByGUID(guid);
-            return vcAsset;
+            var assetPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go);
+            return AssetDatabase.AssetPathToGUID(assetPath);
         }
 
         public float PrefabModeButton(GameObjectTreeViewItem item, Rect selectionRect)

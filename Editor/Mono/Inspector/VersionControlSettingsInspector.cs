@@ -122,8 +122,9 @@ namespace UnityEditor
         private void CreatePopupMenuVersionControl(string title, EditorSettingsInspector.PopupElement[] elements, string selectedValue,
             GenericMenu.MenuFunction2 func)
         {
-            var selectedIndex =
-                System.Array.FindIndex(elements, (EditorSettingsInspector.PopupElement typeElem) => (typeElem.id == selectedValue));
+            var selectedIndex = Array.FindIndex(elements, e => e.id == selectedValue);
+            if (selectedIndex == -1)
+                selectedIndex = Array.FindIndex(elements, e => e.id == ExternalVersionControl.Generic);
             var content = new GUIContent(elements[selectedIndex].content);
             EditorSettingsInspector.CreatePopupMenu(null, title, content, elements, selectedIndex, func);
         }
@@ -221,9 +222,12 @@ namespace UnityEditor
 
         public void OnEnable()
         {
-            Plugin[] availvc = Plugin.availablePlugins;
+            IEnumerable<Plugin> availvc = Plugin.availablePlugins;
 
-            List<EditorSettingsInspector.PopupElement> popupArray = new List<EditorSettingsInspector.PopupElement>(vcDefaultPopupList);
+            var popupArray = new List<EditorSettingsInspector.PopupElement>(vcDefaultPopupList);
+            var descriptors = VersionControlManager.versionControlDescriptors;
+            popupArray.AddRange(descriptors.OrderBy(d => d.displayName).Select(d => new EditorSettingsInspector.PopupElement(d.name, d.displayName)));
+            availvc = availvc.Where(p => !descriptors.Any(d => string.Equals(d.name, p.name, StringComparison.Ordinal)));
             foreach (var plugin in availvc)
             {
                 popupArray.Add(new EditorSettingsInspector.PopupElement(plugin.name));
@@ -258,7 +262,13 @@ namespace UnityEditor
             GUI.enabled = true;
             ConfigField[] configFields = null;
 
-            if (VersionControlSystemHasGUI())
+            var versionControlSystemHasGUI = VersionControlSystemHasGUI();
+            var vco = versionControlSystemHasGUI ? VersionControlManager.activeVersionControlObject : null;
+            if (vco != null)
+            {
+                vco.GetExtension<ISettingsInspectorExtension>()?.OnInspectorGUI();
+            }
+            else if (versionControlSystemHasGUI)
             {
                 bool hasRequiredFields = false;
 

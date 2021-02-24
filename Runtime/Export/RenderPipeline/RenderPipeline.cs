@@ -75,5 +75,10 @@ namespace UnityEngine.Rendering
         protected virtual void Dispose(bool disposing)
         {
         }
+
+        public virtual RenderPipelineGlobalSettings defaultSettings
+        {
+            get { return null; }
+        }
     }
 }

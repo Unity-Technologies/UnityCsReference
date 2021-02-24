@@ -40,6 +40,19 @@ namespace UnityEditorInternal.VersionControl
 
         static void HandleVersionControlOverlays(string guid, Rect drawRect)
         {
+            var vco = VersionControlManager.activeVersionControlObject;
+            if (vco != null)
+            {
+                var extension = vco.GetExtension<IIconOverlayExtension>();
+                if (extension != null)
+                {
+                    var assetPath = AssetDatabase.GUIDToAssetPath(guid);
+                    if (!string.IsNullOrEmpty(assetPath))
+                        extension.DrawOverlay(assetPath, IconOverlayType.Project, drawRect);
+                }
+                return;
+            }
+
             if (Provider.isActive)
             {
                 string vcsType = VersionControlSettings.mode;

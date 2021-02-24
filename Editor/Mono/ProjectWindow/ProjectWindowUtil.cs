@@ -842,7 +842,16 @@ namespace UnityEditor
             AssetDatabase.StopAssetEditing();
             if (!success)
             {
-                string message = (Provider.enabled && Provider.onlineState == OnlineState.Offline) ?
+                var vcsOffline = false;
+                if (!EditorUserSettings.WorkOffline)
+                {
+                    var vco = VersionControlManager.activeVersionControlObject;
+                    if (vco != null)
+                        vcsOffline = !vco.isConnected;
+                    else if (Provider.enabled)
+                        vcsOffline = !Provider.isActive;
+                }
+                var message = vcsOffline ?
                     L10n.Tr("Some assets could not be deleted.\nMake sure you are connected to your Version Control server or \"Work Offline\" is enabled.") :
                     L10n.Tr("Some assets could not be deleted.\nMake sure nothing is keeping a hook on them, like a loaded DLL for example.");
 

@@ -462,14 +462,7 @@ namespace UnityEditor
                         break;
 
                     case EventType.ContextClick:
-                        Rect overlayPos = rect;
-                        overlayPos.x += 2;
-                        overlayPos = ProjectHooks.GetOverlayRect(overlayPos);
-                        if (overlayPos.width != rect.width && Provider.isActive && overlayPos.Contains(evt.mousePosition))
-                        {
-                            EditorUtility.DisplayPopupMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), "Assets/Version Control", new MenuCommand(null, 0));
-                            evt.Use();
-                        }
+                        HandleContextClick(evt, rect);
                         break;
                 }
             }
@@ -503,16 +496,29 @@ namespace UnityEditor
                             List<int> newSelection = GetNewSelection(ref assetReference, false, false);
                             m_Owner.SetSelection(newSelection.ToArray(), false);
 
-                            Rect overlayPos = position;
-                            overlayPos.x += 2;
-                            overlayPos = ProjectHooks.GetOverlayRect(overlayPos);
-                            if (overlayPos.width != position.width && Provider.isActive && overlayPos.Contains(evt.mousePosition))
-                            {
-                                EditorUtility.DisplayPopupMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), "Assets/Version Control", new MenuCommand(null, 0));
-                                evt.Use();
-                            }
+                            HandleContextClick(evt, position);
                         }
                         break;
+                }
+            }
+
+            static void HandleContextClick(Event evt, Rect rect)
+            {
+                var overlayRect = rect;
+                overlayRect.x += 2;
+                overlayRect = ProjectHooks.GetOverlayRect(overlayRect);
+
+                var vco = VersionControlManager.activeVersionControlObject;
+                if (vco != null && !vco.isConnected)
+                    vco = null;
+                var vcConnected = vco != null || Provider.isActive;
+                if (vcConnected && overlayRect.width != rect.width && overlayRect.Contains(evt.mousePosition))
+                {
+                    if (vco != null)
+                        vco.GetExtension<IPopupMenuExtension>()?.DisplayPopupMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0));
+                    else
+                        EditorUtility.DisplayPopupMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), "Assets/Version Control", new MenuCommand(null, 0));
+                    evt.Use();
                 }
             }
 
@@ -752,7 +758,7 @@ namespace UnityEditor
                 if (!ListMode)
                     labelRect = new Rect(position.x, position.yMax + 1 - s_Styles.resultsGridLabel.fixedHeight, position.width - 1, s_Styles.resultsGridLabel.fixedHeight);
 
-                int vcPadding = Provider.isActive && ListMode ? k_ListModeVersionControlOverlayPadding : 0;
+                var vcPadding = VersionControlUtils.isVersionControlConnected && ListMode ? k_ListModeVersionControlOverlayPadding : 0;
 
                 float contentStartX = foldoutRect.xMax;
                 if (ListMode)

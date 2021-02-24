@@ -213,16 +213,21 @@ namespace Unity.UI.Builder
             if (asset == null)
                 return false;
 
-            // Already open uxml document will be opened by the default editor.
             var builderWindow = ActiveWindow;
-            if (builderWindow != null)
+
+            if (builderWindow == null)
             {
-                if (builderWindow.document.visualTreeAsset == asset)
-                    return false;
+                builderWindow = ShowWindow();
+            }
+            else
+            {
+                builderWindow.Focus();
             }
 
-            var builder = ShowWindow();
-            builder.LoadDocument(asset);
+            if (builderWindow.document.visualTreeAsset != asset)
+            {
+                builderWindow.LoadDocument(asset);
+            }
 
             return true;
         }

@@ -107,6 +107,8 @@ namespace UnityEditor
 
         public static Color selectedOutlineColor => kSceneViewSelectedOutline.Color;
 
+        public bool isUsingSceneFiltering => UseSceneFiltering();
+
         [SerializeField]
         bool m_ShowContextualTools;
 

@@ -549,7 +549,17 @@ namespace UnityEditor
         {
             bool GUIEnabledValue = GUI.enabled;
 
-            if (Provider.enabled && !Provider.isActive && !EditorUserSettings.WorkOffline)
+            var vcDisconnected = false;
+            if (!EditorUserSettings.WorkOffline)
+            {
+                var vco = VersionControlManager.activeVersionControlObject;
+                if (vco != null)
+                    vcDisconnected = !vco.isConnected;
+                else if (Provider.enabled)
+                    vcDisconnected = !Provider.isActive;
+            }
+
+            if (vcDisconnected)
             {
                 GUI.enabled = false;
             }
@@ -612,7 +622,7 @@ namespace UnityEditor
             } GUILayout.EndVertical();
 
             GUI.enabled = GUIEnabledValue;
-            if (Provider.enabled && !Provider.isActive && !EditorUserSettings.WorkOffline)
+            if (vcDisconnected)
             {
                 EditorGUILayout.HelpBox("Version control is disconnected", MessageType.Warning);
             }

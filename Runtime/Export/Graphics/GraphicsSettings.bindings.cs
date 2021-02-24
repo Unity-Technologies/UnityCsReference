@@ -77,5 +77,31 @@ namespace UnityEngine.Rendering
 
         [NativeName("SetCustomShaderScript")] extern static public void     SetCustomShader(BuiltinShaderType type, Shader shader);
         [NativeName("GetCustomShaderScript")] extern static public Shader   GetCustomShader(BuiltinShaderType type);
+
+
+        #region Default Settings for Render Pipelines
+        static public void RegisterRenderPipelineSettings<T>(RenderPipelineGlobalSettings settings) where T : RenderPipeline
+        {
+            RegisterRenderPipeline(typeof(T).FullName, settings);
+        }
+
+        [NativeName("RegisterRenderPipelineSettings")] extern static void RegisterRenderPipeline(string renderpipelineName, Object settings);
+
+        static public void UnregisterRenderPipelineSettings<T>() where T : RenderPipeline
+        {
+            UnregisterRenderPipeline(typeof(T).FullName);
+        }
+
+        [NativeName("UnregisterRenderPipelineSettings")] extern static void UnregisterRenderPipeline(string renderpipelineName);
+
+        static public RenderPipelineGlobalSettings GetSettingsForRenderPipeline<T>() where T : RenderPipeline
+        {
+            RenderPipelineGlobalSettings settings = GetSettingsForRenderPipeline(typeof(T).FullName) as RenderPipelineGlobalSettings;
+            return settings;
+        }
+
+        [NativeName("GetSettingsForRenderPipeline")] extern static Object GetSettingsForRenderPipeline(string renderpipelineName);
+
+        #endregion
     }
 }

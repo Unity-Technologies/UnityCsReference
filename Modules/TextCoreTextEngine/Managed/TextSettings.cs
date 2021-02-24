@@ -172,7 +172,10 @@ namespace UnityEngine.TextCore.Text
             get
             {
                 if (m_UnicodeLineBreakingRules == null)
+                {
+                    m_UnicodeLineBreakingRules = new UnicodeLineBreakingRules();
                     UnicodeLineBreakingRules.LoadLineBreakingRules();
+                }
 
                 return m_UnicodeLineBreakingRules;
             }

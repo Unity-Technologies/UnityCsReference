@@ -199,7 +199,7 @@ namespace UnityEditor
 
                     reorderableList.Property = property;
                     reorderableList.Draw(label, position, visibleArea);
-                    return false;
+                    return !includeChildren && property.isExpanded;
                 }
 
                 if (!includeChildren)

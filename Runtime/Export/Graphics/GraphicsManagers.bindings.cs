@@ -126,6 +126,7 @@ namespace UnityEngine
         [StaticAccessor("QualitySettingsScripting", StaticAccessorType.DoubleColon)] extern public static int maxQueuedFrames { get; set; }
 
         [NativeName("GetCurrentIndex")] extern public static int  GetQualityLevel();
+        [FreeFunction] extern public static Object GetQualitySettings();
         [NativeName("SetCurrentIndex")] extern public static void SetQualityLevel(int index, [uei.DefaultValue("true")] bool applyExpensiveChanges);
 
         [NativeProperty("QualitySettingsNames")] extern public static string[] names { get; }

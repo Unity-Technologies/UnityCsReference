@@ -11,8 +11,6 @@ namespace UnityEngine.TextCore.Text
     [Serializable]
     public class UnicodeLineBreakingRules
     {
-        private static UnicodeLineBreakingRules s_Instance = new UnicodeLineBreakingRules();
-
         /// <summary>
         /// Text file that contains the Unicode line breaking rules defined here https://www.unicode.org/reports/tr14/tr14-22.html
         /// </summary>

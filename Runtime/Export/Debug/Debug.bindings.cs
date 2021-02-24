@@ -32,11 +32,7 @@ namespace UnityEngine
         internal static readonly ILogger s_DefaultLogger = new Logger(new DebugLogHandler());
 
         internal static ILogger s_Logger = new Logger(new DebugLogHandler());
-        public static ILogger unityLogger
-        {
-            get { return s_Logger; }
-        }
-
+        public static ILogger unityLogger => s_Logger;
 
         [ExcludeFromDocs]
         public static void DrawLine(Vector3 start, Vector3 end, Color color , float duration)
@@ -104,7 +100,7 @@ namespace UnityEngine
         public static extern void DebugBreak();
 
         [ThreadSafe]
-        public static unsafe extern int ExtractStackTraceNoAlloc(byte* buffer, int bufferMax, string projectFolder);
+        public static extern unsafe int ExtractStackTraceNoAlloc(byte* buffer, int bufferMax, string projectFolder);
 
         // Logs /message/ to the Unity Console.
         public static void Log(object message) { unityLogger.Log(LogType.Log, message); }
@@ -120,7 +116,7 @@ namespace UnityEngine
             unityLogger.LogFormat(LogType.Log, format, args);
         }
 
-        public static void LogFormat(UnityEngine.Object context, string format, params object[] args)
+        public static void LogFormat(Object context, string format, params object[] args)
         {
             unityLogger.LogFormat(LogType.Log, context, format, args);
         }
@@ -145,7 +141,7 @@ namespace UnityEngine
             unityLogger.LogFormat(LogType.Error, format, args);
         }
 
-        public static void LogErrorFormat(UnityEngine.Object context, string format, params object[] args)
+        public static void LogErrorFormat(Object context, string format, params object[] args)
         {
             unityLogger.LogFormat(LogType.Error, context, format, args);
         }
@@ -257,25 +253,36 @@ namespace UnityEngine
         [RequiredByNativeCode]
         internal static bool CallOverridenDebugHandler(Exception exception, Object obj)
         {
-            if (s_Logger.logHandler is DebugLogHandler)
+            if (unityLogger.logHandler is DebugLogHandler)
             {
                 return false;
             }
 
             try
             {
-                s_Logger.LogException(exception, obj);
+                unityLogger.LogException(exception, obj);
             }
             catch (Exception ex)
             {
                 // If s_Logger.logHandler.LogException throws an error it would make this method fail and would
                 // generate an infinite loop of exceptions, so we cannot let this method fail.
                 // So we fallback to the default logger.
-                s_DefaultLogger.LogError($"Invalid exception thrown from custom {s_Logger.logHandler.GetType()}.LogException(). Message: {ex}", obj);
+                s_DefaultLogger.LogError($"Invalid exception thrown from custom {unityLogger.logHandler.GetType()}.LogException(). Message: {ex}", obj);
                 return false;
             }
 
             return true;
+        }
+
+        [RequiredByNativeCode]
+        internal static bool IsLoggingEnabled()
+        {
+            if (unityLogger.logHandler is DebugLogHandler)
+            {
+                return unityLogger.logEnabled;
+            }
+
+            return s_DefaultLogger.logEnabled;
         }
 
         internal static extern void LogSticky(int identifier, LogType logType, LogOption logOptions, string message, Object context = null);

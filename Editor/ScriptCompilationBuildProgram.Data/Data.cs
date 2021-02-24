@@ -21,7 +21,8 @@ namespace ScriptCompilationBuildProgram.Data
     {
         public AssemblyData[] assemblies;
         public AssemblyData[] codegenAssemblies;
-        public string cscPath;
+        public string dotnetRoslynPath;
+        public string dotnetRuntimePath;
         public string movedFromExtractorPath;
         public string netcorerunPath;
         public string outputdirectory;

@@ -2830,7 +2830,7 @@ namespace UnityEditor
             // If property is a reference and we're using VCS, add item to check it out
             // This menu is not excluded when the field is disabled
             // because it is nice to get information about the property even when it's disabled.
-            if (propertyWithPath.propertyType == SerializedPropertyType.ObjectReference && Provider.isActive)
+            if (propertyWithPath.propertyType == SerializedPropertyType.ObjectReference && VersionControlUtils.isVersionControlConnected)
             {
                 var obj = propertyWithPath.objectReferenceValue;
                 if (obj != null && !AssetDatabase.IsOpenForEdit(obj))

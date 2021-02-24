@@ -167,8 +167,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     var useNextVersion = actualLifecycleNextVersion != null && actualLifecycleNextVersion.version > installed.version;
                     return recommendedLifecycleVersion
-                        ?? (useNextVersion ? actualLifecycleNextVersion : null)
-                        ?? installed;
+                        ?? (useNextVersion ? actualLifecycleNextVersion : null);
                 }
             }
         }
