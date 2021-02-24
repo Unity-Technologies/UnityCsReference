@@ -177,6 +177,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Cursor", "Texture is used for a cursor."),
                 EditorGUIUtility.TrTextContent("Cookie", "Texture is a cookie you put on a light."),
                 EditorGUIUtility.TrTextContent("Lightmap", "Texture is a lightmap."),
+                EditorGUIUtility.TrTextContent("Directional Lightmap", "Texture is a directional lightmap."),
                 EditorGUIUtility.TrTextContent("Single Channel", "Texture is a one component texture."),
             };
             public readonly int[] textureTypeValues =
@@ -188,6 +189,7 @@ namespace UnityEditor
                 (int)TextureImporterType.Cursor,
                 (int)TextureImporterType.Cookie,
                 (int)TextureImporterType.Lightmap,
+                (int)TextureImporterType.DirectionalLightmap,
                 (int)TextureImporterType.SingleChannel
             };
 
@@ -549,6 +551,10 @@ namespace UnityEditor
                 TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
                 | TextureInspectorGUIElement.StreamingMipmaps
                 , TextureImporterShape.Texture2D);
+            m_TextureTypeGUIElements[(int)TextureImporterType.DirectionalLightmap] = new TextureInspectorTypeGUIProperties(0,
+                TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
+                | TextureInspectorGUIElement.StreamingMipmaps
+                , TextureImporterShape.Texture2D);
 
             m_GUIElementMethods.Clear();
             m_GUIElementMethods.Add(TextureInspectorGUIElement.PowerOfTwo, this.POTScaleGUI);
@@ -905,7 +911,7 @@ namespace UnityEditor
                 }
 
                 bool showAlphaIsTransparency = success && (TextureImporterAlphaSource)m_AlphaSource.intValue != TextureImporterAlphaSource.None && countHDR == 0; // AlphaIsTransparency is not properly implemented for HDR texture yet.
-                using (new EditorGUI.DisabledScope(!showAlphaIsTransparency))
+                using (new EditorGUI.DisabledScope(assetTarget != null && !showAlphaIsTransparency))
                 {
                     ToggleFromInt(m_AlphaIsTransparency, s_Styles.alphaIsTransparency);
                 }

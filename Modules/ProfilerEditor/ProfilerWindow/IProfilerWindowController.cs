@@ -22,6 +22,7 @@ namespace UnityEditorInternal
 
         void SetSelectedPropertyPath(string path);
         void ClearSelectedPropertyPath();
+        event Action frameDataViewAboutToBeDisposed;
 
         void SetClearOnPlay(bool enabled);
         bool GetClearOnPlay();

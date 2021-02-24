@@ -99,6 +99,9 @@ namespace UnityEngine
         // Breaks into the attached debugger, if present
         public static extern void DebugBreak();
 
+        [ThreadSafe]
+        public static unsafe extern int ExtractStackTraceNoAlloc(byte* buffer, int bufferMax, string projectFolder);
+
         // Logs /message/ to the Unity Console.
         public static void Log(object message) { unityLogger.Log(LogType.Log, message); }
 

@@ -191,10 +191,17 @@ namespace UnityEngine.UIElements.UIR
             {
                 if (s_WhiteTexel == null)
                 {
-                    s_WhiteTexel = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+                    // Case 1309555: We actually use a 2x2 texture instead of 1x1 because Intel integrated GPUs
+                    // encounter issues when reading from a real single-texel texture.
+                    s_WhiteTexel = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                    s_WhiteTexel.name = "UIR White Texel";
                     s_WhiteTexel.hideFlags = HideFlags.HideAndDontSave;
-                    s_WhiteTexel.filterMode = FilterMode.Bilinear; // Make sure it's bilinear so UIRAtlasManager accepts it on older HW targets
-                    s_WhiteTexel.SetPixel(0, 0, Color.white);
+                    s_WhiteTexel.filterMode = FilterMode.Point;
+                    int pixelCount = s_WhiteTexel.width * s_WhiteTexel.height;
+                    var pixels = new Color[pixelCount];
+                    for (int i = 0; i < pixelCount; ++i)
+                        pixels[i] = Color.white;
+                    s_WhiteTexel.SetPixels(pixels);
                     s_WhiteTexel.Apply(false, true);
                 }
                 return s_WhiteTexel;
