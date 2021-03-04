@@ -378,7 +378,12 @@ namespace UnityEditorInternal
                     EditorGUIUtility.labelWidth = FieldLabelSize(rect, prop);
 
                     var handler = ScriptAttributeUtility.GetHandler(prop);
+                    EditorGUI.BeginChangeCheck();
                     handler.OnGUI(rect, prop, null, true);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        prop.serializedObject.ApplyModifiedProperties();
+                    }
                     if (Event.current.type == EventType.MouseDown && Event.current.button == 1 && rect.Contains(Event.current.mousePosition)) Event.current.Use();
 
                     EditorGUIUtility.labelWidth = oldLabelWidth;
@@ -1099,11 +1104,11 @@ namespace UnityEditorInternal
                     UpdateDraggedY(listRect);
 
                     // handle inspector auto-scroll
-                    if (PropertyEditor.CurrentPropertyEditor != null)
+                    if (PropertyEditor.HoveredPropertyEditor != null)
                     {
                         Vector2 mousePoistion = new Vector2(0, Mathf.Clamp(evt.mousePosition.y, listRect.y, listRect.y + listRect.height));
-                        mousePoistion = GUIUtility.GUIToScreenPoint(mousePoistion) - new Vector2(0, PropertyEditor.CurrentPropertyEditor.m_Pos.y);
-                        PropertyEditor.CurrentPropertyEditor.AutoScroll(mousePoistion);
+                        mousePoistion = GUIUtility.GUIToScreenPoint(mousePoistion) - new Vector2(0, PropertyEditor.HoveredPropertyEditor.m_Pos.y);
+                        PropertyEditor.HoveredPropertyEditor.AutoScroll(mousePoistion);
                     }
                     evt.Use();
                     break;

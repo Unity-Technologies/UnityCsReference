@@ -113,7 +113,7 @@ namespace UnityEditor
         public EditorDragging editorDragging { get; }
         public bool useUIElementsDefaultInspector { get; internal set; } = false;
         public Editor lastInteractedEditor { get; set; }
-        internal static PropertyEditor CurrentPropertyEditor { get; private set; }
+        internal static PropertyEditor HoveredPropertyEditor { get; private set; }
 
         public InspectorMode inspectorMode
         {
@@ -290,6 +290,11 @@ namespace UnityEditor
             EditorApplication.focusChanged += OnFocusChanged;
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
             PrefabUtility.prefabInstanceUnpacked += OnPrefabInstanceUnpacked;
+
+            rootVisualElement.RegisterCallback<DragUpdatedEvent>(DragOverBottomArea);
+            rootVisualElement.RegisterCallback<DragPerformEvent>(DragPerformInBottomArea);
+            rootVisualElement.RegisterCallback<MouseEnterEvent>(OnMouseEnter);
+            rootVisualElement.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
         }
 
         [UsedImplicitly]
@@ -302,7 +307,16 @@ namespace UnityEditor
             EditorApplication.focusChanged -= OnFocusChanged;
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             PrefabUtility.prefabInstanceUnpacked -= OnPrefabInstanceUnpacked;
+
+            rootVisualElement.UnregisterCallback<DragUpdatedEvent>(DragOverBottomArea);
+            rootVisualElement.UnregisterCallback<DragPerformEvent>(DragPerformInBottomArea);
+            rootVisualElement.UnregisterCallback<MouseEnterEvent>(OnMouseEnter);
+            rootVisualElement.UnregisterCallback<MouseLeaveEvent>(OnMouseLeave);
         }
+
+        private void OnMouseEnter(MouseEnterEvent e) => HoveredPropertyEditor = this;
+
+        private void OnMouseLeave(MouseLeaveEvent e) => HoveredPropertyEditor = null;
 
         [UsedImplicitly]
         protected virtual void OnLostFocus()
@@ -840,11 +854,6 @@ namespace UnityEditor
             rootVisualElement.MarkDirtyRepaint();
 
             ScriptAttributeUtility.ClearGlobalCache();
-
-            rootVisualElement.RegisterCallback<DragUpdatedEvent>(DragOverBottomArea);
-            rootVisualElement.RegisterCallback<DragPerformEvent>(DragPerformInBottomArea);
-            rootVisualElement.RegisterCallback<MouseEnterEvent>((e) => { CurrentPropertyEditor = this; });
-            rootVisualElement.RegisterCallback<MouseLeaveEvent>((e) => { CurrentPropertyEditor = null; });
 
             EndRebuildContentContainers();
 

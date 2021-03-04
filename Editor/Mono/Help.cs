@@ -218,6 +218,21 @@ namespace UnityEditor
             m_UrlCache.Clear();
         }
 
+        internal static string TranslateURIForRedirection(string uri)
+        {
+            if (docRedirectionServer != DocRedirectionServer.None && IsLocalPath(uri) == false)
+            {
+                var version = InternalEditorUtility.GetUnityVersion();
+                //case 1300425: The redirection server that launched with 2020.2 badly redirects Manual/index.html and ScriptReference/index.html resulting in a 404
+                //Even without the 404, the Manual/index.html and ScriptReference/index.html need the version parameter to be redirected to the matching docs for this version
+                if (uri.Equals(string.Join("/", new string[] { baseDocumentationUrl, "Manual", "index.html" }), StringComparison.OrdinalIgnoreCase))
+                    uri = $"{baseDocumentationUrl}/?section=manual&version={version.Major}.{version.Minor}";
+                if (uri.Equals(string.Join("/", new string[] { baseDocumentationUrl, "ScriptReference", "index.html" }), StringComparison.OrdinalIgnoreCase))
+                    uri = $"{baseDocumentationUrl}/?section=api&version={version.Major}.{version.Minor}";
+            }
+            return uri;
+        }
+
         internal static string FindHelpNamed(string topic)
         {
             if (m_UrlCache.ContainsKey(topic))
@@ -228,35 +243,13 @@ namespace UnityEditor
             var documentPath = "";
             if (topic.StartsWith(k_AbsoluteURI))
             {
-                //HACK version 2 (case 1300425); special cases for the redirect server which we can't currently access:
-                if (docRedirectionServer != DocRedirectionServer.None && baseDocumentationUrl.StartsWith("https://", StringComparison.Ordinal))
-                {
-                    if (topic.Equals("file:///unity/Manual/index.html", StringComparison.Ordinal))
-                    {
-                        documentPath = GetURLPath(false, baseDocumentationUrl, "?section=manual");
-                    }
-                    else if (topic.Equals("file:///unity/ScriptReference/index.html", StringComparison.Ordinal))
-                    {
-                        documentPath = GetURLPath(false, baseDocumentationUrl, "?section=api");
-                    }
-
-                    if (String.IsNullOrEmpty(documentPath) == false)
-                    {
-                        var version = InternalEditorUtility.GetUnityVersion();
-                        documentPath += $"&version={version.Major}.{version.Minor}";
-                    }
-                }
-
-                if (String.IsNullOrEmpty(documentPath))
-                {
-                    documentPath = GetURLPath(true, baseDocumentationUrl, topic.Substring(k_AbsoluteURI.Length));
-                }
+                documentPath = GetURLPath(true, baseDocumentationUrl, topic.Substring(k_AbsoluteURI.Length));
             }
             else if (topic.StartsWith(k_AbsoluteFileRef))
             {
                 documentPath = topic.Substring(k_AbsoluteFileRef.Length);
             }
-            else if (topic.StartsWith("http://") || topic.StartsWith("https://"))
+            else if (IsLocalPath(topic) == false)
             {
                 documentPath = topic;
             }
@@ -291,6 +284,9 @@ namespace UnityEditor
                     documentPath = "";
                 }
             }
+
+            documentPath = TranslateURIForRedirection(documentPath);
+
             m_UrlCache[topic] = documentPath;
 
             return documentPath;

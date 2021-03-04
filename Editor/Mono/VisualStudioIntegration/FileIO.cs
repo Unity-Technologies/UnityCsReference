@@ -10,10 +10,11 @@ namespace UnityEditor.VisualStudioIntegration
     interface IFileIO
     {
         bool Exists(string fileName);
-
+        void Delete(string fileName);
         string ReadAllText(string fileName);
         void WriteAllText(string fileName, string content);
         void Copy(string source, string destination, bool overwrite = false);
+        void Move(string source, string destination);
     }
 
     class FileIOProvider : IFileIO
@@ -23,9 +24,19 @@ namespace UnityEditor.VisualStudioIntegration
             return File.Exists(fileName);
         }
 
+        public void Delete(string fileName)
+        {
+            File.Delete(fileName);
+        }
+
         public void Copy(string source, string destination, bool overwrite = false)
         {
             File.Copy(source, destination, overwrite);
+        }
+
+        public void Move(string source, string destination)
+        {
+            File.Move(source, destination);
         }
 
         public string ReadAllText(string fileName)
@@ -44,6 +55,7 @@ namespace UnityEditor.VisualStudioIntegration
         void CreateDirectory(string path);
         bool Exists(string path);
         void Delete(string path, bool recursive = false);
+        string[] GetFiles(string outputPath);
         string[] GetFiles(string outputPath, string s, SearchOption topDirectoryOnly);
     }
 
@@ -62,6 +74,11 @@ namespace UnityEditor.VisualStudioIntegration
         public void Delete(string path, bool recursive)
         {
             Directory.Delete(path, recursive);
+        }
+
+        public string[] GetFiles(string outputPath)
+        {
+            return Directory.GetFiles(outputPath);
         }
 
         public string[] GetFiles(string outputPath, string searchPattern, SearchOption searchOption)
