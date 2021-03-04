@@ -343,7 +343,13 @@ namespace UnityEditor.Experimental.SceneManagement
             return this;
         }
 
-        internal override Color GetBackgroundColor() { return SceneView.kSceneViewPrefabBackground.Color; }
+        internal override Color GetBackgroundColor()
+        {
+            // Case 1255995 - Workaround for OSX 10.15 driver issue with Intel 630 cards
+            Color opaqueBackground = SceneView.kSceneViewPrefabBackground.Color;
+            opaqueBackground.a = 1;
+            return opaqueBackground;
+        }
 
         public bool IsPartOfPrefabContents(GameObject gameObject)
         {

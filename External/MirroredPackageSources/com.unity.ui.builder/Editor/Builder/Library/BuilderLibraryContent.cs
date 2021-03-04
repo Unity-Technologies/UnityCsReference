@@ -231,6 +231,7 @@ namespace Unity.UI.Builder
                 new BuilderLibraryTreeItem("ScrollView", "ScrollView", typeof(ScrollView), () => new ScrollView()),
                 new BuilderLibraryTreeItem("ListView", "ListView", typeof(ListView), () => new ListView()),
                 new BuilderLibraryTreeItem("IMGUI Container", "VisualElement", typeof(IMGUIContainer), () => new IMGUIContainer()),
+                new BuilderLibraryTreeItem("GroupBox", "VisualElement", typeof(GroupBox), () => new GroupBox()),
             };
             containersItem.AddChildren(containersItemList);
             controlsTree.Add(containersItem);
@@ -244,7 +245,13 @@ namespace Unity.UI.Builder
                 new BuilderLibraryTreeItem("Text Field", nameof(TextField), typeof(TextField), () => new TextField("Text Field") { value = "filler text" }),
                 new BuilderLibraryTreeItem("Foldout", nameof(Foldout), typeof(Foldout), () => new Foldout { text = "Foldout" }),
                 new BuilderLibraryTreeItem("Slider", nameof(Slider), typeof(Slider), () => new Slider("Slider", 0, 100) { value = 42 }),
+                new BuilderLibraryTreeItem("Slider (Int)", nameof(SliderInt), typeof(SliderInt), () => new SliderInt("SliderInt", 0, 100) { value = 42 }),
                 new BuilderLibraryTreeItem("Min-Max Slider", nameof(MinMaxSlider), typeof(MinMaxSlider), () => new MinMaxSlider("Min/Max Slider", 0, 20, -10, 40) { value = new Vector2(10, 12) }),
+
+                new BuilderLibraryTreeItem("Progress Bar", nameof(ProgressBar), typeof(ProgressBar), () => new ProgressBar() { title = "my-progress", value = 22 }),
+                new BuilderLibraryTreeItem("Dropdown", "Dropdown", typeof(DropdownField), () => new DropdownField("Dropdown")),
+                new BuilderLibraryTreeItem("Radio Button", nameof(RadioButton), typeof(RadioButton), () => new RadioButton("Radio Button")),
+                new BuilderLibraryTreeItem("Radio Button Group", nameof(RadioButtonGroup), typeof(RadioButtonGroup), () => new RadioButtonGroup("Radio Button Group")),
             }) { isHeader = true };
 
             var numericFields = new BuilderLibraryTreeItem("Numeric Fields", null, null, null, null, new List<TreeViewItem<string>>
@@ -252,15 +259,13 @@ namespace Unity.UI.Builder
                 new BuilderLibraryTreeItem("Integer", nameof(IntegerField), typeof(IntegerField), () => new IntegerField("Int Field") { value = 42 }),
                 new BuilderLibraryTreeItem("Float", nameof(FloatField), typeof(FloatField), () => new FloatField("Float Field") { value = 42.2f }),
                 new BuilderLibraryTreeItem("Long", nameof(LongField), typeof(LongField), () => new LongField("Long Field") { value = 42 }),
-                new BuilderLibraryTreeItem("Min-Max Slider", nameof(MinMaxSlider), typeof(MinMaxSlider), () => new MinMaxSlider("Min/Max Slider", 0, 20, -10, 40) { value = new Vector2(10, 12) }),
-                new BuilderLibraryTreeItem("Slider", nameof(Slider), typeof(Slider), () => new Slider("Slider", 0, 100) { value = 42 }),
-                new BuilderLibraryTreeItem("Progress Bar", nameof(ProgressBar), typeof(ProgressBar), () => new ProgressBar() { title = "my-progress", value = 22 }),
+
+
                 new BuilderLibraryTreeItem("Vector2", nameof(Vector2Field), typeof(Vector2Field), () => new Vector2Field("Vec2 Field")),
                 new BuilderLibraryTreeItem("Vector3", nameof(Vector3Field), typeof(Vector3Field), () => new Vector3Field("Vec3 Field")),
                 new BuilderLibraryTreeItem("Vector4", nameof(Vector4Field), typeof(Vector4Field), () => new Vector4Field("Vec4 Field")),
                 new BuilderLibraryTreeItem("Rect", nameof(RectField), typeof(RectField), () => new RectField("Rect")),
                 new BuilderLibraryTreeItem("Bounds", nameof(BoundsField), typeof(BoundsField), () => new BoundsField("Bounds")),
-                new BuilderLibraryTreeItem("Slider (Int)", nameof(SliderInt), typeof(SliderInt), () => new SliderInt("SliderInt", 0, 100) { value = 42 }),
                 new BuilderLibraryTreeItem("Vector2 (Int)", nameof(Vector2IntField), typeof(Vector2IntField), () => new Vector2IntField("Vector2Int")),
                 new BuilderLibraryTreeItem("Vector3 (Int)", nameof(Vector3IntField), typeof(Vector3IntField), () => new Vector3IntField("Vector3Int")),
                 new BuilderLibraryTreeItem("Rect (Int)", nameof(RectIntField), typeof(RectIntField), () => new RectIntField("RectInt")),

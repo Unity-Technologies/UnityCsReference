@@ -26,7 +26,7 @@ namespace UnityEditor.Search.Providers
             priority = 50;
             this.filterId = filterId;
             showDetails = true;
-            showDetailsOptions = ShowDetailsOptions.Inspector | ShowDetailsOptions.Actions | ShowDetailsOptions.Preview;
+            showDetailsOptions = ShowDetailsOptions.Inspector | ShowDetailsOptions.Actions | ShowDetailsOptions.Preview | ShowDetailsOptions.DefaultGroup;
 
             isEnabledForContextualSearch = () =>
                 Utils.IsFocusedWindowTypeName("SceneView") ||

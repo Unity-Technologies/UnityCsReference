@@ -96,6 +96,7 @@ namespace UnityEditor.UIElements.Samples
                 new SampleTreeItem("Button", ButtonSnippet.Create),
                 new SampleTreeItem("Scroller", ScrollerSnippet.Create),
                 new SampleTreeItem("Toggle", ToggleSnippet.Create),
+                new SampleTreeItem("RadioButton", RadioButtonSnippet.Create),
                 new SampleTreeItem("Label", LabelSnippet.Create),
                 new SampleTreeItem("Text Field", TextFieldSnippet.Create),
                 new SampleTreeItem("HelpBox", HelpBoxSnippet.Create),
@@ -133,7 +134,9 @@ namespace UnityEditor.UIElements.Samples
                     new SampleTreeItem("Tag", TagFieldSnippet.Create),
                     new SampleTreeItem("Mask", MaskFieldSnippet.Create),
                     new SampleTreeItem("Layer", LayerFieldSnippet.Create),
-                    new SampleTreeItem("LayerMask", LayerMaskFieldSnippet.Create)
+                    new SampleTreeItem("LayerMask", LayerMaskFieldSnippet.Create),
+                    new SampleTreeItem("DropdownField", DropdownFieldSnippet.Create),
+                    new SampleTreeItem("RadioButtonGroup", RadioButtonGroupSnippet.Create),
                 }),
             };
 

@@ -408,7 +408,7 @@ namespace UnityEngine.UIElements.UIR
             // Commit new requests for atlases if any
             atlas?.InvokeUpdateDynamicTextures(panel); // TODO: For a shared atlas + drawInCameras, postpone after all updates have occurred.
             vectorImageManager?.Commit();
-            shaderInfoAllocator.IssuePendingAtlasBlits();
+            shaderInfoAllocator.IssuePendingStorageChanges();
 
             device?.OnFrameRenderingBegin();
 

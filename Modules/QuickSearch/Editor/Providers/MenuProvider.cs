@@ -20,6 +20,7 @@ namespace UnityEditor.Search.Providers
 
         private const string type = "menu";
         private const string displayName = "Menus";
+        private const string disabledMenuExecutionWarning = "The menu you are trying to execute is disabled. It will not be executed.";
 
         private static string[] shortcutIds;
         private static QueryEngine<MenuData> queryEngine = null;
@@ -52,7 +53,17 @@ namespace UnityEditor.Search.Providers
 
                 fetchItems = FetchItems,
 
-                fetchLabel = (item, context) => item.label ?? (item.label = Utils.GetNameFromPath(item.id)),
+                fetchLabel = (item, context) =>
+                {
+                    if (item.label == null)
+                    {
+                        var menuName = Utils.GetNameFromPath(item.id);
+                        var enabled = Menu.GetEnabled(item.id);
+                        var @checked = Menu.GetChecked(item.id);
+                        item.label = $"{menuName}{(enabled ? "" : " (disabled)")} {(@checked ? "\u2611" : "")}";
+                    }
+                    return item.label;
+                },
 
                 fetchDescription = (item, context) =>
                 {
@@ -71,7 +82,7 @@ namespace UnityEditor.Search.Providers
             for (int i = 0; i < itemNames.Count; ++i)
             {
                 var menuItem = itemNames[i];
-                localMenus.Add(new MenuData()
+                localMenus.Add(new MenuData
                 {
                     path = menuItem,
                     words = SplitMenuPath(menuItem).Select(w => Utils.FastToLower(w)).ToArray()
@@ -136,6 +147,11 @@ namespace UnityEditor.Search.Providers
                     handler = (item) =>
                     {
                         var menuId = item.id;
+                        if (!Menu.GetEnabled(menuId))
+                        {
+                            Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, disabledMenuExecutionWarning);
+                            return;
+                        }
                         EditorApplication.delayCall += () => EditorApplication.ExecuteMenuItem(menuId);
                     }
                 }

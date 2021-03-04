@@ -4,98 +4,74 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace UnityEditor.Search.Providers
 {
     static class HelpProvider
     {
-        internal static string type = "help";
-        internal static string displayName = "Help";
+        internal const string type = "help";
+        internal const string displayName = "Help";
 
-        static Dictionary<SearchItem, Action<SearchItem, SearchContext>> m_StaticItemToAction;
+        delegate void HelpHandler();
 
         [SearchItemProvider]
         internal static SearchProvider CreateProvider()
         {
-            var helpProvider = new SearchProvider(type, displayName)
+            var helpProvider = new SearchProvider(type, displayName, FetchItems)
             {
                 priority = -1,
                 filterId = "?",
                 isExplicitProvider = true,
-                fetchItems = (context, items, provider) => FetchItems(context, provider)
+                fetchThumbnail = FetchIcon
             };
 
             return helpProvider;
         }
 
-        private static IEnumerable<SearchItem> FetchItems(SearchContext context, SearchProvider provider)
-        {
-            if (m_StaticItemToAction == null)
-                BuildHelpItems(context, provider);
+        private static Texture2D FetchIcon(SearchItem item, SearchContext context) => Icons.help;
 
-            var searchQuery = context.searchQuery.Trim();
-            var helpItems = m_StaticItemToAction.Keys;
-            var fetchAllItems = string.IsNullOrEmpty(searchQuery);
-            foreach (var helpItem in helpItems)
+        private static IEnumerable<SearchItem> FetchItems(SearchContext context, SearchProvider helpProvider)
+        {
+            var searchView = context.searchView;
+            if (searchView != null)
+                searchView.itemIconSize = 1f;
+
+            foreach (var p in SearchService.OrderedProviders)
             {
-                if (fetchAllItems ||
-                    helpItem.GetLabel(context, true).IndexOf(searchQuery, StringComparison.OrdinalIgnoreCase) != -1 ||
-                    helpItem.GetDescription(context, true).IndexOf(searchQuery, StringComparison.OrdinalIgnoreCase) != -1)
-                    yield return helpItem;
+                if (p.priority < 0)
+                    continue;
+                var id = $"help_provider_{p.id}";
+                var label = p.isExplicitProvider ? $"Activate only <b>{p.name}</b>" : $"Search only <b>{p.name}</b>";
+                var description = p.isExplicitProvider ? $"Type <b>{p.filterId}</b> to activate <b>{p.name}</b>"
+                    : $"Type <b>{p.filterId}</b> to search <b>{p.name}</b>";
+
+                if (label.IndexOf(context.searchQuery, StringComparison.OrdinalIgnoreCase) == -1 &&
+                    description.IndexOf(context.searchQuery, StringComparison.OrdinalIgnoreCase) == -1)
+                    continue;
+
+                HelpHandler helpHandler = () => searchView.SetSearchText(p.filterId);
+                yield return helpProvider.CreateItem(context, id, p.priority, label, description, null, helpHandler);
             }
+
+            yield return helpProvider.CreateItem(context, "help_open_pref", 9999, "Open Search Preferences", null, Icons.settings, (HelpHandler)OpenPreferences);
+        }
+
+        static void OpenPreferences()
+        {
+            SettingsService.OpenUserPreferences(SearchSettings.settingsPreferencesKey);
         }
 
         [SearchActionsProvider]
         internal static IEnumerable<SearchAction> ActionHandlers()
         {
-            return new[]
-            {
-                new SearchAction(type, "help", null, "Help") {
-                    closeWindowAfterExecution = false,
-                    handler = (item) =>
-                    {
-                        if (item.id.StartsWith("help_recent_"))
-                        {
-                            item.context.searchView.SetSearchText((string)item.data);
-                        }
-                        else if (m_StaticItemToAction.TryGetValue(item, out var helpHandler))
-                        {
-                            helpHandler(item, item.context);
-                        }
-                    }
-                }
-            };
+            yield return new SearchAction(type, "help", null, "Help", ExecuteHelp) { closeWindowAfterExecution = false };
         }
 
-        static void BuildHelpItems(SearchContext context, SearchProvider helpProvider)
+        private static void ExecuteHelp(SearchItem item)
         {
-            if (context.searchView != null)
-                context.searchView.itemIconSize = 1f;
-
-            m_StaticItemToAction = new Dictionary<SearchItem, Action<SearchItem, SearchContext>>();
-
-            // Settings provider: id, Search for...
-            foreach (var provider in SearchService.OrderedProviders)
-            {
-                var helpItem = provider.isExplicitProvider ?
-                    helpProvider.CreateItem(context, $"help_provider_{provider.id}",
-                    $"Activate only <b>{provider.name}</b>",
-                    $"Type <b>{provider.filterId}</b> to activate <b>{provider.name}</b>", null, null) :
-                    helpProvider.CreateItem(context, $"help_provider_{provider.id}",
-                    $"Search only <b>{provider.name}</b>",
-                    $"Type <b>{provider.filterId}</b> to search <b>{provider.name}</b>", null, null);
-
-                helpItem.score = m_StaticItemToAction.Count;
-                helpItem.thumbnail = Icons.help;
-                m_StaticItemToAction.Add(helpItem, (item, _context) => _context.searchView.SetSearchText(provider.filterId));
-            }
-
-            {
-                var helpItem = helpProvider.CreateItem(context, "help_open_pref", "Open Search Preferences", null, null, null);
-                helpItem.score = m_StaticItemToAction.Count;
-                helpItem.thumbnail = Icons.settings;
-                m_StaticItemToAction.Add(helpItem, (item, _context) => SettingsService.OpenUserPreferences(SearchSettings.settingsPreferencesKey));
-            }
+            if (item.data is HelpHandler helpHandler)
+                helpHandler.Invoke();
         }
     }
 }

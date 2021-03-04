@@ -14,7 +14,7 @@ namespace UnityEditor.Search
         public static readonly string @default =
 @"{
     ""name"": ""Assets"",
-    ""roots"": [""Assets"", ""Packages""],
+    ""roots"": [""Assets""],
     ""includes"": [],
     ""excludes"": [""Temp/"", ""External/""],
     ""options"": {

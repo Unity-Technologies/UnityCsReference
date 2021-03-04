@@ -14,7 +14,6 @@ using Unity.CodeEditor;
 using UnityEditor.Connect;
 using UnityEngine.UIElements;
 using UnityEditor.Experimental;
-using UnityEngine.TestTools;
 using UnityEditor.Compilation;
 using UnityEditor.Collaboration;
 
@@ -69,7 +68,6 @@ namespace UnityEditor
             public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Light"), EditorGUIUtility.TrTextContent("Dark") };
             public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alphanumeric Sorting");
             public static readonly GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation");
-            public static readonly GUIContent codeCoverageEnabled = EditorGUIUtility.TrTextContent("Enable Code Coverage", "Check this to enable Code Coverage. Code Coverage lets you see how much of your code is executed when it is run. Note that Code Coverage lowers Editor performance.");
             public static readonly GUIContent applicationFrameThrottling = EditorGUIUtility.TrTextContent("Frame Throttling (milliseconds)", "The number of milliseconds the Editor can idle between frames.");
             public static readonly GUIContent inputMaxProcessTime = EditorGUIUtility.TrTextContent("Input Throttling (milliseconds)", "The maximum number of milliseconds the Editor will take to process user inputs.");
             public static readonly GUIContent interactionMode = EditorGUIUtility.TrTextContent("Interaction Mode", "Specifies how long the Editor can idle before it updates.");
@@ -207,8 +205,6 @@ namespace UnityEditor
         private bool m_EnableCompilerMessagesLocalization;
 
         private bool m_AllowAlphaNumericHierarchy = false;
-        private bool m_EnableCodeCoverage = false;
-        private readonly string kCodeCoverageEnabledMessage = L10n.Tr("Code Coverage collection is enabled for this Unity session. Note that Code Coverage lowers Editor performance.");
         private bool m_Create3DObjectsAtOrigin = false;
         private float m_ProgressDialogDelay = 3.0f;
         private bool m_GraphSnapping;
@@ -584,19 +580,6 @@ namespace UnityEditor
                 {
                     EditorGUILayout.HelpBox(ExternalProperties.changingThisSettingRequiresRestart.text, MessageType.Warning);
                 }
-            }
-
-            EditorGUI.BeginChangeCheck();
-            m_EnableCodeCoverage = EditorGUILayout.Toggle(GeneralProperties.codeCoverageEnabled, m_EnableCodeCoverage);
-            if (EditorGUI.EndChangeCheck())
-            {
-                // This sets the CodeCoverageEnabled EditorPref in ScriptingCoverage::SetEnabled
-                Coverage.enabled = m_EnableCodeCoverage;
-            }
-
-            if (m_EnableCodeCoverage)
-            {
-                EditorGUILayout.HelpBox(kCodeCoverageEnabledMessage, MessageType.Warning);
             }
 
             if (Application.platform == RuntimePlatform.WindowsEditor)
@@ -1206,7 +1189,6 @@ namespace UnityEditor
             m_SelectedLanguage = EditorPrefs.GetString("Editor.kEditorLocale", LocalizationDatabase.GetDefaultEditorLanguage().ToString());
             m_EnableCompilerMessagesLocalization = EditorPrefs.GetBool("Editor.kEnableCompilerMessagesLocalization", false);
             m_AllowAlphaNumericHierarchy = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false);
-            m_EnableCodeCoverage = EditorPrefs.GetBool("CodeCoverageEnabled", false);
             m_ProgressDialogDelay = EditorPrefs.GetFloat("EditorBusyProgressDialogDelay", 3.0f);
             m_Create3DObjectsAtOrigin = GOCreationCommands.s_PlaceObjectsAtWorldOrigin;
 

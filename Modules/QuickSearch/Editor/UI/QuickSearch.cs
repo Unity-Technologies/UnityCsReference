@@ -342,13 +342,10 @@ namespace UnityEditor.Search
         {
             var providers = providerIds.Select(id => SearchService.Providers.Find(p => p.id == id)).Where(p => p != null).ToArray();
             if (providers.Length != providerIds.Length)
-            {
-                Debug.LogWarning($"Cannot find one of these search providers {String.Join(", ", providerIds)}");
-                return OpenDefaultQuickSearch();
-            }
+                Debug.LogWarning($"Cannot find one of these search providers {string.Join(", ", providerIds)}");
 
-            if (providerIds.Length == 0)
-                return Open(flags: flags);
+            if (providers.Length == 0)
+                return OpenDefaultQuickSearch();
 
             var context = SearchService.CreateContext(providers);
             topic = topic ?? string.Join(", ", providers.Select(p => p.name.ToLower()));
@@ -1132,11 +1129,19 @@ namespace UnityEditor.Search
                 var ctrl = evt.control || evt.command;
                 if (evt.keyCode == KeyCode.Escape)
                 {
-                    SendEvent(SearchAnalytics.GenericEventType.QuickSearchDismissEsc);
-                    selectCallback?.Invoke(null, true);
-                    selectCallback = null;
-                    evt.Use();
-                    CloseSearchWindow();
+                    if (!docked)
+                    {
+                        SendEvent(SearchAnalytics.GenericEventType.QuickSearchDismissEsc);
+                        selectCallback?.Invoke(null, true);
+                        selectCallback = null;
+                        evt.Use();
+                        CloseSearchWindow();
+                    }
+                    else
+                    {
+                        evt.Use();
+                        ClearSearch();
+                    }
                 }
                 else if (evt.keyCode == KeyCode.F1)
                 {
@@ -1375,6 +1380,17 @@ namespace UnityEditor.Search
                 {
                     var filterContent = new GUIContent($"{p.name} ({p.filterId})");
                     filterMenu.AddItem(filterContent, context.IsEnabled(p.id), () => ToggleFilter(p.id));
+
+                    // Asset provider indexes if more than one.
+                    if (p.id == "asset")
+                    {
+                        var dbs = SearchDatabase.EnumerateAll().ToList();
+                        if (dbs.Count > 1)
+                        {
+                            foreach (var db in dbs)
+                                filterMenu.AddItem(new GUIContent($"{db.name} ({db.settings.type} index)"), !db.settings.options.disabled, () => ToggleIndexEnabled(db));
+                        }
+                    }
                 }
             }
 
@@ -1392,6 +1408,12 @@ namespace UnityEditor.Search
             }
 
             filterMenu.ShowAsContext();
+        }
+
+        private void ToggleIndexEnabled(SearchDatabase db)
+        {
+            db.settings.options.disabled = !db.settings.options.disabled;
+            Refresh(RefreshFlags.GroupChanged);
         }
 
         private void ToggleExplicitProvider(SearchProvider provider)

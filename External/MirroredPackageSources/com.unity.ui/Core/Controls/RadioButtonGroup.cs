@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEngine.UIElements
 {
@@ -9,7 +8,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="RadioButtonGroup"/> using data from a UXML file.
         /// </summary>
-        public new class UxmlFactory : UxmlFactory<RadioButtonGroup, UxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<RadioButtonGroup, UxmlTraits> { }
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="RadioButtonGroup"/>.
@@ -26,9 +25,10 @@ namespace UnityEngine.UIElements
             /// <param name="cc">The creation context; unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
-                // Need to update choices first so that radio buttons are created before the value is set.
-                ((RadioButtonGroup)ve).choices = m_Choices.GetValueFromBag(bag, cc).Split(',').Select(e => e.Trim()).ToList();
                 base.Init(ve, bag, cc);
+
+                var f = (RadioButtonGroup)ve;
+                f.choices = ParseChoiceList(m_Choices.GetValueFromBag(bag, cc));
             }
         }
 
@@ -69,14 +69,14 @@ namespace UnityEngine.UIElements
                         m_RadioButtons.Add(radioButton);
                         visualInput.Add(radioButton);
                     }
+
+                    UpdateRadioButtons();
                 }
             }
         }
 
         public RadioButtonGroup()
-            : this(null)
-        {
-        }
+            : this(null) { }
 
         public RadioButtonGroup(string label, List<string> radioButtonChoices = null)
             : base(label, null)

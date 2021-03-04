@@ -179,6 +179,13 @@ namespace UnityEditor.Search
             var query = EditorUtility.InstanceIDToObject(instanceId) as SearchQuery;
             if (query == null)
                 return null;
+
+            if (query.providerIds.Count == 0)
+            {
+                Debug.LogWarning($"Search query has no valid providers.", query);
+                return null;
+            }
+
             var searchWindow = QuickSearch.OpenWithContextualProvider(query.text, query.providerIds.ToArray(), SearchFlags.ReuseExistingWindow, "Unity");
             searchWindow.SetViewState(query.viewState);
             return searchWindow;

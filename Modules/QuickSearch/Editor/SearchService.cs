@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor.Search
@@ -210,7 +211,7 @@ namespace UnityEditor.Search
         {
             // Stop all search sessions every time there is a new search.
             context.sessions.StopAllAsyncSearchSessions();
-            context.searchFinishTime = context.searchStartTime = EditorApplication.timeSinceStartup;
+            context.searchFinishTime = context.searchStartTime = DateTime.Now.Ticks;
             context.sessionEnded -= OnSearchEnded;
             context.sessionEnded += OnSearchEnded;
 
@@ -379,7 +380,7 @@ namespace UnityEditor.Search
 
         private static void OnSearchEnded(SearchContext context)
         {
-            context.searchFinishTime = EditorApplication.timeSinceStartup;
+            context.searchFinishTime = DateTime.Now.Ticks;
         }
 
         private static int SortItemComparer(SearchItem item1, SearchItem item2)

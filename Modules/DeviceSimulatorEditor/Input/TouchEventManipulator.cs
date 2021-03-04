@@ -13,8 +13,8 @@ namespace UnityEditor.DeviceSimulation
     internal class TouchEventManipulator : MouseManipulator
     {
         private bool m_TouchFromMouseActive;
-        private int m_ScreenWidth;
-        private int m_ScreenHeight;
+        private Texture m_OverlayTexture;
+        private DeviceInfo m_DeviceInfo;
         private ScreenSimulation m_ScreenSimulation;
         private readonly DeviceSimulator m_DeviceSimulator;
         private InputManagerBackend m_InputManagerBackend;
@@ -80,10 +80,10 @@ namespace UnityEditor.DeviceSimulation
             TouchFromMouse(position, phase);
         }
 
-        public void InitTouchInput(int screenWidth, int screenHeight, ScreenSimulation screenSimulation)
+        public void InitTouchInput(Texture overlayTexture, DeviceInfo deviceInfo, ScreenSimulation screenSimulation)
         {
-            m_ScreenWidth = screenWidth;
-            m_ScreenHeight = screenHeight;
+            m_OverlayTexture = overlayTexture;
+            m_DeviceInfo = deviceInfo;
             m_ScreenSimulation = screenSimulation;
             CancelAllTouches();
         }
@@ -100,9 +100,9 @@ namespace UnityEditor.DeviceSimulation
                 position.x = 0;
                 isPointerInsideDeviceScreen = false;
             }
-            else if (position.x > m_ScreenWidth)
+            else if (position.x > m_DeviceInfo.screens[0].width)
             {
-                position.x = m_ScreenWidth;
+                position.x = m_DeviceInfo.screens[0].width;
                 isPointerInsideDeviceScreen = false;
             }
             if (position.y < 0)
@@ -110,13 +110,21 @@ namespace UnityEditor.DeviceSimulation
                 position.y = 0;
                 isPointerInsideDeviceScreen = false;
             }
-            else if (position.y > m_ScreenHeight)
+            else if (position.y > m_DeviceInfo.screens[0].height)
             {
-                position.y = m_ScreenHeight;
+                position.y = m_DeviceInfo.screens[0].height;
                 isPointerInsideDeviceScreen = false;
             }
 
             pointerPosition = ScreenPixelToTouchCoordinate(position);
+
+            // Test if the touch is over a cutout or notch using the texture (preferred) or the cutouts from the .device (fallback)
+            // Texture check uses the originalTouchPosition as it assumes the touch and texture are in portrait regardless of orientation
+            // Cutouts check uses the adjusted pointerPosition as we have different cutout positions for different orientations
+            if (IsTouchOnCutout(position, pointerPosition))
+            {
+                isPointerInsideDeviceScreen = false;
+            }
 
             if (!m_TouchFromMouseActive && mousePhase != MousePhase.Start)
                 return;
@@ -167,8 +175,8 @@ namespace UnityEditor.DeviceSimulation
         private Vector2 ScreenPixelToTouchCoordinate(Vector2 position)
         {
             // First calculating which pixel is being touched inside the pixel rect where game is rendered in portrait orientation, due to insets this might not be full screen
-            var renderedAreaPortraitWidth = m_ScreenWidth - m_ScreenSimulation.Insets.x - m_ScreenSimulation.Insets.z;
-            var renderedAreaPortraitHeight = m_ScreenHeight - m_ScreenSimulation.Insets.y - m_ScreenSimulation.Insets.w;
+            var renderedAreaPortraitWidth = m_DeviceInfo.screens[0].width - m_ScreenSimulation.Insets.x - m_ScreenSimulation.Insets.z;
+            var renderedAreaPortraitHeight = m_DeviceInfo.screens[0].height - m_ScreenSimulation.Insets.y - m_ScreenSimulation.Insets.w;
 
             var touchedPixelPortraitX = position.x - m_ScreenSimulation.Insets.x;
             var touchedPixelPortraitY = position.y - m_ScreenSimulation.Insets.y;
@@ -211,6 +219,38 @@ namespace UnityEditor.DeviceSimulation
             }
 
             return new Vector2(touchedPixelX * scaleX, touchedPixelY * scaleY);
+        }
+
+        private bool IsTouchOnCutout(Vector2 originalTouchPosition, Vector2 screenPixelToTouchPosition)
+        {
+            // If we have and can read the overlay texture (this is more accurate and follows the curves of cutouts)
+            if (m_OverlayTexture is Texture2D {isReadable : true} overlayTexture)
+            {
+                // We use the orientation agnostic touch position, but we need to adjust the 0,0 position from bottom/left to top/left
+                var adjustedTouchPositionY = m_DeviceInfo.screens[0].height - originalTouchPosition.y;
+
+                // Calculate the device size:overlay texture ratio
+                var screenWidthScale = m_OverlayTexture.width / (m_DeviceInfo.screens[0].presentation.borderSize.x + m_DeviceInfo.screens[0].presentation.borderSize.z + m_DeviceInfo.screens[0].width);
+                var screenHeightScale = m_OverlayTexture.height / (m_DeviceInfo.screens[0].presentation.borderSize.y + m_DeviceInfo.screens[0].presentation.borderSize.w + m_DeviceInfo.screens[0].height);
+
+                // Since we're orientation agnostic and always checking using portrait mode we need to take into account the x and w borders.
+                var touchToTexturePositionX = (int)((originalTouchPosition.x + m_DeviceInfo.screens[0].presentation.borderSize.x) * screenWidthScale);
+                var touchToTexturePositionY = (int)((adjustedTouchPositionY + m_DeviceInfo.screens[0].presentation.borderSize.w) * screenHeightScale);
+
+                // We can consider pixels of over 80% alpha as opaque enough for a cutout
+                return overlayTexture.GetPixel(touchToTexturePositionX, touchToTexturePositionY).a > 0.8;
+            }
+
+            // just check using the cutouts from the device file (always square)
+            foreach (var cutout in m_ScreenSimulation.cutouts)
+            {
+                if (!cutout.Contains(screenPixelToTouchPosition))
+                    continue;
+
+                return true;
+            }
+
+            return false;
         }
 
         public void CancelAllTouches()

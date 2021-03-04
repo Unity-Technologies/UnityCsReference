@@ -162,7 +162,7 @@ namespace UnityEditor.UIElements
             }
             else
             {
-                menu = elementPanel?.contextType == ContextType.Player ? new GenericDropdownMenu() : DropdownMenu.CreateDropdown();
+                menu = elementPanel?.contextType == ContextType.Player ? new GenericDropdownMenu() : DropdownUtility.CreateDropdown();
             }
 
             AddMenuItems(menu);

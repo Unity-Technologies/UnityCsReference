@@ -395,5 +395,35 @@ namespace UnityEditor.Search
 
             return refs;
         }
+
+        static readonly Dictionary<string, SearchProvider> s_GroupProviders = new Dictionary<string, SearchProvider>();
+        internal static SearchProvider CreateGroupProvider(SearchProvider templateProvider, string groupId, int groupPriority, bool cacheProvider = false)
+        {
+            if (cacheProvider && s_GroupProviders.TryGetValue(groupId, out var groupProvider))
+                return groupProvider;
+
+            groupProvider = new SearchProvider($"_group_provider_{groupId}", groupId)
+            {
+                type = templateProvider.id,
+                priority = groupPriority,
+                isExplicitProvider = true,
+                actions = templateProvider.actions,
+                showDetails = templateProvider.showDetails,
+                showDetailsOptions = templateProvider.showDetailsOptions,
+                fetchDescription = templateProvider.fetchDescription,
+                fetchItems = templateProvider.fetchItems,
+                fetchLabel = templateProvider.fetchLabel,
+                fetchPreview = templateProvider.fetchPreview,
+                fetchThumbnail = templateProvider.fetchThumbnail,
+                startDrag = templateProvider.startDrag,
+                toObject = templateProvider.toObject,
+                trackSelection = templateProvider.trackSelection
+            };
+
+            if (cacheProvider)
+                s_GroupProviders[groupId] = groupProvider;
+
+            return groupProvider;
+        }
     }
 }

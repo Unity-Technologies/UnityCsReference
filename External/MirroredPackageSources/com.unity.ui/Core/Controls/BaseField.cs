@@ -29,6 +29,26 @@ namespace UnityEngine.UIElements
                 base.Init(ve, bag, cc);
                 ((BaseField<TValueType>)ve).label = m_Label.GetValueFromBag(bag, cc);
             }
+
+            internal static List<string> ParseChoiceList(string choicesFromBag)
+            {
+                if (string.IsNullOrEmpty(choicesFromBag.Trim()))
+                    return null;
+
+                // Here the choices is comma separated in the string...
+                var choices = choicesFromBag.Split(',');
+
+                if (choices.Length != 0)
+                {
+                    var listOfChoices = new List<string>();
+                    foreach (var choice in choices)
+                    {
+                        listOfChoices.Add(choice.Trim());
+                    }
+                    return listOfChoices;
+                }
+                return null;
+            }
         }
 
         /// <summary>

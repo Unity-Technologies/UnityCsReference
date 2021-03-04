@@ -723,5 +723,10 @@ namespace UnityEditor.Search
 
             return false;
         }
+
+        internal static string[] GetAssetRootFolders()
+        {
+            return AssetDatabase.GetAssetRootFolders();
+        }
     }
 }

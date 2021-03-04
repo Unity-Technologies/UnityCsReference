@@ -34,6 +34,7 @@ namespace UnityEngine
     public sealed class Canvas : Behaviour
     {
         public delegate void WillRenderCanvases();
+        public static event WillRenderCanvases preWillRenderCanvases;
         public static event WillRenderCanvases willRenderCanvases;
 
         public extern RenderMode renderMode { get; set; }
@@ -53,7 +54,8 @@ namespace UnityEngine
         public extern AdditionalCanvasShaderChannels additionalShaderChannels { get; set; }
         public extern string sortingLayerName { get; set; }
         public extern Canvas rootCanvas { get; }
-        public extern Vector2 displaySize { get; }
+
+        public extern Vector2 renderingDisplaySize { get; }
 
 
         internal static Action<int> externBeginRenderOverlays { get; set; }
@@ -80,7 +82,14 @@ namespace UnityEngine
 
         public static void ForceUpdateCanvases()
         {
+            SendPreWillRenderCanvases();
             SendWillRenderCanvases();
+        }
+
+        [RequiredByNativeCode]
+        private static void SendPreWillRenderCanvases()
+        {
+            preWillRenderCanvases?.Invoke();
         }
 
         [RequiredByNativeCode]

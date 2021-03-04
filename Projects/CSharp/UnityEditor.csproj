@@ -6550,6 +6550,9 @@
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\CurveFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\CurveFieldSnippet.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\DropdownFieldSnippet.cs">
+      <Link>Modules\UIElementsSamplesEditor\Snippets\DropdownFieldSnippet.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\EnumFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\EnumFieldSnippet.cs</Link>
     </Compile>
@@ -6594,6 +6597,12 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\PopupFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\PopupFieldSnippet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\RadioButtonGroupSnippet.cs">
+      <Link>Modules\UIElementsSamplesEditor\Snippets\RadioButtonGroupSnippet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\RadioButtonSnippet.cs">
+      <Link>Modules\UIElementsSamplesEditor\Snippets\RadioButtonSnippet.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\RectFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\RectFieldSnippet.cs</Link>

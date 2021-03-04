@@ -385,7 +385,12 @@ namespace UnityEditorInternal
                     EditorGUIUtility.labelWidth = FieldLabelSize(rect, prop);
 
                     var handler = ScriptAttributeUtility.GetHandler(prop);
+                    EditorGUI.BeginChangeCheck();
                     handler.OnGUI(rect, prop, null, true);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        prop.serializedObject.ApplyModifiedProperties();
+                    }
 
                     EditorGUIUtility.labelWidth = oldLabelWidth;
                     if (Event.current.type == EventType.MouseDown && Event.current.button == 1 && rect.Contains(Event.current.mousePosition)) Event.current.Use();

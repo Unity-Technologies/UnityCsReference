@@ -137,6 +137,20 @@ namespace UnityEditor.Search
             }
         }
 
+        public new string name
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(settings.name))
+                    return base.name;
+                return settings.name;
+            }
+            set
+            {
+                base.name = value;
+            }
+        }
+
         [SerializeField] public Settings settings;
         [SerializeField, HideInInspector] public byte[] bytes;
 
@@ -224,6 +238,17 @@ namespace UnityEditor.Search
                 .Concat(new[] { s_DefaultDB })
                 .Where(db => db)
                 .Select(db => { db.Log("Enumerate"); return db; });
+        }
+
+        public static IEnumerable<SearchDatabase> EnumerateAll()
+        {
+            if (!s_DefaultDB && File.Exists(defaultSearchDatabaseIndexPath))
+                s_DefaultDB = Create(defaultSearchDatabaseIndexPath);
+
+            return AssetDatabase.FindAssets("t:SearchDatabase").Select(AssetDatabase.GUIDToAssetPath)
+                .Select(path => AssetDatabase.LoadAssetAtPath<SearchDatabase>(path))
+                .Concat(new[] { s_DefaultDB })
+                .Where(db => db);
         }
 
         public static Settings LoadSettings(string settingsPath)

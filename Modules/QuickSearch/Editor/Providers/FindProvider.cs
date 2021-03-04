@@ -62,7 +62,7 @@ namespace UnityEditor.Search.Providers
                 options |= FindOptions.Packages | FindOptions.Fuzzy;
 
             foreach (var e in Search(context, provider, options))
-                yield return AssetProvider.CreateItem(context, provider, "Find", AssetProvider.GetGID(e.path), e.path, e.score);
+                yield return AssetProvider.CreateItem(context, provider, "Find", AssetProvider.GetGID(e.path), e.path, e.score, useGroupProvider: false);
         }
 
         public static IEnumerable<SearchDocument> Search(SearchContext context, SearchProvider provider, FindOptions options)
@@ -286,7 +286,7 @@ namespace UnityEditor.Search.Providers
                 return roots;
 
             var projectRoots = new List<string>() { "Assets" };
-            projectRoots.AddRange(AssetDatabase.GetAssetRootFolders().Where(r => FilterRoot(r, options)));
+            projectRoots.AddRange(Utils.GetAssetRootFolders().Where(r => FilterRoot(r, options)));
             if (options.HasFlag(FindOptions.AllFiles))
             {
                 var baseProjectRoot = new DirectoryInfo(Path.Combine(Application.dataPath, "..")).FullName.Replace("\\", "/");

@@ -461,6 +461,11 @@ namespace UnityEditor.Search
             {
                 return m_Items.IndexOf(item);
             }
+
+            public override string ToString()
+            {
+                return $"{id} ({m_Items.Count})";
+            }
         }
 
         private int m_TotalCount = 0;
@@ -586,10 +591,10 @@ namespace UnityEditor.Search
         private void AddDefaultGroups()
         {
             var defaultGroups = context.providers
-                .Where(p => !p.isExplicitProvider)
-                .OrderBy(p => p.priority)
+                .Where(p => p.showDetailsOptions.HasFlag(ShowDetailsOptions.DefaultGroup))
                 .Select(p => new Group(p.id, p.name, p.priority));
             m_Groups.AddRange(defaultGroups);
+            m_Groups.Sort((lhs, rhs) => lhs.priority.CompareTo(rhs.priority));
         }
 
         public override void AddItems(IEnumerable<SearchItem> items)

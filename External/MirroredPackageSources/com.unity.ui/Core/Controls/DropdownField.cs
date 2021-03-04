@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEngine.UIElements
 {
@@ -9,25 +8,23 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="DropdownField"/> using the data read from a UXML file.
         /// </summary>
-        public new class UxmlFactory : UxmlFactory<DropdownField, UxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<DropdownField, UxmlTraits> { }
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="DropdownField"/>.
         /// </summary>
         public new class UxmlTraits : BaseField<string>.UxmlTraits
         {
+            UxmlIntAttributeDescription m_Index = new UxmlIntAttributeDescription { name = "index" };
             UxmlStringAttributeDescription m_Choices = new UxmlStringAttributeDescription() { name = "choices" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
-                var dropdownElement = (DropdownField)ve;
-                dropdownElement.choices = m_Choices.GetValueFromBag(bag, cc).Split(',').Select(e => e.Trim()).ToList();
 
-                if (dropdownElement.choices.Count > 0)
-                {
-                    dropdownElement.SetValueWithoutNotify(dropdownElement.choices[0]);
-                }
+                var f = (DropdownField)ve;
+                f.choices = ParseChoiceList(m_Choices.GetValueFromBag(bag, cc));
+                f.index = m_Index.GetValueFromBag(bag, cc);
             }
         }
 
@@ -62,14 +59,14 @@ namespace UnityEngine.UIElements
         {
             if (m_FormatSelectedValueCallback != null)
                 return m_FormatSelectedValueCallback(value);
-            return value.ToString();
+            return value ?? string.Empty;
         }
 
         internal string GetListItemToDisplay(string value)
         {
             if (m_FormatListItemCallback != null)
                 return m_FormatListItemCallback(value);
-            return value;
+            return (value != null && m_Choices.Contains(value)) ? value : string.Empty;
         }
 
         /// <summary>
@@ -95,6 +92,7 @@ namespace UnityEngine.UIElements
         }
 
         private int m_Index = -1;
+
         /// <summary>
         /// The currently selected index in the popup menu.
         /// </summary>
@@ -103,13 +101,12 @@ namespace UnityEngine.UIElements
             get { return m_Index; }
             set
             {
-                if (value != m_Index)
-                {
-                    if (value >= m_Choices.Count || value < 0)
-                        throw new ArgumentException(string.Format("Index {0} is beyond the scope of possible values", value));
-                    m_Index = value;
+                m_Index = value;
+                
+                if (m_Choices == null || value >= m_Choices.Count || value < 0)
+                    this.value = null;
+                else
                     this.value = m_Choices[m_Index];
-                }
             }
         }
 
@@ -119,18 +116,17 @@ namespace UnityEngine.UIElements
         internal static readonly string arrowUssClassNameBasePopupField = ussClassNameBasePopupField + "__arrow";
         internal static readonly string labelUssClassNameBasePopupField = ussClassNameBasePopupField + "__label";
         internal static readonly string inputUssClassNameBasePopupField = ussClassNameBasePopupField + "__input";
-        
+
         // Base selectors coming from PopupField
         internal static readonly string ussClassNamePopupField = "unity-popup-field";
         internal static readonly string labelUssClassNamePopupField = ussClassNamePopupField + "__label";
         internal static readonly string inputUssClassNamePopupField = ussClassNamePopupField + "__input";
-        
+
         /// <summary>
         /// Construct a DropdownField.
         /// </summary>
         public DropdownField()
-            : this(null)
-        {}
+            : this(null) { }
 
         /// <summary>
         /// Construct a DropdownField.
@@ -141,7 +137,7 @@ namespace UnityEngine.UIElements
             // BasePopupField constructor
             AddToClassList(ussClassNameBasePopupField);
             labelElement.AddToClassList(labelUssClassNameBasePopupField);
-            
+
             m_TextElement = new PopupTextElement
             {
                 pickingMode = PickingMode.Ignore
@@ -156,7 +152,7 @@ namespace UnityEngine.UIElements
             visualInput.Add(m_ArrowElement);
 
             choices = new List<string>();
-            
+
             // PopupField constructor
             AddToClassList(ussClassNamePopupField);
             labelElement.AddToClassList(labelUssClassNamePopupField);
@@ -167,9 +163,7 @@ namespace UnityEngine.UIElements
         /// Construct a DropdownField.
         /// </summary>
         public DropdownField(List<string> choices, string defaultValue, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
-            : this(null, choices, defaultValue, formatSelectedValueCallback, formatListItemCallback)
-        {
-        }
+            : this(null, choices, defaultValue, formatSelectedValueCallback, formatListItemCallback) { }
 
         /// <summary>
         /// Construct a DropdownField.
@@ -181,9 +175,6 @@ namespace UnityEngine.UIElements
                 throw new ArgumentNullException(nameof(defaultValue));
 
             this.choices = choices;
-            if (!m_Choices.Contains(defaultValue))
-                throw new ArgumentException(string.Format("Default value {0} is not present in the list of possible values", defaultValue));
-
             SetValueWithoutNotify(defaultValue);
 
             this.formatListItemCallback = formatListItemCallback;
@@ -194,7 +185,7 @@ namespace UnityEngine.UIElements
         /// Construct a DropdownField.
         /// </summary>
         public DropdownField(List<string> choices, int defaultIndex, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
-            : this(null, choices, defaultIndex, formatSelectedValueCallback, formatListItemCallback) {}
+            : this(null, choices, defaultIndex, formatSelectedValueCallback, formatListItemCallback) { }
 
         /// <summary>
         /// Construct a DropdownField.
@@ -204,8 +195,6 @@ namespace UnityEngine.UIElements
         {
             this.choices = choices;
 
-            if (defaultIndex >= m_Choices.Count || defaultIndex < 0)
-                throw new ArgumentException(string.Format("Default Index {0} is beyond the scope of possible value", value));
             index = defaultIndex;
 
             this.formatListItemCallback = formatListItemCallback;
@@ -219,6 +208,9 @@ namespace UnityEngine.UIElements
             {
                 throw new ArgumentNullException(nameof(menu));
             }
+
+            if (m_Choices == null)
+                return;
 
             foreach (var item in m_Choices)
             {
@@ -235,14 +227,8 @@ namespace UnityEngine.UIElements
 
         internal virtual List<string> choices
         {
-            get { return m_Choices; }
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-
-                m_Choices = value;
-            }
+            get => m_Choices;
+            set => m_Choices = value;
         }
 
         /// <summary>
@@ -253,13 +239,7 @@ namespace UnityEngine.UIElements
             get { return base.value; }
             set
             {
-                int newIndex = m_Choices.IndexOf(value);
-                if (newIndex < 0)
-                {
-                    throw new ArgumentException(string.Format("Value {0} is not present in the list of possible values", value));
-                }
-                m_Index = newIndex;
-
+                m_Index = m_Choices?.IndexOf(value) ?? -1;
                 base.value = value;
             }
         }
@@ -270,12 +250,7 @@ namespace UnityEngine.UIElements
         /// <param name="newValue">The new value.</param>
         public override void SetValueWithoutNotify(string newValue)
         {
-            int newIndex = m_Choices.IndexOf(newValue);
-            if (newIndex < 0)
-            {
-                throw new ArgumentException(string.Format("Value {0} is not present in the list of possible values", newValue));
-            }
-            m_Index = newIndex;
+            m_Index = m_Choices?.IndexOf(newValue) ?? -1;
 
             base.SetValueWithoutNotify(newValue);
             ((INotifyValueChanged<string>)m_TextElement).SetValueWithoutNotify(GetValueToDisplay());
@@ -326,7 +301,7 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                menu = elementPanel?.contextType == ContextType.Player ? new GenericDropdownMenu() : DropdownMenu.CreateDropdown();
+                menu = elementPanel?.contextType == ContextType.Player ? new GenericDropdownMenu() : DropdownUtility.CreateDropdown();
             }
 
             AddMenuItems(menu);
@@ -343,6 +318,7 @@ namespace UnityEngine.UIElements
                 {
                     textToMeasure = " ";
                 }
+
                 return MeasureTextSize(textToMeasure, desiredWidth, widthMode, desiredHeight, heightMode);
             }
         }

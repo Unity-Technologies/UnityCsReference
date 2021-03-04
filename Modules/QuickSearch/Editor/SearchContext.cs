@@ -409,9 +409,9 @@ namespace UnityEditor.Search
         /// <summary>
         /// Returns the time it took to evaluate the last query in milliseconds.
         /// </summary>
-        internal double searchElapsedTime => (searchFinishTime - searchStartTime) * 1000.0;
-        internal double searchStartTime { get; set; } = 0;
-        internal double searchFinishTime { get; set; } = 0;
+        internal double searchElapsedTime => TimeSpan.FromTicks(searchFinishTime - searchStartTime).TotalMilliseconds;
+        internal long searchStartTime { get; set; } = 0;
+        internal long searchFinishTime { get; set; } = 0;
 
         /// <summary>
         /// Indicates that the search results should be filter for this type.
@@ -502,6 +502,11 @@ namespace UnityEditor.Search
                 // Return a new list since the list can be modified asynchronously
                 return m_QueryErrors.Where(error => error.provider.id == providerId).ToList();
             }
+        }
+
+        public override string ToString()
+        {
+            return $"{searchText} - {GetProviders().Count}";
         }
     }
 }
