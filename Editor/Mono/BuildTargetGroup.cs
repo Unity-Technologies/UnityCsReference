@@ -101,7 +101,9 @@ namespace UnityEditor
 
         CloudRendering = 30,
 
+        [System.Obsolete("GameCoreScarlett is deprecated, please use GameCoreXboxSeries (UnityUpgradable) -> GameCoreXboxSeries", false)]
         GameCoreScarlett = 31,
+        GameCoreXboxSeries = 31, // GameCoreXboxSeries intentionally set to the same as GameCoreScarlett
         GameCoreXboxOne = 32,
 
         PS5 = 33,

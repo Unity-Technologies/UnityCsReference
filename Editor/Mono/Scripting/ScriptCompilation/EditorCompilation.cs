@@ -13,6 +13,7 @@ using Unity.Scripting.Compilation;
 using UnityEditor.Compilation;
 using UnityEditor.Modules;
 using UnityEditor.Scripting.Compilers;
+using UnityEditor.VisualStudioIntegration;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -234,6 +235,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public PrecompiledAssemblyProviderBase PrecompiledAssemblyProvider { get; set; } = new PrecompiledAssemblyProvider();
         public CompilationSetupErrorsTrackerBase CompilationSetupErrorsTracker { get; set; } = new CompilationSetupErrorsTracker();
         public ResponseFileProvider ResponseFileProvider { get; set; } = new MicrosoftCSharpResponseFileProvider();
+        private FileIOProvider fileIOProvider = new FileIOProvider();
+        private DirectoryIOProvider directoryIOProvider = new DirectoryIOProvider();
 
         Dictionary<object, Stopwatch> stopWatchDict = new Dictionary<object, Stopwatch>();
         string projectDirectory = string.Empty;
@@ -1440,15 +1443,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public void DeleteUnusedAssemblies()
         {
             ScriptAssemblySettings settings = CreateEditorScriptAssemblySettings(EditorScriptCompilationOptions.BuildingForEditor);
-            DeleteUnusedAssemblies(settings);
+            DeleteUnusedAssemblies(settings, fileIOProvider, directoryIOProvider);
         }
 
         // Delete all .dll's that aren't used anymore
-        public void DeleteUnusedAssemblies(ScriptAssemblySettings settings)
+        public void DeleteUnusedAssemblies(ScriptAssemblySettings settings, IFileIO fileIO , IDirectoryIO directoryIO)
         {
             string fullEditorAssemblyPath = AssetPath.Combine(projectDirectory, GetCompileScriptsOutputDirectory());
 
-            if (!Directory.Exists(fullEditorAssemblyPath))
+            if (!settings.BuildingForEditor || !directoryIO.Exists(fullEditorAssemblyPath))
             {
                 // This is called in GetTargetAssembliesWithScripts and is required for compilation to
                 // be set up correctly. Since we early out here, we need to call this here.
@@ -1456,15 +1459,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return;
             }
 
-            var deleteFiles = Directory.GetFiles(fullEditorAssemblyPath).Select(f => AssetPath.ReplaceSeparators(f)).ToList();
+            //This will also update all the defines on the TargetAssembly
+            //This is needed as long as TargetAssemblies has Defines state on them.
+            var targetAssemblies = GetTargetAssembliesWithScripts(settings);
+
+            var deleteFiles = directoryIO.GetFiles(fullEditorAssemblyPath).Select(f => AssetPath.ReplaceSeparators(f)).ToList();
             string timestampPath = GetAssemblyTimestampPath(GetCompileScriptsOutputDirectory());
             deleteFiles.Remove(AssetPath.Combine(projectDirectory, timestampPath));
-
-            var targetAssemblies = GetTargetAssembliesWithScripts(settings);
 
             foreach (var assembly in targetAssemblies)
             {
                 string path = AssetPath.Combine(fullEditorAssemblyPath, assembly.Name);
+
                 deleteFiles.Remove(path);
                 deleteFiles.Remove(MDBPath(path));
                 deleteFiles.Remove(PDBPath(path));
@@ -1472,7 +1478,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             foreach (var path in deleteFiles)
-                DeleteFile(path);
+                DeleteFile(path, fileIO: fileIO);
         }
 
         public void CleanScriptAssemblies()
@@ -1483,14 +1489,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return;
 
             foreach (var path in Directory.GetFiles(fullEditorAssemblyPath))
-                DeleteFile(path);
+                DeleteFile(path, fileIOProvider);
         }
 
-        static void DeleteFile(string path, DeleteFileOptions fileOptions = DeleteFileOptions.LogError)
+        static void DeleteFile(string path, IFileIO fileIO, DeleteFileOptions fileOptions = DeleteFileOptions.LogError)
         {
             try
             {
-                File.Delete(path);
+                fileIO.Delete(path);
             }
             catch (Exception)
             {
@@ -1499,7 +1505,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        static bool MoveOrReplaceFile(string sourcePath, string destinationPath, out string errorMessage)
+        static bool MoveOrReplaceFile(string sourcePath, string destinationPath, out string errorMessage, IFileIO fileIO)
         {
             bool fileMoved = false;
             errorMessage = string.Empty;
@@ -1509,7 +1515,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 try
                 {
-                    File.Move(sourcePath, destinationPath);
+                    fileIO.Move(sourcePath, destinationPath);
                     fileMoved = true;
                 }
                 catch (IOException e)
@@ -1521,7 +1527,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (!fileMoved)
             {
                 var backupFile = destinationPath + ".bak";
-                DeleteFile(backupFile, DeleteFileOptions.NoLogError); // Delete any previous backup files.
+                DeleteFile(backupFile, fileIO, DeleteFileOptions.NoLogError); // Delete any previous backup files.
 
                 try
                 {
@@ -1535,7 +1541,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 // Try to delete backup file. Does not need to exist
                 // We will eventually delete the file in DeleteUnusedAssemblies.
-                DeleteFile(backupFile, DeleteFileOptions.NoLogError);
+                DeleteFile(backupFile, fileIO, DeleteFileOptions.NoLogError);
             }
             return fileMoved;
         }
@@ -1550,18 +1556,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return dllPath + ".mdb";
         }
 
-        static bool CopyAssembly(string sourcePath, string destinationPath, out string errorMessage)
+        static bool CopyAssembly(string sourcePath, string destinationPath, IFileIO fileIO, out string errorMessage)
         {
-            if (!MoveOrReplaceFile(sourcePath, destinationPath, out errorMessage))
+            if (!MoveOrReplaceFile(sourcePath, destinationPath, out errorMessage, fileIO))
                 return false;
 
             string sourceMdb = MDBPath(sourcePath);
             string destinationMdb = MDBPath(destinationPath);
 
             if (File.Exists(sourceMdb))
-                MoveOrReplaceFile(sourceMdb, destinationMdb, out errorMessage);
+                MoveOrReplaceFile(sourceMdb, destinationMdb, out errorMessage, fileIO);
             else if (File.Exists(destinationMdb))
-                DeleteFile(destinationMdb);
+                DeleteFile(destinationMdb, fileIO);
 
             string combinedErrorMessage = errorMessage;
 
@@ -1569,9 +1575,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             string destinationPdb = PDBPath(destinationPath);
 
             if (File.Exists(sourcePdb))
-                MoveOrReplaceFile(sourcePdb, destinationPdb, out errorMessage);
+                MoveOrReplaceFile(sourcePdb, destinationPdb, out errorMessage, fileIO);
             else if (File.Exists(destinationPdb))
-                DeleteFile(destinationPdb);
+                DeleteFile(destinationPdb, fileIO);
 
             combinedErrorMessage += $"\t{errorMessage}";
             errorMessage = combinedErrorMessage;
@@ -1715,7 +1721,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             ref string[] notCompiledScripts,
             CompilationTaskOptions compilationTaskOptions = CompilationTaskOptions.StopOnFirstError)
         {
-            DeleteUnusedAssemblies(scriptAssemblySettings);
+            DeleteUnusedAssemblies(scriptAssemblySettings, fileIOProvider, directoryIOProvider);
 
             if (!DoesProjectFolderHaveAnyDirtyScripts() &&
                 !ArePrecompiledAssembliesDirty() &&
@@ -1793,7 +1799,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (returnCompilationComplete)
             {
-                DeleteUnusedAssemblies(scriptAssemblySettings);
+                DeleteUnusedAssemblies(scriptAssemblySettings, fileIOProvider, directoryIOProvider);
                 CleanUpAfterCompilationCompleted();
                 return CompileStatus.CompilationComplete;
             }
@@ -1946,7 +1952,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
 
                 // Copy from tempBuildDirectory to assembly output directory
-                if (!CopyAssembly(AssetPath.Combine(tempBuildDirectory, assembly.Filename), assembly.FullPath, out string errorMessage))
+                if (!CopyAssembly(AssetPath.Combine(tempBuildDirectory, assembly.Filename), assembly.FullPath, fileIOProvider, out string errorMessage))
                 {
                     messages.Add(new CompilerMessage
                     {
