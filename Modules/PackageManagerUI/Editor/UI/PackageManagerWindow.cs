@@ -60,6 +60,7 @@ namespace UnityEditor.PackageManager.UI
 
             var container = ServicesContainer.instance;
             var resourceLoader = container.Resolve<ResourceLoader>();
+            var extensionManager = container.Resolve<ExtensionManager>();
             var selection = container.Resolve<SelectionProxy>();
             var packageFiltering = container.Resolve<PackageFiltering>();
             var packageManagerPrefs = container.Resolve<PackageManagerPrefs>();
@@ -70,7 +71,7 @@ namespace UnityEditor.PackageManager.UI
             var applicationProxy = container.Resolve<ApplicationProxy>();
             var upmClient = container.Resolve<UpmClient>();
 
-            m_Root = new PackageManagerWindowRoot(resourceLoader, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient);
+            m_Root = new PackageManagerWindowRoot(resourceLoader, extensionManager, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient);
             rootVisualElement.Add(m_Root);
 
             m_Root.OnEnable();

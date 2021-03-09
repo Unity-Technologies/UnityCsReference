@@ -1456,7 +1456,15 @@ namespace UnityEditor
             if (motion.objectReferenceValue is AnimationClip)
             {
                 SerializedProperty timeScale = child.FindPropertyRelative("m_TimeScale");
-                EditorGUI.PropertyField(rects[col], timeScale, GUIContent.none);
+                float timeScaleValue = timeScale.floatValue;
+                EditorGUI.BeginChangeCheck();
+                timeScaleValue = EditorGUI.DelayedFloatField(rects[col], "", timeScaleValue, EditorStyles.textField);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    timeScale.floatValue = timeScaleValue;
+                    serializedObject.ApplyModifiedProperties();
+                    GUI.changed = true;
+                }
             }
             else
             {

@@ -22,10 +22,8 @@ namespace UnityEditorInternal.Profiling
         protected override ProfilerViewType DefaultViewTypeSetting => ProfilerViewType.Hierarchy;
 
         static readonly string k_GpuProfilingDisabled = L10n.Tr("GPU Profiling was not enabled so no data was gathered.");
-        static readonly string k_GpuProfilingEnabled = L10n.Tr("GPU Profiling was enabled but no data was gathered.");
-        static readonly string k_GpuProfilingSupported = L10n.Tr("The Graphics API, driver, and device supported GPU Profiling.");
 
-        static readonly string k_GpuProfilingNotSupportedWithEditorProfiling = L10n.Tr("GPU Profiling is currently not supported when profiling the Editor, try switching to Playmode.");
+        static readonly string k_GpuProfilingNotSupportedWithEditorProfilingBefore2021_2 = L10n.Tr("GPU Profiling was not supported when profiling the Editor before 2021.2.");
         static readonly string k_GpuProfilingNotSupportedWithLegacyGfxJobs = L10n.Tr("GPU Profiling is currently not supported when using Graphics Jobs.");
         static readonly string k_GpuProfilingNotSupportedWithNativeGfxJobs = L10n.Tr("GPU Profiling is currently not supported when using Graphics Jobs.");
         static readonly string k_GpuProfilingNotSupportedByDevice = L10n.Tr("GPU Profiling is currently not supported by this device.");
@@ -37,9 +35,11 @@ namespace UnityEditorInternal.Profiling
         static readonly Dictionary<GpuProfilingStatisticsAvailabilityStates, string> s_StatisticsAvailabilityStateReason
             = new Dictionary<GpuProfilingStatisticsAvailabilityStates, string>()
             {
-            {GpuProfilingStatisticsAvailabilityStates.NotSupportedWithEditorProfiling , k_GpuProfilingNotSupportedWithEditorProfiling},
+#pragma warning disable CS0618 // Type or member is obsolete
+            {GpuProfilingStatisticsAvailabilityStates.NotSupportedWithEditorProfiling , k_GpuProfilingNotSupportedWithEditorProfilingBefore2021_2},
+#pragma warning restore CS0618 // Type or member is obsolete
             {GpuProfilingStatisticsAvailabilityStates.NotSupportedWithLegacyGfxJobs , k_GpuProfilingNotSupportedWithLegacyGfxJobs},
-            {GpuProfilingStatisticsAvailabilityStates.NotSupportedWithNativeGfxJobs , k_GpuProfilingNotSupportedWithLegacyGfxJobs},
+            {GpuProfilingStatisticsAvailabilityStates.NotSupportedWithNativeGfxJobs , k_GpuProfilingNotSupportedWithNativeGfxJobs},
             {GpuProfilingStatisticsAvailabilityStates.NotSupportedByDevice , k_GpuProfilingNotSupportedByDevice},
             {GpuProfilingStatisticsAvailabilityStates.NotSupportedByGraphicsAPI , k_GpuProfilingNotSupportedByGraphicsAPI},
             {GpuProfilingStatisticsAvailabilityStates.NotSupportedDueToFrameTimingStatsAndDisjointTimerQuery , k_GpuProfilingNotSupportedDueToFrameTimingStatsAndDisjointTimerQuery},

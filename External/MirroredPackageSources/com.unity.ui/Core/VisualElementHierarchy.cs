@@ -75,6 +75,17 @@ namespace UnityEngine.UIElements
         {
             get { return this; }
         }
+        
+        private VisualTreeAsset m_VisualTreeAssetSource = null;
+
+        /// <summary>
+        /// Stores the asset reference, if the generated element is cloned from a VisualTreeAsset.
+        /// </summary>
+        public VisualTreeAsset visualTreeAssetSource
+        {
+            get => m_VisualTreeAssetSource;
+            internal set => m_VisualTreeAssetSource = value;
+        }
 
         // IVisualElementHierarchy container
         /// <summary>
@@ -1012,8 +1023,6 @@ namespace UnityEngine.UIElements
             return this;
         }
 
-        internal VisualTreeAsset m_VisualTreeAssetSource = null;
-
         private ILiveReloadAssetTracker<VisualTreeAsset> m_VisualTreeAssetTracker = null;
 
         internal ILiveReloadAssetTracker<VisualTreeAsset> visualTreeAssetTracker
@@ -1023,7 +1032,9 @@ namespace UnityEngine.UIElements
             {
                 if (m_VisualTreeAssetTracker == null && parent != null)
                 {
-                    return parent.visualTreeAssetTracker;
+                    // When we find a value, we cache it here for subsequent accesses and/or accesses from children
+                    // don't have to go further up than necessary.
+                    m_VisualTreeAssetTracker = parent.visualTreeAssetTracker;
                 }
 
                 return m_VisualTreeAssetTracker;
@@ -1069,6 +1080,10 @@ namespace UnityEngine.UIElements
                     // As we're detaching from panel, our parent may not be there anymore and if it held the tracker
                     // information, we won't find it anymore - so the updater will handle it all, based on the VisualElement.
                     detachingPanel.StopVisualTreeAssetTracking(this);
+
+                    // Since we cache the tracker, once we detach from the panel we need to clear the reference as well
+                    // to avoid the information being outdated.
+                    visualTreeAssetTracker = null;
                 }
 
                 if (styleSheetList?.Count > 0)

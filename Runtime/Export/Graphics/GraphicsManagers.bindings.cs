@@ -43,6 +43,9 @@ namespace UnityEngine
         extern public static Texture        customReflection            { get; [NativeThrows] set; }
         extern public static float          reflectionIntensity         { get; set; }
         extern public static int            reflectionBounces           { get; set; }
+
+        [NativeProperty("GeneratedSkyboxReflection")]
+        extern internal static Cubemap      defaultReflection           { get; }
         extern public static ReflectionMode defaultReflectionMode       { get; set; }
         extern public static int            defaultReflectionResolution { get; set; }
 

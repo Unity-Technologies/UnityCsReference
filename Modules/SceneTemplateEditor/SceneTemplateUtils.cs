@@ -17,6 +17,16 @@ namespace UnityEditor.SceneTemplate
     {
         private const string k_LastSceneOperationFolder = "SceneTemplateLastOperationFolder";
 
+        public const string TemplateScenePropertyName = nameof(SceneTemplateAsset.templateScene);
+        public const string TemplatePipelineName = nameof(SceneTemplateAsset.templatePipeline);
+        public const string TemplateTitlePropertyName = nameof(SceneTemplateAsset.templateName);
+        public const string TemplateDescriptionPropertyName = nameof(SceneTemplateAsset.description);
+        public const string TemplateAddToDefaultsPropertyName = nameof(SceneTemplateAsset.addToDefaults);
+        public const string TemplateThumbnailPropertyName = nameof(SceneTemplateAsset.preview);
+        public const string DependenciesPropertyName = nameof(SceneTemplateAsset.dependencies);
+        public const string DependencyPropertyName = nameof(DependencyInfo.dependency);
+        public const string InstantiationModePropertyName = nameof(DependencyInfo.instantiationMode);
+
         internal static IEnumerable<string> GetSceneTemplatePaths()
         {
             return AssetDatabase.FindAssets("t:SceneTemplateAsset").Select(AssetDatabase.GUIDToAssetPath);

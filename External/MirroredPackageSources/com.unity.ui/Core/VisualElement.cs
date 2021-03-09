@@ -369,6 +369,9 @@ namespace UnityEngine.UIElements
         internal Rect lastPadding;
         internal RenderChainVEData renderChainData;
 
+        // m_Pivot will be soon replaced by the resolved style and will default to  Vector3(float.NaN, float.NaN, 0);
+        Vector3 m_Pivot = Vector3.zero;
+
         Vector3 m_Position = Vector3.zero;
         Quaternion m_Rotation = Quaternion.identity;
         Vector3 m_Scale = Vector3.one;
@@ -376,6 +379,27 @@ namespace UnityEngine.UIElements
         public ITransform transform
         {
             get { return this; }
+        }
+
+        internal Vector3 transformOrigin
+        {
+            get
+            {
+                var pivot = m_Pivot;
+                if (float.IsNaN(pivot.x))
+                    pivot.x = layout.width / 2.0f;
+                if (float.IsNaN(pivot.y))
+                    pivot.y = layout.height / 2.0f;
+
+                return pivot;
+            }
+            set
+            {
+                if (m_Pivot == value)
+                    return;
+                m_Pivot = value;
+                IncrementVersion(VersionChangeType.Transform| VersionChangeType.Size);
+            }
         }
 
         Vector3 ITransform.position
@@ -727,12 +751,12 @@ namespace UnityEngine.UIElements
 
             if (hierarchy.parent != null)
             {
-                var mat = matrixWithLayout;
+                var mat = pivottedMatrixWithLayout;
                 MultiplyMatrix34(ref hierarchy.parent.worldTransformRef,  ref mat, out m_WorldTransformCache);
             }
             else
             {
-                m_WorldTransformCache = matrixWithLayout;
+                m_WorldTransformCache = pivottedMatrixWithLayout;
             }
 
             isWorldTransformInverseDirty = true;
@@ -753,6 +777,7 @@ namespace UnityEngine.UIElements
 
         private Rect m_WorldClip = Rect.zero;
         private Rect m_WorldClipMinusGroup = Rect.zero;
+        private bool m_WorldClipIsInfinite = false;
         internal Rect worldClip
         {
             get
@@ -779,6 +804,19 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal bool worldClipIsInfinite
+        {
+            get
+            {
+                if (isWorldClipDirty)
+                {
+                    UpdateWorldClip();
+                    isWorldClipDirty = false;
+                }
+                return m_WorldClipIsInfinite;
+            }
+        }
+
         internal void EnsureWorldTransformAndClipUpToDate()
         {
             if (isWorldTransformDirty)
@@ -790,16 +828,24 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private static readonly Rect s_InfiniteRect = new Rect(-10000, -10000, 40000, 40000);
+        internal static readonly Rect s_InfiniteRect = new Rect(-10000, -10000, 40000, 40000);
 
         private void UpdateWorldClip()
         {
             if (hierarchy.parent != null)
             {
                 m_WorldClip = hierarchy.parent.worldClip;
+
+                bool parentWorldClipIsInfinite = hierarchy.parent.worldClipIsInfinite;
                 if (hierarchy.parent != renderChainData.groupTransformAncestor) // Accessing render data here?
+                {
                     m_WorldClipMinusGroup = hierarchy.parent.worldClipMinusGroup;
-                else m_WorldClipMinusGroup = panel?.contextType == ContextType.Player ? s_InfiniteRect : GUIClip.topmostRect;
+                }
+                else
+                {
+                    parentWorldClipIsInfinite = true;
+                    m_WorldClipMinusGroup = s_InfiniteRect;
+                }
 
                 if (ShouldClip())
                 {
@@ -808,27 +854,32 @@ namespace UnityEngine.UIElements
                     // be the last operation that's performed.
                     Rect wb = SubstractBorderPadding(worldBound);
 
-                    float x1 = Mathf.Max(wb.xMin, m_WorldClip.xMin);
-                    float x2 = Mathf.Min(wb.xMax, m_WorldClip.xMax);
-                    float y1 = Mathf.Max(wb.yMin, m_WorldClip.yMin);
-                    float y2 = Mathf.Min(wb.yMax, m_WorldClip.yMax);
-                    float width = Mathf.Max(x2 - x1, 0);
-                    float height = Mathf.Max(y2 - y1, 0);
-                    m_WorldClip = new Rect(x1, y1, width, height);
+                    m_WorldClip = parentWorldClipIsInfinite ? wb : CombineClipRects(wb, m_WorldClip);
+                    m_WorldClipMinusGroup = parentWorldClipIsInfinite ? wb : CombineClipRects(wb, m_WorldClipMinusGroup);
 
-                    x1 = Mathf.Max(wb.xMin, m_WorldClipMinusGroup.xMin);
-                    x2 = Mathf.Min(wb.xMax, m_WorldClipMinusGroup.xMax);
-                    y1 = Mathf.Max(wb.yMin, m_WorldClipMinusGroup.yMin);
-                    y2 = Mathf.Min(wb.yMax, m_WorldClipMinusGroup.yMax);
-                    width = Mathf.Max(x2 - x1, 0);
-                    height = Mathf.Max(y2 - y1, 0);
-                    m_WorldClipMinusGroup = new Rect(x1, y1, width, height);
+                    m_WorldClipIsInfinite = false;
+                }
+                else
+                {
+                    m_WorldClipIsInfinite = parentWorldClipIsInfinite;
                 }
             }
             else
             {
-                m_WorldClipMinusGroup = m_WorldClip = (panel != null) ? panel.visualTree.rect : s_InfiniteRect;
+                m_WorldClipMinusGroup = m_WorldClip = (panel != null) ? panel.visualTree.rect : s_InfiniteRect;;
+                m_WorldClipIsInfinite = true;
             }
+        }
+
+        private Rect CombineClipRects(Rect rect, Rect parentRect)
+        {
+            float x1 = Mathf.Max(rect.xMin, parentRect.xMin);
+            float x2 = Mathf.Min(rect.xMax, parentRect.xMax);
+            float y1 = Mathf.Max(rect.yMin, parentRect.yMin);
+            float y2 = Mathf.Min(rect.yMax, parentRect.yMax);
+            float width = Mathf.Max(x2 - x1, 0);
+            float height = Mathf.Max(y2 - y1, 0);
+            return new Rect(x1, y1, width, height);
         }
 
         private Rect SubstractBorderPadding(Rect worldRect)
@@ -1332,9 +1383,9 @@ namespace UnityEngine.UIElements
         /// Called when the <see cref="VisualElement"/> visual contents need to be (re)generated.
         /// </summary>
         /// <remarks>
-        /// When handled, it is possible to generate custom geometry in the content region of the <see cref="VisualElement"/>.
-        ///                     This delegate is called only when the <see cref="VisualElement"/> has been detected to need to regenerate its visual contents. It is not called every frame when refreshing the panel. The content generated is cached and remains intact until a property on the <see cref="VisualElement"/> affecting visuals has changed or <see cref="VisualElement.MarkDirtyRepaint"/> is called.
-        ///                     While executing code in a handler to this delegate, refrain from making changes to any property of the <see cref="VisualElement"/>. A correct handler should treat the <see cref="VisualElement"/> as 'read-only' and generate the geometry without causing side-effects. Changes done to the <see cref="VisualElement"/> during this event could be missed or lag appearance at best.
+        /// <para>When this delegate is handled, you can generate custom geometry in the content region of the <see cref="VisualElement"/>. For an example, see the <see cref="MeshGenerationContext"/> documentation.</para>
+        /// <para>This delegate is called only when the <see cref="VisualElement"/> needs to regenerate its visual contents. It is not called every frame when the panel refreshes. The generated content is cached, and remains intact until any of the <see cref="VisualElement"/>'s properties that affects visuals either changes, or <see cref="VisualElement.MarkDirtyRepaint"/> is called.</para>
+        /// <para>When you execute code in a handler to this delegate, do not make changes to any property of the <see cref="VisualElement"/>. A handler should treat the <see cref="VisualElement"/> as 'read-only'. Changing the <see cref="VisualElement"/> during this event might cause undesirable side effects. For example, the changes might lag, or be missed completely.</para>
         /// </remarks>
         public Action<MeshGenerationContext> generateVisualContent { get; set; }
 

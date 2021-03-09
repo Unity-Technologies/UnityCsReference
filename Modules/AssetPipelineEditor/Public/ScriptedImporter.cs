@@ -56,7 +56,13 @@ namespace UnityEditor.AssetImporters
         [RequiredByNativeCode]
         internal static void RegisterScriptedImporters()
         {
-            var importers = TypeCache.GetTypesWithAttribute<ScriptedImporterAttribute>();
+            //Find the types with the 'ScriptedImporter' attribute which also derive from 'ScriptedImporter'
+            var importers = new List<Type>();
+            foreach (var type in TypeCache.GetTypesWithAttribute<ScriptedImporterAttribute>())
+                if (type.IsSubclassOf(typeof(ScriptedImporter)))
+                    importers.Add(type);
+                else
+                    Debug.LogError(String.Format("{0} has a 'ScriptedImporter' Attribute but is not a subclass of 'ScriptedImporter'.", type.ToString()));
 
             ScriptedImporterAttribute[] scriptedImporterAttributes = new ScriptedImporterAttribute[importers.Count];
             SortedDictionary<string, bool>[] handledExtensions = new SortedDictionary<string, bool>[importers.Count];

@@ -7,7 +7,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -90,6 +89,7 @@ namespace UnityEditor.Search
         public static bool onBoardingDoNotAskAgain { get; set; }
         public static bool showPackageIndexes { get; set; }
         public static bool showStatusBar { get; set; }
+        public static bool useExpressions { get; set; }
         public static Dictionary<string, string> scopes { get; private set; }
         public static Dictionary<string, SearchProviderSettings> providers { get; private set; }
         public const int k_RecentSearchMaxCount = 20;
@@ -142,6 +142,7 @@ namespace UnityEditor.Search
             onBoardingDoNotAskAgain = ReadSetting(settings, nameof(onBoardingDoNotAskAgain), false);
             showPackageIndexes = ReadSetting(settings, nameof(showPackageIndexes), false);
             showStatusBar = ReadSetting(settings, nameof(showStatusBar), false);
+            useExpressions = ReadSetting(settings, nameof(useExpressions), false);
             savedSearchesSortOrder = (SearchQuerySortOrder)ReadSetting(settings, nameof(savedSearchesSortOrder), 0);
 
 
@@ -168,6 +169,7 @@ namespace UnityEditor.Search
                 [nameof(onBoardingDoNotAskAgain)] = onBoardingDoNotAskAgain,
                 [nameof(showPackageIndexes)] = showPackageIndexes,
                 [nameof(showStatusBar)] = showStatusBar,
+                [nameof(useExpressions)] = useExpressions,
                 [nameof(scopes)] = scopes,
                 [nameof(providers)] = providers,
                 [nameof(recentSearches)] = recentSearches,
@@ -230,6 +232,9 @@ namespace UnityEditor.Search
         {
             if (wantsMore)
                 options |= SearchFlags.WantsMore;
+
+            if (useExpressions)
+                options |= SearchFlags.Expression;
 
             return options;
         }

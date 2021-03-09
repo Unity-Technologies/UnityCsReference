@@ -9,13 +9,14 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class PackageManagerWindowRoot : VisualElement
+    internal class PackageManagerWindowRoot : VisualElement, IWindow
     {
         private string m_PackageToSelectOnLoaded;
 
         private PackageFilterTab? m_FilterToSelectAfterLoad;
 
         private ResourceLoader m_ResourceLoader;
+        private ExtensionManager m_ExtensionManager;
         private SelectionProxy m_Selection;
         private PackageFiltering m_PackageFiltering;
         private PackageManagerPrefs m_PackageManagerPrefs;
@@ -26,6 +27,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ApplicationProxy m_ApplicationProxy;
         private UpmClient m_UpmClient;
         private void ResolveDependencies(ResourceLoader resourceLoader,
+            ExtensionManager extensionManager,
             SelectionProxy selection,
             PackageFiltering packageFiltering,
             PackageManagerPrefs packageManagerPrefs,
@@ -37,6 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             UpmClient upmClient)
         {
             m_ResourceLoader = resourceLoader;
+            m_ExtensionManager = extensionManager;
             m_Selection = selection;
             m_PackageFiltering = packageFiltering;
             m_PackageManagerPrefs = packageManagerPrefs;
@@ -49,6 +52,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         public PackageManagerWindowRoot(ResourceLoader resourceLoader,
+                                        ExtensionManager extensionManager,
                                         SelectionProxy selection,
                                         PackageFiltering packageFiltering,
                                         PackageManagerPrefs packageManagerPrefs,
@@ -59,7 +63,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                                         ApplicationProxy applicationProxy,
                                         UpmClient upmClient)
         {
-            ResolveDependencies(resourceLoader, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient);
+            ResolveDependencies(resourceLoader, extensionManager, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient);
 
             styleSheets.Add(m_ResourceLoader.packageManagerWindowStyleSheet);
 
@@ -112,6 +116,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 
             RefreshSelectedInInspectorClass();
+
+            m_ExtensionManager.OnWindowCreated(this, packageDetails.extensionContainer);
         }
 
         private void DelayRefresh(PackageFilterTab tab)
@@ -223,8 +229,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnDestroy()
         {
-            foreach (var extension in PackageManagerExtensions.ToolbarExtensions)
-                extension.OnWindowDestroy();
+            m_ExtensionManager.OnWindowDestroy();
         }
 
         private void OnRefreshOperationFinish()
@@ -396,6 +401,25 @@ namespace UnityEditor.PackageManager.UI.Internal
             // so that the OnTextFieldChange of placeholder gets called
             dropdown.packageNameField.value = packageName;
             dropdown.packageVersionField.value = packageVersion;
+        }
+
+        public IDetailsExtension AddDetailsExtension()
+        {
+            return m_ExtensionManager.CreateDetailsExtension();
+        }
+
+        public void Select(string identifier)
+        {
+            SelectPackageAndFilter(identifier);
+        }
+
+        public PackageSelectionArgs activeSelection
+        {
+            get
+            {
+                m_PageManager.GetSelectedPackageAndVersion(out var package, out var packageVersion);
+                return new PackageSelectionArgs { package = package, packageVersion = packageVersion, window = this };
+            }
         }
 
         private VisualElementCache cache { set; get; }

@@ -119,6 +119,9 @@ namespace UnityEngine.UIElements
 
         void Invoke(KeyboardNavigationOperation operation, EventBase evt)
         {
+            if (operation == KeyboardNavigationOperation.None)
+                return;
+
             m_Action?.Invoke(operation, evt);
         }
     }

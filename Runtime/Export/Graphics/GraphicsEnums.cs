@@ -571,7 +571,7 @@ namespace UnityEngine
                 MSAA4x = 12,
                 MSAA8x = 13,
                 //MSAA16x = 14, // this is only used internally.
-                StencilSampling = 15,
+                StencilSampling = 16,
             }
 
             // Keep in sync with DefaultFormat in Runtime/Graphics/Format.h
@@ -1870,6 +1870,20 @@ namespace UnityEngine.Rendering
     {
         None = 0,
         AsyncCompute = 1 << 1
+    }
+
+    //Needs to line up with the common elements of the c++ version of this enum found GfxDeviceTypes.h (GfxClearFlags)
+    [Flags]
+    public enum RTClearFlags
+    {
+        None = 0,
+        Color = 1 << 0,
+        Depth = 1 << 1,
+        Stencil = 1 << 2,
+        All = Color | Depth | Stencil,
+        DepthStencil = Depth | Stencil,
+        ColorDepth = Color | Depth,
+        ColorStencil = Color | Stencil
     }
 
     //Needs to line up with the common elements of the c++ version of this enum found GfxDeviceTypes.h

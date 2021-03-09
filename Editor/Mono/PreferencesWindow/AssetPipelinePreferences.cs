@@ -1,0 +1,325 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using UnityEngine;
+using System;
+using System.Collections.Generic;
+using UnityEditor.Collaboration;
+using UnityEngine.UIElements;
+
+namespace UnityEditor
+{
+    internal class AssetPipelinePreferences : PreferencesProvider
+    {
+        class Properties
+        {
+            public static readonly GUIContent autoRefresh = EditorGUIUtility.TrTextContent("Auto Refresh", "Automatically import changed assets.");
+            public static readonly GUIContent autoRefreshHelpBox = EditorGUIUtility.TrTextContent("Auto Refresh must be set when using Collaboration feature.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+            public static readonly GUIContent directoryMonitoring = EditorGUIUtility.TrTextContent("Directory Monitoring", "Monitor directories instead of scanning all project files to detect asset changes.");
+            public static readonly GUIContent compressAssetsOnImport = EditorGUIUtility.TrTextContent("Compress Textures on Import", "Disable to skip texture compression during import process (textures will be imported into uncompressed formats, and compressed when making a build).");
+            public static readonly GUIContent verifySavingAssets = EditorGUIUtility.TrTextContent("Verify Saving Assets", "Show confirmation dialog whenever Unity saves any assets.");
+            public static readonly GUIContent enterSafeModeDialog = EditorGUIUtility.TrTextContent("Show Enter Safe Mode Dialog", "Show confirmation dialog when Unity would enter Safe Mode due to script compilation errors.");
+
+            public static readonly GUIContent cacheServer = new GUIContent("Unity Accelerator (Cache Server)");
+            public static readonly GUIContent cacheServerDefaultMode = new GUIContent("Default Mode", "Specifies if Accelerator should be enabled or disabled by default. This can be overridden per project in editor settings.");
+            public static readonly GUIContent cacheServerIPLabel = new GUIContent("Default IP address", "This IP address is used for the Accelerator if not overridden in the editor settings per project.");
+            public static readonly GUIContent cacheServerLearnMore = new GUIContent("Learn more...", "Open Unity Accelerator documentation.");
+        }
+
+        bool m_AutoRefresh;
+        bool m_DirectoryMonitoring;
+        bool m_CompressAssetsOnImport;
+        bool m_VerifySavingAssets;
+        bool m_EnterSafeModeDialog;
+
+
+        const string kCacheServerIPAddressKey = "CacheServer2IPAddress";
+        const string kCacheServerModeKey = "CacheServer2Mode";
+
+        const string kIpAddressKeyArgs = "-CacheServerIPAddress";
+        const string kModeKey = "CacheServerMode";
+        const string kDeprecatedEnabledKey = "CacheServerEnabled";
+
+        static bool s_CacheServerPrefsLoaded;
+        static bool s_HasPendingChanges;
+        enum ConnectionState { Unknown, Success, Failure }
+
+        static ConnectionState s_ConnectionState;
+        static string s_CacheServer2IPAddress;
+
+        enum CacheServer2Mode { Enabled, Disabled }
+        static CacheServer2Mode s_CacheServer2Mode;
+
+        public enum CacheServerMode { Local, Remote, Disabled }
+        static CacheServerMode s_CacheServerMode;
+        static bool s_EnableCustomPath;
+        static string s_CachePath;
+
+        public static bool IsCacheServerEnabled
+        {
+            get
+            {
+                ReadCacheServerPreferences();
+                return s_CacheServer2Mode == CacheServer2Mode.Enabled;
+            }
+        }
+
+        public static string CacheServerAddress
+        {
+            get
+            {
+                ReadCacheServerPreferences();
+                return s_CacheServer2IPAddress;
+            }
+        }
+
+        void ReadAssetImportPreferences()
+        {
+            m_AutoRefresh = EditorPrefs.GetBool("kAutoRefresh");
+            m_DirectoryMonitoring = EditorPrefs.GetBool("DirectoryMonitoring", true);
+            m_VerifySavingAssets = EditorPrefs.GetBool("VerifySavingAssets", false);
+            m_CompressAssetsOnImport = Unsupported.GetApplicationSettingCompressAssetsOnImport();
+            m_EnterSafeModeDialog = EditorPrefs.GetBool("EnterSafeModeDialog", true);
+        }
+
+        void WriteAssetImportPreferences()
+        {
+            EditorPrefs.SetBool("kAutoRefresh", m_AutoRefresh);
+            bool oldDirectoryMonitoring = EditorPrefs.GetBool("DirectoryMonitoring", true);
+            if (oldDirectoryMonitoring != m_DirectoryMonitoring)
+            {
+                EditorPrefs.SetBool("DirectoryMonitoring", m_DirectoryMonitoring);
+                AssetDatabase.RefreshSettings();
+            }
+            EditorPrefs.SetBool("VerifySavingAssets", m_VerifySavingAssets);
+            EditorPrefs.SetBool("EnterSafeModeDialog", m_EnterSafeModeDialog);
+        }
+
+        static void ReadCacheServerPreferences()
+        {
+            if (s_CacheServerPrefsLoaded)
+                return;
+            s_CacheServer2IPAddress = EditorPrefs.GetString(kCacheServerIPAddressKey, s_CacheServer2IPAddress);
+            s_CacheServer2Mode = (CacheServer2Mode)EditorPrefs.GetInt(kCacheServerModeKey, (int)CacheServer2Mode.Disabled);
+            s_CacheServerMode = (CacheServerMode)EditorPrefs.GetInt(kModeKey, (int)(EditorPrefs.GetBool(kDeprecatedEnabledKey) ? CacheServerMode.Remote : CacheServerMode.Disabled));
+            s_CachePath = EditorPrefs.GetString(LocalCacheServer.PathKey);
+            s_EnableCustomPath = EditorPrefs.GetBool(LocalCacheServer.CustomPathKey);
+            s_CacheServerPrefsLoaded = true;
+        }
+
+        static void WriteCacheServerPreferences()
+        {
+            // Don't change anything if there's a command line override
+            if (GetCommandLineRemoteAddressOverride() != null)
+                return;
+
+            CacheServerMode oldMode = (CacheServerMode)EditorPrefs.GetInt(kModeKey);
+            var oldPath = EditorPrefs.GetString(LocalCacheServer.PathKey);
+            var oldCustomPath = EditorPrefs.GetBool(LocalCacheServer.CustomPathKey);
+            bool changedDir = false;
+            if (oldMode != s_CacheServerMode && oldMode == CacheServerMode.Local)
+                changedDir = true;
+            if (s_EnableCustomPath && oldPath != s_CachePath)
+                changedDir = true;
+            if (s_EnableCustomPath != oldCustomPath && s_CachePath != LocalCacheServer.GetCacheLocation() && s_CachePath != "")
+                changedDir = true;
+            if (changedDir)
+            {
+                var message = s_CacheServerMode == CacheServerMode.Local ?
+                    "You have changed the location of the local cache storage." :
+                    "You have disabled the local cache.";
+                message += " Do you want to delete the old locally cached data at " + LocalCacheServer.GetCacheLocation() + "?";
+                if (EditorUtility.DisplayDialog("Delete old Cache", message, "Delete", "Don't Delete"))
+                {
+                    LocalCacheServer.Clear();
+                }
+            }
+
+            EditorPrefs.SetString(kCacheServerIPAddressKey, s_CacheServer2IPAddress);
+            EditorPrefs.SetInt(kCacheServerModeKey, (int)s_CacheServer2Mode);
+            EditorPrefs.SetInt(kModeKey, (int)s_CacheServerMode);
+            EditorPrefs.SetString(LocalCacheServer.PathKey, s_CachePath);
+            EditorPrefs.SetBool(LocalCacheServer.CustomPathKey, s_EnableCustomPath);
+            LocalCacheServer.Setup();
+
+            AssetDatabase.RefreshSettings();
+
+            if (changedDir)
+            {
+                //Call ExitGUI after bringing up a dialog to avoid an exception
+                EditorGUIUtility.ExitGUI();
+            }
+        }
+
+        public static string GetCommandLineRemoteAddressOverride()
+        {
+            string address = null;
+            var argv = Environment.GetCommandLineArgs();
+            var index = Array.IndexOf(argv, kIpAddressKeyArgs);
+            if (index >= 0 && argv.Length > index + 1)
+                address = argv[index + 1];
+
+            return address;
+        }
+
+        public override void OnActivate(string searchContext, VisualElement rootElement)
+        {
+            base.OnActivate(searchContext, rootElement);
+            ReadAssetImportPreferences();
+        }
+
+        [SettingsProvider]
+        internal static SettingsProvider CreateSettingsProvider()
+        {
+            var p = new AssetPipelinePreferences("Preferences/Asset Pipeline", GetSearchKeywordsFromGUIContentProperties<Properties>());
+            p.guiHandler = searchContext =>
+            {
+                using (new SettingsWindow.GUIScope())
+                    p.ShowGUI();
+            };
+            return p;
+        }
+
+        void ShowGUI()
+        {
+            EditorGUIUtility.labelWidth = 200f;
+            AssetImportGUI();
+
+            if (!s_CacheServerPrefsLoaded)
+            {
+                ReadCacheServerPreferences();
+                bool shouldTryConnect = s_ConnectionState == ConnectionState.Unknown &&
+                    s_CacheServer2Mode != CacheServer2Mode.Disabled;
+                if (shouldTryConnect)
+                {
+                    var isConnected = AssetDatabase.IsConnectedToCacheServer();
+                    s_ConnectionState = isConnected ? ConnectionState.Success : ConnectionState.Failure;
+                }
+            }
+            {
+                EditorGUILayout.Space();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label(Properties.cacheServer, EditorStyles.boldLabel);
+                if (GUILayout.Button(Properties.cacheServerLearnMore, EditorStyles.linkLabel))
+                {
+                    Application.OpenURL("https://docs.unity3d.com/Manual/UnityAccelerator.html#UsingWithAssetPipeline");
+                }
+                GUILayout.EndHorizontal();
+                EditorGUI.BeginChangeCheck();
+
+                EditorGUILayout.Space();
+                CacheServerGUI();
+
+                var overrideAddress = GetCommandLineRemoteAddressOverride();
+                if (overrideAddress != null)
+                    EditorGUILayout.HelpBox("Cache Server preferences currently forced via command line argument to " + overrideAddress + " and any changes here will not take effect until starting Unity without that command line argument.", MessageType.Info, true);
+
+                if (EditorGUI.EndChangeCheck())
+                    s_HasPendingChanges = true;
+
+                // Only commit changes when we don't have an active hot control, to avoid restarting the cache server all the time while the slider is dragged, slowing down the UI.
+                if (s_HasPendingChanges && GUIUtility.hotControl == 0)
+                {
+                    s_HasPendingChanges = false;
+                    WriteCacheServerPreferences();
+                    ReadCacheServerPreferences();
+                }
+            }
+
+        }
+
+        void AssetImportGUI()
+        {
+            EditorGUI.BeginChangeCheck();
+            bool collabEnabled = Collab.instance.IsCollabEnabledForCurrentProject();
+            using (new EditorGUI.DisabledScope(collabEnabled))
+            {
+                if (collabEnabled)
+                {
+                    EditorGUILayout.Toggle(Properties.autoRefresh, true);               // Don't keep toggle value in m_AutoRefresh since we don't want to save the overwritten value
+                    EditorGUILayout.HelpBox(Properties.autoRefreshHelpBox);
+                }
+                else
+                    m_AutoRefresh = EditorGUILayout.Toggle(Properties.autoRefresh, m_AutoRefresh);
+            }
+            DoDirectoryMonitoring();
+
+            bool oldCompressOnImport = m_CompressAssetsOnImport;
+            m_CompressAssetsOnImport = EditorGUILayout.Toggle(Properties.compressAssetsOnImport, oldCompressOnImport);
+            m_VerifySavingAssets = EditorGUILayout.Toggle(Properties.verifySavingAssets, m_VerifySavingAssets);
+            m_EnterSafeModeDialog = EditorGUILayout.Toggle(Properties.enterSafeModeDialog, m_EnterSafeModeDialog);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                if (GUI.changed && m_CompressAssetsOnImport != oldCompressOnImport)
+                    Unsupported.SetApplicationSettingCompressAssetsOnImport(m_CompressAssetsOnImport);
+                WriteAssetImportPreferences();
+                ReadAssetImportPreferences();
+            }
+        }
+
+        void DoDirectoryMonitoring()
+        {
+            bool isWindows = Application.platform == RuntimePlatform.WindowsEditor;
+            using (new EditorGUI.DisabledScope(!isWindows))
+            {
+                m_DirectoryMonitoring = EditorGUILayout.Toggle(Properties.directoryMonitoring, m_DirectoryMonitoring);
+                if (!isWindows)
+                    EditorGUILayout.HelpBox("Directory monitoring currently only available on windows", MessageType.Info, true);
+            }
+        }
+
+        static void CacheServerGUI()
+        {
+            bool changeStateBeforeControls = GUI.changed;
+
+            s_CacheServer2Mode = (CacheServer2Mode)EditorGUILayout.EnumPopup(Properties.cacheServerDefaultMode, s_CacheServer2Mode);
+
+            s_CacheServer2IPAddress = EditorGUILayout.TextField(Properties.cacheServerIPLabel, s_CacheServer2IPAddress);
+
+            if (GUI.changed != changeStateBeforeControls)
+            {
+                s_ConnectionState = ConnectionState.Unknown;
+            }
+
+            EditorGUILayout.Space();
+
+            if (GUILayout.Button("Check Connection", GUILayout.Width(150)))
+            {
+                var address = s_CacheServer2IPAddress.Split(':');
+                var ip = address[0];
+                UInt16 port = 0;
+                if (address.Length == 2)
+                    port = Convert.ToUInt16(address[1]);
+
+                if (AssetDatabase.CanConnectToCacheServer(ip, port))
+                    s_ConnectionState = ConnectionState.Success;
+                else
+                    s_ConnectionState = ConnectionState.Failure;
+
+            }
+
+            GUILayout.Space(-25);
+
+            switch (s_ConnectionState)
+            {
+                case ConnectionState.Success:
+                    EditorGUILayout.HelpBox("Connection successful.", MessageType.Info, false);
+                    break;
+
+                case ConnectionState.Failure:
+                    EditorGUILayout.HelpBox("Connection failed.", MessageType.Warning, false);
+                    break;
+
+                case ConnectionState.Unknown:
+                    GUILayout.Space(44);
+                    break;
+            }
+        }
+
+        public AssetPipelinePreferences(string path, IEnumerable<string> keywords = null) : base(path, keywords)
+        {
+        }
+    }
+}

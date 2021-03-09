@@ -51,6 +51,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        private bool isRequestedButOverriddenVersion =>
+            !string.IsNullOrEmpty(displayVersion?.versionString) &&
+            displayVersion.versionString == package?.versions.primary.packageInfo?.projectDependenciesEntry;
+
         private const string k_EmptyDescriptionClass = "empty";
 
         internal enum InfoBoxState
@@ -152,14 +156,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             PackageTag.ReleaseCandidate
         };
 
-        // We limit the number of entries shown so as to not overload the dialog.
-        // The relevance of results beyond this limit is also questionable.
-        private const int MaxDependentList = 10;
-
         internal bool descriptionExpanded => m_DescriptionExpanded;
         private bool m_DescriptionExpanded;
 
         private ResourceLoader m_ResourceLoader;
+        private ExtensionManager m_ExtensionManager;
         private ApplicationProxy m_Application;
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private PackageManagerPrefs m_PackageManagerPrefs;
@@ -171,6 +172,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var container = ServicesContainer.instance;
             m_ResourceLoader = container.Resolve<ResourceLoader>();
+            m_ExtensionManager = container.Resolve<ExtensionManager>();
             m_Application = container.Resolve<ApplicationProxy>();
             m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
@@ -365,7 +367,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             dependencies.SetPackageVersion(displayVersion);
         }
 
-        void RefreshExtensions(IPackageVersion version)
+        void RefreshExtensions(IPackage package, IPackageVersion version)
         {
             var packageInfo = version?.packageInfo;
             PackageManagerExtensions.ExtensionCallback(() =>
@@ -376,19 +378,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                 foreach (var extension in PackageManagerExtensions.ToolbarExtensions)
                     extension.OnPackageSelectionChange(version, packageToolbarContainer);
             });
+
+            m_ExtensionManager.SendPackageSelectionChangedEvent(package, version);
         }
 
-        private static bool IsUsingDifferentVersionThanInstalled(IPackageVersion packageVersion)
+        private static bool IsDifferentVersionThanRequested(IPackageVersion packageVersion)
         {
-            return !string.IsNullOrEmpty(packageVersion?.packageInfo?.projectDependenciesEntry) && packageVersion.isInstalled &&
+            return !string.IsNullOrEmpty(packageVersion?.packageInfo?.projectDependenciesEntry) &&
                 !packageVersion.HasTag(PackageTag.Git | PackageTag.Local | PackageTag.Custom) &&
                 packageVersion.packageInfo.projectDependenciesEntry != packageVersion.versionString;
-        }
-
-        private static string GetVersionInfoIconTooltip(IPackageVersion packageVersion)
-        {
-            var tooltip = L10n.Tr("At least one other package depends on this version, therefore the version currently used is {0} instead of {1}.");
-            return string.Format(tooltip, packageVersion.versionString, packageVersion.packageInfo.projectDependenciesEntry);
         }
 
         private void RefreshContent()
@@ -402,7 +400,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 UIUtils.SetElementDisplay(signInButton, false);
                 UIUtils.SetElementDisplay(customContainer, false);
-                RefreshExtensions(null);
+                UIUtils.SetElementDisplay(extensionContainer, false);
+                RefreshExtensions(null, null);
             }
             else
             {
@@ -416,17 +415,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 var versionString = displayVersion.versionString;
                 var releaseDateString = displayVersion.publishedDate?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US"));
-                var isUsingDifferentVersionThanInstalled = IsUsingDifferentVersionThanInstalled(displayVersion);
-                var versionLabelText = isUsingDifferentVersionThanInstalled ? $"{L10n.Tr("Using version")} {versionString}" : $"{L10n.Tr("Version")} {versionString}";
-                if (string.IsNullOrEmpty(releaseDateString))
-                    detailVersion.SetValueWithoutNotify(versionLabelText);
-                else
-                    detailVersion.SetValueWithoutNotify($"{versionLabelText} - {releaseDateString}");
+                detailVersion.SetValueWithoutNotify(string.IsNullOrEmpty(releaseDateString)
+                    ? string.Format(L10n.Tr("Version {0}"), versionString)
+                    : string.Format(L10n.Tr("Version {0} - {1}"), versionString, releaseDateString));
                 UIUtils.SetElementDisplay(detailVersion, !package.Is(PackageType.BuiltIn) && !string.IsNullOrEmpty(versionString));
 
-                UIUtils.SetElementDisplay(versionInfoIcon, isUsingDifferentVersionThanInstalled);
-                if (isUsingDifferentVersionThanInstalled)
-                    versionInfoIcon.tooltip = GetVersionInfoIconTooltip(displayVersion);
+                RefreshVersionInfoIcon();
 
                 UIUtils.SetElementDisplay(disabledInfoBox, displayVersion.HasTag(PackageTag.Disabled));
 
@@ -454,7 +448,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 RefreshReleaseDetails();
 
                 UIUtils.SetElementDisplay(customContainer, true);
-                RefreshExtensions(displayVersion);
+                UIUtils.SetElementDisplay(extensionContainer, true);
+                RefreshExtensions(package, displayVersion);
 
                 RefreshDependencies();
 
@@ -618,6 +613,26 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             UIUtils.SetElementDisplay(detailReleaseDetailsContainer, detailReleaseDetails.Children().Any());
+        }
+
+        private void RefreshVersionInfoIcon()
+        {
+            var isInstalledVersionDifferentThanRequested = IsDifferentVersionThanRequested(package?.versions.installed);
+            UIUtils.SetElementDisplay(versionInfoIcon, isInstalledVersionDifferentThanRequested);
+
+            if (!isInstalledVersionDifferentThanRequested)
+                return;
+
+            var installedVersionString = package?.versions.installed.versionString;
+            if (isRequestedButOverriddenVersion)
+                versionInfoIcon.tooltip = string.Format(
+                    L10n.Tr("Unity installed version {0} because another package depends on it (version {0} overrides version {1})."),
+                    installedVersionString, displayVersion.versionString);
+            else if (displayVersion.isInstalled && IsDifferentVersionThanRequested(displayVersion))
+                versionInfoIcon.tooltip = L10n.Tr("At least one other package depends on this version of the package.");
+            else
+                versionInfoIcon.tooltip = string.Format(
+                    L10n.Tr("At least one other package depends on version {0} of this package."), installedVersionString);
         }
 
         private void RefreshEntitlement()
@@ -800,7 +815,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var installed = package?.versions.installed;
             var targetVersion = this.targetVersion;
             var installable = targetVersion?.HasTag(PackageTag.Installable) ?? false;
-            var visibleFlag = installed?.HasTag(PackageTag.VersionLocked) != true && displayVersion != null && installable && installed != targetVersion;
+            var visibleFlag = installed?.HasTag(PackageTag.VersionLocked) != true && displayVersion != null && installable && installed != targetVersion && !isRequestedButOverriddenVersion;
             if (visibleFlag)
             {
                 SemVersion? versionToUpdateTo = null;
@@ -823,14 +838,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var installed = package?.versions.installed;
             var removable = displayVersion?.HasTag(PackageTag.Removable) ?? false;
-            var visibleFlag = installed != null && installed == displayVersion && removable;
+            var visibleFlag = installed != null && (installed == displayVersion || isRequestedButOverriddenVersion) && removable;
             if (visibleFlag)
             {
                 var action = displayVersion.HasTag(PackageTag.BuiltIn) ? PackageAction.Disable : PackageAction.Remove;
                 var currentPackageRemoveInProgress = m_PackageDatabase.IsUninstallInProgress(package);
                 removeButton.text = GetButtonText(action, currentPackageRemoveInProgress);
 
-                var disableIfUsedByOthers = new ButtonDisableCondition(IsUsingDifferentVersionThanInstalled(installed), L10n.Tr("You cannot remove this package because at least one other installed package depends on it. See dependencies for more details."));
+                var isInstalledAsDependency = installed == displayVersion && (!displayVersion.isDirectDependency || IsDifferentVersionThanRequested(displayVersion));
+                var disableIfUsedByOthers = new ButtonDisableCondition(isInstalledAsDependency,
+                    L10n.Tr("You cannot remove this package because at least one other installed package depends on it. See dependencies for more details."));
                 RefreshButtonStatusAndTooltip(removeButton, action, disableIfUsedByOthers, disableIfInstallOrUninstallInProgress, disableIfCompiling);
             }
             UIUtils.SetElementDisplay(removeButton, visibleFlag);
@@ -1040,60 +1057,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             PackageManagerWindowAnalytics.SendEvent(eventName, targetVersion?.uniqueId);
         }
 
-        /// <summary>
-        /// Get a line-separated bullet list of package names
-        /// </summary>
-        private string GetPackageDashList(IEnumerable<IPackageVersion> versions, int maxListCount = MaxDependentList)
-        {
-            var shortListed = versions.Take(maxListCount);
-            return " - " + string.Join("\n - ", shortListed.Select(p => p.displayName).ToArray());
-        }
-
-        /// <summary>
-        /// Get the full dependent message string
-        /// </summary>
-        private string GetDependentMessage(IPackageVersion version, IEnumerable<IPackageVersion> roots, int maxListCount = MaxDependentList)
-        {
-            var dependentPackages = roots.Where(p => !p.HasTag(PackageTag.BuiltIn)).ToList();
-            var dependentModules = roots.Where(p => p.HasTag(PackageTag.BuiltIn)).ToList();
-
-            var packageType = version.HasTag(PackageTag.BuiltIn) ? "built-in package" : "package";
-            var prefix = string.Format(L10n.Tr("This {0} is a dependency of the following "), packageType);
-            var message = string.Format("{0}{1}:\n\n", prefix,  dependentPackages.Any() ? "packages" : "built-in packages");
-
-            if (dependentPackages.Any())
-                message += GetPackageDashList(dependentPackages, maxListCount);
-            if (dependentPackages.Any() && dependentModules.Any())
-                message += L10n.Tr("\n\nand the following built-in packages:\n\n");
-            if (dependentModules.Any())
-                message += GetPackageDashList(dependentModules, maxListCount);
-
-            if (roots.Count() > maxListCount)
-                message += L10n.Tr("\n\n   ... and more (see console for details) ...");
-
-            var actionType = version.HasTag(PackageTag.BuiltIn) ? "disable" : "remove";
-            message += string.Format(L10n.Tr("\n\nYou will need to remove or disable them before being able to {0} this {1}."), actionType, packageType);
-
-            return message;
-        }
-
         private void RemoveClick()
         {
-            var roots = m_PackageDatabase.GetReverseDependencies(displayVersion)?.Where(p => p.isDirectDependency && p.isInstalled).ToList();
-            // Only show this message on a package if it is installed by dependency only. This allows it to still be removed from the installed list.
-            var showDialog = (roots?.Any() ?? false) && !(!displayVersion.HasTag(PackageTag.BuiltIn) && displayVersion.isDirectDependency);
-            if (showDialog)
-            {
-                if (roots.Count > MaxDependentList)
-                    Debug.Log(GetDependentMessage(displayVersion, roots, int.MaxValue));
-
-                var message = GetDependentMessage(displayVersion, roots);
-                var title = displayVersion.HasTag(PackageTag.BuiltIn) ? L10n.Tr("Cannot disable built-in package") : L10n.Tr("Cannot remove dependent package");
-                EditorUtility.DisplayDialog(title, message, L10n.Tr("Ok"));
-
-                return;
-            }
-
             if (displayVersion.HasTag(PackageTag.Custom))
             {
                 if (!EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), L10n.Tr("You will lose all your changes (if any) if you delete a package in development. Are you sure?"), L10n.Tr("Yes"), L10n.Tr("No")))
@@ -1218,6 +1183,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private HelpBox scopedRegistryInfoBox { get { return cache.Get<HelpBox>("scopedRegistryInfoBox"); } }
         private Label detailRegistryName { get { return cache.Get<Label>("detailRegistryName"); } }
         private VisualElement customContainer { get { return cache.Get<VisualElement>("detailCustomContainer"); } }
+        internal VisualElement extensionContainer { get { return cache.Get<VisualElement>("detailExtensionContainer"); } }
         private PackageSampleList sampleList { get { return cache.Get<PackageSampleList>("detailSampleList"); } }
         private PackageDependencies dependencies { get { return cache.Get<PackageDependencies>("detailDependencies"); } }
         internal VisualElement packageToolbarContainer { get { return cache.Get<VisualElement>("toolbarContainer"); } }

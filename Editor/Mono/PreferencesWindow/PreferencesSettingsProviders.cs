@@ -11,12 +11,8 @@ using System.IO;
 using System.Linq;
 using JetBrains.Annotations;
 using Unity.CodeEditor;
-using UnityEditor.Connect;
 using UnityEngine.UIElements;
 using UnityEditor.Experimental;
-using UnityEngine.TestTools;
-using UnityEditor.Compilation;
-using UnityEditor.Collaboration;
 
 namespace UnityEditor
 {
@@ -28,22 +24,14 @@ namespace UnityEditor
             Release
         }
 
-        internal static class Constants
+        static class Constants
         {
-            public static GUIStyle sectionScrollView = "PreferencesSectionBox";
-            public static GUIStyle settingsBoxTitle = "OL Title";
-            public static GUIStyle settingsBox = "OL Box";
-            public static GUIStyle errorLabel = "WordWrappedLabel";
-            public static GUIStyle sectionElement = "PreferencesSection";
-            public static GUIStyle evenRow = "CN EntryBackEven";
-            public static GUIStyle oddRow = "CN EntryBackOdd";
-            public static GUIStyle selected = "OL SelectedRow";
-            public static GUIStyle keysElement = "PreferencesKeysElement";
-            public static GUIStyle warningIcon = "CN EntryWarn";
-            public static GUIStyle cacheFolderLocation = "CacheFolderLocation";
+            public static readonly GUIStyle errorLabel = "WordWrappedLabel";
+            public static readonly GUIStyle warningIcon = "CN EntryWarn";
+            public static readonly GUIStyle cacheFolderLocation = "CacheFolderLocation";
         }
 
-        internal class Styles
+        class Styles
         {
             public static readonly GUIContent browse = EditorGUIUtility.TrTextContent("Browse...");
             public static readonly GUIStyle clearBindingButton = new GUIStyle(GUI.skin.button);
@@ -54,22 +42,15 @@ namespace UnityEditor
             }
         }
 
-        internal class GeneralProperties
+        class GeneralProperties
         {
-            public static readonly GUIContent autoRefresh = EditorGUIUtility.TrTextContent("Auto Refresh");
-            public static readonly GUIContent directoryMonitoring = EditorGUIUtility.TrTextContent("Directory Monitoring", "Monitor directories instead of periodically scanning all project files to detect asset changes.");
-            public static readonly GUIContent autoRefreshHelpBox = EditorGUIUtility.TrTextContent("Auto Refresh must be set when using Collaboration feature.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public static readonly GUIContent loadPreviousProjectOnStartup = EditorGUIUtility.TrTextContent("Load Previous Project on Startup");
-            public static readonly GUIContent compressAssetsOnImport = EditorGUIUtility.TrTextContent("Compress Assets on Import");
             public static readonly GUIContent disableEditorAnalytics = EditorGUIUtility.TrTextContent("Disable Editor Analytics (Pro Only)");
-            public static readonly GUIContent verifySavingAssets = EditorGUIUtility.TrTextContent("Verify Saving Assets");
             public static readonly GUIContent scriptChangesDuringPlay = EditorGUIUtility.TrTextContent("Script Changes While Playing");
             public static readonly GUIContent editorFont = EditorGUIUtility.TrTextContent("Editor Font");
             public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Theme");
             public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Light"), EditorGUIUtility.TrTextContent("Dark") };
             public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alphanumeric Sorting");
-            public static readonly GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation");
-            public static readonly GUIContent codeCoverageEnabled = EditorGUIUtility.TrTextContent("Enable Code Coverage", "Check this to enable Code Coverage. Code Coverage lets you see how much of your code is executed when it is run. Note that Code Coverage lowers Editor performance.");
             public static readonly GUIContent applicationFrameThrottling = EditorGUIUtility.TrTextContent("Frame Throttling (milliseconds)", "The number of milliseconds the Editor can idle between frames.");
             public static readonly GUIContent inputMaxProcessTime = EditorGUIUtility.TrTextContent("Input Throttling (milliseconds)", "The maximum number of milliseconds the Editor will take to process user inputs.");
             public static readonly GUIContent interactionMode = EditorGUIUtility.TrTextContent("Interaction Mode", "Specifies how long the Editor can idle before it updates.");
@@ -84,8 +65,6 @@ namespace UnityEditor
             public static readonly GUIContent progressDialogDelay = EditorGUIUtility.TrTextContent("Busy Progress Delay", "Delay in seconds before 'Unity is busy' progress bar shows up.");
             public static readonly GUIContent enableSnapping = EditorGUIUtility.TrTextContent("Graph Snapping", "If enabled, GraphElements in Graph Views (such as Shader Graph) align with one another when you move them. If disabled, GraphElements move freely.");
 
-            public static readonly GUIContent enterSafeModeDialog = EditorGUIUtility.TrTextContent("Show Enter Safe Mode Dialog");
-
             public static readonly GUIContent packageManagerLogLevel = EditorGUIUtility.TrTextContent("Package Manager Log Level",
                 "Determines the level of detail when the Package Manager writes information to log files.\n"
                 + "\nFrom least detailed to most detailed:"
@@ -98,7 +77,7 @@ namespace UnityEditor
             public static readonly GUIContent packageManagerLogLevelOverridden = EditorGUIUtility.TrTextContent("Package Manager Log Level currently overridden by -enablePackageManagerTraces command-line argument.");
         }
 
-        internal class ExternalProperties
+        class ExternalProperties
         {
             public static readonly GUIContent codeOptimizationOnStartup = EditorGUIUtility.TrTextContent("Code Optimization On Startup");
             public static readonly GUIContent changingThisSettingRequiresRestart = EditorGUIUtility.TrTextContent("Changing this setting requires a restart to take effect.");
@@ -107,7 +86,7 @@ namespace UnityEditor
             public static readonly GUIContent imageApplication = EditorGUIUtility.TrTextContent("Image application");
         }
 
-        internal class UIScalingProperties
+        class UIScalingProperties
         {
             public static readonly GUIContent editorContentScaling = EditorGUIUtility.TrTextContent("Editor icons and text scaling");
             public static readonly GUIContent defaultContentScaling = EditorGUIUtility.TrTextContent("Use default desktop setting");
@@ -115,12 +94,12 @@ namespace UnityEditor
             public static readonly GUIContent customContentScaling = EditorGUIUtility.TrTextContent("Use custom scaling value");
         }
 
-        internal class ColorsProperties
+        class ColorsProperties
         {
             public static readonly GUIContent userDefaults = EditorGUIUtility.TrTextContent("Use Defaults");
         }
 
-        internal class GICacheProperties
+        class GICacheProperties
         {
             public static readonly GUIContent maxCacheSize = EditorGUIUtility.TrTextContent("Maximum Cache Size (GB)", "The size of the GI Cache folder will be kept below this maximum value when possible. A background job will periodically clean up the oldest unused files.");
             public static readonly GUIContent customCacheLocation = EditorGUIUtility.TrTextContent("Custom cache location", "Specify the GI Cache folder location.");
@@ -133,12 +112,12 @@ namespace UnityEditor
             public static readonly GUIContent pleaseWait = EditorGUIUtility.TrTextContent("Please wait...");
         }
 
-        internal class TwoDProperties
+        class TwoDProperties
         {
             public static readonly GUIContent spriteMaxCacheSize = EditorGUIUtility.TrTextContent("Max Sprite Atlas Cache Size (GB)", "The size of the Sprite Atlas Cache folder will be kept below this maximum value when possible. Change requires Editor restart");
         }
 
-        internal class SceneViewProperties
+        class SceneViewProperties
         {
             public static readonly GUIContent enableFilteringWhileSearching = EditorGUIUtility.TrTextContent("Enable filtering while searching", "If enabled, searching will cause non-matching items in the scene view to be greyed out");
             public static readonly GUIContent enableFilteringWhileLodGroupEditing = EditorGUIUtility.TrTextContent("Enable filtering while editing LOD groups", "If enabled, editing LOD groups will cause other objects in the scene view to be greyed out");
@@ -146,14 +125,14 @@ namespace UnityEditor
             public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("Create Objects at Origin", "Enable this preference to instantiate new 3D objects at World coordinates 0,0,0. Disable it to instantiate them at the Scene pivot (in front of the Scene view Camera).");
         }
 
-        internal class LanguageProperties
+        class LanguageProperties
         {
             public static readonly GUIContent editorLanguageExperimental = EditorGUIUtility.TrTextContent("Editor Language (Experimental)");
             public static readonly GUIContent editorLanguage = EditorGUIUtility.TrTextContent("Editor language");
             public static readonly GUIContent localizeCompileMessages = EditorGUIUtility.TrTextContent("Localize compiler messages");
         }
 
-        internal class DeveloperModeProperties
+        class DeveloperModeProperties
         {
             public static readonly GUIContent developerMode = EditorGUIUtility.TrTextContent("Developer Mode", "Enable or disable developer mode features.");
             public static readonly GUIContent showRepaintDots = EditorGUIUtility.TrTextContent("Show Repaint Dots", "Enable or disable the colored dots that flash when an EditorWindow repaints.");
@@ -161,19 +140,14 @@ namespace UnityEditor
         }
 
         private List<IPreferenceWindowExtension> prefWinExtensions;
-        private bool m_AutoRefresh;
-        private bool m_DirectoryMonitoring;
 
         private bool m_ReopenLastUsedProjectOnStartup;
-        private bool m_CompressAssetsOnImport;
         private bool m_EnableEditorAnalytics;
-        private bool m_VerifySavingAssets;
         private ScriptChangesDuringPlayOptions m_ScriptCompilationDuringPlay;
         private bool m_DeveloperMode;
         private bool m_ShowRepaintDots;
         private bool m_DeveloperModeDirty;
         private bool m_ScriptDebugInfoEnabled;
-        private bool m_EnterSafeModeDialog;
         private string m_GpuDeviceInUse;
         private string m_GpuDevice;
         private string[] m_CachedGpuDevices;
@@ -208,8 +182,6 @@ namespace UnityEditor
         private bool m_EnableCompilerMessagesLocalization;
 
         private bool m_AllowAlphaNumericHierarchy = false;
-        private bool m_EnableCodeCoverage = false;
-        private readonly string kCodeCoverageEnabledMessage = L10n.Tr("Code Coverage collection is enabled for this Unity session. Note that Code Coverage lowers Editor performance.");
         private bool m_Create3DObjectsAtOrigin = false;
         private float m_ProgressDialogDelay = 3.0f;
         private bool m_GraphSnapping;
@@ -404,7 +376,9 @@ namespace UnityEditor
         private void ShowExternalApplications(string searchContext)
         {
             // Applications
-            FilePopup(ExternalProperties.externalScriptEditor, ScriptEditorUtility.GetExternalScriptEditor(), ref m_ScriptAppDisplayNames, ref m_ScriptApps, m_ScriptEditorPath, CodeEditor.SystemDefaultPath, OnScriptEditorChanged);
+
+            EditorUtility.SelectMenuItemFunction selectMenuItemAction = AppsListClickRuntimePlatformExtension;
+            FilePopup(ExternalProperties.externalScriptEditor, ScriptEditorUtility.GetExternalScriptEditor(), ref m_ScriptAppDisplayNames, ref m_ScriptApps, m_ScriptEditorPath, CodeEditor.SystemDefaultPath, OnScriptEditorChanged, selectMenuItemAction);
 
             CodeEditor.Editor.CurrentCodeEditor.OnGUI();
 
@@ -483,34 +457,13 @@ namespace UnityEditor
         private void ShowGeneral(string searchContext)
         {
             // Options
-            bool collabEnabled = Collab.instance.IsCollabEnabledForCurrentProject();
-            using (new EditorGUI.DisabledScope(collabEnabled))
-            {
-                if (collabEnabled)
-                {
-                    EditorGUILayout.Toggle(GeneralProperties.autoRefresh, true);               // Don't keep toggle value in m_AutoRefresh since we don't want to save the overwritten value
-                    EditorGUILayout.HelpBox(GeneralProperties.autoRefreshHelpBox);
-                }
-                else
-                    m_AutoRefresh = EditorGUILayout.Toggle(GeneralProperties.autoRefresh, m_AutoRefresh);
-            }
-            DoDirectoryMonitoring();
-
             m_ReopenLastUsedProjectOnStartup = EditorGUILayout.Toggle(GeneralProperties.loadPreviousProjectOnStartup, m_ReopenLastUsedProjectOnStartup);
-
-            bool oldCompressOnImport = m_CompressAssetsOnImport;
-            m_CompressAssetsOnImport = EditorGUILayout.Toggle(GeneralProperties.compressAssetsOnImport, oldCompressOnImport);
-
-            if (GUI.changed && m_CompressAssetsOnImport != oldCompressOnImport)
-                Unsupported.SetApplicationSettingCompressAssetsOnImport(m_CompressAssetsOnImport);
 
             bool pro = UnityEngine.Application.HasProLicense();
             using (new EditorGUI.DisabledScope(!pro))
             {
                 m_EnableEditorAnalytics = !EditorGUILayout.Toggle(GeneralProperties.disableEditorAnalytics, !m_EnableEditorAnalytics) || !pro && !m_EnableEditorAnalytics;
             }
-
-            m_VerifySavingAssets = EditorGUILayout.Toggle(GeneralProperties.verifySavingAssets, m_VerifySavingAssets);
 
             m_ScriptCompilationDuringPlay = (ScriptChangesDuringPlayOptions)EditorGUILayout.EnumPopup(GeneralProperties.scriptChangesDuringPlay, m_ScriptCompilationDuringPlay);
 
@@ -587,19 +540,6 @@ namespace UnityEditor
                 }
             }
 
-            EditorGUI.BeginChangeCheck();
-            m_EnableCodeCoverage = EditorGUILayout.Toggle(GeneralProperties.codeCoverageEnabled, m_EnableCodeCoverage);
-            if (EditorGUI.EndChangeCheck())
-            {
-                // This sets the CodeCoverageEnabled EditorPref in ScriptingCoverage::SetEnabled
-                Coverage.enabled = m_EnableCodeCoverage;
-            }
-
-            if (m_EnableCodeCoverage)
-            {
-                EditorGUILayout.HelpBox(kCodeCoverageEnabledMessage, MessageType.Warning);
-            }
-
             if (Application.platform == RuntimePlatform.WindowsEditor)
             {
                 var progressDialogDelay = EditorGUILayout.DelayedFloatField(GeneralProperties.progressDialogDelay, m_ProgressDialogDelay);
@@ -611,8 +551,6 @@ namespace UnityEditor
                 }
             }
             m_GraphSnapping = EditorGUILayout.Toggle(GeneralProperties.enableSnapping, m_GraphSnapping);
-
-            m_EnterSafeModeDialog = EditorGUILayout.Toggle(GeneralProperties.enterSafeModeDialog, m_EnterSafeModeDialog);
 
             GameView.openWindowOnEnteringPlayMode = EditorGUILayout.Toggle(GeneralProperties.enterPlayModeSettingsFocusGameView, GameView.openWindowOnEnteringPlayMode);
 
@@ -706,20 +644,6 @@ namespace UnityEditor
                 {
                     EditorGUILayout.HelpBox(GeneralProperties.packageManagerLogLevelOverridden.text, MessageType.Info, true);
                 }
-            }
-        }
-
-        private void DoDirectoryMonitoring()
-        {
-            bool isWindows = Environment.OSVersion.Platform == PlatformID.Win32NT ||
-                Environment.OSVersion.Platform == PlatformID.Win32Windows;
-
-            using (new EditorGUI.DisabledScope(!isWindows))
-            {
-                m_DirectoryMonitoring = EditorGUILayout.Toggle(GeneralProperties.directoryMonitoring, m_DirectoryMonitoring);
-
-                if (!isWindows)
-                    EditorGUILayout.HelpBox("Directory monitoring currently only available on windows", MessageType.Info, true);
             }
         }
 
@@ -1082,15 +1006,6 @@ namespace UnityEditor
             WriteRecentAppsList(m_ScriptApps, m_ScriptEditorPath, kRecentScriptAppsKey);
             WriteRecentAppsList(m_ImageApps, m_ImageAppPath, kRecentImageAppsKey);
 
-            EditorPrefs.SetBool("kAutoRefresh", m_AutoRefresh);
-
-            bool oldDirectoryMonitoring = EditorPrefs.GetBool("DirectoryMonitoring", true);
-            if (oldDirectoryMonitoring != m_DirectoryMonitoring)
-            {
-                EditorPrefs.SetBool("DirectoryMonitoring", m_DirectoryMonitoring);
-                AssetDatabase.RefreshSettings();
-            }
-
             if (m_ContentScaleChangedThisSession)
             {
                 EditorPrefs.SetInt(kContentScalePrefKey, m_ContentScalePercentValue);
@@ -1098,7 +1013,6 @@ namespace UnityEditor
 
             EditorPrefs.SetBool("ReopenLastUsedProjectOnStartup", m_ReopenLastUsedProjectOnStartup);
             EditorPrefs.SetBool("EnableEditorAnalytics", m_EnableEditorAnalytics);
-            EditorPrefs.SetBool("VerifySavingAssets", m_VerifySavingAssets);
             EditorPrefs.SetInt("ScriptCompilationDuringPlay", (int)m_ScriptCompilationDuringPlay);
 
             // The Preferences window always writes all preferences, we don't want this behavior since we
@@ -1138,7 +1052,6 @@ namespace UnityEditor
             UnityEditor.Lightmapping.UpdateCachePath();
 
             EditorPrefs.SetBool("GraphSnapping", m_GraphSnapping);
-            EditorPrefs.SetBool("EnterSafeModeDialog", m_EnterSafeModeDialog);
         }
 
         private int CurrentEditorScalingValue
@@ -1185,14 +1098,10 @@ namespace UnityEditor
             if (m_DiffToolIndex == -1)
                 m_DiffToolIndex = 0;
 
-            m_AutoRefresh = EditorPrefs.GetBool("kAutoRefresh");
-            m_DirectoryMonitoring = EditorPrefs.GetBool("DirectoryMonitoring", true);
-
             m_ReopenLastUsedProjectOnStartup = EditorPrefs.GetBool("ReopenLastUsedProjectOnStartup");
 
             m_EnableEditorAnalytics = EditorPrefs.GetBool("EnableEditorAnalytics", true);
 
-            m_VerifySavingAssets = EditorPrefs.GetBool("VerifySavingAssets", false);
             m_ScriptCompilationDuringPlay = (ScriptChangesDuringPlayOptions)EditorPrefs.GetInt("ScriptCompilationDuringPlay", 0);
             m_DeveloperMode = Unsupported.IsDeveloperMode();
             m_ShowRepaintDots = EditorGUI.s_ShowRepaintDots.value;
@@ -1209,11 +1118,9 @@ namespace UnityEditor
             m_SelectedLanguage = EditorPrefs.GetString("Editor.kEditorLocale", LocalizationDatabase.GetDefaultEditorLanguage().ToString());
             m_EnableCompilerMessagesLocalization = EditorPrefs.GetBool("Editor.kEnableCompilerMessagesLocalization", false);
             m_AllowAlphaNumericHierarchy = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false);
-            m_EnableCodeCoverage = EditorPrefs.GetBool("CodeCoverageEnabled", false);
             m_ProgressDialogDelay = EditorPrefs.GetFloat("EditorBusyProgressDialogDelay", 3.0f);
             m_Create3DObjectsAtOrigin = GOCreationCommands.s_PlaceObjectsAtWorldOrigin;
 
-            m_CompressAssetsOnImport = Unsupported.GetApplicationSettingCompressAssetsOnImport();
             m_GpuDevice = EditorPrefs.GetString("GpuDeviceName");
 
             if (EditorPrefs.HasKey(kContentScalePrefKey))
@@ -1233,7 +1140,6 @@ namespace UnityEditor
             }
 
             m_GraphSnapping = EditorPrefs.GetBool("GraphSnapping", true);
-            m_EnterSafeModeDialog = EditorPrefs.GetBool("EnterSafeModeDialog", true);
         }
 
         internal static void ReloadCustomDiffToolData()
@@ -1275,7 +1181,7 @@ namespace UnityEditor
             public Action onChanged;
         }
 
-        void AppsListClick(object userData, string[] options, int selected)
+        void AppsListClickRuntimePlatformExtension(object userData, string[] options, int selected)
         {
             AppsListUserData ud = (AppsListUserData)userData;
             if (options[selected] == L10n.Tr("Browse..."))
@@ -1301,7 +1207,38 @@ namespace UnityEditor
             ReadPreferences();
         }
 
+        void AppsListClickNoRuntimePlatformExtension(object userData, string[] options, int selected)
+        {
+            AppsListUserData ud = (AppsListUserData)userData;
+            if (options[selected] == L10n.Tr("Browse..."))
+            {
+                string path = EditorUtility.OpenFilePanel("Browse for application", "", "");
+                if (path.Length != 0)
+                {
+                    // browsed to new application
+                    ud.str.str = path;
+                    if (ud.onChanged != null)
+                        ud.onChanged();
+                }
+            }
+            else
+            {
+                // value comes from the list
+                ud.str.str = ud.paths[selected];
+                if (ud.onChanged != null)
+                    ud.onChanged();
+            }
+
+            WritePreferences();
+            ReadPreferences();
+        }
+
         private void FilePopup(GUIContent label, string selectedString, ref string[] names, ref string[] paths, RefString outString, string defaultString, Action onChanged)
+        {
+            FilePopup(label, selectedString, ref names, ref paths, outString, defaultString, onChanged, AppsListClickRuntimePlatformExtension);
+        }
+
+        private void FilePopup(GUIContent label, string selectedString, ref string[] names, ref string[] paths, RefString outString, string defaultString, Action onChanged, EditorUtility.SelectMenuItemFunction ApplicationsListOnClick)
         {
             GUIStyle style = EditorStyles.popup;
             GUILayout.BeginHorizontal();
@@ -1315,8 +1252,11 @@ namespace UnityEditor
             AppsListUserData ud = new AppsListUserData(paths, outString, onChanged);
             if (EditorGUI.DropdownButton(r, text, FocusType.Passive, style))
             {
-                ArrayUtility.Add(ref names, Styles.browse.text);
-                EditorUtility.DisplayCustomMenu(r, names, selected, AppsListClick, ud, false);
+                if (names[names.Length - 1] != Styles.browse.text)
+                {
+                    ArrayUtility.Add(ref names, Styles.browse.text);
+                }
+                EditorUtility.DisplayCustomMenu(r, names, selected, ApplicationsListOnClick, ud, false);
             }
             GUILayout.EndHorizontal();
         }

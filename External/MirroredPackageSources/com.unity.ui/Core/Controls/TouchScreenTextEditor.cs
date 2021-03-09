@@ -7,9 +7,7 @@ namespace UnityEngine.UIElements
 
 
         public TouchScreenTextEditorEventHandler(TextEditorEngine editorEngine, ITextInputField textInputField)
-            : base(editorEngine, textInputField)
-        {
-        }
+            : base(editorEngine, textInputField) {}
 
         void PollTouchScreenKeyboard()
         {
@@ -57,22 +55,28 @@ namespace UnityEngine.UIElements
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
-            if (!textInputField.isReadOnly && evt.eventTypeId == PointerDownEvent.TypeId() && editorEngine.keyboardOnScreen == null)
+            if (editorEngine.keyboardOnScreen != null)
+                return;
+
+            if (!textInputField.isReadOnly && evt.eventTypeId == PointerDownEvent.TypeId())
             {
+                textInputField.CaptureMouse();
                 m_LastPointerDownTarget = evt.target as VisualElement;
             }
-            else if (!textInputField.isReadOnly && evt.eventTypeId == PointerUpEvent.TypeId() && editorEngine.keyboardOnScreen == null)
+            else if (!textInputField.isReadOnly && evt.eventTypeId == PointerUpEvent.TypeId())
             {
-                var pointerUpEvent = evt as PointerUpEvent;
-                if (m_LastPointerDownTarget == null || !m_LastPointerDownTarget.worldBound.Contains(pointerUpEvent.position))
+                textInputField.ReleaseMouse();
+                if (m_LastPointerDownTarget == null || !m_LastPointerDownTarget.worldBound.Contains(((PointerUpEvent)evt).position))
                     return;
+
+                m_LastPointerDownTarget = null;
 
                 textInputField.SyncTextEngine();
                 textInputField.UpdateText(editorEngine.text);
 
                 editorEngine.keyboardOnScreen = TouchScreenKeyboard.Open(textInputField.text,
                     TouchScreenKeyboardType.Default,
-                    true,     // autocorrection
+                    true, // autocorrection
                     editorEngine.multiline,
                     textInputField.isPasswordField);
 

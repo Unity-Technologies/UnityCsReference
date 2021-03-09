@@ -100,7 +100,7 @@ namespace UnityEditor.PackageManager.UI
         {
             if (package != null)
             {
-                if (string.IsNullOrEmpty(package?.resolvedPath))
+                if (string.IsNullOrEmpty(package.resolvedPath))
                     return Enumerable.Empty<Sample>();
 
                 try

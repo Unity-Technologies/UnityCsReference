@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -28,10 +26,14 @@ namespace Unity.UI.Builder
             return pill;
         }
 
+        protected override void FillDragElement(VisualElement pill)
+        {
+            pill.Q<Label>().text = m_ClassNameBeingDragged;
+        }
+
         protected override bool StartDrag(VisualElement target, Vector2 mousePosition, VisualElement pill)
         {
             m_ClassNameBeingDragged = target.GetProperty(BuilderConstants.ExplorerStyleClassPillClassNameVEPropertyName) as string;
-            pill.Q<Label>().text = m_ClassNameBeingDragged;
             return true;
         }
 
@@ -69,6 +71,11 @@ namespace Unity.UI.Builder
                 return false;
 
             return true;
+        }
+
+        protected override bool SupportsDragInEmptySpace(VisualElement element)
+        {
+            return false;
         }
 
         protected override bool SupportsPlacementIndicator()

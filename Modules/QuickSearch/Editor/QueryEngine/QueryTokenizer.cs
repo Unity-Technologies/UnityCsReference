@@ -30,11 +30,11 @@ namespace UnityEditor.Search
         public const string k_FilterFunctionPattern = "(\\([^\\(\\)]+\\))?";
         public const string k_PartialFilterFunctionPattern = "(?<f1>\\((?!\\S*\\s+\\))[^\\(\\)\\s]*\\)?)?(?<f2>(f1)|\\([^\\(\\)]*\\))?";
 
-        public const string k_FilterValuePattern = "(\\\".*?\\\"|([a-zA-Z0-9]*?)(?:\\{(?:(?<c>\\{)|[^{}]+|(?<-c>\\}))*(?(c)(?!))\\})|[^\\s{}]+)";
-        public const string k_PartialFilterValuePattern = "(?<value>(?(op)(\\\".*?\\\"|([a-zA-Z0-9]*?)(?:\\{(?:(?<c>\\{)|[^{}]+|(?<-c>\\}))*(?(c)(?!))\\})|[^\\s{}]+)))?";
+        public const string k_FilterValuePattern = "(\\\".*?\\\"|([a-zA-Z0-9]*?)(?:\\{(?>(?<c>\\{)|[^{}]+|(?<-c>\\}))*(?(c)(?!))\\})|[^\\s{}]+)";
+        public const string k_PartialFilterValuePattern = "(?<value>(?(op)(\\\".*?\\\"|([a-zA-Z0-9]*?)(?:\\{(?>(?<c>\\{)|[^{}]+|(?<-c>\\}))*(?(c)(?!))\\})|[^\\s{}]+)))?";
 
         public static readonly Regex k_WordRx = new Regex("\\G!?\\S+");
-        public static readonly Regex k_NestedQueryRx = new Regex("\\G([a-zA-Z0-9]*?)(\\{(?:(?<c>\\{)|[^{}]+|(?<-c>\\}))*(?(c)(?!))\\})");
+        public static readonly Regex k_NestedQueryRx = new Regex("\\G([a-zA-Z0-9]*?)(\\{(?>(?<c>\\{)|[^{}]+|(?<-c>\\}))*(?(c)(?!))\\})");
     }
 
     abstract class QueryTokenizer<TUserData>
@@ -113,7 +113,7 @@ namespace UnityEditor.Search
 
                 if (!matched)
                 {
-                    errors.Add(new QueryError {index = index, reason = $"Error parsing string. No token could be deduced at {index}"});
+                    errors.Add(new QueryError { index = index, reason = $"Error parsing string. No token could be deduced at {index}" });
                     return ParseState.NoMatch;
                 }
             }
@@ -206,7 +206,7 @@ namespace UnityEditor.Search
             matched = true;
             if (groupStartIndex < 0 || groupStartIndex >= text.Length)
             {
-                errors.Add(new QueryError {index = 0, reason = $"A group should have been found but index was {groupStartIndex}"});
+                errors.Add(new QueryError { index = 0, reason = $"A group should have been found but index was {groupStartIndex}" });
                 return -1;
             }
 
@@ -231,7 +231,7 @@ namespace UnityEditor.Search
             }
 
             sv = text.GetStringView(groupStartIndex + 1, groupStartIndex + charConsumed - 1);
-            if (StringView.IsNullOrWhiteSpace(sv))
+            if (sv.IsNullOrWhiteSpace())
             {
                 errors.Add(new QueryError { index = groupStartIndex, length = charConsumed, reason = $"Empty group" });
                 return -1;

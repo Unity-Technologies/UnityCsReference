@@ -97,15 +97,23 @@ namespace UnityEditor.Search
                 return label.Equals(s);
             return other is SearchProposition l && Equals(l);
         }
+
+        public override string ToString()
+        {
+            return $"{label} > {replacement}";
+        }
     }
 
     struct SearchPropositionOptions
     {
+        static readonly char[] s_Delimiters = new[] { '{', '}', '[', ']', '=', ',' };
+        static readonly char[] s_ExtendedDelimiters = new[] { '{', '}', '[', ']', '=', ':' };
         public SearchPropositionOptions(string query, int cursor)
         {
             this.query = query;
             this.cursor = cursor;
-            m_Word = m_Token = null;
+            m_Word = null;
+            m_Tokens = null;
             wordStartPos = wordEndPos = -1;
         }
 
@@ -115,7 +123,7 @@ namespace UnityEditor.Search
         public int wordEndPos;
 
         private string m_Word;
-        private string m_Token;
+        private string[] m_Tokens;
 
         public string word
         {
@@ -127,14 +135,30 @@ namespace UnityEditor.Search
             }
         }
 
-        public string token
+        public string[] tokens
         {
             get
             {
-                if (m_Token == null)
-                    m_Token = GetTokenAtCursorPosition(query, cursor);
-                return m_Token;
+                if (m_Tokens == null)
+                {
+                    m_Tokens = new[]
+                    {
+                        GetTokenAtCursorPosition(query, cursor, IsDelimiter),
+                        GetTokenAtCursorPosition(query, cursor, IsExtendedDelimiter)
+                    }.Distinct().ToArray();
+                }
+                return m_Tokens;
             }
+        }
+
+        public static bool IsExtendedDelimiter(char ch)
+        {
+            return char.IsWhiteSpace(ch) || Array.IndexOf(s_ExtendedDelimiters, ch) != -1;
+        }
+
+        public static bool IsDelimiter(char ch)
+        {
+            return char.IsWhiteSpace(ch) || Array.IndexOf(s_Delimiters, ch) != -1;
         }
 
         private static string GetWordAtCursorPosition(string txt, int cursorIndex, out int startPos, out int endPos)
@@ -142,19 +166,19 @@ namespace UnityEditor.Search
             return GetTokenAtCursorPosition(txt, cursorIndex, out startPos, out endPos, ch => !char.IsLetterOrDigit(ch) && !(ch == '_'));
         }
 
-        private static string GetTokenAtCursorPosition(string txt, int cursorIndex)
+        private static string GetTokenAtCursorPosition(string txt, int cursorIndex, Func<char, bool> comparer)
         {
-            return GetTokenAtCursorPosition(txt, cursorIndex, out var _, out var _, ch => char.IsWhiteSpace(ch));
+            return GetTokenAtCursorPosition(txt, cursorIndex, out var _, out var _, comparer);
         }
 
         internal static void GetTokenBoundariesAtCursorPosition(string txt, int cursorIndex, out int startPos, out int endPos)
         {
-            GetTokenAtCursorPosition(txt, cursorIndex, out startPos, out endPos, ch => char.IsWhiteSpace(ch));
+            GetTokenAtCursorPosition(txt, cursorIndex, out startPos, out endPos, IsDelimiter);
         }
 
         private static string GetTokenAtCursorPosition(string txt, int cursorIndex, out int startPos, out int endPos, Func<char, bool> check)
         {
-            if (txt.Length > 0 && (cursorIndex == txt.Length || char.IsWhiteSpace(txt[cursorIndex])))
+            if (txt.Length > 0 && (cursorIndex == txt.Length || IsDelimiter(txt[cursorIndex])))
                 cursorIndex--;
 
             startPos = cursorIndex;
@@ -239,7 +263,7 @@ namespace UnityEditor.Search
             if (!enabled)
                 return false;
 
-            SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchAutoCompleteTab, options.token);
+            SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchAutoCompleteTab, string.Join(",", options.tokens));
             UpdateCompleteList(te, options);
             return true;
         }
@@ -271,28 +295,11 @@ namespace UnityEditor.Search
                 {
                     view.SetSearchText(autoFill.replacement, autoFill.moveCursor);
                 }
-                else if (!options.token.StartsWith(autoFill.replacement, StringComparison.OrdinalIgnoreCase))
+                else if (!options.tokens.All(t => t.StartsWith(autoFill.replacement, StringComparison.OrdinalIgnoreCase)))
                 {
-                    var searchText = context.searchText;
-
-                    var replaceFrom = options.cursor - 1;
-                    while (replaceFrom >= 0 && !char.IsWhiteSpace(searchText[replaceFrom]))
-                        replaceFrom--;
-                    if (replaceFrom == -1)
-                        replaceFrom = 0;
-                    else
-                        replaceFrom++;
-
-                    var replaceTo = searchText.IndexOf(' ', options.cursor);
-                    if (replaceTo == -1)
-                        replaceTo = searchText.Length;
-                    var sb = new StringBuilder(searchText);
-                    sb.Remove(replaceFrom, replaceTo - replaceFrom);
-                    sb.Insert(replaceFrom, autoFill.replacement);
-
-                    var insertion = sb.ToString();
+                    var insertion = ReplaceText(context.searchText, autoFill.replacement, options.cursor, out var insertTokenPos);
                     SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchAutoCompleteInsertSuggestion, insertion);
-                    view.SetSearchText(insertion, autoFill.moveCursor);
+                    view.SetSearchText(insertion, autoFill.moveCursor, insertTokenPos);
                 }
                 Clear();
             }
@@ -301,6 +308,47 @@ namespace UnityEditor.Search
                 // No more results
                 Clear();
             }
+        }
+
+        private static int IndexOfDelimiter(string self, int startIndex)
+        {
+            for (int index = startIndex; index < self.Length; ++index)
+            {
+                if (SearchPropositionOptions.IsDelimiter(self[index]))
+                    return index;
+            }
+            return -1;
+        }
+
+        public static string ReplaceText(string searchText, string replacement, int cursorPos, out int insertTokenPos)
+        {
+            var replaceFrom = cursorPos - 1;
+            while (replaceFrom >= 0 && !SearchPropositionOptions.IsDelimiter(searchText[replaceFrom]))
+                replaceFrom--;
+            if (replaceFrom == -1)
+                replaceFrom = 0;
+            else
+                replaceFrom++;
+
+            var replaceTo = IndexOfDelimiter(searchText, cursorPos);
+            if (replaceTo == -1)
+                replaceTo = searchText.Length;
+
+            if (searchText.Substring(replaceFrom, replaceTo - replaceFrom).StartsWith(replacement, StringComparison.OrdinalIgnoreCase))
+            {
+                insertTokenPos = cursorPos;
+                return searchText;
+            }
+
+            var sb = new StringBuilder(searchText);
+            sb.Remove(replaceFrom, replaceTo - replaceFrom);
+            sb.Insert(replaceFrom, replacement);
+
+            var insertion = sb.ToString();
+            insertTokenPos = insertion.LastIndexOf('\t');
+            if (insertTokenPos != -1)
+                insertion = insertion.Remove(insertTokenPos, 1);
+            return insertion;
         }
 
         public static bool HandleKeyEvent(Event evt)
@@ -356,7 +404,8 @@ namespace UnityEditor.Search
         {
             var propositions = new SortedSet<SearchProposition>();
 
-            FillBuiltInPropositions(context, propositions);
+            if (!context.options.HasFlag(SearchFlags.Debug))
+                FillBuiltInPropositions(context, propositions);
             FillProviderPropositions(context, propositions);
 
             foreach (var p in propositions)
@@ -419,7 +468,7 @@ namespace UnityEditor.Search
             position = CalcRect(te, parent.width * 0.55f, parent.height * 0.8f);
 
             var maxVisibleCount = Mathf.FloorToInt(position.height / EditorStyles.toolbarDropDown.fixedHeight);
-            BuildCompleteList(options.token, maxVisibleCount, 0.4f);
+            BuildCompleteList(options.tokens, maxVisibleCount, 0.4f);
 
             var maxLabelSize = 100f;
             var gc = new GUIContent();
@@ -445,36 +494,39 @@ namespace UnityEditor.Search
             s_LastInput = te.text;
         }
 
-        private static void BuildCompleteList(string input, int maxCount, float levenshteinDistance)
+        private static void BuildCompleteList(string[] inputs, int maxCount, float levenshteinDistance)
         {
             var uniqueSrc = new List<SearchProposition>(propositions);
             int srcCnt = uniqueSrc.Count;
             s_FilteredList = new List<SearchProposition>(Math.Min(maxCount, srcCnt));
 
             // Start with - slow
-            SelectPropositions(ref srcCnt, maxCount, uniqueSrc, p => p.label.StartsWith(input, StringComparison.OrdinalIgnoreCase));
+            SelectPropositions(ref srcCnt, maxCount, uniqueSrc, p => inputs.Any(i => p.label.StartsWith(i, StringComparison.OrdinalIgnoreCase)));
 
             s_FilteredList.Sort();
 
             // Contains - very slow
             SelectPropositions(ref srcCnt, maxCount, uniqueSrc, (p) =>
             {
-                if (p.label.IndexOf(input, StringComparison.OrdinalIgnoreCase) != -1)
+                if (inputs.Any(i => p.label.IndexOf(i, StringComparison.OrdinalIgnoreCase) != -1))
                     return true;
-                if (p.help != null && p.help.IndexOf(input, StringComparison.OrdinalIgnoreCase) != -1)
+                if (p.help != null && inputs.Any(i => p.help.IndexOf(i, StringComparison.OrdinalIgnoreCase) != -1))
                     return true;
                 return false;
             });
 
             // Levenshtein Distance - very very slow.
-            if (levenshteinDistance > 0f && input.Length > 3 && s_FilteredList.Count < maxCount)
+            var lvInputs = inputs.Where(i => i.Length > 3).Select(input => input.Replace("<", "").Replace("=", "").Replace(">", "")).ToArray();
+            if (levenshteinDistance > 0f && lvInputs.All(i => i.Length > 3) && s_FilteredList.Count < maxCount)
             {
-                var levenshteinInput = input.Replace("<", "").Replace("=", "").Replace(">", "");
                 levenshteinDistance = Mathf.Clamp01(levenshteinDistance);
                 SelectPropositions(ref srcCnt, maxCount, uniqueSrc, p =>
                 {
-                    int distance = Utils.LevenshteinDistance(p.label, levenshteinInput, caseSensitive: false);
-                    return (int)(levenshteinDistance * p.label.Length) > distance;
+                    return lvInputs.Any(levenshteinInput =>
+                    {
+                        int distance = Utils.LevenshteinDistance(p.label, levenshteinInput, caseSensitive: false);
+                        return (int)(levenshteinDistance * p.label.Length) > distance;
+                    });
                 });
             }
 
@@ -526,10 +578,14 @@ namespace UnityEditor.Search
 
         private static string HightlightLabel(string label)
         {
-            if (string.IsNullOrEmpty(label) || string.IsNullOrEmpty(options.token) || label.IndexOf('<') != -1)
+            if (string.IsNullOrEmpty(label) || options.tokens.Any(string.IsNullOrEmpty) || label.IndexOf('<') != -1)
                 return label;
-            var escapedToken = Regex.Escape(options.token);
-            return Regex.Replace(label, escapedToken, $"<b>{options.token}</b>", RegexOptions.IgnoreCase);
+            foreach (var token in options.tokens)
+            {
+                var escapedToken = Regex.Escape(token);
+                label = Regex.Replace(label, escapedToken, $"<b>{token}</b>", RegexOptions.IgnoreCase);
+            }
+            return label;
         }
 
         private static bool DrawItem(Event evt, Rect rect, bool selected, SearchProposition item)

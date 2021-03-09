@@ -27,6 +27,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private ResourceLoader m_ResourceLoader;
 
+        private ExtensionManager m_ExtensionManager;
+
         [SerializeField]
         private UnityConnectProxy m_UnityConnectProxy;
 
@@ -69,7 +71,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private PackageDatabase m_PackageDatabase;
 
-
         private readonly Dictionary<Type, object> m_RegisteredObjects;
 
         [NonSerialized]
@@ -90,6 +91,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SettingsProxy = new PackageManagerProjectSettingsProxy();
 
             m_ResourceLoader = new ResourceLoader();
+            m_ExtensionManager = new ExtensionManager();
 
             m_AssetStoreCache = new AssetStoreCache();
             m_AssetStoreClient = new AssetStoreClient();
@@ -135,6 +137,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_PackageDatabase.ResolveDependencies(m_UnityConnectProxy, m_AssetDatabaseProxy, m_AssetStoreUtils, m_AssetStoreClient, m_AssetStoreDownloadManager, m_UpmClient, m_IOProxy);
             m_PageManager.ResolveDependencies(m_ApplicationProxy, m_SelectionProxy, m_UnityConnectProxy, m_PackageFiltering, m_PackageManagerPrefs, m_UpmClient, m_UpmRegistryClient, m_AssetStoreClient, m_PackageDatabase, m_SettingsProxy);
+
+            m_ExtensionManager.ResolveDependencies(m_PackageManagerPrefs);
 
             m_DependenciesResolved = true;
         }
@@ -183,6 +187,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Register(m_ApplicationProxy);
             Register(m_AssetDatabaseProxy);
             Register(m_ResourceLoader);
+            Register(m_ExtensionManager);
             Register(m_IOProxy);
             Register(m_SettingsProxy);
 

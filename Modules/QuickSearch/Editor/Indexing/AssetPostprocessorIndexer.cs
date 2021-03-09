@@ -116,18 +116,12 @@ namespace UnityEditor.Search
             {
                 var state = (AssetModification)t.state;
                 var assetPath = AssetDatabase.GUIDToAssetPath(t.guid.ToString());
-                if (state.HasFlag(AssetModification.Updated))
-                {
+                if ((state & AssetModification.Updated) == AssetModification.Updated)
                     updated.Add(assetPath);
-                }
-                else if (state.HasFlag(AssetModification.Moved))
-                {
+                else if ((state & AssetModification.Moved) == AssetModification.Moved)
                     moved.Add(assetPath);
-                }
-                else if (state.HasFlag(AssetModification.Removed))
-                {
+                else if ((state & AssetModification.Removed) == AssetModification.Removed)
                     removed.Add(assetPath);
-                }
             }
             return new AssetIndexChangeSet(updated, removed, moved, predicate);
         }

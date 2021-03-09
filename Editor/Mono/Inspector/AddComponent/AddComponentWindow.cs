@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -63,7 +64,7 @@ namespace UnityEditor.AddComponent
 
         private void OnItemSelected(AdvancedDropdownItem item)
         {
-            if (item is ComponentDropdownItem)
+            if (item is ComponentDropdownItem cdi)
             {
                 SendUsabilityAnalyticsEvent(new AnalyticsEventData
                 {
@@ -73,13 +74,26 @@ namespace UnityEditor.AddComponent
                 });
 
                 var gos = m_GameObjects;
-                EditorApplication.ExecuteMenuItemOnGameObjects(((ComponentDropdownItem)item).menuPath, gos);
+                EditorApplication.ExecuteMenuItemOnGameObjects(cdi.menuPath, gos);
             }
         }
 
         protected override void OnDisable()
         {
             EditorPrefs.SetString(kComponentSearch, searchString);
+        }
+
+        internal new void OnGUI()
+        {
+            if (m_GameObjects.Any(g => !g))
+            {
+                // Close the popup window if one of the object is now invalid (i.e. deleted from an undo operation)
+                Close();
+                GUIUtility.ExitGUI();
+                return;
+            }
+
+            base.OnGUI();
         }
 
         protected override Vector2 CalculateWindowSize(Rect buttonRect)
@@ -90,14 +104,14 @@ namespace UnityEditor.AddComponent
         protected override bool SpecialKeyboardHandling(Event evt)
         {
             var createScriptMenu = state.GetSelectedChild(renderedTreeItem);
-            if (createScriptMenu is NewScriptDropdownItem)
+            if (createScriptMenu is NewScriptDropdownItem nsdi)
             {
                 // When creating new script name we want to dedicate both left/right arrow and backspace
                 // to editing the script name so they can't be used for navigating the menus.
                 // The only way to get back using the keyboard is pressing Esc.
                 if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
                 {
-                    OnCreateNewScript((NewScriptDropdownItem)createScriptMenu);
+                    OnCreateNewScript(nsdi);
                     evt.Use();
                     GUIUtility.ExitGUI();
                 }

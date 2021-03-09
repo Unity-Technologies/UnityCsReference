@@ -403,6 +403,7 @@ namespace UnityEditor
                         if (rect.Contains(evt.mousePosition))
                         {
                             DragAndDropVisualMode mode = DoDrag(assetReference.instanceID, perform);
+
                             if (mode == DragAndDropVisualMode.Rejected && perform)
                                 evt.Use();
                             else if (mode != DragAndDropVisualMode.None)

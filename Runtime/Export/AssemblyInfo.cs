@@ -38,6 +38,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UIElements.Editor")]
 [assembly: InternalsVisibleTo("UnityEditor.UIElementsModule")]
 [assembly: InternalsVisibleTo("UnityEditor.UIElementsGameObjectsModule")]
+[assembly: InternalsVisibleTo("Unity.Tiny.Rendering.Authoring")]
+[assembly: InternalsVisibleTo("Unity.Tiny.Authoring")]
 
 // Required for the type forwarder UnityEngine.dll
 [assembly: InternalsVisibleTo("UnityEngine")]

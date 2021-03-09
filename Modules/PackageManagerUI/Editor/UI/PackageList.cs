@@ -446,7 +446,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 group.onGroupToggle += value =>
                 {
-                    if (value && group.Contains(GetSelectedItem()))
+                    var s = GetSelectedItem();
+                    if (value && s != null && group.Contains(s))
                         EditorApplication.delayCall += () => ScrollIfNeeded();
                 };
             }

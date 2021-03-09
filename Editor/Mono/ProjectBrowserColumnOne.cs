@@ -287,9 +287,6 @@ namespace UnityEditor
             {
                 foreach (TreeViewItem item in m_RootItem.children)
                 {
-                    // Do not expand Packages root item
-                    if (item.id == ProjectBrowser.kPackagesFolderInstanceId)
-                        continue;
                     bool expanded = EditorPrefs.GetBool(kProjectBrowserString + item.displayName, true);
                     SetExpanded(item, expanded);
                 }

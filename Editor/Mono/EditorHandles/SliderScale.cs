@@ -76,8 +76,23 @@ namespace UnityEditorInternal
                     float capSize = size * .1f;
                     if (Handles.IsHovering(id, evt))
                         capSize *= Handles.s_HoverExtraScale;
-                    Handles.DrawLine(startPosition, cubePosition, thickness);
-                    Handles.CubeHandleCap(id, cubePosition, rotation, capSize, EventType.Repaint);
+
+                    var camera = Camera.current;
+                    var viewDir = camera != null ? camera.transform.forward : -direction;
+                    var facingAway = Vector3.Dot(viewDir, direction) < 0.0f;
+                    // draw line vs cube in the appropriate order based on viewing
+                    // direction, for correct transparency sorting
+                    var lineEndPos = position + direction * (s * s_ScaleDrawLength * lineScale - capSize * 0.5f) + positionOffset;
+                    if (facingAway)
+                    {
+                        Handles.DrawLine(startPosition, lineEndPos, thickness);
+                        Handles.CubeHandleCap(id, cubePosition, rotation, capSize, EventType.Repaint);
+                    }
+                    else
+                    {
+                        Handles.CubeHandleCap(id, cubePosition, rotation, capSize, EventType.Repaint);
+                        Handles.DrawLine(startPosition, lineEndPos, thickness);
+                    }
                     Handles.color = prevColor;
                     break;
             }

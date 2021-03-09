@@ -621,7 +621,7 @@ namespace Unity.UI.Builder
             // and re-imported asset we detected here.
             ClearBackups();
 
-            builderWindow.toolbar.LoadDocument(newVisualTreeAsset, true);
+            builderWindow.toolbar.LoadDocument(newVisualTreeAsset, false, true);
         }
 
         //

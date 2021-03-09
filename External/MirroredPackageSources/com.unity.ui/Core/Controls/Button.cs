@@ -111,7 +111,7 @@ namespace UnityEngine.UIElements
             {
                 if (m_Clickable == null)
                 {
-                    clickable = new PointerClickable(value);
+                    clickable = new Clickable(value);
                 }
                 else
                 {
@@ -141,12 +141,12 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// By default, a single left mouse click triggers the Action. To change the activator, modify <see cref="clickable"/>.
         /// </remarks>
-        public Button(System.Action clickEvent)
+        public Button(Action clickEvent)
         {
             AddToClassList(ussClassName);
 
             // Click-once behaviour
-            clickable = new PointerClickable(clickEvent);
+            clickable = new Clickable(clickEvent);
 
             RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
             RegisterCallback<KeyDownEvent>(OnKeyDown);

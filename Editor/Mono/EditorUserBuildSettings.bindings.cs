@@ -596,7 +596,7 @@ namespace UnityEditor
         public static extern bool buildAppBundle { get; set; }
 
         // Symlink runtime libraries with an iOS Xcode project.
-        [Obsolete("EditorUserBuildSettings.symlinkLibraries is obsolete. Use EditorUserBuildSettings.symlinkSources instead (UnityUpgradable) -> [UnityEditor] EditorUserBuildSettings.symlinkSources", true)]
+        [Obsolete("EditorUserBuildSettings.symlinkLibraries is obsolete. Use EditorUserBuildSettings.symlinkSources instead (UnityUpgradable) -> [UnityEditor] EditorUserBuildSettings.symlinkSources", false)]
 
         public static bool symlinkLibraries
         {

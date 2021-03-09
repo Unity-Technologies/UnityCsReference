@@ -1167,7 +1167,7 @@ namespace UnityEditor
             {
                 menu.AddDisabledItem(Styles.setOriginLabel);
             }
-            else if (selectedObject && selectedObject.GetInstanceID() != GetDefaultParentForSession(selectedObject.scene.guid))
+            else if (selectedObject && (selectedObject.GetInstanceID() != GetDefaultParentForSession(selectedObject.scene.guid) || EditorSceneManager.GetActiveScene().guid != selectedObject.scene.guid))
             {
                 menu.AddItem(Styles.setOriginLabel, false, () =>
                 {
@@ -1662,6 +1662,7 @@ namespace UnityEditor
             }
 
             var sceneGUID = "";
+            Scene scene;
 
             if (lastSelectedObject)
             {
@@ -1671,13 +1672,34 @@ namespace UnityEditor
                     return;
 
                 sceneGUID = lastSelectedObject.scene.guid;
+                scene = lastSelectedObject.scene;
             }
             else
-                sceneGUID = EditorSceneManager.GetActiveScene().guid;
+            {
+                scene = EditorSceneManager.GetActiveScene();
+                sceneGUID = scene.guid;
+            }
 
             string undoText = "Set Default Parent Object";
             int currentlySetID = GetDefaultParentForSession(sceneGUID);
-            if (toggle && currentlySetID != 0)
+
+            var objectInstanceID = lastSelectedObject ? lastSelectedObject.GetInstanceID() : 0;
+            var isPrefabStage = PrefabStageUtility.IsPrefabStageScene(scene);
+
+            // if we're toggling an object that is already the default parent object in an inactive scene,
+            // we set the active scene and leave the same object as the active parent
+            // this is to avoid confusion because active parent objects are not highlighted in inactive scenes
+            if (toggle && currentlySetID == objectInstanceID && sceneGUID != EditorSceneManager.GetActiveScene().guid && !isPrefabStage)
+            {
+                EditorSceneManager.SetActiveScene(scene);
+                return;
+            }
+
+            // we check if we're toggling inside the active scene
+            // if yes - we deactivate the current active parent object
+            // if not - we allow setting a new parent object immediately without unsetting the previous object first
+            // (it gets overriden on the first shortcut click)
+            if (toggle && currentlySetID != 0 && (sceneGUID == EditorSceneManager.GetActiveScene().guid || isPrefabStage))
             {
                 if (lastSelectedObject == null)
                     return;
@@ -1687,7 +1709,11 @@ namespace UnityEditor
             }
 
             if (toggle && currentlySetID != 0 || lastSelectedObject != null)
+            {
                 InternalEditorUtility.RegisterSetDefaultParentObjectUndo(sceneGUID, GetDefaultParentForSession(sceneGUID), undoText);
+                if (!isPrefabStage)
+                    EditorSceneManager.SetActiveScene(scene);
+            }
 
             UpdateSessionStateInfoAndActiveParentObjectValuesForScene(sceneGUID, id);
         }

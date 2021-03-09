@@ -33,7 +33,7 @@ namespace UnityEngine.UIElements
         protected Dictionary<int, AssetTracking<T>> m_TrackedAssets = new Dictionary<int, AssetTracking<T>>();
         protected List<int> m_RemovedAssets = new List<int>();
 
-        public void StartTrackingAsset(T asset)
+        public int StartTrackingAsset(T asset)
         {
             int assetId = asset.GetInstanceID();
 
@@ -43,14 +43,17 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                m_TrackedAssets[assetId] = new AssetTracking<T>()
+                tracking = new AssetTracking<T>()
                 {
                     m_Asset = asset,
                     m_AssetPath = AssetOperationsAccess.GetAssetPath(asset),
                     m_LastDirtyCount = AssetOperationsAccess.GetAssetDirtyCount(asset),
                     m_ReferenceCount = 1
                 };
+                m_TrackedAssets[assetId] = tracking;
             }
+
+            return tracking.m_LastDirtyCount;
         }
 
         public void StopTrackingAsset(T asset)
@@ -77,7 +80,12 @@ namespace UnityEngine.UIElements
             return m_TrackedAssets.ContainsKey(asset.GetInstanceID());
         }
 
-        public virtual bool CheckTrackedAssetsDirty()
+        public bool IsTrackingAssets()
+        {
+            return m_TrackedAssets.Count > 0;
+        }
+
+        public bool CheckTrackedAssetsDirty()
         {
             // Early out: no assets being tracked.
             if (m_TrackedAssets.Count == 0)
@@ -99,19 +107,19 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            if (m_RemovedAssets.Count > 0)
-            {
-                foreach (var removedAsset in m_RemovedAssets)
-                {
-                    m_TrackedAssets.Remove(removedAsset);
-                }
-                m_RemovedAssets.Clear();
-            }
-
             return isTrackedAssetDirty;
         }
 
+        public void UpdateAssetDirtyCount(T asset, int newDirtyCount)
+        {
+            if (m_TrackedAssets.TryGetValue(asset.GetInstanceID(), out var assetTracking))
+            {
+                assetTracking.m_LastDirtyCount = newDirtyCount;
+            }
+        }
+
         public abstract void OnAssetsImported(HashSet<T> changedAssets, HashSet<string> deletedAssets);
+        public virtual void OnTrackedAssetChanged() {}
 
         protected virtual bool ProcessChangedAssets(HashSet<T> changedAssets)
         {
@@ -145,16 +153,9 @@ namespace UnityEngine.UIElements
     {
         internal abstract void OnVisualTreeAssetChanged();
 
-        public override bool CheckTrackedAssetsDirty()
+        public override void OnTrackedAssetChanged()
         {
-            bool isTrackedVisualTreeAssetDirty = base.CheckTrackedAssetsDirty();
-
-            if (isTrackedVisualTreeAssetDirty)
-            {
-                OnVisualTreeAssetChanged();
-            }
-
-            return isTrackedVisualTreeAssetDirty;
+            OnVisualTreeAssetChanged();
         }
 
         public override void OnAssetsImported(HashSet<VisualTreeAsset> changedAssets, HashSet<string> deletedAssets)

@@ -86,6 +86,10 @@ namespace UnityEditorInternal
             [UnityEngine.SerializeField]
             public string name;
             [UnityEngine.SerializeField]
+            public string qualifiedName;
+            [UnityEngine.SerializeField]
+            public string nativeNamespace;
+            [UnityEngine.SerializeField]
             public string module;
 
             [UnityEngine.SerializeField]

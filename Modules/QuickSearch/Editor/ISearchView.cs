@@ -139,6 +139,7 @@ namespace UnityEditor.Search
         /// <param name="searchText">Text to be displayed in the search view.</param>
         /// <param name="moveCursor">Where to place the cursor after having set the search text</param>
         void SetSearchText(string searchText, TextCursorPlacement moveCursor = TextCursorPlacement.Default);
+        void SetSearchText(string searchText, TextCursorPlacement moveCursor, int cursorInsertPosition);
 
         /// <summary>
         /// Make sure the search is now focused.

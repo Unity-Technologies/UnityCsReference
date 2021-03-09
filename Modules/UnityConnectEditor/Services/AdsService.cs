@@ -93,11 +93,7 @@ namespace UnityEditor.Connect
                 AdvertisementSettings.SetEnabledServiceWindow(enable);
                 CancelCurrentWebRequest();
 
-                if (enable)
-                {
-                    RefreshGameIds();
-                }
-                else
+                if (!enable)
                 {
                     SetGameIds(appleGameId: null, androidGameId: null);
                 }
@@ -105,6 +101,13 @@ namespace UnityEditor.Connect
             }
 
             base.InternalEnableService(enable, shouldUpdateApiFlag);
+        }
+
+        protected override void OnServiceFlagRequestCompleted(AsyncOperation asyncOperation)
+        {
+            base.OnServiceFlagRequestCompleted(asyncOperation);
+
+            RefreshGameIds();
         }
 
         void RefreshGameIds()

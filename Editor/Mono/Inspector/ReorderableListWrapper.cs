@@ -100,17 +100,17 @@ namespace UnityEditorInternal
             m_ReorderableList.ClearCache();
         }
 
-        public float GetHeight()
+        public float GetHeight(bool includeChildren)
         {
-            return m_HeaderHeight + (Property.isExpanded && m_ReorderableList != null ? Constants.kHeaderPadding + m_ReorderableList.GetHeight() : 0.0f);
+            return m_HeaderHeight + (includeChildren && Property.isExpanded && m_ReorderableList != null ? Constants.kHeaderPadding + m_ReorderableList.GetHeight() : 0.0f);
         }
 
-        public void Draw(GUIContent label, Rect r)
+        public void Draw(GUIContent label, Rect r, bool includeChildren)
         {
-            Draw(label, r, ReorderableList.Defaults.infinityRect);
+            Draw(label, r, ReorderableList.Defaults.infinityRect, includeChildren);
         }
 
-        public void Draw(GUIContent label, Rect r, Rect visibleArea)
+        public void Draw(GUIContent label, Rect r, Rect visibleArea, bool includeChildren)
         {
             r.xMin += EditorGUI.indent;
             var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
@@ -148,7 +148,14 @@ namespace UnityEditorInternal
             }
             GUI.enabled = prevEnabled;
 
-            if (Event.current.type == EventType.Used && sizeRect.Contains(Event.current.mousePosition)) Event.current.type = prevType;
+            if (!includeChildren) return;
+
+            DrawChildren(r, headerRect, sizeRect, visibleArea, prevType);
+        }
+
+        void DrawChildren(Rect listRect, Rect headerRect, Rect sizeRect, Rect visibleRect, EventType previousEvent)
+        {
+            if (Event.current.type == EventType.Used && sizeRect.Contains(Event.current.mousePosition)) Event.current.type = previousEvent;
 
             EditorGUI.DefaultPropertyField(sizeRect, m_ArraySize, GUIContent.none);
             EditorGUI.LabelField(sizeRect, new GUIContent("", "Array Size"));
@@ -182,11 +189,11 @@ namespace UnityEditorInternal
 
             if (Property.isExpanded)
             {
-                r.y += m_HeaderHeight + Constants.kHeaderPadding;
-                r.height -= m_HeaderHeight + Constants.kHeaderPadding;
+                listRect.y += m_HeaderHeight + Constants.kHeaderPadding;
+                listRect.height -= m_HeaderHeight + Constants.kHeaderPadding;
 
-                visibleArea.y -= r.y;
-                m_ReorderableList.DoList(r, visibleArea);
+                visibleRect.y -= listRect.y;
+                m_ReorderableList.DoList(listRect, visibleRect);
             }
         }
     }

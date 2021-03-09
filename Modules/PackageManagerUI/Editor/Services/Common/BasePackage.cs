@@ -40,7 +40,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (primary.isInstalled && !primary.isDirectDependency)
                     return PackageState.InstalledAsDependency;
 
-                if (primary != recommended && (primary.isInstalled && primary != latestKeyVersion))
+                if (primary != recommended && ((primary.isInstalled && primary != latestKeyVersion) || primary is AssetStorePackageVersion))
                     return PackageState.UpdateAvailable;
 
                 if (versions.importAvailable != null)
@@ -123,6 +123,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public abstract string uniqueId { get; }
         public abstract IVersionList versions { get; }
+
+        IEnumerable<UI.IPackageVersion> UI.IPackage.versions => versions.Cast<UI.IPackageVersion>();
 
         public abstract IPackage Clone();
     }

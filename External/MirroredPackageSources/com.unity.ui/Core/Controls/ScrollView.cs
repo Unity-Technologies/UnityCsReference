@@ -926,7 +926,6 @@ namespace UnityEngine.UIElements
 
         void OnPointerDown(PointerDownEvent evt)
         {
-            // We need to ignore temporarily mouse callback on mobile because they are sent with with the wrong type.
             if (evt.pointerType != PointerType.mouse && evt.isPrimary && m_ScrollingPointerId == PointerId.invalidPointerId)
             {
                 m_PostPointerUpAnimation?.Pause();
@@ -950,7 +949,8 @@ namespace UnityEngine.UIElements
                 if (touchStopsVelocityOnly)
                 {
                     contentContainer.CapturePointer(evt.pointerId);
-                    evt.PreventDefault();
+                    contentContainer.panel.PreventCompatibilityMouseEvents(evt.pointerId);
+                    evt.StopPropagation();
                 }
             }
         }

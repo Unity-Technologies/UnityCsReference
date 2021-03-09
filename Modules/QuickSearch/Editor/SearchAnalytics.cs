@@ -411,9 +411,13 @@ namespace UnityEditor.Search
 
             var allIndexes = SearchDatabase.Enumerate(SearchDatabase.IndexLocation.assets).ToArray();
             report.indexCount = allIndexes.Length;
-            var maxSize = allIndexes.Max(index => index.bytes?.Length ?? 0);
-            report.maxIndexSize = maxSize / 1048576f;
-
+            if (allIndexes.Length > 0)
+            {
+                var maxSize = allIndexes.Max(index => index.bytes?.Length ?? 0);
+                report.maxIndexSize = maxSize / 1048576f;
+            }
+            else
+                report.maxIndexSize = 0;
             return report;
         }
 

@@ -1,8 +1,8 @@
 namespace UnityEngine.UIElements
 {
-    internal class TwoPaneSplitViewResizer : MouseManipulator
+    internal class TwoPaneSplitViewResizer : PointerManipulator
     {
-        Vector2 m_Start;
+        Vector3 m_Start;
         protected bool m_Active;
         TwoPaneSplitView m_SplitView;
 
@@ -45,16 +45,16 @@ namespace UnityEngine.UIElements
 
         protected override void RegisterCallbacksOnTarget()
         {
-            target.RegisterCallback<MouseDownEvent>(OnMouseDown);
-            target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
-            target.RegisterCallback<MouseUpEvent>(OnMouseUp);
+            target.RegisterCallback<PointerDownEvent>(OnPointerDown);
+            target.RegisterCallback<PointerMoveEvent>(OnPointerMove);
+            target.RegisterCallback<PointerUpEvent>(OnPointerUp);
         }
 
         protected override void UnregisterCallbacksFromTarget()
         {
-            target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
-            target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
-            target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+            target.UnregisterCallback<PointerDownEvent>(OnPointerDown);
+            target.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
+            target.UnregisterCallback<PointerUpEvent>(OnPointerUp);
         }
 
         public void ApplyDelta(float delta)
@@ -92,7 +92,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        protected void OnMouseDown(MouseDownEvent e)
+        protected void OnPointerDown(PointerDownEvent e)
         {
             if (m_Active)
             {
@@ -102,38 +102,38 @@ namespace UnityEngine.UIElements
 
             if (CanStartManipulation(e))
             {
-                m_Start = e.localMousePosition;
+                m_Start = e.localPosition;
 
                 m_Active = true;
-                target.CaptureMouse();
+                target.CapturePointer(e.pointerId);
                 e.StopPropagation();
             }
         }
 
-        protected void OnMouseMove(MouseMoveEvent e)
+        protected void OnPointerMove(PointerMoveEvent e)
         {
-            if (!m_Active || !target.HasMouseCapture())
+            if (!m_Active || !target.HasPointerCapture(e.pointerId))
                 return;
 
-            Vector2 diff = e.localMousePosition - m_Start;
-            float mouseDiff = diff.x;
+            Vector2 diff = e.localPosition - m_Start;
+            var mouseDiff = diff.x;
             if (m_Orientation == TwoPaneSplitViewOrientation.Vertical)
                 mouseDiff = diff.y;
 
-            float delta = m_Direction * mouseDiff;
+            var delta = m_Direction * mouseDiff;
 
             ApplyDelta(delta);
 
             e.StopPropagation();
         }
 
-        protected void OnMouseUp(MouseUpEvent e)
+        protected void OnPointerUp(PointerUpEvent e)
         {
-            if (!m_Active || !target.HasMouseCapture() || !CanStopManipulation(e))
+            if (!m_Active || !target.HasPointerCapture(e.pointerId) || !CanStopManipulation(e))
                 return;
 
             m_Active = false;
-            target.ReleaseMouse();
+            target.ReleasePointer(e.pointerId);
             e.StopPropagation();
         }
     }

@@ -490,7 +490,8 @@ namespace UnityEngine.UIElements
                 get { return editorEngine.selectIndex; }
             }
 
-            bool ITextInputField.isReadOnly => isReadOnly;
+            // For input purposes, the field does not accept modification whether it's set as read only or is not enabled in the hierarchy.
+            bool ITextInputField.isReadOnly => isReadOnly || !enabledInHierarchy;
 
             /// <summary>
             /// Returns true if the field is read only.
@@ -866,8 +867,8 @@ namespace UnityEngine.UIElements
 
             internal virtual bool AcceptCharacter(char c)
             {
-                // when readonly, we do not accept any character
-                return !isReadOnly;
+                // When readonly or not enabled in the hierarchy, we do not accept any character.
+                return !isReadOnly && enabledInHierarchy;
             }
 
             /// <summary>

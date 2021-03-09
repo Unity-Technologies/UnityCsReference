@@ -145,6 +145,10 @@ namespace Unity.UI.Builder
 
             // Update sub title.
             UpdateSubtitleFromActiveUSS();
+            
+            // Init drag stylesheet root
+            classDragger.builderStylesheetRoot = container;
+            styleSheetsDragger.builderStylesheetRoot = container;
         }
 
         protected override bool IsSelectedItemValid(VisualElement element)

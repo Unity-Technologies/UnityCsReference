@@ -27,7 +27,7 @@ namespace UnityEngine.UIElements
 
             // Set-up the label and text...
             text = null;
-            this.AddManipulator(new PointerClickable(OnClickEvent));
+            this.AddManipulator(new Clickable(OnClickEvent));
 
             RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
             RegisterCallback<KeyDownEvent>(OnKeyDown);

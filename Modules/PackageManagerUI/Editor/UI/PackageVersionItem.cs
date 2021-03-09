@@ -45,24 +45,27 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var primary = package.versions.primary;
             var recommended = package.versions.recommended;
+            var versionInManifest = primary?.packageInfo?.projectDependenciesEntry;
             var stateText = string.Empty;
 
             if (version == primary)
             {
                 if (version.isInstalled)
-                    stateText = L10n.Tr("Currently Installed");
+                    stateText = L10n.Tr(version.isDirectDependency ? "Currently installed" : "Installed as dependency");
                 else if (version.HasTag(PackageTag.Downloadable) && version.isAvailableOnDisk)
-                    stateText = L10n.Tr("Currently Downloaded");
+                    stateText = L10n.Tr("Currently downloaded");
                 // with keyVersions being potentially larger now, we want to
                 //  show 'Recommended' text whether package is installed or not
                 //  if more than one version is in keyVersions
                 else if (version == recommended && alwaysShowRecommendedLabel)
                     stateText = L10n.Tr("Recommended");
             }
+            else if (versionInManifest == version.versionString)
+                stateText = L10n.Tr("Requested but overridden");
             else if (version == recommended)
                 stateText = L10n.Tr("Recommended");
             else if (primary.isInstalled && isLatestVersion)
-                stateText = L10n.Tr("Latest Update");
+                stateText = L10n.Tr("Latest update");
 
             stateLabel.text = stateText;
 

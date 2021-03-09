@@ -196,9 +196,47 @@ namespace Unity.UI.Builder
                 return AssetMoveResult.FailedMove;
         }
 
+        internal static bool IsAssetUsedInDocument(BuilderDocument document, string assetPath)
+        {
+            // Check current document.
+            var isAssetUsedInDocument = assetPath.Equals(document.uxmlPath) || document.ussPaths.Contains(assetPath);
+
+            if (!isAssetUsedInDocument)
+            {
+                // Check uxml and uss paths in document dependencies.
+                isAssetUsedInDocument = IsAssetUsedInDependencies(document.visualTreeAsset, assetPath);
+            }
+
+            return isAssetUsedInDocument;
+        }
+
+        static bool IsAssetUsedInDependencies(VisualTreeAsset visualTreeAsset, string assetPath)
+        {
+            foreach (var styleSheet in visualTreeAsset.GetAllReferencedStyleSheets())
+            {
+                if (AssetDatabase.GetAssetPath(styleSheet) == assetPath)
+                {
+                    return true;
+                }
+            }
+
+            foreach (var vta in visualTreeAsset.templateDependencies)
+            {
+                var path = visualTreeAsset.GetPathFromTemplateName(vta.name);
+                if (path == assetPath)
+                {
+                    return true;
+                }
+
+                return IsAssetUsedInDependencies(vta, assetPath);
+            }
+
+            return false;
+        }
+
         bool IsFileActionCompatible(string assetPath, string actionName)
         {
-            if (assetPath.Equals(document.uxmlPath) || document.ussPaths.Contains(assetPath))
+            if (IsAssetUsedInDocument(document, assetPath))
             {
                 var fileName = Path.GetFileName(assetPath);
                 var acceptAction = BuilderDialogsUtility.DisplayDialog(BuilderConstants.ErrorDialogNotice,

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using NiceIO;
 using UnityEditor;
 
 namespace UnityEditorInternal
@@ -31,14 +32,25 @@ namespace UnityEditorInternal
 
             arguments.Add(FormatArgument("outputpath", builder.ConvertOutputFileToFullPath(outputRelativePath)));
 
+            string cacheDirectory = null;
             if (!string.IsNullOrEmpty(builder.CacheDirectory) && !builder.OverriddenCacheDirectory)
-                arguments.Add(FormatArgument("cachedirectory", IL2CPPBuilder.GetShortPathName(CacheDirectoryPathFor(builder.CacheDirectory))));
+            {
+                cacheDirectory = IL2CPPBuilder.GetShortPathName(CacheDirectoryPathFor(builder.CacheDirectory));
+                arguments.Add(FormatArgument("cachedirectory", cacheDirectory));
+            }
 
             if (!string.IsNullOrEmpty(builder.CompilerFlags))
                 arguments.Add(FormatArgument("compiler-flags", builder.CompilerFlags));
 
             if (!string.IsNullOrEmpty(builder.LinkerFlags))
-                arguments.Add(FormatArgument("linker-flags", builder.LinkerFlags));
+            {
+                if (cacheDirectory == null)
+                    throw new ArgumentException("If you pass linkerflags, a cachedirectory also needs to be passed.");
+
+                NPath templinkerflagsTxt = $"{cacheDirectory}/linkerflags/linkerflags.txt";
+                templinkerflagsTxt.WriteAllText(builder.LinkerFlags);
+                arguments.Add(FormatArgument("linker-flags-file", templinkerflagsTxt.ToString()));
+            }
 
             if (!string.IsNullOrEmpty(builder.PluginPath))
                 arguments.Add(FormatArgument("plugin", builder.PluginPath));

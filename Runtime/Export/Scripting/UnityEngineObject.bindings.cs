@@ -397,7 +397,7 @@ namespace UnityEngine
         [NativeMethod(Name = "CurrentThreadIsMainThread", IsFreeFunction = true, IsThreadSafe = true)]
         extern static bool CurrentThreadIsMainThread();
 
-        [FreeFunction("CloneObject")]
+        [NativeMethod(Name = "CloneObject", IsFreeFunction = true, ThrowsException = true)]
         extern static Object Internal_CloneSingle([NotNull("NullExceptionObject")] Object data);
 
         [FreeFunction("CloneObject")]

@@ -21,24 +21,9 @@ namespace UnityEditor.SceneTemplate
         public delegate void SceneTemplateAssetModified(SceneTemplateAsset asset);
         public static event SceneTemplateAssetModified sceneTemplateAssetModified;
 
-        private const string k_TemplateScenePropertyName = nameof(SceneTemplateAsset.templateScene);
-        private const string k_TemplatePipelineName = nameof(SceneTemplateAsset.templatePipeline);
-        private const string k_TemplateTitlePropertyName = nameof(SceneTemplateAsset.templateName);
-        private const string k_TemplateDescriptionPropertyName = nameof(SceneTemplateAsset.description);
-        private const string k_TemplateAddToDefaultsPropertyName = nameof(SceneTemplateAsset.addToDefaults);
-        private const string k_TemplateThumbnailPropertyName = nameof(SceneTemplateAsset.preview);
-        private const string k_DependenciesPropertyName = nameof(SceneTemplateAsset.dependencies);
-        private const string k_DependencyPropertyName = nameof(DependencyInfo.dependency);
-        private const string k_InstantiationModePropertyName = nameof(DependencyInfo.instantiationMode);
-
-        private const string k_DependencyRowElementName = "scene-template-asset-inspector-dependency-row";
-        private const string k_DependenciesLabelName = "scene-template-asset-inspector-dependency-label";
         private const string k_ThumbnailAreaName = "scene-template-asset-inspector-thumbnail-area";
         private const string k_DependencyListView = "scene-template-asset-inspector-list-view";
         private const string k_NoLabelRowName = "scene-template-asset-inspector-no-label-row";
-        private const string k_SceneTemplatePipelineName = "scene-template-pipeline-field";
-
-        private const string k_DependencyInfo = @"This section lists dependencies of the Template Scene assigned above. Enable the Clone option for any dependency that you want to clone when you create a new scene from this template. Unity duplicates cloned assets into a folder with the same name as the new scene. The new scene references any dependencies that are not cloned.";
 
         const string k_SceneTemplateInfo = @"Scene Template Pipeline must be a Mono Script whose main class derives from ISceneTemplatePipeline or SceneTemplatePipelineAdapter. The main class and the script must have the same name.";
 
@@ -55,9 +40,7 @@ namespace UnityEditor.SceneTemplate
 
         private Texture2D m_HelpIcon;
 
-        private VisualElement m_DependencyHelpBox;
-        private ZebraList m_ZebraList;
-        private Toggle m_CloneHeaderToggle;
+        private DependencyListView m_DependencyListView;
         VisualElement Root { get; set; }
 
         private class SnapshotTargetInfo
@@ -105,7 +88,7 @@ namespace UnityEditor.SceneTemplate
             var detailElement = new VisualElement();
 
             // Template scene
-            var templateSceneProperty = serializedObject.FindProperty(k_TemplateScenePropertyName);
+            var templateSceneProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplateScenePropertyName);
             var templatePropertyField = new PropertyField(templateSceneProperty, "Template Scene");
             templatePropertyField.RegisterCallback<ChangeEvent<Object>>(e =>
             {
@@ -115,13 +98,13 @@ namespace UnityEditor.SceneTemplate
             detailElement.Add(templatePropertyField);
 
             // Scene title
-            var templateTitleProperty = serializedObject.FindProperty(k_TemplateTitlePropertyName);
+            var templateTitleProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplateTitlePropertyName);
             var titlePropertyField = new PropertyField(templateTitleProperty, "Title");
             titlePropertyField.RegisterCallback<ChangeEvent<string>>(e => TriggerSceneTemplateModified());
             detailElement.Add(titlePropertyField);
 
             // Scene description
-            var templateDescriptionProperty = serializedObject.FindProperty(k_TemplateDescriptionPropertyName);
+            var templateDescriptionProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplateDescriptionPropertyName);
             var description = new PropertyField(templateDescriptionProperty, "Description");
             description.RegisterCallback<ChangeEvent<string>>(e => TriggerSceneTemplateModified());
             description.RegisterCallback<SerializedPropertyBindEvent>(e =>
@@ -140,7 +123,7 @@ namespace UnityEditor.SceneTemplate
             });
             detailElement.Add(description);
 
-            var templateAddToDefaultsProperty = serializedObject.FindProperty(k_TemplateAddToDefaultsPropertyName);
+            var templateAddToDefaultsProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplateAddToDefaultsPropertyName);
             var defaultTemplateField = new VisualElement();
             defaultTemplateField.style.flexDirection = FlexDirection.Row;
             var addToDefaultsPropertyField = new PropertyField(templateAddToDefaultsProperty, " ");
@@ -157,14 +140,14 @@ namespace UnityEditor.SceneTemplate
             root.Add(CreateFoldoutInspector(detailElement, "Details", "SceneTemplateInspectorDetailsFoldout"));
 
             // Template thumbnail
-            var templateThumbnailProperty = serializedObject.FindProperty(k_TemplateThumbnailPropertyName);
+            var templateThumbnailProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplateThumbnailPropertyName);
             var thumbnailField = MakeThumbnailField(templateThumbnailProperty, "Texture");
             root.Add(CreateFoldoutInspector(thumbnailField, "Thumbnail", "SceneTemplateInspectorThumbnailFoldout"));
 
             // SceneTemplatePipeline
             var sceneTemplatePipeline = new VisualElement();
-            var pipelineProperty = serializedObject.FindProperty(k_TemplatePipelineName);
-            var pipelineField = new PropertyField(pipelineProperty, "Scene Template Pipeline") { name = k_SceneTemplatePipelineName };
+            var pipelineProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplatePipelineName);
+            var pipelineField = new PropertyField(pipelineProperty, "Scene Template Pipeline");
             pipelineField.RegisterCallback<ChangeEvent<Object>>(e =>
             {
                 if (e.newValue != null && !SceneTemplateAsset.IsValidPipeline(e.newValue as MonoScript))
@@ -195,7 +178,7 @@ namespace UnityEditor.SceneTemplate
             var scriptAsset = SceneTemplateService.CreateNewSceneTemplatePipeline(folder) as MonoScript;
             if (scriptAsset == null)
                 return;
-            var pipelineProperty = serializedObject.FindProperty(k_TemplatePipelineName);
+            var pipelineProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplatePipelineName);
             pipelineProperty.objectReferenceValue = scriptAsset;
             serializedObject.ApplyModifiedProperties();
         }
@@ -250,204 +233,17 @@ namespace UnityEditor.SceneTemplate
         private VisualElement BuildDependencyRows()
         {
             var dependencies = new VisualElement();
-            var dependenciesProperty = serializedObject.FindProperty(k_DependenciesPropertyName);
-            m_DependencyHelpBox = new HelpBox(k_DependencyInfo, HelpBoxMessageType.Info);// AddHelpBox(k_DependencyInfo, MessageType.Info, "scene-template-asset-inspector-help-box-dependency");
-            dependencies.Add(m_DependencyHelpBox);
+            var dependenciesProperty = serializedObject.FindProperty(SceneTemplateUtils.DependenciesPropertyName);
 
             m_DependenciesProperty = new List<SerializedProperty>();
             PopulateDependencyProperties(dependenciesProperty, m_DependenciesProperty);
 
-            m_ZebraList = new ZebraList(m_DependenciesProperty, k_ItemSize, () =>
-            {
-                var changeAllRowElement = new VisualElement();
-                changeAllRowElement.style.flexDirection = FlexDirection.Row;
-                dependencies.Add(changeAllRowElement);
-
-                var dependenciesLabelField = new Label("Dependencies") { name = k_DependenciesLabelName };
-                dependenciesLabelField.AddToClassList(Styles.classHeaderLabel);
-                dependenciesLabelField.AddToClassList(Styles.classUnityBaseField);
-                dependenciesLabelField.AddToClassList("scene-template-asset-inspector-dependency-header");
-                changeAllRowElement.Add(dependenciesLabelField);
-
-                var cloneLabel = new Label("Clone");
-                changeAllRowElement.Add(cloneLabel);
-                m_CloneHeaderToggle = new Toggle();
-                m_CloneHeaderToggle.SetValueWithoutNotify(AreAllDependenciesCloned());
-                m_CloneHeaderToggle.RegisterValueChangedCallback<bool>(evt =>
-                {
-                    var listContent = m_ZebraList.listView.Q<VisualElement>("unity-content-container");
-                    foreach (var row in listContent.Children())
-                    {
-                        var prop = (SerializedProperty)row.userData;
-                        var mode = evt.newValue ? TemplateInstantiationMode.Clone : TemplateInstantiationMode.Reference;
-                        SetDependencyInstantiationMode(row, mode);
-                    }
-                    serializedObject.ApplyModifiedProperties();
-                });
-                m_CloneHeaderToggle.AddToClassList("scene-template-asset-inspector-dependency-header-clone-column");
-                changeAllRowElement.Add(m_CloneHeaderToggle);
-
-                return changeAllRowElement;
-            }, CreateDependencyElement, BindDependencyElement);
-            m_ZebraList.AddToClassList(Styles.classUnityBaseField);
-            m_ZebraList.listView.selectionType = SelectionType.Multiple;
-            m_ZebraList.listView.onItemsChosen += OnDoubleClick;
-            m_ZebraList.listView.RegisterCallback<KeyUpEvent>(OnKeyUpEvent);
-            dependencies.Add(m_ZebraList);
-            m_ZebraList.name = k_DependencyListView;
+            m_DependencyListView = new DependencyListView(m_DependenciesProperty, k_ItemSize, serializedObject);
+            m_DependencyListView.AddToClassList(Styles.classUnityBaseField);
+            dependencies.Add(m_DependencyListView);
+            m_DependencyListView.name = k_DependencyListView;
             UpdateDependencyListVisibility();
             return dependencies;
-        }
-
-        private bool AreAllDependenciesCloned()
-        {
-            var sceneTemplateAsset = (SceneTemplateAsset)serializedObject.targetObject;
-            return sceneTemplateAsset.dependencies
-                .Where(dep => SceneTemplateProjectSettings.Get().GetDependencyInfo(dep.dependency).supportsModification)
-                .All(dep => dep.instantiationMode == TemplateInstantiationMode.Clone);
-        }
-
-        private static void OnDoubleClick(IEnumerable<object> objs)
-        {
-            var obj = objs.FirstOrDefault();
-            var property = obj as SerializedProperty;
-            if (property == null)
-                return;
-
-            var depProperty = property.FindPropertyRelative(k_DependencyPropertyName);
-            if (depProperty.objectReferenceValue != null)
-            {
-                EditorGUIUtility.PingObject(depProperty.objectReferenceValue);
-            }
-        }
-
-        private void OnKeyUpEvent(KeyUpEvent e)
-        {
-            if (e.keyCode == KeyCode.Space)
-            {
-                if (m_ZebraList.listView.selectedIndex == -1)
-                    return;
-
-                // If there is any value that is not set to Clone, set everything to Clone. Otherwise,
-                // set everything to Reference.
-                var selectedItems = GetSelectedDependencies();
-                var allClone = selectedItems.Select(item => item.FindPropertyRelative(k_InstantiationModePropertyName))
-                    .All(instantiationModeProperty => instantiationModeProperty.enumValueIndex == (int)TemplateInstantiationMode.Clone);
-
-                var newEnumValue = allClone ? TemplateInstantiationMode.Reference : TemplateInstantiationMode.Clone;
-                SyncListSelectionToValue(newEnumValue);
-
-                e.StopPropagation();
-            }
-        }
-
-        private static VisualElement CreateDependencyElement()
-        {
-            var row = new VisualElement();
-            row.style.flexDirection = FlexDirection.Row;
-            row.name = k_DependencyRowElementName;
-
-            var icon = new Image(){ scaleMode = ScaleMode.ScaleAndCrop, pickingMode = PickingMode.Ignore };
-            icon.AddToClassList("scene-template-asset-inspector-dependency-row-icon");
-            row.Add(icon);
-
-            var label = new Label();
-            label.AddToClassList("scene-template-asset-inspector-dependency-row-label");
-            row.Add(label);
-
-            var cloneToggle = new Toggle();
-            cloneToggle.AddToClassList("scene-template-asset-inspector-dependency-row-clone-toggle");
-            row.Add(cloneToggle);
-
-            return row;
-        }
-
-        void BindDependencyElement(VisualElement el, int modelIndex)
-        {
-            var property = m_DependenciesProperty[modelIndex];
-            var icon = (Image)el.ElementAt(0);
-            var label = (Label)el.ElementAt(1);
-            var depProperty = property.FindPropertyRelative(k_DependencyPropertyName);
-            var content = EditorGUIUtility.ObjectContent(depProperty.objectReferenceValue, depProperty.objectReferenceValue.GetType());
-            icon.image = content.image;
-            label.text = content.text;
-            el.userData = property;
-
-            var instantiationModeProperty = property.FindPropertyRelative(k_InstantiationModePropertyName);
-            var cloneToggle = (Toggle)el.ElementAt(2);
-            cloneToggle.value = IsCloning(instantiationModeProperty);
-            cloneToggle.SetEnabled(SceneTemplateProjectSettings.Get().GetDependencyInfo(depProperty.objectReferenceValue).supportsModification);
-            cloneToggle.RegisterValueChangedCallback<bool>(evt =>
-            {
-                if (evt.newValue == IsCloning(instantiationModeProperty))
-                    return;
-                var newInstantiationType = (evt.newValue ? TemplateInstantiationMode.Clone : TemplateInstantiationMode.Reference);
-                instantiationModeProperty.enumValueIndex = (int)newInstantiationType;
-
-                // Sync Selection if the dependency is part of it:
-                if (m_ZebraList.listView.selectedIndices.Contains(modelIndex))
-                    SyncListSelectionToValue(newInstantiationType);
-                serializedObject.ApplyModifiedProperties();
-
-                m_CloneHeaderToggle.SetValueWithoutNotify(AreAllDependenciesCloned());
-            });
-        }
-
-        private void SyncListSelectionToValue(TemplateInstantiationMode mode)
-        {
-            if (m_ZebraList.listView.selectedIndex != -1)
-            {
-                var listContent = m_ZebraList.listView.Q<VisualElement>("unity-content-container");
-                foreach (var row in listContent.Children())
-                {
-                    var prop = (SerializedProperty)row.userData;
-                    if (row.ClassListContains("unity-list-view__item--selected"))
-                    {
-                        SetDependencyInstantiationMode(row, mode);
-                    }
-                }
-            }
-            serializedObject.ApplyModifiedProperties();
-        }
-
-        private void SetDependencyInstantiationMode(VisualElement row, TemplateInstantiationMode mode)
-        {
-            var prop = (SerializedProperty)row.userData;
-            var toggle = (Toggle)row.ElementAt(2);
-            if (!toggle.enabledSelf)
-                return;
-
-            toggle.SetValueWithoutNotify(mode == TemplateInstantiationMode.Clone);
-
-            var depProp = prop.FindPropertyRelative(k_InstantiationModePropertyName);
-            if (depProp.enumValueIndex != (int)mode)
-            {
-                depProp.enumValueIndex = (int)mode;
-            }
-        }
-
-        private IEnumerable<SerializedProperty> GetSelectedDependencies()
-        {
-            var selectedItems = new List<SerializedProperty>();
-            if (m_ZebraList.listView.selectedIndex != -1)
-            {
-                var listContent = m_ZebraList.listView.Q<VisualElement>("unity-content-container");
-                foreach (var row in listContent.Children())
-                {
-                    var prop = (SerializedProperty)row.userData;
-                    if (row.ClassListContains("unity-list-view__item--selected"))
-                    {
-                        selectedItems.Add(prop);
-                    }
-                }
-            }
-            return selectedItems;
-        }
-
-        static bool IsCloning(SerializedProperty prop)
-        {
-            var instantiationMode = (TemplateInstantiationMode)prop.enumValueIndex;
-            return instantiationMode == TemplateInstantiationMode.Clone;
         }
 
         private void RebuildDependencies(VisualElement root)
@@ -455,18 +251,17 @@ namespace UnityEditor.SceneTemplate
             var sceneTemplateAsset = (SceneTemplateAsset)serializedObject.targetObject;
             sceneTemplateAsset.BindScene(sceneTemplateAsset.templateScene);
             serializedObject.Update();
-            var dependenciesProperty = serializedObject.FindProperty(k_DependenciesPropertyName);
+            var dependenciesProperty = serializedObject.FindProperty(SceneTemplateUtils.DependenciesPropertyName);
             m_DependenciesProperty.Clear();
             PopulateDependencyProperties(dependenciesProperty, m_DependenciesProperty);
-            m_ZebraList.listView.Refresh();
+            m_DependencyListView.Refresh();
             UpdateDependencyListVisibility();
         }
 
         private void UpdateDependencyListVisibility()
         {
-            m_ZebraList.style.height = (m_DependenciesProperty.Count + 1) * k_ItemSize + 2;
-            m_DependencyHelpBox.visible = m_DependenciesProperty.Count > 0;
-            m_ZebraList.visible = m_DependenciesProperty.Count > 0;
+            m_DependencyListView.UpdateListViewSize();
+            m_DependencyListView.visible = m_DependenciesProperty.Count > 0;
         }
 
         private static void PopulateDependencyProperties(SerializedProperty rootProperty, List<SerializedProperty> model)
@@ -475,7 +270,7 @@ namespace UnityEditor.SceneTemplate
             for (var i = 0; i < numDependency; ++i)
             {
                 var depInfoProperty = rootProperty.GetArrayElementAtIndex(i);
-                var depProperty = depInfoProperty.FindPropertyRelative(k_DependencyPropertyName);
+                var depProperty = depInfoProperty.FindPropertyRelative(SceneTemplateUtils.DependencyPropertyName);
                 if (!SceneTemplateProjectSettings.Get().GetDependencyInfo(depProperty.objectReferenceValue).ignore)
                 {
                     model.Add(depInfoProperty);

@@ -332,7 +332,8 @@ namespace UnityEditor.Search
         private volatile bool m_IndexReady = false;
         private long m_Timestamp;
 
-        private readonly QueryEngine<SearchResult> m_QueryEngine = new QueryEngine<SearchResult>(validateFilters: false);
+        private static readonly QueryValidationOptions k_QueryEngineOptions = new QueryValidationOptions {validateFilters = false, skipNestedQueries = true};
+        private readonly QueryEngine<SearchResult> m_QueryEngine = new QueryEngine<SearchResult>(k_QueryEngineOptions);
         private readonly Dictionary<string, Query<SearchResult, object>> m_QueryPool = new Dictionary<string, Query<SearchResult, object>>();
 
         private readonly Dictionary<RangeSet, IndexRange> m_FixedRanges;
@@ -560,7 +561,7 @@ namespace UnityEditor.Search
             if (!parsedQuery.valid)
             {
                 if (context != null && provider != null)
-                    context.AddSearchQueryErrors(parsedQuery.errors.Select(e => new SearchQueryError(e.index, e.length, e.reason, context, provider)));
+                    context.AddSearchQueryErrors(parsedQuery.errors.Select(e => new SearchQueryError(e, context, provider)));
                 return Enumerable.Empty<SearchResult>();
             }
             return parsedQuery.Apply(null).OrderBy(e => e.score).Distinct();

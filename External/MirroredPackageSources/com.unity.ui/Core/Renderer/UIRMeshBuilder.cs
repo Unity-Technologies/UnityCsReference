@@ -580,8 +580,11 @@ namespace UnityEngine.UIElements.UIR
                     cc.firstDegenerateIndex = cc.firstDegenerateIndex == -1 ? i : cc.firstDegenerateIndex;
                     cc.degenerateTriangles++;
                 }
+                else
+                {
+                    cc.firstDegenerateIndex = -1;
+                }
 
-                cc.firstDegenerateIndex = -1;
                 cc.clippedTriangles++;
                 cc.addedTriangles += 4; // Triangles clipping against corners may spawn more triangles
             }
@@ -656,22 +659,41 @@ namespace UnityEngine.UIElements.UIR
             mwd.m_Indices = mwd.m_Indices.Slice(0, mwd.currentIndex);
         }
 
+        private enum VertexClipEdge
+        {
+            None    = 0,
+            Left   = 1 << 0,
+            Top    = 1 << 1,
+            Right  = 1 << 2,
+            Bottom = 1 << 3
+        }
+        private static VertexClipEdge[] s_AllClipEdges = new VertexClipEdge[] { VertexClipEdge.Left, VertexClipEdge.Top, VertexClipEdge.Right, VertexClipEdge.Bottom };
+
         unsafe static void RectClipTriangle(Vertex* vt, UInt16* it, Vector4 clipRectMinMax, MeshWriteData mwd, ref UInt16 nextNewVertex)
         {
             Vertex* newVerts = stackalloc Vertex[4 + 3 + 6];
+            VertexClipEdge* vertClipEdges = stackalloc VertexClipEdge[3];
+            Vector4* clipSegments = stackalloc Vector4[4];
             int newVertsCount = 0;
 
             // First check, add original triangle vertices if they all fall within the clip rect, and early out if they are 3.
             // This hopefully will trap the majority of triangles.
             for (int i = 0; i < 3; i++)
             {
-                if ((vt[i].position.x >= clipRectMinMax.x) &&
-                    (vt[i].position.y >= clipRectMinMax.y) &&
-                    (vt[i].position.x <= clipRectMinMax.z) &&
-                    (vt[i].position.y <= clipRectMinMax.w))
-                {
+                VertexClipEdge clipEdge = VertexClipEdge.None;
+                if (vt[i].position.x < clipRectMinMax.x)
+                    clipEdge |= VertexClipEdge.Left;
+                if (vt[i].position.y < clipRectMinMax.y)
+                    clipEdge |= VertexClipEdge.Top;
+                if (vt[i].position.x > clipRectMinMax.z)
+                    clipEdge |= VertexClipEdge.Right;
+                if (vt[i].position.y > clipRectMinMax.w)
+                    clipEdge |= VertexClipEdge.Bottom;
+
+                if (clipEdge == VertexClipEdge.None)
                     newVerts[newVertsCount++] = vt[i];
-                }
+
+                vertClipEdges[i] = clipEdge;
             }
 
             if (newVertsCount == 3)
@@ -702,55 +724,27 @@ namespace UnityEngine.UIElements.UIR
                 newVerts[newVertsCount++] = InterpolateVertexInTriangle(vt, clipRectMinMax.z, clipRectMinMax.w, uvwBR);
 
             // Next, test triangle edges against rect sides (12 tests)
-            float t;
-            t = IntersectSegments(vt[0].position.x, vt[0].position.y, vt[1].position.x, vt[1].position.y, clipRectMinMax.x, clipRectMinMax.y, clipRectMinMax.z, clipRectMinMax.y); // Edge 1 against top side
-            if (t != float.MaxValue)
-                newVerts[newVertsCount++] = InterpolateVertexInTriangleEdge(vt, 0, 1, t);
 
-            t = IntersectSegments(vt[1].position.x, vt[1].position.y, vt[2].position.x, vt[2].position.y, clipRectMinMax.x, clipRectMinMax.y, clipRectMinMax.z, clipRectMinMax.y); // Edge 2 against top side
-            if (t != float.MaxValue)
-                newVerts[newVertsCount++] = InterpolateVertexInTriangleEdge(vt, 1, 2, t);
+            // The segments should follow the same order as s_AllEdges
+            clipSegments[0] = new Vector4(clipRectMinMax.x, clipRectMinMax.y, clipRectMinMax.x, clipRectMinMax.w); // Left
+            clipSegments[1] = new Vector4(clipRectMinMax.x, clipRectMinMax.y, clipRectMinMax.z, clipRectMinMax.y); // Top
+            clipSegments[2] = new Vector4(clipRectMinMax.z, clipRectMinMax.y, clipRectMinMax.z, clipRectMinMax.w); // Right
+            clipSegments[3] = new Vector4(clipRectMinMax.x, clipRectMinMax.w, clipRectMinMax.z, clipRectMinMax.w); // Bottom
+            for (int e = 0; e < s_AllClipEdges.Length; ++e)
+            {
+                var clipEdge = s_AllClipEdges[e];
+                var clipSegment = clipSegments[e];
+                for (int i = 0; i < 3; ++i)
+                {
+                    int j = (i + 1) % 3;
+                    if ((vertClipEdges[i] & clipEdge) == (vertClipEdges[j] & clipEdge))
+                        continue; // This segment doesn't cross that edge
 
-            t = IntersectSegments(vt[2].position.x, vt[2].position.y, vt[0].position.x, vt[0].position.y, clipRectMinMax.x, clipRectMinMax.y, clipRectMinMax.z, clipRectMinMax.y); // Edge 3 against top side
-            if (t != float.MaxValue)
-                newVerts[newVertsCount++] = InterpolateVertexInTriangleEdge(vt, 2, 0, t);
-
-
-            t = IntersectSegments(vt[0].position.x, vt[0].position.y, vt[1].position.x, vt[1].position.y, clipRectMinMax.z, clipRectMinMax.y, clipRectMinMax.z, clipRectMinMax.w); // Edge 1 against right side
-            if (t != float.MaxValue)
-                newVerts[newVertsCount++] = InterpolateVertexInTriangleEdge(vt, 0, 1, t);
-
-            t = IntersectSegments(vt[1].position.x, vt[1].position.y, vt[2].position.x, vt[2].position.y, clipRectMinMax.z, clipRectMinMax.y, clipRectMinMax.z, clipRectMinMax.w); // Edge 2 against right side
-            if (t != float.MaxValue)
-                newVerts[newVertsCount++] = InterpolateVertexInTriangleEdge(vt, 1, 2, t);
-
-            t = IntersectSegments(vt[2].position.x, vt[2].position.y, vt[0].position.x, vt[0].position.y, clipRectMinMax.z, clipRectMinMax.y, clipRectMinMax.z, clipRectMinMax.w); // Edge 3 against right side
-            if (t != float.MaxValue)
-                newVerts[newVertsCount++] = InterpolateVertexInTriangleEdge(vt, 2, 0, t);
-
-            t = IntersectSegments(vt[0].position.x, vt[0].position.y, vt[1].position.x, vt[1].position.y, clipRectMinMax.x, clipRectMinMax.w, clipRectMinMax.z, clipRectMinMax.w); // Edge 1 against bottom side
-            if (t != float.MaxValue)
-                newVerts[newVertsCount++] = InterpolateVertexInTriangleEdge(vt, 0, 1, t);
-
-            t = IntersectSegments(vt[1].position.x, vt[1].position.y, vt[2].position.x, vt[2].position.y, clipRectMinMax.x, clipRectMinMax.w, clipRectMinMax.z, clipRectMinMax.w); // Edge 2 against bottom side
-            if (t != float.MaxValue)
-                newVerts[newVertsCount++] = InterpolateVertexInTriangleEdge(vt, 1, 2, t);
-
-            t = IntersectSegments(vt[2].position.x, vt[2].position.y, vt[0].position.x, vt[0].position.y, clipRectMinMax.x, clipRectMinMax.w, clipRectMinMax.z, clipRectMinMax.w); // Edge 3 against bottom side
-            if (t != float.MaxValue)
-                newVerts[newVertsCount++] = InterpolateVertexInTriangleEdge(vt, 2, 0, t);
-
-            t = IntersectSegments(vt[0].position.x, vt[0].position.y, vt[1].position.x, vt[1].position.y, clipRectMinMax.x, clipRectMinMax.y, clipRectMinMax.x, clipRectMinMax.w); // Edge 1 against left side
-            if (t != float.MaxValue)
-                newVerts[newVertsCount++] = InterpolateVertexInTriangleEdge(vt, 0, 1, t);
-
-            t = IntersectSegments(vt[1].position.x, vt[1].position.y, vt[2].position.x, vt[2].position.y, clipRectMinMax.x, clipRectMinMax.y, clipRectMinMax.x, clipRectMinMax.w); // Edge 2 against left side
-            if (t != float.MaxValue)
-                newVerts[newVertsCount++] = InterpolateVertexInTriangleEdge(vt, 1, 2, t);
-
-            t = IntersectSegments(vt[2].position.x, vt[2].position.y, vt[0].position.x, vt[0].position.y, clipRectMinMax.x, clipRectMinMax.y, clipRectMinMax.x, clipRectMinMax.w); // Edge 3 against left side
-            if (t != float.MaxValue)
-                newVerts[newVertsCount++] = InterpolateVertexInTriangleEdge(vt, 2, 0, t);
+                    float t = IntersectSegments(vt[i].position.x, vt[i].position.y, vt[j].position.x, vt[j].position.y, clipSegment.x, clipSegment.y, clipSegment.z, clipSegment.w);
+                    if (t != float.MaxValue)
+                        newVerts[newVertsCount++] = InterpolateVertexInTriangleEdge(vt, i, j, t);
+                }
+            }
 
             if (newVertsCount == 0)
                 return; // This should be rare. It means the bounding box test intersected but the accurate test found no intersection. It's ok.
@@ -879,15 +873,69 @@ namespace UnityEngine.UIElements.UIR
 
         unsafe static float IntersectSegments(float ax, float ay, float bx, float by, float cx, float cy, float dx, float dy)
         {
+            // We use this epsilon to reject "almost parallel" segments which may lead to precision issues.
+            // Consider exposing this value to provide more control if needed.
+            const float kEpsilon = 0.00001f;
+
+
+            /*
+             *         Notes on a1 = (ax - dx) * (by - dy) - (ay - dy) * (bx - dx);
+             *
+             *          a1 is the double of the signed area of the triangle ABD
+             *          - The double because there is no need to divide by 2 for theses calculations
+             *
+             *          - Signed is important in this context as changing the order of the points (clockwise vs counterclockwise) changes the sign
+             *              This is used to test if D and C are on the same side of the line going through a-b (a1 vs a1)
+
+             *
+             *          a1 = (ax - dx) * (by - dy) - (ay - dy) * (bx - dx) = large rectangle - small rectangle
+             *
+             *          Larger rectangle = (ax - dx) * (by - dy)
+             *          smaller rectangle = (ay - dy) * (bx - dx)
+             *                  => can be expressed as two smaller rectangle with the same height
+             *                      smaller rectangle  = (ay - dy) * (  (bx + ax) -(ax + dx) )
+             *
+             *          One of theses smaller rectangle represent the double of the area of DAE (bottom right corner)
+             *          the other represent the double of the area BAE (area of triangle = base * height/2, the base is what is straight on x or y axis)
+             *
+             *
+             *          Attempt to document how to get thoses rectangles here : https://docs.google.com/presentation/d/1KokdRTwJKrW4PWBIVHubuq_togqwh-ftxJUlMZAdvWo/edit?usp=sharing
+             *
+             *         +------------------------------------------------------------------------------B------------------------------------------+
+             *         |                                                                       ---/     ----\                                    |
+             *         |                                                                  ----/              ----\                               |
+             *         |                                                             ----/                        ----\                          |
+             *         |                                                         ---/                                  ----\                     |
+             *         |                                                    ----/                                           ---\                 |
+             *         |                                                ---/                                                    ----\            |
+             *         |                                           ----/                                                             ----\       |
+             *         |                                       ---/                                                                       ----\  |
+             *         |-----------------------------------------------------------------------------+                                   /-------A
+             *         |                             ----/                                           |                    /--------------        |
+             *         |                         ---/                                                |     /--------------                       |
+             *         |                    ----/                                           /--------|-----                                      |
+             *         |                ---/                                 /--------------         |                                           |
+             *         |           ----/                      /--------------                        |                                           |
+             *         |      ----/            /--------------                                       |                                           |
+             *         |  ---/  /--------------                                                      |                                           |
+             *         |--------                                                                     |                                           |
+             *         D-------------------------------------------------------------------------------------------------------------------------E
+             *
+             */
+
+
             float a1 = (ax - dx) * (by - dy) - (ay - dy) * (bx - dx);
             float a2 = (ax - cx) * (by - cy) - (ay - cy) * (bx - cx);
-            if (a1 * a2 >= 0)
+            if (a1 * a2 >= -kEpsilon)
                 return float.MaxValue; // No intersection
+
             // Return t on AB
             float a3 = (cx - ax) * (dy - ay) - (cy - ay) * (dx - ax);
-            float a4 = a3 + a2 - a1;
-            if (a3 * a4 >= 0)
+            float a4 = a3 + a2 - a1;    // We know the area of the quadrilateral, so we can speed up the calculation of the last area. Signs have been flipped because some are negative/opposite.
+            if (a3 * a4 >= -kEpsilon)
                 return float.MaxValue; // No intersection
+
+            // The area are proportional, so we can get the intersection point % by using the ration of the one area on the area of the quadrilateral with the 4 points.
             return a3 / (a3 - a4); // t [0,1] interpolates between A and B respectively as such: p=a+t*(b-a)
         }
     }

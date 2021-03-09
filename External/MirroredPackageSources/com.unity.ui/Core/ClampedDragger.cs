@@ -2,7 +2,7 @@ using System;
 
 namespace UnityEngine.UIElements
 {
-    internal class ClampedDragger<T> : PointerClickable
+    internal class ClampedDragger<T> : Clickable
         where T : IComparable<T>
     {
         [Flags]
@@ -58,7 +58,8 @@ namespace UnityEngine.UIElements
                 if (evt.eventTypeId == PointerMoveEvent.TypeId())
                 {
                     var pointerMoveEvent = (PointerMoveEvent)evt;
-                    pointerMoveEvent.isHandledByDraggable = true;
+                    if (pointerMoveEvent.pointerId != PointerId.mousePointerId)
+                        pointerMoveEvent.isHandledByDraggable = true;
                 }
 
                 dragging?.Invoke();

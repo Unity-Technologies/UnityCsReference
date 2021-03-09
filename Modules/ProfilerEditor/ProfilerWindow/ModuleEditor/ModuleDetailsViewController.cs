@@ -155,8 +155,7 @@ namespace UnityEditor.Profiling.ModuleEditor
             {
                 ProfilerMarkers.k_FetchCounters.Begin();
                 var counterCollector = new CounterCollector();
-                var unityCounters = counterCollector.LoadUnityCounters();
-                var userCounters = counterCollector.LoadUserCounters();
+                counterCollector.LoadCounters(out var unityCounters, out var userCounters);
                 ProfilerMarkers.k_FetchCounters.End();
 
                 // Format counter data for display in tree view.

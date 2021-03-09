@@ -80,6 +80,18 @@ namespace UnityEngine.UIElements
         public string templateId { get; private set; }
         private VisualElement m_ContentContainer;
 
+        private VisualTreeAsset m_TemplateSource;
+
+        /// <summary>
+        /// Stores the template asset reference, if the generated element is cloned from a VisualTreeAsset as a
+        /// Template declaration inside another VisualTreeAsset.
+        /// </summary>
+        public VisualTreeAsset templateSource
+        {
+            get => m_TemplateSource;
+            internal set => m_TemplateSource = value;
+        }
+
         public TemplateContainer() : this(null) {}
 
         public TemplateContainer(string templateId)

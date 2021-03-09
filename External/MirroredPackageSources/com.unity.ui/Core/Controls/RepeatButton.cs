@@ -35,7 +35,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private PointerClickable m_Clickable;
+        private Clickable m_Clickable;
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -70,7 +70,7 @@ namespace UnityEngine.UIElements
         public void SetAction(System.Action clickEvent, long delay, long interval)
         {
             this.RemoveManipulator(m_Clickable);
-            m_Clickable = new PointerClickable(clickEvent, delay, interval);
+            m_Clickable = new Clickable(clickEvent, delay, interval);
             this.AddManipulator(m_Clickable);
         }
     }

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEngine;
 
 namespace UnityEditor.Search
@@ -187,7 +186,7 @@ namespace UnityEditor.Search
         /// <returns>The newly created search item attached to the current search provider.</returns>
         public SearchItem CreateItem(SearchContext context, string id, int score, string label, string description, Texture2D thumbnail, object data)
         {
-            if (context.options.HasFlag(SearchFlags.Debug))
+            if (context.options.HasAny(SearchFlags.Debug))
             {
                 // Debug sorting
                 description = $"DEBUG: id={id} - label={label} - description={description} - thumbnail={thumbnail} - data={data}";

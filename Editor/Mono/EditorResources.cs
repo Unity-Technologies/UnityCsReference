@@ -379,6 +379,12 @@ namespace UnityEditor.Experimental
             return extendedStyles;
         }
 
+        internal static void DeleteStyleCatalogCache()
+        {
+            if (File.Exists(k_GlobalStyleCatalogCacheFilePath))
+                File.Delete(k_GlobalStyleCatalogCacheFilePath);
+        }
+
 
         private static void UpdateGUIStyleProperties(string name, GUIStyle style)
         {

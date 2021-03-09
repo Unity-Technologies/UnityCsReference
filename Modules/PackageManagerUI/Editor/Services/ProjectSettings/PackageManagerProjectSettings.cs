@@ -18,6 +18,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public event Action<bool> onScopedRegistriesSettingsFoldoutChanged = delegate {};
         public event Action<bool> onSeeAllVersionsChanged = delegate {};
         public event Action<long> onLoadAssetsChanged = delegate {};
+        public event Action onInitializationFinished = delegate {};
 
         [SerializeField]
         private bool m_EnablePreReleasePackages;
@@ -120,6 +121,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             get => m_UserAddingNewScopedRegistry;
             set => m_UserAddingNewScopedRegistry = value;
         }
+
         [SerializeField]
         private RegistryInfoDraft m_RegistryInfoDraft = new RegistryInfoDraft();
         public RegistryInfoDraft registryInfoDraft => m_RegistryInfoDraft;
@@ -230,12 +232,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         void OnEnable()
         {
+            m_RegistryInfoDraft.OnEnable();
+
             if (m_RegistryInfoDraft.original == null && !m_RegistryInfoDraft.hasUnsavedChanges && !isUserAddingNewScopedRegistry)
             {
                 var firstScopedRegistry = scopedRegistries.FirstOrDefault();
                 if (firstScopedRegistry != null)
                     m_RegistryInfoDraft.SetOriginalRegistryInfo(firstScopedRegistry);
             }
+
+            onInitializationFinished.Invoke();
         }
 
         public void Save()

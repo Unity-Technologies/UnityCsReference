@@ -853,6 +853,12 @@ namespace UnityEditor
             get;
         }
 
+        public extern bool removeConstantScaleCurves
+        {
+            get;
+            set;
+        }
+
         [System.Obsolete("Use animationCompression instead", true)]
         private bool reduceKeyframes { get { return false; } set {} }
 

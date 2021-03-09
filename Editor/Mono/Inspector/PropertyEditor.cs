@@ -1990,7 +1990,7 @@ namespace UnityEditor
                         m_OpenAddComponentMenu && Event.current.type == EventType.Repaint)
                     {
                         m_OpenAddComponentMenu = false;
-                        if (AddComponentWindow.Show(rect, editor.targets.Select(o => (GameObject)o).ToArray()))
+                        if (AddComponentWindow.Show(rect, editor.targets.Cast<GameObject>().Where(o => o).ToArray()))
                         {
                             GUIUtility.ExitGUI();
                         }

@@ -24,6 +24,14 @@ namespace UnityEngine
         private int m_Z;
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public Vector3Int(int x, int y)
+        {
+            m_X = x;
+            m_Y = y;
+            m_Z = 0;
+        }
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public Vector3Int(int x, int y, int z)
         {
             m_X = x;

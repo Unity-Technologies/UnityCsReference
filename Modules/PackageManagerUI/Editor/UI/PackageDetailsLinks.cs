@@ -81,14 +81,28 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (!version.isAvailableOnDisk)
             {
-                EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), L10n.Tr("This package is not available offline."), L10n.Tr("Ok"));
+                if (m_Application.isInternetReachable)
+                {
+                    if (version.isInstalled)
+                    {
+                        EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), L10n.Tr($"This package does not contain {messageOnNotFound}."), L10n.Tr("Ok"));
+                        return;
+                    }
+                    else
+                    {
+                        EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), L10n.Tr($"This package does not contain online {messageOnNotFound}, but you can install the package to see its offline {messageOnNotFound}."), L10n.Tr("Ok"));
+                        return;
+                    }
+                }
+                EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), L10n.Tr($"You are trying to access package {messageOnNotFound} without an internet connection, but this package doesn't provide offline {messageOnNotFound}. Please connect to the internet and try again."), L10n.Tr("Ok"));
                 return;
             }
+
             var offlineUrl = getUrl(m_IOProxy, version, true);
             if (!string.IsNullOrEmpty(offlineUrl))
                 m_Application.RevealInFinder(offlineUrl);
             else
-                EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), messageOnNotFound, L10n.Tr("Ok"));
+                EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), L10n.Tr($"This package does not contain offline {messageOnNotFound}."), L10n.Tr("Ok"));
         }
 
         private void ViewUrl(IPackageVersion version, Func<IOProxy, IPackageVersion, bool, string> getUrl, string messageOnNotFound)
@@ -101,13 +115,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 operation.completed += (op) =>
                 {
                     if (request.responseCode != 404)
-                    {
                         m_Application.OpenURL(onlineUrl);
-                    }
                     else
-                    {
                         ViewOfflineDocs(version, getUrl, messageOnNotFound);
-                    }
                 };
             }
             else
@@ -118,17 +128,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void ViewDocClick()
         {
-            ViewUrl(m_Version, UpmPackageDocs.GetDocumentationUrl, L10n.Tr("This package does not contain offline documentation."));
+            ViewUrl(m_Version, UpmPackageDocs.GetDocumentationUrl, "documentation");
         }
 
         private void ViewChangelogClick()
         {
-            ViewUrl(m_Version, UpmPackageDocs.GetChangelogUrl, L10n.Tr("This package does not contain offline changelog."));
+            ViewUrl(m_Version, UpmPackageDocs.GetChangelogUrl, "changelog");
         }
 
         private void ViewLicensesClick()
         {
-            ViewUrl(m_Version, UpmPackageDocs.GetLicensesUrl, L10n.Tr("This package does not contain offline licenses."));
+            ViewUrl(m_Version, UpmPackageDocs.GetLicensesUrl, "license documentation");
         }
     }
 }

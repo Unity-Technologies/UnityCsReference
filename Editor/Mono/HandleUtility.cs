@@ -902,13 +902,15 @@ namespace UnityEditor
             return Internal_FindNearestVertex(cam, screenPoint, objectsToSearch, objectsToIgnore, out vertex);
         }
 
-#pragma warning disable 618
-        [Obsolete("Use PickGameObjectCallback")]
+        // Until `pickGameObjectCustomPasses` can handle sorting priority correctly, we need a way to override the
+        // picking action treating the override pass as topmost. This is used for things like Physics Debugger, where
+        // picking should always select the debug volumes first.
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         internal delegate GameObject PickClosestGameObjectFunc(Camera cam, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, out int materialIndex);
 
-        [Obsolete("Use pickGameObjectCustomPasses")]
+        // Important! Where possible you should prefer to use pickGameObjectCustomPasses. See above for explanation.
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         internal static PickClosestGameObjectFunc pickClosestGameObjectDelegate;
-#pragma warning restore 618
 
         public static GameObject PickGameObject(Vector2 position, out int materialIndex)
         {
@@ -940,10 +942,8 @@ namespace UnityEditor
             GameObject picked = null;
 
             // deprecated version
-            #pragma warning disable 618
             if (pickClosestGameObjectDelegate != null)
                 picked = pickClosestGameObjectDelegate(cam, layers, position, ignore, filter, out materialIndex);
-            #pragma warning restore 618
 
             bool drawGizmos = SceneView.lastActiveSceneView == null || SceneView.lastActiveSceneView.drawGizmos;
 

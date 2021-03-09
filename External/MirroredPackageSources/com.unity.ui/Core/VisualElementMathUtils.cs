@@ -10,9 +10,10 @@ namespace UnityEngine.UIElements
             get { return m_Position + (Vector3)layout.min; }
         }
 
-        Matrix4x4 matrixWithLayout
+        // Translate to pivot, scale, rotate, translate back, then do final translation.
+        Matrix4x4 pivottedMatrixWithLayout
         {
-            get { return Matrix4x4.TRS(positionWithLayout, m_Rotation, m_Scale); }
+            get { return Matrix4x4.TRS( positionWithLayout + transformOrigin , m_Rotation, m_Scale) * Matrix4x4.Translate(-transformOrigin); }
         }
 
         void TransformAlignedRect(ref Rect r)
@@ -35,13 +36,45 @@ namespace UnityEngine.UIElements
             OrderMinMaxRect(ref r);
         }
 
+        internal static Rect CalculateConservativeRect(ref Matrix4x4 matrix, Rect rect)
+        {
+
+            //Mathf.Min does not check for NAN
+            if (float.IsNaN(rect.height) | float.IsNaN(rect.width) | float.IsNaN(rect.x) | float.IsNaN(rect.y))
+            {
+                //fall back to old algorithm
+                rect = new Rect(MultiplyMatrix44Point2(ref matrix, rect.position),
+                                            MultiplyVector2(ref matrix, rect.size));
+                OrderMinMaxRect(ref rect);
+                return rect;
+            }
+
+            var topLeft = new Vector2(rect.xMin, rect.yMin);
+            var bottomRight = new Vector2(rect.xMax, rect.yMax);
+            var topRight = new Vector2(rect.xMax, rect.yMin);
+            var bottomLeft = new Vector2(rect.xMin, rect.yMax);
+
+            var transformedTL = matrix.MultiplyPoint3x4(topLeft);
+            var transformedBR = matrix.MultiplyPoint3x4(bottomRight);
+            var transformedRL = matrix.MultiplyPoint3x4(topRight);
+            var transformedBL = matrix.MultiplyPoint3x4(bottomLeft);
+
+            Vector2 min = new Vector2(
+                Mathf.Min(transformedTL.x, transformedBR.x, transformedRL.x, transformedBL.x),
+                Mathf.Min(transformedTL.y, transformedBR.y, transformedRL.y, transformedBL.y));
+
+            Vector2 max = new Vector2(
+                Mathf.Max(transformedTL.x, transformedBR.x, transformedRL.x, transformedBL.x),
+                Mathf.Max(transformedTL.y, transformedBR.y, transformedRL.y, transformedBL.y));
+
+            return new Rect(min.x, min.y, max.x - min.x, max.y - min.y);
+        }
+
         internal static void TransformAlignedRect(ref Matrix4x4 matrix, ref Rect rect)
         {
-            // We assume that the transform performs translation/scaling without rotation.
-            rect = new Rect(
-                MultiplyMatrix44Point2(ref matrix, rect.position),
-                MultiplyVector2(ref matrix, rect.size));
-            OrderMinMaxRect(ref rect);
+            rect =  CalculateConservativeRect(ref matrix, rect);
+
+
         }
 
         internal static void OrderMinMaxRect(ref Rect rect)
@@ -140,7 +173,7 @@ namespace UnityEngine.UIElements
                 throw new ArgumentNullException(nameof(ele));
             }
 
-            return VisualElement.MultiplyMatrix44Rect2(ref ele.worldTransformInverse, r);
+            return VisualElement.CalculateConservativeRect(ref ele.worldTransformInverse, r);
         }
 
         // transforms a rect to Panel space referential
@@ -151,7 +184,7 @@ namespace UnityEngine.UIElements
                 throw new ArgumentNullException(nameof(ele));
             }
 
-            return VisualElement.MultiplyMatrix44Rect2(ref ele.worldTransformRef, r);
+            return VisualElement.CalculateConservativeRect(ref ele.worldTransformRef, r);
         }
 
         // transform point from the local space of one element to to the local space of another

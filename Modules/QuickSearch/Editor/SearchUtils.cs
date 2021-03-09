@@ -318,7 +318,7 @@ namespace UnityEditor.Search
                 goRoots.AddRange(sceneRootObjects);
 
             return SceneModeUtility.GetObjects(goRoots.ToArray(), true)
-                .Where(o => !o.hideFlags.HasFlag(HideFlags.HideInHierarchy)).ToArray();
+                .Where(o => (o.hideFlags & HideFlags.HideInHierarchy) != HideFlags.HideInHierarchy).ToArray();
         }
 
         /// <summary>
@@ -344,7 +344,7 @@ namespace UnityEditor.Search
             }
 
             return SceneModeUtility.GetObjects(goRoots.ToArray(), true)
-                .Where(o => !o.hideFlags.HasFlag(HideFlags.HideInHierarchy));
+                .Where(o => (o.hideFlags & HideFlags.HideInHierarchy) != HideFlags.HideInHierarchy);
         }
 
         internal static ISet<string> GetReferences(UnityEngine.Object obj, int level = 1)

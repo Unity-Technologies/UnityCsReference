@@ -53,6 +53,7 @@ namespace UnityEngine.UIElements
         VisualElement m_OuterContainer;
         ScrollView m_ScrollView;
         VisualElement m_PanelRootVisualContainer;
+        VisualElement m_TargetElement;
         Rect m_DesiredRect;
         KeyboardNavigationManipulator m_NavigationManipulator;
 
@@ -88,6 +89,7 @@ namespace UnityEngine.UIElements
                 return;
 
             contentContainer.AddManipulator(m_NavigationManipulator = new KeyboardNavigationManipulator(Apply));
+            m_MenuContainer.RegisterCallback<PointerDownEvent>(OnPointerDown);
             m_MenuContainer.RegisterCallback<PointerMoveEvent>(OnPointerMove);
             m_MenuContainer.RegisterCallback<PointerUpEvent>(OnPointerUp);
 
@@ -101,7 +103,11 @@ namespace UnityEngine.UIElements
             if (evt.originPanel == null)
                 return;
 
+            m_MenuContainer.UnregisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            m_MenuContainer.UnregisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+
             contentContainer.RemoveManipulator(m_NavigationManipulator);
+            m_MenuContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown);
             m_MenuContainer.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
             m_MenuContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp);
 
@@ -113,6 +119,10 @@ namespace UnityEngine.UIElements
         void Hide()
         {
             m_MenuContainer.RemoveFromHierarchy();
+
+            if (m_TargetElement != null)
+                m_TargetElement.pseudoStates ^= PseudoStates.Active;
+            m_TargetElement = null;
         }
 
         void Apply(KeyboardNavigationOperation op, EventBase sourceEvent)
@@ -192,27 +202,30 @@ namespace UnityEngine.UIElements
 
         Vector2 m_MousePosition;
 
+        void OnPointerDown(PointerDownEvent evt)
+        {
+            m_MousePosition = m_ScrollView.WorldToLocal(evt.position);
+            UpdateSelection(evt.target as VisualElement);
+
+            if (evt.pointerId != PointerId.mousePointerId)
+            {
+                m_MenuContainer.panel.PreventCompatibilityMouseEvents(evt.pointerId);
+            }
+
+            evt.StopPropagation();
+        }
+
         void OnPointerMove(PointerMoveEvent evt)
         {
             m_MousePosition = m_ScrollView.WorldToLocal(evt.position);
+            UpdateSelection(evt.target as VisualElement);
 
-            if (!m_ScrollView.ContainsPoint(m_MousePosition))
-                return;
-
-            var ve = evt.target as VisualElement;
-            if (ve == null)
-                return;
-
-            if ((ve.pseudoStates & PseudoStates.Hover) != PseudoStates.Hover)
+            if (evt.pointerId != PointerId.mousePointerId)
             {
-                var selectedIndex = GetSelectedIndex();
-                if (selectedIndex >= 0)
-                {
-                    m_Items[selectedIndex].element.pseudoStates &= ~PseudoStates.Hover;
-                }
-
-                ve.pseudoStates |= PseudoStates.Hover;
+                m_MenuContainer.panel.PreventCompatibilityMouseEvents(evt.pointerId);
             }
+
+            evt.StopPropagation();
         }
 
         void OnPointerUp(PointerUpEvent evt)
@@ -226,6 +239,13 @@ namespace UnityEngine.UIElements
 
                 Hide();
             }
+
+            if (evt.pointerId != PointerId.mousePointerId)
+            {
+                m_MenuContainer.panel.PreventCompatibilityMouseEvents(evt.pointerId);
+            }
+
+            evt.StopPropagation();
         }
 
         void OnFocusOut(FocusOutEvent evt)
@@ -244,6 +264,32 @@ namespace UnityEngine.UIElements
         void OnParentResized(GeometryChangedEvent evt)
         {
             Hide();
+        }
+
+        void UpdateSelection(VisualElement target)
+        {
+            if (!m_ScrollView.ContainsPoint(m_MousePosition))
+            {
+                var selectedIndex = GetSelectedIndex();
+                if (selectedIndex >= 0)
+                    m_Items[selectedIndex].element.pseudoStates &= ~PseudoStates.Hover;
+
+                return;
+            }
+
+            if (target == null)
+                return;
+
+            if ((target.pseudoStates & PseudoStates.Hover) != PseudoStates.Hover)
+            {
+                var selectedIndex = GetSelectedIndex();
+                if (selectedIndex >= 0)
+                {
+                    m_Items[selectedIndex].element.pseudoStates &= ~PseudoStates.Hover;
+                }
+
+                target.pseudoStates |= PseudoStates.Hover;
+            }
         }
 
         void ChangeSelectedIndex(int newIndex, int previousIndex)
@@ -360,7 +406,8 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            m_PanelRootVisualContainer = targetElement.GetRootVisualContainer();
+            m_TargetElement = targetElement;
+            m_PanelRootVisualContainer = m_TargetElement.GetRootVisualContainer();
 
             if (m_PanelRootVisualContainer == null)
             {
@@ -383,6 +430,9 @@ namespace UnityEngine.UIElements
 
             m_MenuContainer.schedule.Execute(contentContainer.Focus);
             EnsureVisibilityInParent();
+
+            if (targetElement != null)
+                targetElement.pseudoStates |= PseudoStates.Active;
         }
 
         void OnContainerGeometryChanged(GeometryChangedEvent evt)

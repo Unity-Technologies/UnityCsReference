@@ -5,16 +5,34 @@ namespace UnityEngine.UIElements
 {
     internal class KeyboardTextEditorEventHandler : TextEditorEventHandler
     {
+        internal const int kDragThreshold = 4;
+
         // used in tests
         internal bool m_Changed;
 
         // Drag
         bool m_Dragged;
         bool m_DragToPosition;
-        bool m_PostponeMove;
-        bool m_SelectAllOnMouseUp = false;
+        bool m_SelectAllOnMouseUp;
 
         string m_PreDrawCursorText;
+
+        private bool m_IsClicking;
+        private Vector2 m_ClickStartPosition;
+
+        private bool isClicking
+        {
+            get => m_IsClicking;
+            set
+            {
+                if (m_IsClicking == value) return;
+                m_IsClicking = value;
+                if (m_IsClicking)
+                    textInputField.CaptureMouse();
+                else
+                    textInputField.ReleaseMouse();
+            }
+        }
 
         public KeyboardTextEditorEventHandler(TextEditorEngine editorEngine, ITextInputField textInputField)
             : base(editorEngine, textInputField)
@@ -89,7 +107,8 @@ namespace UnityEngine.UIElements
 
                 if (evt.button == (int)MouseButton.LeftMouse)
                 {
-                    textInputField.CaptureMouse();
+                    isClicking = true;
+                    m_ClickStartPosition = evt.localMousePosition;
                 }
 
                 evt.StopPropagation();
@@ -115,7 +134,8 @@ namespace UnityEngine.UIElements
                     editorEngine.MoveCursorToPosition_Internal(evt.localMousePosition, evt.shiftKey);
                 }
 
-                textInputField.CaptureMouse();
+                isClicking = true;
+                m_ClickStartPosition = evt.localMousePosition;
                 evt.StopPropagation();
             }
             else if (evt.button == (int)MouseButton.RightMouse)
@@ -139,7 +159,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (!textInputField.HasMouseCapture())
+            if (!isClicking)
             {
                 return;
             }
@@ -151,23 +171,18 @@ namespace UnityEngine.UIElements
             {
                 editorEngine.MoveSelectionToAltCursor();
             }
-            else if (m_PostponeMove)
-            {
-                editorEngine.MoveCursorToPosition_Internal(evt.localMousePosition, evt.shiftKey);
-            }
             else if (m_SelectAllOnMouseUp)
             {
                 editorEngine.SelectAll();
-                m_SelectAllOnMouseUp = false;
             }
 
             editorEngine.MouseDragSelectsWholeWords(false);
 
-            textInputField.ReleaseMouse();
+            isClicking = false;
 
             m_DragToPosition = true;
             m_Dragged = false;
-            m_PostponeMove = false;
+            m_SelectAllOnMouseUp = false;
 
             evt.StopPropagation();
 
@@ -182,7 +197,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (!textInputField.HasMouseCapture())
+            if (!isClicking)
             {
                 return;
             }
@@ -190,7 +205,22 @@ namespace UnityEngine.UIElements
             textInputField.SyncTextEngine();
             m_Changed = false;
 
-            // FIXME: presing shift while dragging will change start of selection (alt cursor).
+            // Allow users to make a simple click on the TextField and not have a drag operation.
+            m_Dragged = m_Dragged || MoveDistanceQualifiesForDrag(m_ClickStartPosition, evt.localMousePosition);
+            if (m_Dragged)
+            {
+                ProcessDragMove(evt);
+            }
+
+            evt.StopPropagation();
+
+            // Scroll offset might need to be updated
+            editorEngine.UpdateScrollOffset();
+        }
+
+        private void ProcessDragMove(MouseMoveEvent evt)
+        {
+            // FIXME: pressing shift while dragging will change start of selection (alt cursor).
             // Also, adding to selection (with shift click) after a drag-select does not work: it clears the previous selection.
             if (!evt.shiftKey && editorEngine.hasSelection && m_DragToPosition)
             {
@@ -208,14 +238,14 @@ namespace UnityEngine.UIElements
                 }
 
                 m_DragToPosition = false;
+
                 m_SelectAllOnMouseUp = !editorEngine.hasSelection;
             }
-            m_Dragged = true;
+        }
 
-            evt.StopPropagation();
-
-            // Scroll offset might need to be updated
-            editorEngine.UpdateScrollOffset();
+        private bool MoveDistanceQualifiesForDrag(Vector2 start, Vector2 current)
+        {
+            return (start - current).sqrMagnitude >= (kDragThreshold * kDragThreshold);
         }
 
         private readonly Event m_ImguiEvent = new Event();

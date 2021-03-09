@@ -107,7 +107,7 @@ namespace UnityEditor.Search
 
             //UnityEngine.Debug.Log($"Generate preview for {path}, {previewSize}, {previewOptions}");
 
-            if (previewOptions.HasFlag(FetchPreviewOptions.Normal))
+            if (previewOptions.HasAny(FetchPreviewOptions.Normal))
             {
                 if (assetType == typeof(AudioClip))
                     return GetAssetThumbnailFromPath(path);
@@ -130,7 +130,7 @@ namespace UnityEditor.Search
             if (obj == null)
                 return null;
 
-            if (previewOptions.HasFlag(FetchPreviewOptions.Large))
+            if (previewOptions.HasAny(FetchPreviewOptions.Large))
             {
                 var tex = AssetPreviewUpdater.CreatePreview(obj, null, path, (int)previewSize.x, (int)previewSize.y);
                 if (tex)
@@ -148,7 +148,7 @@ namespace UnityEditor.Search
         internal static Texture2D GetAssetPreview(UnityEngine.Object obj, FetchPreviewOptions previewOptions)
         {
             var preview = AssetPreview.GetAssetPreview(obj);
-            if (preview == null || previewOptions.HasFlag(FetchPreviewOptions.Large))
+            if (preview == null || previewOptions.HasAny(FetchPreviewOptions.Large))
             {
                 var largePreview = AssetPreview.GetMiniThumbnail(obj);
                 if (preview == null || (largePreview != null && largePreview.width > preview.width))
@@ -553,7 +553,7 @@ namespace UnityEditor.Search
                 return sr.sprite.texture;
 
 
-            if (!options.HasFlag(FetchPreviewOptions.Large))
+            if (!options.HasAny(FetchPreviewOptions.Large))
             {
                 var preview = AssetPreview.GetAssetPreview(obj);
                 if (preview)
@@ -619,9 +619,9 @@ namespace UnityEditor.Search
             }
         }
 
-        internal static void CallDelayed(EditorApplication.CallbackFunction callback, double seconds = 0)
+        internal static Action CallDelayed(EditorApplication.CallbackFunction callback, double seconds = 0)
         {
-            EditorApplication.CallDelayed(callback, seconds);
+            return EditorApplication.CallDelayed(callback, seconds);
         }
 
         internal static void SetFirstInspectedEditor(Editor editor)

@@ -172,6 +172,10 @@ namespace UnityEditor
         public override void OnEnable()
         {
             base.OnEnable();
+
+            //Ensure UIElements handles the IMGUI container with margins
+            alwaysAllowExpansion = true;
+
             m_AssemblyName = extraDataSerializedObject.FindProperty("assemblyName");
             InitializeReorderableLists();
             m_SemVersionRanges = new VersionRangesFactory<SemVersion>();

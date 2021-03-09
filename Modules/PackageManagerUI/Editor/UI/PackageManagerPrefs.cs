@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -92,7 +93,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [SerializeField]
-        private bool m_DependenciesExpanded = false;
+        private bool m_DependenciesExpanded = true;
         public virtual bool dependenciesExpanded
         {
             get => m_DependenciesExpanded;
@@ -113,6 +114,25 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get => m_PackageDetailVerticalScrollOffset;
             set => m_PackageDetailVerticalScrollOffset = value;
+        }
+
+        [SerializeField]
+        private List<string> m_ExpandedDetailsExtensions = new List<string>();
+        public virtual bool IsDetailsExtensionExpanded(string extensionTitle)
+        {
+            return !string.IsNullOrEmpty(extensionTitle) && m_ExpandedDetailsExtensions.Contains(extensionTitle);
+        }
+
+        public virtual void SetDetailsExtensionExpanded(string extensionTitle, bool value)
+        {
+            if (string.IsNullOrEmpty(extensionTitle))
+                return;
+
+            var index = m_ExpandedDetailsExtensions.IndexOf(extensionTitle);
+            if (value && index < 0)
+                m_ExpandedDetailsExtensions.Add(extensionTitle);
+            else if (!value && index >= 0)
+                m_ExpandedDetailsExtensions.RemoveAt(index);
         }
     }
 }

@@ -126,7 +126,9 @@ namespace UnityEditor
                 var serializedObject = new SerializedObject(m_SerializedProperty.serializedObject.targetObjects[i]);
                 var property = serializedObject.FindProperty(m_SerializedProperty.propertyPath);
 
-                if (property.intValue == int.MaxValue)
+                // Second conditopn is for backward compatibility, currently we use int.MaxValue to represent all flags set, previously we used -1 and the same value is stored in YAML files
+                // So when we read the SerializedProperty we are getting -1, and the behaviour is not as expected.
+                if (property.intValue == int.MaxValue || property.intValue == -1)
                 {
                     property.intValue = 0;
                     for (int j = 0; j < m_OptionMaskValues.Length; j++)

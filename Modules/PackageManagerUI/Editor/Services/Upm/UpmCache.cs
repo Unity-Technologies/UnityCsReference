@@ -77,7 +77,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 p1.versions.all.Length != p2.versions.all.Length || !p1.versions.all.SequenceEqual(p2.versions.all) ||
                 p1.errors.Length != p2.errors.Length || !p1.errors.SequenceEqual(p2.errors) ||
                 p1.dependencies.Length != p2.dependencies.Length || !p1.dependencies.SequenceEqual(p2.dependencies) ||
-                p1.resolvedDependencies.Length != p2.resolvedDependencies.Length || !p1.resolvedDependencies.SequenceEqual(p2.resolvedDependencies))
+                p1.resolvedDependencies.Length != p2.resolvedDependencies.Length || !p1.resolvedDependencies.SequenceEqual(p2.resolvedDependencies) ||
+                p1.projectDependenciesEntry != p2.projectDependenciesEntry)
                 return true;
 
             if (p1.source == PackageSource.BuiltIn || p1.source == PackageSource.Registry)

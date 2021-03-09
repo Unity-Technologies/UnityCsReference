@@ -52,7 +52,7 @@ namespace UnityEditor
         AllowDebugging = 1 << 9,
 
         // Symlink runtime libraries when generating iOS XCode project. (Faster iteration time).
-        [Obsolete("BuildOptions.SymlinkLibraries is obsolete. Use BuildOptions.SymlinkSources instead (UnityUpgradable) -> [UnityEditor] BuildOptions.SymlinkSources", true)]
+        [Obsolete("BuildOptions.SymlinkLibraries is obsolete. Use BuildOptions.SymlinkSources instead (UnityUpgradable) -> [UnityEditor] BuildOptions.SymlinkSources", false)]
 
         SymlinkLibraries = 1 << 10,
 

@@ -200,7 +200,7 @@ namespace UnityEditor.Search
 
             if (settings.options.dependencies)
             {
-                foreach (var depPath in AssetDatabase.GetDependencies(path, true))
+                foreach (var depPath in AssetDatabase.GetDependencies(path, false))
                 {
                     if (path == depPath)
                         continue;

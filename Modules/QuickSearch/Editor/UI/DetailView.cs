@@ -96,19 +96,19 @@ namespace UnityEditor.Search
 
                 using (var s = new EditorGUILayout.VerticalScope(Styles.inspector))
                 {
-                    if (showOptions.HasFlag(ShowDetailsOptions.Actions))
+                    if (showOptions.HasAny(ShowDetailsOptions.Actions))
                         DrawActions(context);
 
                     if (selectionCount == 1)
                     {
-                        if (showOptions.HasFlag(ShowDetailsOptions.Preview) && lastItem != null)
+                        if (showOptions.HasAny(ShowDetailsOptions.Preview) && lastItem != null)
                             DrawPreview(context, lastItem, width);
 
-                        if (showOptions.HasFlag(ShowDetailsOptions.Description) && lastItem != null)
+                        if (showOptions.HasAny(ShowDetailsOptions.Description) && lastItem != null)
                             DrawDescription(context, lastItem);
                     }
 
-                    if (showOptions.HasFlag(ShowDetailsOptions.Inspector))
+                    if (showOptions.HasAny(ShowDetailsOptions.Inspector))
                         DrawInspector(width);
                 }
 
@@ -258,7 +258,7 @@ namespace UnityEditor.Search
 
             ResetEditors();
 
-            if (!showOptions.HasFlag(ShowDetailsOptions.Inspector))
+            if (!showOptions.HasAny(ShowDetailsOptions.Inspector))
                 return;
 
             var targets = new List<UnityEngine.Object>();
@@ -275,7 +275,7 @@ namespace UnityEditor.Search
                     var components = go.GetComponents<Component>();
                     foreach (var c in components)
                     {
-                        if (!c || c.hideFlags.HasFlag(HideFlags.HideInInspector))
+                        if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
                             continue;
 
                         targets.Add(c);
@@ -378,7 +378,7 @@ namespace UnityEditor.Search
 
         public void Refresh(RefreshFlags flags = RefreshFlags.Default)
         {
-            if (flags.HasFlag(RefreshFlags.StructureChanged))
+            if ((flags & RefreshFlags.StructureChanged) == RefreshFlags.StructureChanged)
                 ResetEditors();
         }
     }

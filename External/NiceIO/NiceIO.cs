@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.IO;
 using System.ComponentModel;
+using System.Diagnostics;
 using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
 
 //Lets make it hard to accidentally use System.IO.File & System.IO.Directly, and require that it is always completely spelled out.
@@ -39,7 +40,25 @@ namespace NiceIO
 
         private static bool CalculateIsWindows() => Environment.OSVersion.Platform == PlatformID.Win32Windows || Environment.OSVersion.Platform == PlatformID.Win32NT;
 
-        private static bool CalculateIsWindows10() => Environment.OSVersion.Platform == PlatformID.Win32NT && Environment.OSVersion.Version.Major >= 10;
+        private static bool CalculateIsWindows10()
+        {
+	        if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+		        return false;
+
+            // Environment.OSVersion will only return versions higher than 6.2 if the owning process has been manifested as compatible with Windows 10:
+            // https://docs.microsoft.com/en-us/windows/win32/w8cookbook/windows-version-check
+            //
+            // Because NiceIO is a library, not its own executable, we are at the mercy of the consumer processes to manifest themselves correctly - and
+            // many of them don't. So, using Environment.OSVersion is not really safe.
+            //
+            // StackOverflow suggests using the file version info for a core OS file, such as kernel32.dll:
+            // https://stackoverflow.com/a/44665238/860530
+
+            var kernel32 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.SystemX86), "kernel32.dll");
+            var versionInfo = FileVersionInfo.GetVersionInfo(kernel32);
+
+            return versionInfo.ProductMajorPart >= 10;
+        }
 
         static readonly StringComparison PathStringComparison =
             k_IsCaseSensitiveFileSystem ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;

@@ -64,6 +64,11 @@ namespace UnityEditor.Search
 
         public void SetSearchText(string searchText, TextCursorPlacement moveCursor = TextCursorPlacement.MoveLineEnd)
         {
+            SetSearchText(searchText, moveCursor, -1);
+        }
+
+        public void SetSearchText(string searchText, TextCursorPlacement moveCursor, int cursorInsertPosition)
+        {
             context.searchText = searchText;
             Refresh();
         }

@@ -16,9 +16,6 @@ namespace UnityEditorInternal.Profiling
     [Serializable]
     internal class NetworkingOperationsProfilerModule : ProfilerModuleBase
     {
-        static public Action<Rect, IProfilerWindowController> DrawDetailsViewOverride = null;
-        static public Func<List<ProfilerCounterData>> GetCustomChartCounters = null;
-
         const string k_IconName = "Profiler.NetworkOperations";
         const int k_DefaultOrderIndex = 9;
         static readonly string k_UnLocalizedName = "Network Operations";
@@ -28,6 +25,7 @@ namespace UnityEditorInternal.Profiling
         SplitterState m_NetworkSplit;
 
         static SVC<Color> s_SeparatorColor = new SVC<Color>("--theme-profiler-border-color-darker", Color.black);
+        static List<ProfilerCounterData> s_CounterData = new List<ProfilerCounterData>();
 
         public NetworkingOperationsProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow,  k_UnLocalizedName, k_Name, k_IconName)
         {
@@ -36,17 +34,39 @@ namespace UnityEditorInternal.Profiling
 
         private void InitCounterOverride()
         {
-            if (GetCustomChartCounters != null)
+            if (NetworkingOperationsProfilerOverrides.getCustomChartCounters != null)
             {
-                var chartCounters = GetCustomChartCounters.Invoke();
-                SetCounters(chartCounters, chartCounters);
+                s_CounterData.Clear();
+
+                var chartCounters = NetworkingOperationsProfilerOverrides.getCustomChartCounters.Invoke();
+                if (chartCounters != null)
+                {
+                    // If the Capcity is the same value a re-alloc will not happen
+                    s_CounterData.Capacity = chartCounters.Count;
+                    chartCounters.ToProfilerCounter(s_CounterData);
+                }
+
+                SetCounters(s_CounterData, s_CounterData);
             }
         }
 
         protected override List<ProfilerCounterData> CollectDefaultChartCounters()
         {
-            if (GetCustomChartCounters != null)
-                return GetCustomChartCounters.Invoke();
+            if (NetworkingOperationsProfilerOverrides.getCustomChartCounters != null)
+            {
+                s_CounterData.Clear();
+
+                var chartCounters = NetworkingOperationsProfilerOverrides.getCustomChartCounters.Invoke();
+                if (chartCounters != null)
+                {
+                    // If the Capcity is the same value a re-alloc will not happen
+                    s_CounterData.Capacity = chartCounters.Count;
+                    chartCounters.ToProfilerCounter(s_CounterData);
+                }
+
+                return s_CounterData;
+            }
+
             return base.CollectDefaultChartCounters();
         }
 
@@ -78,8 +98,8 @@ namespace UnityEditorInternal.Profiling
 
         public override void DrawDetailsView(Rect position)
         {
-            if (DrawDetailsViewOverride != null)
-                DrawDetailsViewOverride.Invoke(position, m_ProfilerWindow);
+            if (NetworkingOperationsProfilerOverrides.drawDetailsViewOverride != null)
+                NetworkingOperationsProfilerOverrides.drawDetailsViewOverride.Invoke(position, m_ProfilerWindow.GetActiveVisibleFrameIndex());
             else
                 DrawNetworkOperationsPane(position);
         }

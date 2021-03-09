@@ -66,10 +66,11 @@ namespace UnityEditor.UIElements.StyleSheets
         public virtual UnityEngine.Object DeclareDependencyAndLoad(string path, string subAssetPath)
         {
             var prefix = $"{ThemeRegistry.kThemeScheme}://";
-            var themeName = path.Substring(prefix.Length);
 
             if (path.StartsWith(prefix))
             {
+                var themeName = path.Substring(prefix.Length);
+
                 if (!ThemeRegistry.themes.ContainsKey(themeName))
                     return null;
 

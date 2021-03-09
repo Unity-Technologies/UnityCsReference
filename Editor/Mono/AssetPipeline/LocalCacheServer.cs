@@ -177,9 +177,9 @@ namespace UnityEditor
 
         public static void Setup()
         {
-            var mode = (CacheServerPreferences.CacheServerMode)EditorPrefs.GetInt("CacheServerMode");
+            var mode = (AssetPipelinePreferences.CacheServerMode)EditorPrefs.GetInt("CacheServerMode");
 
-            if (mode == CacheServerPreferences.CacheServerMode.Local)
+            if (mode == AssetPipelinePreferences.CacheServerMode.Local)
                 CreateIfNeeded();
             else
                 Kill();

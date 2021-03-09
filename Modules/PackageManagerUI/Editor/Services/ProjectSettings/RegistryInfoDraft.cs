@@ -11,8 +11,40 @@ using UnityEngine;
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
-    internal class RegistryInfoDraft
+    internal class RegistryInfoDraft : ISerializationCallbackReceiver
     {
+        [SerializeField]
+        private bool m_Modified;
+
+        public string name
+        {
+            get => m_UserModifications.name;
+            set
+            {
+                m_UserModifications.name = value;
+                m_Modified = true;
+            }
+        }
+
+        public string url
+        {
+            get => m_UserModifications.url;
+            set
+            {
+                m_UserModifications.url = value;
+                m_Modified = true;
+            }
+        }
+
+        public int selectedScopeIndex
+        {
+            get => m_UserModifications.selectedScopeIndex;
+            set => m_UserModifications.selectedScopeIndex = value;
+        }
+
+        public ReadOnlyCollection<string> scopes => m_UserModifications.scopes;
+        public ReadOnlyCollection<string> sanitizedScopes => m_UserModifications.sanitizedScopes;
+
         [SerializeField]
         private string m_ErrorMessage;
         public string errorMessage
@@ -22,63 +54,81 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [SerializeField]
-        private RegistryInfo m_Original;
-        public RegistryInfo original => string.IsNullOrEmpty(m_Original?.id) ? null : m_Original;
+        private int m_UserModificationsInstanceId;
+        [NonSerialized]
+        private RegistryInfoDraftData m_UserModifications;
 
-        public void SetOriginalRegistryInfo(RegistryInfo registryInfo)
+        [SerializeField]
+        private int m_OriginalInstanceId;
+        [NonSerialized]
+        private RegistryInfoOriginalData m_Original;
+        public RegistryInfoOriginalData original => string.IsNullOrEmpty(m_Original?.id) ? null : m_Original;
+
+        public void OnBeforeSerialize()
         {
-            m_Original = registryInfo;
-            RevertChanges();
+            m_UserModificationsInstanceId = m_UserModifications.GetInstanceID();
+            m_OriginalInstanceId = m_Original.GetInstanceID();
         }
 
-        [SerializeField]
-        private bool m_Modified;
-        [SerializeField]
-        private string m_Name;
-        public string name
+        // do nothing
+        public void OnAfterDeserialize() {}
+
+        public bool IsReady()
         {
-            get => m_Name;
-            set
+            // check if the scriptableObject holding user input data is ready
+            return m_UserModifications;
+        }
+
+        public void OnEnable()
+        {
+            m_UserModifications = ScriptableObject.FindObjectFromInstanceID(m_UserModificationsInstanceId) as RegistryInfoDraftData ??
+                ScriptableObject.CreateInstance<RegistryInfoDraftData>();
+            m_UserModifications.hideFlags = HideFlags.DontSave;
+
+            m_Original = ScriptableObject.FindObjectFromInstanceID(m_OriginalInstanceId) as RegistryInfoOriginalData ??
+                ScriptableObject.CreateInstance<RegistryInfoOriginalData>();
+            m_Original.hideFlags = HideFlags.DontSave;
+        }
+
+        public void SetModifiedAfterUndo()
+        {
+            m_Modified = true;
+        }
+
+        public void RegisterWithOriginalOnUndo(string undoEvent)
+        {
+            Undo.BeginAtomicUndoGroup();
+            Undo.RegisterCompleteObjectUndo(m_UserModifications, undoEvent);
+            Undo.RegisterCompleteObjectUndo(m_Original, undoEvent);
+            Undo.EndAtomicUndoGroup();
+        }
+
+        public void RegisterOnUndo(string undoEvent)
+        {
+            Undo.RegisterCompleteObjectUndo(m_UserModifications, undoEvent);
+        }
+
+        public void SetOriginalRegistryInfo(RegistryInfo registryInfo, bool isUndo = false)
+        {
+            if (registryInfo != null)
             {
-                if (m_Name == value)
-                    return;
-                m_Name = value ?? string.Empty;
-                m_Modified = true;
+                m_Original = ScriptableObject.FindObjectFromInstanceID(m_OriginalInstanceId) as RegistryInfoOriginalData ??
+                    ScriptableObject.CreateInstance<RegistryInfoOriginalData>();
+                m_Original.hideFlags = HideFlags.DontSave;
+                m_Original.SetRegistryInfo(registryInfo);
             }
-        }
-
-        [SerializeField]
-        private string m_Url;
-        public string url
-        {
-            get => m_Url;
-            set
+            else
             {
-                if (m_Url == value)
-                    return;
-                m_Url = value ?? string.Empty;
-                m_Modified = true;
+                m_Original.SetRegistryInfo(null);
             }
-        }
 
-        [SerializeField]
-        private List<string> m_Scopes;
-        public ReadOnlyCollection<string> scopes => m_Scopes.AsReadOnly();
-        public ReadOnlyCollection<string> sanitizedScopes => m_Scopes.Where(scope => !string.IsNullOrEmpty(scope)).ToList().AsReadOnly();
-        [SerializeField]
-        private int m_SelectedScopeIndex;
-        public int selectedScopeIndex
-        {
-            get => m_SelectedScopeIndex;
-            set => m_SelectedScopeIndex = Math.Min(value, m_Scopes.Count - 1);
+            if (!isUndo)
+                RevertChanges();
         }
 
         public void SetScopes(IEnumerable<string> scopes)
         {
-            m_Scopes = scopes?.Select(s => s ?? string.Empty).ToList() ?? new List<string>();
-            if (m_Scopes.Count == 0)
-                m_Scopes.Add(string.Empty);
-            m_SelectedScopeIndex = Math.Min(m_SelectedScopeIndex, m_Scopes.Count - 1);
+            m_UserModifications.SetScopes(scopes);
             m_Modified = true;
         }
 
@@ -89,52 +139,33 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!m_Modified)
                     return false;
                 if (original == null)
-                    return !string.IsNullOrEmpty(m_Name) || !string.IsNullOrEmpty(m_Url) || !(m_Scopes.Count == 0 || m_Scopes.All(string.IsNullOrEmpty));
+                    return !string.IsNullOrEmpty(m_UserModifications.name) || !string.IsNullOrEmpty(m_UserModifications.url) || !(m_UserModifications.scopes.Count == 0 || m_UserModifications.scopes.All(string.IsNullOrEmpty));
 
-                var comparer = new UpmRegistryClient.RegistryInfoComparer();
-
-                return !comparer.Equals(original, new RegistryInfo(original.id, m_Name, m_Url, m_Scopes.ToArray(), original.isDefault, original.capabilities));
+                return !original.IsEqualTo(new RegistryInfo(original.id, m_UserModifications.name, m_UserModifications.url, m_UserModifications.scopes.ToArray(), original.isDefault, original.capabilities));
             }
         }
 
         public bool isUrlOrScopesUpdated
         {
             get => m_Modified && original != null &&
-            !new UpmRegistryClient.RegistryInfoComparer().Equals(original, new RegistryInfo(original.id, original.name, m_Url, m_Scopes.ToArray(), original.isDefault, original.capabilities));
-        }
-
-        public RegistryInfoDraft()
-        {
-            m_Modified = false;
-            m_Name = string.Empty;
-            m_Url = string.Empty;
-            m_Scopes = new List<string>() { "" };
-            m_SelectedScopeIndex = 0;
+            !original.IsEqualTo(new RegistryInfo(original.id, original.name, m_UserModifications.url, m_UserModifications.scopes.ToArray(), original.isDefault, original.capabilities));
         }
 
         public void RevertChanges()
         {
-            var original = this.original;
+            m_UserModifications.RevertChanges(original);
             m_Modified = false;
-            m_Name = original?.name ?? string.Empty;
-            m_Url = original?.url ?? string.Empty;
-            m_Scopes.Clear();
-            if (original?.scopes?.Length > 0)
-                m_Scopes.AddRange(original.scopes);
-            if (m_Scopes.Count == 0)
-                m_Scopes.Add(string.Empty);
-            m_SelectedScopeIndex = 0;
             m_ErrorMessage = string.Empty;
         }
 
         public bool Validate()
         {
             m_ErrorMessage = string.Empty;
-            if (string.IsNullOrEmpty(m_Name?.Trim()))
+            if (string.IsNullOrEmpty(m_UserModifications.name?.Trim()))
                 AddErrorMessage(L10n.Tr("Registry name cannot be null, empty or whitespace"));
-            if (sanitizedScopes.Count == 0)
+            if (m_UserModifications.sanitizedScopes.Count == 0)
                 AddErrorMessage(L10n.Tr("Scope(s) cannot be empty"));
-            if (!(Uri.TryCreate(m_Url, UriKind.Absolute, out var uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps)))
+            if (!(Uri.TryCreate(m_UserModifications.url, UriKind.Absolute, out var uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps)))
                 AddErrorMessage(L10n.Tr("\"URL\" must be a valid uri with a scheme matching the http|https pattern"));
 
             return string.IsNullOrEmpty(m_ErrorMessage);

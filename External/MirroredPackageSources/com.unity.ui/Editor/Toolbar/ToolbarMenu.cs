@@ -31,8 +31,6 @@ namespace UnityEditor.UIElements
             Popup
         }
 
-        PointerClickable clickable;
-
         /// <summary>
         /// The menu.
         /// </summary>
@@ -71,8 +69,7 @@ namespace UnityEditor.UIElements
             Toolbar.SetToolbarStyleSheet(this);
             generateVisualContent = null;
 
-            clickable = new PointerClickable(this.ShowMenu);
-            this.AddManipulator(clickable);
+            this.AddManipulator(new Clickable(this.ShowMenu));
             menu = new DropdownMenu();
 
             AddToClassList(ussClassName);

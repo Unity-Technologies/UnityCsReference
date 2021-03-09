@@ -772,6 +772,10 @@ namespace UnityEditor
             }
 
             obj.ApplyModifiedProperties();
+
+            //Reload the custom inspector to show the SerializedObjects values which are modified from non-registered events like - FromJSONOverwrite //case1311461
+            EditorUtility.ForceReloadInspectors();
+
             return EditorGUI.EndChangeCheck();
         }
 

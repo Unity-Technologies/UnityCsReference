@@ -8,7 +8,6 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.Hardware;
 using UnityEditor.Collaboration;
-using UnityEditor.Experimental;
 using UnityEngine.Assertions;
 
 namespace UnityEditor
@@ -146,13 +145,6 @@ namespace UnityEditor
             new PopupElement("Windows"),
         };
 
-        private PopupElement[] spritePackerPaddingPowerPopupList =
-        {
-            new PopupElement("1"),
-            new PopupElement("2"),
-            new PopupElement("3"),
-        };
-
         private PopupElement[] remoteDevicePopupList;
         private DevDevice[]    remoteDeviceList;
         private PopupElement[] remoteCompressionList =
@@ -169,12 +161,6 @@ namespace UnityEditor
         {
             new PopupElement("Remote"),
             new PopupElement("Local"),
-        };
-
-        private PopupElement[] assetPipelineModePopupList =
-        {
-            new PopupElement("Version 1 (deprecated)"),
-            new PopupElement("Version 2"),
         };
 
         private PopupElement[] cacheServerModePopupList =
@@ -259,7 +245,6 @@ namespace UnityEditor
 
         enum CacheServerConnectionState { Unknown, Success, Failure }
         private CacheServerConnectionState m_CacheServerConnectionState;
-        private static string s_ForcedAssetPipelineWarning;
 
         public void OnEnable()
         {
@@ -336,7 +321,6 @@ namespace UnityEditor
             Assert.IsNotNull(m_ProjectGenerationRootNamespace);
 
             m_CacheServerConnectionState = CacheServerConnectionState.Unknown;
-            s_ForcedAssetPipelineWarning = null;
 
             m_IsGlobalSettings = EditorSettings.GetEditorSettings() == target;
         }
@@ -610,22 +594,6 @@ namespace UnityEditor
             return EditorGUI.EndChangeCheck();
         }
 
-        private static string GetForcedAssetPipelineWarning()
-        {
-            if (s_ForcedAssetPipelineWarning == null)
-            {
-                if (CacheServerPreferences.GetEnvironmentAssetPipelineOverride())
-                    s_ForcedAssetPipelineWarning = "Asset pipeline mode was forced via the UNITY_ASSETS_V2_KATANA_TESTS environment variable. The above setting is not in effect before restarting without the environment variable set.";
-                else if (CacheServerPreferences.GetCommandLineAssetPipelineOverride() != 0)
-                    s_ForcedAssetPipelineWarning = "Asset pipeline mode was forced via command line argument using -adb2 command line argument. The above setting is not in effect before restarting without the command line argument.";
-                else if (CacheServerPreferences.GetMagicFileAssetPipelineOverride())
-                    s_ForcedAssetPipelineWarning = "Asset pipeline mode was forced via via magic adb2.txt file in project root. The above setting is not in effect before restarting without the magic file.";
-                else
-                    s_ForcedAssetPipelineWarning = string.Empty;
-            }
-            return s_ForcedAssetPipelineWarning;
-        }
-
         private void DoCacheServerSettings()
         {
             Assert.IsTrue(m_IsGlobalSettings);
@@ -640,7 +608,7 @@ namespace UnityEditor
             }
             GUILayout.EndHorizontal();
 
-            var overrideAddress = CacheServerPreferences.GetCommandLineRemoteAddressOverride();
+            var overrideAddress = AssetPipelinePreferences.GetCommandLineRemoteAddressOverride();
             if (overrideAddress != null)
             {
                 EditorGUILayout.HelpBox("Cache Server remote address forced via command line argument. To use the cache server address specified here please restart Unity without the -CacheServerIPAddress command line argument.", MessageType.Info, true);
@@ -656,9 +624,9 @@ namespace UnityEditor
                 if (index == (int)CacheServerMode.AsPreferences)
                 {
                     isCacheServerEnabled = false;
-                    if (CacheServerPreferences.IsCacheServerV2Enabled)
+                    if (AssetPipelinePreferences.IsCacheServerEnabled)
                     {
-                        var cacheServerIP = CacheServerPreferences.CachesServerV2Address;
+                        var cacheServerIP = AssetPipelinePreferences.CacheServerAddress;
                         cacheServerIP = string.IsNullOrEmpty(cacheServerIP) ? "Not set in preferences" : cacheServerIP;
                         EditorGUILayout.HelpBox(cacheServerIP, MessageType.None, false);
                     }
@@ -985,7 +953,6 @@ namespace UnityEditor
         {
             EditorUserSettings.SetConfigValue("cacheServerAuthMode", $"{(int)data}");
         }
-
 
         private void SetEtcTextureCompressorBehavior(object data)
         {

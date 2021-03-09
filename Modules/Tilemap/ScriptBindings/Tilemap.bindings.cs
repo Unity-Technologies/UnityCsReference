@@ -152,6 +152,11 @@ namespace UnityEngine.Tilemaps
         private extern void INTERNAL_CALL_SetTileAssetsBlock(Vector3Int position, Vector3Int blockDimensions, Object[] tileArray);
         public void SetTilesBlock(BoundsInt position, TileBase[] tileArray) { INTERNAL_CALL_SetTileAssetsBlock(position.min, position.size, tileArray); }
 
+        [NativeMethod(Name = "SetTileChangeData")]
+        public extern void SetTile(TileChangeData tileChangeData, bool ignoreLockFlags);
+        [NativeMethod(Name = "SetTileChangeDataArray")]
+        public extern void SetTiles(TileChangeData[] tileChangeDataArray, bool ignoreLockFlags);
+
         public bool HasTile(Vector3Int position)
         {
             return GetTileAsset(position) != null;
@@ -339,10 +344,15 @@ namespace UnityEngine.Tilemaps
             }
         }
 
-        [RequiredByNativeCode]
         internal static bool HasSyncTileCallback()
         {
             return (Tilemap.tilemapTileChanged != null);
+        }
+
+        [RequiredByNativeCode]
+        internal static void HasSyncTileCallbackRef(ref bool hasCallback)
+        {
+            hasCallback = HasSyncTileCallback();
         }
 
         [RequiredByNativeCode]
@@ -467,6 +477,30 @@ namespace UnityEngine.Tilemaps
         private GameObject m_GameObject;
         private TileFlags m_Flags;
         private Tile.ColliderType m_ColliderType;
+    }
+
+    [RequiredByNativeCode]
+    [StructLayoutAttribute(LayoutKind.Sequential)]
+    [NativeType(Header = "Modules/Tilemap/TilemapScripting.h")]
+    public partial struct TileChangeData
+    {
+        public Vector3Int position { get { return m_Position; } set { m_Position = value; } }
+        public TileBase tile { get { return (TileBase)m_TileAsset; } set { m_TileAsset = value; } }
+        public Color color { get { return m_Color; } set { m_Color = value; } }
+        public Matrix4x4 transform { get { return m_Transform; } set { m_Transform = value; } }
+
+        private Vector3Int m_Position;
+        private Object m_TileAsset;
+        private Color m_Color;
+        private Matrix4x4 m_Transform;
+
+        public TileChangeData(Vector3Int position, TileBase tile, Color color, Matrix4x4 transform)
+        {
+            m_Position = position;
+            m_TileAsset = tile;
+            m_Color = color;
+            m_Transform = transform;
+        }
     }
 
     [RequiredByNativeCode]

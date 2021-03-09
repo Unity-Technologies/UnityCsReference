@@ -77,6 +77,10 @@ namespace UnityEditor.Search
             this.provider = provider;
         }
 
+        internal SearchQueryError(QueryError error, SearchContext context, SearchProvider provider, bool fromSearchQuery = true)
+            : this(error.index, error.length, error.reason, context, provider, fromSearchQuery, error.type)
+        {}
+
         /// <summary>
         /// Get the hashcode of this error.
         /// </summary>
@@ -84,6 +88,25 @@ namespace UnityEditor.Search
         public override int GetHashCode()
         {
             return (index.GetHashCode() * 397) ^ length.GetHashCode();
+        }
+
+        internal static int Compare(SearchQueryError x, SearchQueryError y)
+        {
+            if (x.type == SearchQueryErrorType.Error && y.type == SearchQueryErrorType.Warning)
+                return -1;
+            if (x.type == SearchQueryErrorType.Warning && y.type == SearchQueryErrorType.Error)
+                return 1;
+
+            return x.length.CompareTo(y.length);
+        }
+
+        internal bool Overlaps(SearchQueryError other)
+        {
+            if (index + length <= other.index)
+                return false;
+            if (other.index + other.length <= index)
+                return false;
+            return true;
         }
     }
 }

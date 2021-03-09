@@ -371,6 +371,16 @@ namespace UnityEditor
             height = info.height;
         }
 
+        public void GetSourceTextureWidthAndHeight(out int width, out int height)
+        {
+            var info = GetSourceTextureInformation();
+            if (info.width == -1)
+                throw new InvalidOperationException("The texture has not yet finished importing. This most likely means this method was called in an AssetPostprocessor.OnPreprocessAsset callback.");
+
+            width = info.width;
+            height = info.height;
+        }
+
         internal bool IsSourceTextureHDR()
         {
             return GetSourceTextureInformation().hdr;

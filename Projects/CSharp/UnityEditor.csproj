@@ -376,6 +376,9 @@
     <Compile Include="..\..\Editor\Mono\AssetPipeline\ShaderImporter.bindings.cs">
       <Link>Editor\Mono\AssetPipeline\ShaderImporter.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetPipeline\ShaderIncludeImporter.bindings.cs">
+      <Link>Editor\Mono\AssetPipeline\ShaderIncludeImporter.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\AssetPipeline\SpeedTreeImporter.bindings.cs">
       <Link>Editor\Mono\AssetPipeline\SpeedTreeImporter.bindings.cs</Link>
     </Compile>
@@ -972,9 +975,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\EditorHandles\FreeRotate.cs">
       <Link>Editor\Mono\EditorHandles\FreeRotate.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\JointAngularLimitHandle.cs">
-      <Link>Editor\Mono\EditorHandles\JointAngularLimitHandle.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\EditorHandles\PositionHandle.cs">
       <Link>Editor\Mono\EditorHandles\PositionHandle.cs</Link>
@@ -1789,9 +1789,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\AreaEffector2DEditor.cs">
       <Link>Editor\Mono\Inspector\AreaEffector2DEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\ArticulationBodyEditor.cs">
-      <Link>Editor\Mono\Inspector\ArticulationBodyEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\AssemblyDefinitionImporterInspector.cs">
       <Link>Editor\Mono\Inspector\AssemblyDefinitionImporterInspector.cs</Link>
     </Compile>
@@ -1891,9 +1888,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\BoxCollider2DEditor.cs">
       <Link>Editor\Mono\Inspector\BoxCollider2DEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\BoxColliderEditor.cs">
-      <Link>Editor\Mono\Inspector\BoxColliderEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\BuoyancyEffector2DEditor.cs">
       <Link>Editor\Mono\Inspector\BuoyancyEffector2DEditor.cs</Link>
     </Compile>
@@ -1912,15 +1906,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\CapsuleCollider2DEditor.cs">
       <Link>Editor\Mono\Inspector\CapsuleCollider2DEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\CapsuleColliderEditor.cs">
-      <Link>Editor\Mono\Inspector\CapsuleColliderEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\CharacterControllerEditor.cs">
-      <Link>Editor\Mono\Inspector\CharacterControllerEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\CharacterJointEditor.cs">
-      <Link>Editor\Mono\Inspector\CharacterJointEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\CircleCollider2DEditor.cs">
       <Link>Editor\Mono\Inspector\CircleCollider2DEditor.cs</Link>
     </Compile>
@@ -1930,14 +1915,8 @@
     <Compile Include="..\..\Editor\Mono\Inspector\Collider2DEditorBase.cs">
       <Link>Editor\Mono\Inspector\Collider2DEditorBase.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\Collider3DEditorBase.cs">
-      <Link>Editor\Mono\Inspector\Collider3DEditorBase.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ColliderEditorBase.cs">
       <Link>Editor\Mono\Inspector\ColliderEditorBase.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\ColliderEditorUtility.cs">
-      <Link>Editor\Mono\Inspector\ColliderEditorUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ColorPresetLibraryInspector.cs">
       <Link>Editor\Mono\Inspector\ColorPresetLibraryInspector.cs</Link>
@@ -1950,9 +1929,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ComputeShaderInspector.cs">
       <Link>Editor\Mono\Inspector\ComputeShaderInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\ConfigurableJointEditor.cs">
-      <Link>Editor\Mono\Inspector\ConfigurableJointEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ConstraintEditorBase.cs">
       <Link>Editor\Mono\Inspector\ConstraintEditorBase.cs</Link>
@@ -2035,9 +2011,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\HingeJoint2DEditor.cs">
       <Link>Editor\Mono\Inspector\HingeJoint2DEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\HingeJointEditor.cs">
-      <Link>Editor\Mono\Inspector\HingeJointEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\IEditorElement.cs">
       <Link>Editor\Mono\Inspector\IEditorElement.cs</Link>
     </Compile>
@@ -2049,9 +2022,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\Joint2DEditor.cs">
       <Link>Editor\Mono\Inspector\Joint2DEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\JointEditor.cs">
-      <Link>Editor\Mono\Inspector\JointEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\LODGroupEditor.cs">
       <Link>Editor\Mono\Inspector\LODGroupEditor.cs</Link>
@@ -2164,9 +2134,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\Physics2DSettingsInspector.cs">
       <Link>Editor\Mono\Inspector\Physics2DSettingsInspector.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\PhysicsManagerInspector.cs">
-      <Link>Editor\Mono\Inspector\PhysicsManagerInspector.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\PlatformEffector2DEditor.cs">
       <Link>Editor\Mono\Inspector\PlatformEffector2DEditor.cs</Link>
     </Compile>
@@ -2260,9 +2227,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\Rigidbody2DEditor.cs">
       <Link>Editor\Mono\Inspector\Rigidbody2DEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\RigidbodyEditor.cs">
-      <Link>Editor\Mono\Inspector\RigidbodyEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\RootEditor.cs">
       <Link>Editor\Mono\Inspector\RootEditor.cs</Link>
     </Compile>
@@ -2323,9 +2287,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\SpeedTreeMaterialInspector.cs">
       <Link>Editor\Mono\Inspector\SpeedTreeMaterialInspector.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\SphereColliderEditor.cs">
-      <Link>Editor\Mono\Inspector\SphereColliderEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\SpringJoint2DEditor.cs">
       <Link>Editor\Mono\Inspector\SpringJoint2DEditor.cs</Link>
     </Compile>
@@ -2355,9 +2316,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\TargetJoint2DEditor.cs">
       <Link>Editor\Mono\Inspector\TargetJoint2DEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\TerrainColliderEditor.cs">
-      <Link>Editor\Mono\Inspector\TerrainColliderEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\TextMeshInspector.cs">
       <Link>Editor\Mono\Inspector\TextMeshInspector.cs</Link>
@@ -2406,9 +2364,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\WebCamTextureInspector.cs">
       <Link>Editor\Mono\Inspector\WebCamTextureInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\WheelColliderEditor.cs">
-      <Link>Editor\Mono\Inspector\WheelColliderEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\WheelJoint2DEditor.cs">
       <Link>Editor\Mono\Inspector\WheelJoint2DEditor.cs</Link>
@@ -2695,8 +2650,8 @@
     <Compile Include="..\..\Editor\Mono\Prefabs\PropertyModification.bindings.cs">
       <Link>Editor\Mono\Prefabs\PropertyModification.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\PreferencesWindow\CacheServerPreferences.cs">
-      <Link>Editor\Mono\PreferencesWindow\CacheServerPreferences.cs</Link>
+    <Compile Include="..\..\Editor\Mono\PreferencesWindow\AssetPipelinePreferences.cs">
+      <Link>Editor\Mono\PreferencesWindow\AssetPipelinePreferences.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\PreferencesWindow\DiagnosticsSwitchPreferences.cs">
       <Link>Editor\Mono\PreferencesWindow\DiagnosticsSwitchPreferences.cs</Link>
@@ -2910,9 +2865,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\SceneModeWindows\OcclusionCullingWindow.cs">
       <Link>Editor\Mono\SceneModeWindows\OcclusionCullingWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\SceneModeWindows\PhysicsDebugWindow.cs">
-      <Link>Editor\Mono\SceneModeWindows\PhysicsDebugWindow.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\SceneModeWindows\SceneModeUtility.cs">
       <Link>Editor\Mono\SceneModeWindows\SceneModeUtility.cs</Link>
@@ -5005,6 +4957,33 @@
     <Compile Include="..\..\Modules\LocalizationEditor\LocalizedEditorFontManager.cs">
       <Link>Modules\LocalizationEditor\LocalizedEditorFontManager.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\DetailsExtension.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\DetailsExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\ExtensionManager.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\ExtensionManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\Interfaces\IDetailsExtension.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\Interfaces\IDetailsExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\Interfaces\IExtension.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\Interfaces\IExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\Interfaces\IPackageSelectionChangedHandler.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\Interfaces\IPackageSelectionChangedHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\Interfaces\IWindow.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\Interfaces\IWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\Interfaces\IWindowCreatedHandler.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\Interfaces\IWindowCreatedHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\Interfaces\IWindowDestroyHandler.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\Interfaces\IWindowDestroyHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\PackageSelectionArgs.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\PackageSelectionArgs.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\External\SemVersionExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\External\SemVersionExtension.cs</Link>
     </Compile>
@@ -5154,6 +5133,12 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\RegistryInfoDraft.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\RegistryInfoDraft.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\RegistryInfoDraftData.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\RegistryInfoDraftData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\RegistryInfoOriginalData.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\RegistryInfoOriginalData.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\ApplicationProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\ApplicationProxy.cs</Link>
@@ -5695,11 +5680,65 @@
     <Compile Include="..\..\Modules\ParticleSystemEditor\SerializedMinMaxGradient.cs">
       <Link>Modules\ParticleSystemEditor\SerializedMinMaxGradient.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Physics2DMenuItem.cs">
+      <Link>Modules\Physics2DEditor\Managed\Physics2DMenuItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\ArticulationBodyEditor.cs">
+      <Link>Modules\PhysicsEditor\ArticulationBodyEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\BoxColliderEditor.cs">
+      <Link>Modules\PhysicsEditor\BoxColliderEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\CapsuleColliderEditor.cs">
+      <Link>Modules\PhysicsEditor\CapsuleColliderEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\CharacterControllerEditor.cs">
+      <Link>Modules\PhysicsEditor\CharacterControllerEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\CharacterJointEditor.cs">
+      <Link>Modules\PhysicsEditor\CharacterJointEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\Collider3DEditorBase.cs">
+      <Link>Modules\PhysicsEditor\Collider3DEditorBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\ColliderEditorUtility.cs">
+      <Link>Modules\PhysicsEditor\ColliderEditorUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\ConfigurableJointEditor.cs">
+      <Link>Modules\PhysicsEditor\ConfigurableJointEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\HingeJointEditor.cs">
+      <Link>Modules\PhysicsEditor\HingeJointEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\JointAngularLimitHandle.cs">
+      <Link>Modules\PhysicsEditor\JointAngularLimitHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\JointEditor.cs">
+      <Link>Modules\PhysicsEditor\JointEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\PhysicsDebugWindow.cs">
+      <Link>Modules\PhysicsEditor\PhysicsDebugWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\PhysicsManagerInspector.cs">
+      <Link>Modules\PhysicsEditor\PhysicsManagerInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\RigidbodyEditor.cs">
+      <Link>Modules\PhysicsEditor\RigidbodyEditor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\ScriptBindings\ColliderUtil.bindings.cs">
       <Link>Modules\PhysicsEditor\ScriptBindings\ColliderUtil.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\ScriptBindings\PhysicsDebug.bindings.cs">
       <Link>Modules\PhysicsEditor\ScriptBindings\PhysicsDebug.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\SphereColliderEditor.cs">
+      <Link>Modules\PhysicsEditor\SphereColliderEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\TerrainColliderEditor.cs">
+      <Link>Modules\PhysicsEditor\TerrainColliderEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\WheelColliderEditor.cs">
+      <Link>Modules\PhysicsEditor\WheelColliderEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PresetsEditor\AddPresetTypeWindow\AddPresetTypeDataSource.cs">
       <Link>Modules\PresetsEditor\AddPresetTypeWindow\AddPresetTypeDataSource.cs</Link>
@@ -6025,6 +6064,9 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\AssetProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\AssetProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\AssetProviderSelectors.cs">
+      <Link>Modules\QuickSearch\Editor\Providers\AssetProviderSelectors.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\AssetStoreProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\AssetStoreProvider.cs</Link>
     </Compile>
@@ -6145,6 +6187,111 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchEnumerator.cs">
       <Link>Modules\QuickSearch\Editor\SearchEnumerator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\AliasEvaluators.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\AliasEvaluators.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\CompareEvaluators.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\CompareEvaluators.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\ControlFlowEvaluators.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\ControlFlowEvaluators.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\ConverterEvaluators.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\ConverterEvaluators.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\ExceptEvaluator.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\ExceptEvaluator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\GroupByEvaluator.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\GroupByEvaluator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\IntersectEvaluator.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\IntersectEvaluator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\MapEvaluator.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\MapEvaluator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\MathEvaluators.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\MathEvaluators.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\PrimitiveEvaluators.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\PrimitiveEvaluators.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\PrintEvaluator.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\PrintEvaluator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\QueryEvaluator.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\QueryEvaluator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\RandomEvaluator.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\RandomEvaluator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\SelectEvaluator.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\SelectEvaluator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\SortEvaluator.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\SortEvaluator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\UnionEvaluator.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\UnionEvaluator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Parsers\AliasExpressionParser.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Parsers\AliasExpressionParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Parsers\ConstantExpressionParser.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Parsers\ConstantExpressionParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Parsers\ExpandExpressionParser.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Parsers\ExpandExpressionParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Parsers\NamedExpressionParser.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Parsers\NamedExpressionParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Parsers\QueryExpressionParser.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Parsers\QueryExpressionParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Parsers\SelectorExpressionParser.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Parsers\SelectorExpressionParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Parsers\SetExpressionParser.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Parsers\SetExpressionParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\ReflectionUtils.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\ReflectionUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\ResultIterators.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\ResultIterators.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\SearchExpression.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\SearchExpression.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\SearchExpressionContext.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\SearchExpressionContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\SearchExpressionEvaluator.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\SearchExpressionEvaluator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\SearchExpressionParser.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\SearchExpressionParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\SearchExpressionProvider.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\SearchExpressionProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\SearchExpressionRuntime.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\SearchExpressionRuntime.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\SearchExpressionSelector.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\SearchExpressionSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\SearchExpressionValidator.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\SearchExpressionValidator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\SearchItemQueryEngine.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\SearchItemQueryEngine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\TaskEvaluatorManager.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\TaskEvaluatorManager.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchFlags.cs">
       <Link>Modules\QuickSearch\Editor\SearchFlags.cs</Link>
     </Compile>
@@ -6241,6 +6388,9 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\DebugTimer.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\DebugTimer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\RaceConditionDetector.cs">
+      <Link>Modules\QuickSearch\Editor\Utilities\RaceConditionDetector.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\StringView.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\StringView.cs</Link>
     </Compile>
@@ -6261,6 +6411,9 @@
     </Compile>
     <Compile Include="..\..\Modules\RestService\ScriptBindings\RestService.bindings.cs">
       <Link>Modules\RestService\ScriptBindings\RestService.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\DependencyListView.cs">
+      <Link>Modules\SceneTemplateEditor\DependencyListView.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\SceneTemplateEditor\DropdownWindow.cs">
       <Link>Modules\SceneTemplateEditor\DropdownWindow.cs</Link>
@@ -6312,9 +6465,6 @@
     </Compile>
     <Compile Include="..\..\Modules\SceneTemplateEditor\VisualSplitter.cs">
       <Link>Modules\SceneTemplateEditor\VisualSplitter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\SceneTemplateEditor\ZebraList.cs">
-      <Link>Modules\SceneTemplateEditor\ZebraList.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShortcutManagerEditor\BindingValidator.cs">
       <Link>Modules\ShortcutManagerEditor\BindingValidator.cs</Link>
@@ -7100,7 +7250,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\artifacts\UnityEditor.dll\Debug</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_ASSETPIPELINE_GUI;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API;USE_SEARCH_MODULE</DefineConstants>
+    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API;USE_SEARCH_MODULE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoWarn>0169;0649;0626</NoWarn>
@@ -7129,9 +7279,6 @@
     <Reference Include="ExCSS.Unity">
       <HintPath>..\..\External\ExCSS\builds\builds\lib\net35\ExCSS.Unity.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.IL2CPP.BeeSettings">
-      <HintPath>..\..\External\il2cpp\builds\build\BeeSettings\offline\Unity.IL2CPP.BeeSettings.dll</HintPath>
-    </Reference>
     <Reference Include="Bee.BeeDriver">
       <HintPath>..\..\artifacts\Stevedore\bee-libraries_6595\Bee.BeeDriver.dll</HintPath>
     </Reference>
@@ -7139,13 +7286,13 @@
       <Project>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</Project>
       <Name>UnityEngine</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Tools\Unity.SerializationLogic\Unity.SerializationLogic.gen.csproj">
-      <Project>{A6749DFF-E369-4FE6-9019-6B7C555E80EA}</Project>
-      <Name>Unity.SerializationLogic</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\Tools\Unity.CecilTools\Unity.CecilTools.gen.csproj">
-      <Project>{35FF4EBD-85F0-4727-8AC0-32AE4F3723D0}</Project>
+      <Project>{9FF9353C-A911-2421-DCC8-4F55C0215E58}</Project>
       <Name>Unity.CecilTools</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Tools\Unity.SerializationLogic\Unity.SerializationLogic.gen.csproj">
+      <Project>{C870EE19-8C55-83AD-8D5A-16B6E8AD8FDA}</Project>
+      <Name>Unity.SerializationLogic</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Editor\ScriptCompilationBuildProgram.Data\ScriptCompilationBuildProgram.Data.gen.csproj">
       <Project>{201222DE-2488-4150-E3B5-DC5FCCE3C890}</Project>

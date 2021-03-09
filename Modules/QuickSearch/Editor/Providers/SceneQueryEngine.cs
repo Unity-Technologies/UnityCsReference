@@ -66,7 +66,8 @@ namespace UnityEditor.Search.Providers
     {
         private readonly List<GameObject> m_GameObjects;
         private readonly Dictionary<int, GOD> m_GODS = new Dictionary<int, GOD>();
-        private readonly QueryEngine<GameObject> m_QueryEngine = new QueryEngine<GameObject>(true);
+        private static readonly QueryValidationOptions k_QueryEngineOptions = new QueryValidationOptions { validateFilters = true, skipNestedQueries = true };
+        private readonly QueryEngine<GameObject> m_QueryEngine = new QueryEngine<GameObject>(k_QueryEngineOptions);
         private List<SearchProposition> m_PropertyPrositions;
         private HashSet<SearchProposition> m_TypePropositions;
 
@@ -490,10 +491,10 @@ namespace UnityEditor.Search.Providers
 
         internal IEnumerable<SearchProposition> FindPropositions(SearchContext context, SearchPropositionOptions options)
         {
-            if (options.token.StartsWith("p("))
-                return FetchPropertyPropositions(options.token.Substring(2));
+            if (options.tokens.Any(t => t.StartsWith("p(")))
+                return FetchPropertyPropositions(options.tokens.First().Substring(2));
 
-            if (options.token.StartsWith("t:", StringComparison.OrdinalIgnoreCase))
+            if (options.tokens.Any(t => t.StartsWith("t:", StringComparison.OrdinalIgnoreCase)))
                 return FetchTypePropositions();
 
             return s_FixedPropositions;
@@ -530,7 +531,7 @@ namespace UnityEditor.Search.Providers
                     for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
                     {
                         var c = gocs[componentIndex];
-                        if (!c || c.hideFlags.HasFlag(HideFlags.HideInInspector))
+                        if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
                             continue;
 
                         var cTypeName = c.GetType().Name;
@@ -565,12 +566,12 @@ namespace UnityEditor.Search.Providers
             var query = m_QueryEngine.Parse(context.searchQuery, true);
             if (!query.valid)
             {
-                context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e.index, e.length, e.reason, context, provider)));
+                context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
                 return new GameObject[] {};
             }
 
             IEnumerable<GameObject> gameObjects = subset ?? m_GameObjects;
-            return query.Apply(gameObjects);
+            return query.Apply(gameObjects, false);
         }
 
         #endregion
@@ -814,7 +815,7 @@ namespace UnityEditor.Search.Providers
             for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
             {
                 var c = gocs[componentIndex];
-                if (!c || c.hideFlags.HasFlag(HideFlags.HideInInspector))
+                if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
                     continue;
 
                 var property = FindPropertyValue(c, propertyName);
@@ -841,7 +842,7 @@ namespace UnityEditor.Search.Providers
                 for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
                 {
                     var c = gocs[componentIndex];
-                    if (!c || c.hideFlags.HasFlag(HideFlags.HideInInspector))
+                    if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
                         continue;
 
                     types.Add(c.GetType().Name.ToLowerInvariant());
@@ -865,7 +866,7 @@ namespace UnityEditor.Search.Providers
                 for (int componentIndex = 0; componentIndex < gocs.Length; ++componentIndex)
                 {
                     var c = gocs[componentIndex];
-                    if (!c || c.hideFlags.HasFlag(HideFlags.HideInInspector))
+                    if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
                         continue;
 
                     attrs.AddRange(c.GetType().GetInterfaces().Select(t => t.Name.ToLowerInvariant()));
@@ -877,45 +878,31 @@ namespace UnityEditor.Search.Providers
             return CompareWords(op, value.ToLowerInvariant(), god.attrs);
         }
 
-        private void BuildReferences(UnityEngine.Object obj, ICollection<string> refs, int depth, int maxDepth)
+        private void BuildReferences(UnityEngine.Object obj, ICollection<string> refs)
         {
-            if (depth > maxDepth)
-                return;
-
             using (var so = new SerializedObject(obj))
             {
                 var p = so.GetIterator();
                 var next = p.NextVisible(true);
                 while (next)
                 {
-                    AddPropertyReferences(p, refs, depth, maxDepth);
+                    AddPropertyReferences(p, refs);
                     next = p.NextVisible(p.hasVisibleChildren);
                 }
             }
         }
 
-        private void AddPropertyReferences(SerializedProperty p, ICollection<string> refs, int depth, int maxDepth)
+        private void AddPropertyReferences(SerializedProperty p, ICollection<string> refs)
         {
             if (p.propertyType != SerializedPropertyType.ObjectReference || !p.objectReferenceValue)
                 return;
 
             var refValue = AssetDatabase.GetAssetPath(p.objectReferenceValue);
-            if (String.IsNullOrEmpty(refValue))
-            {
-                if (p.objectReferenceValue is GameObject go)
-                {
-                    refValue = SearchUtils.GetTransformPath(go.transform);
-                }
-            }
+            if (string.IsNullOrEmpty(refValue) && p.objectReferenceValue is GameObject go)
+                refValue = SearchUtils.GetTransformPath(go.transform);
 
-            if (!String.IsNullOrEmpty(refValue))
-            {
-                if (!refs.Contains(refValue))
-                {
-                    AddReference(p.objectReferenceValue, refValue, refs);
-                    BuildReferences(p.objectReferenceValue, refs, depth + 1, maxDepth);
-                }
-            }
+            if (!string.IsNullOrEmpty(refValue) && !refs.Contains(refValue))
+                AddReference(p.objectReferenceValue, refValue, refs);
 
             // Add custom object cases
             if (p.objectReferenceValue is Material material)
@@ -947,18 +934,20 @@ namespace UnityEditor.Search.Providers
 
             if (god.refs == null)
             {
-                const int maxReferenceDepth = 3;
                 var refs = new HashSet<string>();
 
-                BuildReferences(go, refs, 0, maxReferenceDepth);
+                BuildReferences(go, refs);
+
+                // Index any prefab reference
+                AddReference(go, PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go), refs);
 
                 var gocs = go.GetComponents<Component>();
                 for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
                 {
                     var c = gocs[componentIndex];
-                    if (!c || c.hideFlags.HasFlag(HideFlags.HideInInspector))
+                    if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
                         continue;
-                    BuildReferences(c, refs, 1, maxReferenceDepth);
+                    BuildReferences(c, refs);
                 }
 
                 god.refs = refs.ToArray();

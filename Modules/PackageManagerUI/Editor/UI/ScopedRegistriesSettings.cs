@@ -16,6 +16,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const string k_NewRegistryClass = "newRegistry";
         private const string k_SelectedScopeClass = "selectedScope";
 
+        private string k_EditRegistryName = L10n.Tr("Edit Registry Name");
+        private string k_EditRegistryUrl = L10n.Tr("Edit Registry URL");
+        private string k_EditRegistryScopes = L10n.Tr("Edit Registry Scopes");
+        private string k_AddNewRegistryDraft = L10n.Tr("Add New Registry Draft");
+        private string k_RemoveRegistry = L10n.Tr("Remove registry");
+        private string k_RegistrySelectionChange = L10n.Tr("Registry Selection Change");
+
         internal new class UxmlFactory : UxmlFactory<ScopedRegistriesSettings> {}
 
         private Dictionary<string, Label> m_RegistryLabels = new Dictionary<string, Label>();
@@ -67,7 +74,45 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UpmRegistryClient.onRegistriesModified += OnRegistriesModified;
             m_UpmRegistryClient.onRegistryOperationError += OnRegistryOperationError;
+            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            Undo.undoRedoPerformed += OnUndoRedoPerformed;
 
+            // on domain reload, it's not guaranteed that the settings have
+            //  reloaded the draft object yet- need to wait and do this when
+            //  initialization has finished
+            if (draft.IsReady())
+            {
+                UpdateRegistryList();
+                UpdateRegistryDetails();
+            }
+            else
+            {
+                m_SettingsProxy.onInitializationFinished += OnSettingsInitialized;
+            }
+        }
+
+        private void OnUndoRedoPerformed()
+        {
+            if (EditorWindow.HasOpenInstances<ProjectSettingsWindow>())
+            {
+                draft.SetModifiedAfterUndo();
+                // check if the old state makes sense- does it still exist in the list of registries
+                //  if not, put it into a new draft, since it was deleted at some point prior
+                if (!string.IsNullOrEmpty(draft.original?.name) && !m_SettingsProxy.scopedRegistries.Any(a => a.name == draft.original?.name))
+                {
+                    draft.SetOriginalRegistryInfo(null, true);
+                    m_SettingsProxy.isUserAddingNewScopedRegistry = true;
+                }
+
+                UpdateRegistryList();
+                UpdateRegistryDetails();
+                RefreshScopeSelection();
+                RefreshButtonState(draft.original == null, draft.hasUnsavedChanges);
+            }
+        }
+
+        private void OnSettingsInitialized()
+        {
             UpdateRegistryList();
             UpdateRegistryDetails();
         }
@@ -79,6 +124,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (!ShowUnsavedChangesDialog())
                 return;
+
+            draft.RegisterWithOriginalOnUndo(k_AddNewRegistryDraft);
 
             m_SettingsProxy.isUserAddingNewScopedRegistry = true;
             draft.SetOriginalRegistryInfo(null);
@@ -112,7 +159,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                     L10n.Tr("Ok"), L10n.Tr("Cancel"));
 
                 if (deleteRegistry)
+                {
+                    draft.RegisterWithOriginalOnUndo(k_RemoveRegistry);
                     m_UpmRegistryClient.RemoveRegistry(draft.original.name);
+                }
             }
             else
             {
@@ -159,6 +209,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (draft.Validate())
             {
                 var scopes = draft.sanitizedScopes.ToArray();
+
                 if (draft.original != null)
                     m_UpmRegistryClient.UpdateRegistry(draft.original.name, draft.name, draft.url, scopes);
                 else
@@ -198,6 +249,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnRegistryNameChanged(ChangeEvent<string> evt)
         {
+            draft.RegisterOnUndo(k_EditRegistryName);
             draft.name = evt.newValue;
             RefreshButtonState(draft.original == null, draft.hasUnsavedChanges);
             RefreshSelectedLabelText();
@@ -205,6 +257,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnRegistryUrlChanged(ChangeEvent<string> evt)
         {
+            draft.RegisterOnUndo(k_EditRegistryUrl);
             draft.url = evt.newValue;
             RefreshButtonState(draft.original == null, draft.hasUnsavedChanges);
             RefreshSelectedLabelText();
@@ -212,6 +265,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnRegistryScopesChanged(ChangeEvent<string> evt = null)
         {
+            draft.RegisterOnUndo(k_EditRegistryScopes);
             draft.SetScopes(scopesList.Children().Cast<TextField>().Select(textField => textField.value));
             RefreshButtonState(draft.original == null, draft.hasUnsavedChanges);
             RefreshSelectedLabelText();
@@ -225,6 +279,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!ShowUnsavedChangesDialog())
                 return;
 
+            draft.RegisterWithOriginalOnUndo(k_RegistrySelectionChange);
             GetRegistryLabel(draft.original?.name)?.EnableInClassList(k_SelectedRegistryClass, false);
             m_SettingsProxy.SelectRegistry(registryName);
             GetRegistryLabel(registryName).EnableInClassList(k_SelectedRegistryClass, true);
@@ -235,6 +290,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             UpdateRegistryList();
             UpdateRegistryDetails();
+            RefreshScopeSelection();
         }
 
         private void OnRegistryOperationError(string name, UIError error)

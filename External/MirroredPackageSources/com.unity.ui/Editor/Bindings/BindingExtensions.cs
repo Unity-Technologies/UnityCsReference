@@ -594,6 +594,10 @@ namespace UnityEditor.UIElements.Bindings
             }
         }
 
+        /// <summary>
+        /// Map of value trackers per serialized property type. WARNING: tracker may be null for some types.
+        /// Check <see cref="GetTrackedValueForPropertyType"/> for reference.
+        /// </summary>
         private Dictionary<SerializedPropertyType, ITrackedValues> m_ValueTracker;
 
         void UpdateTrackedValues()
@@ -602,7 +606,7 @@ namespace UnityEditor.UIElements.Bindings
             {
                 foreach (var kvp in m_ValueTracker)
                 {
-                    kvp.Value.Update(this);
+                    kvp.Value?.Update(this);
                 }
             }
         }
@@ -717,6 +721,7 @@ namespace UnityEditor.UIElements.Bindings
                     case SerializedPropertyType.ExposedReference:
                     case SerializedPropertyType.Generic:
                         // nothing to bind here
+                        Debug.LogWarning("Serialized property type " + prop.propertyType + " does not support value tracking; callback is not set for " + prop.name);
                         values = null;
                         break;
                     default:
@@ -800,7 +805,7 @@ namespace UnityEditor.UIElements.Bindings
             {
                 foreach (var trackers in m_ValueTracker)
                 {
-                    trackers.Value.UpdateValidProperties(m_ValidPropertyPaths);
+                    trackers.Value?.UpdateValidProperties(m_ValidPropertyPaths);
                 }
             }
         }

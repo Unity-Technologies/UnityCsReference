@@ -17,9 +17,8 @@ namespace UnityEditor.PackageManager.UI
         // versionString and versionId are the same for UpmPackage but difference for in the case Asset Store packages:
         // versionString - something that looks like `1.0.2` or `1.0a`
         // versionId     - the unique numeric id that is used in the Asset Store backend that looks like `12345`
+        // to avoid confusing external developers, we only expose `versionString` in the public API and not `versionId`
         string versionString { get; }
-
-        string versionId { get; }
 
         string uniqueId { get; }
 
@@ -54,6 +53,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool hasEntitlementsError { get; }
 
         SemVersion? version { get; }
+
+        string versionId { get; }
 
         DateTime? publishedDate { get; }
 

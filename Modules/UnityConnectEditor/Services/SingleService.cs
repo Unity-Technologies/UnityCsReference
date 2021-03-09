@@ -219,11 +219,15 @@ namespace UnityEditor.Connect
                         UnityWebRequest.kHttpVerbPUT, null, uploadHandler);
                     serviceFlagRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
                     serviceFlagRequest.SetRequestHeader("Content-Type", "application/json;charset=UTF-8");
-                    serviceFlagRequest.SendWebRequest().completed += (op) => {
-                        ((UnityWebRequestAsyncOperation)op).webRequest.Dispose();
-                    };
+                    serviceFlagRequest.SendWebRequest().completed += OnServiceFlagRequestCompleted;
                 });
             }
+        }
+
+        protected virtual void OnServiceFlagRequestCompleted(AsyncOperation asyncOperation)
+        {
+            asyncOperation.completed -= OnServiceFlagRequestCompleted;
+            ((UnityWebRequestAsyncOperation)asyncOperation).webRequest.Dispose();
         }
 
         /// <summary>

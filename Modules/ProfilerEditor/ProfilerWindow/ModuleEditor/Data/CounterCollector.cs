@@ -11,30 +11,10 @@ namespace UnityEditor.Profiling.ModuleEditor
 {
     class CounterCollector
     {
-        public SortedDictionary<string, List<string>> LoadUnityCounters()
+        public void LoadCounters(out SortedDictionary<string, List<string>> systemCounters, out SortedDictionary<string, List<string>> userCounters)
         {
-            var availableCounterHandles = new List<ProfilerRecorderHandle>();
-            ProfilerRecorderHandle.GetAvailable(availableCounterHandles);
-
-            var unityCounters = new SortedDictionary<string, List<string>>();
-            foreach (var availableCounterHandle in availableCounterHandles)
-            {
-                var description = ProfilerRecorderHandle.GetDescription(availableCounterHandle);
-                if ((description.Flags & MarkerFlags.Counter) != 0 &&
-                    (description.Flags & MarkerFlags.Script) == 0)
-                {
-                    var counterName = description.Name;
-                    var categoryName = description.Category.Name;
-                    AddToCountersCollection(categoryName, counterName, unityCounters);
-                }
-            }
-
-            return unityCounters;
-        }
-
-        public SortedDictionary<string, List<string>> LoadUserCounters()
-        {
-            var userCounters = new SortedDictionary<string, List<string>>();
+            userCounters = new SortedDictionary<string, List<string>>();
+            systemCounters = new SortedDictionary<string, List<string>>();
             using (var frameData = ProfilerDriver.GetRawFrameDataView(ProfilerDriver.lastFrameIndex, 0))
             {
                 if (frameData.valid)
@@ -44,19 +24,19 @@ namespace UnityEditor.Profiling.ModuleEditor
 
                     foreach (var markerInfo in markers)
                     {
-                        if ((markerInfo.flags & MarkerFlags.Counter) != 0 &&
-                            (markerInfo.flags & MarkerFlags.Script) != 0)
-                        {
-                            var counterName = markerInfo.name;
-                            var categoryInfo = frameData.GetCategoryInfo(markerInfo.category);
-                            var categoryName = categoryInfo.name;
+                        if ((markerInfo.flags & MarkerFlags.Counter) == 0)
+                            continue;
+
+                        var counterName = markerInfo.name;
+                        var categoryInfo = frameData.GetCategoryInfo(markerInfo.category);
+                        var categoryName = categoryInfo.name;
+                        if ((markerInfo.flags & MarkerFlags.Script) != 0)
                             AddToCountersCollection(categoryName, counterName, userCounters);
-                        }
+                        else
+                            AddToCountersCollection(categoryName, counterName, systemCounters);
                     }
                 }
             }
-
-            return userCounters;
         }
 
         void AddToCountersCollection(string categoryName, string counterName, SortedDictionary<string, List<string>> collection)

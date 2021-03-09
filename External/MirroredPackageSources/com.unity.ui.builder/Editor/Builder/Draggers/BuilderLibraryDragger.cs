@@ -16,6 +16,7 @@ namespace Unity.UI.Builder
         VisualElement m_DragPreviewElement;
         BuilderLibraryTreeItem m_LibraryItem;
         BuilderTooltipPreview m_TooltipPreview;
+        VisualElement m_MadeElement;
 
         public BuilderLibraryDragger(
             BuilderPaneWindow paneWindow,
@@ -36,6 +37,25 @@ namespace Unity.UI.Builder
             return container;
         }
 
+        protected override void FillDragElement(VisualElement pill)
+        {
+            if (m_MadeElement == null)
+                return;
+
+            pill.Clear();
+
+            m_MadeElement.AddToClassList(s_BeingDraggedClassName);
+            pill.Add(m_MadeElement);
+
+            if (m_MadeElement.GetType() == typeof(VisualElement))
+                m_MadeElement.AddToClassList(s_EmptyVisualElementClassName);
+
+            var overlay = new VisualElement();
+            overlay.name = s_OverlayName;
+            overlay.AddToClassList(s_OverlayClassName);
+            pill.Add(overlay);
+        }
+
         protected override bool StartDrag(VisualElement target, Vector2 mousePosition, VisualElement pill)
         {
             m_LibraryItem =
@@ -48,22 +68,9 @@ namespace Unity.UI.Builder
             if (isCurrentDocumentVisualTreeAsset)
                 return false;
 
-            var madeElement = m_LibraryItem.makeVisualElementCallback?.Invoke();
-            if (madeElement == null)
+            m_MadeElement = m_LibraryItem.makeVisualElementCallback?.Invoke();
+            if (m_MadeElement == null)
                 return false;
-
-            pill.Clear();
-
-            madeElement.AddToClassList(s_BeingDraggedClassName);
-            pill.Add(madeElement);
-
-            if (madeElement.GetType() == typeof(VisualElement))
-                madeElement.AddToClassList(s_EmptyVisualElementClassName);
-
-            var overlay = new VisualElement();
-            overlay.name = s_OverlayName;
-            overlay.AddToClassList(s_OverlayClassName);
-            pill.Add(overlay);
 
             m_TooltipPreview.Disable();
 
@@ -82,16 +89,14 @@ namespace Unity.UI.Builder
             {
                 return;
             }
-            else
-            {
-                ResetDragPreviewElement();
+            
+            ResetDragPreviewElement();
 
-                m_DragPreviewLastParent = pickedElement;
+            m_DragPreviewLastParent = pickedElement;
 
-                m_DragPreviewLastParent.HideMinSizeSpecialElement();
+            m_DragPreviewLastParent.HideMinSizeSpecialElement();
 
-                FixElementSizeAndPosition(m_DragPreviewLastParent);
-            }
+            FixElementSizeAndPosition(m_DragPreviewLastParent);
 
             var item =
                 target.GetProperty(BuilderConstants.LibraryItemLinkedManipulatorVEPropertyName)
@@ -106,10 +111,10 @@ namespace Unity.UI.Builder
             var item = m_LibraryItem;
             var itemVTA = item.sourceAsset;
 
-            if (!paneWindow.document.WillCauseCircularDependency(itemVTA))
+            if (paneWindow.document.WillCauseCircularDependency(itemVTA))
             {
                 BuilderDialogsUtility.DisplayDialog(BuilderConstants.InvalidWouldCauseCircularDependencyMessage,
-                    BuilderConstants.InvalidWouldCauseCircularDependencyMessageDescription, null);
+                    BuilderConstants.InvalidWouldCauseCircularDependencyMessageDescription, BuilderConstants.DialogOkOption);
                 return;
             }
 

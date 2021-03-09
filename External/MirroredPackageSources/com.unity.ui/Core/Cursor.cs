@@ -64,11 +64,14 @@ namespace UnityEngine.UIElements
 
     internal class CursorManager : ICursorManager
     {
+        public bool isCursorOverriden { get; private set; }
+
         public void SetCursor(Cursor cursor)
         {
             if (cursor.texture != null)
             {
                 UnityEngine.Cursor.SetCursor(cursor.texture, cursor.hotspot, CursorMode.Auto);
+                isCursorOverriden = true;
             }
             else
             {
@@ -84,7 +87,9 @@ namespace UnityEngine.UIElements
 
         public void ResetCursor()
         {
-            UnityEngine.Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+            if (isCursorOverriden)
+                UnityEngine.Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+            isCursorOverriden = false;
         }
     }
 }

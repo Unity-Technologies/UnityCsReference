@@ -939,6 +939,9 @@ namespace UnityEditorInternal
         [FreeFunction("HandleProjectWindowFileDrag")]
         internal static extern DragAndDropVisualMode HandleProjectWindowFileDrag(string newParentPath, string[] paths, bool perform, int defaultPromptAction);
 
+        [FreeFunction("InternalEditorUtilityBindings::DragAndDropPrefabsFromHierarchyToProjectWindow")]
+        internal static extern DragAndDropVisualMode DragAndDropPrefabsFromHierarchyToProjectWindow(string destAssetGuid, bool perform, int dialogOption);
+
         [FreeFunction]
         [NativeHeader("Editor/Src/Undo/DefaultParentObjectUndo.h")]
         internal static extern void RegisterSetDefaultParentObjectUndo(string sceneGUID, int instanceID, string undoName);

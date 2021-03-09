@@ -33,7 +33,7 @@ namespace UnityEditor.Search.Providers
         internal const string type = "asset";
         private const string displayName = "Project";
 
-        private static bool reloadAssetIndexes = true;
+        internal static bool reloadAssetIndexes = true;
         private static List<SearchDatabase> m_AssetIndexes = null;
         private static List<SearchDatabase> assetIndexes
         {
@@ -122,7 +122,7 @@ namespace UnityEditor.Search.Providers
         {
             var info = GetInfo(item);
 
-            if (item.options.HasFlag(SearchItemOptions.Compacted))
+            if (item.options.HasAny(SearchItemOptions.Compacted))
                 return info.path;
 
             if (!string.IsNullOrEmpty(item.description))
@@ -192,7 +192,7 @@ namespace UnityEditor.Search.Providers
 
         private static IEnumerable<SearchProposition> FetchPropositions(SearchContext context, SearchPropositionOptions options)
         {
-            if (context.options.HasFlag(SearchFlags.NoIndexing))
+            if (context.options.HasAny(SearchFlags.NoIndexing))
                 return null;
 
             return assetIndexes.SelectMany(db => db.index.GetKeywords().Select(kw => new SearchProposition(kw)));
@@ -243,7 +243,7 @@ namespace UnityEditor.Search.Providers
         private static IEnumerator SearchAssets(SearchContext context, SearchProvider provider)
         {
             var searchQuery = context.searchQuery;
-            var useIndexing = !context.options.HasFlag(SearchFlags.NoIndexing) && assetIndexes.Count > 0;
+            var useIndexing = !context.options.HasAny(SearchFlags.NoIndexing) && assetIndexes.Count > 0;
             if (!string.IsNullOrEmpty(searchQuery))
             {
                 // Search by GUID
@@ -263,7 +263,7 @@ namespace UnityEditor.Search.Providers
                     }
                 }
 
-                if (!useIndexing || !allIndexesReady || context.options.HasFlag(SearchFlags.WantsMore))
+                if (!useIndexing || !allIndexesReady || context.wantsMore)
                 {
                     // Perform a quick search on asset paths
                     var findOptions = FindOptions.Words | FindOptions.Regex | FindOptions.Glob | (context.wantsMore ? FindOptions.Fuzzy : FindOptions.None);
@@ -272,7 +272,7 @@ namespace UnityEditor.Search.Providers
                 }
 
                 // Finally wait for indexes that are being built to end the search.
-                if (useIndexing && !allIndexesReady && !context.options.HasFlag(SearchFlags.Synchronous))
+                if (useIndexing && !allIndexesReady && !context.options.HasAny(SearchFlags.Synchronous))
                 {
                     foreach (var db in assetIndexes)
                         yield return SearchIndexes(context.searchQuery, context, provider, db);
@@ -314,7 +314,7 @@ namespace UnityEditor.Search.Providers
         {
             while (!db.ready)
             {
-                if (!db || context.options.HasFlag(SearchFlags.Synchronous))
+                if (!db || context.options.HasAny(SearchFlags.Synchronous))
                     yield break;
                 yield return null;
             }
@@ -346,7 +346,7 @@ namespace UnityEditor.Search.Providers
         public static SearchItem CreateItem(SearchContext context, SearchProvider provider, string dbName, GlobalObjectId gid, string path, int itemScore, bool useGroupProvider = true)
         {
             string filename = null;
-            if (context.options.HasFlag(SearchFlags.Debug) && !string.IsNullOrEmpty(dbName))
+            if (context.options.HasAny(SearchFlags.Debug) && !string.IsNullOrEmpty(dbName))
             {
                 filename = Path.GetFileName(path);
                 filename += $" ({dbName}, {itemScore})";
@@ -365,6 +365,7 @@ namespace UnityEditor.Search.Providers
             return dbName;
         }
 
+        [SearchExpressionSelector("^path$", provider: type)]
         public static string GetAssetPath(SearchItem item)
         {
             var gid = GetGID(item);

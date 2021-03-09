@@ -12,6 +12,8 @@ namespace UnityEditor.PackageManager.UI
         string uniqueId { get; }
 
         string name { get; }
+
+        IEnumerable<IPackageVersion> versions { get; }
     }
 }
 
@@ -23,7 +25,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         DateTime? purchasedTime { get; }
 
-        IVersionList versions { get; }
+        new IVersionList versions { get; }
 
         PackageState state { get; }
 

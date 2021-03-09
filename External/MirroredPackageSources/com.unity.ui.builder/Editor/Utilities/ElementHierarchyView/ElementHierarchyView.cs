@@ -229,7 +229,9 @@ namespace Unity.UI.Builder
 
                         pillLabel.text = partStrShortened;
 
+                        // We want class dragger first because it has priority on the pill label when drag starts.
                         m_ClassDragger.RegisterCallbacksOnTarget(pill);
+                        m_ExplorerDragger.RegisterCallbacksOnTarget(pill);
                     }
                     else if (partStr.StartsWith(BuilderConstants.UssSelectorNameSymbol))
                     {

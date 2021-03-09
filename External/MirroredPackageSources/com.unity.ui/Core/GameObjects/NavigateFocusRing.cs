@@ -87,12 +87,14 @@ namespace UnityEngine.UIElements
 
             ve = GetRootFocusable(ve);
 
+            Rect panelBounds = m_Root.worldBoundingBox;
+            Rect panelRect = new Rect(panelBounds.position - Vector2.one, panelBounds.size + Vector2.one * 2);
             Rect rect = ve.worldBound;
             Rect validRect = new Rect(rect.position - Vector2.one, rect.size + Vector2.one * 2);
-            if (direction == Up) validRect.yMin = 0;
-            else if (direction == Down) validRect.yMax = Screen.height;
-            else if (direction == Left) validRect.xMin = 0;
-            else if (direction == Right) validRect.xMax = Screen.width;
+            if (direction == Up) validRect.yMin = panelRect.yMin;
+            else if (direction == Down) validRect.yMax = panelRect.yMax;
+            else if (direction == Left) validRect.xMin = panelRect.xMin;
+            else if (direction == Right) validRect.xMax = panelRect.xMax;
 
             var best = new FocusableHierarchyTraversal
             {
@@ -106,10 +108,10 @@ namespace UnityEngine.UIElements
                 return GetLeafFocusable(best);
 
             validRect = new Rect(rect.position - Vector2.one, rect.size + Vector2.one * 2);
-            if (direction == Down) validRect.yMin = 0;
-            else if (direction == Up) validRect.yMax = Screen.height;
-            else if (direction == Right) validRect.xMin = 0;
-            else if (direction == Left) validRect.xMax = Screen.height;
+            if (direction == Down) validRect.yMin = panelRect.yMin;
+            else if (direction == Up) validRect.yMax = panelRect.yMax;
+            else if (direction == Right) validRect.xMin = panelRect.xMin;
+            else if (direction == Left) validRect.xMax = panelRect.xMax;
 
             best = new FocusableHierarchyTraversal
             {
@@ -199,35 +201,59 @@ namespace UnityEngine.UIElements
             int Order(VisualElement a, VisualElement b)
             {
                 Rect ra = a.worldBound, rb = b.worldBound;
+                int result = StrictOrder(ra, rb);
+                return result != 0 ? result : TieBreaker(ra, rb);
+            }
+
+            int StrictOrder(VisualElement a, VisualElement b)
+            {
+                return StrictOrder(a.worldBound, b.worldBound);
+            }
+
+            int StrictOrder(Rect ra, Rect rb)
+            {
                 float diff = 0f;
                 if (direction == Up) diff = rb.yMax - ra.yMax;
                 else if (direction == Down) diff = ra.yMin - rb.yMin;
                 else if (direction == Left) diff = rb.xMax - ra.xMax;
                 else if (direction == Right) diff = ra.xMin - rb.xMin;
-                if (Mathf.Approximately(diff, 0f))
-                    return 0;
-                return diff > 0 ? 1 : -1;
+                if (!Mathf.Approximately(diff, 0f))
+                    return diff > 0 ? 1 : -1;
+                return 0;
             }
 
-            public VisualElement GetBestOverall(VisualElement root, VisualElement bestSoFar = null)
+            int TieBreaker(Rect ra, Rect rb)
             {
-                if (!ValidateHierarchyTraversal(root))
+                // Elements are aligned in the search axis. Find who's top-left corner is closer to current element.
+                // TODO: use other corners if grow direction is not left-to-right / top-to-bottom
+                Rect rc = currentFocusable.worldBound;
+                float diff = (ra.min - rc.min).sqrMagnitude - (rb.min - rc.min).sqrMagnitude;
+                if (!Mathf.Approximately(diff, 0f))
+                    return diff > 0 ? 1 : -1;
+
+                // Elements probably only differ through numerical rounding errors, so we don't force an order.
+                return 0;
+            }
+
+            public VisualElement GetBestOverall(VisualElement candidate, VisualElement bestSoFar = null)
+            {
+                if (!ValidateHierarchyTraversal(candidate))
                     return bestSoFar;
 
-                if (ValidateElement(root))
+                if (ValidateElement(candidate))
                 {
-                    if ((!firstPass || Order(root, currentFocusable) > 0) &&
-                        (bestSoFar == null || Order(bestSoFar, root) > 0))
-                        bestSoFar = root;
+                    if ((!firstPass || StrictOrder(candidate, currentFocusable) > 0) &&
+                        (bestSoFar == null || Order(bestSoFar, candidate) > 0))
+                        bestSoFar = candidate;
 
-                    if (IsFocusRoot(root))
+                    if (IsFocusRoot(candidate))
                         return bestSoFar;
                 }
 
-                int n = root.childCount;
+                int n = candidate.childCount;
                 for (int i = 0; i < n; i++)
                 {
-                    var child = root[i];
+                    var child = candidate[i];
                     bestSoFar = GetBestOverall(child, bestSoFar);
                 }
 

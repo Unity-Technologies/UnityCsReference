@@ -307,7 +307,7 @@ namespace UnityEditor
                 showSimplifyPreview = EditorGUILayout.Toggle(Styles.simplifyPreview, showSimplifyPreview);
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.PrefixLabel(Styles.tolerance);
-                simplifyTolerance = Mathf.Max(0, EditorGUILayout.FloatField(simplifyTolerance, GUILayout.MaxWidth(100.0f)));
+                simplifyTolerance = Mathf.Max(0, EditorGUILayout.FloatField(simplifyTolerance, GUILayout.MaxWidth(35.0f)));
                 if (GUILayout.Button(Styles.simplify, EditorStyles.miniButton))
                 {
                     SimplifyPoints();

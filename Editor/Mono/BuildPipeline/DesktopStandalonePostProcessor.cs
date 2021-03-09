@@ -532,7 +532,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         return ((args.options & BuildOptions.Development) != 0);
     }
 
-    protected static bool IsHeadlessMode(BuildPostProcessArgs args)
+    protected static bool IsServerBuild(BuildPostProcessArgs args)
     {
         return ((args.options & BuildOptions.EnableHeadlessMode) != 0);
     }

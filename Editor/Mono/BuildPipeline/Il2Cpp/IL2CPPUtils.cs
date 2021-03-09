@@ -9,7 +9,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Runtime.InteropServices;
-using Unity.IL2CPP.BeeSettings;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Player;
@@ -459,6 +458,9 @@ namespace UnityEditorInternal
 
             arguments.Add("--avoid-dynamic-library-copy");
 
+            //make il2cpp not deploy baselib, as we already copy it in ourselves
+            arguments.Add("--dont-deploy-baselib");
+
             arguments.Add("--profiler-report");
 
             return arguments.ToArray();
@@ -477,11 +479,6 @@ namespace UnityEditorInternal
             return Path.GetFullPath(Path.Combine(
                 EditorApplication.applicationContentsPath,
                 "il2cpp"));
-        }
-
-        internal static string GetIl2CppBeeSettingsFolder()
-        {
-            return $"{GetIl2CppFolder()}/build/BeeSettings/offline";
         }
 
         internal static string GetTundraFolder()
@@ -577,11 +574,7 @@ namespace UnityEditorInternal
             var managedDir = Path.GetFullPath(Path.Combine(m_StagingAreaData, "Managed"));
 
             // Make all assemblies in Staging/Managed writable for stripping.
-            foreach (var file in Directory.GetFiles(managedDir))
-            {
-                var fileInfo = new FileInfo(file);
-                fileInfo.IsReadOnly = false;
-            }
+            ClearReadOnlyFlagOnAllFilesNonRecursively(managedDir);
 
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
 
@@ -595,12 +588,17 @@ namespace UnityEditorInternal
 
             Directory.CreateDirectory(m_TempFolder);
             Directory.CreateDirectory(generatedCppDir);
+            ClearReadOnlyFlagOnAllFilesNonRecursively(generatedCppDir);
 
             // Need to clean out the AdditionalCppFiles directory because a platform could do pretty much anything
             // in a "modifyOutputBeforeCompile" callback method, and so we need to provide a fresh directory. Bee will
             // still check the hash of these files before doing a build, so writing them again won't cause a recompile.
             if (Directory.Exists(additionalCppFilesDirectory))
+            {
+                ClearReadOnlyFlagOnAllFilesNonRecursively(additionalCppFilesDirectory);
                 Directory.Delete(additionalCppFilesDirectory, true);
+            }
+
             Directory.CreateDirectory(additionalCppFilesDirectory);
 
             if (m_ModifyOutputBeforeCompile != null)
@@ -609,6 +607,15 @@ namespace UnityEditorInternal
             var pipelineData = new Il2CppBuildPipelineData(m_PlatformProvider.target, managedDir);
 
             ConvertPlayerDlltoCpp(pipelineData);
+        }
+
+        private static void ClearReadOnlyFlagOnAllFilesNonRecursively(string managedDir)
+        {
+            foreach (var file in Directory.GetFiles(managedDir))
+            {
+                var fileInfo = new FileInfo(file);
+                fileInfo.IsReadOnly = false;
+            }
         }
 
         public void RunCompileAndLink(string il2cppBuildCacheSource)
@@ -709,6 +716,10 @@ namespace UnityEditorInternal
                 Il2CppNativeCodeBuilderUtils.ClearAndPrepareCacheDirectory(il2CppNativeCodeBuilder);
                 arguments.AddRange(Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, buildCacheNativeOutputFile, m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, compilerConfiguration));
             }
+            else
+            {
+                arguments.Add($"--cachedirectory={CommandLineFormatter.PrepareFileName(GetShortPathName(Path.GetFullPath(m_PlatformProvider.il2cppBuildCacheDirectory)))}");
+            }
 
             // Additional files can take any form, depending on platform, so pass anything in the additional files directory
             foreach (var additionalCppFile in Directory.GetFiles(GetAdditionalCppFilesDirectory(m_PlatformProvider.il2cppBuildCacheDirectory)))
@@ -727,7 +738,6 @@ namespace UnityEditorInternal
                 arguments.Add(additionalArgs);
 
             arguments.Add($"--directory={CommandLineFormatter.PrepareFileName(GetShortPathName(Path.GetFullPath(data.inputDirectory)))}");
-
             arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(GetCppOutputDirectory(m_PlatformProvider.il2cppBuildCacheDirectory))}");
 
             // NOTE: any arguments added here that affect how generated code is built need
@@ -771,29 +781,13 @@ namespace UnityEditorInternal
             var nativeOutputDirectoryInBuildCache = GetNativeOutputRelativeDirectory(m_PlatformProvider.il2cppBuildCacheDirectory);
             var nativeOutputDirectoryInStagingArea = GetNativeOutputRelativeDirectory(m_StagingAreaData);
 
-            BeeSettingsIl2Cpp beeSettings = new BeeSettingsIl2Cpp();
             var il2cppOutputParser = new Il2CppOutputParser(Path.Combine(cppOutputDirectoryInBuildCache, "Il2CppToEditorData.json"));
 
-            beeSettings.ToolPath = $"{EscapeSpacesInPath(GetIl2CppExe())}";
-            beeSettings.Arguments.AddRange(arguments);
-            beeSettings.Serialize(m_PlatformProvider.il2cppBuildCacheDirectory);
-
-            void SetupTundraAndStartInfo(ProcessStartInfo startInfo)
-            {
-                if (setupStartInfo != null)
-                    setupStartInfo(startInfo);
-
-                // For some reason, TUNDRA_EXECUTABLE needs to be unescaped in order to be found on OSX,
-                // but MONO_EXECUTABLE needs to be escaped in order to be found on OSX
-                startInfo.EnvironmentVariables.Add("TUNDRA_EXECUTABLE", GetIl2CppTundraExe());
-                startInfo.EnvironmentVariables.Add("REAPI_CACHE_CLIENT", GetIl2CppReapiCacheClientExe());
-                startInfo.EnvironmentVariables.Add("MONO_EXECUTABLE", EscapeSpacesInPath(GetMonoBleedingEdgeExe()));
-            }
+            arguments.Add("--convert-in-graph");
 
             var args = arguments.Aggregate(String.Empty, (current, arg) => current + arg + " ");
-            var beeArgs = $"--no-colors --prebuiltbuildprogram={EscapeSpacesInPath(GetIl2CppBeeBuildProgramExe())}";
-            Console.WriteLine("Invoking il2cpp (via bee.exe) with arguments: " + args);
-            Runner.RunManagedProgram(GetIl2CppBeeExe(), beeArgs, m_PlatformProvider.il2cppBuildCacheDirectory, il2cppOutputParser, SetupTundraAndStartInfo);
+            Console.WriteLine("Invoking il2cpp with arguments: " + args);
+            Runner.RunNetCoreProgram(GetIl2CppExe(), args, m_PlatformProvider.il2cppBuildCacheDirectory, il2cppOutputParser, setupStartInfo);
 
             // Copy IL2CPP outputs to StagingArea
             if (Directory.Exists(nativeOutputDirectoryInBuildCache))
@@ -818,21 +812,6 @@ namespace UnityEditorInternal
         private string GetIl2CppExe()
         {
             return $"{IL2CPPUtils.GetIl2CppFolder()}/build/deploy/netcoreapp3.1/il2cpp{(Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "")}";
-        }
-
-        private string GetIl2CppBeeExe()
-        {
-            return $"{IL2CPPUtils.GetIl2CppBeeSettingsFolder()}/bee.exe";
-        }
-
-        private string GetIl2CppBeeArtifactsDirectory()
-        {
-            return $"{IL2CPPUtils.GetIl2CppBeeSettingsFolder()}/artifacts";
-        }
-
-        private string GetIl2CppBeeBuildProgramExe()
-        {
-            return $"{GetIl2CppBeeArtifactsDirectory()}/buildprogram/buildprogram.exe";
         }
 
         private string GetIl2CppTundraExe()

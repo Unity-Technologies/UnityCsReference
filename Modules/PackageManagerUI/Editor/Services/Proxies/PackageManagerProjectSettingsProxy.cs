@@ -15,6 +15,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public event Action<bool> onScopedRegistriesSettingsFoldoutChanged = delegate {};
         public event Action<bool> onSeeAllVersionsChanged = delegate {};
         public event Action<long> onLoadAssetsChanged = delegate {};
+        public event Action onInitializationFinished = delegate {};
 
         public virtual bool enablePreReleasePackages
         {
@@ -103,6 +104,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             PackageManagerProjectSettings.instance.onScopedRegistriesSettingsFoldoutChanged += OnScopedRegistriesSettingsFoldoutChanged;
             PackageManagerProjectSettings.instance.onSeeAllVersionsChanged += OnSeeAllPackageVersionsChanged;
             PackageManagerProjectSettings.instance.onLoadAssetsChanged += OnLoadAssetsChanged;
+            PackageManagerProjectSettings.instance.onInitializationFinished += OnInitializationFinished;
         }
 
         public void OnDisable()
@@ -113,11 +115,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             PackageManagerProjectSettings.instance.onScopedRegistriesSettingsFoldoutChanged -= OnScopedRegistriesSettingsFoldoutChanged;
             PackageManagerProjectSettings.instance.onSeeAllVersionsChanged -= OnSeeAllPackageVersionsChanged;
             PackageManagerProjectSettings.instance.onLoadAssetsChanged -= OnLoadAssetsChanged;
+            PackageManagerProjectSettings.instance.onInitializationFinished -= OnInitializationFinished;
         }
 
         public virtual void Save()
         {
             PackageManagerProjectSettings.instance.Save();
+        }
+
+        private void OnInitializationFinished()
+        {
+            onInitializationFinished.Invoke();
         }
 
         private void OnEnablePreReleasePackagesChanged(bool enablePreReleasePackages)

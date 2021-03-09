@@ -136,6 +136,25 @@ namespace UnityEditor.DeviceSimulation
             path = path.Replace("\\", "/");
             if (!path.StartsWith("Assets/") && !path.StartsWith("Packages/"))
                 path = Path.Combine(device.directory, path);
+
+            // Custom textures need to be readable for us to accurately map touches in cutouts
+            // but we can full back to the .device cutouts. We need the .meta file to be unlocked in VCS.
+            var textureImporter = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (textureImporter != null && !textureImporter.isReadable)
+            {
+                if (AssetDatabase.MakeEditable(path + ".meta"))
+                {
+                    textureImporter.isReadable = true;
+                    AssetDatabase.ImportAsset(path);
+                    AssetDatabase.Refresh();
+                }
+                else
+                {
+                    Debug.LogWarning(
+                        "Read/Write not enabled on simulator texture\nRead/Write is required to simulate touch over the device bezel and cutouts accurately.");
+                }
+            }
+
             return AssetDatabase.LoadAssetAtPath<Texture>(path);
         }
     }

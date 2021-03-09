@@ -84,7 +84,7 @@ namespace UnityEditorInternal
         Gathered = 1 << 0,
         Enabled = 1 << 1,
         Supported = 1 << 2,
-        NotSupportedWithEditorProfiling = 1 << 3,
+        [Obsolete("This has been made obsolete. GPU Profiling is supported in Edit Mode.", false)] NotSupportedWithEditorProfiling = 1 << 3,
         NotSupportedWithLegacyGfxJobs = 1 << 4,
         NotSupportedWithNativeGfxJobs = 1 << 5,
         NotSupportedByDevice = 1 << 6,

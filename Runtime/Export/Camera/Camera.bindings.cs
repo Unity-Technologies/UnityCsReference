@@ -64,6 +64,8 @@ namespace UnityEngine
         extern public bool layerCullSpherical { get; set; }
         extern public CameraType cameraType { get; set; }
 
+        extern internal Material skyboxMaterial { get; }
+
         [NativeConditional("UNITY_EDITOR")]
         extern public ulong  overrideSceneCullingMask     { get; set; }
 

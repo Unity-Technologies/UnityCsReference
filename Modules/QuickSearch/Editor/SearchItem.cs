@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
@@ -36,6 +37,7 @@ namespace UnityEditor.Search
         Description,
         Score,
         Complete,
+        Value,
 
         Default = Id
     }
@@ -110,7 +112,6 @@ namespace UnityEditor.Search
             priority = int.MinValue,
             toObject = (item, type) => null,
             fetchLabel = (item, context) => item.label ?? item.id,
-            fetchDescription = (item, context) => item.label ?? item.id,
             fetchThumbnail = (item, context) => item.thumbnail ?? Icons.logInfo,
             actions = new List<SearchAction> { new SearchAction("select", "select", null, null, (SearchItem item) => {}) }
         };
@@ -160,10 +161,12 @@ namespace UnityEditor.Search
         /// <returns>The search item description</returns>
         public string GetDescription(SearchContext context, bool stripHTML = false)
         {
-            if (options.HasFlag(SearchItemOptions.Compacted) && provider?.fetchDescription != null)
+            if (options.HasAny(SearchItemOptions.Compacted) && provider?.fetchDescription != null)
                 return provider?.fetchDescription?.Invoke(this, context);
-            if (description == null)
-                description = provider?.fetchDescription?.Invoke(this, context);
+            if (description == null && provider?.fetchDescription != null)
+                description = provider.fetchDescription(this, context);
+            if (description == null && m_Value != null)
+                return value.ToString();
             if (!stripHTML || string.IsNullOrEmpty(description))
                 return description;
             return Utils.StripHTML(description);
@@ -269,9 +272,11 @@ namespace UnityEditor.Search
         /// <returns></returns>
         public override string ToString()
         {
-            if (label == null)
-                return id;
-            return $"{id} | {label} | {score}";
+            if (string.IsNullOrEmpty(label))
+                return $"[{score}] {value}";
+            if (string.IsNullOrEmpty(description))
+                return $"[{score}] {label} | {value}";
+            return $"[{score}] {label} [{score}] | {value} ({description})";
         }
 
         /// <summary>
@@ -392,6 +397,9 @@ namespace UnityEditor.Search
                 if (sortBy == SearchItemSorting.Id)
                     return string.CompareOrdinal(x.id, y.id);
 
+                if (sortBy == SearchItemSorting.Value)
+                    return System.Collections.Comparer.DefaultInvariant.Compare(x.value, y.value);
+
                 if (sortBy == SearchItemSorting.Label)
                     return string.Compare(x.GetLabel(x.context, true), y.GetLabel(y.context, true), StringComparison.InvariantCulture);
 
@@ -408,6 +416,64 @@ namespace UnityEditor.Search
 
                 return string.CompareOrdinal(x.id, y.id);
             }
+        }
+
+        private Dictionary<string, object> m_Fields;
+        internal void SetField(string name, object value)
+        {
+            if (m_Fields == null)
+                m_Fields = new Dictionary<string, object>();
+            if (value != null)
+                m_Fields[name] = value;
+            else
+                RemoveField(name);
+        }
+
+        internal bool RemoveField(string name)
+        {
+            if (m_Fields == null)
+                return false;
+            return m_Fields.Remove(name);
+        }
+
+        internal object GetValue(string name = null, SearchContext context = null)
+        {
+            if (name == null)
+                return m_Value;
+            if (m_Fields != null && m_Fields.TryGetValue(name, out var value))
+                return value;
+
+            switch (name)
+            {
+                case "id": return id;
+                case "value": return m_Value;
+                case "label": return GetLabel(context, true);
+                case "desc":
+                case "description":
+                    return GetDescription(context, true);
+            }
+
+            return null;
+        }
+
+        internal object this[string name]
+        {
+            get { return GetValue(name); }
+            set { SetField(name, value); }
+        }
+
+        internal int GetFieldCount()
+        {
+            if (m_Fields == null)
+                return 0;
+            return m_Fields.Count;
+        }
+
+        internal string[] GetFieldNames()
+        {
+            if (m_Fields == null)
+                return new string[0];
+            return m_Fields.Keys.ToArray();
         }
     }
 }

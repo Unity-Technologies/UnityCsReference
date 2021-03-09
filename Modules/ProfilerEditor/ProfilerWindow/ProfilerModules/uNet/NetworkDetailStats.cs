@@ -4,7 +4,55 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+
+using UnityEditor.Profiling;
+
+using UnityEngine;
 using UnityEngine.Networking;
+
+namespace UnityEditorInternal.Profiling
+{
+    //*undocumented*
+    public static class NetworkingOperationsProfilerOverrides
+    {
+        static public Action<Rect, int> drawDetailsViewOverride = null;
+        static public Func<List<NetworkCounterData>> getCustomChartCounters = null;
+    }
+
+    //*undocumented*
+    public static class NetworkingMessagesProfilerOverrides
+    {
+        static public Action<Rect, int> drawDetailsViewOverride = null;
+        static public Func<List<NetworkCounterData>> getCustomChartCounters = null;
+    }
+
+    //*undocumented*
+    public struct NetworkCounterData
+    {
+        public string category;
+        public string name;
+    }
+
+    internal static class NetworkProfilerUtils
+    {
+        public static ProfilerCounterData ToProfilerCounter(this NetworkCounterData data)
+        {
+            return new ProfilerCounterData() { m_Name = data.name, m_Category = data.category };
+        }
+
+        public static void ToProfilerCounter(this List<NetworkCounterData> data, List<ProfilerCounterData> inData)
+        {
+            if (data.Count > inData.Capacity)
+                throw new ArgumentOutOfRangeException("Count and Capacity must be the same!");
+
+            for (int i = 0; i < data.Count; i++)
+            {
+                inData.Add(data[i].ToProfilerCounter());
+            }
+        }
+    }
+}
 
 namespace UnityEditor
 {

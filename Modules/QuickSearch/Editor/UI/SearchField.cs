@@ -3,9 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
 using UnityEngine;
 
 namespace UnityEditor.Search
@@ -440,16 +437,29 @@ namespace UnityEditor.Search
 
         public static void MoveCursor(TextCursorPlacement moveCursor)
         {
+            MoveCursor(moveCursor, -1);
+        }
+
+        public static void MoveCursor(TextCursorPlacement moveCursor, int cursorInsertPosition)
+        {
             var te = GetTextEditor();
-            switch (moveCursor)
+
+            if (cursorInsertPosition >= 0)
             {
-                case TextCursorPlacement.MoveLineEnd: te.MoveLineEnd(); break;
-                case TextCursorPlacement.MoveLineStart: te.MoveLineStart(); break;
-                case TextCursorPlacement.MoveToEndOfPreviousWord: te.MoveToEndOfPreviousWord(); break;
-                case TextCursorPlacement.MoveToStartOfNextWord: te.MoveToStartOfNextWord(); break;
-                case TextCursorPlacement.MoveWordLeft: te.MoveWordLeft(); break;
-                case TextCursorPlacement.MoveWordRight: te.MoveWordRight(); break;
-                case TextCursorPlacement.MoveAutoComplete: MoveAutoComplete(te); break;
+                te.selectIndex = te.cursorIndex = cursorInsertPosition;
+            }
+            else
+            {
+                switch (moveCursor)
+                {
+                    case TextCursorPlacement.MoveLineEnd: te.MoveLineEnd(); break;
+                    case TextCursorPlacement.MoveLineStart: te.MoveLineStart(); break;
+                    case TextCursorPlacement.MoveToEndOfPreviousWord: te.MoveToEndOfPreviousWord(); break;
+                    case TextCursorPlacement.MoveToStartOfNextWord: te.MoveToStartOfNextWord(); break;
+                    case TextCursorPlacement.MoveWordLeft: te.MoveWordLeft(); break;
+                    case TextCursorPlacement.MoveWordRight: te.MoveWordRight(); break;
+                    case TextCursorPlacement.MoveAutoComplete: MoveAutoComplete(te); break;
+                }
             }
         }
 
@@ -485,7 +495,7 @@ namespace UnityEditor.Search
             if (evt.type != EventType.KeyDown)
                 return false;
 
-            if (evt.modifiers.HasFlag(EventModifiers.Alt))
+            if (evt.modifiers.HasAny(EventModifiers.Alt))
             {
                 if (evt.keyCode == KeyCode.DownArrow)
                 {

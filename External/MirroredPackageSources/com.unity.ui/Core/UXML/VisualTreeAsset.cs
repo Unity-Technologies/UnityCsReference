@@ -86,6 +86,9 @@ namespace UnityEngine.UIElements
         {
             get
             {
+                if (m_Usings == null || m_Usings.Count == 0)
+                    yield break;
+
                 HashSet<VisualTreeAsset> sent = new HashSet<VisualTreeAsset>();
 
                 foreach (var entry in m_Usings)
@@ -277,10 +280,17 @@ namespace UnityEngine.UIElements
         {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
-
+            
             if ((visualElementAssets == null || visualElementAssets.Count <= 0) &&
                 (templateAssets == null || templateAssets.Count <= 0))
                 return;
+
+            if (target is TemplateContainer templateContainer)
+            {
+                // We keep track of VisualTreeAssets instantiated as Templates inside other VisualTreeAssets so that
+                // users can find the reference and re-clone them.
+                templateContainer.templateSource = this;
+            }
 
             Dictionary<int, List<VisualElementAsset>> idToChildren = new Dictionary<int, List<VisualElementAsset>>();
             int eltcount = visualElementAssets == null ? 0 : visualElementAssets.Count;
@@ -332,9 +342,10 @@ namespace UnityEngine.UIElements
                 if (rootVe != null)
                 {
                     // Save reference to the VisualTreeAsset itself on the containing VisualElement so it can be
-                    // tracked for live reloading on changes.
-                    rootVe.m_VisualTreeAssetSource = this;
-
+                    // tracked for live reloading on changes, and also accessible for users that need to keep track
+                    // of their cloned VisualTreeAssets.
+                    rootVe.visualTreeAssetSource = this;
+                    
                     // if contentContainer == this, the shadow and the logical hierarchy are identical
                     // otherwise, if there is a CC, we want to insert in the shadow
                     target.hierarchy.Add(rootVe);

@@ -649,7 +649,8 @@ namespace UnityEditor
                     lineStyle = (colorCode < 4) ? GameObjectStyles.brokenPrefabLabel : GameObjectStyles.disabledBrokenPrefabLabel;
             }
 
-            if (s_ActiveParentObjectPerSceneGUID.ContainsValue(goItem.id))
+            var sceneGUID = s_ActiveParentObjectPerSceneGUID.FirstOrDefault(x => x.Value == goItem.id).Key;
+            if (!string.IsNullOrEmpty(sceneGUID) && (EditorSceneManager.GetActiveScene().guid == sceneGUID || PrefabStageUtility.GetCurrentPrefabStage() != null))
             {
                 lineStyle = Styles.lineBoldStyle;
             }

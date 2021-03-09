@@ -55,18 +55,14 @@ namespace UnityEditor.UIElements
 
         public void CreateGUI()
         {
-            // After the c# file has been created and the domain.reload executed, we want to close the window
+            // After the c# file has been created and the domain.reload executed, we want to close the creator window and open the new editor window
             if (m_CSharpName != "" && ClassExists())
             {
-                EditorApplication.ExecuteMenuItem("Window/UI Toolkit/" + m_CSharpName);
-
-                EditorApplication.CallbackFunction handler = null;
-                handler = () =>
+                EditorApplication.delayCall += () =>
                 {
-                    EditorApplication.update -= handler;
                     Close();
+                    EditorApplication.ExecuteMenuItem("Window/UI Toolkit/" + m_CSharpName);
                 };
-                EditorApplication.update += handler;
             }
             else
             {

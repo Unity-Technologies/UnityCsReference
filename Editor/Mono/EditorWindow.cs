@@ -493,11 +493,6 @@ namespace UnityEditor
             finally
             {
                 ContainerWindow.s_Modal = false;
-
-                // Modal windows run their own message loops thus when they break out of it
-                // layout groups will be reset and if we don't exit gui rendering,
-                // we will have layout errors (exiting layout group when there is no layout group active)
-                if (GUIUtility.guiDepth > 0) GUIUtility.ExitGUI();
             }
         }
 

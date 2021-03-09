@@ -201,7 +201,7 @@ namespace UnityEngine.UIElements
 
             if (Application.isPlaying && useDefaultEventSystem)
             {
-                defaultEventSystem.Update();
+                defaultEventSystem.Update(DefaultEventSystem.UpdateMode.IgnoreIfAppNotFocused);
             }
         }
 
@@ -247,6 +247,41 @@ namespace UnityEngine.UIElements
             });
 
             s_PanelOrderingDirty = false;
+        }
+
+        internal static Vector2 MultiDisplayBottomLeftToPanelPosition(Vector2 position, out int? targetDisplay)
+        {
+            var screenPosition = MultiDisplayToLocalScreenPosition(position, out targetDisplay);
+            return ScreenBottomLeftToPanelPosition(screenPosition, targetDisplay ?? 0);
+        }
+
+        internal static Vector2 MultiDisplayToLocalScreenPosition(Vector2 position, out int? targetDisplay)
+        {
+            var relativePosition = Display.RelativeMouseAt(position);
+            if (relativePosition != Vector3.zero)
+            {
+                targetDisplay = (int)relativePosition.z;
+                return relativePosition;
+            }
+            targetDisplay = null;
+            return position;
+        }
+
+        internal static Vector2 ScreenBottomLeftToPanelPosition(Vector2 position, int targetDisplay)
+        {
+            // Flip positions Y axis between input and UITK
+            var screenHeight = Screen.height;
+            if (targetDisplay > 0 && targetDisplay < Display.displays.Length)
+                screenHeight = Display.displays[targetDisplay].systemHeight;
+            position.y = screenHeight - position.y;
+            return position;
+        }
+
+        internal static Vector2 ScreenBottomLeftToPanelDelta(Vector2 delta)
+        {
+            // Flip deltas Y axis between input and UITK
+            delta.y = -delta.y;
+            return delta;
         }
     }
 }

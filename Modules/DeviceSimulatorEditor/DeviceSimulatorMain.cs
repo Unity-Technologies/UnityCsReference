@@ -94,10 +94,11 @@ namespace UnityEditor.DeviceSimulation
             m_SystemInfoSimulation?.Dispose();
 
             var playerSettings = new SimulationPlayerSettings();
-            m_UserInterface.OverlayTexture = DeviceLoader.LoadOverlay(currentDevice, 0);
+            var overlayTexture = DeviceLoader.LoadOverlay(currentDevice, 0);
+            m_UserInterface.OverlayTexture = overlayTexture;
             m_ScreenSimulation = new ScreenSimulation(currentDevice.deviceInfo, playerSettings);
             m_SystemInfoSimulation = new SystemInfoSimulation(currentDevice, playerSettings);
-            m_TouchInput.InitTouchInput(currentDevice.deviceInfo.screens[0].width, currentDevice.deviceInfo.screens[0].height, m_ScreenSimulation);
+            m_TouchInput.InitTouchInput(overlayTexture, currentDevice.deviceInfo, m_ScreenSimulation);
             m_UserInterface.OnSimulationStart(m_ScreenSimulation);
         }
 

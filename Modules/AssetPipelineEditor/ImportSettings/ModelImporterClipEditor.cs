@@ -92,6 +92,8 @@ namespace UnityEditor
 
         [CacheProperty]
         SerializedProperty m_MotionNodeName;
+        [CacheProperty]
+        SerializedProperty m_RemoveConstantScaleCurves;
 #pragma warning restore 0649
 
         public int motionNodeIndex { get; set; }
@@ -209,6 +211,7 @@ namespace UnityEditor
 
             public GUIContent ImportAnimatedCustomProperties = EditorGUIUtility.TrTextContent("Animated Custom Properties", "Controls if animated custom properties are imported.");
             public GUIContent ImportConstraints = EditorGUIUtility.TrTextContent("Import Constraints", "Controls if the constraints are imported.");
+            public GUIContent RemoveConstantScaleCurves = EditorGUIUtility.TrTextContent("Remove Constant Scale Curves", "Removes constant animation curves with values identical to the object initial scale value.");
 
             public Styles()
             {
@@ -519,6 +522,7 @@ namespace UnityEditor
             }
 
             EditorGUILayout.PropertyField(m_ImportAnimatedCustomProperties, styles.ImportAnimatedCustomProperties);
+            EditorGUILayout.PropertyField(m_RemoveConstantScaleCurves, styles.RemoveConstantScaleCurves);
         }
 
         void RootMotionNodeSettings()

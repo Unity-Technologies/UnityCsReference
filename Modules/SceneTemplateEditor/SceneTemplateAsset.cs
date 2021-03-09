@@ -55,19 +55,19 @@ namespace UnityEditor.SceneTemplate
             UpdateDependencies();
         }
 
-        internal void UpdateDependencies()
+        internal bool UpdateDependencies()
         {
             if (!isValid)
             {
                 dependencies = new DependencyInfo[0];
-                return;
+                return false;
             }
 
             var scenePath = AssetDatabase.GetAssetPath(templateScene.GetInstanceID());
             if (string.IsNullOrEmpty(scenePath))
             {
                 dependencies = new DependencyInfo[0];
-                return;
+                return false;
             }
 
             var sceneName = Path.GetFileNameWithoutExtension(scenePath);
@@ -77,11 +77,15 @@ namespace UnityEditor.SceneTemplate
             var depList = new List<Object>();
             ReferenceUtils.GetSceneDependencies(scenePath, depList);
 
+            var newDependenciesAdded = false;
+
             dependencies = depList.Select(d =>
             {
                 var oldDependencyInfo = dependencies.FirstOrDefault(di => di.dependency.GetInstanceID() == d.GetInstanceID());
                 if (oldDependencyInfo != null)
                     return oldDependencyInfo;
+
+                newDependenciesAdded = true;
 
                 var depTypeInfo = SceneTemplateProjectSettings.Get().GetDependencyInfo(d);
                 var dependencyPath = AssetDatabase.GetAssetPath(d);
@@ -101,6 +105,14 @@ namespace UnityEditor.SceneTemplate
                     instantiationMode = instantiationMode
                 };
             }).ToArray();
+
+            if (newDependenciesAdded)
+            {
+                EditorUtility.SetDirty(this);
+                AssetDatabase.SaveAssets();
+            }
+
+            return newDependenciesAdded;
         }
 
         internal void AddThumbnailToAsset(Texture2D thumbnail)

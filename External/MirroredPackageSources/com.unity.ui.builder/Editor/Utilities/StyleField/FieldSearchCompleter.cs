@@ -442,7 +442,11 @@ namespace Unity.UI.Builder
                 }
                 else
                 {
-                    popup.listView.OnKeyDown(e);
+                    using (var evt = KeyDownEvent.GetPooled(e.character, e.keyCode, e.modifiers))
+                    {
+                        evt.target = popup.listView.m_ScrollView.contentContainer;
+                        popup.listView.SendEvent(evt);
+                    }
                 }
 
                 e.StopImmediatePropagation();

@@ -7,6 +7,12 @@ namespace UnityEngine.UIElements
 {
     internal class VisualTreeAssetChangeTrackerUpdater : BaseVisualTreeUpdater
     {
+        private struct VisualTreeAssetToTrackMappingEntry
+        {
+            public int m_LastDirtyCount;
+            public HashSet<ILiveReloadAssetTracker<VisualTreeAsset>> m_Trackers;
+        }
+
         private static readonly string s_Description = "Update UI Assets (Editor)";
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
@@ -38,6 +44,9 @@ namespace UnityEngine.UIElements
                 TextEventManager.COLOR_GRADIENT_PROPERTY_EVENT.Remove(m_ColorGradientChange);
 
                 m_TextElements.Clear();
+
+                m_LiveReloadVisualTreeAssetTrackers.Clear();
+                m_AssetToTrackerMap.Clear();
             }
         }
 
@@ -76,60 +85,61 @@ namespace UnityEngine.UIElements
         private long m_LastUpdateTimeMs = 0;
 
         // These are 2 data structures that hold some duplication to allow faster access to information as needed.
-        // We guarantee the keys on m_TrackerToVisualElementMap are exactly the same entries from m_LiveReloadVisualTreeAssetTrackers
-        // to avoid having to get all keys from the dictionary, as we use the list of trackers for the Update() method.
+        // We guarantee the keys on m_AssetToTrackerMap are exactly the same entries from m_LiveReloadVisualTreeAssetTrackers
+        // to avoid having to get all keys from the dictionary, as we use the list of trackers for a few operations.
+        // Having the information indexed by asset allows quick access to the trackers keeping tabs on them
+        // so that we can check assets for being dirty only once per Update call (instead of potentially multiple times
+        // if there are multiple trackers looking at the same asset - e.g. life bars on a game).
         private HashSet<ILiveReloadAssetTracker<VisualTreeAsset>> m_LiveReloadVisualTreeAssetTrackers = new HashSet<ILiveReloadAssetTracker<VisualTreeAsset>>();
-        private Dictionary<ILiveReloadAssetTracker<VisualTreeAsset>, HashSet<VisualElement>> m_TrackerToVisualElementMap = new Dictionary<ILiveReloadAssetTracker<VisualTreeAsset>, HashSet<VisualElement>>();
+        private Dictionary<VisualTreeAsset, VisualTreeAssetToTrackMappingEntry> m_AssetToTrackerMap = new Dictionary<VisualTreeAsset, VisualTreeAssetToTrackMappingEntry>();
+
+        // List to help with the Update() and avoid creating and destroying the list.
+        private HashSet<ILiveReloadAssetTracker<VisualTreeAsset>> m_TrackersToRefresh = new HashSet<ILiveReloadAssetTracker<VisualTreeAsset>>();
 
         internal ILiveReloadAssetTracker<StyleSheet> m_LiveReloadStyleSheetAssetTracker;
 
         internal void StartVisualTreeAssetTracking(ILiveReloadAssetTracker<VisualTreeAsset> tracker,
             VisualElement visualElementUsingAsset)
         {
-            tracker.StartTrackingAsset(visualElementUsingAsset.m_VisualTreeAssetSource);
+            int dirtyCount = tracker.StartTrackingAsset(visualElementUsingAsset.visualTreeAssetSource);
 
-            if (!m_TrackerToVisualElementMap.TryGetValue(tracker, out var visualElements))
+            m_LiveReloadVisualTreeAssetTrackers.Add(tracker);
+
+            if (!m_AssetToTrackerMap.TryGetValue(visualElementUsingAsset.visualTreeAssetSource, out var trackers))
             {
-                visualElements = new HashSet<VisualElement>();
-                m_TrackerToVisualElementMap[tracker] = visualElements;
-                m_LiveReloadVisualTreeAssetTrackers.Add(tracker);
+                trackers = new VisualTreeAssetToTrackMappingEntry()
+                {
+                    m_LastDirtyCount = dirtyCount,
+                    m_Trackers = new HashSet<ILiveReloadAssetTracker<VisualTreeAsset>>()
+                };
+                m_AssetToTrackerMap[visualElementUsingAsset.visualTreeAssetSource] = trackers;
             }
-
-            visualElements.Add(visualElementUsingAsset);
+            trackers.m_Trackers.Add(tracker);
         }
 
         internal void StopVisualTreeAssetTracking(VisualElement visualElementUsingAsset)
         {
-            ILiveReloadAssetTracker<VisualTreeAsset> foundTracker = null;
-
-            foreach (var trackerMapEntry in m_TrackerToVisualElementMap)
+            var tracker = visualElementUsingAsset.visualTreeAssetTracker;
+            if (tracker == null)
             {
-                var tracker = trackerMapEntry.Key;
-
-                if (!tracker.IsTrackingAsset(visualElementUsingAsset.m_VisualTreeAssetSource))
-                {
-                    continue;
-                }
-
-                var visualElements = trackerMapEntry.Value;
-
-                foreach (var visualElement in visualElements)
-                {
-                    if (visualElement == visualElementUsingAsset)
-                    {
-                        foundTracker = tracker;
-                        break;
-                    }
-                }
-
-                if (foundTracker != null)
-                {
-                    visualElements.Remove(visualElementUsingAsset);
-                    break;
-                }
+                return;
             }
 
-            foundTracker?.StopTrackingAsset(visualElementUsingAsset.m_VisualTreeAssetSource);
+            tracker.StopTrackingAsset(visualElementUsingAsset.visualTreeAssetSource);
+
+            if (!tracker.IsTrackingAssets())
+            {
+                m_LiveReloadVisualTreeAssetTrackers.Remove(tracker);
+            }
+
+            if (m_AssetToTrackerMap.TryGetValue(visualElementUsingAsset.visualTreeAssetSource, out var trackers))
+            {
+                trackers.m_Trackers.Remove(tracker);
+                if (trackers.m_Trackers.Count == 0)
+                {
+                    m_AssetToTrackerMap.Remove(visualElementUsingAsset.visualTreeAssetSource);
+                }
+            }
         }
 
         internal HashSet<ILiveReloadAssetTracker<VisualTreeAsset>> GetVisualTreeAssetTrackersListCopy()
@@ -177,10 +187,34 @@ namespace UnityEngine.UIElements
             // We update here to prevent unnecessary checking of asset changes.
             m_PreviousInMemoryAssetsVersion = UIElementsUtility.m_InMemoryAssetsVersion;
 
-            foreach (var tracker in m_LiveReloadVisualTreeAssetTrackers)
+            // We iterate on the assets to avoid calling GetDirtyCount for the same asset more than once.
+            // In Editor this seems very likely and in Runtime we're assuming there are not multiple panels going
+            // around, or if there are they're not using the same UXMLs but we may have to revisit this if we ever
+            // detect that to be the case (to once again avoid calling GetDirtyCount multiple times on the same asset).
+            foreach (var trackedAssetEntry in m_AssetToTrackerMap)
             {
-                tracker.CheckTrackedAssetsDirty();
+                var trackedAsset = trackedAssetEntry.Key;
+                var trackersEntry = trackedAssetEntry.Value;
+                int dirtyCount = AssetOperationsAccess.GetAssetDirtyCount(trackedAsset);
+                if (dirtyCount != trackersEntry.m_LastDirtyCount)
+                {
+                    trackersEntry.m_LastDirtyCount = dirtyCount;
+                    foreach (var tracker in trackersEntry.m_Trackers)
+                    {
+                        // Update the dirty count on the tracker to keep the information correct everywhere.
+                        tracker.UpdateAssetDirtyCount(trackedAsset, dirtyCount);
+
+                        // Add to list to make sure we only call each tracker only once.
+                        m_TrackersToRefresh.Add(tracker);
+                    }
+                }
             }
+
+            foreach (var tracker in m_TrackersToRefresh)
+            {
+                tracker.OnTrackedAssetChanged();
+            }
+            m_TrackersToRefresh.Clear();
 
             if (m_LiveReloadStyleSheetAssetTracker != null && m_LiveReloadStyleSheetAssetTracker.CheckTrackedAssetsDirty())
             {

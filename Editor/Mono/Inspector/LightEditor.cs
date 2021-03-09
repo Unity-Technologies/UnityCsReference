@@ -107,7 +107,7 @@ namespace UnityEditor
                 public static readonly GUIContent AreaRadius = EditorGUIUtility.TrTextContent("Radius", "Controls the radius in units of the disc area light.");
 
                 public static readonly GUIContent BakingWarning = EditorGUIUtility.TrTextContent("Light mode is currently overridden to Realtime mode. Enable Baked Global Illumination to use Mixed or Baked light modes.");
-                public static readonly GUIContent IndirectBounceShadowWarning = EditorGUIUtility.TrTextContent("Realtime indirect bounce shadowing is not supported for Spot and Point lights.");
+                public static readonly GUIContent IndirectBounceShadowWarning = EditorGUIUtility.TrTextContent("Realtime indirect bounce shadowing is only supported for Directional lights.");
                 public static readonly GUIContent CookieSpotRepeatWarning = EditorGUIUtility.TrTextContent("Cookie textures for spot lights should be set to clamp, not repeat, to avoid artifacts.");
                 public static readonly GUIContent CookieNotEnabledWarning = EditorGUIUtility.TrTextContent("Cookie support for baked lights is not enabled. Please enable it in Project Settings > Editor > Enable baked cookies support");
                 public static readonly GUIContent CookieNotEnabledInfo = EditorGUIUtility.TrTextContent("Cookie support for mixed lights is not enabled for indirect lighting. You can enable it in Project Settings > Editor > Enable baked cookies support");
@@ -463,7 +463,7 @@ namespace UnityEditor
                 {
                     EditorGUILayout.PropertyField(bounceIntensity, Styles.LightBounceIntensityRealtimeGISupport);
 
-                    // Indirect shadows warning (Should be removed when we support realtime indirect shadows)
+                    // No shadowing of indirect warning.
                     if (showBounceWarning)
                     {
                         EditorGUILayout.HelpBox(Styles.IndirectBounceShadowWarning.text, MessageType.Warning);

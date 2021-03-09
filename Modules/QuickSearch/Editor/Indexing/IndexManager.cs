@@ -46,6 +46,7 @@ namespace UnityEditor.Search
 
         private const string k_IndexExtension = "index";
         private const string k_BuildText = "Build";
+        private const string k_PackagesPrefix = "Packages/";
         private List<IndexManagerViewModel> m_IndexSettings;
         private List<SearchDatabase> m_IndexSettingsAssets;
         private List<string> m_IndexSettingsFilePaths;
@@ -82,6 +83,7 @@ namespace UnityEditor.Search
         private static int s_SelectedAssetOnOpen;
         private int m_PreviousSelectedIndex = -1;
         private int m_IndexToInsertPackagesOnToggle = -1;
+        private List<SearchDatabase> m_AllSearchDatabases;
 
         int selectedIndex => m_ListViewIndexSettings != null ? m_ListViewIndexSettings.selectedIndex : -1;
         IndexManagerViewModel selectedItem => m_IndexSettings != null && selectedIndex >= 0 && selectedIndex < m_IndexSettings.Count ? m_IndexSettings[selectedIndex] : null;
@@ -91,6 +93,8 @@ namespace UnityEditor.Search
 
         internal void OnEnable()
         {
+            SearchService.SetupSearchFirstUse();
+
             titleContent.image = Icons.quicksearch;
             titleContent.text = "Search Index Manager";
 
@@ -146,14 +150,14 @@ namespace UnityEditor.Search
                     m_IndexToInsertPackagesOnToggle = 0;
                     for (; m_IndexToInsertPackagesOnToggle < m_IndexSettingsFilePaths.Count; m_IndexToInsertPackagesOnToggle++)
                     {
-                        if (m_IndexSettingsFilePaths[m_IndexToInsertPackagesOnToggle].CompareTo("Packages/") > 0)
+                        if (m_IndexSettingsFilePaths[m_IndexToInsertPackagesOnToggle].CompareTo(k_PackagesPrefix) > 0)
                         {
                             break;
                         }
                     }
                 }
                 int addedItems = 0;
-                foreach (var searchDatabase in SearchDatabase.Enumerate(SearchDatabase.IndexLocation.packages))
+                foreach (var searchDatabase in EnumerateIndexes(SearchDatabase.IndexLocation.packages))
                 {
                     if (m_IndexSettingsFilePaths.Contains(searchDatabase.path))
                         continue;
@@ -170,7 +174,7 @@ namespace UnityEditor.Search
                 m_IndexToInsertPackagesOnToggle = -1;
                 for (int i = 0; i < m_IndexSettingsFilePaths.Count;)
                 {
-                    if (m_IndexSettingsFilePaths[i].StartsWith("Packages/"))
+                    if (m_IndexSettingsFilePaths[i].StartsWith(k_PackagesPrefix))
                     {
                         if (m_IndexToInsertPackagesOnToggle < 0)
                             m_IndexToInsertPackagesOnToggle = i;
@@ -195,7 +199,8 @@ namespace UnityEditor.Search
         {
             int indexToSelect = -1;
 
-            foreach (var searchDatabase in SearchDatabase.Enumerate(includePackages ? SearchDatabase.IndexLocation.all : SearchDatabase.IndexLocation.assets))
+            m_AllSearchDatabases = SearchDatabase.EnumerateAll().OrderBy(sd => Path.GetFileNameWithoutExtension(sd.path)).ToList();
+            foreach (var searchDatabase in EnumerateIndexes(includePackages ? SearchDatabase.IndexLocation.all : SearchDatabase.IndexLocation.assets))
             {
                 m_IndexSettingsAssets.Add(searchDatabase);
                 m_IndexSettings.Add(new IndexManagerViewModel(searchDatabase.settings, false));
@@ -208,6 +213,19 @@ namespace UnityEditor.Search
             if (indexToSelect == -1 && m_IndexSettings.Any())
                 indexToSelect = 0;
             return indexToSelect;
+        }
+
+        private IEnumerable<SearchDatabase> EnumerateIndexes(SearchDatabase.IndexLocation location)
+        {
+            return m_AllSearchDatabases.Where(sd =>
+            {
+                if (location == SearchDatabase.IndexLocation.all)
+                    return true;
+                else if (location == SearchDatabase.IndexLocation.packages)
+                    return sd.path.StartsWith(k_PackagesPrefix);
+                else
+                    return !sd.path.StartsWith(k_PackagesPrefix);
+            });
         }
 
         internal void OnDisable()
@@ -237,7 +255,7 @@ namespace UnityEditor.Search
             return ExtractIndexFromText(Path.GetFileName(filePath), File.ReadAllText(filePath));
         }
 
-        private static SearchDatabase.Settings ExtractIndexFromText(string name, string jsonText)
+        internal static SearchDatabase.Settings ExtractIndexFromText(string name, string jsonText)
         {
             var settings = JsonUtility.FromJson<SearchDatabase.Settings>(jsonText);
             settings.name = name;
@@ -545,7 +563,7 @@ namespace UnityEditor.Search
 
         private Foldout CreateFoldout(string title)
         {
-            Foldout roots = new Foldout();
+            Foldout roots = new Foldout() { name = title };
             roots.style.flexShrink = 0;
             var toggle = roots.Q<Toggle>();
             toggle.text = title;
@@ -595,7 +613,7 @@ namespace UnityEditor.Search
             }
         }
 
-        private void CreateIndexSettings(string path)
+        internal void CreateIndexSettings(string path)
         {
             SetupNewAsset(path);
             if (CreateOrUpdateAsset(path))
@@ -714,27 +732,6 @@ namespace UnityEditor.Search
                 m_SaveButton.text = k_BuildText;
         }
 
-        private VisualElement AddRemoveButtons(Action add, Action remove)
-        {
-            var container = new VisualElement() { name = "Footer" };
-            container.style.flexDirection = FlexDirection.Row;
-            var leftSpace = new VisualElement();
-            leftSpace.style.flexDirection = FlexDirection.Row;
-            leftSpace.style.flexGrow = 1;
-            container.Add(leftSpace);
-            var buttonsContainer = new VisualElement() { name = "AddRemoveButtons" };
-            buttonsContainer.style.flexDirection = FlexDirection.Row;
-            buttonsContainer.Add(new Button(add) { name = "AddButton" });
-            buttonsContainer.Add(new Button(remove) { name = "RemoveButton" });
-            foreach (var item in buttonsContainer.Children())
-            {
-                item.RemoveFromClassList("unity-button");
-                item.RemoveFromClassList("unity-text-element");
-            }
-            container.Add(buttonsContainer);
-            return container;
-        }
-
         private void RemoveExcludeElement()
         {
             RemoveListElement(selectedItem.excludes, m_ListViewExcludes);
@@ -788,29 +785,34 @@ namespace UnityEditor.Search
         {
             if (selectedIndex >= 0 && EditorUtility.DisplayDialog("Delete selected index?", "You are about to delete this index, are you sure?", "Yes", "No"))
             {
-                SendIndexEvent(SearchAnalytics.GenericEventType.IndexManagerRemoveIndex, m_IndexSettings[selectedIndex]);
-                var deleteIndex = selectedIndex;
-                string path = selectedItemPath;
-                m_IndexSettings.RemoveAt(deleteIndex);
-                m_IndexSettingsAssets.RemoveAt(deleteIndex);
-                if (m_IndexSettingsExists[deleteIndex])
-                {
-                    if (File.Exists(path + ".meta"))
-                    {
-                        AssetDatabase.DeleteAsset(path);
-                    }
-                    else
-                    {
-                        File.Delete(path);
-                        AssetPostprocessorIndexer.RaiseContentRefreshed(new string[0], new string[] { path }, new string[0]);
-                        AssetDatabase.Refresh();
-                    }
-                }
-                m_IndexSettingsFilePaths.RemoveAt(deleteIndex);
-                m_IndexSettingsExists.RemoveAt(deleteIndex);
-
-                m_ListViewIndexSettings.UpdateListViewOnRemove();
+                DeleteSelectedIndexSetting();
             }
+        }
+
+        internal void DeleteSelectedIndexSetting()
+        {
+            SendIndexEvent(SearchAnalytics.GenericEventType.IndexManagerRemoveIndex, m_IndexSettings[selectedIndex]);
+            var deleteIndex = selectedIndex;
+            string path = selectedItemPath;
+            m_IndexSettings.RemoveAt(deleteIndex);
+            m_IndexSettingsAssets.RemoveAt(deleteIndex);
+            if (m_IndexSettingsExists[deleteIndex])
+            {
+                if (File.Exists(path + ".meta"))
+                {
+                    AssetDatabase.DeleteAsset(path);
+                }
+                else
+                {
+                    File.Delete(path);
+                    AssetPostprocessorIndexer.RaiseContentRefreshed(new string[0], new string[] { path }, new string[0]);
+                    AssetDatabase.Refresh();
+                }
+            }
+            m_IndexSettingsFilePaths.RemoveAt(deleteIndex);
+            m_IndexSettingsExists.RemoveAt(deleteIndex);
+
+            m_ListViewIndexSettings.UpdateListViewOnRemove();
         }
 
         private void CreateNewIndexSettingMenu()
@@ -818,9 +820,9 @@ namespace UnityEditor.Search
             var menu = new GenericMenu();
             foreach (var template in m_IndexSettingsTemplates)
             {
-                menu.AddItem(new GUIContent(template.name), false, () => { CreateNewIndexSettingFromTemplate(template); });
+                menu.AddItem(new GUIContent(template.name), false, () => { CreateNewIndexSettingFromTemplateWithConfirmation(template); });
             }
-            if (SearchDatabase.EnumeratePaths(SearchDatabase.IndexLocation.assets).Count() == 0 && !File.Exists(SearchDatabase.defaultSearchDatabaseIndexPath))
+            if (EnumerateIndexes(SearchDatabase.IndexLocation.assets).Count() == 0 && !File.Exists(SearchDatabase.defaultSearchDatabaseIndexPath))
             {
                 menu.AddSeparator("");
                 menu.AddItem(new GUIContent("Create Default"), false, () =>
@@ -838,24 +840,29 @@ namespace UnityEditor.Search
             menu.ShowAsContext();
         }
 
-        private void CreateNewIndexSettingFromTemplate(SearchDatabase.Settings template)
+        void CreateNewIndexSettingFromTemplateWithConfirmation(SearchDatabase.Settings template)
         {
             if (template == null)
             {
                 Debug.LogError("The chosen template was null");
                 return;
             }
-
-            var newItem = new IndexManagerViewModel(template, true);
-            if (newItem.type == SearchDatabase.IndexType.asset || EditorUtility.DisplayDialog("Create non asset index?", $"You are about to create a {template.type} index, this type of index will do a deep indexing that will be longer and take more space than a standard asset index, are you sure?", "Yes", "No"))
+            if ((SearchDatabase.IndexType)Enum.Parse(typeof(SearchDatabase.IndexType), template.type) == SearchDatabase.IndexType.asset || EditorUtility.DisplayDialog("Create non asset index?", $"You are about to create a {template.type} index, this type of index will do a deep indexing that will be longer and take more space than a standard asset index, are you sure?", "Yes", "No"))
             {
-                m_IndexSettings.Add(newItem);
-                m_IndexSettingsFilePaths.Add("");
-                m_IndexSettingsExists.Add(false);
-                m_IndexSettingsAssets.Add(null);
-                SendIndexEvent(SearchAnalytics.GenericEventType.IndexManagerCreateIndex, newItem);
-                m_ListViewIndexSettings.UpdateListViewOnAdd();
+                CreateNewIndexSettingFromTemplate(template);
             }
+        }
+
+        internal void CreateNewIndexSettingFromTemplate(SearchDatabase.Settings template)
+        {
+            var newItem = new IndexManagerViewModel(template, true);
+
+            m_IndexSettings.Add(newItem);
+            m_IndexSettingsFilePaths.Add("");
+            m_IndexSettingsExists.Add(false);
+            m_IndexSettingsAssets.Add(null);
+            SendIndexEvent(SearchAnalytics.GenericEventType.IndexManagerCreateIndex, newItem);
+            m_ListViewIndexSettings.UpdateListViewOnAdd();
         }
 
         private VisualElement MakeIndexItem()
@@ -983,10 +990,8 @@ namespace UnityEditor.Search
         {
             var container = new VisualElement();
             container.style.flexDirection = FlexDirection.Row;
-            var objectField = new ObjectField() { name = "RootObjectField" };
-            objectField.allowSceneObjects = false;
-            objectField.objectType = typeof(DefaultAsset);
-            container.Add(objectField);
+            var textField = new DraggableTextField() { name = "RootTextField" };
+            container.Add(textField);
             Button button;
             container.Add(button = new Button(() =>
             {
@@ -995,17 +1000,13 @@ namespace UnityEditor.Search
                 {
                     path = path.Substring(k_ProjectPath.Length + 1); // Only the project part
 
-                    objectField.value = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
+                    textField.value = path;
                 }
             })
                 { name = "RootButton" });
-            objectField.RegisterValueChangedCallback(e =>
+            textField.RegisterValueChangedCallback(e =>
             {
-                var assetPath = AssetDatabase.GetAssetPath(e.newValue);
-                if (!Directory.Exists(assetPath))
-                    assetPath = Path.GetDirectoryName(assetPath).Replace("\\", "/");
-                objectField.SetValueWithoutNotify(AssetDatabase.LoadMainAssetAtPath(assetPath));
-                selectedItem.roots[(int)container.userData] = assetPath;
+                selectedItem.roots[(int)container.userData] = e.newValue;
                 UpdateUnsavedChanges(true);
             });
             return container;
@@ -1014,8 +1015,8 @@ namespace UnityEditor.Search
         private void BindRootPathItem(VisualElement element, int index)
         {
             element.userData = index;
-            element.Q<ObjectField>().value = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(selectedItem.roots[index]);
-            element.Q<ObjectField>().tooltip = selectedItem.roots[index];
+            element.Q<TextField>().value = selectedItem.roots[index];
+            element.Q<TextField>().tooltip = selectedItem.roots[index];
         }
 
         private VisualElement MakeIncludeItem()
@@ -1036,6 +1037,52 @@ namespace UnityEditor.Search
         private void BindExcludeItem(VisualElement element, int index)
         {
             ((IncludeExcludePathElement)element).UpdateValues(selectedItem.excludes[index], index);
+        }
+
+        private class DraggableTextField : TextField
+        {
+            protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+            {
+                base.ExecuteDefaultActionAtTarget(evt);
+
+                if (evt == null)
+                {
+                    return;
+                }
+                if (evt.eventTypeId == DragUpdatedEvent.TypeId())
+                    OnDragUpdated(evt);
+                else if (evt.eventTypeId == DragPerformEvent.TypeId())
+                    OnDragPerform(evt);
+            }
+
+            private void OnDragUpdated(EventBase evt)
+            {
+                UnityEngine.Object draggedObject = DragAndDrop.objectReferences.FirstOrDefault();
+                if (draggedObject != null)
+                {
+                    DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
+
+                    evt.StopPropagation();
+                }
+            }
+
+            private void OnDragPerform(EventBase evt)
+            {
+                UnityEngine.Object draggedObject = DragAndDrop.objectReferences.FirstOrDefault();
+                if (draggedObject != null)
+                {
+                    DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
+                    value = AssetDatabase.GetAssetPath(draggedObject);
+
+                    UpdateOnDragPerform(draggedObject);
+
+                    DragAndDrop.AcceptDrag();
+
+                    evt.StopPropagation();
+                }
+            }
+
+            internal virtual void UpdateOnDragPerform(UnityEngine.Object draggedObject) {}
         }
 
         private class IncludeExcludePathElement : VisualElement
@@ -1067,7 +1114,7 @@ namespace UnityEditor.Search
                 m_EnumField.RegisterValueChangedCallback(FilePatternChanged);
 
                 Add(m_PrefixTextField = new TextField() { name = "Prefix", value = "." });
-                Add(m_PathTextField = new DraggableTextField(this) { name = "PathTextField" });
+                Add(m_PathTextField = new IncludeExcludeDraggableTextField(this) { name = "PathTextField" });
                 m_PathTextField.RegisterValueChangedCallback(evt =>
                 {
                     PathTextFieldValueChanged();
@@ -1082,56 +1129,20 @@ namespace UnityEditor.Search
                 Add(m_ExplorerButton = new Button(ChooseFolder));
             }
 
-            private class DraggableTextField : TextField
+            private class IncludeExcludeDraggableTextField : DraggableTextField
             {
                 private IncludeExcludePathElement m_Parent;
-                public DraggableTextField(IncludeExcludePathElement parent)
+                public IncludeExcludeDraggableTextField(IncludeExcludePathElement parent)
                 {
                     m_Parent = parent;
                 }
 
-                protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+                internal override void UpdateOnDragPerform(UnityEngine.Object draggedObject)
                 {
-                    base.ExecuteDefaultActionAtTarget(evt);
-
-                    if (evt == null)
-                    {
-                        return;
-                    }
-                    if (evt.eventTypeId == DragUpdatedEvent.TypeId())
-                        OnDragUpdated(evt);
-                    else if (evt.eventTypeId == DragPerformEvent.TypeId())
-                        OnDragPerform(evt);
-                }
-
-                private void OnDragUpdated(EventBase evt)
-                {
-                    UnityEngine.Object draggedObject = DragAndDrop.objectReferences.FirstOrDefault();
-                    if (draggedObject != null)
-                    {
-                        DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
-
-                        evt.StopPropagation();
-                    }
-                }
-
-                private void OnDragPerform(EventBase evt)
-                {
-                    UnityEngine.Object draggedObject = DragAndDrop.objectReferences.FirstOrDefault();
-                    if (draggedObject != null)
-                    {
-                        DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
-                        value = AssetDatabase.GetAssetPath(draggedObject);
-
-                        if (ProjectWindowUtil.IsFolder(draggedObject.GetInstanceID()))
-                            m_Parent.m_EnumField.value = FilePattern.Folder;
-                        else
-                            m_Parent.m_EnumField.value = FilePattern.File;
-
-                        DragAndDrop.AcceptDrag();
-
-                        evt.StopPropagation();
-                    }
+                    if (ProjectWindowUtil.IsFolder(draggedObject.GetInstanceID()))
+                        m_Parent.m_EnumField.value = FilePattern.Folder;
+                    else
+                        m_Parent.m_EnumField.value = FilePattern.File;
                 }
             }
 
@@ -1316,9 +1327,9 @@ namespace UnityEditor.Search
 
                 searchDatabase.settings.type = Enum.GetName(typeof(SearchDatabase.IndexType), type);
                 searchDatabase.settings.baseScore = score;
-                searchDatabase.settings.roots = GetRoots().ToArray();
-                searchDatabase.settings.includes = includes.ToArray();
-                searchDatabase.settings.excludes = excludes.ToArray();
+                searchDatabase.settings.roots = GetRoots().Where(e => !string.IsNullOrEmpty(e)).ToArray();
+                searchDatabase.settings.includes = includes.Where(e => !string.IsNullOrEmpty(e)).ToArray();
+                searchDatabase.settings.excludes = excludes.Where(e => !string.IsNullOrEmpty(e)).ToArray();
                 SetOptions(searchDatabase.settings.options, this.options);
             }
 

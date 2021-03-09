@@ -101,6 +101,8 @@ namespace UnityEditor.Search
         /// If skipIncompleteFilters is false, incomplete filters will generate errors when parsed.
         /// </summary>
         public bool skipIncompleteFilters;
+
+        internal bool skipNestedQueries;
     }
 
     class QueryEngineParserData
@@ -604,7 +606,7 @@ namespace UnityEditor.Search
 
         protected override bool ConsumeNestedQuery(string text, int startIndex, int endIndex, StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
         {
-            if (validationOptions.validateFilters)
+            if (validationOptions.validateFilters && !validationOptions.skipNestedQueries)
             {
                 if (m_NestedQueryHandler == null)
                 {
@@ -625,8 +627,15 @@ namespace UnityEditor.Search
             var nestedQueryString = queryString.Substring(1, queryString.Length - 2);
             nestedQueryString = nestedQueryString.Trim();
             var nestedQueryNode = new NestedQueryNode(nestedQueryString, m_NestedQueryHandler);
-            nestedQueryNode.token = new QueryToken(match.Value, startIndex);
-            userData.nodesToStringPosition.Add(nestedQueryNode, new QueryToken(startIndex + (string.IsNullOrEmpty(nestedQueryAggregator) ? 0 : nestedQueryAggregator.Length), queryString.Length));
+            nestedQueryNode.token = new QueryToken(startIndex + (string.IsNullOrEmpty(nestedQueryAggregator) ? 0 : nestedQueryAggregator.Length), queryString.Length);
+            userData.nodesToStringPosition.Add(nestedQueryNode, nestedQueryNode.token);
+            if (validationOptions.skipNestedQueries)
+            {
+                nestedQueryNode.skipped = true;
+                userData.expressionNodes.Add(nestedQueryNode);
+                return true;
+            }
+
             userData.tokens.Add(match.Value);
 
             if (string.IsNullOrEmpty(nestedQueryAggregator))
@@ -641,7 +650,8 @@ namespace UnityEditor.Search
                 }
 
                 var aggregatorNode = new AggregatorNode(nestedQueryAggregator, aggregator);
-                userData.nodesToStringPosition.Add(aggregatorNode, new QueryToken(startIndex, nestedQueryAggregator.Length));
+                aggregatorNode.token = new QueryToken(startIndex, nestedQueryAggregator.Length + nestedQueryNode.token.length);
+                userData.nodesToStringPosition.Add(aggregatorNode, aggregatorNode.token);
                 aggregatorNode.children.Add(nestedQueryNode);
                 nestedQueryNode.parent = aggregatorNode;
                 userData.expressionNodes.Add(aggregatorNode);
@@ -738,6 +748,11 @@ namespace UnityEditor.Search
 
             if (QueryEngineUtils.IsNestedQueryToken(filterValue))
             {
+                if (validationOptions.skipNestedQueries)
+                {
+                    return new InFilterNode(filter, op, filterValue, filterParam, token) {skipped = true};
+                }
+
                 if (validationOptions.validateFilters && m_NestedQueryHandler == null)
                 {
                     errors.Add(new QueryError(filterValueIndex, filterValue.Length, $"Cannot use a nested query without setting the handler first."));
@@ -979,7 +994,7 @@ namespace UnityEditor.Search
             return searchNode;
         }
 
-        static IQueryNode CombineNodesToTree(List<IQueryNode> expressionNodes, ICollection<QueryError> errors, NodesToStringPosition nodesToStringPosition)
+        IQueryNode CombineNodesToTree(List<IQueryNode> expressionNodes, ICollection<QueryError> errors, NodesToStringPosition nodesToStringPosition)
         {
             var count = expressionNodes.Count;
             if (count == 0)
@@ -1068,9 +1083,9 @@ namespace UnityEditor.Search
             }
         }
 
-        static void TransformAndOrToIntersectUnion(ref IQueryNode root, ICollection<QueryError> errors, NodesToStringPosition nodesToStringPosition)
+        void TransformAndOrToIntersectUnion(ref IQueryNode root, ICollection<QueryError> errors, NodesToStringPosition nodesToStringPosition)
         {
-            if (root.type != QueryNodeType.And && root.type != QueryNodeType.Or)
+            if ((root.type != QueryNodeType.And && root.type != QueryNodeType.Or) || validationOptions.skipNestedQueries)
                 return;
 
             var children = root.children.ToArray();
@@ -1587,6 +1602,17 @@ namespace UnityEditor.Search
             {
                 var options = m_Impl.validationOptions;
                 options.skipIncompleteFilters = value;
+                m_Impl.validationOptions = options;
+            }
+        }
+
+        internal bool skipNestedQueries
+        {
+            get => m_Impl.validationOptions.skipNestedQueries;
+            set
+            {
+                var options = m_Impl.validationOptions;
+                options.skipNestedQueries = value;
                 m_Impl.validationOptions = options;
             }
         }
