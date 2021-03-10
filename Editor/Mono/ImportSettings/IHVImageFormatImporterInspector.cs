@@ -59,8 +59,9 @@ namespace UnityEditor
         public void TextureSettingsGUI()
         {
             // NOTE: once we get ability to have 3D/Volume texture shapes, should pass true for isVolume based on m_TextureShape
-            bool isVolume = false;
-            TextureInspector.WrapModePopup(m_WrapU, m_WrapV, m_WrapW, isVolume, ref m_ShowPerAxisWrapModes);
+            // Also, always consider we may have a volume if we don't know the target.
+            bool isVolume = assetTarget == null;
+            TextureInspector.WrapModePopup(m_WrapU, m_WrapV, m_WrapW, isVolume, ref m_ShowPerAxisWrapModes, assetTarget == null);
 
             Rect rect = EditorGUILayout.GetControlRect();
             EditorGUI.BeginProperty(rect, Styles.filterMode, m_FilterMode);
@@ -86,12 +87,15 @@ namespace UnityEditor
                 foreach (AssetImporter importer in targets)
                 {
                     Texture tex = AssetDatabase.LoadMainAssetAtPath(importer.assetPath) as Texture;
-                    if (m_FilterMode.intValue != -1)
-                        TextureUtil.SetFilterModeNoDirty(tex, (FilterMode)m_FilterMode.intValue);
-                    if ((m_WrapU.intValue != -1 || m_WrapV.intValue != -1 || m_WrapW.intValue != -1) &&
-                        !m_WrapU.hasMultipleDifferentValues && !m_WrapV.hasMultipleDifferentValues && !m_WrapW.hasMultipleDifferentValues)
+                    if (tex != null)
                     {
-                        TextureUtil.SetWrapModeNoDirty(tex, (TextureWrapMode)m_WrapU.intValue, (TextureWrapMode)m_WrapV.intValue, (TextureWrapMode)m_WrapW.intValue);
+                        if (m_FilterMode.intValue != -1)
+                            TextureUtil.SetFilterModeNoDirty(tex, (FilterMode)m_FilterMode.intValue);
+                        if ((m_WrapU.intValue != -1 || m_WrapV.intValue != -1 || m_WrapW.intValue != -1) &&
+                            !m_WrapU.hasMultipleDifferentValues && !m_WrapV.hasMultipleDifferentValues && !m_WrapW.hasMultipleDifferentValues)
+                        {
+                            TextureUtil.SetWrapModeNoDirty(tex, (TextureWrapMode)m_WrapU.intValue, (TextureWrapMode)m_WrapV.intValue, (TextureWrapMode)m_WrapW.intValue);
+                        }
                     }
                 }
                 SceneView.RepaintAll();

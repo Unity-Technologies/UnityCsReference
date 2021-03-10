@@ -88,8 +88,8 @@ namespace UnityEditor
 
         public static SceneView currentDrawingSceneView { get { return s_CurrentDrawingSceneView; } }
 
-        static readonly PrefColor kSceneViewBackground = new PrefColor("Scene/Background", 0.278431f, 0.278431f, 0.278431f, 0);
-        internal static readonly PrefColor kSceneViewPrefabBackground = new PrefColor("Scene/Background for Prefabs", 0.132f, 0.231f, 0.330f, 0);
+        internal static readonly PrefColor kSceneViewBackground = new PrefColor("Scene/Background", 0.278431f, 0.278431f, 0.278431f, 1);
+        internal static readonly PrefColor kSceneViewPrefabBackground = new PrefColor("Scene/Background for Prefabs", 0.132f, 0.231f, 0.330f, 1);
         static readonly PrefColor kSceneViewWire = new PrefColor("Scene/Wireframe", 0.0f, 0.0f, 0.0f, 0.5f);
         static readonly PrefColor kSceneViewWireOverlay = new PrefColor("Scene/Wireframe Overlay", 0.0f, 0.0f, 0.0f, 0.25f);
         static readonly PrefColor kSceneViewSelectedOutline = new PrefColor("Scene/Selected Outline", 255.0f / 255.0f, 102.0f / 255.0f, 0.0f / 255.0f, 0.0f / 255.0f);
@@ -221,7 +221,8 @@ namespace UnityEditor
         internal const float k_MaxSceneViewSize = 3.2e38f;
         // Limit the max draw distance to Sqrt(float.MaxValue) because transparent sorting function uses dist^2, and
         // Asserts that values are finite.
-        const float k_MaxCameraFarClip = 1.844674E+19f;
+        internal const float k_MaxCameraFarClip = 1.844674E+19f;
+        internal const float k_MinCameraNearClip = 1e-5f;
 
         [NonSerialized]
         static ActiveEditorTracker s_SharedTracker;
@@ -621,6 +622,12 @@ namespace UnityEditor
                 speed = m_Speed;
             }
 
+            internal void SetClipPlanes(float near, float far)
+            {
+                farClip = Mathf.Clamp(far, float.Epsilon, k_MaxCameraFarClip);
+                nearClip = Mathf.Max(k_MinCameraNearClip, near);
+            }
+
             public float fieldOfView
             {
                 get { return m_FieldOfViewHorizontalOrVertical; }
@@ -659,6 +666,12 @@ namespace UnityEditor
         {
             get { return m_CameraSettings; }
             set { m_CameraSettings = value; }
+        }
+
+        internal Vector2 GetDynamicClipPlanes()
+        {
+            float farClip = Mathf.Clamp(2000f * size, 1000f, k_MaxCameraFarClip);
+            return new Vector2(farClip * 0.000005f, farClip);
         }
 
         internal SceneViewGrid sceneViewGrids
@@ -2938,10 +2951,13 @@ namespace UnityEditor
             }
             else
             {
+                Color opaqueBackground;
                 if (m_StageHandling != null && StageNavigationManager.instance.currentItem.isPrefabStage)
-                    m_Camera.backgroundColor = kSceneViewPrefabBackground;
+                    opaqueBackground = kSceneViewPrefabBackground;
                 else
-                    m_Camera.backgroundColor = kSceneViewBackground;
+                    opaqueBackground = kSceneViewBackground;
+                opaqueBackground.a = 1;
+                m_Camera.backgroundColor = opaqueBackground;
             }
 
             if (Event.current.type == EventType.Repaint)
@@ -2972,9 +2988,9 @@ namespace UnityEditor
 
             if (m_CameraSettings.dynamicClip)
             {
-                float farClip = Mathf.Min(Mathf.Max(1000f, 2000f * size), k_MaxCameraFarClip);
-                m_Camera.nearClipPlane = farClip * 0.000005f;
-                m_Camera.farClipPlane = farClip;
+                var clip = GetDynamicClipPlanes();
+                m_Camera.nearClipPlane = clip.x;
+                m_Camera.farClipPlane = clip.y;
             }
             else
             {
@@ -2983,7 +2999,6 @@ namespace UnityEditor
             }
 
             m_Camera.useOcclusionCulling = m_CameraSettings.occlusionCulling;
-
             m_Camera.transform.position = m_Position.value + m_Camera.transform.rotation * new Vector3(0, 0, -cameraDistance);
 
             // In 2D mode, camera position z should not go to positive value.
@@ -3066,7 +3081,7 @@ namespace UnityEditor
 
         internal Quaternion cameraTargetRotation { get { return m_Rotation.target; } }
 
-        internal Vector3 cameraTargetPosition { get { return m_Position.target + m_Rotation.target * new Vector3(0, 0, cameraDistance); } }
+        internal Vector3 cameraTargetPosition { get { return m_Position.target + m_Rotation.target * new Vector3(0, 0, -cameraDistance); } }
 
         internal float GetVerticalFOV(float aspectNeutralFOV)
         {

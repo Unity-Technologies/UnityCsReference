@@ -118,11 +118,7 @@ namespace UnityEditor
             {
                 float near = settings.nearClip, far = settings.farClip;
                 DrawClipPlanesField(EditorGUI.s_ClipingPlanesLabel, ref near, ref far, EditorGUI.kNearFarLabelsWidth);
-                settings.nearClip = near;
-                settings.farClip = far;
-                settings.nearClip = Mathf.Max(kNearClipMin, settings.nearClip);
-                if (settings.nearClip > settings.farClip)
-                    settings.farClip = settings.nearClip + kNearClipMin;
+                settings.SetClipPlanes(near, far);
             }
 
             settings.occlusionCulling = EditorGUILayout.Toggle(m_OcclusionCulling, settings.occlusionCulling);
