@@ -416,8 +416,12 @@ namespace UnityEditorInternal
             }
         }
 
-        static List<ReorderableList> s_Instances = new List<ReorderableList>();
-        internal static void ClearExistingListCaches() => s_Instances.ForEach(list => list.ClearCache());
+        static List<WeakReference> s_Instances = new List<WeakReference>();
+        internal static void ClearExistingListCaches() => s_Instances.ForEach(list =>
+        {
+            if (!list.IsAlive) return;
+            (list.Target as ReorderableList).ClearCache();
+        });
 
         // constructors
         public ReorderableList(IList elements, Type elementType)
@@ -459,7 +463,7 @@ namespace UnityEditorInternal
                 if (m_Elements.isArray == false) Debug.LogError("Input elements should be an Array SerializedProperty");
             }
 
-            s_Instances.Add(this);
+            s_Instances.Add(new WeakReference(this));
         }
 
         public SerializedProperty serializedProperty

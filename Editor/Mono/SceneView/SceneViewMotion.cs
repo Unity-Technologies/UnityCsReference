@@ -244,8 +244,9 @@ namespace UnityEditor
             foreach (MeshFilter mf in meshFil)
             {
                 Mesh mesh = mf.sharedMesh;
-                if (!mesh)
+                if (!mesh || !mesh.canAccess)
                     continue;
+
                 RaycastHit localHit;
                 if (HandleUtility.IntersectRayMesh(mouseRay, mesh, mf.transform.localToWorldMatrix, out localHit))
                 {
