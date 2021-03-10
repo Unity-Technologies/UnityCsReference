@@ -48,7 +48,14 @@ namespace Unity.UI.Builder
 
         protected virtual VisualElement ExplorerGetDragPreviewFromTarget(VisualElement target, Vector2 mousePosition)
         {
-            return target.GetProperty(BuilderConstants.ExplorerItemElementLinkVEPropertyName) as VisualElement;
+            var element = target.GetProperty(BuilderConstants.ExplorerItemElementLinkVEPropertyName) as VisualElement;
+            if (element == null)
+            {
+                var explorerItem = target.GetFirstAncestorWithClass(BuilderConstants.ExplorerItemLabelContClassName).parent;
+                element = explorerItem.GetProperty(BuilderConstants.ExplorerItemElementLinkVEPropertyName) as VisualElement;
+            }
+
+            return element;
         }
 
         protected virtual void ResetDragPreviewElement()
@@ -66,6 +73,14 @@ namespace Unity.UI.Builder
             var pill = classPillTemplate.CloneTree();
             pill.AddToClassList(s_DraggableStyleClassPillClassName);
             return pill;
+        }
+
+        protected override void FillDragElement(VisualElement pill)
+        {
+            // We use the primary target element for our pill info.
+            var pillLabel = pill.Q<Label>();
+            pillLabel.text = ExplorerGetDraggedPillText(m_TargetElementToReparent);
+            pillLabel.RemoveFromClassList(BuilderConstants.ElementClassNameClassName);
         }
 
         protected override bool StartDrag(VisualElement target, Vector2 mousePosition, VisualElement pill)
@@ -92,11 +107,6 @@ namespace Unity.UI.Builder
             m_TargetElementToReparent = ExplorerGetDragPreviewFromTarget(target, mousePosition);
             if (m_TargetElementToReparent == null || !ExplorerCanStartDrag(m_TargetElementToReparent))
                 return false;
-
-            // We use the primary target element for our pill info.
-            var pillLabel = pill.Q<Label>();
-            pillLabel.text = ExplorerGetDraggedPillText(m_TargetElementToReparent);
-            pillLabel.RemoveFromClassList(BuilderConstants.ElementClassNameClassName);
 
             return true;
         }

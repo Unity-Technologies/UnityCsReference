@@ -590,6 +590,7 @@ namespace UnityEngine.UIElements
         private float m_LastHeight;
         private List<RecycledItem> m_Pool = new List<RecycledItem>();
         internal readonly ScrollView m_ScrollView;
+        KeyboardNavigationManipulator m_NavigationManipulator;
 
         private readonly VisualElement m_EmptyRows;
         private int m_LastItemIndex;
@@ -728,14 +729,10 @@ namespace UnityEngine.UIElements
             if (evt.destinationPanel == null)
                 return;
 
+            m_ScrollView.contentContainer.AddManipulator(m_NavigationManipulator = new KeyboardNavigationManipulator(Apply));
             m_ScrollView.contentContainer.RegisterCallback<PointerDownEvent>(OnPointerDown);
             m_ScrollView.contentContainer.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
             m_ScrollView.contentContainer.RegisterCallback<PointerUpEvent>(OnPointerUp);
-            m_ScrollView.contentContainer.RegisterCallback<KeyDownEvent>(OnKeyDown);
-
-            m_ScrollView.contentContainer.RegisterCallback<NavigationMoveEvent>(OnNavigationMove);
-            m_ScrollView.contentContainer.RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
-            m_ScrollView.contentContainer.RegisterCallback<NavigationCancelEvent>(OnNavigationCancel);
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -743,36 +740,19 @@ namespace UnityEngine.UIElements
             if (evt.originPanel == null)
                 return;
 
+            m_ScrollView.contentContainer.RemoveManipulator(m_NavigationManipulator);
             m_ScrollView.contentContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown);
             m_ScrollView.contentContainer.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
             m_ScrollView.contentContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp);
-            m_ScrollView.contentContainer.UnregisterCallback<KeyDownEvent>(OnKeyDown);
-
-            m_ScrollView.contentContainer.UnregisterCallback<NavigationMoveEvent>(OnNavigationMove);
-            m_ScrollView.contentContainer.UnregisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
-            m_ScrollView.contentContainer.UnregisterCallback<NavigationCancelEvent>(OnNavigationCancel);
         }
 
         //TODO: make private. This doesn't need to be in the public API. Unit tests can be implemented with SendEvent.
         public void OnKeyDown(KeyDownEvent evt)
         {
-            if (panel?.contextType == ContextType.Editor)
-                OnEditorKeyDown(evt);
-            else
-                OnRuntimeKeyDown(evt);
+            m_NavigationManipulator.OnKeyDown(evt);
         }
 
-        enum ListOperation
-        {
-            None,
-            SelectAll,
-            Cancel, Submit,
-            Previous, Next,
-            PageUp, PageDown,
-            Begin, End,
-        }
-
-        private bool Apply(ListOperation op, bool shiftKey)
+        private bool Apply(KeyboardNavigationOperation op, bool shiftKey)
         {
             if (!HasValidDataAndBindings())
             {
@@ -795,13 +775,13 @@ namespace UnityEngine.UIElements
 
             switch (op)
             {
-                case ListOperation.SelectAll:
+                case KeyboardNavigationOperation.SelectAll:
                     SelectAll();
                     return true;
-                case ListOperation.Cancel:
+                case KeyboardNavigationOperation.Cancel:
                     ClearSelection();
                     return true;
-                case ListOperation.Submit:
+                case KeyboardNavigationOperation.Submit:
 #pragma warning disable 618
                     if (selectedIndex >= 0 && selectedIndex < m_ItemsSource.Count)
                         onItemChosen?.Invoke(m_ItemsSource[selectedIndex]);
@@ -809,30 +789,30 @@ namespace UnityEngine.UIElements
                     onItemsChosen?.Invoke(m_SelectedItems);
                     ScrollToItem(selectedIndex);
                     return true;
-                case ListOperation.Previous:
+                case KeyboardNavigationOperation.Previous:
                     if (selectedIndex > 0)
                     {
                         HandleSelectionAndScroll(selectedIndex - 1);
                         return true;
                     }
                     break; // Allow focus to move outside the ListView
-                case ListOperation.Next:
+                case KeyboardNavigationOperation.Next:
                     if (selectedIndex + 1 < itemsSource.Count)
                     {
                         HandleSelectionAndScroll(selectedIndex + 1);
                         return true;
                     }
                     break; // Allow focus to move outside the ListView
-                case ListOperation.Begin:
+                case KeyboardNavigationOperation.Begin:
                     HandleSelectionAndScroll(0);
                     return true;
-                case ListOperation.End:
+                case KeyboardNavigationOperation.End:
                     HandleSelectionAndScroll(itemsSource.Count - 1);
                     return true;
-                case ListOperation.PageDown:
+                case KeyboardNavigationOperation.PageDown:
                     HandleSelectionAndScroll(Math.Min(itemsSource.Count - 1, selectedIndex + (int)(m_LastHeight / resolvedItemHeight)));
                     return true;
-                case ListOperation.PageUp:
+                case KeyboardNavigationOperation.PageUp:
                     HandleSelectionAndScroll(Math.Max(0, selectedIndex - (int)(m_LastHeight / resolvedItemHeight)));
                     return true;
             }
@@ -840,7 +820,7 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        private void Apply(ListOperation op, EventBase sourceEvent)
+        private void Apply(KeyboardNavigationOperation op, EventBase sourceEvent)
         {
             var shiftKey = (sourceEvent as KeyDownEvent)?.shiftKey ?? false;
             if (Apply(op, shiftKey))
@@ -848,71 +828,6 @@ namespace UnityEngine.UIElements
                 sourceEvent.StopPropagation();
                 sourceEvent.PreventDefault();
             }
-        }
-
-        private void OnNavigationMove(NavigationMoveEvent evt)
-        {
-            switch (evt.direction)
-            {
-                case NavigationMoveEvent.Direction.Up:
-                    Apply(ListOperation.Previous, evt);
-                    break;
-                case NavigationMoveEvent.Direction.Down:
-                    Apply(ListOperation.Next, evt);
-                    break;
-            }
-        }
-
-        private void OnNavigationSubmit(NavigationSubmitEvent evt)
-        {
-            Apply(ListOperation.Submit, evt);
-        }
-
-        private void OnNavigationCancel(NavigationCancelEvent evt)
-        {
-            Apply(ListOperation.Cancel, evt);
-        }
-
-        private void OnRuntimeKeyDown(KeyDownEvent evt)
-        {
-            // At the moment these actions are not mapped dynamically in the InputSystemEventSystem component.
-            // When that becomes the case in the future, remove the following and use corresponding Navigation events.
-            ListOperation GetOperation()
-            {
-                switch (evt.keyCode)
-                {
-                    case KeyCode.A when evt.actionKey: return ListOperation.SelectAll;
-                    case KeyCode.Home: return ListOperation.Begin;
-                    case KeyCode.End: return ListOperation.End;
-                    case KeyCode.PageUp: return ListOperation.PageUp;
-                    case KeyCode.PageDown: return ListOperation.PageDown;
-                }
-                return ListOperation.None;
-            }
-
-            Apply(GetOperation(), evt);
-        }
-
-        private void OnEditorKeyDown(KeyDownEvent evt)
-        {
-            ListOperation GetOperation()
-            {
-                switch (evt.keyCode)
-                {
-                    case KeyCode.A when evt.actionKey: return ListOperation.SelectAll;
-                    case KeyCode.Escape: return ListOperation.Cancel;
-                    case KeyCode.Return: case KeyCode.KeypadEnter: return ListOperation.Submit;
-                    case KeyCode.UpArrow: return ListOperation.Previous;
-                    case KeyCode.DownArrow: return ListOperation.Next;
-                    case KeyCode.Home: return ListOperation.Begin;
-                    case KeyCode.End: return ListOperation.End;
-                    case KeyCode.PageUp: return ListOperation.PageUp;
-                    case KeyCode.PageDown: return ListOperation.PageDown;
-                }
-                return ListOperation.None;
-            }
-
-            Apply(GetOperation(), evt);
         }
 
         /// <summary>

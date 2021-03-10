@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -122,17 +120,23 @@ namespace Unity.UI.Builder
                 // Check if USS is part of active document.
                 if (element.IsStyleSheet() && toReparent.IsStyleSheet() && !string.IsNullOrEmpty(element.GetProperty(BuilderConstants.ExplorerItemLinkedUXMLFileName) as string))
                     return false;
+
+                if (element.IsPartOfCurrentDocument())
+                    return false;
+
+                if (element.HasAncestor(builderHierarchyRoot))
+                    return false;
             }
 
             return true;
         }
 
-        protected override bool SupportsDragInEmptySpace()
+        protected override bool SupportsDragInEmptySpace(VisualElement element)
         {
             if (paneWindow.document.activeOpenUXMLFile.openUSSFiles.Count != BuilderSharedStyles.GetSelectorContainerElement(selection.documentRootElement).childCount)
                 return false;
 
-            return true;
+            return element != null && element.HasAncestor(builderStylesheetRoot);
         }
 
         protected override bool SupportsPlacementIndicator()

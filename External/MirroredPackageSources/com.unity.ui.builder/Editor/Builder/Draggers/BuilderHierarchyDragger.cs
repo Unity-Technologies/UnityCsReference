@@ -120,6 +120,11 @@ namespace Unity.UI.Builder
             return true;
         }
 
+        protected override bool SupportsDragInEmptySpace(VisualElement element)
+        {
+            return element != null && element.HasAncestor(builderHierarchyRoot);
+        }
+
         protected override void ResetDragPreviewElement()
         {
             m_TargetElementToReparent.RemoveFromClassList(s_DragPreviewElementClassName);
