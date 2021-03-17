@@ -62,7 +62,7 @@ namespace UnityEngine.SubsystemsImplementation
                 if (storeInList[finderIndex].id != descriptor.id)
                     continue;
 
-                Debug.LogWarning(string.Format("Registering subsystem descriptor with duplicate ID '{descriptor.id}' - overwriting previous entry."));
+                Debug.LogWarning($"Registering subsystem descriptor with duplicate ID '{descriptor.id}' - overwriting previous entry.");
                 storeInList[finderIndex] = descriptor;
                 return;
             }

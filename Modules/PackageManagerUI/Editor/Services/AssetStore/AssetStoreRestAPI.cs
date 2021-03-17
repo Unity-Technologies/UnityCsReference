@@ -70,7 +70,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [NonSerialized]
-        internal Queue<AssetStoreLocalInfo> m_Queue;
+        private Queue<string> m_Queue;
 
         [NonSerialized]
         private UnityConnectProxy m_UnityConnect;
@@ -192,8 +192,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             var partialInfos = new List<AssetStoreLocalInfo>(chunkSize);
-            for (var i = 0; i < chunkSize && m_Queue.Any(); i++)
-                partialInfos.Add(m_Queue.Dequeue());
+            while (m_Queue.Any() && partialInfos.Count < chunkSize)
+            {
+                var productId = m_Queue.Dequeue();
+                var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
+                if (localInfo?.updateInfoFetched == false)
+                    partialInfos.Add(localInfo);
+            }
 
             var localInfosJsonData = Json.Serialize(partialInfos.Select(info => info?.ToDictionary() ?? new Dictionary<string, string>()).ToList());
 
@@ -211,16 +216,18 @@ namespace UnityEditor.PackageManager.UI.Internal
                 });
         }
 
-        public virtual void GetProductUpdateDetail(IEnumerable<AssetStoreLocalInfo> localInfos, Action<Dictionary<string, object>> doneCallbackAction)
+        public virtual void GetProductUpdateDetail(IEnumerable<string> productIds, Action<Dictionary<string, object>> doneCallbackAction)
         {
-            if (localInfos?.Any() != true)
+            if (productIds?.Any() != true)
             {
                 doneCallbackAction?.Invoke(new Dictionary<string, object>());
                 return;
             }
 
             var updateDetails = new List<IDictionary<string, object>>();
-            m_Queue = new Queue<AssetStoreLocalInfo>(localInfos);
+
+            // We want to prioritize new fetch update details calls as those are more likely to be the ones users are interested in
+            m_Queue = new Queue<string>(productIds.Concat(m_Queue?.ToArray() ?? Enumerable.Empty<string>()));
 
             void ErrorCallBack(string message)
             {

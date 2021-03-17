@@ -306,9 +306,10 @@ namespace UnityEditor
                 DoAnisoLevelSlider();
             }
 
+            serializedObject.ApplyModifiedProperties();
+
             if (EditorGUI.EndChangeCheck())
                 ApplySettingsToTextures();
-            serializedObject.ApplyModifiedProperties();
         }
 
         // wrap/filter/aniso editors will change serialized object

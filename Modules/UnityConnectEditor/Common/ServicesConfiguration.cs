@@ -150,13 +150,13 @@ namespace UnityEditor.Connect
             m_CloudBuildUploadUrl = m_CloudBuildProjectUrl + "/upload/?page=1";
             m_CloudBuildTargetUrl = m_CloudBuildProjectUrl + "/buildtargets";
             m_CloudBuildApiUrl = m_ServicesUrlsConfig["build-api"];
-            m_CloudBuildApiProjectUrl = m_CloudBuildApiUrl + "/api/v1/projects/{0}";
+            m_CloudBuildApiProjectUrl = m_CloudBuildApiUrl + "/api/v1/orgs/{0}/projects/{1}";
             m_CloudBuildApiStatusUrl = m_CloudBuildApiUrl + "/api/v1/status";
 
             m_CloudDiagCrashesDashboardUrl = m_ServicesUrlsConfig["build"] + "/diagnostics/orgs/{0}/projects/{1}/crashes";
             m_CollabDashboardUrl = m_ServicesUrlsConfig["build"] + "/collab/orgs/{0}/projects/{1}/assets/";
             m_PurchasingDashboardUrl = m_ServicesUrlsConfig["analytics"] + "/projects/{0}/purchasing/";
-            m_AnalyticsDashboardUrl = m_ServicesUrlsConfig["analytics"] + "/events/{0}/";
+            m_AnalyticsDashboardUrl = UnityEditor.Analytics.AnalyticsSettings.dashboardUrl + "/organizations/{0}/projects/{1}/analytics/events/";
 
             pathsReady = true;
             loadingConfigurations = false;
@@ -649,14 +649,14 @@ namespace UnityEditor.Connect
 
         public void RequestCloudBuildApiCurrentProjectUrl(Action<string> callback)
         {
-            RequestCloudBuildApiProjectUrl(UnityConnect.instance.projectInfo.projectId, callback);
+            RequestCloudBuildApiProjectUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId, callback);
         }
 
-        public void RequestCloudBuildApiProjectUrl(string projectId, Action<string> callback)
+        public void RequestCloudBuildApiProjectUrl(string organizationId, string projectId, Action<string> callback)
         {
             RequestAsyncUrl(AsyncUrlId.CloudBuildApiProjectUrl, cloudBuildApiProjectUrl =>
             {
-                callback(string.Format(cloudBuildApiProjectUrl, projectId));
+                callback(string.Format(cloudBuildApiProjectUrl, organizationId, projectId));
             });
         }
 

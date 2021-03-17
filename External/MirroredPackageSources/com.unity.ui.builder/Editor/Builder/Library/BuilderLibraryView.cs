@@ -62,6 +62,13 @@ namespace Unity.UI.Builder
             if (isCurrentDocumentOpen)
                 return;
 
+            if (m_PaneWindow.document.WillCauseCircularDependency(item.sourceAsset))
+            {
+                BuilderDialogsUtility.DisplayDialog(BuilderConstants.InvalidWouldCauseCircularDependencyMessage,
+                    BuilderConstants.InvalidWouldCauseCircularDependencyMessageDescription, null);
+                return;
+            }
+
             var newElement = item.makeVisualElementCallback?.Invoke();
             if (newElement == null)
                 return;

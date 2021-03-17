@@ -184,7 +184,7 @@ namespace UnityEditor
         // When hovering over some handle axis/control, this is the indication that it would
         // get picked on mouse press:
         // Color gets a bit more bright and less opaque,
-        internal static Color s_HoverIntensity = new Color(1.2f, 1.2f, 1.2f, 1.33f);
+        internal static Color s_HoverIntensity = new Color(1.0f, 1.0f, 1.0f, 1.33f);
         // Handle lines get more thick,
         internal static float s_HoverExtraThickness = 1.0f;
         // 3D handle elements (caps) get slightly larger.
@@ -240,7 +240,13 @@ namespace UnityEditor
             }
             else if (IsHovering(controlID, evt))
             {
-                Handles.color = Handles.color * s_HoverIntensity;
+                var col = Handles.color * s_HoverIntensity;
+                // make sure colors never go outside of 0..1 range
+                col.r = Mathf.Clamp01(col.r);
+                col.g = Mathf.Clamp01(col.g);
+                col.b = Mathf.Clamp01(col.b);
+                col.a = Mathf.Clamp01(col.a);
+                Handles.color = col;
                 thickness += s_HoverExtraThickness;
             }
         }
@@ -723,8 +729,23 @@ namespace UnityEditor
                         thickness += s_HoverExtraThickness;
                         coneSize *= s_HoverExtraScale;
                     }
-                    ConeHandleCap(controlID, position + (direction + coneOffset) * size, rotation, coneSize, eventType);
-                    Handles.DrawLine(position, position + (direction + coneOffset) * (size * .9f), thickness);
+                    var camera = Camera.current;
+                    var viewDir = camera != null ? camera.transform.forward : -direction;
+                    var facingAway = Vector3.Dot(viewDir, direction) < 0.0f;
+                    var conePos = position + (direction + coneOffset) * size;
+                    var linePos = position + (direction + coneOffset) * (size * .9f);
+                    // draw line vs cone in the appropriate order based on viewing
+                    // direction, for correct transparency sorting
+                    if (facingAway)
+                    {
+                        DrawLine(position, linePos, thickness);
+                        ConeHandleCap(controlID, conePos, rotation, coneSize, eventType);
+                    }
+                    else
+                    {
+                        ConeHandleCap(controlID, conePos, rotation, coneSize, eventType);
+                        DrawLine(position, linePos, thickness);
+                    }
                     break;
                 }
             }

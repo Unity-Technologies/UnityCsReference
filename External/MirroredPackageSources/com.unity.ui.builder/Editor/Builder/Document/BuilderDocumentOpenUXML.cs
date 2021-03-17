@@ -354,6 +354,7 @@ namespace Unity.UI.Builder
             }
         }
 
+
         public void AddStyleSheetsToAllRootElements(string newUssPath = null, int newUssIndex = 0)
         {
             var rootVEA = visualTreeAsset.GetRootUXMLElement();
@@ -590,7 +591,7 @@ namespace Unity.UI.Builder
             // and re-imported asset we detected here.
             ClearBackups();
 
-            builderWindow.toolbar.LoadDocument(newVisualTreeAsset, true);
+            builderWindow.toolbar.LoadDocument(newVisualTreeAsset, false, true);
         }
 
         //

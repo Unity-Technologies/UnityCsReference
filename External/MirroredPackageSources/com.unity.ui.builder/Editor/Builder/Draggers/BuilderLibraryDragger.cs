@@ -111,7 +111,7 @@ namespace Unity.UI.Builder
             var item = m_LibraryItem;
             var itemVTA = item.sourceAsset;
 
-            if (!paneWindow.document.WillCauseCircularDependency(itemVTA))
+            if (paneWindow.document.WillCauseCircularDependency(itemVTA))
             {
                 BuilderDialogsUtility.DisplayDialog(BuilderConstants.InvalidWouldCauseCircularDependencyMessage,
                     BuilderConstants.InvalidWouldCauseCircularDependencyMessageDescription, BuilderConstants.DialogOkOption);

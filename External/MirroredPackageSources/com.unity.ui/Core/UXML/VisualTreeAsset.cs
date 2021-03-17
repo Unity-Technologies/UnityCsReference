@@ -86,6 +86,9 @@ namespace UnityEngine.UIElements
         {
             get
             {
+                if (m_Usings == null || m_Usings.Count == 0)
+                    yield break;
+
                 HashSet<VisualTreeAsset> sent = new HashSet<VisualTreeAsset>();
 
                 foreach (var entry in m_Usings)

@@ -1494,7 +1494,7 @@ namespace UnityEditor
             get
             {
                 Verify(VerifyFlags.IteratorNotAtEnd);
-                return GetArraySize();
+                return GetInspectableArraySize();
             }
             set
             {
@@ -1503,7 +1503,17 @@ namespace UnityEditor
             }
         }
 
-        extern private int GetArraySize();
+        public int minArraySize
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return GetMinArraySize();
+            }
+        }
+
+        extern private int GetMinArraySize();
+        extern private int GetInspectableArraySize();
         extern private void ResizeArray(int value);
 
         private bool GetArrayElementAtIndexInternal(int index)

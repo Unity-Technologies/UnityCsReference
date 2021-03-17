@@ -318,7 +318,8 @@ namespace UnityEngine.Rendering
 
                         if (valid == false)
                         {
-                            throw new ArgumentException($"Invalid textureformat on layer: {i}. Supported formats are: {supportedFormats}");
+                            string cpuGpu = (gpuGeneration == 1) ? "GPU" : "CPU";
+                            throw new ArgumentException($"{cpuGpu} Procedural Virtual Texturing doesn't support GraphicsFormat {layers[i]} for stack layer {i}");
                         }
                     }
                     if (maxActiveRequests > MaxRequestsPerFrameSupported || maxActiveRequests <= 0)

@@ -82,6 +82,13 @@ namespace UnityEngine.Analytics
             get;
         }
 
+        [StaticAccessor("GetUnityConnectSettings()", StaticAccessorType.Dot)]
+        private extern static string dashboardUrlInternal
+        {
+            [NativeMethod("GetDashboardUrl")]
+            get;
+        }
+
         [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
         private extern static bool limitUserTrackingInternal
         {

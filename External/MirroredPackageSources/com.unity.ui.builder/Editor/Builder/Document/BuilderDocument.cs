@@ -299,7 +299,7 @@ namespace Unity.UI.Builder
             // Perform check on current active document
             var activeVTA = activeOpenUXMLFile.visualTreeAsset;
             if (activeVTA.TemplateExists(vtaCheck))
-                return false;
+                return true;
 
             // Crawl up hierarchy if there are open subdocuments
             int parentInd = activeOpenUXMLFile.openSubDocumentParentIndex;
@@ -308,10 +308,10 @@ namespace Unity.UI.Builder
                 var parentuxml = openUXMLFiles[parentInd];
                 var parentvta = parentuxml.visualTreeAsset;
                 if (parentvta.TemplateExists(vtaCheck))
-                    return false;
+                    return true;
                 parentInd = parentuxml.openSubDocumentParentIndex;
             }
-            return true;
+            return false;
         }
 
         //

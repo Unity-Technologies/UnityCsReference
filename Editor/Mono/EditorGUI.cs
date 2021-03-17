@@ -6843,8 +6843,7 @@ namespace UnityEditor
                     newChildrenAreExpanded = Foldout(position, childrenAreExpanded, s_PropertyFieldTempContent, true, foldoutStyle);
                 }
 
-
-                if (childrenAreExpanded && property.isArray && property.arraySize > property.serializedObject.maxArraySizeForMultiEditing && property.serializedObject.isEditingMultipleObjects)
+                if (childrenAreExpanded && property.isArray && property.minArraySize > property.serializedObject.maxArraySizeForMultiEditing && property.serializedObject.isEditingMultipleObjects)
                 {
                     Rect boxRect = position;
                     boxRect.xMin += EditorGUIUtility.labelWidth - indent;

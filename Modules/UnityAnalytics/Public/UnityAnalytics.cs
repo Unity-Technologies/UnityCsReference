@@ -71,6 +71,16 @@ namespace UnityEngine.Analytics
             }
         }
 
+        public static string dashboardUrl
+        {
+            get
+            {
+                if (!IsInitialized())
+                    return String.Empty;
+                return dashboardUrlInternal;
+            }
+        }
+
         public static string configUrl
         {
             get

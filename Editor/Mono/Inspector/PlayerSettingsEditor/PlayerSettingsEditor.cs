@@ -212,6 +212,7 @@ namespace UnityEditor
             public static string undoChangedScriptingDefineString { get { return LocalizationDatabase.GetLocalizedString("Changed Scripting Define Settings"); } }
             public static string undoChangedGraphicsJobsString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics Jobs Setting"); } }
             public static string undoChangedGraphicsJobModeString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics Job Mode Setting"); } }
+            public static string changeColorSpaceString { get { return LocalizationDatabase.GetLocalizedString("Changing the color space may take a significant amount of time."); } }
         }
 
         class RecompileReason
@@ -1632,7 +1633,7 @@ namespace UnityEditor
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    if (m_ActiveColorSpace.enumValueIndex != selectedValue && EditorUtility.DisplayDialog("Changing Color Space", "Warning: Changing the color space can take some time.", $"Change to {(ColorSpace)m_ActiveColorSpace.enumValueIndex}", "Cancel"))
+                    if (m_ActiveColorSpace.enumValueIndex != selectedValue && EditorUtility.DisplayDialog("Changing Color Space", SettingsContent.changeColorSpaceString, $"Change to {(ColorSpace)m_ActiveColorSpace.enumValueIndex}", "Cancel"))
                     {
                         serializedObject.ApplyModifiedProperties();
                     }

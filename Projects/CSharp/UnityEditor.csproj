@@ -3247,6 +3247,9 @@
     <Compile Include="..\..\Editor\Mono\SelectionCommands\SelectionCommands.cs">
       <Link>Editor\Mono\SelectionCommands\SelectionCommands.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\SerializationDebug.bindings.cs">
+      <Link>Editor\Mono\SerializationDebug.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\SerializedObject.bindings.cs">
       <Link>Editor\Mono\SerializedObject.bindings.cs</Link>
     </Compile>
@@ -5592,6 +5595,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ParticleSystemEditor\SerializedMinMaxGradient.cs">
       <Link>Modules\ParticleSystemEditor\SerializedMinMaxGradient.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Physics2DMenuItem.cs">
+      <Link>Modules\Physics2DEditor\Managed\Physics2DMenuItem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\ScriptBindings\ColliderUtil.bindings.cs">
       <Link>Modules\PhysicsEditor\ScriptBindings\ColliderUtil.bindings.cs</Link>

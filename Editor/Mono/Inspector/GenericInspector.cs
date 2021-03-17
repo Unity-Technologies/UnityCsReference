@@ -71,7 +71,7 @@ namespace UnityEditor
             {
                 var handler = ScriptAttributeUtility.GetHandler(property);
                 var hasPropertyDrawer = handler.propertyDrawer != null;
-                var propertyHeight = handler.GetHeight(property, null, hasPropertyDrawer);
+                var propertyHeight = handler.GetHeight(property, null, hasPropertyDrawer || PropertyHandler.UseReorderabelListControl(property));
                 if (propertyHeight > 0)
                     height += propertyHeight + EditorGUI.kControlVerticalSpacing;
                 childrenAreExpanded = !hasPropertyDrawer && property.isExpanded && EditorGUI.HasVisibleChildFields(property);
@@ -109,13 +109,13 @@ namespace UnityEditor
                     var handler = ScriptAttributeUtility.GetHandler(property);
                     var hasPropertyDrawer = handler.propertyDrawer != null;
                     childrenAreExpanded = !hasPropertyDrawer && property.isExpanded && EditorGUI.HasVisibleChildFields(property);
-                    contentRect.height = handler.GetHeight(property, null, hasPropertyDrawer);
+                    contentRect.height = handler.GetHeight(property, null, hasPropertyDrawer || PropertyHandler.UseReorderabelListControl(property));
 
                     if (contentRect.Overlaps(visibleRect))
                     {
                         EditorGUI.indentLevel = property.depth;
                         using (new EditorGUI.DisabledScope(isInspectorModeNormal && "m_Script" == property.propertyPath))
-                            childrenAreExpanded &= handler.OnGUI(contentRect, property, null, false, visibleRect);
+                            childrenAreExpanded &= handler.OnGUI(contentRect, property, null, PropertyHandler.UseReorderabelListControl(property), visibleRect);
                     }
 
                     if (contentRect.height > 0)

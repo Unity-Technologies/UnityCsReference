@@ -15,23 +15,12 @@ namespace Unity.UI.Builder
             typeof(VisualTreeAsset).GetField("m_Usings", BindingFlags.Instance | BindingFlags.NonPublic);
 
         static readonly IComparer<VisualTreeAsset.UsingEntry> s_UsingEntryPathComparer = new UsingEntryPathComparer();
-        static readonly IComparer<VisualTreeAsset.UsingEntry> s_UsingEntryAssetComparer = new UsingEntryAssetComparer();
 
         class UsingEntryPathComparer : IComparer<VisualTreeAsset.UsingEntry>
         {
             public int Compare(VisualTreeAsset.UsingEntry x, VisualTreeAsset.UsingEntry y)
             {
                 return Comparer<string>.Default.Compare(x.path, y.path);
-            }
-        }
-
-        class UsingEntryAssetComparer : IComparer<VisualTreeAsset.UsingEntry>
-        {
-            public int Compare(VisualTreeAsset.UsingEntry x, VisualTreeAsset.UsingEntry y)
-            {
-                var xAsset = x.asset as VisualTreeAsset;
-                var yAsset = y.asset as VisualTreeAsset;
-                return xAsset == yAsset ? 0 : -1;
             }
         }
 
@@ -347,16 +336,54 @@ namespace Unity.UI.Builder
 
         public static bool TemplateExists(this VisualTreeAsset windowVTA, VisualTreeAsset draggingInVTA)
         {
-            var fieldInfo = UsingsListFieldInfo;
-            if (fieldInfo != null && draggingInVTA != null)
+            var checkedTemplates = new HashSet<VisualTreeAsset>();
+            return TemplateExists(windowVTA, draggingInVTA, checkedTemplates);
+        }
+
+        internal static bool IsUsingTemplate(List<VisualTreeAsset.UsingEntry> usings, string path, VisualTreeAsset template)
+        {
+            foreach (var usingEntry in usings)
             {
-                var usings = fieldInfo.GetValue(draggingInVTA) as List<VisualTreeAsset.UsingEntry>;
+                if (usingEntry.path == path || usingEntry.asset == template)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        internal static bool TemplateExists(this VisualTreeAsset parentTemplate, VisualTreeAsset templateToCheck, HashSet<VisualTreeAsset> checkedTemplates)
+        {
+            var fieldInfo = UsingsListFieldInfo;
+            if (fieldInfo != null && templateToCheck != null)
+            {
+                var usings = fieldInfo.GetValue(templateToCheck) as List<VisualTreeAsset.UsingEntry>;
                 if (usings != null && usings.Count > 0)
                 {
-                    var lookingFor = new VisualTreeAsset.UsingEntry(null, windowVTA);
-                    int index = usings.BinarySearch(lookingFor, s_UsingEntryAssetComparer);
-                    if (index >= 0)
+                    checkedTemplates.Add(templateToCheck);
+
+                    var assetPath = AssetDatabase.GetAssetPath(parentTemplate);
+                    var isUsingTemplate = IsUsingTemplate(usings, assetPath, parentTemplate);
+
+                    if (isUsingTemplate)
+                    {
                         return true;
+                    }
+
+                    var templates = templateToCheck.templateDependencies;
+                    foreach (var template in templates)
+                    {
+                        if (checkedTemplates.Contains(template))
+                        {
+                            continue;
+                        }
+
+                        if (TemplateExists(parentTemplate, template, checkedTemplates))
+                        {
+                            return true;
+                        }
+                    }
                 }
             }
             return false;
@@ -623,5 +650,6 @@ namespace Unity.UI.Builder
                     if (asset.stylesheets[i] != null)
                         element.styleSheets.Add(asset.stylesheets[i]);
         }
+
     }
 }

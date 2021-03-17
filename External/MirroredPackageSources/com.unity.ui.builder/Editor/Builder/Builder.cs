@@ -203,6 +203,7 @@ namespace Unity.UI.Builder
         protected override void OnEnable()
         {
             base.OnEnable();
+            minSize = new Vector2(200, 200);
             SetTitleContent(BuilderConstants.BuilderWindowTitle, BuilderConstants.BuilderWindowIcon);
         }
 
