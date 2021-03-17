@@ -221,12 +221,12 @@ namespace UnityEditor.Search
                             }
 
                             GUI.changed = false;
-                            EditorGUIUtility.currentViewWidth = width;
+                            Utils.SetCurrentViewWidth(width);
                             EditorGUIUtility.wideMode = wideMode;
                             EditorGUIUtility.hierarchyMode = wideMode;
                             EditorGUIUtility.labelWidth = Mathf.Max((wideMode ? 0.4f : 0.2f) * width, 150f);
                             e.OnInspectorGUI();
-                            EditorGUIUtility.currentViewWidth = -1f;
+                            Utils.SetCurrentViewWidth(-1f);
                         }
                     }
                 }
@@ -235,6 +235,13 @@ namespace UnityEditor.Search
                     EditorGUILayout.HelpBox(new GUIContent($"Failed to display inspector for {e.GetType().Name}", ex.Message));
                 }
             }
+        }
+
+        private bool UseWideEditor(UnityEngine.Object target)
+        {
+            if (target.GetType() == typeof(Transform))
+                return true;
+            return false;
         }
 
         private void SetEditorCollapsed(Editor e, bool collapsed)

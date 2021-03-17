@@ -25,7 +25,7 @@ namespace UnityEditor.Search
         public static void OpenWindow(int instanceID)
         {
             s_SelectedAssetOnOpen = instanceID;
-            var window = CreateWindow<IndexManager>();
+            var window = GetWindow<IndexManager>();
             window.m_WindowId = GUID.Generate().ToString();
             window.position = Utils.GetMainWindowCenteredPosition(new Vector2(760f, 500f));
             window.minSize = new Vector2(510f, 200f);
@@ -765,7 +765,8 @@ namespace UnityEditor.Search
 
         private void AddListElement(List<string> list, ListViewIndexSettings listView)
         {
-            list.Add("");
+            // set up include path to null instead of "" because "" is a valid default value for File
+            list.Add(null);
 
             listView.UpdateListViewOnAdd();
         }
@@ -1094,6 +1095,7 @@ namespace UnityEditor.Search
 
             FilePattern m_Pattern;
             EnumField m_EnumField;
+            static FilePattern m_LastFilePattern = FilePattern.File;
             TextField m_PrefixTextField;
             TextField m_PathTextField;
             TextField m_SuffixTextField;
@@ -1110,7 +1112,8 @@ namespace UnityEditor.Search
                 var grip = new VisualElement() { name = "ReorderableListViewGrip" };
                 Add(grip);
 
-                Add(m_EnumField = new EnumField(FilePattern.File));
+                m_Pattern = m_LastFilePattern;
+                Add(m_EnumField = new EnumField(m_Pattern));
                 m_EnumField.RegisterValueChangedCallback(FilePatternChanged);
 
                 Add(m_PrefixTextField = new TextField() { name = "Prefix", value = "." });
@@ -1127,6 +1130,7 @@ namespace UnityEditor.Search
                 });
                 Add(m_SuffixTextField = new TextField() { name = "Suffix", value = "/" });
                 Add(m_ExplorerButton = new Button(ChooseFolder));
+                FilePatternChanged();
             }
 
             private class IncludeExcludeDraggableTextField : DraggableTextField
@@ -1158,6 +1162,7 @@ namespace UnityEditor.Search
             private void FilePatternChanged(ChangeEvent<Enum> evt)
             {
                 m_Pattern = (FilePattern)evt.newValue;
+                m_LastFilePattern = m_Pattern;
                 FilePatternChanged();
                 m_PathsListView.itemsSource[(int)userData] = m_Path;
                 m_Window.UpdateUnsavedChanges(true);
@@ -1206,7 +1211,18 @@ namespace UnityEditor.Search
             internal void UpdateValues(string path, int index)
             {
                 userData = index;
-                UpdateValues(path);
+
+                if (path != null)
+                {
+                    if (path != m_Path)
+                        UpdateValues(path);
+                }
+                // new items have null path, in that case we need to setup the field with the m_Path that was computed in the constructor from the previous file pattern
+                else
+                {
+                    m_PathsListView.itemsSource[(int)userData] = m_Path;
+                    UpdateValues(m_Path);
+                }
             }
 
             internal void UpdateValues(string path)
@@ -1237,7 +1253,7 @@ namespace UnityEditor.Search
                     if (!string.IsNullOrEmpty(result))
                     {
                         result = Utils.CleanPath(result);
-                        if (File.Exists(result) && Utils.IsPathUnderProject(result))
+                        if (File.Exists(result) && result.StartsWith(k_ProjectPath))
                         {
                             fileName = result.Substring(k_ProjectPath.Length + 1); // Only the project part
                         }
@@ -1254,7 +1270,7 @@ namespace UnityEditor.Search
             if (!string.IsNullOrEmpty(result))
             {
                 result = Utils.CleanPath(result);
-                if (Directory.Exists(result) && Utils.IsPathUnderProject(result))
+                if (Directory.Exists(result) && result.StartsWith(k_ProjectPath))
                 {
                     folderName = result.Substring(k_ProjectPath.Length + 1); // Only the project part
                 }
@@ -1328,8 +1344,8 @@ namespace UnityEditor.Search
                 searchDatabase.settings.type = Enum.GetName(typeof(SearchDatabase.IndexType), type);
                 searchDatabase.settings.baseScore = score;
                 searchDatabase.settings.roots = GetRoots().Where(e => !string.IsNullOrEmpty(e)).ToArray();
-                searchDatabase.settings.includes = includes.Where(e => !string.IsNullOrEmpty(e)).ToArray();
-                searchDatabase.settings.excludes = excludes.Where(e => !string.IsNullOrEmpty(e)).ToArray();
+                searchDatabase.settings.includes = includes.Where(e => !string.IsNullOrEmpty(e) && e != "." && e != "/").ToArray();
+                searchDatabase.settings.excludes = excludes.Where(e => !string.IsNullOrEmpty(e) && e != "." && e != "/").ToArray();
                 SetOptions(searchDatabase.settings.options, this.options);
             }
 

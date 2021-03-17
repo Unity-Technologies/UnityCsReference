@@ -427,7 +427,7 @@ namespace UnityEditor
                 var danglingObjects = new List<Object>();
                 PrefabUtility.CollectAddedObjects(t.correspondingSourceObject, t.prefabHierarchy, danglingObjects);
                 foreach (var component in danglingObjects)
-                    Undo.RegisterCreatedObjectUndo(component, actionName);
+                    Undo.RegisterCreatedObjectUndoToFrontOfUndoQueue(component, actionName);
             }
 
             EditorUtility.ForceRebuildInspectors();

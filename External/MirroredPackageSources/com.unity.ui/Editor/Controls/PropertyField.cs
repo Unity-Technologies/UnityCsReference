@@ -198,6 +198,9 @@ namespace UnityEditor.UIElements
                 var originalWideMode = InspectorElement.SetWideModeForWidth(this);
                 try
                 {
+                    if (!m_SerializedProperty.isValid)
+                        return;
+                    
                     EditorGUI.BeginChangeCheck();
                     m_SerializedProperty.serializedObject.Update();
 

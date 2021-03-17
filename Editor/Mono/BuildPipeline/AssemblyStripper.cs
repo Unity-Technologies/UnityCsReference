@@ -16,6 +16,7 @@ using UnityEditor.Scripting.Compilers;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.Build;
+using UnityEditor.UnityLinker;
 using UnityEditor.Utils;
 using Debug = UnityEngine.Debug;
 
@@ -42,7 +43,7 @@ namespace UnityEditorInternal
             }
         }
 
-        private static string UnityLinkerPath
+        public static string UnityLinkerPath
         {
             get
             {
@@ -223,32 +224,8 @@ namespace UnityEditorInternal
         {
             string output;
             string error;
-            var rcr = runInformation.rcr;
             var managedAssemblyFolderPath = runInformation.managedAssemblyFolderPath;
-            var linkXmlFiles = new List<string>();
-            linkXmlFiles.AddRange(Il2CppBlacklistPaths);
-
-            if (rcr != null)
-            {
-                linkXmlFiles.Add(WriteMethodsToPreserveBlackList(rcr, runInformation.target));
-                linkXmlFiles.Add(WriteTypesInScenesBlacklist(managedAssemblyFolderPath, rcr));
-                linkXmlFiles.Add(WriteSerializedTypesBlacklist(managedAssemblyFolderPath, rcr));
-            }
-
-            linkXmlFiles.AddRange(ProcessBuildPipelineGenerateAdditionalLinkXmlFiles(runInformation));
-            linkXmlFiles.AddRange(GetUserBlacklistFiles());
-
-            if (runInformation.isMonoBackend)
-            {
-                // The old Mono assembly stripper uses per-platform link.xml files if available. Apply these here.
-                var buildToolsDirectory = BuildPipeline.GetBuildToolsDirectory(runInformation.target);
-                if (!string.IsNullOrEmpty(buildToolsDirectory))
-                {
-                    var platformDescriptor = Path.Combine(buildToolsDirectory, "link.xml");
-                    if (File.Exists(platformDescriptor))
-                        linkXmlFiles.Add(platformDescriptor);
-                }
-            }
+            var linkXmlFiles = GetLinkXmlFiles(runInformation);
 
             WriteEditorData(runInformation);
 
@@ -261,7 +238,7 @@ namespace UnityEditorInternal
                 tempStripPath,
                 out output,
                 out error,
-                SanitizeLinkXmlFilePaths(linkXmlFiles, runInformation),
+                linkXmlFiles,
                 runInformation))
                 throw new Exception("Error in stripping assemblies: " + runInformation.AssembliesToProcess() + ", " + error);
 
@@ -298,6 +275,38 @@ namespace UnityEditorInternal
             foreach (var dir in Directory.GetDirectories(tempStripPath))
                 Directory.Move(dir, Path.Combine(managedAssemblyFolderPath, Path.GetFileName(dir)));
             Directory.Delete(tempStripPath);
+        }
+
+        public static List<string> GetLinkXmlFiles(UnityLinkerRunInformation runInformation)
+        {
+            var managedAssemblyFolderPath = runInformation.managedAssemblyFolderPath;
+
+            var linkXmlFiles = new List<string>();
+            linkXmlFiles.AddRange(Il2CppBlacklistPaths);
+
+            if (runInformation.rcr != null)
+            {
+                linkXmlFiles.Add(WriteMethodsToPreserveBlackList(runInformation.rcr));
+                linkXmlFiles.Add(WriteTypesInScenesBlacklist(managedAssemblyFolderPath, runInformation.rcr));
+                linkXmlFiles.Add(WriteSerializedTypesBlacklist(managedAssemblyFolderPath, runInformation.rcr));
+            }
+
+            linkXmlFiles.AddRange(ProcessBuildPipelineGenerateAdditionalLinkXmlFiles(runInformation));
+            linkXmlFiles.AddRange(GetUserBlacklistFiles());
+
+            if (runInformation.isMonoBackend)
+            {
+                // The old Mono assembly stripper uses per-platform link.xml files if available. Apply these here.
+                var buildToolsDirectory = BuildPipeline.GetBuildToolsDirectory(runInformation.target);
+                if (!string.IsNullOrEmpty(buildToolsDirectory))
+                {
+                    var platformDescriptor = Path.Combine(buildToolsDirectory, "link.xml");
+                    if (File.Exists(platformDescriptor))
+                        linkXmlFiles.Add(platformDescriptor);
+                }
+            }
+
+            return SanitizeLinkXmlFilePaths(linkXmlFiles, runInformation).ToList();
         }
 
         private static string WriteTypesInScenesBlacklist(string managedAssemblyDirectory, RuntimeClassRegistry rcr)
@@ -408,7 +417,7 @@ namespace UnityEditorInternal
             return data;
         }
 
-        private static void WriteEditorData(UnityLinkerRunInformation runInformation)
+        public static void WriteEditorData(UnityLinkerRunInformation runInformation)
         {
             var items = GetTypesInScenesInformation(runInformation.managedAssemblyFolderPath, runInformation.rcr);
 
@@ -473,6 +482,8 @@ namespace UnityEditorInternal
                 items.Add(new EditorToLinkerData.NativeTypeData
                 {
                     name = unityType.name,
+                    qualifiedName = unityType.qualifiedName,
+                    nativeNamespace = unityType.hasNativeNamespace ? unityType.nativeNamespace : null,
                     module = unityType.module,
                     baseName = unityType.baseClass != null ? unityType.baseClass.name : null,
                     baseModule = unityType.baseClass != null ? unityType.baseClass.module : null,
@@ -497,9 +508,9 @@ namespace UnityEditorInternal
             }
         }
 
-        private static string WriteMethodsToPreserveBlackList(RuntimeClassRegistry rcr, BuildTarget target)
+        private static string WriteMethodsToPreserveBlackList(RuntimeClassRegistry rcr)
         {
-            var contents = GetMethodPreserveBlacklistContents(rcr, target);
+            var contents = GetMethodPreserveBlacklistContents(rcr);
             if (contents == null)
                 return null;
             var methodPerserveBlackList = Path.GetTempFileName();
@@ -507,7 +518,7 @@ namespace UnityEditorInternal
             return methodPerserveBlackList;
         }
 
-        private static string GetMethodPreserveBlacklistContents(RuntimeClassRegistry rcr, BuildTarget target)
+        private static string GetMethodPreserveBlacklistContents(RuntimeClassRegistry rcr)
         {
             if (rcr.GetMethodsToPreserve().Count == 0)
                 return null;

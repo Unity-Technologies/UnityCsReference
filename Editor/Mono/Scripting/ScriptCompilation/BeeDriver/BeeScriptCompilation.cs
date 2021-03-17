@@ -51,29 +51,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             beeDriver.DataForBuildProgram.Add(new ScriptCompilationData
             {
-                outputdirectory = outputDirectory,
-                dotnetRuntimePath = dotNetRuntimePath,
-                dotnetRoslynPath = dotNetSdkRoslynPath,
-                movedFromExtractorPath = movedFromExtractorPath,
-                netcorerunPath = netcorerunPath,
-                assemblies = cachedAssemblies,
-                codegenAssemblies = codeGenAssemblies,
-                debug = debug,
-                buildTarget = buildTarget.ToString(),
-                localization = localization,
-                packages = PackageManager.PackageInfo.GetAll().Select(p =>
-                {
-                    NPath resolvedPath = new NPath(p.resolvedPath);
-                    if (resolvedPath.IsChildOf(editorCompilation.projectDirectory))
-                        resolvedPath = resolvedPath.RelativeTo(editorCompilation.projectDirectory);
-
-                    return new ScriptCompilationBuildProgram.Data.PackageInfo()
-                    {
-                        name = p.name,
-                        resolvedpath = resolvedPath.ToString(),
-                        immutable = (p.source != PackageSource.Embedded && p.source != PackageSource.Local)
-                    };
-                }).ToArray()
+                OutputDirectory = outputDirectory,
+                DotnetRuntimePath = dotNetRuntimePath,
+                DotnetRoslynPath = dotNetSdkRoslynPath,
+                MovedFromExtractorPath = movedFromExtractorPath,
+                Assemblies = cachedAssemblies,
+                CodegenAssemblies = codeGenAssemblies,
+                Debug = debug,
+                BuildTarget = buildTarget.ToString(),
+                Localization = localization
             });
         }
 
@@ -102,20 +88,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
             Array.Sort(references);
             return new AssemblyData
             {
-                name = new NPath(a.Filename).FileNameWithoutExtension,
-                sourceFiles = a.Files,
-                defines = a.Defines,
-                prebuiltReferences = a.References,
-                references = references,
-                allowUnsafeCode = a.CompilerOptions.AllowUnsafeCode,
-                ruleSet = a.CompilerOptions.RoslynAnalyzerRulesetPath,
-                languageVersion = a.CompilerOptions.LanguageVersion,
-                analyzers = a.CompilerOptions.RoslynAnalyzerDllPaths,
-                useDeterministicCompilation = a.CompilerOptions.UseDeterministicCompilation,
-                asmdef = a.AsmDefPath,
-                customCompilerOptions = a.CompilerOptions.AdditionalCompilerArguments,
-                bclDirectories = MonoLibraryHelpers.GetSystemReferenceDirectories(a.CompilerOptions.ApiCompatibilityLevel),
-                debugIndex = index
+                Name = new NPath(a.Filename).FileNameWithoutExtension,
+                SourceFiles = a.Files,
+                Defines = a.Defines,
+                PrebuiltReferences = a.References,
+                References = references,
+                AllowUnsafeCode = a.CompilerOptions.AllowUnsafeCode,
+                RuleSet = a.CompilerOptions.RoslynAnalyzerRulesetPath,
+                LanguageVersion = a.CompilerOptions.LanguageVersion,
+                Analyzers = a.CompilerOptions.RoslynAnalyzerDllPaths,
+                UseDeterministicCompilation = a.CompilerOptions.UseDeterministicCompilation,
+                Asmdef = a.AsmDefPath,
+                CustomCompilerOptions = a.CompilerOptions.AdditionalCompilerArguments,
+                BclDirectories = MonoLibraryHelpers.GetSystemReferenceDirectories(a.CompilerOptions.ApiCompatibilityLevel),
+                DebugIndex = index
             };
         }
 

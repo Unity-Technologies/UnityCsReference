@@ -167,6 +167,11 @@ namespace UnityEditor.Search
             return ((index % n) + n) % n;
         }
 
+        internal static void SetCurrentViewWidth(float width)
+        {
+            EditorGUIUtility.currentViewWidth = width;
+        }
+
         internal static void SelectObject(UnityEngine.Object obj, bool ping = false)
         {
             if (!obj)

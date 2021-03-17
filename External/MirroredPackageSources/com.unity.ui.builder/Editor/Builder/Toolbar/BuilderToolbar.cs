@@ -352,10 +352,18 @@ namespace Unity.UI.Builder
             SetToolbarBreadCrumbs();
         }
 
+        public bool ReloadDocument()
+        {
+            return LoadDocument(null, false);
+        }
+
         public bool LoadDocument(VisualTreeAsset visualTreeAsset, bool unloadAllSubdocuments = true, bool assetModifiedExternally = false)
         {
             if (!document.CheckForUnsavedChanges(assetModifiedExternally))
                 return false;
+
+            if (visualTreeAsset == null)
+                visualTreeAsset = document.visualTreeAsset;
 
             if (unloadAllSubdocuments)
                 document.GoToRootDocument(m_Viewport.documentRootElement, m_PaneWindow);

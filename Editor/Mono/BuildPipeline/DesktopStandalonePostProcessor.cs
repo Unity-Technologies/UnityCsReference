@@ -83,10 +83,9 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         return true;
     }
 
-    public override void UpdateBootConfig(BuildTarget target, BootConfigData config, BuildOptions options)
+    // Temp helper until all desktop platforms use Bee and we derive from the same class again.
+    public static void UpdateBootConfigStatic(BuildTarget target, BootConfigData config, BuildOptions options)
     {
-        base.UpdateBootConfig(target, config, options);
-
         if (PlayerSettings.forceSingleInstance)
             config.AddKey("single-instance");
         if (!PlayerSettings.useFlipModelSwapchain)
@@ -102,6 +101,13 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             config.Set("enableCodeCoverage", "1");
         if (!PlayerSettings.usePlayerLog)
             config.AddKey("nolog");
+    }
+
+    public override void UpdateBootConfig(BuildTarget target, BootConfigData config, BuildOptions options)
+    {
+        base.UpdateBootConfig(target, config, options);
+
+        UpdateBootConfigStatic(target, config, options);
     }
 
     private void CopyNativePlugins(BuildPostProcessArgs args, BuildTarget buildTarget, out List<string> cppPlugins)
@@ -570,11 +576,6 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     protected virtual void ProcessSymbolFiles(BuildPostProcessArgs args)
     {
-    }
-
-    protected static string GetIl2CppDataBackupFolderName(BuildPostProcessArgs args)
-    {
-        return Path.GetFileNameWithoutExtension(args.installPath) + "_BackUpThisFolder_ButDontShipItWithYourGame";
     }
 
     protected virtual string GetDirectoryForGameAssembly(BuildPostProcessArgs args)

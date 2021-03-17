@@ -171,7 +171,8 @@ namespace UnityEditor
                 // Note: report will be null, if delayToAfterScriptReload = true
                 var report = BuildPipeline.BuildPlayerInternalNoCheck(options.scenes, options.locationPathName, PostprocessBuildPlayer.GetStreamingAssetsBundleManifestPath(), options.targetGroup, options.target, options.options, options.extraScriptingDefines, delayToAfterScriptReload);
 
-                if (report != null)
+                if (report != null
+                )
                 {
                     var resultStr = String.Format("Build completed with a result of '{0}' in {1} seconds ({2} ms)",
                         report.summary.result.ToString("g"),

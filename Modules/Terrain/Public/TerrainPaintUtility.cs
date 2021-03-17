@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine.Rendering;
+using uei = UnityEngine.Internal;
 
 namespace UnityEngine.Experimental.TerrainAPI
 {
@@ -153,9 +154,14 @@ namespace UnityEngine.Experimental.TerrainAPI
             }
         }
 
-        internal static PaintContext InitializePaintContext(Terrain terrain, int targetWidth, int targetHeight, RenderTextureFormat pcFormat, Rect boundsInTerrainSpace, int extraBorderPixels = 0, bool texelPadding = true)
+        internal static PaintContext InitializePaintContext(
+            Terrain terrain, int targetWidth, int targetHeight, RenderTextureFormat pcFormat, Rect boundsInTerrainSpace,
+            [uei.DefaultValue("0")] int extraBorderPixels = 0,
+            [uei.DefaultValue("true")] bool sharedBoundaryTexel = true,
+            [uei.DefaultValue("true")] bool fillOutsideTerrain = true)
         {
-            PaintContext ctx = PaintContext.CreateFromBounds(terrain, boundsInTerrainSpace, targetWidth, targetHeight, extraBorderPixels, texelPadding);
+            PaintContext ctx = PaintContext.CreateFromBounds(terrain, boundsInTerrainSpace, targetWidth, targetHeight,
+                extraBorderPixels, sharedBoundaryTexel, fillOutsideTerrain);
             ctx.CreateRenderTargets(pcFormat);
             return ctx;
         }
@@ -165,10 +171,14 @@ namespace UnityEngine.Experimental.TerrainAPI
             ctx.Cleanup();
         }
 
-        public static PaintContext BeginPaintHeightmap(Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
+        public static PaintContext BeginPaintHeightmap(Terrain terrain, Rect boundsInTerrainSpace,
+            [uei.DefaultValue("0")] int extraBorderPixels = 0,
+            [uei.DefaultValue("true")] bool fillOutsideTerrain = true)
         {
             int heightmapResolution = terrain.terrainData.heightmapResolution;
-            PaintContext ctx = InitializePaintContext(terrain, heightmapResolution, heightmapResolution, Terrain.heightmapRenderTextureFormat, boundsInTerrainSpace, extraBorderPixels);
+            PaintContext ctx = InitializePaintContext(terrain, heightmapResolution, heightmapResolution,
+                Terrain.heightmapRenderTextureFormat, boundsInTerrainSpace, extraBorderPixels,
+                true, fillOutsideTerrain);
             ctx.GatherHeightmap();
             return ctx;
         }
@@ -179,10 +189,15 @@ namespace UnityEngine.Experimental.TerrainAPI
             ctx.Cleanup();
         }
 
-        public static PaintContext BeginPaintHoles(Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
+        public static PaintContext BeginPaintHoles(
+            Terrain terrain, Rect boundsInTerrainSpace,
+            [uei.DefaultValue("0")] int extraBorderPixels = 0,
+            [uei.DefaultValue("true")] bool fillOutsideTerrain = true)
         {
             int holesResolution = terrain.terrainData.holesResolution;
-            PaintContext ctx = InitializePaintContext(terrain, holesResolution, holesResolution, Terrain.holesRenderTextureFormat, boundsInTerrainSpace, extraBorderPixels, false);
+            PaintContext ctx = InitializePaintContext(terrain, holesResolution, holesResolution,
+                Terrain.holesRenderTextureFormat, boundsInTerrainSpace, extraBorderPixels,
+                false, fillOutsideTerrain);
             ctx.GatherHoles();
             return ctx;
         }
@@ -193,21 +208,30 @@ namespace UnityEngine.Experimental.TerrainAPI
             ctx.Cleanup();
         }
 
-        public static PaintContext CollectNormals(Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
+        public static PaintContext CollectNormals(
+            Terrain terrain, Rect boundsInTerrainSpace,
+            [uei.DefaultValue("0")] int extraBorderPixels = 0,
+            [uei.DefaultValue("true")] bool fillOutsideTerrain = true)
         {
             int heightmapResolution = terrain.terrainData.heightmapResolution;
-            PaintContext ctx = InitializePaintContext(terrain, heightmapResolution, heightmapResolution, Terrain.normalmapRenderTextureFormat, boundsInTerrainSpace, extraBorderPixels);
+            PaintContext ctx = InitializePaintContext(terrain, heightmapResolution, heightmapResolution,
+                Terrain.normalmapRenderTextureFormat, boundsInTerrainSpace, extraBorderPixels,
+                true, fillOutsideTerrain);
             ctx.GatherNormals();
             return ctx;
         }
 
-        public static PaintContext BeginPaintTexture(Terrain terrain, Rect boundsInTerrainSpace, TerrainLayer inputLayer, int extraBorderPixels = 0)
+        public static PaintContext BeginPaintTexture(
+            Terrain terrain, Rect boundsInTerrainSpace, TerrainLayer inputLayer,
+            [uei.DefaultValue("0")] int extraBorderPixels = 0,
+            [uei.DefaultValue("true")] bool fillOutsideTerrain = true)
         {
             if (inputLayer == null)
                 return null;
 
             int resolution = terrain.terrainData.alphamapResolution;
-            PaintContext ctx = InitializePaintContext(terrain, resolution, resolution, RenderTextureFormat.R8, boundsInTerrainSpace, extraBorderPixels);
+            PaintContext ctx = InitializePaintContext(terrain, resolution, resolution,
+                RenderTextureFormat.R8, boundsInTerrainSpace, extraBorderPixels, true, fillOutsideTerrain);
             ctx.GatherAlphamap(inputLayer, true);
             return ctx;
         }
@@ -222,7 +246,7 @@ namespace UnityEngine.Experimental.TerrainAPI
         public static Material GetBlitMaterial()
         {
             if (!s_BlitMaterial)
-                s_BlitMaterial = new Material(Shader.Find("Hidden/BlitCopy"));
+                s_BlitMaterial = new Material(Shader.Find("Hidden/TerrainEngine/TerrainBlitCopyZWrite"));
 
             return s_BlitMaterial;
         }
@@ -282,10 +306,104 @@ namespace UnityEngine.Experimental.TerrainAPI
             }
         }
 
-        internal static RectInt CalcPixelRectFromBounds(Terrain terrain, Rect boundsInTerrainSpace, int textureWidth, int textureHeight, int extraBorderPixels, bool texelPadding)
+        internal static void DrawQuadPadded(RectInt destinationPixels, RectInt destinationPixelsPadded,
+            RectInt sourcePixels, RectInt sourcePixelsPadded, Texture sourceTexture)
         {
-            float scaleX = (textureWidth - (texelPadding ? 1.0f : 0.0f)) / terrain.terrainData.size.x;
-            float scaleY = (textureHeight - (texelPadding ? 1.0f : 0.0f)) / terrain.terrainData.size.z;
+            // Draw 3x3 Quads, where the center quad is defined by sourcePixels,
+            // and the sourcePixelsPadded is a skirt of quads around the center.
+            //
+            //       /-----------\        z = 0
+            //     / |           | \
+            //   /   |           |   \
+            // / pad |  terrain  | pad \  z = -1
+            //
+            // Z values are used as a priority for which sample is used.
+            // Z values do NOT correspond to the height of terrain.
+            // The near plane is 1, far plane is -100 (from GL.LoadPixelMatrix docs).
+            // Pad regions typically correspond to source uv's outside the range [0, 1]
+            // filling in otherwise empty PaintContext.
+            // Compared to using only Quads with no z-buffer, the performance on a mac for a 512x512 PaintContext
+            // touching 3 tiles was 15% slower on CPU (total 0.14 ms), and 25% slower on GPU (total 0.0325 ms).
+
+            GL.Begin(GL.QUADS);
+            GL.Color(new Color(1.0f, 1.0f, 1.0f, 1.0f));
+
+            for (int yi = 0; yi < 3; yi++)
+            {
+                // The Vector2Int represents min ([0]) and max ([1]) values
+                Vector2Int sourceY, destY;
+                Vector2 yEdgeZ;
+                if (yi == 0)
+                {
+                    sourceY = new Vector2Int(sourcePixelsPadded.yMin, sourcePixels.yMin);
+                    destY = new Vector2Int(destinationPixelsPadded.yMin, destinationPixels.yMin);
+                    yEdgeZ = new Vector2(-1f, 0f);
+                }
+                else if (yi == 1)
+                {
+                    sourceY = new Vector2Int(sourcePixels.yMin, sourcePixels.yMax);
+                    destY = new Vector2Int(destinationPixels.yMin, destinationPixels.yMax);
+                    yEdgeZ = new Vector2(0f, 0f);
+                }
+                else
+                {
+                    sourceY = new Vector2Int(sourcePixels.yMax, sourcePixelsPadded.yMax);
+                    destY = new Vector2Int(destinationPixels.yMax, destinationPixelsPadded.yMax);
+                    yEdgeZ = new Vector2(0f, -1f);
+                }
+
+                if (sourceY[0] >= sourceY[1]) continue;
+
+                for (int xi = 0; xi < 3; xi++)
+                {
+                    Vector2Int sourceX, destX;
+                    Vector2 xEdgeZ;
+                    if (xi == 0)
+                    {
+                        sourceX = new Vector2Int(sourcePixelsPadded.xMin, sourcePixels.xMin);
+                        destX = new Vector2Int(destinationPixelsPadded.xMin, destinationPixels.xMin);
+                        xEdgeZ = new Vector2(-1f, 0f);
+                    }
+                    else if (xi == 1)
+                    {
+                        sourceX = new Vector2Int(sourcePixels.xMin, sourcePixels.xMax);
+                        destX = new Vector2Int(destinationPixels.xMin, destinationPixels.xMax);
+                        xEdgeZ = new Vector2(0f, 0f);
+                    }
+                    else
+                    {
+                        sourceX = new Vector2Int(sourcePixels.xMax, sourcePixelsPadded.xMax);
+                        destX = new Vector2Int(destinationPixels.xMax, destinationPixelsPadded.xMax);
+                        xEdgeZ = new Vector2(0f, -1f);
+                    }
+
+                    if (sourceX[0] >= sourceX[1]) continue;
+
+                    Rect sourceUVs = new Rect(
+                        sourceX[0] / (float)sourceTexture.width,
+                        sourceY[0] / (float)sourceTexture.height,
+                        (sourceX[1] - sourceX[0]) / (float)sourceTexture.width,
+                        (sourceY[1] - sourceY[0]) / (float)sourceTexture.height);
+
+                    GL.TexCoord2(sourceUVs.x, sourceUVs.y);
+                    GL.Vertex3(destX[0], destY[0], 0.5f * (xEdgeZ[0] + yEdgeZ[0]));
+                    GL.TexCoord2(sourceUVs.x, sourceUVs.yMax);
+                    GL.Vertex3(destX[0], destY[1], 0.5f * (xEdgeZ[0] + yEdgeZ[1]));
+                    GL.TexCoord2(sourceUVs.xMax, sourceUVs.yMax);
+                    GL.Vertex3(destX[1], destY[1], 0.5f * (xEdgeZ[1] + yEdgeZ[1]));
+                    GL.TexCoord2(sourceUVs.xMax, sourceUVs.y);
+                    GL.Vertex3(destX[1], destY[0], 0.5f * (xEdgeZ[1] + yEdgeZ[0]));
+                }
+            }
+            GL.End();
+        }
+
+        internal static RectInt CalcPixelRectFromBounds(
+            Terrain terrain, Rect boundsInTerrainSpace, int textureWidth, int textureHeight,
+            int extraBorderPixels, bool sharedBoundaryTexel)
+        {
+            float scaleX = (textureWidth - (sharedBoundaryTexel ? 1.0f : 0.0f)) / terrain.terrainData.size.x;
+            float scaleY = (textureHeight - (sharedBoundaryTexel ? 1.0f : 0.0f)) / terrain.terrainData.size.z;
             int xMin = Mathf.FloorToInt(boundsInTerrainSpace.xMin * scaleX) - extraBorderPixels;
             int yMin = Mathf.FloorToInt(boundsInTerrainSpace.yMin * scaleY) - extraBorderPixels;
             int xMax = Mathf.CeilToInt(boundsInTerrainSpace.xMax * scaleX) + extraBorderPixels;

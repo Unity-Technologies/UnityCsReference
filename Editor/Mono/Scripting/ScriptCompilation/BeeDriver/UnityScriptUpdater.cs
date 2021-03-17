@@ -26,8 +26,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static RunnableProgram DefaultScriptUpdaterProgram()
         {
-            string scriptUpdaterExe = EditorApplication.applicationContentsPath + "/Tools/ScriptUpdater/ScriptUpdater.exe";
-            return new SystemProcessRunnableProgram(NetCoreRunProgram.NetCoreRunPath, scriptUpdaterExe);
+            NPath scriptUpdaterExe = $"{EditorApplication.applicationContentsPath}/Tools/ScriptUpdater/ScriptUpdater.exe";
+            return new SystemProcessRunnableProgram(NetCoreRunProgram.NetCoreRunPath,
+                new[] {scriptUpdaterExe.InQuotes()},
+                stdOutMode: StdOutMode.LogStdOutOnFinish);
         }
 
         internal class UnityScriptUpdaterTask : Task
@@ -177,7 +179,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var assemblyInfo = Helpers.FindOutputDataAssemblyInfoFor(nodeResult, beeDriver);
 
-            return new UnityScriptUpdaterTask(assemblyInfo.scriptUpdaterRsp, ProjectRoot, _scriptUpdaterProgram, nodeResult, containsUpdatableCompilerMessage == CanUpdateAny.Certainly);
+            return new UnityScriptUpdaterTask(assemblyInfo.ScriptUpdaterRsp, ProjectRoot, _scriptUpdaterProgram, nodeResult, containsUpdatableCompilerMessage == CanUpdateAny.Certainly);
         }
     }
 
@@ -187,7 +189,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             var scriptCompilationDataOut = beeDriver.DataFromBuildProgram.Get<ScriptCompilationData_Out>();
             var outputfileForwardSlash = new NPath(nodeResult.outputfile).ToString();
-            var assemblyDataOut = scriptCompilationDataOut.assemblies.FirstOrDefault(a => a.path == outputfileForwardSlash);
+            var assemblyDataOut = scriptCompilationDataOut.Assemblies.FirstOrDefault(a => a.Path == outputfileForwardSlash);
             return assemblyDataOut ?? throw new ArgumentException($"Unable to find entry for {outputfileForwardSlash} in dataFromBuildProgram");
         }
     }

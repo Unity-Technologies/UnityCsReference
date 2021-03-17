@@ -16,32 +16,30 @@ namespace UnityEditor
     internal class UndoWindow : EditorWindow
     {
         private List<string> undos = new List<string>();
-        private List<string> redos = new List<string>();
+        private int undoCursorPos = -1;
 
         // Used for caching, this way lists won't be recreated every time
         private List<string> newUndos = new List<string>();
-        private List<string> newRedos = new List<string>();
+        int newUndoCursorPos = -1;
 
         private Vector2 undosScroll = Vector2.zero;
-        private Vector2 redosScroll = Vector2.zero;
 
         [MenuItem("Window/Internal/Undo", false, 1, true)]
         internal static void Init()
         {
             EditorWindow wnd = GetWindow(typeof(UndoWindow));
-            wnd.titleContent =  EditorGUIUtility.TrTextContent("Undo");
+            wnd.titleContent = EditorGUIUtility.TrTextContent("Undo");
         }
 
         private void Update()
         {
-            Undo.GetRecords(newUndos, newRedos);
-            bool equal = undos.SequenceEqual(newUndos) && redos.SequenceEqual(newRedos);
+            Undo.GetRecords(newUndos, out newUndoCursorPos);
 
-            if (equal)
+            if (undos.SequenceEqual(newUndos) && undoCursorPos == newUndoCursorPos)
                 return;
 
             undos = new List<string>(newUndos);
-            redos = new List<string>(newRedos);
+            undoCursorPos = newUndoCursorPos;
 
             Repaint();
         }
@@ -51,7 +49,6 @@ namespace UnityEditor
             GUILayout.Label("(Available only in Developer builds)", EditorStyles.boldLabel);
             float height = position.height - 60.0f;
             float width = position.width * 0.5f - 5.0f;
-            int i;
             GUILayout.BeginHorizontal();
 
             GUILayout.BeginVertical();
@@ -62,27 +59,11 @@ namespace UnityEditor
                 GUILayout.MinWidth(width)
             });
 
-            i = 0;
-            foreach (var undo in undos)
+            for (var i = 0; i < undos.Count; i++)
             {
-                GUILayout.Label(string.Format("[{0}] - {1}", i++, undo));
+                GUILayout.Label(string.Format(i + 1 == undoCursorPos ? "[{0}] - {1} <<<" : "[{0}] - {1}", i + 1, undos[i]));
             }
-            GUILayout.EndScrollView();
-            GUILayout.EndVertical();
 
-            GUILayout.BeginVertical();
-            GUILayout.Label("Redos");
-            redosScroll = GUILayout.BeginScrollView(redosScroll, EditorStyles.helpBox, new GUILayoutOption[]
-            {
-                GUILayout.MinHeight(height),
-                GUILayout.MinWidth(width)
-            });
-
-            i = 0;
-            foreach (var redo in redos)
-            {
-                GUILayout.Label(string.Format("[{0}] - {1}", i++, redo));
-            }
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
 

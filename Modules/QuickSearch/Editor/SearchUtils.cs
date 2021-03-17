@@ -8,9 +8,10 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+
+using UnityEditor.SceneManagement;
 
 namespace UnityEditor.Search
 {

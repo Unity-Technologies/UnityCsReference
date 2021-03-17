@@ -61,9 +61,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             public AssetStoreDownloadManager downloadManager { get; set; }
 
-            public void OnDownloadProgress(string downloadId, string message, ulong bytes, ulong total)
+            public void OnDownloadProgress(string downloadId, string message, ulong bytes, ulong total, int errorCode)
             {
-                downloadManager?.OnDownloadProgress(downloadId, message, bytes, total);
+                downloadManager?.OnDownloadProgress(downloadId, message, bytes, total, errorCode);
             }
         }
 
@@ -174,7 +174,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         // This function will be called by AssetStoreUtils after the download delegate registration
         // assetStoreUtils.RegisterDownloadDelegate
-        public virtual void OnDownloadProgress(string downloadId, string message, ulong bytes, ulong total)
+        public virtual void OnDownloadProgress(string downloadId, string message, ulong bytes, ulong total, int errorCode)
         {
             // The download unique id we receive from the A$ download callback could be in the format of
             // `123456` or `content__123456` (depending on where the download starts).
@@ -189,7 +189,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var operation = GetDownloadOperation(productId);
             if (operation == null)
                 return;
-            operation.OnDownloadProgress(message, bytes, total);
+            operation.OnDownloadProgress(message, bytes, total, errorCode);
 
             if (!operation.isInProgress && !operation.isInPause)
                 RemoveDownloadOperation(productId);

@@ -366,8 +366,8 @@ namespace UnityEditor
             if (parent == null || m_Controller == null)
                 return;
 
-            Undo.RecordObjects(new UnityEngine.Object[] { m_Controller, parent }, "Add Child Group");
             var newGroup = m_Controller.CreateNewGroup("New Group", true);
+            Undo.RecordObjects(new UnityEngine.Object[] { m_Controller, parent }, "Add Child Group");
             m_Controller.AddChildToParent(newGroup, parent);
             m_Controller.AddGroupToCurrentView(newGroup);
 

@@ -56,10 +56,15 @@ namespace UnityEditor.Build.Reporting
         [NativeMethod("DeleteFilesRecursive")]
         internal extern void RecordFilesDeletedRecursive(string rootDir);
 
+        [NativeMethod("DeleteAllFiles")]
+        internal extern void DeleteAllFileEntries();
+
         [FreeFunction("BuildReporting::SummarizeErrors", HasExplicitThis = true)]
         internal extern string SummarizeErrors();
 
         internal extern void AddMessage(LogType messageType, string message, string exceptionType);
+
+        internal extern void SetBuildResult(BuildResult result);
 
         internal extern int BeginBuildStep(string stepName);
         internal extern void ResumeBuildStep(int depth);

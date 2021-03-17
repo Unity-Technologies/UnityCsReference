@@ -236,11 +236,21 @@ namespace UnityEngine.UIElements
 
             s_SortedRuntimePanels.Sort((a, b) =>
             {
-                var diff = a.sortingPriority - b.sortingPriority;
+                var runtimePanelA = a as BaseRuntimePanel;
+                var runtimePanelB = b as BaseRuntimePanel;
+
+                if (runtimePanelA == null || runtimePanelB == null)
+                {
+                    // Should never happen, so just being safe (after all there's a cast happening).
+                    return 0;
+                }
+                
+                var diff = runtimePanelA.sortingPriority - runtimePanelB.sortingPriority;
 
                 if (Mathf.Approximately(0, diff))
                 {
-                    return 0;
+                    // They're the same value, compare their count (panels created first show up first).
+                    return runtimePanelA.m_RuntimePanelCreationIndex.CompareTo(runtimePanelB.m_RuntimePanelCreationIndex);
                 }
 
                 return (diff < 0) ? -1 : 1;

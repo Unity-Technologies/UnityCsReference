@@ -95,7 +95,6 @@ namespace UnityEditor.Search.Providers
                 case SerializedPropertyType.Bounds: return p.boundsValue.size.magnitude;
                 case SerializedPropertyType.BoundsInt: return p.boundsIntValue.size.magnitude;
                 case SerializedPropertyType.Color: return p.colorValue;
-                case SerializedPropertyType.LayerMask: return p.layerMaskBits;
                 case SerializedPropertyType.FixedBufferSize: return p.fixedBufferSize;
                 case SerializedPropertyType.ArraySize: return p.arraySize;
 
@@ -106,14 +105,16 @@ namespace UnityEditor.Search.Providers
                 case SerializedPropertyType.Vector3: return p.vector3Value.ToString();
                 case SerializedPropertyType.Vector4: return p.vector4Value.ToString();
                 case SerializedPropertyType.AnimationCurve: return p.animationCurveValue.ToString();
-                case SerializedPropertyType.Gradient: return p.gradientValue.ToString();
                 case SerializedPropertyType.Quaternion: return p.quaternionValue.eulerAngles.ToString();
                 case SerializedPropertyType.Vector2Int: return p.vector2IntValue.ToString();
                 case SerializedPropertyType.Vector3Int: return p.vector3IntValue.ToString();
-                case SerializedPropertyType.Hash128: return p.hash128Value.ToString();
 
                 case SerializedPropertyType.ObjectReference: return p.objectReferenceValue?.name;
                 case SerializedPropertyType.ExposedReference: return p.exposedReferenceValue?.name;
+
+                case SerializedPropertyType.Gradient: return p.gradientValue.ToString();
+                case SerializedPropertyType.LayerMask: return p.layerMaskBits;
+                case SerializedPropertyType.Hash128: return p.hash128Value.ToString();
 
                 case SerializedPropertyType.ManagedReference:
                 case SerializedPropertyType.Character:

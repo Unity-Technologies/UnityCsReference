@@ -55,15 +55,12 @@ namespace UnityEngine
         }
 
         // Constructs a new vector with given x, y components.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public Vector2(float x, float y) { this.x = x; this.y = y; }
 
         // Set x and y components of an existing Vector2.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void Set(float newX, float newY) { x = newX; y = newY; }
 
         // Linearly interpolates between two vectors.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector2 Lerp(Vector2 a, Vector2 b, float t)
         {
             t = Mathf.Clamp01(t);
@@ -74,7 +71,6 @@ namespace UnityEngine
         }
 
         // Linearly interpolates between two vectors without clamping the interpolant
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector2 LerpUnclamped(Vector2 a, Vector2 b, float t)
         {
             return new Vector2(
@@ -102,11 +98,9 @@ namespace UnityEngine
         }
 
         // Multiplies two vectors component-wise.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector2 Scale(Vector2 a, Vector2 b) { return new Vector2(a.x * b.x, a.y * b.y); }
 
         // Multiplies every component of this vector by the same component of /scale/.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void Scale(Vector2 scale) { x *= scale.x; y *= scale.y; }
 
         // Makes this vector have a ::ref::magnitude of 1.
@@ -165,7 +159,6 @@ namespace UnityEngine
             return Equals((Vector2)other);
         }
 
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public bool Equals(Vector2 other)
         {
             return x == other.x && y == other.y;
@@ -177,23 +170,20 @@ namespace UnityEngine
             return new Vector2(factor * inNormal.x + inDirection.x, factor * inNormal.y + inDirection.y);
         }
 
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector2 Perpendicular(Vector2 inDirection)
         {
             return new Vector2(-inDirection.y, inDirection.x);
         }
 
         // Dot Product of two vectors.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static float Dot(Vector2 lhs, Vector2 rhs) { return lhs.x * rhs.x + lhs.y * rhs.y; }
 
         // Returns the length of this vector (RO).
-        public float magnitude { get { return (float)Math.Sqrt(x * x + y * y); } }
+        public float magnitude { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return (float)Math.Sqrt(x * x + y * y); } }
         // Returns the squared length of this vector (RO).
-        public float sqrMagnitude { get { return x * x + y * y; } }
+        public float sqrMagnitude { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return x * x + y * y; } }
 
         // Returns the angle in degrees between /from/ and /to/.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static float Angle(Vector2 from, Vector2 to)
         {
             // sqrt(a) * sqrt(b) = sqrt(a * b) -- valid for real numbers
@@ -321,31 +311,22 @@ namespace UnityEngine
         }
 
         // Adds two vectors.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector2 operator+(Vector2 a, Vector2 b) { return new Vector2(a.x + b.x, a.y + b.y); }
         // Subtracts one vector from another.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector2 operator-(Vector2 a, Vector2 b) { return new Vector2(a.x - b.x, a.y - b.y); }
         // Multiplies one vector by another.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector2 operator*(Vector2 a, Vector2 b) { return new Vector2(a.x * b.x, a.y * b.y); }
         // Divides one vector over another.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector2 operator/(Vector2 a, Vector2 b) { return new Vector2(a.x / b.x, a.y / b.y); }
         // Negates a vector.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector2 operator-(Vector2 a) { return new Vector2(-a.x, -a.y); }
         // Multiplies a vector by a number.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector2 operator*(Vector2 a, float d) { return new Vector2(a.x * d, a.y * d); }
         // Multiplies a vector by a number.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector2 operator*(float d, Vector2 a) { return new Vector2(a.x * d, a.y * d); }
         // Divides a vector by a number.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector2 operator/(Vector2 a, float d) { return new Vector2(a.x / d, a.y / d); }
         // Returns true if the vectors are equal.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static bool operator==(Vector2 lhs, Vector2 rhs)
         {
             // Returns false in the presence of NaN values.
@@ -355,7 +336,6 @@ namespace UnityEngine
         }
 
         // Returns true if vectors are different.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static bool operator!=(Vector2 lhs, Vector2 rhs)
         {
             // Returns true in the presence of NaN values.
@@ -363,14 +343,12 @@ namespace UnityEngine
         }
 
         // Converts a [[Vector3]] to a Vector2.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static implicit operator Vector2(Vector3 v)
         {
             return new Vector2(v.x, v.y);
         }
 
         // Converts a Vector2 to a [[Vector3]].
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static implicit operator Vector3(Vector2 v)
         {
             return new Vector3(v.x, v.y, 0);
@@ -387,21 +365,21 @@ namespace UnityEngine
 
 
         // Shorthand for writing @@Vector2(0, 0)@@
-        public static Vector2 zero { get { return zeroVector; } }
+        public static Vector2 zero { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return zeroVector; } }
         // Shorthand for writing @@Vector2(1, 1)@@
-        public static Vector2 one { get { return oneVector; }   }
+        public static Vector2 one { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return oneVector; }   }
         // Shorthand for writing @@Vector2(0, 1)@@
-        public static Vector2 up { get { return upVector; } }
+        public static Vector2 up { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return upVector; } }
         // Shorthand for writing @@Vector2(0, -1)@@
-        public static Vector2 down { get { return downVector; } }
+        public static Vector2 down { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return downVector; } }
         // Shorthand for writing @@Vector2(-1, 0)@@
-        public static Vector2 left { get { return leftVector; } }
+        public static Vector2 left { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return leftVector; } }
         // Shorthand for writing @@Vector2(1, 0)@@
-        public static Vector2 right { get { return rightVector; } }
+        public static Vector2 right { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return rightVector; } }
         // Shorthand for writing @@Vector2(float.PositiveInfinity, float.PositiveInfinity)@@
-        public static Vector2 positiveInfinity { get { return positiveInfinityVector; } }
+        public static Vector2 positiveInfinity { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return positiveInfinityVector; } }
         // Shorthand for writing @@Vector2(float.NegativeInfinity, float.NegativeInfinity)@@
-        public static Vector2 negativeInfinity { get { return negativeInfinityVector; } }
+        public static Vector2 negativeInfinity { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return negativeInfinityVector; } }
 
         // *Undocumented*
         public const float kEpsilon = 0.00001F;

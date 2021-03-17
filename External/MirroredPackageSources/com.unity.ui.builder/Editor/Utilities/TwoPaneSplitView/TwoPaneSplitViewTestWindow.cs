@@ -18,9 +18,9 @@ namespace Unity.UI.Builder
         {
             var root = rootVisualElement;
 
-            root.styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UtilitiesPath + "/TwoPaneSplitViewTestWindow/TwoPaneSplitViewTestWindow.uss"));
+            root.styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UtilitiesPath + "/TwoPaneSplitView/TwoPaneSplitViewTestWindow.uss"));
 
-            var xmlAsset = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(BuilderConstants.UtilitiesPath + "/TwoPaneSplitViewTestWindow/TwoPaneSplitViewTestWindow.uxml");
+            var xmlAsset = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(BuilderConstants.UtilitiesPath + "/TwoPaneSplitView/TwoPaneSplitViewTestWindow.uxml");
             xmlAsset.CloneTree(root);
         }
     }

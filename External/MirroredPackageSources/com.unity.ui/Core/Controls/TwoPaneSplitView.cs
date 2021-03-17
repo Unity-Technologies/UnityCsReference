@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEditor;
 
 namespace UnityEngine.UIElements
 {
@@ -54,7 +53,9 @@ namespace UnityEngine.UIElements
 
         VisualElement m_FixedPane;
         VisualElement m_FlexedPane;
-
+        
+        [SerializeField] float m_FixedPaneDimension = -1;
+        
         /// <summary>
         /// The child element that is set as the fixed size pane.
         /// </summary>
@@ -91,7 +92,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// The inital width or height for the fixed pane.
+        /// The initial width or height for the fixed pane.
         /// </summary>
         public float fixedPaneInitialDimension
         {
@@ -119,8 +120,23 @@ namespace UnityEngine.UIElements
                 Init(m_FixedPaneIndex, m_FixedPaneInitialDimension, value);
             }
         }
+        
+        internal float fixedPaneDimension
+        {
+            get => string.IsNullOrEmpty(viewDataKey)
+                ? m_FixedPaneInitialDimension 
+                : m_FixedPaneDimension;
 
-        TwoPaneSplitViewResizer m_Resizer;
+            set
+            {
+                if (value == m_FixedPaneDimension)
+                    return;
+                m_FixedPaneDimension = value;
+                SaveViewData();
+            }
+        }
+
+        internal TwoPaneSplitViewResizer m_Resizer;
 
         public TwoPaneSplitView()
         {
@@ -253,14 +269,13 @@ namespace UnityEngine.UIElements
         {
             if (m_Content.childCount != 2)
             {
-                Debug.LogError("TwoPaneSplitView needs exactly 2 chilren.");
+                Debug.LogError("TwoPaneSplitView needs exactly 2 children.");
                 return;
             }
 
             PostDisplaySetup();
 
             UnregisterCallback<GeometryChangedEvent>(OnPostDisplaySetup);
-            RegisterCallback<GeometryChangedEvent>(OnSizeChange);
         }
 
         void PostDisplaySetup()
@@ -270,6 +285,11 @@ namespace UnityEngine.UIElements
                 Debug.LogError("TwoPaneSplitView needs exactly 2 children.");
                 return;
             }
+            
+            if (fixedPaneDimension < 0)
+                fixedPaneDimension = m_FixedPaneInitialDimension;
+            
+            var dimension = fixedPaneDimension;
 
             m_LeftPane = m_Content[0];
             if (m_FixedPaneIndex == 0)
@@ -297,13 +317,13 @@ namespace UnityEngine.UIElements
 
             if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
             {
-                m_FixedPane.style.width = m_FixedPaneInitialDimension;
+                m_FixedPane.style.width = dimension;
                 m_FixedPane.style.height = StyleKeyword.Null;
             }
             else
             {
                 m_FixedPane.style.width = StyleKeyword.Null;
-                m_FixedPane.style.height = m_FixedPaneInitialDimension;
+                m_FixedPane.style.height = dimension;
             }
 
             m_FixedPane.style.flexShrink = 0;
@@ -311,20 +331,20 @@ namespace UnityEngine.UIElements
             m_FlexedPane.style.flexGrow = 1;
             m_FlexedPane.style.flexShrink = 0;
             m_FlexedPane.style.flexBasis = 0;
-
+           
             if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
             {
                 if (m_FixedPaneIndex == 0)
-                    m_DragLineAnchor.style.left = m_FixedPaneInitialDimension;
+                    m_DragLineAnchor.style.left = dimension;
                 else
-                    m_DragLineAnchor.style.left = this.resolvedStyle.width - m_FixedPaneInitialDimension;
+                    m_DragLineAnchor.style.left = this.resolvedStyle.width - dimension;
             }
             else
             {
                 if (m_FixedPaneIndex == 0)
-                    m_DragLineAnchor.style.top = m_FixedPaneInitialDimension;
+                    m_DragLineAnchor.style.top = dimension;
                 else
-                    m_DragLineAnchor.style.top = this.resolvedStyle.height - m_FixedPaneInitialDimension;
+                    m_DragLineAnchor.style.top = this.resolvedStyle.height - dimension;
             }
 
             int direction = 1;
@@ -340,7 +360,6 @@ namespace UnityEngine.UIElements
 
             m_DragLineAnchor.AddManipulator(m_Resizer);
 
-            UnregisterCallback<GeometryChangedEvent>(OnPostDisplaySetup);
             RegisterCallback<GeometryChangedEvent>(OnSizeChange);
         }
 
@@ -349,46 +368,75 @@ namespace UnityEngine.UIElements
             OnSizeChange();
         }
 
+       
         void OnSizeChange()
         {
             if (m_CollapseMode)
                 return;
 
-            var maxLength = this.resolvedStyle.width;
-            var dragLinePos = m_DragLineAnchor.resolvedStyle.left;
-            var activeElementPos = m_FixedPane.resolvedStyle.left;
+            var maxLength = resolvedStyle.width;
+            var fixedPaneLength = m_FixedPane.resolvedStyle.width;
+            var fixedPaneMinLength = m_FixedPane.resolvedStyle.minWidth.value;
+            var flexedPaneMinLength = m_FlexedPane.resolvedStyle.minWidth.value;
+
             if (m_Orientation == TwoPaneSplitViewOrientation.Vertical)
             {
-                maxLength = this.resolvedStyle.height;
-                dragLinePos = m_DragLineAnchor.resolvedStyle.top;
-                activeElementPos = m_FixedPane.resolvedStyle.top;
+                maxLength = resolvedStyle.height;
+                fixedPaneLength = m_FixedPane.resolvedStyle.height;
+                fixedPaneMinLength = m_FixedPane.resolvedStyle.minHeight.value;
+                flexedPaneMinLength = m_FlexedPane.resolvedStyle.minHeight.value;
             }
 
-            if (m_FixedPaneIndex == 0 && dragLinePos > maxLength)
+            // Big enough to account for current fixed pane size and flexed pane minimum size, so we let the layout 
+            // dictates where the dragger should be.
+            if (maxLength >= fixedPaneLength + flexedPaneMinLength)
             {
-                var delta = maxLength - dragLinePos;
-                m_Resizer.ApplyDelta(delta);
+                SetDragLineOffset(m_FixedPaneIndex == 0 ? fixedPaneLength : maxLength - fixedPaneLength);
             }
-            else if (m_FixedPaneIndex == 1)
+            // Big enough to account for fixed and flexed pane minimum sizes, so we resize the fixed pane and adjust
+            // where the dragger should be.
+            else if (maxLength >= fixedPaneMinLength + flexedPaneMinLength)
             {
-                if (activeElementPos < 0)
-                {
-                    var delta = -dragLinePos;
-                    m_Resizer.ApplyDelta(delta);
-                }
-                else
-                {
-                    if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
-                        m_DragLineAnchor.style.left = activeElementPos;
-                    else
-                        m_DragLineAnchor.style.top = activeElementPos;
-                }
+                var newDimension = maxLength - flexedPaneMinLength;
+                SetFixedPaneDimension(newDimension);
+                SetDragLineOffset(m_FixedPaneIndex == 0 ? newDimension : flexedPaneMinLength);
+            }
+            // Not big enough for fixed and flexed pane minimum sizes
+            else
+            {
+                SetFixedPaneDimension(fixedPaneMinLength);
+                SetDragLineOffset(m_FixedPaneIndex == 0 ? fixedPaneMinLength : flexedPaneMinLength);
             }
         }
 
         public override VisualElement contentContainer
         {
             get { return m_Content; }
+        }
+
+        internal override void OnViewDataReady()
+        {
+            base.OnViewDataReady();
+            var key = GetFullHierarchicalViewDataKey();
+
+            OverwriteFromViewData(this, key);
+            PostDisplaySetup();
+        }
+
+        void SetDragLineOffset(float offset)
+        {
+            if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
+                m_DragLineAnchor.style.left = offset;
+            else
+                m_DragLineAnchor.style.top = offset;
+        }
+
+        void SetFixedPaneDimension(float dimension)
+        {
+            if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
+                m_FixedPane.style.width = dimension;
+            else
+                m_FixedPane.style.height = dimension;
         }
     }
 

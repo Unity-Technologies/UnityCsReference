@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{201222DE-2488-4150-E3B5-DC5FCCE3C890}</ProjectGuid>
+    <ProjectGuid>{236F6903-2F21-1CCA-571E-C6D1D859E1EA}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>ScriptCompilationBuildProgram.Data</RootNamespace>
-    <AssemblyName>ScriptCompilationBuildProgram.Data</AssemblyName>
+    <RootNamespace>BeeBuildProgramCommon.Data</RootNamespace>
+    <AssemblyName>BeeBuildProgramCommon.Data</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <LangVersion>latest</LangVersion>
@@ -20,7 +20,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\artifacts\ScriptCompilationBuildProgram.Data.dll\Debug</OutputPath>
+    <OutputPath>..\..\..\artifacts\BeeBuildProgramCommon.Data.dll\Debug</OutputPath>
     <DefineConstants></DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>

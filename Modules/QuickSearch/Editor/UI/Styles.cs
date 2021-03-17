@@ -349,6 +349,9 @@ namespace UnityEditor.Search
         public static readonly GUIContent syncSearchProviderNotSupportedContent = new GUIContent(string.Empty, EditorGUIUtility.LoadIcon("QuickSearch/SyncSearch"), "Search provider doesn't support synchronization");
         public static readonly GUIContent syncSearchViewNotEnabledContent = new GUIContent(string.Empty, EditorGUIUtility.LoadIcon("QuickSearch/SyncSearch"), "Search provider uses a search engine\nthat cannot be synchronized.\nSee Preferences -> Search.");
 
+        public static readonly GUIStyle statusError = "CN StatusError";
+        public static readonly GUIStyle statusWarning = "CN StatusWarn";
+
         public static readonly GUIStyle toolbarButton = new GUIStyle("IconButton")
         {
             margin = new RectOffset(0, 0, 0, 0),

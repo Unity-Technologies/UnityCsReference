@@ -4,6 +4,7 @@
 
 using System;
 using System.Threading;
+using System.Runtime.CompilerServices;
 using uei = UnityEngine.Internal;
 
 namespace UnityEngineInternal

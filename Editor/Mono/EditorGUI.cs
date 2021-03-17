@@ -10725,17 +10725,19 @@ namespace UnityEditor
                 arrowRightRect = new Rect(toggleRect.xMax - toggleStyle.padding.right, toggleRect.y, toggleStyle.padding.right, toggleRect.height);
             }
 
-            bool clicked = EditorGUI.DropdownButton(arrowRightRect, GUIContent.none, FocusType.Passive, GUIStyle.none);
+
+            int dropdownButtonId = GUIUtility.GetControlID(EditorGUI.s_DropdownButtonHash, FocusType.Passive, arrowRightRect);
+            bool clicked = EditorGUI.DropdownButton(dropdownButtonId, arrowRightRect, GUIContent.none, GUIStyle.none);
 
             if (!clicked)
             {
                 toggled = GUI.Toggle(toggleRect, toggled, content, toggleStyle);
             }
 
-            // Ensure that the dropdown button is rendered onto of the toggle
-            if (Event.current.type == EventType.Repaint && toggleDropdownButtonStyle != GUIStyle.none)
+            // Ensure that the dropdown button is rendered on top of the toggle
+            if (Event.current.type == EventType.Repaint && toggleDropdownButtonStyle != null && toggleDropdownButtonStyle != GUIStyle.none)
             {
-                EditorGUI.DropdownButton(arrowRightRect, GUIContent.none, FocusType.Passive, toggleDropdownButtonStyle);
+                EditorGUI.DropdownButton(dropdownButtonId, arrowRightRect, GUIContent.none, toggleDropdownButtonStyle);
             }
 
             return clicked;

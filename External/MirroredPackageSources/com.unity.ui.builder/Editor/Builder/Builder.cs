@@ -6,7 +6,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    class Builder : BuilderPaneWindow, IBuilderViewportWindow
+    class Builder : BuilderPaneWindow, IBuilderViewportWindow, IHasCustomMenu
     {
         BuilderSelection m_Selection;
 
@@ -54,7 +54,7 @@ namespace Unity.UI.Builder
         [MenuItem(BuilderConstants.BuilderMenuEntry)]
         public static Builder ShowWindow()
         {
-            return GetWindowWithRectAndInit<Builder>(BuilderConstants.BuilderWindowDefaultRect);
+            return GetWindow<Builder>();
         }
 
         public static Builder ActiveWindow
@@ -203,6 +203,7 @@ namespace Unity.UI.Builder
         protected override void OnEnable()
         {
             base.OnEnable();
+            minSize = new Vector2(200, 200);
             SetTitleContent(BuilderConstants.BuilderWindowTitle, BuilderConstants.BuilderWindowIcon);
         }
 
@@ -230,6 +231,19 @@ namespace Unity.UI.Builder
             }
 
             return true;
+        }
+
+        public void AddItemsToMenu(GenericMenu menu)
+        {
+            menu.AddItem(new GUIContent("Reset UI Builder Layout"), false, () =>
+            {
+                ClearPersistentViewData();
+                m_Parent.Reload(this);
+                
+                var window = GetWindow<Builder>();
+                window.RepaintImmediately();
+                window.m_Viewport.FitCanvas();
+            });
         }
     }
 }

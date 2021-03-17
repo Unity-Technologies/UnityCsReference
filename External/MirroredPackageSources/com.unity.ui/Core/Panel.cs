@@ -298,24 +298,6 @@ namespace UnityEngine.UIElements
             get { return m_PixelsPerPoint * m_Scale; }
         }
 
-        private float m_SortingPriority = 0;
-        public float sortingPriority
-        {
-            get => m_SortingPriority;
-
-            set
-            {
-                if (!Mathf.Approximately(m_SortingPriority, value))
-                {
-                    m_SortingPriority = value;
-                    if (contextType == ContextType.Player)
-                    {
-                        UIElementsRuntimeUtility.SetPanelOrderingDirty();
-                    }
-                }
-            }
-        }
-
         // For backwards compatibility with debugger in 2020.1
         public PanelClearFlags clearFlags
         {
@@ -998,13 +980,36 @@ namespace UnityEngine.UIElements
                 }
             }
         }
+        
+        // We count instances of Runtime panels to be able to insert panels that have the same sort order in a deterministic
+        // way throughout the same session (i.e. instances created before will be placed before in the visual tree).
+        private static int s_CurrentRuntimePanelCounter = 0;
+        internal readonly int m_RuntimePanelCreationIndex;
+
+        private float m_SortingPriority = 0;
+        public float sortingPriority
+        {
+            get => m_SortingPriority;
+
+            set
+            {
+                if (!Mathf.Approximately(m_SortingPriority, value))
+                {
+                    m_SortingPriority = value;
+                    if (contextType == ContextType.Player)
+                    {
+                        UIElementsRuntimeUtility.SetPanelOrderingDirty();
+                    }
+                }
+            }
+        }
 
         public event Action destroyed;
-
-
+        
         protected BaseRuntimePanel(ScriptableObject ownerObject, EventDispatcher dispatcher = null)
             : base(ownerObject, ContextType.Player, dispatcher)
         {
+            m_RuntimePanelCreationIndex = s_CurrentRuntimePanelCounter++;
         }
 
         protected override void Dispose(bool disposing)

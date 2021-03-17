@@ -31,7 +31,7 @@ namespace UnityEngine.UIElements
                 }
 
                 // They're the same value, compare their count (UIDocuments created first show up first).
-                if (uiDocument.m_UIDocumentCount > sibling.m_UIDocumentCount)
+                if (uiDocument.m_UIDocumentCreationIndex > sibling.m_UIDocumentCreationIndex)
                 {
                     index++;
                     continue;
@@ -111,7 +111,7 @@ namespace UnityEngine.UIElements
         // We count instances of UIDocument to be able to insert UIDocuments that have the same sort order in a
         // deterministic way (i.e. instances created before will be placed before in the visual tree).
         private static int s_CurrentUIDocumentCounter = 0;
-        internal readonly int m_UIDocumentCount;
+        internal readonly int m_UIDocumentCreationIndex;
 
         internal static Func<bool> IsEditorPlaying;
         internal static Func<bool> IsEditorPlayingOrWillChangePlaymode;
@@ -271,7 +271,7 @@ namespace UnityEngine.UIElements
         // Private constructor so it's not present on the public API file.
         private UIDocument()
         {
-            m_UIDocumentCount = s_CurrentUIDocumentCounter++;
+            m_UIDocumentCreationIndex = s_CurrentUIDocumentCounter++;
         }
 
         private void Awake()

@@ -142,10 +142,14 @@ namespace UnityEditor.Modules
 
         bool SupportsScriptsOnlyBuild();
 
+        bool UsesBeeBuild();
+
         // This is the place to make sure platform has everything it needs for the build.
         // Use EditorUtility.Display(Cancelable)ProgressBar when running long tasks (e.g. downloading SDK from internet).
         // Return non-empty string indicating error message to stop the build.
         string PrepareForBuild(BuildOptions options, BuildTarget target);
+
+        void PostProcessCompletedBuild(BuildPostProcessArgs args);
 
         void UpdateBootConfig(BuildTarget target, BootConfigData config, BuildOptions options);
 

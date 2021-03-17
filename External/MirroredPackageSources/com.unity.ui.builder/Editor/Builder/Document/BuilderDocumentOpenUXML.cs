@@ -587,6 +587,23 @@ namespace Unity.UI.Builder
             hasUnsavedChanges = false;
         }
 
+        private void LoadVisualTreeAsset(VisualTreeAsset newVisualTreeAsset)
+        {
+            var builderWindow = Builder.ActiveWindow;
+            if (builderWindow == null)
+                builderWindow = Builder.ShowWindow();
+
+            // LoadDocument() will call Clear() which will try to restore from Backup().
+            // If we don't clear the Backups here, they will overwrite the newly post-processed
+            // and re-imported asset we detected here.
+            ClearBackups();
+
+            if (string.IsNullOrEmpty(uxmlPath))
+                builderWindow.toolbar.ReloadDocument();
+            else
+                builderWindow.toolbar.LoadDocument(newVisualTreeAsset, false, true);
+        }
+
         //
         // Asset Change Detection
         //
@@ -612,16 +629,8 @@ namespace Unity.UI.Builder
                     return;
             }
 
-            var builderWindow = Builder.ActiveWindow;
-            if (builderWindow == null)
-                builderWindow = Builder.ShowWindow();
-
-            // LoadDocument() will call Clear() which will try to restore from Backup().
-            // If we don't clear the Backups here, they will overwrite the newly post-processed
-            // and re-imported asset we detected here.
-            ClearBackups();
-
-            builderWindow.toolbar.LoadDocument(newVisualTreeAsset, false, true);
+            // LoadVisualTreeAsset needs to be delayed to ensure that this is called later, while in a correct state.
+            EditorApplication.delayCall += () => LoadVisualTreeAsset(newVisualTreeAsset);
         }
 
         //
@@ -786,7 +795,6 @@ namespace Unity.UI.Builder
                 return;
 
             documentRootElement.Clear();
-            documentRootElement.styleSheets.Clear();
             BuilderSharedStyles.ClearContainer(documentRootElement);
 
             documentRootElement.SetProperty(

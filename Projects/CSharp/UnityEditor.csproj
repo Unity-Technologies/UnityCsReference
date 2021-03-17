@@ -2422,6 +2422,9 @@
     <Compile Include="..\..\Editor\Mono\ModuleMetadata.bindings.cs">
       <Link>Editor\Mono\ModuleMetadata.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Modules\BeeBuildPostprocessor.cs">
+      <Link>Editor\Mono\Modules\BeeBuildPostprocessor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Modules\DefaultBuildPostprocessor.cs">
       <Link>Editor\Mono\Modules\DefaultBuildPostprocessor.cs</Link>
     </Compile>
@@ -7280,7 +7283,7 @@
       <HintPath>..\..\External\ExCSS\builds\builds\lib\net35\ExCSS.Unity.dll</HintPath>
     </Reference>
     <Reference Include="Bee.BeeDriver">
-      <HintPath>..\..\artifacts\Stevedore\bee-libraries_6595\Bee.BeeDriver.dll</HintPath>
+      <HintPath>..\..\artifacts\Stevedore\bee-libraries_1a42\Bee.BeeDriver.dll</HintPath>
     </Reference>
     <ProjectReference Include="UnityEngine.csproj">
       <Project>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</Project>
@@ -7294,9 +7297,17 @@
       <Project>{C870EE19-8C55-83AD-8D5A-16B6E8AD8FDA}</Project>
       <Name>Unity.SerializationLogic</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Editor\ScriptCompilationBuildProgram.Data\ScriptCompilationBuildProgram.Data.gen.csproj">
-      <Project>{201222DE-2488-4150-E3B5-DC5FCCE3C890}</Project>
+    <ProjectReference Include="..\..\Editor\IncrementalBuildPipeline\ScriptCompilationBuildProgram.Data\ScriptCompilationBuildProgram.Data.gen.csproj">
+      <Project>{2BA9D0ED-D2EF-DA84-1599-37A046A44915}</Project>
       <Name>ScriptCompilationBuildProgram.Data</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Editor\IncrementalBuildPipeline\PlayerBuildProgramLibrary.Data\PlayerBuildProgramLibrary.Data.gen.csproj">
+      <Project>{0B340C5C-3844-3B45-E3FD-DA591C333973}</Project>
+      <Name>PlayerBuildProgramLibrary.Data</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Editor\IncrementalBuildPipeline\BeeBuildProgramCommon.Data\BeeBuildProgramCommon.Data.gen.csproj">
+      <Project>{236F6903-2F21-1CCA-571E-C6D1D859E1EA}</Project>
+      <Name>BeeBuildProgramCommon.Data</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

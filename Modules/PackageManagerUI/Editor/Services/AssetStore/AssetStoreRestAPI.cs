@@ -70,7 +70,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [NonSerialized]
-        internal Queue<AssetStoreLocalInfo> m_Queue;
+        private Queue<string> m_Queue;
 
         [NonSerialized]
         private UnityConnectProxy m_UnityConnect;
@@ -177,13 +177,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                     var downloadInfo = new AssetStoreDownloadInfo
                     {
                         isValid = false,
-                        errorMessage = error.message
+                        errorMessage = error.message,
+                        errorCode = error.operationErrorCode
                     };
                     doneCallbackAction?.Invoke(downloadInfo);
                 });
         }
 
-        public virtual void GetChunkProductUpdateDetails(int chunkSize, Action<IEnumerable<IDictionary<string, object>>> doneCallbackAction, Action<string> errorCallbackAction)
+        public virtual void GetChunkProductUpdateDetails(int chunkSize, Action<IEnumerable<IDictionary<string, object>>> doneCallbackAction, Action<UIError> errorCallbackAction)
         {
             if (m_Queue?.Any() != true)
             {
@@ -192,8 +193,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             var partialInfos = new List<AssetStoreLocalInfo>(chunkSize);
-            for (var i = 0; i < chunkSize && m_Queue.Any(); i++)
-                partialInfos.Add(m_Queue.Dequeue());
+            while (m_Queue.Any() && partialInfos.Count < chunkSize)
+            {
+                var productId = m_Queue.Dequeue();
+                var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
+                if (localInfo?.updateInfoFetched == false)
+                    partialInfos.Add(localInfo);
+            }
 
             var localInfosJsonData = Json.Serialize(partialInfos.Select(info => info?.ToDictionary() ?? new Dictionary<string, string>()).ToList());
 
@@ -207,24 +213,30 @@ namespace UnityEditor.PackageManager.UI.Internal
                 },
                 error =>
                 {
-                    errorCallbackAction?.Invoke(error.message);
+                    errorCallbackAction?.Invoke(error);
                 });
         }
 
-        public virtual void GetProductUpdateDetail(IEnumerable<AssetStoreLocalInfo> localInfos, Action<Dictionary<string, object>> doneCallbackAction)
+        public virtual void GetProductUpdateDetail(IEnumerable<string> productIds, Action<Dictionary<string, object>> doneCallbackAction)
         {
-            if (localInfos?.Any() != true)
+            if (productIds?.Any() != true)
             {
                 doneCallbackAction?.Invoke(new Dictionary<string, object>());
                 return;
             }
 
             var updateDetails = new List<IDictionary<string, object>>();
-            m_Queue = new Queue<AssetStoreLocalInfo>(localInfos);
 
-            void ErrorCallBack(string message)
+            // We want to prioritize new fetch update details calls as those are more likely to be the ones users are interested in
+            m_Queue = new Queue<string>(productIds.Concat(m_Queue?.ToArray() ?? Enumerable.Empty<string>()));
+
+            void ErrorCallBack(UIError error)
             {
-                var ret = new Dictionary<string, object> {["errorMessage"] = message};
+                var ret = new Dictionary<string, object>
+                {
+                    ["errorMessage"] = error.message,
+                    ["errorCode"] = error.operationErrorCode
+                };
                 doneCallbackAction?.Invoke(ret);
             }
 
@@ -272,15 +284,23 @@ namespace UnityEditor.PackageManager.UI.Internal
                                 return;
 
                             var responseCode = request.responseCode;
+                            if (responseCode == 0)
+                            {
+                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, k_ErrorMessage, responseCode));
+                                return;
+                            }
+
+                            if (responseCode >= k_ServerErrorResponseCode)
+                            {
+                                retryCallbackAction?.Invoke(responseCode);
+                                return;
+                            }
+
                             if (responseCode >= k_ClientErrorResponseCode && responseCode < k_ServerErrorResponseCode)
                             {
                                 var errorMessage = k_KnownErrors[k_GeneralClientError];
                                 k_KnownErrors.TryGetValue(request.responseCode, out errorMessage);
-                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, $"{responseCode} {errorMessage}. {k_ErrorMessage}"));
-                            }
-                            else if (responseCode >= k_ServerErrorResponseCode)
-                            {
-                                retryCallbackAction?.Invoke(responseCode);
+                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, $"{responseCode} {errorMessage}. {k_ErrorMessage}", responseCode));
                                 return;
                             }
 
@@ -290,7 +310,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                             else
                             {
                                 if (parsedResult.ContainsKey("errorMessage"))
-                                    errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, parsedResult.GetString("errorMessage")));
+                                {
+                                    var operationErrorCode = parsedResult.ContainsKey("errorCode") ? int.Parse(parsedResult.GetString("errorCode")) : -1;
+                                    errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, parsedResult.GetString("errorMessage"), operationErrorCode));
+                                }
                                 else
                                     doneCallbackAction?.Invoke(parsedResult);
                             }
@@ -310,10 +333,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                             {
                                 var errorMessage = k_KnownErrors[k_GeneralServerError];
                                 k_KnownErrors.TryGetValue(lastResponseCode, out errorMessage);
-                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, $"{lastResponseCode} {errorMessage}. {k_ErrorMessage}"));
+                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, $"{lastResponseCode} {errorMessage}. {k_ErrorMessage}", lastResponseCode));
                             }
                             else
-                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, k_ErrorMessage));
+                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, k_ErrorMessage, lastResponseCode));
                         }
                     }
 

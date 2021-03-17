@@ -91,7 +91,7 @@ namespace UnityEditorInternal
     [NativeHeader("Runtime/Utilities/Argv.h")]
     [NativeHeader("Runtime/Utilities/FileUtilities.h")]
     [NativeHeader("Runtime/Utilities/LaunchUtilities.h")]
-    [NativeHeader("Runtime/Utilities/UnityRevision.h")]
+    [NativeHeader("Runtime/Utilities/UnityConfiguration.h")]
     public partial class InternalEditorUtility
     {
         // Needs to be kept in sync with DragAndDropForwarding.h
@@ -451,7 +451,7 @@ namespace UnityEditorInternal
         [FreeFunction("SetupShaderPopupMenu")]
         extern public static void SetupShaderMenu([NotNull] Material material);
 
-        [FreeFunction("GetUnityBuildFullVersion")]
+        [FreeFunction("UnityConfig::GetUnityBuildFullVersion")]
         extern public static string GetFullUnityVersion();
 
         public static Version GetUnityVersion()
@@ -463,22 +463,22 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::GetUnityVersionDigits")]
         extern public static string GetUnityVersionDigits();
 
-        [FreeFunction("GetUnityBuildBranchName")]
+        [FreeFunction("UnityConfig::GetUnityBuildBranchName")]
         extern public static string GetUnityBuildBranch();
 
-        [FreeFunction("GetUnityBuildHash")]
+        [FreeFunction("UnityConfig::GetUnityBuildHash")]
         extern public static string GetUnityBuildHash();
 
-        [FreeFunction("GetUnityDisplayVersion")]
+        [FreeFunction("UnityConfig::GetUnityDisplayVersion")]
         extern public static string GetUnityDisplayVersion();
 
-        [FreeFunction("GetUnityDisplayVersionVerbose")]
+        [FreeFunction("UnityConfig::GetUnityDisplayVersionVerbose")]
         extern public static string GetUnityDisplayVersionVerbose();
 
-        [FreeFunction("GetUnityBuildTimeSinceEpoch")]
+        [FreeFunction("UnityConfig::GetUnityBuildTimeSinceEpoch")]
         extern public static int GetUnityVersionDate();
 
-        [FreeFunction("GetUnityBuildNumericRevision")]
+        [FreeFunction("UnityConfig::GetUnityBuildNumericRevision")]
         extern public static int GetUnityRevision();
 
         [FreeFunction("InternalEditorUtilityBindings::IsUnityBeta")]

@@ -40,10 +40,8 @@ namespace UnityEditor
         //*undocumented*
         InstallInBuildFolder = 1 << 6,
 
-        //*undocumented*
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("WebPlayer has been removed in 5.4", true)]
-        WebPlayerOfflineDeployment = 1 << 7,
+        // Do a non-incremental, clean cache build
+        CleanBuildCache = 1 << 7,
 
         // automatically connects the profiler when the build is ran
         ConnectWithProfiler = 1 << 8,
@@ -125,6 +123,7 @@ namespace UnityEditor
 
         // Turn shader stripping on and enable shader live link connection
         ShaderLivelinkSupport = 1 << 30,
+
     }
 
     // Asset Bundle building options.
@@ -437,6 +436,8 @@ namespace UnityEditor
 
         // Just like BuildPlayer, but does not check for Pro license. Used from build player dialog.
         internal static extern BuildReport BuildPlayerInternalNoCheck(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options, string[] extraScriptingDefines, bool delayToAfterScriptReload);
+
+        internal static extern void BuildPlayerInternalPostBuild(BuildReport report);
 
 
         [FreeFunction("WriteBootConfig", ThrowsException = true)]

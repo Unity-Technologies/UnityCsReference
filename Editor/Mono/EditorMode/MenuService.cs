@@ -14,6 +14,7 @@ using UnityEngine;
 using JSONObject = System.Collections.IDictionary;
 
 using static UnityEditor.ModeService;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor
 {
@@ -316,7 +317,8 @@ namespace UnityEditor
 
             var menuItems = TypeCache.GetMethodsWithAttribute<MenuItem>();
 
-            foreach (var methodInfo in menuItems)
+            // Order the menu items to start with Unity menus before projects menus. That way if there is a duplicate, the project one is flagged as duplicate
+            foreach (var methodInfo in menuItems.OrderBy(m => !Utility.FastStartsWith(m.DeclaringType.Assembly.FullName, "UnityEditor", "unityeditor")))
             {
                 if (!ValidateMethodForMenuCommand(methodInfo))
                     continue;

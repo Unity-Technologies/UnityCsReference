@@ -888,6 +888,7 @@ namespace UnityEditorInternal
                     return false;
 
                 animationPlayer = EnsureActiveAnimationPlayer(animatedObject);
+                Undo.RecordObject(animationPlayer, "Add animation clip");
                 bool success = AddClipToAnimationPlayerComponent(animationPlayer, newClip);
 
                 if (!success)

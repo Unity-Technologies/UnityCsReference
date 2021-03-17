@@ -9,6 +9,7 @@ using uei = UnityEngine.Internal;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace UnityEngine
 {
@@ -399,7 +400,7 @@ namespace UnityEngine
             new Vector4(0, 0, 0, 1));
 
         // Returns the identity matrix (RO).
-        public static Matrix4x4 identity    { get { return identityMatrix; } }
+        public static Matrix4x4 identity    { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return identityMatrix; } }
 
         public override string ToString()
         {

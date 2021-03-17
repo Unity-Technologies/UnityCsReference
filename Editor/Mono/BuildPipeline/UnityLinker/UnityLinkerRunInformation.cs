@@ -42,7 +42,7 @@ namespace UnityEditorInternal
             buildTargetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
             argumentProvider = new UnityLinkerArgumentValueProvider(this);
             isMonoBackend = PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.Mono2x;
-            engineStrippingSupported = platformProvider.supportsEngineStripping && !isMonoBackend;
+            engineStrippingSupported = (platformProvider?.supportsEngineStripping ?? false) && !isMonoBackend;
             performEngineStripping = rcr != null && PlayerSettings.stripEngineCode && engineStrippingSupported;
         }
 

@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-
+using NiceIO;
 using UnityEngine;
 
 namespace UnityEditor.Modules
@@ -17,7 +17,6 @@ namespace UnityEditor.Modules
         : IBuildPostprocessor
     {
         static readonly string kXrBootSettingsKey = "xr-boot-settings";
-
         public virtual void LaunchPlayer(BuildLaunchPlayerArgs args)
         {
             throw new NotSupportedException();
@@ -35,6 +34,11 @@ namespace UnityEditor.Modules
             // NOTE: For some reason, calling PostProcess seems like it can trigger this object to be GC'd
             //  so create is just before returning
             outProperties = ScriptableObject.CreateInstance<DefaultBuildProperties>();
+        }
+
+        // Note! Only called when running a bee build.
+        public virtual void PostProcessCompletedBuild(BuildPostProcessArgs args)
+        {
         }
 
         public virtual bool SupportsInstallInBuildFolder()
@@ -56,6 +60,8 @@ namespace UnityEditor.Modules
         {
             return true;
         }
+
+        public virtual bool UsesBeeBuild() => false;
 
         public virtual string PrepareForBuild(BuildOptions options, BuildTarget target)
         {
@@ -108,6 +114,11 @@ namespace UnityEditor.Modules
                     config.Set("profiler-enable-deep-profiling-support", "1");
                 }
             }
+        }
+
+        protected static string GetIl2CppDataBackupFolderName(BuildPostProcessArgs args)
+        {
+            return $"{args.installPath.ToNPath().FileNameWithoutExtension}_BackUpThisFolder_ButDontShipItWithYourGame";
         }
 
         public virtual string GetExtension(BuildTarget target, BuildOptions options)

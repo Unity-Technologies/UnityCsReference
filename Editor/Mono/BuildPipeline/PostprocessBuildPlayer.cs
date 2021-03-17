@@ -150,12 +150,25 @@ namespace UnityEditor
             return postprocessor.PrepareForBuild(options, target);
         }
 
+        [RequiredByNativeCode]
         static public bool SupportsScriptsOnlyBuild(BuildTargetGroup targetGroup, BuildTarget target)
         {
             IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
             if (postprocessor != null)
             {
                 return postprocessor.SupportsScriptsOnlyBuild();
+            }
+
+            return false;
+        }
+
+        [RequiredByNativeCode]
+        static public bool UsesBeeBuild(BuildTargetGroup targetGroup, BuildTarget target)
+        {
+            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
+            if (postprocessor != null)
+            {
+                return postprocessor.UsesBeeBuild();
             }
 
             return false;
@@ -352,6 +365,12 @@ namespace UnityEditor
 
             // If postprocessor is not provided, build target is not supported
             throw new UnityException(string.Format("Build target '{0}' not supported", target));
+        }
+
+        public static void PostProcessCompletedBuild(BuildPostProcessArgs args)
+        {
+            var postprocessor = ModuleManager.GetBuildPostProcessor(BuildPipeline.GetBuildTargetGroup(args.target), args.target);
+            postprocessor.PostProcessCompletedBuild(args);
         }
 
         internal static string ExecuteSystemProcess(string command, string args, string workingdir)

@@ -22,7 +22,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return false;
 
             var assemblyData = Helpers.FindOutputDataAssemblyInfoFor(nodeResult, beeDriver);
-            var lines = new NPath(assemblyData.movedFromExtractorFile).ReadAllLines();
+            var lines = new NPath(assemblyData.MovedFromExtractorFile).ReadAllLines();
 
             return typeNames.Any(t => lines.Contains(t));
         }

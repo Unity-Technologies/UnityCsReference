@@ -106,12 +106,11 @@ namespace UnityEditor.AssetImporters
                     {
                         handledExtensions[importerIndex].Remove(importerExtension.Key);
 
-                        if (rejectedImporters.Length == 0)
-                            rejectedImporters = importers[importerIndex].FullName;
-                        else
-                            rejectedImporters = rejectedImporters + ", " + importers[importerIndex].FullName;
+                        if (rejectedImporters.Length != 0)
+                            rejectedImporters = $"{rejectedImporters}, ";
+                        rejectedImporters = $"{rejectedImporters}{importers[importerIndex].FullName} (assembly: {importers[importerIndex].Module.FullyQualifiedName})";
                     }
-                    Debug.LogError(String.Format("Multiple scripted importers ({0}) are targeting the extension '{1}' and have all been rejected.", rejectedImporters, importerExtension.Key));
+                    Debug.LogError(String.Format("Multiple scripted importers are targeting the extension '{0}' and have all been rejected: {1} ", importerExtension.Key, rejectedImporters));
                 }
             }
 

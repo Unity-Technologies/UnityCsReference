@@ -44,10 +44,18 @@ namespace UnityEditor
 
             if (parent != null)
             {
+                // At this point, RecordStructureChange is already ongoing (from the CreatePrimitive call through the CreateAndPlacePrimitive method). We need to flush the stack to finalise the RecordStructureChange before the
+                // following SetTransformParent call takes place.
+                Undo.FlushTrackedObjects();
+
                 SetGameObjectParent(go, parent.transform);
             }
             else if (defaultObjectTransform != null)
             {
+                // At this point, RecordStructureChange is already ongoing (from the CreatePrimitive call through the CreateAndPlacePrimitive method). We need to flush the stack to finalise the RecordStructureChange before the
+                // following SetTransformParent call takes place.
+                Undo.FlushTrackedObjects();
+
                 SetGameObjectParent(go, defaultObjectTransform);
             }
             else
@@ -152,6 +160,10 @@ namespace UnityEditor
             {
                 go.transform.MoveAfterSibling(sibling, true);
             }
+
+            // At this point, RecordStructureChange is already ongoing (from the CreateGameObject call).
+            // We need to flush the stack to finalise the RecordStructureChange before any of following SetTransformParent calls takes place.
+            Undo.FlushTrackedObjects();
 
             // Put gameObjects under a created parent
             if (selected.Length > 0)

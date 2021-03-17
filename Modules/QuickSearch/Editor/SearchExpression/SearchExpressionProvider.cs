@@ -189,7 +189,7 @@ namespace UnityEditor.Search
             {
                 EditorGUIUtility.labelWidth = EditorGUIUtility.currentViewWidth * 0.3f;
                 EditorGUILayout.BeginVertical();
-                EditorGUI.BeginDisabled(true);
+                EditorGUI.BeginDisabledGroup(true);
                 EditorGUILayout.TextField("provider", item.provider.name);
                 EditorGUILayout.IntField("score", item.score);
                 EditorGUILayout.TextField("id", item.id);
@@ -199,7 +199,7 @@ namespace UnityEditor.Search
                     EditorGUILayout.TextField("data", item.data.ToString());
                 if (item.value != null)
                     EditorGUILayout.TextField("value", item.value.ToString());
-                EditorGUI.EndDisabled();
+                EditorGUI.EndDisabledGroup();
                 foreach (var n in item.GetFieldNames())
                 {
                     EditorGUI.BeginChangeCheck();

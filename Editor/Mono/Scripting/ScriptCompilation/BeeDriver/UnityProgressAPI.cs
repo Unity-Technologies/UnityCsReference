@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Threading.Tasks;
 using Bee.BeeDriver;
 using NiceIO;
 using ScriptCompilationBuildProgram.Data;
@@ -24,22 +25,27 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public override ProgressToken Start() => new UnityProgressAPIToken(Title);
 
-        private class UnityProgressAPIToken : ProgressToken
+        public class UnityProgressAPIToken : ProgressToken
         {
             private readonly int _token;
             public UnityProgressAPIToken(string msg) => _token = Progress.Start(msg);
 
-            public override void Report(string msg, int currentStep, int totalStep)
+            public override void Report(string msg)
             {
-                Progress.Report(_token, currentStep, totalStep, msg);
+                Progress.SetDescription(_token, msg);
+            }
+
+            public virtual void Report(float progress)
+            {
+                Progress.Report(_token, progress);
             }
 
             public override void Report(NodeResult nodeResult)
             {
+                Report(nodeResult.processed_node_count / (float)nodeResult.number_of_nodes_ever_queued);
                 if (nodeResult.outputfile == null)
                 {
-                    var msg = nodeResult.annotation.Substring(nodeResult.annotation.LastIndexOf('/') + 1);
-                    Report(msg, nodeResult.processed_node_count, nodeResult.amount_of_nodes_ever_queued);
+                    Report(nodeResult.annotation.Substring(nodeResult.annotation.LastIndexOf('/') + 1));
                     return;
                 }
 
@@ -47,10 +53,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (outputFile.HasExtension(Constants.MovedFromExtension))
                     return;
 
-                Report(outputFile.FileName, nodeResult.processed_node_count, nodeResult.amount_of_nodes_ever_queued);
+                Report(outputFile.FileName);
             }
 
-            public override void Finish() => Progress.Finish(_token);
+            public override void Finish()
+            {
+                // Why do we run Progress.Finish on a Task here?
+                // The BeeDriver will read tundra output logs on a thread, causing `ProgressToken.Report(NodeResult nodeResult)`
+                // to be called on a non-main thread. Unity's `Progress` API implementation puts all non-main thread requests on
+                // a queue which will be executed at a later point from the main thread. But then, the BeeDriver will call
+                // `ProgressToken.Finish` from the main thread. This will be called directly, causing Finish to be executed before
+                // `Report` - which causes errors. By calling Finish from a Task, we make sure that it _also_ gets called of the main
+                // thread, and thus won't skip the queue. A better fix might be to change the progress implementation to flush all pending
+                // calls on Finish.
+                Task.Run(() => Progress.Finish(_token));
+            }
         }
     }
 }

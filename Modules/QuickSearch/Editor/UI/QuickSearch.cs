@@ -1068,10 +1068,8 @@ namespace UnityEditor.Search
             {
                 if (context.GetAllErrors().FirstOrDefault(e => e.provider.id == m_FilteredItems.currentGroup) is SearchQueryError err)
                 {
-                    var errType = err.type == SearchQueryErrorType.Error ? ConsoleWindow.Mode.Error : ConsoleWindow.Mode.ScriptingWarning;
-                    GUILayout.Label(err.reason,
-                        ConsoleWindow.GetStatusStyleForErrorMode((int)errType),
-                        GUILayout.MaxWidth(position.width - 100));
+                    var errStyle = err.type == SearchQueryErrorType.Error ? Styles.statusError : Styles.statusWarning;
+                    GUILayout.Label(err.reason, errStyle, GUILayout.MaxWidth(position.width - 100));
                 }
                 else if (SearchSettings.showStatusBar)
                 {

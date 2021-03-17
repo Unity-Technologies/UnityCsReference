@@ -176,11 +176,14 @@ namespace UnityEditor.PackageManager.UI
             packageDatabase?.ClearSamplesCache();
 
             var applicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
-            if (!applicationProxy.isBatchMode)
-            {
-                var upmRegistryClient = ServicesContainer.instance.Resolve<UpmRegistryClient>();
-                upmRegistryClient.CheckRegistriesChanged();
-            }
+            if (applicationProxy.isBatchMode)
+                return;
+
+            var upmRegistryClient = ServicesContainer.instance.Resolve<UpmRegistryClient>();
+            upmRegistryClient.CheckRegistriesChanged();
+
+            var upmCache = ServicesContainer.instance.Resolve<UpmCache>();
+            upmCache.SetInstalledPackageInfos(PackageInfo.GetAllRegisteredPackages());
         }
 
         private static void OnRegisteredPackages(PackageRegistrationEventArgs args)

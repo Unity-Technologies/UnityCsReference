@@ -14,7 +14,7 @@ namespace UnityEditor
 {
     public sealed partial class EditorGUI
     {
-        static int s_DropdownButtonHash = "DropdownButton".GetHashCode();
+        internal static int s_DropdownButtonHash = "DropdownButton".GetHashCode();
         static int s_MouseDeltaReaderHash = "MouseDeltaReader".GetHashCode();
 
         internal static bool Button(Rect position, GUIContent content)

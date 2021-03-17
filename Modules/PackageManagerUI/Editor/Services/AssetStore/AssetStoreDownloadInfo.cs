@@ -19,6 +19,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string key;
         public string url;
         public string errorMessage;
+        public int errorCode = -1;
 
         public string[] destination => new string[]
         {

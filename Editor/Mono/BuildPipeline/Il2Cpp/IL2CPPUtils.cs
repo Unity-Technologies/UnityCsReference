@@ -809,7 +809,7 @@ namespace UnityEditorInternal
             return CommandLineFormatter.EscapeCharsQuote(path);
         }
 
-        private string GetIl2CppExe()
+        public static string GetIl2CppExe()
         {
             return $"{IL2CPPUtils.GetIl2CppFolder()}/build/deploy/netcoreapp3.1/il2cpp{(Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "")}";
         }

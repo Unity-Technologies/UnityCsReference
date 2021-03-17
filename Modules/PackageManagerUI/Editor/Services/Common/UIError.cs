@@ -20,6 +20,9 @@ namespace UnityEditor.PackageManager.UI
         [SerializeField]
         private Attribute m_Attribute;
 
+        [SerializeField]
+        private int m_OperationErrorCode;
+
         [Flags]
         internal enum Attribute
         {
@@ -29,19 +32,24 @@ namespace UnityEditor.PackageManager.UI
             IsClearable         = 1 << 2
         }
 
-        public UIError(UIErrorCode errorCode, string message, Attribute attribute = Attribute.None) : base(NativeErrorCode.Unknown, message)
-        {
-            m_UIErrorCode = errorCode;
-            m_Attribute = attribute;
-        }
-
         public new UIErrorCode errorCode => m_UIErrorCode;
+
+        public int operationErrorCode => m_OperationErrorCode;
 
         public Attribute attribute => m_Attribute;
 
         public bool HasAttribute(Attribute attribute)
         {
             return (m_Attribute & attribute) != 0;
+        }
+
+        public UIError(UIErrorCode errorCode, string message, int operationErrorCode) : this(errorCode, message, Attribute.None, operationErrorCode) {}
+
+        public UIError(UIErrorCode errorCode, string message, Attribute attribute = Attribute.None, int operationErrorCode = -1) : base(NativeErrorCode.Unknown, message)
+        {
+            m_UIErrorCode = errorCode;
+            m_Attribute = attribute;
+            m_OperationErrorCode = operationErrorCode;
         }
     }
 }

@@ -15,6 +15,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal static readonly string k_DownloadErrorMessage = "The download could not be completed. Please try again.";
         internal static readonly string k_AbortErrorMessage = "The download could not be aborted. Please try again.";
         internal static readonly string k_AssetStoreDownloadPrefix = "content__";
+        internal static readonly string k_ForbiddenErrorMessage = "The Asset Store package you are trying to download is not available to the current Unity account. If you purchased this asset from the Asset Store using a different account, use that Unity account to sign into the Editor.";
 
         [SerializeField]
         private string m_ProductId;
@@ -95,7 +96,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ProductOldPath = oldPath;
         }
 
-        public void OnDownloadProgress(string message, ulong bytes, ulong total)
+        public void OnDownloadProgress(string message, ulong bytes, ulong total, int errorCode)
         {
             switch (message)
             {
@@ -132,19 +133,30 @@ namespace UnityEditor.PackageManager.UI.Internal
                     }
                     break;
                 default:
-                    OnErrorMessage(message);
+                    OnErrorMessage(message, errorCode);
                     break;
             }
 
             onOperationProgress?.Invoke(this);
         }
 
-        private void OnErrorMessage(string errorMessage)
+        private void OnErrorMessage(string errorMessage, int operationErrorCode = -1)
         {
             m_State = DownloadState.Error;
-            m_ErrorMessage = L10n.Tr(k_DownloadErrorMessage);
             Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {errorMessage}");
-            onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage, UIError.Attribute.IsDetailInConsole | UIError.Attribute.IsClearable));
+
+            var attr = UIError.Attribute.None;
+            if (operationErrorCode == 403)
+            {
+                m_ErrorMessage = L10n.Tr(k_ForbiddenErrorMessage);
+            }
+            else
+            {
+                attr |= UIError.Attribute.IsDetailInConsole | UIError.Attribute.IsClearable;
+                m_ErrorMessage = L10n.Tr(k_DownloadErrorMessage);
+            }
+
+            onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage, attr, operationErrorCode));
             onOperationFinalized?.Invoke(this);
         }
 
@@ -194,7 +206,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_DownloadInfo = downloadInfo;
                 if (!downloadInfo.isValid)
                 {
-                    OnErrorMessage(downloadInfo.errorMessage);
+                    OnErrorMessage(downloadInfo.errorMessage, downloadInfo.errorCode);
                     return;
                 }
 

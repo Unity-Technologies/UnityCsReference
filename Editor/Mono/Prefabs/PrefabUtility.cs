@@ -265,7 +265,10 @@ namespace UnityEditor
 
                     if (requiredComponentsExist)
                     {
-                        Undo.RegisterCreatedObjectUndo(danglingObject, actionName);
+                        // This is a special case where the stack order must be forced. Created objects must be registered to the undo system before any structure changes can be recorded to it but in the case of applying prefabs this isn't possible. They are
+                        // modified but we can only find what has been added/created as an "afterthought" when scooping up the dangling objects. In this special case we must insert the creation of those dangling objects to the front of the current undo operation's stack
+                        // before they are referenced by any other entries on the undo stack
+                        Undo.RegisterCreatedObjectUndoToFrontOfUndoQueue(danglingObject, actionName);
                         if (danglingObject is Component)
                         {
                             addedTypes.Add(danglingObject.GetType());
@@ -281,7 +284,7 @@ namespace UnityEditor
             Debug.Assert(danglingObjects.Count == 0, "Dangling components have unfulfilled dependencies");
             foreach (var component in danglingObjects)
             {
-                Undo.RegisterCreatedObjectUndo(component, actionName);
+                Undo.RegisterCreatedObjectUndoToFrontOfUndoQueue(component, actionName);
             }
         }
 
@@ -1221,7 +1224,7 @@ namespace UnityEditor
                 var createdAssetObject = GetCorrespondingObjectFromSourceInAsset(gameObject, prefabSourceGameObjectParent);
                 if (createdAssetObject != null)
                 {
-                    Undo.RegisterCreatedObjectUndo(createdAssetObject, actionName);
+                    Undo.RegisterCreatedObjectUndoToFrontOfUndoQueue(createdAssetObject, actionName);
 
                     EditorUtility.ForceRebuildInspectors();
                 }

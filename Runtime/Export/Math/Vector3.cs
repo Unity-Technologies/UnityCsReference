@@ -34,7 +34,6 @@ namespace UnityEngine
         public float z;
 
         // Linearly interpolates between two vectors.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 Lerp(Vector3 a, Vector3 b, float t)
         {
             t = Mathf.Clamp01(t);
@@ -46,7 +45,6 @@ namespace UnityEngine
         }
 
         // Linearly interpolates between two vectors without clamping the interpolant
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 LerpUnclamped(Vector3 a, Vector3 b, float t)
         {
             return new Vector3(
@@ -189,22 +187,17 @@ namespace UnityEngine
         }
 
         // Creates a new vector with given x, y, z components.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public Vector3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; }
         // Creates a new vector with given x, y components and sets /z/ to zero.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public Vector3(float x, float y) { this.x = x; this.y = y; z = 0F; }
 
         // Set x, y and z components of an existing Vector3.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void Set(float newX, float newY, float newZ) { x = newX; y = newY; z = newZ; }
 
         // Multiplies two vectors component-wise.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 Scale(Vector3 a, Vector3 b) { return new Vector3(a.x * b.x, a.y * b.y, a.z * b.z); }
 
         // Multiplies every component of this vector by the same component of /scale/.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void Scale(Vector3 scale) { x *= scale.x; y *= scale.y; z *= scale.z; }
 
         // Cross Product of two vectors.
@@ -265,10 +258,12 @@ namespace UnityEngine
         }
 
         // Returns this vector with a ::ref::magnitude of 1 (RO).
-        public Vector3 normalized { get { return Vector3.Normalize(this); } }
+        public Vector3 normalized
+        {
+            get { return Vector3.Normalize(this); }
+        }
 
         // Dot Product of two vectors.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static float Dot(Vector3 lhs, Vector3 rhs) { return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z; }
 
         // Projects a vector onto another vector.
@@ -357,28 +352,27 @@ namespace UnityEngine
         }
 
         // *undoc* --- there's a property now
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static float Magnitude(Vector3 vector) { return (float)Math.Sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z); }
 
         // Returns the length of this vector (RO).
-        public float magnitude { get { return (float)Math.Sqrt(x * x + y * y + z * z); } }
+        public float magnitude
+        {
+            get { return (float)Math.Sqrt(x * x + y * y + z * z); }
+        }
 
         // *undoc* --- there's a property now
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static float SqrMagnitude(Vector3 vector) { return vector.x * vector.x + vector.y * vector.y + vector.z * vector.z; }
 
         // Returns the squared length of this vector (RO).
-        public float sqrMagnitude { get { return x * x + y * y + z * z; } }
+        public float sqrMagnitude { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return x * x + y * y + z * z; } }
 
         // Returns a vector that is made from the smallest components of two vectors.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 Min(Vector3 lhs, Vector3 rhs)
         {
             return new Vector3(Mathf.Min(lhs.x, rhs.x), Mathf.Min(lhs.y, rhs.y), Mathf.Min(lhs.z, rhs.z));
         }
 
         // Returns a vector that is made from the largest components of two vectors.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 Max(Vector3 lhs, Vector3 rhs)
         {
             return new Vector3(Mathf.Max(lhs.x, rhs.x), Mathf.Max(lhs.y, rhs.y), Mathf.Max(lhs.z, rhs.z));
@@ -396,40 +390,34 @@ namespace UnityEngine
         static readonly Vector3 negativeInfinityVector = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
 
         // Shorthand for writing @@Vector3(0, 0, 0)@@
-        public static Vector3 zero { get { return zeroVector; } }
+        public static Vector3 zero { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return zeroVector; } }
         // Shorthand for writing @@Vector3(1, 1, 1)@@
-        public static Vector3 one { get { return oneVector; } }
+        public static Vector3 one { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return oneVector; } }
         // Shorthand for writing @@Vector3(0, 0, 1)@@
-        public static Vector3 forward { get { return forwardVector; } }
-        public static Vector3 back { get { return backVector; } }
+        public static Vector3 forward { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return forwardVector; } }
+        public static Vector3 back { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return backVector; } }
         // Shorthand for writing @@Vector3(0, 1, 0)@@
-        public static Vector3 up { get { return upVector; } }
-        public static Vector3 down { get { return downVector; } }
-        public static Vector3 left { get { return leftVector; } }
+        public static Vector3 up { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return upVector; } }
+        public static Vector3 down { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return downVector; } }
+        public static Vector3 left { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return leftVector; } }
         // Shorthand for writing @@Vector3(1, 0, 0)@@
-        public static Vector3 right { get { return rightVector; } }
+        public static Vector3 right { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return rightVector; } }
         // Shorthand for writing @@Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity)@@
-        public static Vector3 positiveInfinity { get { return positiveInfinityVector; } }
+        public static Vector3 positiveInfinity { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return positiveInfinityVector; } }
         // Shorthand for writing @@Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity)@@
-        public static Vector3 negativeInfinity { get { return negativeInfinityVector; } }
+        public static Vector3 negativeInfinity { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return negativeInfinityVector; } }
 
         // Adds two vectors.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 operator+(Vector3 a, Vector3 b) { return new Vector3(a.x + b.x, a.y + b.y, a.z + b.z); }
         // Subtracts one vector from another.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 operator-(Vector3 a, Vector3 b) { return new Vector3(a.x - b.x, a.y - b.y, a.z - b.z); }
         // Negates a vector.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 operator-(Vector3 a) { return new Vector3(-a.x, -a.y, -a.z); }
         // Multiplies a vector by a number.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 operator*(Vector3 a, float d) { return new Vector3(a.x * d, a.y * d, a.z * d); }
         // Multiplies a vector by a number.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 operator*(float d, Vector3 a) { return new Vector3(a.x * d, a.y * d, a.z * d); }
         // Divides a vector by a number.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 operator/(Vector3 a, float d) { return new Vector3(a.x / d, a.y / d, a.z / d); }
 
         // Returns true if the vectors are equal.

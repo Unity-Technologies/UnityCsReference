@@ -425,9 +425,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElementCache cache { set; get; }
         internal PackageList packageList { get { return cache.Get<PackageList>("packageList"); } }
         internal PackageLoadBar packageLoadBar { get { return cache.Get<PackageLoadBar>("packageLoadBar"); } }
-        private PackageDetails packageDetails { get { return cache.Get<PackageDetails>("packageDetails"); } }
-        private PackageManagerToolbar packageManagerToolbar { get { return cache.Get<PackageManagerToolbar>("topMenuToolbar"); } }
-        private PackageStatusBar packageStatusbar { get { return cache.Get<PackageStatusBar>("packageStatusBar"); } }
+        internal PackageDetails packageDetails { get { return cache.Get<PackageDetails>("packageDetails"); } }
+        internal PackageManagerToolbar packageManagerToolbar { get { return cache.Get<PackageManagerToolbar>("topMenuToolbar"); } }
+        internal PackageStatusBar packageStatusbar { get { return cache.Get<PackageStatusBar>("packageStatusBar"); } }
         private VisualElement leftColumnContainer { get { return cache.Get<VisualElement>("leftColumnContainer"); } }
         private VisualElement rightColumnContainer { get { return cache.Get<VisualElement>("rightColumnContainer"); } }
     }

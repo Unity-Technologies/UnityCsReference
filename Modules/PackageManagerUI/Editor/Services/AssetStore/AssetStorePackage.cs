@@ -90,11 +90,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Labels = purchaseInfo?.tags;
             m_PurchasedTimeTicks = !string.IsNullOrEmpty(purchaseInfo?.purchasedTime) ? DateTime.Parse(purchaseInfo?.purchasedTime).Ticks : 0;
 
-            if (purchaseInfo == null)
-            {
-                var errorMessage = L10n.Tr("The Asset Store package you are trying to import is not available to the current Unity account. If you purchased this asset from the Asset Store using a different account, use that Unity account to sign into the Editor.");
-                AddError(new UIError(UIErrorCode.AssetStorePackageError, errorMessage));
-            }
             if (string.IsNullOrEmpty(productInfo?.id) || string.IsNullOrEmpty(productInfo?.versionId))
             {
                 AddError(new UIError(UIErrorCode.AssetStorePackageError, L10n.Tr("Invalid product details.")));

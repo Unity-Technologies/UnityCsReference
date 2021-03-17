@@ -24,7 +24,18 @@ using File = System.IO.File;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
-    class EditorCompilation
+    internal interface IEditorCompilation
+    {
+        PrecompiledAssemblyProviderBase PrecompiledAssemblyProvider { get; set; }
+
+        ScriptAssembly[] GetAllScriptAssemblies(
+            EditorScriptCompilationOptions options,
+            PrecompiledAssembly[] unityAssembliesArg,
+            Dictionary<string, PrecompiledAssembly> precompiledAssembliesArg,
+            string[] defines);
+    }
+
+    class EditorCompilation : IEditorCompilation
     {
         const int kLogIdentifierFor_EditorMessages = 1234;
         const int kLogIdentifierFor_PlayerMessages = 1235;
@@ -162,7 +173,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             CancelActiveBuild();
         }
 
-        void CleanCache()
+        internal static void CleanCache()
         {
             new NPath("Library/Bee").DeleteIfExists(DeleteMode.Soft);
         }
@@ -955,7 +966,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static SystemProcessRunnableProgram MakeScriptCompilationBuildProgram()
         {
             var buildProgramAssembly = new NPath($"{EditorApplication.applicationContentsPath}/ScriptCompilationBuildProgram/ScriptCompilationBuildProgram.exe");
-            return new SystemProcessRunnableProgram($"{EditorApplication.applicationContentsPath}/Tools/netcorerun/netcorerun{BeeScriptCompilation.ExecutableExtension}", buildProgramAssembly.ToString(SlashMode.Native));
+            return new SystemProcessRunnableProgram($"{EditorApplication.applicationContentsPath}/Tools/netcorerun/netcorerun{BeeScriptCompilation.ExecutableExtension}", buildProgramAssembly.InQuotes(SlashMode.Native));
         }
 
         public void InvokeCompilationStarted(object context)

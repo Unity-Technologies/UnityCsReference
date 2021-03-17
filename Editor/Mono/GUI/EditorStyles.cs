@@ -368,6 +368,8 @@ namespace UnityEditor
         internal static GUIStyle dropDownList { get { return s_Current.m_DropDownList; } }
         private GUIStyle m_DropDownList;
 
+        internal static GUIStyle dropDownToggleButton { get { return s_Current.m_DropDownToggleButton; } }
+        private GUIStyle m_DropDownToggleButton;
         internal static GUIStyle minMaxStateDropdown { get { return s_Current.m_MinMaxStateDropdown; } }
         private GUIStyle m_MinMaxStateDropdown;
 
@@ -495,6 +497,7 @@ namespace UnityEditor
             m_ToolbarSlider = GetStyle("ToolbarSlider");
             m_MinMaxHorizontalSliderThumb = GetStyle("MinMaxHorizontalSliderThumb");
             m_DropDownList = GetStyle("DropDownButton");
+            m_DropDownToggleButton = GetStyle("DropDownToggleButton");
             m_MinMaxStateDropdown = GetStyle("IN MinMaxStateDropdown");
             m_ProgressBarBack = GetStyle("ProgressBarBack");
             m_ProgressBarBar = GetStyle("ProgressBarBar");

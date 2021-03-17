@@ -48,17 +48,25 @@ namespace UnityEditor
 
     [NativeHeader("Editor/Src/Undo/Undo.h")]
     [NativeHeader("Editor/Src/Undo/UndoManager.h")]
-    [NativeHeader("Editor/Src/Undo/PropertyDiffUndoRecorder.h")]
+    [NativeHeader("Editor/Src/Undo/PropertyUndoManager.h")]
     [NativeHeader("Editor/Src/Undo/ObjectUndo.h")]
     [NativeHeader("Editor/Mono/Undo/Undo.bindings.h")]
     public partial class Undo
     {
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
-        private static extern void GetRecordsInternal(object undoRecords, object redoRecords);
+        private static extern void GetRecordsInternal(object undoRecords, out int undoCursorPos);
+
+        internal static void GetRecords(List<string> undoRecords, out int undoCursor)
+        {
+            GetRecordsInternal(undoRecords, out undoCursor);
+        }
+
+        [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
+        private static extern void GetTimelineRecordsInternal(object undoRecords, object redoRecords);
 
         internal static void GetRecords(List<string> undoRecords, List<string> redoRecords)
         {
-            GetRecordsInternal(undoRecords, redoRecords);
+            GetTimelineRecordsInternal(undoRecords, redoRecords);
         }
 
         public static void RegisterCompleteObjectUndo(Object objectToUndo, string name)
@@ -90,8 +98,23 @@ namespace UnityEditor
         public static extern void MoveGameObjectToScene([NotNull] GameObject go, Scene scene, string name);
 
         // Register the state of a Unity Object so the user can later undo back to that state.
+        public static void RegisterCreatedObjectUndo(Object objectToUndo, string name)
+        {
+            if (objectToUndo.GetType() == typeof(Transform) || objectToUndo.GetType().IsSubclassOf(typeof(Transform)))
+                throw new ArgumentException("Cannot call 'RegisterCreatedObjectUndo' on Transform components, as transforms cannot be created/destroyed independently from their game object");
+            RecordObjectCreation(objectToUndo, name);
+        }
+
+        internal static void RegisterCreatedObjectUndoToFrontOfUndoQueue(Object objectToUndo, string name)
+        {
+            RecordObjectCreationToFrontOfUndoQueue(objectToUndo, name);
+        }
+
         [FreeFunction]
-        public static extern void RegisterCreatedObjectUndo([NotNull] Object objectToUndo, string name);
+        private static extern void RecordObjectCreation([NotNull] Object objectToUndo, string name);
+
+        [FreeFunction]
+        private static extern void RecordObjectCreationToFrontOfUndoQueue([NotNull] Object objectToUndo, string name);
 
         public static void DestroyObjectImmediate(Object objectToUndo)
         {
@@ -128,7 +151,6 @@ namespace UnityEditor
 
         [FreeFunction("RecordUndoDiff")]
         public static extern void RecordObject(Object objectToUndo, string name);
-
         public static void RecordObjects(Object[] objectsToUndo, string name)
         {
             RecordObjectsInternal(objectsToUndo, objectsToUndo.Length, name);
@@ -205,9 +227,13 @@ namespace UnityEditor
 
         public static WillFlushUndoRecord willFlushUndoRecord;
 
-        [StaticAccessor("GetPropertyDiffUndoRecorder()", StaticAccessorType.Dot)]
+        [StaticAccessor("GetPropertyUndoManager()", StaticAccessorType.Dot)]
         [NativeMethod("Flush")]
         public static extern void FlushUndoRecordObjects();
+
+        [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
+        [NativeMethod("FlushTrackedObjects")]
+        internal static extern void FlushTrackedObjects();
 
         public delegate UndoPropertyModification[] PostprocessModifications(UndoPropertyModification[] modifications);
 

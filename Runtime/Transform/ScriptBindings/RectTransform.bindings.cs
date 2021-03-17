@@ -43,7 +43,7 @@ namespace UnityEngine
     }
 
     [NativeHeader("Editor/Src/Animation/AnimationModeSnapshot.h")]
-    [NativeHeader("Editor/Src/Undo/PropertyDiffUndoRecorder.h")]
+    [NativeHeader("Editor/Src/Undo/PropertyUndoManager.h")]
     public struct DrivenRectTransformTracker
     {
         private List<RectTransform> m_Tracked;
@@ -62,10 +62,10 @@ namespace UnityEngine
         [FreeFunction("GetAnimationModeSnapshot().IsInAnimationMode")]
         static extern bool IsInAnimationMode();
 
-        [FreeFunction("GetPropertyDiffUndoRecorder().HasRecordings")]
+        [FreeFunction("GetPropertyUndoManager().HasRecordings")]
         static extern bool HasUndoRecordObjects();
 
-        [FreeFunction("GetPropertyDiffUndoRecorder().IsUndoingOrRedoing")]
+        [FreeFunction("GetPropertyUndoManager().IsUndoingOrRedoing")]
         static extern bool IsUndoingOrRedoing();
 
         private static bool s_BlockUndo;

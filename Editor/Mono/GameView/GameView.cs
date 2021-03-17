@@ -289,6 +289,11 @@ namespace UnityEditor
             m_ZoomArea = new ZoomableArea(true, false) {uniformScale = true, upDirection = ZoomableArea.YDirection.Negative};
         }
 
+        private void UndoRedoPerformed()
+        {
+            Repaint();
+        }
+
         public void OnEnable()
         {
             wantsLessLayoutEvents = true;
@@ -299,6 +304,7 @@ namespace UnityEditor
 
             ModeService.modeChanged += OnEditorModeChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+            Undo.undoRedoPerformed += UndoRedoPerformed;
 
             targetSize = targetRenderSize;
         }
@@ -307,6 +313,8 @@ namespace UnityEditor
         {
             ModeService.modeChanged -= OnEditorModeChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            Undo.undoRedoPerformed -= UndoRedoPerformed;
+
             if (m_RenderTexture)
             {
                 DestroyImmediate(m_RenderTexture);

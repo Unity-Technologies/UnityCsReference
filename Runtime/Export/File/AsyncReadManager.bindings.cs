@@ -111,6 +111,13 @@ namespace Unity.IO.LowLevel.Unsafe
             return GetBytesRead(this);
         }
 
+        public long GetBytesRead(uint readCommandIndex)
+        {
+            if (!IsReadHandleValid(this))
+                throw new InvalidOperationException("ReadHandle.GetBytesRead cannot be called after the ReadHandle has been disposed");
+            return GetBytesReadForCommand(this, readCommandIndex);
+        }
+
         [ThreadAndSerializationSafe()]
         [FreeFunction("AsyncReadManagerManaged::GetReadStatus", IsThreadSafe = true)]
         private extern static ReadStatus GetReadStatus(ReadHandle handle);
@@ -118,6 +125,10 @@ namespace Unity.IO.LowLevel.Unsafe
         [ThreadAndSerializationSafe()]
         [FreeFunction("AsyncReadManagerManaged::GetBytesRead", IsThreadSafe = true)]
         private extern static long GetBytesRead(ReadHandle handle);
+
+        [ThreadAndSerializationSafe()]
+        [FreeFunction("AsyncReadManagerManaged::GetBytesReadForCommand", IsThreadSafe = true)]
+        private extern static long GetBytesReadForCommand(ReadHandle handle, uint readCommandIndex);
 
         [ThreadAndSerializationSafe()]
         [FreeFunction("AsyncReadManagerManaged::ReleaseReadHandle", IsThreadSafe = true)]

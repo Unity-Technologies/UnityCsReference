@@ -23,6 +23,8 @@ namespace UnityEditor.Profiling
         const int k_ToolbarHeight = 30;
         const int k_TotalBorderHeight = 2;
 
+        static long s_LastClosedTime;
+
         // Data
         bool m_IsInitialized;
         List<ProfilerModuleBase> m_Modules;
@@ -32,9 +34,19 @@ namespace UnityEditor.Profiling
 
         public IResponder responder { get; set; }
 
-        public static ProfilerModulesDropdownWindow Present(Rect buttonRect, List<ProfilerModuleBase> modules)
+        public static bool TryPresentIfNoOpenInstances(Rect buttonRect, List<ProfilerModuleBase> modules, out ProfilerModulesDropdownWindow window)
         {
-            var window = GetWindowDontShow<ProfilerModulesDropdownWindow>();
+            /* Due to differences in the timing of Editor window destruction across platforms, we cannot easily detect if the window was just destroyed due to being unfocussed with EditorWindow.HasOpenInstances alone. We need to detect this situation in the case of clicking the dropdown control whilst the window is open - this should close the window. Following the advice of the Editor team, this timer pattern is copied from LayerSettingsWindow as this is how they work around the issue. realtimeSinceStartUp is not used since it is set to 0 when entering/exiting playmode, we assume an increasing time when comparing time.
+             */
+            long nowMilliSeconds = System.DateTime.Now.Ticks / System.TimeSpan.TicksPerMillisecond;
+            bool justClosed = nowMilliSeconds < s_LastClosedTime + 50;
+            if (HasOpenInstances<ProfilerModulesDropdownWindow>() || justClosed)
+            {
+                window = null;
+                return false;
+            }
+
+            window = GetWindowDontShow<ProfilerModulesDropdownWindow>();
             window.Initialize(modules);
 
             var windowHeight = (k_ListViewItemHeight * modules.Count) + k_ToolbarHeight + k_TotalBorderHeight;
@@ -42,7 +54,7 @@ namespace UnityEditor.Profiling
             window.ShowAsDropDown(buttonRect, windowSize);
             window.Focus();
 
-            return window;
+            return true;
         }
 
         void Initialize(List<ProfilerModuleBase> modules)
@@ -83,6 +95,11 @@ namespace UnityEditor.Profiling
             var restoreDefaultsButton = rootVisualElement.Q<Button>(k_UssSelector_RestoreDefaultsButton);
             restoreDefaultsButton.text = LocalizationDatabase.GetLocalizedString("Restore Defaults");
             restoreDefaultsButton.clicked += RestoreDefaults;
+        }
+
+        void OnDisable()
+        {
+            s_LastClosedTime = System.DateTime.Now.Ticks / System.TimeSpan.TicksPerMillisecond;
         }
 
         void OnModuleSelected(IEnumerable<object> selectedItems)

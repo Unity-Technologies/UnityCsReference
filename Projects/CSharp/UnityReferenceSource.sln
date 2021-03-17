@@ -11,7 +11,11 @@ Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "Unity.CecilTools.gen", "..\
 EndProject
 Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "Unity.SerializationLogic.gen", "..\..\Tools\Unity.SerializationLogic\Unity.SerializationLogic.gen.csproj", "{C870EE19-8C55-83AD-8D5A-16B6E8AD8FDA}"
 EndProject
-Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "ScriptCompilationBuildProgram.Data.gen", "..\..\Editor\ScriptCompilationBuildProgram.Data\ScriptCompilationBuildProgram.Data.gen.csproj", "{201222DE-2488-4150-E3B5-DC5FCCE3C890}"
+Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "ScriptCompilationBuildProgram.Data.gen", "..\..\Editor\IncrementalBuildPipeline\ScriptCompilationBuildProgram.Data\ScriptCompilationBuildProgram.Data.gen.csproj", "{2BA9D0ED-D2EF-DA84-1599-37A046A44915}"
+EndProject
+Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "PlayerBuildProgramLibrary.Data.gen", "..\..\Editor\IncrementalBuildPipeline\PlayerBuildProgramLibrary.Data\PlayerBuildProgramLibrary.Data.gen.csproj", "{0B340C5C-3844-3B45-E3FD-DA591C333973}"
+EndProject
+Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "BeeBuildProgramCommon.Data.gen", "..\..\Editor\IncrementalBuildPipeline\BeeBuildProgramCommon.Data\BeeBuildProgramCommon.Data.gen.csproj", "{236F6903-2F21-1CCA-571E-C6D1D859E1EA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,10 +39,18 @@ Global
 		{C870EE19-8C55-83AD-8D5A-16B6E8AD8FDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C870EE19-8C55-83AD-8D5A-16B6E8AD8FDA}.Release|Any CPU.ActiveCfg = Debug|Any CPU
 		{C870EE19-8C55-83AD-8D5A-16B6E8AD8FDA}.Release|Any CPU.Build.0 = Debug|Any CPU
-		{201222DE-2488-4150-E3B5-DC5FCCE3C890}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{201222DE-2488-4150-E3B5-DC5FCCE3C890}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{201222DE-2488-4150-E3B5-DC5FCCE3C890}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{201222DE-2488-4150-E3B5-DC5FCCE3C890}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{2BA9D0ED-D2EF-DA84-1599-37A046A44915}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2BA9D0ED-D2EF-DA84-1599-37A046A44915}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2BA9D0ED-D2EF-DA84-1599-37A046A44915}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{2BA9D0ED-D2EF-DA84-1599-37A046A44915}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{0B340C5C-3844-3B45-E3FD-DA591C333973}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B340C5C-3844-3B45-E3FD-DA591C333973}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B340C5C-3844-3B45-E3FD-DA591C333973}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B340C5C-3844-3B45-E3FD-DA591C333973}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{236F6903-2F21-1CCA-571E-C6D1D859E1EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{236F6903-2F21-1CCA-571E-C6D1D859E1EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{236F6903-2F21-1CCA-571E-C6D1D859E1EA}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{236F6903-2F21-1CCA-571E-C6D1D859E1EA}.Release|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -606,6 +606,7 @@ namespace UnityEditor
             BuildTarget buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
             BuildTargetGroup buildTargetGroup = EditorUserBuildSettingsUtils.CalculateSelectedBuildTargetGroup();
             BuildPlatform platform = BuildPlatforms.instance.BuildPlatformFromTargetGroup(buildTargetGroup);
+            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(buildTargetGroup, buildTarget);
             bool licensed = BuildPipeline.LicenseCheck(buildTarget);
 
             // Draw the group name (text & icon separately to have some space between them)
@@ -641,7 +642,7 @@ namespace UnityEditor
                         Help.BrowseURL(url);
                     }
                 }
-                GUIBuildButtons(false, false, false, platform);
+                GUIBuildButtons(false, false, false, platform, postprocessor);
                 return;
             }
             else if (Application.HasProLicense() && !InternalEditorUtility.HasAdvancedLicenseOnBuildTarget(buildTarget))
@@ -665,7 +666,7 @@ namespace UnityEditor
             if (error != null)
             {
                 GUILayout.Label(error, EditorStyles.wordWrappedLabel);
-                GUIBuildButtons(false, false, false, platform);
+                GUIBuildButtons(false, false, false, platform, postprocessor);
                 return;
             }
 
@@ -702,7 +703,7 @@ namespace UnityEditor
                     }
                 }
                 GUILayout.EndHorizontal();
-                GUIBuildButtons(false, false, false, platform);
+                GUIBuildButtons(false, false, false, platform, postprocessor);
                 return;
             }
 
@@ -727,7 +728,6 @@ namespace UnityEditor
             bool shouldDrawArrayBoundsChecksToggle = buildWindowExtension != null ? buildWindowExtension.ShouldDrawExplicitArrayBoundsCheckbox() : false;
             bool shouldDrawDevelopmentPlayerToggle = buildWindowExtension != null ? buildWindowExtension.ShouldDrawDevelopmentPlayerCheckbox() : true;
 
-            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(buildTargetGroup, buildTarget);
             bool enableBuildScriptsOnly = (postprocessor != null ? postprocessor.SupportsScriptsOnlyBuild() : false);
             bool canInstallInBuildFolder = false;
 
@@ -861,22 +861,24 @@ namespace UnityEditor
             GUILayout.EndScrollView();
 
             GUIBuildButtons(buildWindowExtension, enableBuildButton, enableBuildAndRunButton,
-                canInstallInBuildFolder, platform);
+                canInstallInBuildFolder, platform, postprocessor);
         }
 
         private static void GUIBuildButtons(bool enableBuildButton,
             bool enableBuildAndRunButton,
             bool canInstallInBuildFolder,
-            BuildPlatform platform)
+            BuildPlatform platform,
+            IBuildPostprocessor postprocessor)
         {
-            GUIBuildButtons(null, enableBuildButton, enableBuildAndRunButton, canInstallInBuildFolder, platform);
+            GUIBuildButtons(null, enableBuildButton, enableBuildAndRunButton, canInstallInBuildFolder, platform, postprocessor);
         }
 
         private static void GUIBuildButtons(IBuildWindowExtension buildWindowExtension,
             bool enableBuildButton,
             bool enableBuildAndRunButton,
             bool canInstallInBuildFolder,
-            BuildPlatform platform)
+            BuildPlatform platform,
+            IBuildPostprocessor postprocessor)
         {
             GUILayout.FlexibleSpace();
 
@@ -974,7 +976,35 @@ namespace UnityEditor
             {
                 // Build Button
                 GUI.enabled = enableBuildButton;
-                if (GUILayout.Button(buildButton, GUILayout.Width(Styles.kButtonWidth)))
+                bool enableCleanBuild = (postprocessor != null ? postprocessor.UsesBeeBuild() : false);
+
+                if (enableCleanBuild)
+                {
+                    Rect buildRect = GUILayoutUtility.GetRect(buildButton, EditorStyles.dropDownToggleButton,
+                        GUILayout.Width(Styles.kButtonWidth));
+                    Rect buildRectPopupButton = buildRect;
+                    buildRectPopupButton.x += buildRect.width - 16;
+                    buildRectPopupButton.width = 16;
+
+                    if (EditorGUI.DropdownButton(buildRectPopupButton, GUIContent.none, FocusType.Passive,
+                        GUIStyle.none))
+                    {
+                        GenericMenu menu = new GenericMenu();
+                        menu.AddItem(new GUIContent("Clean Build…"), false,
+                            () =>
+                            {
+                                CallBuildMethods(askForBuildLocation,
+                                    BuildOptions.ShowBuiltPlayer | BuildOptions.CleanBuildCache);
+                            });
+                        menu.DropDown(buildRect);
+                    }
+                    else if (GUI.Button(buildRect, buildButton, EditorStyles.dropDownToggleButton))
+                    {
+                        CallBuildMethods(askForBuildLocation, BuildOptions.ShowBuiltPlayer);
+                        GUIUtility.ExitGUI();
+                    }
+                }
+                else if (GUILayout.Button(buildButton, GUILayout.Width(Styles.kButtonWidth)))
                 {
                     CallBuildMethods(askForBuildLocation, BuildOptions.ShowBuiltPlayer);
                     GUIUtility.ExitGUI();

@@ -27,7 +27,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static readonly string k_Descending = "↑";
 
         private ResourceLoader m_ResourceLoader;
-        private ApplicationProxy m_Application;
+        internal ApplicationProxy m_Application;
         private UnityConnectProxy m_UnityConnect;
         private PackageFiltering m_PackageFiltering;
         private PackageDatabase m_PackageDatabase;
@@ -353,7 +353,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             action = action ?? (a => SetFilterFromMenu(tab));
             actionStatusCallback = actionStatusCallback ?? (a => m_PackageFiltering.currentFilterTab == tab ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
-            filterTabsMenu.menu.AppendAction(GetFilterDisplayName(tab), action, actionStatusCallback);
+            filterTabsMenu.menu.AppendAction(GetFilterDisplayName(tab), action, actionStatusCallback, tab);
         }
 
         private void SetupFilterTabsMenu()

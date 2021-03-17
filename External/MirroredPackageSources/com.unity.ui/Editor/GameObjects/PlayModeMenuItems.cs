@@ -23,6 +23,7 @@ namespace UnityEditor.UIElements.GameObjects
             GameObject parent = menuCommand.context as GameObject;
             Type type = typeof(UIDocument);
             var root = ObjectFactory.CreateGameObject(type.Name, type);
+            GameObjectUtility.EnsureUniqueNameForSibling(root);
             UIDocument uiDocument = root.GetComponent<UIDocument>();
 
             // Works for all stages.

@@ -4,8 +4,10 @@
 
 using System;
 using System.Collections.Generic;
+using uei = UnityEngine.Internal;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
+using UnityEngine.Profiling;
 
 namespace UnityEngine.Experimental.TerrainAPI
 {
@@ -53,6 +55,8 @@ namespace UnityEngine.Experimental.TerrainAPI
             Terrain terrain                 { get; }            // the terrain tile
             RectInt clippedTerrainPixels    { get; }            // the region modified by the PaintContext, in target texture pixels
             RectInt clippedPCPixels         { get; }            // the region modified by the PaintContext, in PaintContext.sourceRenderTexture or destinationRenderTexture pixels
+            RectInt paddedTerrainPixels     { get; }            // a padded version of clippedTerrainPixels, used for extended-edge sampling to fill empty space
+            RectInt paddedPCPixels          { get; }            // a padded version of clippedPCPixels, used for extended-edge sampling to fill empty space
             bool gatherEnable               { get; set; }       // user tools can disable gathering of this terrain tile by setting this flag (default true)
             bool scatterEnable              { get; set; }       // user tools can disable scattering to this terrain tile by setting this flag (default true)
             object userData                 { get; set; }       // user tools can use this to associate data with the terrain
@@ -66,6 +70,9 @@ namespace UnityEngine.Experimental.TerrainAPI
             public RectInt clippedTerrainPixels;    // the tile pixels touched by this PaintContext (in terrain-local target texture pixels)
             public RectInt clippedPCPixels;         // the tile pixels touched by this PaintContext (in PaintContext/source/destRenderTexture pixels)
 
+            public RectInt paddedTerrainPixels;     // a padded version of clippedTerrainPixels, used for extended-edge sampling
+            public RectInt paddedPCPixels;          // a padded version of clippedPCPixels, used for extended-edge sampling
+
             public object userData;                 // user data stash
             public bool gatherEnable;                 // user controls for read/write
             public bool scatterEnable;
@@ -73,11 +80,14 @@ namespace UnityEngine.Experimental.TerrainAPI
             Terrain ITerrainInfo.terrain                 { get { return terrain; } }
             RectInt ITerrainInfo.clippedTerrainPixels    { get { return clippedTerrainPixels; } }
             RectInt ITerrainInfo.clippedPCPixels         { get { return clippedPCPixels; } }
+            RectInt ITerrainInfo.paddedTerrainPixels     { get { return paddedTerrainPixels; } }
+            RectInt ITerrainInfo.paddedPCPixels          { get { return paddedPCPixels; } }
             bool ITerrainInfo.gatherEnable               { get { return gatherEnable; } set { gatherEnable = value; } }
             bool ITerrainInfo.scatterEnable              { get { return scatterEnable; } set { scatterEnable = value; } }
             object ITerrainInfo.userData                 { get { return userData; } set { userData = value; } }
 
-            public static TerrainTile Make(Terrain terrain, int tileOriginPixelsX, int tileOriginPixelsY, RectInt pixelRect, int targetTextureWidth, int targetTextureHeight)
+            public static TerrainTile Make(Terrain terrain, int tileOriginPixelsX, int tileOriginPixelsY,
+                RectInt pixelRect, int targetTextureWidth, int targetTextureHeight, int edgePad = 0)
             {
                 var tile = new TerrainTile()
                 {
@@ -98,6 +108,23 @@ namespace UnityEngine.Experimental.TerrainAPI
                     tile.clippedTerrainPixels.y + tile.tileOriginPixels.y - pixelRect.y,
                     tile.clippedTerrainPixels.width,
                     tile.clippedTerrainPixels.height);
+                // Optimize padding by removing it on edges that have a neighbor.
+                int leftPad = terrain.leftNeighbor == null ? edgePad : 0;
+                int rightPad = terrain.rightNeighbor == null ? edgePad : 0;
+                int bottomPad = terrain.bottomNeighbor == null ? edgePad : 0;
+                int topPad = terrain.topNeighbor == null ? edgePad : 0;
+                // Redo same clipping as clippedTerrainPixels, but on padded version of terrain.
+                tile.paddedTerrainPixels = new RectInt()
+                {
+                    x = Mathf.Max(-leftPad, pixelRect.x - tileOriginPixelsX - leftPad),
+                    y = Mathf.Max(-bottomPad, pixelRect.y - tileOriginPixelsY - bottomPad),
+                    xMax = Mathf.Min(targetTextureWidth + rightPad, pixelRect.xMax - tileOriginPixelsX + rightPad),
+                    yMax = Mathf.Min(targetTextureHeight + topPad, pixelRect.yMax - tileOriginPixelsY + topPad)
+                };
+                // PaddedPCPixels is equal to clippedPCPixels padded by the same amount as terrainPixels.
+                tile.paddedPCPixels = new RectInt(
+                    tile.clippedPCPixels.min + (tile.paddedTerrainPixels.min - tile.clippedTerrainPixels.min),
+                    tile.clippedPCPixels.size + (tile.paddedTerrainPixels.size - tile.clippedTerrainPixels.size));
 
                 if (tile.clippedTerrainPixels.width == 0 || tile.clippedTerrainPixels.height == 0)
                 {
@@ -133,7 +160,10 @@ namespace UnityEngine.Experimental.TerrainAPI
         // TerrainPaintUtilityEditor hooks to this event to do automatic undo
         internal static event Action<PaintContext.ITerrainInfo, ToolAction, string /*editorUndoName*/> onTerrainTileBeforePaint;
 
-        public PaintContext(Terrain terrain, RectInt pixelRect, int targetTextureWidth, int targetTextureHeight, bool texelPadding = true)
+        public PaintContext(
+            Terrain terrain, RectInt pixelRect, int targetTextureWidth, int targetTextureHeight,
+            [uei.DefaultValue("true")] bool sharedBoundaryTexel = true,
+            [uei.DefaultValue("true")] bool fillOutsideTerrain = true)
         {
             this.originTerrain = terrain;
             this.pixelRect = pixelRect;
@@ -141,21 +171,26 @@ namespace UnityEngine.Experimental.TerrainAPI
             this.targetTextureHeight = targetTextureHeight;
             TerrainData terrainData = terrain.terrainData;
             this.pixelSize = new Vector2(
-                terrainData.size.x / (targetTextureWidth - (texelPadding ? 1.0f : 0.0f)),
-                terrainData.size.z / (targetTextureHeight - (texelPadding ? 1.0f : 0.0f)));
+                terrainData.size.x / (targetTextureWidth - (sharedBoundaryTexel ? 1.0f : 0.0f)),
+                terrainData.size.z / (targetTextureHeight - (sharedBoundaryTexel ? 1.0f : 0.0f)));
 
-            FindTerrainTilesUnlimited(texelPadding);
+            FindTerrainTilesUnlimited(sharedBoundaryTexel, fillOutsideTerrain);
         }
 
-        public static PaintContext CreateFromBounds(Terrain terrain, Rect boundsInTerrainSpace, int inputTextureWidth, int inputTextureHeight, int extraBorderPixels = 0, bool texelPadding = true)
+        public static PaintContext CreateFromBounds(
+            Terrain terrain, Rect boundsInTerrainSpace, int inputTextureWidth, int inputTextureHeight,
+            [uei.DefaultValue("0")] int extraBorderPixels = 0,
+            [uei.DefaultValue("true")] bool sharedBoundaryTexel = true,
+            [uei.DefaultValue("true")] bool fillOutsideTerrain = true)
         {
             return new PaintContext(
                 terrain,
-                TerrainPaintUtility.CalcPixelRectFromBounds(terrain, boundsInTerrainSpace, inputTextureWidth, inputTextureHeight, extraBorderPixels, texelPadding),
-                inputTextureWidth, inputTextureHeight, texelPadding);
+                TerrainPaintUtility.CalcPixelRectFromBounds(terrain, boundsInTerrainSpace, inputTextureWidth,
+                    inputTextureHeight, extraBorderPixels, sharedBoundaryTexel),
+                inputTextureWidth, inputTextureHeight, sharedBoundaryTexel, fillOutsideTerrain);
         }
 
-        private void FindTerrainTilesUnlimited(bool texelPadding)
+        private void FindTerrainTilesUnlimited(bool sharedBoundaryTexel, bool fillOutsideTerrain)
         {
             // pixel rect bounds (in world space)
             float minX = originTerrain.transform.position.x + pixelSize.x * pixelRect.xMin;
@@ -194,11 +229,13 @@ namespace UnityEngine.Experimental.TerrainAPI
                     var coord = cur.Key;
                     Terrain terrain = cur.Value;
 
-                    int minPixelX = coord.tileX * (targetTextureWidth - (texelPadding ? 1 : 0));
-                    int minPixelZ = coord.tileZ * (targetTextureHeight - (texelPadding ? 1 : 0));
+                    int minPixelX = coord.tileX * (targetTextureWidth - (sharedBoundaryTexel ? 1 : 0));
+                    int minPixelZ = coord.tileZ * (targetTextureHeight - (sharedBoundaryTexel ? 1 : 0));
                     RectInt terrainPixelRect = new RectInt(minPixelX, minPixelZ, targetTextureWidth, targetTextureHeight);
                     if (pixelRect.Overlaps(terrainPixelRect))
                     {
+                        // EdgePad fills empty regions outside terrains in PaintContext.
+                        int edgePad = fillOutsideTerrain ? Mathf.Max(targetTextureWidth, targetTextureHeight) : 0;
                         m_TerrainTiles.Add(
                             TerrainTile.Make(
                                 terrain,
@@ -206,7 +243,8 @@ namespace UnityEngine.Experimental.TerrainAPI
                                 minPixelZ,
                                 pixelRect,
                                 targetTextureWidth,
-                                targetTextureHeight));
+                                targetTextureHeight,
+                                edgePad));
                         m_HeightWorldSpaceMin = Mathf.Min(m_HeightWorldSpaceMin, terrain.GetPosition().y);
                         m_HeightWorldSpaceMax = Mathf.Max(m_HeightWorldSpaceMax, terrain.GetPosition().y + terrain.terrainData.size.y);
                     }
@@ -216,7 +254,8 @@ namespace UnityEngine.Experimental.TerrainAPI
 
         public void CreateRenderTargets(RenderTextureFormat colorFormat)
         {
-            sourceRenderTexture = RenderTexture.GetTemporary(pixelRect.width, pixelRect.height, 0, colorFormat, RenderTextureReadWrite.Linear);
+            // Extended edge sampling of tiles requires a depth buffer (see TerrainPaintUtility.DrawQuadPadded for more info).
+            sourceRenderTexture = RenderTexture.GetTemporary(pixelRect.width, pixelRect.height, 16, colorFormat, RenderTextureReadWrite.Linear);
             destinationRenderTexture = RenderTexture.GetTemporary(pixelRect.width, pixelRect.height, 0, colorFormat, RenderTextureReadWrite.Linear);
             sourceRenderTexture.wrapMode = TextureWrapMode.Clamp;
             sourceRenderTexture.filterMode = FilterMode.Point;
@@ -247,7 +286,7 @@ namespace UnityEngine.Experimental.TerrainAPI
                 blitMaterial = TerrainPaintUtility.GetBlitMaterial();
 
             RenderTexture.active = sourceRenderTexture;
-            GL.Clear(false, true, defaultColor);
+            GL.Clear(true, true, defaultColor);
 
             GL.PushMatrix();
             GL.LoadPixelMatrix(0, pixelRect.width, 0, pixelRect.height);
@@ -276,7 +315,9 @@ namespace UnityEngine.Experimental.TerrainAPI
 
                 blitMaterial.SetTexture("_MainTex", sourceTexture);
                 blitMaterial.SetPass(blitPass);
-                TerrainPaintUtility.DrawQuad(terrainTile.clippedPCPixels, terrainTile.clippedTerrainPixels, sourceTexture);
+                // Draw padded quads to support extended-edge sampling of each terrain tile into empty regions.
+                TerrainPaintUtility.DrawQuadPadded(terrainTile.clippedPCPixels, terrainTile.paddedPCPixels,
+                    terrainTile.clippedTerrainPixels, terrainTile.paddedTerrainPixels, sourceTexture);
 
                 sourceTexture.filterMode = oldFilterMode;
 
