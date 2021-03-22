@@ -1190,11 +1190,10 @@ namespace UnityEditor
             Rect popupRect = GUILayoutUtility.GetRect(Styles.addArea, EditorStyles.toolbarDropDown, Styles.chartWidthOption);
             if (EditorGUI.DropdownButton(popupRect, Styles.addArea, FocusType.Passive, EditorStyles.toolbarDropDownLeft))
             {
-                if (!HasOpenInstances<ProfilerModulesDropdownWindow>())
+                var popupScreenRect = GUIUtility.GUIToScreenRect(popupRect);
+                if (ProfilerModulesDropdownWindow.TryPresentIfNoOpenInstances(popupScreenRect, m_Modules, out var modulesDropdownWindow))
                 {
-                    var popupScreenRect = GUIUtility.GUIToScreenRect(popupRect);
-                    var modulesDropdownWindow = ProfilerModulesDropdownWindow.Present(popupScreenRect, m_Modules);
-                    modulesDropdownWindow.responder = m_ProfilerWindowControllerProxy as ProfilerModulesDropdownWindow.IResponder;
+                    modulesDropdownWindow.responder = m_ProfilerWindowControllerProxy;
                 }
             }
         }
