@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
@@ -186,14 +185,6 @@ namespace UnityEditor.PackageManager.UI
             scopedRegistryInfoBox.Q<Button>().clickable.clicked += () => m_Application.OpenURL(scopedRegistryInfoReadMoreUrl);
 
             RefreshContent();
-        }
-
-        public UnityEngine.Object GetDisplayPackageManifestAsset()
-        {
-            var assetPath = displayVersion?.packageInfo?.assetPath;
-            if (string.IsNullOrEmpty(assetPath))
-                return null;
-            return m_AssetDatabase.LoadMainAssetAtPath(Path.Combine(assetPath, "package.json"));
         }
 
         public void OnEnable()

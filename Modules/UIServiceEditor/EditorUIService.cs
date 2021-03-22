@@ -49,8 +49,8 @@ namespace UnityEditor
         public void AddDefaultEditorStyleSheets(VisualElement ve) => UIElementsEditorUtility.AddDefaultEditorStyleSheets(ve);
         public string GetUIToolkitDefaultCommonDarkStyleSheetPath() => UIElementsEditorUtility.s_DefaultCommonDarkStyleSheetPath;
         public string GetUIToolkitDefaultCommonLightStyleSheetPath() => UIElementsEditorUtility.s_DefaultCommonLightStyleSheetPath;
-        public StyleSheet GetUIToolkitDefaultCommonDarkStyleSheet() => UIElementsEditorUtility.s_DefaultCommonDarkStyleSheet;
-        public StyleSheet GetUIToolkitDefaultCommonLightStyleSheet() => UIElementsEditorUtility.s_DefaultCommonLightStyleSheet;
+        public StyleSheet GetUIToolkitDefaultCommonDarkStyleSheet() => UIElementsEditorUtility.GetCommonDarkStyleSheet();
+        public StyleSheet GetUIToolkitDefaultCommonLightStyleSheet() => UIElementsEditorUtility.GetCommonLightStyleSheet();
 
         public StyleSheet CompileStyleSheetContent(string styleSheetContent, bool disableValidation, bool reportErrors)
         {

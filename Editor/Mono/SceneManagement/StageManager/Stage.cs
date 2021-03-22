@@ -92,7 +92,13 @@ namespace UnityEditor.SceneManagement
 
         internal virtual Stage GetContextStage() { return this; }
 
-        internal virtual Color GetBackgroundColor() { return SceneView.kSceneViewBackground.Color; }
+        internal virtual Color GetBackgroundColor()
+        {
+            // Case 1255995 - Workaround for OSX 10.15 driver issue with Intel 630 cards
+            Color opaqueBackground = SceneView.kSceneViewBackground.Color;
+            opaqueBackground.a = 1;
+            return opaqueBackground;
+        }
 
         // Called before and after the Scene view renders.
         internal virtual void OnPreSceneViewRender(SceneView sceneView) {}

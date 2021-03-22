@@ -1624,6 +1624,9 @@ namespace UnityEditor
                     // target is a pure c# object, like a MonoBehaviour
                     // We'll just attempt to recreate the EditorElement on the next frame
                     // see case 1147234
+                    // For some reasons the case 1302872 is also triggering that code but does not force an inspector rebuild.
+                    // Adding a delayed call to make sure a rebuild is done regardless of the magic happening behind it.
+                    EditorApplication.delayCall += InspectorWindow.RefreshInspectors;
                 }
             }
 

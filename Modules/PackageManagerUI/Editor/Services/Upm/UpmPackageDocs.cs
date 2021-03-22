@@ -3,8 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.IO;
 using System.Linq;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -72,16 +72,24 @@ namespace UnityEditor.PackageManager.UI
         {
             if (version?.isAvailableOnDisk ?? false)
             {
-                var docsFolder = Path.Combine(version.packageInfo.resolvedPath, "Documentation~");
-                if (!IOProxy.DirectoryExists(docsFolder))
-                    docsFolder = Path.Combine(version.packageInfo.resolvedPath, "Documentation");
-                if (IOProxy.DirectoryExists(docsFolder))
+                try
                 {
-                    var mdFiles = IOProxy.DirectoryGetFiles(docsFolder, "*.md", SearchOption.TopDirectoryOnly);
-                    var docsMd = mdFiles.FirstOrDefault(d => Path.GetFileName(d).ToLower() == "index.md")
-                        ?? mdFiles.FirstOrDefault(d => Path.GetFileName(d).ToLower() == "tableofcontents.md") ?? mdFiles.FirstOrDefault();
-                    if (!string.IsNullOrEmpty(docsMd))
-                        return docsMd;
+                    var docsFolder = IOProxy.PathsCombine(version.packageInfo.resolvedPath, "Documentation~");
+                    if (!IOProxy.DirectoryExists(docsFolder))
+                        docsFolder = IOProxy.PathsCombine(version.packageInfo.resolvedPath, "Documentation");
+                    if (IOProxy.DirectoryExists(docsFolder))
+                    {
+                        var mdFiles = IOProxy.DirectoryGetFiles(docsFolder, "*.md", System.IO.SearchOption.TopDirectoryOnly);
+                        var docsMd = mdFiles.FirstOrDefault(d => IOProxy.GetFileName(d).ToLower() == "index.md")
+                            ?? mdFiles.FirstOrDefault(d => IOProxy.GetFileName(d).ToLower() == "tableofcontents.md") ?? mdFiles.FirstOrDefault();
+                        if (!string.IsNullOrEmpty(docsMd))
+                            return docsMd;
+                    }
+                }
+                catch (System.IO.IOException e)
+                {
+                    Debug.Log($"[Package Manager] Cannot get offline documentation: {e.Message}");
+                    return string.Empty;
                 }
             }
             return string.Empty;
@@ -127,8 +135,15 @@ namespace UnityEditor.PackageManager.UI
         {
             if (version?.isAvailableOnDisk ?? false)
             {
-                var changelogFile = Path.Combine(version.packageInfo.resolvedPath, "CHANGELOG.md");
-                return IOProxy.FileExists(changelogFile) ? changelogFile : string.Empty;
+                try
+                {
+                    var changelogFile = IOProxy.PathsCombine(version.packageInfo.resolvedPath, "CHANGELOG.md");
+                    return IOProxy.FileExists(changelogFile) ? changelogFile : string.Empty;
+                }
+                catch (System.IO.IOException e)
+                {
+                    Debug.Log($"[Package Manager] Cannot get offline change log: {e.Message}");
+                }
             }
             return string.Empty;
         }
@@ -157,8 +172,15 @@ namespace UnityEditor.PackageManager.UI
         {
             if (version?.isAvailableOnDisk ?? false)
             {
-                var licenseFile = Path.Combine(version.packageInfo.resolvedPath, "LICENSE.md");
-                return IOProxy.FileExists(licenseFile) ? licenseFile : string.Empty;
+                try
+                {
+                    var licenseFile = IOProxy.PathsCombine(version.packageInfo.resolvedPath, "LICENSE.md");
+                    return IOProxy.FileExists(licenseFile) ? licenseFile : string.Empty;
+                }
+                catch (System.IO.IOException e)
+                {
+                    Debug.Log($"[Package Manager] Cannot get offline licenses: {e.Message}");
+                }
             }
             return string.Empty;
         }

@@ -184,7 +184,7 @@ namespace UnityEditor
         // When hovering over some handle axis/control, this is the indication that it would
         // get picked on mouse press:
         // Color gets a bit more bright and less opaque,
-        internal static Color s_HoverIntensity = new Color(1.2f, 1.2f, 1.2f, 1.33f);
+        internal static Color s_HoverIntensity = new Color(1.0f, 1.0f, 1.0f, 1.33f);
         // Handle lines get more thick,
         internal static float s_HoverExtraThickness = 1.0f;
         // 3D handle elements (caps) get slightly larger.
@@ -240,7 +240,13 @@ namespace UnityEditor
             }
             else if (IsHovering(controlID, evt))
             {
-                Handles.color = Handles.color * s_HoverIntensity;
+                var col = Handles.color * s_HoverIntensity;
+                // make sure colors never go outside of 0..1 range
+                col.r = Mathf.Clamp01(col.r);
+                col.g = Mathf.Clamp01(col.g);
+                col.b = Mathf.Clamp01(col.b);
+                col.a = Mathf.Clamp01(col.a);
+                Handles.color = col;
                 thickness += s_HoverExtraThickness;
             }
         }
@@ -340,6 +346,11 @@ namespace UnityEditor
             }
 
             var mat = SetupArcMaterial();
+            if (mat == null) // can't do thick lines
+            {
+                DrawLine(p1, p2);
+                return;
+            }
             mat.SetVector(kPropArcCenterRadius, new Vector4(p1.x, p1.y, p1.z, 0));
             mat.SetVector(kPropArcFromCount, new Vector4(p2.x, p2.y, p2.z, 0));
             mat.SetVector(kPropArcThicknessSides, new Vector4(thickness, kArcSides, 0, 0));
@@ -718,8 +729,23 @@ namespace UnityEditor
                         thickness += s_HoverExtraThickness;
                         coneSize *= s_HoverExtraScale;
                     }
-                    ConeHandleCap(controlID, position + (direction + coneOffset) * size, rotation, coneSize, eventType);
-                    Handles.DrawLine(position, position + (direction + coneOffset) * (size * .9f), thickness);
+                    var camera = Camera.current;
+                    var viewDir = camera != null ? camera.transform.forward : -direction;
+                    var facingAway = Vector3.Dot(viewDir, direction) < 0.0f;
+                    var conePos = position + (direction + coneOffset) * size;
+                    var linePos = position + (direction + coneOffset) * (size * .9f);
+                    // draw line vs cone in the appropriate order based on viewing
+                    // direction, for correct transparency sorting
+                    if (facingAway)
+                    {
+                        DrawLine(position, linePos, thickness);
+                        ConeHandleCap(controlID, conePos, rotation, coneSize, eventType);
+                    }
+                    else
+                    {
+                        ConeHandleCap(controlID, conePos, rotation, coneSize, eventType);
+                        DrawLine(position, linePos, thickness);
+                    }
                     break;
                 }
             }
@@ -1085,8 +1111,10 @@ namespace UnityEditor
 
         static Material SetupArcMaterial()
         {
-            var col = color * lineTransparency;
             var mat = HandleUtility.handleArcMaterial;
+            if (!mat.shader.isSupported) // can happen when editor is actually using OpenGL ES 2 (no instancing)
+                return null;
+            var col = color * lineTransparency;
             mat.SetInt(kPropUseGuiClip, Camera.current ? 0 : 1);
             mat.SetInt(kPropHandleZTest, (int)zTest);
             mat.SetColor(kPropColor, col);
@@ -1105,6 +1133,13 @@ namespace UnityEditor
             thickness = ThicknessToPixels(thickness);
 
             var mat = SetupArcMaterial();
+            if (mat == null) // can't do arcs or thick lines (only on GLES2), fallback to thin arc via CPU path
+            {
+                SetDiscSectionPoints(s_WireArcPoints, center, normal, from, angle, radius);
+                DrawPolyLine(s_WireArcPoints);
+                return;
+            }
+
             mat.SetVector(kPropArcCenterRadius, new Vector4(center.x, center.y, center.z, radius));
             mat.SetVector(kPropArcNormalAngle, new Vector4(normal.x, normal.y, normal.z, angle * Mathf.Deg2Rad));
             mat.SetVector(kPropArcFromCount, new Vector4(from.x, from.y, from.z, kArcSegments));

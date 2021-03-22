@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -104,7 +103,15 @@ namespace UnityEditor.PackageManager.UI
         public void SetLocalPath(string path)
         {
             m_LocalPath = path ?? string.Empty;
-            m_IsAvailableOnDisk = !string.IsNullOrEmpty(m_LocalPath) && m_IOProxy.FileExists(m_LocalPath);
+            try
+            {
+                m_IsAvailableOnDisk = !string.IsNullOrEmpty(m_LocalPath) && m_IOProxy.FileExists(m_LocalPath);
+            }
+            catch (System.IO.IOException e)
+            {
+                Debug.Log($"[Package Manager] Cannot determine local path for {packageUniqueId}: {e.Message}");
+                m_IsAvailableOnDisk = false;
+            }
         }
 
         public AssetStorePackageVersion(AssetStoreUtils assetStoreUtils, IOProxy ioProxy, AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null)

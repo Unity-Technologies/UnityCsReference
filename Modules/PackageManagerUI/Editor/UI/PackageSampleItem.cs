@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.IO;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -37,9 +39,8 @@ namespace UnityEditor.PackageManager.UI
         private void OnImportButtonClicked()
         {
             var previousImports = m_Sample.previousImports;
-            var previousImportPaths = string.Empty;
-            foreach (var v in previousImports)
-                previousImportPaths += v.Replace(Application.dataPath, "Assets") + "\n";
+            var previousImportPaths = previousImports.Aggregate<string, string>(string.Empty,
+                (current, next) => current + next.Replace(@"\", "/").Replace(Application.dataPath, "Assets") + "\n");
 
             var warningMessage = string.Empty;
             if (previousImports.Count > 1)
@@ -77,8 +78,9 @@ namespace UnityEditor.PackageManager.UI
                 if (m_Sample.isImported)
                 {
                     // Highlight import path
-                    var importRelativePath = m_Sample.importPath.Replace(Application.dataPath, "Assets");
-                    Object obj = m_AssetDatabase.LoadMainAssetAtPath(importRelativePath);
+                    var currentPath = Directory.GetCurrentDirectory();
+                    var importRelativePath = m_Sample.importPath.Replace(currentPath, "");
+                    var obj = m_AssetDatabase.LoadMainAssetAtPath(importRelativePath);
                     m_Selection.activeObject = obj;
                     EditorGUIUtility.PingObject(obj);
                 }

@@ -250,18 +250,26 @@ namespace UnityEditor.PackageManager.UI
                 if (string.IsNullOrEmpty(path))
                     return;
 
-                if (m_IOProxy.GetFileName(path) != "package.json")
+                try
                 {
-                    Debug.Log(L10n.Tr("Please select a valid package.json file in a package folder."));
-                    return;
-                }
+                    if (m_IOProxy.GetFileName(path) != "package.json")
+                    {
+                        Debug.Log(L10n.Tr("[Package Manager] Please select a valid package.json file in a package folder."));
+                        return;
+                    }
 
-                if (!m_PackageDatabase.isInstallOrUninstallInProgress)
-                {
-                    m_PackageDatabase.InstallFromPath(m_IOProxy.GetDirectoryName(path));
-                    PackageManagerWindowAnalytics.SendEvent("addFromDisk");
+
+                    if (!m_PackageDatabase.isInstallOrUninstallInProgress)
+                    {
+                        m_PackageDatabase.InstallFromPath(m_IOProxy.GetParentDirectory(path));
+                        PackageManagerWindowAnalytics.SendEvent("addFromDisk");
+                    }
                 }
-            }, a => DropdownMenuAction.Status.Normal);
+                catch (System.IO.IOException e)
+                {
+                    Debug.Log($"[Package Manager] Cannot add package from disk {path}: {e.Message}");
+                }
+            }, a => DropdownMenuAction.Status.Normal, "AddFromDisk");
 
             addMenu.menu.AppendAction(L10n.Tr("Add package from tarball..."), a =>
             {
@@ -271,7 +279,7 @@ namespace UnityEditor.PackageManager.UI
                     m_PackageDatabase.InstallFromPath(path);
                     PackageManagerWindowAnalytics.SendEvent("addFromTarball");
                 }
-            }, a => DropdownMenuAction.Status.Normal);
+            }, a => DropdownMenuAction.Status.Normal, "AddFromTarball");
 
             addMenu.menu.AppendAction(L10n.Tr("Add package from git URL..."), a =>
             {
@@ -297,7 +305,7 @@ namespace UnityEditor.PackageManager.UI
 
                 parent.Add(addFromGitUrl);
                 addFromGitUrl.Show();
-            }, a => DropdownMenuAction.Status.Normal);
+            }, a => DropdownMenuAction.Status.Normal, "AddFromGit");
 
             PackageManagerExtensions.ExtensionCallback(() =>
             {
