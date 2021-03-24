@@ -115,7 +115,7 @@ namespace UnityEditor
 
         TextureInspector textureInspector
         {
-            get => (TextureInspector)preview;
+            get => preview as TextureInspector;
         }
 
         internal static readonly TextureImporterFormat[] kFormatsWithCompressionSettings =

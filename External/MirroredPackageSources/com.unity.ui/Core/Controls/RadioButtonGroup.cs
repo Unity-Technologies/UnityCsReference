@@ -8,7 +8,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="RadioButtonGroup"/> using data from a UXML file.
         /// </summary>
-        public new class UxmlFactory : UxmlFactory<RadioButtonGroup, UxmlTraits> { }
+        public new class UxmlFactory : UxmlFactory<RadioButtonGroup, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="RadioButtonGroup"/>.
@@ -76,7 +76,7 @@ namespace UnityEngine.UIElements
         }
 
         public RadioButtonGroup()
-            : this(null) { }
+            : this(null) {}
 
         public RadioButtonGroup(string label, List<string> radioButtonChoices = null)
             : base(label, null)

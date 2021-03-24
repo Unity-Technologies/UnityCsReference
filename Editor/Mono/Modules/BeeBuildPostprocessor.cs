@@ -96,7 +96,7 @@ namespace UnityEditor.Modules
 
                 var additionalArgs = new List<string>();
 
-                var diagArgs = Debug.GetDiagnosticSwitch("VMUnityLinkerAdditionalArgs") as string;
+                var diagArgs = Debug.GetDiagnosticSwitch("VMUnityLinkerAdditionalArgs").value as string;
                 if (!string.IsNullOrEmpty(diagArgs))
                     additionalArgs.Add(diagArgs.Trim('\''));
 
@@ -156,7 +156,7 @@ namespace UnityEditor.Modules
 
             var additionalArgs = new List<string>();
 
-            var diagArgs = Debug.GetDiagnosticSwitch("VMIl2CppAdditionalArgs") as string;
+            var diagArgs = Debug.GetDiagnosticSwitch("VMIl2CppAdditionalArgs").value as string;
             if (!string.IsNullOrEmpty(diagArgs))
                 additionalArgs.Add(diagArgs.Trim('\''));
 

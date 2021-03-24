@@ -116,8 +116,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 
             RefreshSelectedInInspectorClass();
+        }
 
-            m_ExtensionManager.OnWindowCreated(this, packageDetails.extensionContainer);
+        public void CreateGUI()
+        {
+            m_ExtensionManager.OnWindowCreated(this, packageDetails.extensionContainer, packageDetails.toolbarExtensions);
         }
 
         private void DelayRefresh(PackageFilterTab tab)
@@ -408,6 +411,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_ExtensionManager.CreateDetailsExtension();
         }
 
+        public IPackageActionMenu AddPackageActionMenu()
+        {
+            return m_ExtensionManager.CreatePackageActionMenu();
+        }
+
+        public IPackageActionButton AddPackageActionButton()
+        {
+            return m_ExtensionManager.CreatePackageActionButton();
+        }
+
         public void Select(string identifier)
         {
             SelectPackageAndFilter(identifier);
@@ -421,6 +434,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return new PackageSelectionArgs { package = package, packageVersion = packageVersion, window = this };
             }
         }
+
+        public IMenu addMenu => packageManagerToolbar.addMenu;
+        public IMenu advancedMenu => packageManagerToolbar.toolbarSettingsMenu;
 
         private VisualElementCache cache { set; get; }
         internal PackageList packageList { get { return cache.Get<PackageList>("packageList"); } }

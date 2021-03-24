@@ -141,7 +141,7 @@ namespace UnityEditor.UIElements
 
             UpdateInspectorVisibility();
 
-            //Need to update the cache for multi-object edit detection. 
+            //Need to update the cache for multi-object edit detection.
             if (editor.targets.Length != Selection.objects.Length)
                 inspectorWindow.tracker.RebuildIfNecessary();
 

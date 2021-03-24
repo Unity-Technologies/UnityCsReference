@@ -313,43 +313,75 @@ namespace UnityEngine.Profiling
 
 
         [Conditional("ENABLE_PROFILER")]
-        public static void EmitFrameMetaData(Guid id, int tag, Array data)
+        public static unsafe void EmitFrameMetaData(Guid id, int tag, Array data)
         {
             if (data == null)
                 throw new ArgumentNullException("data");
 
             var elementType = data.GetType().GetElementType();
             if (!UnsafeUtility.IsBlittable(elementType))
-                throw new ArgumentException(string.Format("{0} type used in Profiler.ReportFrameStats must be blittable", elementType));
+                throw new ArgumentException(string.Format("{0} type must be blittable", elementType));
 
-            Internal_EmitFrameMetaData_Array(id.ToByteArray(), tag, data, data.Length, UnsafeUtility.SizeOf(elementType));
+            Internal_EmitGlobalMetaData_Array(&id, 16, tag, data, data.Length, UnsafeUtility.SizeOf(elementType), true);
         }
 
         [Conditional("ENABLE_PROFILER")]
-        public static void EmitFrameMetaData<T>(Guid id, int tag, List<T> data) where T : struct
+        public static unsafe void EmitFrameMetaData<T>(Guid id, int tag, List<T> data) where T : struct
         {
             if (data == null)
                 throw new ArgumentNullException("data");
 
             var elementType = typeof(T);
             if (!UnsafeUtility.IsBlittable(typeof(T)))
-                throw new ArgumentException(string.Format("{0} type used in Profiler.ReportFrameStats must be blittable", elementType));
+                throw new ArgumentException(string.Format("{0} type must be blittable", elementType));
 
-            Internal_EmitFrameMetaData_Array(id.ToByteArray(), tag, NoAllocHelpers.ExtractArrayFromList(data), data.Count, UnsafeUtility.SizeOf(elementType));
+            Internal_EmitGlobalMetaData_Array(&id, 16, tag, NoAllocHelpers.ExtractArrayFromList(data), data.Count, UnsafeUtility.SizeOf(elementType), true);
         }
 
         [Conditional("ENABLE_PROFILER")]
         public static unsafe void EmitFrameMetaData<T>(Guid id, int tag, Unity.Collections.NativeArray<T> data) where T : struct
         {
-            Internal_EmitFrameMetaData_Native(&id, 16, tag, (IntPtr)data.GetUnsafeReadOnlyPtr(), data.Length, UnsafeUtility.SizeOf<T>());
+            Internal_EmitGlobalMetaData_Native(&id, 16, tag, (IntPtr)data.GetUnsafeReadOnlyPtr(), data.Length, UnsafeUtility.SizeOf<T>(), true);
         }
 
-        [NativeMethod(Name = "ProfilerBindings::Internal_EmitFrameMetaData_Array", IsFreeFunction = true, IsThreadSafe = true)]
-        [NativeConditional("ENABLE_PROFILER")]
-        static extern void Internal_EmitFrameMetaData_Array(byte[] id, int tag, Array data, int count, int elementSize);
+        [Conditional("ENABLE_PROFILER")]
+        public static unsafe void EmitSessionMetaData(Guid id, int tag, Array data)
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
 
-        [NativeMethod(Name = "ProfilerBindings::Internal_EmitFrameMetaData_Native", IsFreeFunction = true, IsThreadSafe = true)]
+            var elementType = data.GetType().GetElementType();
+            if (!UnsafeUtility.IsBlittable(elementType))
+                throw new ArgumentException(string.Format("{0} type must be blittable", elementType));
+
+            Internal_EmitGlobalMetaData_Array(&id, 16, tag, data, data.Length, UnsafeUtility.SizeOf(elementType), false);
+        }
+
+        [Conditional("ENABLE_PROFILER")]
+        public static unsafe void EmitSessionMetaData<T>(Guid id, int tag, List<T> data) where T : struct
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
+
+            var elementType = typeof(T);
+            if (!UnsafeUtility.IsBlittable(typeof(T)))
+                throw new ArgumentException(string.Format("{0} type must be blittable", elementType));
+
+            Internal_EmitGlobalMetaData_Array(&id, 16, tag, NoAllocHelpers.ExtractArrayFromList(data), data.Count, UnsafeUtility.SizeOf(elementType), false);
+        }
+
+        [Conditional("ENABLE_PROFILER")]
+        public static unsafe void EmitSessionMetaData<T>(Guid id, int tag, Unity.Collections.NativeArray<T> data) where T : struct
+        {
+            Internal_EmitGlobalMetaData_Native(&id, 16, tag, (IntPtr)data.GetUnsafeReadOnlyPtr(), data.Length, UnsafeUtility.SizeOf<T>(), false);
+        }
+
+        [NativeMethod(Name = "ProfilerBindings::Internal_EmitGlobalMetaData_Array", IsFreeFunction = true, IsThreadSafe = true)]
         [NativeConditional("ENABLE_PROFILER")]
-        static extern unsafe void Internal_EmitFrameMetaData_Native(void* id, int idLen, int tag, IntPtr data, int count, int elementSize);
+        static extern unsafe void Internal_EmitGlobalMetaData_Array(void* id, int idLen, int tag, Array data, int count, int elementSize, bool frameData);
+
+        [NativeMethod(Name = "ProfilerBindings::Internal_EmitGlobalMetaData_Native", IsFreeFunction = true, IsThreadSafe = true)]
+        [NativeConditional("ENABLE_PROFILER")]
+        static extern unsafe void Internal_EmitGlobalMetaData_Native(void* id, int idLen, int tag, IntPtr data, int count, int elementSize, bool frameData);
     }
 }

@@ -16,19 +16,19 @@ namespace UnityEditor.UIElements.StyleSheets
         static readonly Uri s_ProjectRootUri = new UriBuilder("project", "").Uri;
         static readonly Uri s_ThemeUri = new UriBuilder(ThemeRegistry.kThemeScheme, "").Uri;
 
-        public static URIValidationResult ValidAssetURL(string assetPath, string path, out string errorMessage, out string resolvedProjectRelativePath)
+        public static URIValidationResult ValidAssetURL(string assetPath, string path, out string errorToken, out string resolvedProjectRelativePath)
         {
-            return ValidAssetURL(assetPath, path, out errorMessage, out resolvedProjectRelativePath, out _);
+            return ValidAssetURL(assetPath, path, out errorToken, out resolvedProjectRelativePath, out _);
         }
 
-        public static URIValidationResult ValidAssetURL(string assetPath, string path, out string errorMessage, out string resolvedProjectRelativePath, out string resolvedSubAssetPath)
+        public static URIValidationResult ValidAssetURL(string assetPath, string path, out string errorToken, out string resolvedProjectRelativePath, out string resolvedSubAssetPath)
         {
             resolvedProjectRelativePath = null;
             resolvedSubAssetPath = null;
 
             if (string.IsNullOrEmpty(path))
             {
-                errorMessage = "Empty URI";
+                errorToken = "''";
                 return URIValidationResult.InvalidURILocation;
             }
 
@@ -57,13 +57,13 @@ namespace UnityEditor.UIElements.StyleSheets
 
                 if (Uri.TryCreate(assetPathUri, path, out absoluteUri) == false)
                 {
-                    errorMessage = assetPath;
+                    errorToken = assetPath;
                     return URIValidationResult.InvalidURILocation;
                 }
             }
             else if (absoluteUri.Scheme != s_ProjectRootUri.Scheme)
             {
-                errorMessage = absoluteUri.Scheme;
+                errorToken = absoluteUri.Scheme;
                 return URIValidationResult.InvalidURIScheme;
             }
 
@@ -78,12 +78,12 @@ namespace UnityEditor.UIElements.StyleSheets
             if (string.IsNullOrEmpty(projectRelativePath) ||
                 (absoluteUri.Scheme != s_ThemeUri.Scheme && !File.Exists(projectRelativePath)))
             {
-                errorMessage = projectRelativePath;
+                errorToken = projectRelativePath;
                 return URIValidationResult.InvalidURIProjectAssetPath;
             }
 
             resolvedProjectRelativePath = absoluteUri.Scheme != s_ThemeUri.Scheme ? projectRelativePath : path;
-            errorMessage = null;
+            errorToken = null;
 
             return URIValidationResult.OK;
         }

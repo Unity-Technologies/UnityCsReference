@@ -5,6 +5,7 @@
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Scripting;
 
 namespace UnityEditor.SceneManagement
 {
@@ -90,6 +91,7 @@ namespace UnityEditor.SceneManagement
             return StageHandle.GetStageHandle(scene);
         }
 
+        [RequiredByNativeCode]
         public static void GoToMainStage()
         {
             StageNavigationManager.instance.GoToMainStage(StageNavigationManager.Analytics.ChangeType.GoToMainViaUnknown);

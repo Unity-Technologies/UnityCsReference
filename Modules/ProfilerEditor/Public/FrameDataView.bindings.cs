@@ -255,6 +255,31 @@ namespace UnityEditor.Profiling
         [ThreadSafe]
         extern int GetFrameMetaDataCount(byte[] statsId, int tag);
 
+        public NativeArray<T> GetSessionMetaData<T>(Guid id, int tag) where T : struct
+        {
+            return GetSessionMetaData<T>(id, tag, 0);
+        }
+
+        public unsafe NativeArray<T> GetSessionMetaData<T>(Guid id, int tag, int index) where T : struct
+        {
+            var stride = UnsafeUtility.SizeOf<T>();
+            var data = GetSessionMetaData(id.ToByteArray(), tag, index);
+            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(data.ptr.ToPointer(), data.size / stride, Allocator.None);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, GetSafetyHandle());
+            return array;
+        }
+
+        public int GetSessionMetaDataCount(Guid id, int tag)
+        {
+            return GetSessionMetaDataCount(id.ToByteArray(), tag);
+        }
+
+        [ThreadSafe]
+        extern Data GetSessionMetaData(byte[] statsId, int tag, int index);
+
+        [ThreadSafe]
+        extern int GetSessionMetaDataCount(byte[] statsId, int tag);
+
         [StructLayout(LayoutKind.Sequential)]
         [RequiredByNativeCode]
         public struct MethodInfo

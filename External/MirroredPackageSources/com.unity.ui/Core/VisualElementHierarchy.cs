@@ -75,7 +75,7 @@ namespace UnityEngine.UIElements
         {
             get { return this; }
         }
-        
+
         private VisualTreeAsset m_VisualTreeAssetSource = null;
 
         /// <summary>

@@ -1931,6 +1931,15 @@ namespace UnityEditor
             prefabInstanceUnpacked?.Invoke(instanceRoot);
         }
 
+        public static void UnpackAllInstancesOfPrefab(GameObject prefabRoot, PrefabUnpackMode unpackMode, InteractionMode action)
+        {
+            var prefabInstances = FindAllInstancesOfPrefab(prefabRoot);
+            foreach (var prefabInstance in prefabInstances)
+            {
+                UnpackPrefabInstance(prefabInstance, unpackMode, action);
+            }
+        }
+
         static internal event Action<GameObject> prefabInstanceUnpacked;
 
         internal static bool HasInvalidComponent(Object gameObjectOrComponent)

@@ -333,10 +333,10 @@ namespace UnityEditor.UIElements
             if (window != null)
             {
                 var rootElement = window.rootVisualElement;
-                
+
                 //we make sure styles have been applied
                 UIElementsEditorUtility.AddDefaultEditorStyleSheets(rootElement);
-                
+
                 if (rootElement.GetProperty(k_InitializedWindowPropertyName) != null)
                     return;
 

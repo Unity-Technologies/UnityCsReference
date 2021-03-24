@@ -117,14 +117,32 @@ namespace UnityEditor.UIElements
             choices = new List<TValueChoice>();
 
             RegisterCallback<PointerDownEvent>(OnPointerDownEvent);
+            RegisterCallback<PointerMoveEvent>(OnPointerMoveEvent);
             RegisterCallback<MouseDownEvent>(e =>
             {
-                if (e.button == (int) MouseButton.LeftMouse)
+                if (e.button == (int)MouseButton.LeftMouse)
                     e.StopPropagation();
             });
         }
 
         void OnPointerDownEvent(PointerDownEvent evt)
+        {
+            ProcessPointerDown(evt);
+        }
+
+        void OnPointerMoveEvent(PointerMoveEvent evt)
+        {
+            // Support cases where PointerMove corresponds to a MouseDown or MouseUp event with multiple buttons.
+            if (evt.button == (int)MouseButton.LeftMouse)
+            {
+                if ((evt.pressedButtons & (1 << (int)MouseButton.LeftMouse)) != 0)
+                {
+                    ProcessPointerDown(evt);
+                }
+            }
+        }
+
+        void ProcessPointerDown<T>(PointerEventBase<T> evt) where T : PointerEventBase<T>, new()
         {
             if (evt.button == (int)MouseButton.LeftMouse)
             {

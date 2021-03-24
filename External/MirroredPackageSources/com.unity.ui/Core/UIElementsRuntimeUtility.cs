@@ -244,7 +244,7 @@ namespace UnityEngine.UIElements
                     // Should never happen, so just being safe (after all there's a cast happening).
                     return 0;
                 }
-                
+
                 var diff = runtimePanelA.sortingPriority - runtimePanelB.sortingPriority;
 
                 if (Mathf.Approximately(0, diff))

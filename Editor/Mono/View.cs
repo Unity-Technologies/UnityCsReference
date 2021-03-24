@@ -76,8 +76,8 @@ namespace UnityEditor
         [SerializeField]
         internal Vector2 m_MaxSize;
 
-        public Vector2 minSize { get { return m_MinSize; } }
-        public Vector2 maxSize { get { return m_MaxSize; } }
+        public virtual Vector2 minSize { get { return m_MinSize; } }
+        public virtual Vector2 maxSize { get { return m_MaxSize; } }
 
         internal void SetMinMaxSizes(Vector2 min, Vector2 max)
         {

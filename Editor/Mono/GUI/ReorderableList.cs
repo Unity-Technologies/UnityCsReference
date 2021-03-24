@@ -391,7 +391,7 @@ namespace UnityEditorInternal
                     {
                         prop.serializedObject.ApplyModifiedProperties();
                     }
-                    if (Event.current.type == EventType.MouseDown && Event.current.button == 1 && rect.Contains(Event.current.mousePosition)) Event.current.Use();
+                    if (Event.current.type == EventType.ContextClick && rect.Contains(Event.current.mousePosition)) Event.current.Use();
 
                     EditorGUIUtility.labelWidth = oldLabelWidth;
                     return;

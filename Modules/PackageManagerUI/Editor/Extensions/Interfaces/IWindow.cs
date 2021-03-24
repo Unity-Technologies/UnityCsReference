@@ -8,8 +8,15 @@ namespace UnityEditor.PackageManager.UI
     {
         PackageSelectionArgs activeSelection { get; }
 
+        IMenu addMenu { get; }
+        IMenu advancedMenu { get; }
+
         void Select(string identifier);
 
         IDetailsExtension AddDetailsExtension();
+
+        IPackageActionMenu AddPackageActionMenu();
+
+        IPackageActionButton AddPackageActionButton();
     }
 }

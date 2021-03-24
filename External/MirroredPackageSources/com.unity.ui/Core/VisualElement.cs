@@ -398,7 +398,7 @@ namespace UnityEngine.UIElements
                 if (m_Pivot == value)
                     return;
                 m_Pivot = value;
-                IncrementVersion(VersionChangeType.Transform| VersionChangeType.Size);
+                IncrementVersion(VersionChangeType.Transform | VersionChangeType.Size);
             }
         }
 
@@ -1132,7 +1132,7 @@ namespace UnityEngine.UIElements
                     {
                         e.WillChangePanel(p);
                     }
-                    
+
                     var hierarchyVersion = previousPanel?.hierarchyVersion ?? 0;
                     if (previousHierarchyVersion != hierarchyVersion)
                     {

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
@@ -51,37 +50,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private bool isRequestedButOverriddenVersion =>
-            !string.IsNullOrEmpty(displayVersion?.versionString) &&
-            displayVersion.versionString == package?.versions.primary.packageInfo?.projectDependenciesEntry;
-
-        private const string k_EmptyDescriptionClass = "empty";
-
-        internal enum InfoBoxState
-        {
-            preRelease,
-            experimental,
-            releaseCandidate,
-            scopedRegistry
-        }
-
-        private string InfoBoxUrl => $"https://docs.unity3d.com/{m_Application?.shortUnityVersion}";
-
-        private static readonly string[] k_InfoBoxReadMoreUrl =
-        {
-            "/Documentation/Manual/pack-prerelease.html",
-            "/Documentation/Manual/pack-experimental.html",
-            "/Documentation/Manual/pack-releasecandidate.html",
-            "/Documentation/Manual/upm-scoped.html"
-        };
-
-        private static readonly string[] k_InfoBoxReadMoreText =
-        {
-            L10n.Tr("Pre-release packages are in the process of becoming stable and will be available as production-ready by the end of this LTS release. We recommend using these only for testing purposes and to give us direct feedback until then."),
-            L10n.Tr("Experimental packages are new packages or experiments on mature packages in the early stages of development. Experimental packages are not supported by Unity."),
-            L10n.Tr("Release Candidate (RC) versions of a package will transition to Released with the current editor release. RCs are supported by Unity"),
-            L10n.Tr("This package is hosted on a Scoped Registry.")
-        };
+        private bool isRequestedButOverriddenVersion => UpmPackageVersion.IsRequestedButOverriddenVersion(package, displayVersion);
 
         internal enum PackageAction
         {
@@ -143,22 +112,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             L10n.Tr("Click to import assets from the package into your project.")
         };
 
-        internal static readonly PackageTag[] k_VisibleTags =
-        {
-            PackageTag.Release,
-            PackageTag.Custom,
-            PackageTag.Local,
-            PackageTag.Git,
-            PackageTag.Deprecated,
-            PackageTag.Disabled,
-            PackageTag.PreRelease,
-            PackageTag.Experimental,
-            PackageTag.ReleaseCandidate
-        };
-
-        internal bool descriptionExpanded => m_DescriptionExpanded;
-        private bool m_DescriptionExpanded;
-
         private ResourceLoader m_ResourceLoader;
         private ExtensionManager m_ExtensionManager;
         private ApplicationProxy m_Application;
@@ -166,7 +119,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageManagerPrefs m_PackageManagerPrefs;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
-        private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private UnityConnectProxy m_UnityConnectProxy;
         private void ResolveDependencies()
         {
@@ -176,7 +128,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Application = container.Resolve<ApplicationProxy>();
             m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
-            m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
             m_UnityConnectProxy = container.Resolve<UnityConnectProxy>();
@@ -199,7 +150,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             root.StretchToParentSize();
 
-            detailAuthorLink.clickable.clicked += AuthorClick;
             updateButton.clickable.clicked += UpdateClick;
             removeButton.clickable.clicked += RemoveClick;
             importButton.clickable.clicked += ImportClick;
@@ -207,15 +157,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             cancelButton.clickable.clicked += CancelClick;
             pauseButton.clickable.clicked += PauseClick;
             resumeButton.clickable.clicked += ResumeClick;
-            detailDescMore.clickable.clicked += DescMoreClick;
-            detailDescLess.clickable.clicked += DescLessClick;
+
             okButton.clickable.clicked += ClearError;
 
             signInButton.clickable.clicked += m_UnityConnectProxy.ShowLogin;
 
-            detailDesc.RegisterCallback<GeometryChangedEvent>(DescriptionGeometryChangeEvent);
-
-            scopedRegistryInfoBox.Q<Button>().clickable.clicked += OnInfoBoxClickMore;
             detailScrollView.verticalScroller.valueChanged += OnDetailScroll;
 
             errorMessage.ShowTextTooltipOnSizeChange();
@@ -230,11 +176,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnEnable()
         {
+            body.OnEnable();
+
             m_Application.onFinishCompiling += RefreshPackageActionButtons;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
 
             m_PackageDatabase.onPackagesChanged += (added, removed, preUpdate, postUpdate) => OnPackagesUpdated(postUpdate);
-            m_PackageDatabase.onPackagesChanged += (added, removed, preUpdate, postUpdate) => RefreshDependencies();
 
             m_PackageDatabase.onPackageProgressUpdate += OnPackageProgressUpdate;
 
@@ -244,8 +191,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_PageManager.onSelectionChanged += OnSelectionChanged;
 
-            m_SettingsProxy.onEnablePackageDependenciesChanged += (value) => RefreshDependencies();
-
             m_UnityConnectProxy.onUserLoginStateChange += OnUserLoginStateChange;
 
             RefreshUI(m_PageManager.GetSelectedVersion());
@@ -253,7 +198,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnDisable()
         {
-            detailsImages.OnDisable();
+            body.OnDisable();
 
             m_Application.onFinishCompiling -= RefreshPackageActionButtons;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
@@ -290,18 +235,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             RefreshEntitlement();
-        }
-
-        private void OnInfoBoxClickMore()
-        {
-            if (displayVersion.HasTag(PackageTag.PreRelease))
-                m_Application.OpenURL($"{InfoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.preRelease]}");
-            else if (displayVersion.HasTag(PackageTag.Experimental))
-                m_Application.OpenURL($"{InfoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.experimental]}");
-            else if (displayVersion.HasTag(PackageTag.ReleaseCandidate))
-                m_Application.OpenURL($"{InfoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.releaseCandidate]}");
-            else if (package.Is(PackageType.ScopedRegistry))
-                m_Application.OpenURL($"{InfoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.scopedRegistry]}");
         }
 
         private void UpdateDownloadProgressBar(IOperation operation)
@@ -362,11 +295,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 SetPackage(null);
         }
 
-        private void RefreshDependencies()
-        {
-            dependencies.SetPackageVersion(displayVersion);
-        }
-
         void RefreshExtensions(IPackage package, IPackageVersion version)
         {
             var packageInfo = version?.packageInfo;
@@ -374,19 +302,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 foreach (var extension in PackageManagerExtensions.Extensions)
                     extension.OnPackageSelectionChange(packageInfo);
-
-                foreach (var extension in PackageManagerExtensions.ToolbarExtensions)
-                    extension.OnPackageSelectionChange(version, packageToolbarContainer);
             });
 
             m_ExtensionManager.SendPackageSelectionChangedEvent(package, version);
-        }
-
-        private static bool IsDifferentVersionThanRequested(IPackageVersion packageVersion)
-        {
-            return !string.IsNullOrEmpty(packageVersion?.packageInfo?.projectDependenciesEntry) &&
-                !packageVersion.HasTag(PackageTag.Git | PackageTag.Local | PackageTag.Custom) &&
-                packageVersion.packageInfo.projectDependenciesEntry != packageVersion.versionString;
         }
 
         private void RefreshContent()
@@ -405,66 +323,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else
             {
-                detailTitle.SetValueWithoutNotify(displayVersion.displayName);
+                header.Refresh(package, displayVersion);
+                body.Refresh(package, displayVersion);
 
                 RefreshEntitlement();
-
-                detailsLinks.Refresh(package, displayVersion);
-
-                RefreshDescription();
-
-                var versionString = displayVersion.versionString;
-                var releaseDateString = displayVersion.publishedDate?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US"));
-                detailVersion.SetValueWithoutNotify(string.IsNullOrEmpty(releaseDateString)
-                    ? string.Format(L10n.Tr("Version {0}"), versionString)
-                    : string.Format(L10n.Tr("Version {0} - {1}"), versionString, releaseDateString));
-                UIUtils.SetElementDisplay(detailVersion, !package.Is(PackageType.BuiltIn) && !string.IsNullOrEmpty(versionString));
-
-                RefreshVersionInfoIcon();
-
-                UIUtils.SetElementDisplay(disabledInfoBox, displayVersion.HasTag(PackageTag.Disabled));
-
-                foreach (var tag in k_VisibleTags)
-                    UIUtils.SetElementDisplay(GetTagLabel(tag.ToString()), displayVersion.HasTag(tag));
-
-                var scopedRegistryTagLabel = GetTagLabel("ScopedRegistry");
-                if ((displayVersion as UpmPackageVersion)?.isUnityPackage == false && !string.IsNullOrEmpty(displayVersion.version?.Prerelease))
-                {
-                    scopedRegistryTagLabel.tooltip = displayVersion.version?.Prerelease;
-                    scopedRegistryTagLabel.text = displayVersion.version?.Prerelease;
-                    UIUtils.SetElementDisplay(scopedRegistryTagLabel, true);
-                }
-                else
-                {
-                    UIUtils.SetElementDisplay(scopedRegistryTagLabel, false);
-                }
-
-                UIUtils.SetElementDisplay(GetTagLabel(PackageType.AssetStore.ToString()), package.Is(PackageType.AssetStore));
-
-                sampleList.SetPackageVersion(displayVersion);
-
-                RefreshAuthor();
-                RefreshRegistry();
-                RefreshReleaseDetails();
 
                 UIUtils.SetElementDisplay(customContainer, true);
                 UIUtils.SetElementDisplay(extensionContainer, true);
                 RefreshExtensions(package, displayVersion);
 
-                RefreshDependencies();
-
-                RefreshSizeAndSupportedUnityVersions();
-
-                detailsImages.Refresh(package);
-
                 RefreshPackageActionButtons();
-                RefreshSourcePath();
 
                 // Here Do logic for Download/Cancel/Pause/Resume
                 RefreshDownloadStatesButtons();
-
-                RefreshPurchasedDate();
-                RefreshLabels();
             }
 
             // Set visibility
@@ -473,240 +344,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshErrorDisplay();
         }
 
-        private void DescriptionGeometryChangeEvent(GeometryChangedEvent evt)
-        {
-            if (package == null || !package.Is(PackageType.AssetStore))
-            {
-                UIUtils.SetElementDisplay(detailDescMore, false);
-                UIUtils.SetElementDisplay(detailDescLess, false);
-                return;
-            }
-
-            var minTextHeight = (int)detailDesc.MeasureTextSize("|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).y*3 + 1;
-            var textHeight = (int)detailDesc.MeasureTextSize(detailDesc.text, evt.newRect.width, MeasureMode.AtMost, float.MaxValue, MeasureMode.Undefined).y + 1;
-            if (!m_DescriptionExpanded && textHeight > minTextHeight)
-            {
-                UIUtils.SetElementDisplay(detailDescMore, true);
-                UIUtils.SetElementDisplay(detailDescLess, false);
-                detailDesc.style.maxHeight = minTextHeight + 4;
-                return;
-            }
-
-            if (evt.newRect.width > evt.oldRect.width && textHeight <= minTextHeight)
-            {
-                UIUtils.SetElementDisplay(detailDescMore, false);
-                UIUtils.SetElementDisplay(detailDescLess, false);
-            }
-            else if (m_DescriptionExpanded && evt.newRect.width < evt.oldRect.width && textHeight > minTextHeight)
-            {
-                UIUtils.SetElementDisplay(detailDescMore, false);
-                UIUtils.SetElementDisplay(detailDescLess, true);
-            }
-        }
-
-        private void RefreshDescription()
-        {
-            var hasDescription = !string.IsNullOrEmpty(displayVersion.description);
-            detailDesc.EnableInClassList(k_EmptyDescriptionClass, !hasDescription);
-            detailDesc.style.maxHeight = int.MaxValue;
-            detailDesc.SetValueWithoutNotify(hasDescription ? displayVersion.description : L10n.Tr("There is no description for this package."));
-            UIUtils.SetElementDisplay(detailDescMore, false);
-            UIUtils.SetElementDisplay(detailDescLess, false);
-            m_DescriptionExpanded = !package.Is(PackageType.AssetStore);
-        }
-
-        private void RefreshAuthor()
-        {
-            UIUtils.SetElementDisplay(detailAuthorContainer, !string.IsNullOrEmpty(displayVersion.author));
-            if (!string.IsNullOrEmpty(displayVersion.author))
-            {
-                if (!string.IsNullOrEmpty(displayVersion.authorLink))
-                {
-                    UIUtils.SetElementDisplay(detailAuthorText, false);
-                    UIUtils.SetElementDisplay(detailAuthorLink, true);
-                    detailAuthorLink.text = displayVersion.author;
-                }
-                else
-                {
-                    UIUtils.SetElementDisplay(detailAuthorText, true);
-                    UIUtils.SetElementDisplay(detailAuthorLink, false);
-                    detailAuthorText.SetValueWithoutNotify(displayVersion.author);
-                }
-            }
-        }
-
-        private void RefreshRegistry()
-        {
-            var registry = displayVersion.packageInfo?.registry;
-            var showRegistry = registry != null;
-            UIUtils.SetElementDisplay(detailRegistryContainer, showRegistry);
-            if (showRegistry)
-            {
-                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.scopedRegistry];
-                UIUtils.SetElementDisplay(scopedRegistryInfoBox, !registry.isDefault);
-                detailRegistryName.text = registry.isDefault ? "Unity" : registry.name;
-                detailRegistryName.tooltip = registry.url;
-            }
-            if (displayVersion.HasTag(PackageTag.Experimental))
-            {
-                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.experimental];
-                UIUtils.SetElementDisplay(scopedRegistryInfoBox, true);
-            }
-            else if (displayVersion.HasTag(PackageTag.PreRelease))
-            {
-                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.preRelease];
-                UIUtils.SetElementDisplay(scopedRegistryInfoBox, true);
-            }
-            else if (displayVersion.HasTag(PackageTag.ReleaseCandidate))
-            {
-                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.releaseCandidate];
-                UIUtils.SetElementDisplay(scopedRegistryInfoBox, true);
-            }
-        }
-
-        private void RefreshLabels()
-        {
-            detailLabels.Clear();
-
-            if (enabledSelf && package?.labels != null)
-            {
-                var labels = string.Join(", ", package.labels.ToArray());
-
-                if (!string.IsNullOrEmpty(labels))
-                {
-                    var label = new SelectableLabel();
-                    label.SetValueWithoutNotify(labels);
-                    detailLabels.Add(label);
-                }
-            }
-
-            var hasLabels = detailLabels.Children().Any();
-            var isAssetStorePackage = package is AssetStorePackage;
-
-            if (!hasLabels && isAssetStorePackage)
-                detailLabels.Add(new Label(L10n.Tr("(None)")));
-
-            UIUtils.SetElementDisplay(detailLabelsContainer, hasLabels || isAssetStorePackage);
-        }
-
-        private void RefreshPurchasedDate()
-        {
-            if (enabledSelf)
-            {
-                detailPurchasedDate.SetValueWithoutNotify(package?.purchasedTime?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US")) ?? string.Empty);
-            }
-            UIUtils.SetElementDisplay(detailPurchasedDateContainer, !string.IsNullOrEmpty(detailPurchasedDate.text));
-        }
-
-        private void RefreshReleaseDetails()
-        {
-            detailReleaseDetails.Clear();
-
-            // If the package details is not enabled, don't update the date yet as we are fetching new information
-            if (enabledSelf && package.firstPublishedDate != null)
-            {
-                detailReleaseDetails.Add(new PackageReleaseDetailsItem($"{displayVersion.versionString}{(displayVersion is AssetStorePackageVersion ? " (Current)" : string.Empty)}",
-                    displayVersion.publishedDate, displayVersion.releaseNotes));
-
-                if (package.firstPublishedDate != null)
-                    detailReleaseDetails.Add(new PackageReleaseDetailsItem("Original", package.firstPublishedDate, string.Empty));
-            }
-
-            UIUtils.SetElementDisplay(detailReleaseDetailsContainer, detailReleaseDetails.Children().Any());
-        }
-
-        private void RefreshVersionInfoIcon()
-        {
-            var isInstalledVersionDifferentThanRequested = IsDifferentVersionThanRequested(package?.versions.installed);
-            UIUtils.SetElementDisplay(versionInfoIcon, isInstalledVersionDifferentThanRequested);
-
-            if (!isInstalledVersionDifferentThanRequested)
-                return;
-
-            var installedVersionString = package?.versions.installed.versionString;
-            if (isRequestedButOverriddenVersion)
-                versionInfoIcon.tooltip = string.Format(
-                    L10n.Tr("Unity installed version {0} because another package depends on it (version {0} overrides version {1})."),
-                    installedVersionString, displayVersion.versionString);
-            else if (displayVersion.isInstalled && IsDifferentVersionThanRequested(displayVersion))
-                versionInfoIcon.tooltip = L10n.Tr("At least one other package depends on this version of the package.");
-            else
-                versionInfoIcon.tooltip = string.Format(
-                    L10n.Tr("At least one other package depends on version {0} of this package."), installedVersionString);
-        }
-
         private void RefreshEntitlement()
         {
-            var showEntitlement = package.hasEntitlements;
-            UIUtils.SetElementDisplay(detailEntitlement, showEntitlement);
-            detailEntitlement.text = showEntitlement ? "E" : string.Empty;
-            detailEntitlement.tooltip = showEntitlement ? L10n.Tr("This is an Entitlement package.") : string.Empty;
+            header.RefreshEntitlement();
 
             var hasEntitlementsError = package.hasEntitlementsError;
-            detailContainer.SetEnabled(!hasEntitlementsError);
+            body.SetEnabled(!hasEntitlementsError);
             UIUtils.SetElementDisplay(signInButton, hasEntitlementsError && !m_UnityConnectProxy.isUserLoggedIn);
             RefreshButtonStatusAndTooltip(signInButton, disableIfNoNetwork);
-        }
-
-        private void RefreshSizeAndSupportedUnityVersions()
-        {
-            var showSupportedUnityVersions = RefreshSupportedUnityVersions();
-            var showSize = RefreshSizeInfo();
-            UIUtils.SetElementDisplay(detailSizesAndSupportedVersionsContainer, showSize || showSupportedUnityVersions);
-        }
-
-        private bool RefreshSupportedUnityVersions()
-        {
-            var hasSupportedVersions = (displayVersion.supportedVersions?.Any() == true);
-            var supportedVersion = displayVersion.supportedVersions?.FirstOrDefault();
-
-            if (!hasSupportedVersions)
-            {
-                supportedVersion = displayVersion.supportedVersion;
-                hasSupportedVersions = supportedVersion != null;
-            }
-
-            UIUtils.SetElementDisplay(detailUnityVersionsContainer, hasSupportedVersions);
-            if (hasSupportedVersions)
-            {
-                detailUnityVersions.SetValueWithoutNotify(string.Format(L10n.Tr("{0} or higher"), supportedVersion));
-                var tooltip = supportedVersion.ToString();
-                if (displayVersion.supportedVersions != null && displayVersion.supportedVersions.Any())
-                {
-                    var versions = displayVersion.supportedVersions.Select(version => version.ToString()).ToArray();
-                    tooltip = versions.Length == 1 ? versions[0] :
-                        string.Format(L10n.Tr("{0} and {1} to improve compatibility with the range of these versions of Unity"), string.Join(", ", versions, 0, versions.Length - 1), versions[versions.Length - 1]);
-                }
-                detailUnityVersions.tooltip = string.Format(L10n.Tr("Package has been submitted using Unity {0}"), tooltip);
-            }
-            else
-            {
-                detailUnityVersions.SetValueWithoutNotify(string.Empty);
-                detailUnityVersions.tooltip = string.Empty;
-            }
-
-            return hasSupportedVersions;
-        }
-
-        private bool RefreshSizeInfo()
-        {
-            var showSizes = displayVersion.sizes.Any();
-            UIUtils.SetElementDisplay(detailSizesContainer, showSizes);
-            detailSizes.Clear();
-
-            var sizeInfo = displayVersion.sizes.FirstOrDefault(info => info.supportedUnityVersion == displayVersion.supportedVersion);
-            if (sizeInfo == null)
-                sizeInfo = displayVersion.sizes.LastOrDefault();
-
-            if (sizeInfo != null)
-            {
-                var label = new SelectableLabel();
-                label.style.whiteSpace = WhiteSpace.Normal;
-                label.SetValueWithoutNotify(string.Format(L10n.Tr("Size: {0} (Number of files: {1})"), UIUtils.ConvertToHumanReadableSize(sizeInfo.downloadSize), sizeInfo.assetCount));
-                detailSizes.Add(label);
-            }
-
-            return showSizes;
         }
 
         public void SetPackage(IPackage package, IPackageVersion version = null)
@@ -808,6 +453,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             RefreshAddButton();
             RefreshRemoveButton();
+            RefreshToolbarExtensionsStatusAndTooltip();
         }
 
         private void RefreshAddButton()
@@ -834,6 +480,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(updateButton, visibleFlag);
         }
 
+        private void RefreshToolbarExtensionsStatusAndTooltip()
+        {
+            var disableCondition = new[] { disableIfInstallOrUninstallInProgress, disableIfCompiling }.FirstOrDefault(c => c.value);
+            foreach (var item in toolbarExtensions.Children())
+                item.SetEnabled(disableCondition == null);
+            toolbarExtensions.tooltip = disableCondition?.tooltip ?? string.Empty;
+        }
+
         private void RefreshRemoveButton()
         {
             var installed = package?.versions.installed;
@@ -845,7 +499,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var currentPackageRemoveInProgress = m_PackageDatabase.IsUninstallInProgress(package);
                 removeButton.text = GetButtonText(action, currentPackageRemoveInProgress);
 
-                var isInstalledAsDependency = installed == displayVersion && (!displayVersion.isDirectDependency || IsDifferentVersionThanRequested(displayVersion));
+                var isInstalledAsDependency = installed == displayVersion && (!displayVersion.isDirectDependency || UpmPackageVersion.IsDifferentVersionThanRequested(displayVersion));
                 var disableIfUsedByOthers = new ButtonDisableCondition(isInstalledAsDependency,
                     L10n.Tr("You cannot remove this package because at least one other installed package depends on it. See dependencies for more details."));
                 RefreshButtonStatusAndTooltip(removeButton, action, disableIfUsedByOthers, disableIfInstallOrUninstallInProgress, disableIfCompiling);
@@ -993,15 +647,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             button.parent.tooltip = string.Empty;
         }
 
-        private void RefreshSourcePath()
-        {
-            var sourcePath = (displayVersion as UpmPackageVersion)?.sourcePath;
-            UIUtils.SetElementDisplay(detailSourcePathContainer, !string.IsNullOrEmpty(sourcePath));
-
-            if (!string.IsNullOrEmpty(sourcePath))
-                detailSourcePath.SetValueWithoutNotify(sourcePath);
-        }
-
         internal static string GetButtonText(PackageAction action, bool inProgress = false, SemVersion? version = null)
         {
             var actionText = inProgress ? k_PackageActionInProgressVerbs[(int)action] : k_PackageActionVerbs[(int)action];
@@ -1011,29 +656,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal static string GetButtonTooltip(PackageAction action)
         {
             return k_PackageActionTooltips[(int)action];
-        }
-
-        private void DescMoreClick()
-        {
-            detailDesc.style.maxHeight = float.MaxValue;
-            UIUtils.SetElementDisplay(detailDescMore, false);
-            UIUtils.SetElementDisplay(detailDescLess, true);
-            m_DescriptionExpanded = true;
-        }
-
-        private void DescLessClick()
-        {
-            detailDesc.style.maxHeight = (int)detailDesc.MeasureTextSize("|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).y*3 + 5;
-            UIUtils.SetElementDisplay(detailDescMore, true);
-            UIUtils.SetElementDisplay(detailDescLess, false);
-            m_DescriptionExpanded = false;
-        }
-
-        private void AuthorClick()
-        {
-            var authorLink = displayVersion?.authorLink ?? string.Empty;
-            if (!string.IsNullOrEmpty(authorLink))
-                m_Application.OpenURL(authorLink);
         }
 
         private void UpdateClick()
@@ -1163,32 +785,20 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElementCache cache { get; set; }
 
         private InProgressView inProgressView => cache.Get<InProgressView>("inProgressView");
-        private SelectableLabel detailDesc { get { return cache.Get<SelectableLabel>("detailDesc"); } }
-        private Button detailDescMore { get { return cache.Get<Button>("detailDescMore"); } }
-        private Button detailDescLess { get { return cache.Get<Button>("detailDescLess"); } }
+        private PackageDetailsHeader header => cache.Get<PackageDetailsHeader>("detailsHeader");
+        private PackageDetailsBody body => cache.Get<PackageDetailsBody>("detailsBody");
+
         internal override IAlert detailError { get { return cache.Get<Alert>("detailError"); } }
         private ScrollView detailScrollView { get { return cache.Get<ScrollView>("detailScrollView"); } }
         private VisualElement detail { get { return cache.Get<VisualElement>("detail"); } }
-        private SelectableLabel detailTitle { get { return cache.Get<SelectableLabel>("detailTitle"); } }
-        private Label detailEntitlement { get { return cache.Get<Label>("detailEntitlement"); } }
-        private SelectableLabel detailVersion { get { return cache.Get<SelectableLabel>("detailVersion"); } }
-        private VisualElement versionInfoIcon => cache.Get<VisualElement>("versionInfoIcon");
-        private HelpBox disabledInfoBox { get { return cache.Get<HelpBox>("disabledInfoBox"); } }
-        private VisualElement detailPurchasedDateContainer { get { return cache.Get<VisualElement>("detailPurchasedDateContainer"); } }
-        private SelectableLabel detailPurchasedDate { get { return cache.Get<SelectableLabel>("detailPurchasedDate"); } }
-        private VisualElement detailAuthorContainer { get { return cache.Get<VisualElement>("detailAuthorContainer"); } }
-        private SelectableLabel detailAuthorText { get { return cache.Get<SelectableLabel>("detailAuthorText"); } }
-        private Button detailAuthorLink { get { return cache.Get<Button>("detailAuthorLink"); } }
-        private VisualElement detailRegistryContainer { get { return cache.Get<VisualElement>("detailRegistryContainer"); } }
-        private HelpBox scopedRegistryInfoBox { get { return cache.Get<HelpBox>("scopedRegistryInfoBox"); } }
-        private Label detailRegistryName { get { return cache.Get<Label>("detailRegistryName"); } }
+
         private VisualElement customContainer { get { return cache.Get<VisualElement>("detailCustomContainer"); } }
         internal VisualElement extensionContainer { get { return cache.Get<VisualElement>("detailExtensionContainer"); } }
-        private PackageSampleList sampleList { get { return cache.Get<PackageSampleList>("detailSampleList"); } }
-        private PackageDependencies dependencies { get { return cache.Get<PackageDependencies>("detailDependencies"); } }
+
         internal VisualElement packageToolbarContainer { get { return cache.Get<VisualElement>("toolbarContainer"); } }
         internal VisualElement packageToolbarMainContainer { get { return cache.Get<VisualElement>("toolbarMainContainer"); } }
         private VisualElement packageToolbarLeftArea { get { return cache.Get<VisualElement>("leftItems"); } }
+        internal VisualElement toolbarExtensions { get { return cache.Get<VisualElement>("extensionItems"); } }
         internal Button updateButton { get { return cache.Get<Button>("update"); } }
         internal Button removeButton { get { return cache.Get<Button>("remove"); } }
         internal Button importButton { get { return cache.Get<Button>("import"); } }
@@ -1198,26 +808,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal Button resumeButton { get { return cache.Get<Button>("resume"); } }
         private Button signInButton { get { return cache.Get<Button>("signIn"); } }
         private ProgressBar downloadProgress { get { return cache.Get<ProgressBar>("downloadProgress"); } }
-        private VisualElement detailSizesAndSupportedVersionsContainer { get { return cache.Get<VisualElement>("detailSizesAndSupportedVersionsContainer"); } }
-        private VisualElement detailUnityVersionsContainer { get { return cache.Get<VisualElement>("detailUnityVersionsContainer"); } }
-        private SelectableLabel detailUnityVersions { get { return cache.Get<SelectableLabel>("detailUnityVersions"); } }
-        private VisualElement detailSizesContainer { get { return cache.Get<VisualElement>("detailSizesContainer"); } }
-        private VisualElement detailSizes { get { return cache.Get<VisualElement>("detailSizes"); } }
-        private VisualElement detailReleaseDetailsContainer { get { return cache.Get<VisualElement>("detailReleaseDetailsContainer"); } }
-        private VisualElement detailReleaseDetails { get { return cache.Get<VisualElement>("detailReleaseDetails"); } }
-        private VisualElement detailLabelsContainer { get { return cache.Get<VisualElement>("detailLabelsContainer"); } }
-        private VisualElement detailLabels { get { return cache.Get<VisualElement>("detailLabels"); } }
-        private VisualElement detailSourcePathContainer { get { return cache.Get<VisualElement>("detailSourcePathContainer"); } }
-        private SelectableLabel detailSourcePath { get { return cache.Get<SelectableLabel>("detailSourcePath"); } }
-        internal PackageTagLabel GetTagLabel(string tag) { return cache.Get<PackageTagLabel>("tag" + tag); }
+
         internal VisualElement packageToolbarErrorContainer { get { return cache.Get<VisualElement>("toolbarErrorContainer"); } }
         private Label errorMessage { get { return cache.Get<Label>("message"); } }
         private Label errorStatus { get { return cache.Get<Label>("state"); } }
         private Button okButton { get { return cache.Get<Button>("ok"); } }
-
-        private VisualElement detailContainer { get { return cache.Get<VisualElement>("detailContainer"); } }
-
-        private PackageDetailsLinks detailsLinks => cache.Get<PackageDetailsLinks>("detailLinksContainer");
-        private PackageDetailsImages detailsImages => cache.Get<PackageDetailsImages>("detailImagesContainer");
     }
 }

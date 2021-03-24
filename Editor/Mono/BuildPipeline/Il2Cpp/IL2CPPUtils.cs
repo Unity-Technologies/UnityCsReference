@@ -472,7 +472,7 @@ namespace UnityEditorInternal
             if (!string.IsNullOrEmpty(pathOverride))
                 return pathOverride;
 
-            pathOverride = Debug.GetDiagnosticSwitch("VMIl2CppPath") as string;
+            pathOverride = Debug.GetDiagnosticSwitch("VMIl2CppPath").value as string;
             if (!string.IsNullOrEmpty(pathOverride))
                 return pathOverride;
 
@@ -504,7 +504,7 @@ namespace UnityEditorInternal
                 arguments.Add(additionalArgs);
             }
 
-            additionalArgs = Debug.GetDiagnosticSwitch("VMIl2CppAdditionalArgs") as string;
+            additionalArgs = Debug.GetDiagnosticSwitch("VMIl2CppAdditionalArgs").value as string;
             if (!string.IsNullOrEmpty(additionalArgs))
             {
                 arguments.Add(additionalArgs.Trim('\''));

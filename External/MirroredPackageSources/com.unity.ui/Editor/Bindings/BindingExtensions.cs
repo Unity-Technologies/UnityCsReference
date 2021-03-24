@@ -125,6 +125,31 @@ namespace UnityEditor.UIElements.Bindings
             }
         }
 
+        private static readonly string k_EnabledOverrideSet = "EnabledSetByBindings";
+
+        static void SyncEditableState(VisualElement fieldElement, bool shouldBeEditable)
+        {
+            if (fieldElement.enabledSelf != shouldBeEditable)
+            {
+                if (shouldBeEditable)
+                {
+                    if (fieldElement.GetProperty(k_EnabledOverrideSet) != null)
+                    {
+                        fieldElement.SetEnabled(true);
+                    }
+                    else
+                    {
+                        // the field was disabled by user code, we don't want to re-enable it.
+                    }
+                }
+                else
+                {
+                    fieldElement.SetProperty(k_EnabledOverrideSet, fieldElement.enabledSelf);
+                    fieldElement.SetEnabled(false);
+                }
+            }
+        }
+
         internal SerializedProperty BindPropertyRelative(IBindable field, SerializedProperty parentProperty)
         {
             var property = parentProperty?.FindPropertyRelative(field.bindingPath);
@@ -145,7 +170,7 @@ namespace UnityEditor.UIElements.Bindings
             RemoveBinding(field);
 
             // Set enabled state before sending the event because element like PropertyField may stop the event
-            fieldElement.SetEnabled(property.editable);
+            SyncEditableState(fieldElement, property.editable);
 
             using (var evt = SerializedPropertyBindEvent.GetPooled(property))
             {

@@ -461,7 +461,7 @@ namespace UnityEngine.UIElements
         [HideInInspector]
         private Shader m_RuntimeWorldShader;
 
-        
+
         /// <summary>
         /// Specifies a <see cref="PanelTextSettings"/> that will be used by every UI Document attached to the panel.
         /// </summary>
@@ -491,7 +491,7 @@ namespace UnityEngine.UIElements
         {
             if (themeUss == null)
             {
-                Debug.LogWarning("No Theme Style Sheet set to PanelSettings " + name + ", UI will not render properly");
+                Debug.LogWarning("No Theme Style Sheet set to PanelSettings " + name + ", UI will not render properly", this);
             }
 
             InitializeShaders();

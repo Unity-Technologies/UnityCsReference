@@ -131,6 +131,7 @@ namespace UnityEditor
 
         PS5 = 44,
 
+        EmbeddedLinux = 45,
 
         // obsolete identifiers. We're using different values so that ToString() works.
         [System.Obsolete("Use iOS instead (UnityUpgradable) -> iOS", true)]

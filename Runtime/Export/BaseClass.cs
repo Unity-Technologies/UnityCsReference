@@ -132,7 +132,12 @@ namespace UnityEngine
         GameCoreXboxSeries = 36, // GameCoreXboxSeries intentionally set to the same as GameCoreScarlett
         GameCoreXboxOne = 37,
         // PS5
-        PS5 = 38
+        PS5 = 38,
+        // Embedded Linux
+        EmbeddedLinuxArm64 = 39,
+        EmbeddedLinuxArm32 = 40,
+        EmbeddedLinuxX64 = 41,
+        EmbeddedLinuxX86 = 42,
     }
 
     // The language the user's operating system is running in. Returned by Application.systemLanguage.

@@ -687,7 +687,7 @@ namespace UnityEngine.UIElements
                 return;
 
             var dbgObject = new EventDebuggerTrace(panel, evt, -1, mouseCapture);
-            
+
             if (!m_StackOfProcessedEvent.TryGetValue(panel, out var stack))
             {
                 stack = new Stack<EventDebuggerTrace>();

@@ -24,7 +24,6 @@ namespace UnityEditor
 
         private Vector2 undosScroll = Vector2.zero;
 
-        [MenuItem("Window/Internal/Undo", false, 1, true)]
         internal static void Init()
         {
             EditorWindow wnd = GetWindow(typeof(UndoWindow));

@@ -106,7 +106,7 @@ namespace UnityEditorInternal
         {
             int length = cdata.GetDataDomainLength();
             int newSelectedFrame = selectedFrame + direction;
-            if (newSelectedFrame < cdata.firstSelectableFrame || newSelectedFrame > cdata.chartDomainOffset + length)
+            if (newSelectedFrame < cdata.firstSelectableFrame || newSelectedFrame > cdata.chartDomainOffset + length - 1)
                 return selectedFrame;
 
             return newSelectedFrame;
@@ -116,7 +116,7 @@ namespace UnityEditorInternal
         {
             int frame = Mathf.RoundToInt((x - r.x) / r.width * len - 0.5f);
             GUI.changed = true;
-            return Mathf.Clamp(frame + cdata.chartDomainOffset, cdata.firstSelectableFrame, cdata.chartDomainOffset + len);
+            return Mathf.Clamp(frame + cdata.chartDomainOffset, cdata.firstSelectableFrame, cdata.chartDomainOffset + len - 1);
         }
 
         private int HandleFrameSelectionEvents(int selectedFrame, int chartControlID, Rect chartFrame, ChartViewData cdata)

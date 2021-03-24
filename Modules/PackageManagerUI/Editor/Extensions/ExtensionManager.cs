@@ -140,8 +140,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private IWindow m_Window = null;
         private VisualElement m_DetailsExtensionContainer;
+        private VisualElement m_ToolbarExtensionContainer;
+
+        private VisualElement m_PackageActionContainer;
 
         private List<DetailsExtension> m_DetailsExtensions = new List<DetailsExtension>();
+        private List<PackageAction> m_PackageActions = new List<PackageAction>();
+
+        private DropdownButton m_CollapsedPackageActions;
 
         private PackageManagerPrefs m_PackageManagerPrefs;
         public void ResolveDependencies(PackageManagerPrefs packageManagerPrefs)
@@ -149,10 +155,24 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageManagerPrefs = packageManagerPrefs;
         }
 
-        public virtual void OnWindowCreated(IWindow window, VisualElement detailsExtensionContainer)
+        public virtual void OnWindowCreated(IWindow window, VisualElement detailsExtensionContainer, VisualElement toolbarExtensionsContainer)
         {
             m_Window = window;
             m_DetailsExtensionContainer = detailsExtensionContainer;
+            m_ToolbarExtensionContainer = toolbarExtensionsContainer;
+
+            m_CollapsedPackageActions = new DropdownButton();
+            m_CollapsedPackageActions.alwaysShowDropdown = true;
+            m_CollapsedPackageActions.text = L10n.Tr("Extensions");
+            m_CollapsedPackageActions.onBeforeShowDropdown += CollapsedPackageActionsOnBeforeShowDropdown;
+            UIUtils.SetElementDisplay(m_CollapsedPackageActions, false);
+            m_ToolbarExtensionContainer.Add(m_CollapsedPackageActions);
+
+            m_PackageActionContainer = new VisualElement();
+            m_PackageActionContainer.style.flexDirection = FlexDirection.Row;
+            m_ToolbarExtensionContainer.Add(m_PackageActionContainer);
+
+            m_ToolbarExtensionContainer.RegisterCallback<GeometryChangedEvent>(evt => RefreshPackageActionsBasedOnWidth());
 
             m_EventDispatcher.SendWindowCreatedEvent(window);
         }
@@ -167,7 +187,42 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_DetailsExtensionContainer.Clear();
             m_DetailsExtensions.Clear();
 
+            m_PackageActionContainer.Clear();
+            m_PackageActions.Clear();
+            m_PackageActionContainer.RemoveFromHierarchy();
+            m_CollapsedPackageActions.RemoveFromHierarchy();
+
             m_Window = null;
+        }
+
+        private void CollapsedPackageActionsOnBeforeShowDropdown()
+        {
+            var newDropdownMenu = new DropdownMenu();
+            foreach (var extension in m_PackageActions.Where(a => a.visible))
+            {
+                var packageActionText = !string.IsNullOrEmpty(extension.text) ? extension.text : extension.tooltip;
+                if (!extension.visibleDropdownItems.Any())
+                    newDropdownMenu.AppendAction(packageActionText, a => { extension.action?.Invoke(m_Window.activeSelection); });
+                else
+                {
+                    if (extension.action != null)
+                        newDropdownMenu.AppendAction($"{packageActionText}/{packageActionText}", a => { extension.action?.Invoke(m_Window.activeSelection); });
+                    foreach (var item in extension.visibleDropdownItems)
+                        newDropdownMenu.AppendAction($"{packageActionText}/{item.text}", a => { item.action?.Invoke(m_Window.activeSelection); }, item.statusCallback);
+                }
+            }
+            m_CollapsedPackageActions.menu = newDropdownMenu;
+        }
+
+        private void RefreshPackageActionsBasedOnWidth()
+        {
+            var childrenWidth = m_PackageActions.Sum(a => a.visible ? a.dropdownButton.estimatedWidth : 0.0f);
+            var showCollapsedButton = childrenWidth > m_ToolbarExtensionContainer.rect.width;
+            if (showCollapsedButton == UIUtils.IsElementVisible(m_CollapsedPackageActions))
+                return;
+
+            UIUtils.SetElementDisplay(m_CollapsedPackageActions, showCollapsedButton);
+            UIUtils.SetElementDisplay(m_PackageActionContainer, !showCollapsedButton);
         }
 
         public DetailsExtension CreateDetailsExtension()
@@ -190,6 +245,42 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_DetailsExtensionContainer.Clear();
             foreach (var extension in m_DetailsExtensions)
                 m_DetailsExtensionContainer.Add(extension);
+        }
+
+        private PackageAction CreatePackageAction()
+        {
+            var result = new PackageAction(m_Window);
+            result.onPriorityChanged += OnPackageActionPriorityChanged;
+            result.onVisibleChanged += RefreshPackageActionsBasedOnWidth;
+
+            m_PackageActions.Add(result);
+            m_PackageActionContainer.Add(result.dropdownButton);
+            OnPackageActionPriorityChanged();
+            RefreshPackageActionsBasedOnWidth();
+            return result;
+        }
+
+        public PackageAction CreatePackageActionButton()
+        {
+            return CreatePackageAction();
+        }
+
+        public PackageAction CreatePackageActionMenu()
+        {
+            var result = CreatePackageAction();
+            result.dropdownButton.alwaysShowDropdown = true;
+            return result;
+        }
+
+        private void OnPackageActionPriorityChanged()
+        {
+            if (IsSorted(m_PackageActions))
+                return;
+            m_PackageActions.Sort(CompareExtensions);
+
+            m_PackageActionContainer.Clear();
+            foreach (var extension in m_PackageActions)
+                m_PackageActionContainer.Add(extension.dropdownButton);
         }
 
         public static int CompareExtensions(IExtension e1, IExtension e2)

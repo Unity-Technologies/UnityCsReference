@@ -53,9 +53,9 @@ namespace UnityEngine.UIElements
 
         VisualElement m_FixedPane;
         VisualElement m_FlexedPane;
-        
+
         [SerializeField] float m_FixedPaneDimension = -1;
-        
+
         /// <summary>
         /// The child element that is set as the fixed size pane.
         /// </summary>
@@ -120,12 +120,12 @@ namespace UnityEngine.UIElements
                 Init(m_FixedPaneIndex, m_FixedPaneInitialDimension, value);
             }
         }
-        
+
         internal float fixedPaneDimension
         {
             get => string.IsNullOrEmpty(viewDataKey)
-                ? m_FixedPaneInitialDimension 
-                : m_FixedPaneDimension;
+            ? m_FixedPaneInitialDimension
+            : m_FixedPaneDimension;
 
             set
             {
@@ -285,10 +285,10 @@ namespace UnityEngine.UIElements
                 Debug.LogError("TwoPaneSplitView needs exactly 2 children.");
                 return;
             }
-            
+
             if (fixedPaneDimension < 0)
                 fixedPaneDimension = m_FixedPaneInitialDimension;
-            
+
             var dimension = fixedPaneDimension;
 
             m_LeftPane = m_Content[0];
@@ -331,7 +331,7 @@ namespace UnityEngine.UIElements
             m_FlexedPane.style.flexGrow = 1;
             m_FlexedPane.style.flexShrink = 0;
             m_FlexedPane.style.flexBasis = 0;
-           
+
             if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
             {
                 if (m_FixedPaneIndex == 0)
@@ -368,7 +368,6 @@ namespace UnityEngine.UIElements
             OnSizeChange();
         }
 
-       
         void OnSizeChange()
         {
             if (m_CollapseMode)
@@ -387,7 +386,7 @@ namespace UnityEngine.UIElements
                 flexedPaneMinLength = m_FlexedPane.resolvedStyle.minHeight.value;
             }
 
-            // Big enough to account for current fixed pane size and flexed pane minimum size, so we let the layout 
+            // Big enough to account for current fixed pane size and flexed pane minimum size, so we let the layout
             // dictates where the dragger should be.
             if (maxLength >= fixedPaneLength + flexedPaneMinLength)
             {

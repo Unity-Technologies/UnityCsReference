@@ -167,6 +167,16 @@ namespace UnityEditor
             else if (visualType == ObjectFieldVisualType.LargePreview)
                 EditorGUIUtility.SetIconSize(new Vector2(64, 64));
 
+            if ((eventType == EventType.MouseDown && Event.current.button == 1 || eventType == EventType.ContextClick) &&
+                position.Contains(Event.current.mousePosition))
+            {
+                var actualObject = property != null ? property.objectReferenceValue : obj;
+                var contextMenu = new GenericMenu();
+                contextMenu.AddItem(GUIContent.Temp("Properties..."), false, () => PropertyEditor.OpenPropertyEditor(actualObject));
+                contextMenu.DropDown(position);
+                Event.current.Use();
+            }
+
             switch (eventType)
             {
                 case EventType.DragExited:
@@ -223,19 +233,8 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.MouseDown:
-                    if (position.Contains(Event.current.mousePosition))
+                    if (position.Contains(Event.current.mousePosition) && Event.current.button == 0)
                     {
-                        if (Event.current.button == 1)
-                        {
-                            var actualObject = property != null ? property.objectReferenceValue : obj;
-                            var contextMenu = new GenericMenu();
-                            contextMenu.AddItem(GUIContent.Temp("Properties..."), false, () => PropertyEditor.OpenPropertyEditor(actualObject));
-                            contextMenu.DropDown(position);
-                        }
-
-                        if (Event.current.button != 0)
-                            break;
-
                         // Get button rect for Object Selector
                         Rect buttonRect = GetButtonRect(visualType, position);
 

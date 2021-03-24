@@ -4,7 +4,6 @@
 
 using System;
 using System.Globalization;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -42,6 +41,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             cache = new VisualElementCache(root);
 
+            var dropDownButton = new DropdownButton();
+            dropDownButton.name = "refreshButton";
+            refreshButtonContainer.Add(dropDownButton);
+
             statusLabel.ShowTextTooltipOnSizeChange();
         }
 
@@ -56,16 +59,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageFiltering.onFilterTabChanged += OnFilterTabChanged;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
 
-            var menu = new GenericMenu();
-            menu.AddItem(new GUIContent(L10n.Tr("Refresh list")), false, () =>
+            refreshButton.SetIcon("refresh");
+            refreshButton.clicked += () =>
             {
                 if (!EditorApplication.isPlaying)
                 {
                     refreshButton.SetEnabled(false);
                     m_PageManager.Refresh(m_PackageFiltering.currentFilterTab, m_PackageManagerPrefs.numItemsPerPage ?? PageManager.k_DefaultPageSize);
                 }
-            });
-            menu.AddItem(new GUIContent(L10n.Tr("Manual resolve")), false, () =>
+            };
+            var menu = new DropdownMenu();
+            menu.AppendAction(L10n.Tr("Manual resolve"), a =>
             {
                 if (!EditorApplication.isPlaying)
                 {
@@ -74,9 +78,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     refreshButton.SetEnabled(true);
                 }
             });
-            refreshButton.DropdownMenu = menu;
-            refreshButton.Status = DropdownStatus.Refresh;
-            refreshButton.clickable.clicked += refreshButton.OnDropdownButtonClicked;
+            refreshButton.menu = menu;
             refreshButton.SetEnabled(true);
         }
 
@@ -166,6 +168,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private LoadingSpinner loadingSpinner { get { return cache.Get<LoadingSpinner>("loadingSpinner"); }}
         private Label errorIcon { get { return cache.Get<Label>("errorIcon"); }}
         private Label statusLabel { get { return cache.Get<Label>("statusLabel"); }}
+        private VisualElement refreshButtonContainer { get { return cache.Get<VisualElement>("refreshButtonContainer"); } }
         private DropdownButton refreshButton { get { return cache.Get<DropdownButton>("refreshButton"); } }
     }
 }

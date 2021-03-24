@@ -79,6 +79,11 @@ namespace UnityEditor.PackageManager.UI
             Events.registeredPackages += OnRegisteredPackages;
         }
 
+        void CreateGUI()
+        {
+            m_Root?.CreateGUI();
+        }
+
         void OnDisable()
         {
             if (instance == null) instance = this;

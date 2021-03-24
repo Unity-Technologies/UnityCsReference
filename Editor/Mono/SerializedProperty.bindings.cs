@@ -811,6 +811,37 @@ namespace UnityEditor
         [NativeName("SetFloatValue")]
         private extern void SetFloatValueInternal(double value);
 
+        internal double[] allDoubleValues
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return GetAllFloatValues();
+            }
+            set
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                SetAllFloatValuesImmediate(value);
+            }
+        }
+        internal long[] allLongValues
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return GetAllIntValues();
+            }
+            set
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                SetAllIntValuesImmediate(value);
+            }
+        }
+        extern double[] GetAllFloatValues();
+        extern void SetAllFloatValuesImmediate(double[] value);
+        extern long[] GetAllIntValues();
+        extern void SetAllIntValuesImmediate(long[] value);
+
         // Value of a double property.
         public double doubleValue
         {

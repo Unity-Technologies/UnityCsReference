@@ -242,13 +242,19 @@ namespace UnityEngine
         [FreeFunction("DeveloperConsole_OpenConsoleFile")]
         internal static extern void OpenConsoleFile();
 
-        internal static extern void GetDiagnosticSwitches(List<DiagnosticSwitch> results);
-
         [NativeThrows]
-        internal static extern object GetDiagnosticSwitch(string name);
+        internal static extern DiagnosticSwitch[] diagnosticSwitches { get; }
 
-        [NativeThrows]
-        internal static extern void SetDiagnosticSwitch(string name, object value, bool setPersistent);
+        internal static DiagnosticSwitch GetDiagnosticSwitch(string name)
+        {
+            foreach (var diagnosticSwitch in diagnosticSwitches)
+            {
+                if (diagnosticSwitch.name == name)
+                    return diagnosticSwitch;
+            }
+
+            throw new ArgumentException($"Could not find DiagnosticSwitch named {name}");
+        }
 
         [RequiredByNativeCode]
         internal static bool CallOverridenDebugHandler(Exception exception, Object obj)

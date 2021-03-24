@@ -34,9 +34,9 @@ namespace UnityEditor.UIElements.Debugger
 
     internal class EventTypeSearchField : ToolbarSearchField
     {
-        public new class UxmlFactory : UxmlFactory<EventTypeSearchField, UxmlTraits> { }
+        public new class UxmlFactory : UxmlFactory<EventTypeSearchField, UxmlTraits> {}
 
-        public new class UxmlTraits : ToolbarSearchField.UxmlTraits { }
+        public new class UxmlTraits : ToolbarSearchField.UxmlTraits {}
 
         VisualElement m_MenuContainer;
         VisualElement m_OuterContainer;
@@ -208,9 +208,9 @@ namespace UnityEditor.UIElements.Debugger
             return from x in assembly.GetTypes()
                 from z in x.GetInterfaces()
                 let y = x.BaseType
-                where (y != null && y.IsGenericType && openGenericType.IsAssignableFrom(y.GetGenericTypeDefinition())) ||
+                    where (y != null && y.IsGenericType && openGenericType.IsAssignableFrom(y.GetGenericTypeDefinition())) ||
                     (z.IsGenericType && openGenericType.IsAssignableFrom(z.GetGenericTypeDefinition()))
-                select x;
+                    select x;
         }
 
         void AddType(Type type)
@@ -236,7 +236,8 @@ namespace UnityEditor.UIElements.Debugger
                 var previousType = nextType;
                 nextType = previousType.BaseType;
                 interfaceType = previousType.GetInterfaces().Where(InterfacePredicate).Except(nextType.GetInterfaces().Where(InterfacePredicate)).FirstOrDefault();
-            } while (interfaceType == null && nextType != typeof(EventBase));
+            }
+            while (interfaceType == null && nextType != typeof(EventBase));
 
             var readableTypeName = EventDebugger.GetTypeDisplayName(type);
             if (interfaceType != null)

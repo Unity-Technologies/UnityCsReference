@@ -60,6 +60,8 @@ namespace UnityEditor
                 "Renderer|Renderer that will receive the images. Defaults to the first renderer on the game object.");
             public readonly GUIContent materialPropertyContent = EditorGUIUtility.TextContent(
                 "Material Property|Texture property of the current Material that will receive the images.");
+            public readonly GUIContent autoSelectMaterialPropertyContent = EditorGUIUtility.TextContent(
+                "Auto-Select Property|Automatically select the main texture property of the current Material.");
 
             public readonly string selectUniformVideoSourceHelp =
                 "Select a uniform video source type before a video clip or URL can be selected.";
@@ -139,7 +141,6 @@ namespace UnityEditor
         readonly AnimBool m_ShowRenderTexture = new AnimBool();
         readonly AnimBool m_ShowTargetCamera = new AnimBool();
         readonly AnimBool m_ShowRenderer = new AnimBool();
-        readonly AnimBool m_ShowMaterialProperty = new AnimBool();
         readonly AnimBool m_DataSourceIsClip = new AnimBool();
         readonly AnimBool m_DataSourceIsUrl = new AnimBool();
         readonly AnimBool m_ShowAspectRatio = new AnimBool();
@@ -159,7 +160,6 @@ namespace UnityEditor
             m_ShowRenderTexture.valueChanged.AddListener(Repaint);
             m_ShowTargetCamera.valueChanged.AddListener(Repaint);
             m_ShowRenderer.valueChanged.AddListener(Repaint);
-            m_ShowMaterialProperty.valueChanged.AddListener(Repaint);
             m_DataSourceIsClip.valueChanged.AddListener(Repaint);
             m_DataSourceIsUrl.valueChanged.AddListener(Repaint);
             m_ShowAspectRatio.valueChanged.AddListener(Repaint);
@@ -196,8 +196,6 @@ namespace UnityEditor
             m_ShowRenderer.value = m_RenderMode.intValue == (int)VideoRenderMode.MaterialOverride;
             m_MaterialPropertyPopupContent = BuildPopupEntries(targets, GetMaterialPropertyNames, out m_MaterialPropertyPopupSelection, out m_MaterialPropertyPopupInvalidSelections);
             m_MaterialPropertyPopupContentHash = GetMaterialPropertyPopupHash(targets);
-            m_ShowMaterialProperty.value =
-                targets.Length > 1 || (m_MaterialPropertyPopupSelection >= 0 && m_MaterialPropertyPopupContent.Length > 0);
 
             m_DataSourceIsClip.value = m_DataSource.intValue == (int)VideoSource.VideoClip;
             m_DataSourceIsUrl.value = m_DataSource.intValue == (int)VideoSource.Url;
@@ -215,7 +213,6 @@ namespace UnityEditor
             m_ShowRenderTexture.valueChanged.RemoveListener(Repaint);
             m_ShowTargetCamera.valueChanged.RemoveListener(Repaint);
             m_ShowRenderer.valueChanged.RemoveListener(Repaint);
-            m_ShowMaterialProperty.valueChanged.RemoveListener(Repaint);
             m_DataSourceIsClip.valueChanged.RemoveListener(Repaint);
             m_DataSourceIsUrl.valueChanged.RemoveListener(Repaint);
             m_ShowAspectRatio.valueChanged.RemoveListener(Repaint);
@@ -303,12 +300,14 @@ namespace UnityEditor
                 if (!renderer)
                     continue;
 
-                hash ^= vp.targetMaterialProperty.GetHashCode();
+                var prop = vp.effectiveTargetMaterialProperty;
+                hash ^= prop.GetHashCode();
                 foreach (Material material in renderer.sharedMaterials)
                 {
                     if (!material)
                         continue;
                     hash ^= material.name.GetHashCode();
+                    hash ^= material.shader.name.GetHashCode();
                     for (int i = 0, e = material.shader.GetPropertyCount(); i < e; ++i)
                     {
                         if (material.shader.GetPropertyType(i) == ShaderPropertyType.Texture)
@@ -332,6 +331,7 @@ namespace UnityEditor
             if (!renderer)
                 return properties;
 
+            var targetMaterialProperty = vp.effectiveTargetMaterialProperty;
             foreach (Material material in renderer.sharedMaterials)
             {
                 if (material)
@@ -345,12 +345,12 @@ namespace UnityEditor
                                 properties.Add(propertyName);
                         }
                     }
-                    selection = properties.IndexOf(vp.targetMaterialProperty);
+                    selection = properties.IndexOf(targetMaterialProperty);
                     invalidSelection = selection < 0 && properties.Count > 0;
                     if (invalidSelection && !multiSelect)
                     {
                         selection = properties.Count;
-                        properties.Add(vp.targetMaterialProperty);
+                        properties.Add(targetMaterialProperty);
                     }
                 }
             }
@@ -383,17 +383,42 @@ namespace UnityEditor
             return entries.Select(x => new GUIContent(x)).ToArray();
         }
 
-        private static void HandlePopup(GUIContent content, SerializedProperty property, GUIContent[] entries, int selection)
+        private static bool HandleAutoSelect(UnityEngine.Object[] objects, SerializedProperty property)
         {
+            var currentValueStr = property.stringValue;
+            bool curAutoSelect = currentValueStr == "" || currentValueStr == "<noninit>";
+            var newAutoSelect =
+                EditorGUILayout.Toggle(s_Styles.autoSelectMaterialPropertyContent, curAutoSelect);
+
+            if (curAutoSelect && !newAutoSelect)
+            {
+                // Disabling auto-selection means every VideoPlayer now takes the current value of
+                // its effective target material. They may not all have the same value, so we have
+                // to handle them separately.
+                foreach (VideoPlayer vp in objects)
+                    if (vp)
+                        vp.targetMaterialProperty = vp.effectiveTargetMaterialProperty;
+            }
+            else if (!curAutoSelect && newAutoSelect)
+                property.stringValue = default;
+
+            return newAutoSelect;
+        }
+
+        private static void HandlePopup(
+            GUIContent content, SerializedProperty property, GUIContent[] entries, int selection, bool editable)
+        {
+            GUILayout.BeginHorizontal();
             Rect pos = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight);
             GUIContent label = EditorGUI.BeginProperty(pos, content, property);
             EditorGUI.BeginChangeCheck();
-            EditorGUI.BeginDisabledGroup(entries.Length == 0);
+            EditorGUI.BeginDisabledGroup(!editable || entries.Length == 0);
             selection = EditorGUI.Popup(pos, label, selection, entries);
             EditorGUI.EndDisabledGroup();
             if (EditorGUI.EndChangeCheck())
                 property.stringValue = entries[selection].text;
             EditorGUI.EndProperty();
+            GUILayout.EndHorizontal();
         }
 
         private void HandleTargetField(VideoRenderMode currentRenderMode)
@@ -432,12 +457,19 @@ namespace UnityEditor
                     EditorGUI.EndProperty();
                 }
 
+                var autoSelectEnabled = HandleAutoSelect(targets, m_TargetMaterialProperty);
+
                 int curHash = GetMaterialPropertyPopupHash(targets);
                 if (m_MaterialPropertyPopupContentHash != curHash)
                     m_MaterialPropertyPopupContent = BuildPopupEntries(
                         targets, GetMaterialPropertyNames, out m_MaterialPropertyPopupSelection,
                         out m_MaterialPropertyPopupInvalidSelections);
-                HandlePopup(s_Styles.materialPropertyContent, m_TargetMaterialProperty, m_MaterialPropertyPopupContent, m_MaterialPropertyPopupSelection);
+
+                EditorGUI.indentLevel++;
+                HandlePopup(s_Styles.materialPropertyContent, m_TargetMaterialProperty,
+                    m_MaterialPropertyPopupContent, m_MaterialPropertyPopupSelection, !autoSelectEnabled);
+                EditorGUI.indentLevel--;
+
                 if (m_MaterialPropertyPopupInvalidSelections > 0 || m_MaterialPropertyPopupContent.Length == 0)
                 {
                     GUILayout.BeginHorizontal();

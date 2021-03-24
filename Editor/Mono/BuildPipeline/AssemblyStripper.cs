@@ -144,7 +144,7 @@ namespace UnityEditorInternal
             if (!string.IsNullOrEmpty(additionalArgs))
                 args.Add(additionalArgs);
 
-            additionalArgs = Debug.GetDiagnosticSwitch("VMUnityLinkerAdditionalArgs") as string;
+            additionalArgs = Debug.GetDiagnosticSwitch("VMUnityLinkerAdditionalArgs").value as string;
             if (!string.IsNullOrEmpty(additionalArgs))
                 args.Add(additionalArgs.Trim('\''));
 

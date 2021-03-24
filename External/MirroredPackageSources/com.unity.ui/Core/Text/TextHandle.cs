@@ -215,7 +215,7 @@ namespace UnityEngine.UIElements
             settings.fontAsset = TextUtilities.GetFontAsset(painterParams);
             settings.material = settings.fontAsset.material;
 
-            
+
             settings.screenRect = painterParams.rect;
             settings.text = string.IsNullOrEmpty(painterParams.text) ? " " : painterParams.text;
             settings.fontSize = painterParams.fontSize > 0

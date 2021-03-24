@@ -980,7 +980,7 @@ namespace UnityEngine.UIElements
                 }
             }
         }
-        
+
         // We count instances of Runtime panels to be able to insert panels that have the same sort order in a deterministic
         // way throughout the same session (i.e. instances created before will be placed before in the visual tree).
         private static int s_CurrentRuntimePanelCounter = 0;
@@ -1005,7 +1005,7 @@ namespace UnityEngine.UIElements
         }
 
         public event Action destroyed;
-        
+
         protected BaseRuntimePanel(ScriptableObject ownerObject, EventDispatcher dispatcher = null)
             : base(ownerObject, ContextType.Player, dispatcher)
         {

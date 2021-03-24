@@ -161,8 +161,8 @@ namespace UnityEngine.UIElements
                 match = element;
                 return false;
             }
-            public override SingleQueryMatcher CreateNew() => new LastQueryMatcher();
 
+            public override SingleQueryMatcher CreateNew() => new LastQueryMatcher();
         }
 
         internal class IndexQueryMatcher : SingleQueryMatcher
@@ -198,9 +198,8 @@ namespace UnityEngine.UIElements
 
                 return matchCount >= _matchIndex;
             }
-            
-            public override SingleQueryMatcher CreateNew() => new IndexQueryMatcher();
 
+            public override SingleQueryMatcher CreateNew() => new IndexQueryMatcher();
         }
     }
 
@@ -237,7 +236,7 @@ namespace UnityEngine.UIElements
             {
                 matcher = matcher.CreateNew();
             }
-            
+
             matcher.Run(m_Element, m_Matchers);
             var match = matcher.match as T;
 

@@ -564,13 +564,11 @@ namespace UnityEditor
                         str = str.Replace(',', '.');
                         if (!float.TryParse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture.NumberFormat, out value))
                         {
-                            EditorGUI.s_RecycledCurrentEditingFloat = 0;
                             value = 0;
                             return value;
                         }
                         if (System.Single.IsNaN(value))
                             value = 0;
-                        EditorGUI.s_RecycledCurrentEditingFloat = value;
                     }
                 }
             }

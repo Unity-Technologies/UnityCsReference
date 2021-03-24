@@ -2656,9 +2656,6 @@
     <Compile Include="..\..\Editor\Mono\PreferencesWindow\AssetPipelinePreferences.cs">
       <Link>Editor\Mono\PreferencesWindow\AssetPipelinePreferences.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\PreferencesWindow\DiagnosticsSwitchPreferences.cs">
-      <Link>Editor\Mono\PreferencesWindow\DiagnosticsSwitchPreferences.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\PreferencesWindow\PreferencesItem.cs">
       <Link>Editor\Mono\PreferencesWindow\PreferencesItem.cs</Link>
     </Compile>
@@ -4303,6 +4300,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImportErrors.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImportErrors.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImportGlossary.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImportGlossary.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImporter.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImporter.cs</Link>
     </Compile>
@@ -4735,6 +4735,12 @@
     <Compile Include="..\..\Modules\DeviceSimulatorEditor\VisualElements\DeviceView.cs">
       <Link>Modules\DeviceSimulatorEditor\VisualElements\DeviceView.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\DiagnosticsEditor\DiagnosticsConsoleMessage.cs">
+      <Link>Modules\DiagnosticsEditor\DiagnosticsConsoleMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DiagnosticsEditor\DiagnosticsPreferences.cs">
+      <Link>Modules\DiagnosticsEditor\DiagnosticsPreferences.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphViewEditor\AssemblyInfo.cs">
       <Link>Modules\GraphViewEditor\AssemblyInfo.cs</Link>
     </Compile>
@@ -4960,17 +4966,41 @@
     <Compile Include="..\..\Modules\LocalizationEditor\LocalizedEditorFontManager.cs">
       <Link>Modules\LocalizationEditor\LocalizedEditorFontManager.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\BaseDropdownItem.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\BaseDropdownItem.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\DetailsExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\Extensions\DetailsExtension.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\ExtendableToolbarMenu.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\ExtendableToolbarMenu.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\ExtensionManager.cs">
       <Link>Modules\PackageManagerUI\Editor\Extensions\ExtensionManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\InputDropdownArgs.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\InputDropdownArgs.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\Interfaces\IDetailsExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\Extensions\Interfaces\IDetailsExtension.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\Interfaces\IExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\Extensions\Interfaces\IExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\Interfaces\IMenu.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\Interfaces\IMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\Interfaces\IMenuDropdownItem.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\Interfaces\IMenuDropdownItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\Interfaces\IPackageActionButton.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\Interfaces\IPackageActionButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\Interfaces\IPackageActionDropdownItem.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\Interfaces\IPackageActionDropdownItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\Interfaces\IPackageActionMenu.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\Interfaces\IPackageActionMenu.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\Interfaces\IPackageSelectionChangedHandler.cs">
       <Link>Modules\PackageManagerUI\Editor\Extensions\Interfaces\IPackageSelectionChangedHandler.cs</Link>
@@ -4983,6 +5013,15 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\Interfaces\IWindowDestroyHandler.cs">
       <Link>Modules\PackageManagerUI\Editor\Extensions\Interfaces\IWindowDestroyHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\MenuDropdownItem.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\MenuDropdownItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\PackageAction.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\PackageAction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\PackageActionDropdownItem.cs">
+      <Link>Modules\PackageManagerUI\Editor\Extensions\PackageActionDropdownItem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\PackageSelectionArgs.cs">
       <Link>Modules\PackageManagerUI\Editor\Extensions\PackageSelectionArgs.cs</Link>
@@ -5322,6 +5361,12 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetails.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDetails.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetailsBody.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageDetailsBody.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetailsHeader.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageDetailsHeader.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetailsImages.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDetailsImages.cs</Link>
@@ -5905,6 +5950,9 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\GlobalIllumination\GlobalIlluminationProfilerModule.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\GlobalIllumination\GlobalIlluminationProfilerModule.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\LegacyDetailsViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\LegacyDetailsViewController.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\MemoryElement.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\MemoryElement.cs</Link>
     </Compile>
@@ -5931,6 +5979,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModuleBase.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModuleBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModuleViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModuleViewController.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Rendering\RenderingProfilerModule.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Rendering\RenderingProfilerModule.cs</Link>

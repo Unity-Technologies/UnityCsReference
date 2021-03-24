@@ -22,11 +22,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 new SelectableLabel.UxmlFactory(),
                 new Alert.UxmlFactory(),
-                new DropdownButton.UxmlFactory(),
                 new LoadingSpinner.UxmlFactory(),
                 new InProgressView.UxmlFactory(),
                 new PackageDependencies.UxmlFactory(),
                 new PackageDetails.UxmlFactory(),
+                new PackageDetailsHeader.UxmlFactory(),
+                new PackageDetailsBody.UxmlFactory(),
                 new PackageDetailsLinks.UxmlFactory(),
                 new PackageDetailsImages.UxmlFactory(),
                 new PackageTagLabel.UxmlFactory(),
@@ -38,7 +39,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 new PackageToolbar.UxmlFactory(),
                 new ProgressBar.UxmlFactory(),
                 new ScopedRegistriesSettings.UxmlFactory(),
-                new ToolbarWindowMenu.UxmlFactory()
+                new ToolbarWindowMenu.UxmlFactory(),
+                new ExtendableToolbarMenu.UxmlFactory()
             };
 
             foreach (IUxmlFactory factory in factories)

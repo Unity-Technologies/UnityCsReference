@@ -3745,6 +3745,12 @@ namespace UnityEditor
             ShowNotification("All compiler errors have to be fixed before you can enter playmode!");
         }
 
+        static void ShowPrefabErrorNotification()
+        {
+            ShowNotification("All Prefab instances without a source Prefab must be fixed before you can enter playmode!");
+            Debug.LogError("All Prefab instances without a source Prefab Asset must be fixed before you can enter playmode!\nYou can find them by searching for 'Missing Prefab' in the Hierarchy");
+        }
+
         internal static void ShowSceneViewPlayModeSaveWarning()
         {
             // In this case, we want to explicitly try the GameView before passing it on to whatever notificationView we have

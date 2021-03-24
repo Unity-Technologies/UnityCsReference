@@ -182,7 +182,7 @@ namespace UnityEngine.UIElements
             float paddingRight = resolvedStyle.paddingRight;
             if (float.IsNaN(paddingRight))
                 paddingRight = 0.0f; // Just in case the style isn't fully resolved yet
-            float extraWidth = Mathf.Clamp(paddingRight, 1.0f/scaledPixelsPerPoint, 1.0f);
+            float extraWidth = Mathf.Clamp(paddingRight, 1.0f / scaledPixelsPerPoint, 1.0f);
 
             // Try full size first
             var size = MeasureTextSize(drawText, 0, MeasureMode.Undefined, 0, MeasureMode.Undefined);

@@ -343,7 +343,7 @@ namespace UnityEditor.UIElements
 
             if (editor != null)
             {
-                if(editor.target == target || editor.serializedObject == serializedObject)
+                if (editor.target == target || editor.serializedObject == serializedObject)
                     return editor;
 
                 if (ownsEditor)

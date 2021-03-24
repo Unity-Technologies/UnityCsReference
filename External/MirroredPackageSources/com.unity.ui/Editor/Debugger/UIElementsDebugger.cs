@@ -142,7 +142,7 @@ namespace UnityEditor.UIElements.Debugger
             get { return m_BreakBatches; }
             set
             {
-                if(m_BreakBatches == value)
+                if (m_BreakBatches == value)
                     return;
                 m_BreakBatches = value;
                 onStateChange?.Invoke();

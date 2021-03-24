@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -15,15 +16,29 @@ namespace UnityEditor
         {
             public static Texture2D smallWarningIcon;
             public static GUIContent restartNeededWarning = EditorGUIUtility.TrTextContent("Some settings will not take effect until you restart Unity.");
+            public static GUIStyle boldFoldout;
 
             static Styles()
             {
                 smallWarningIcon = EditorGUIUtility.LoadIconRequired("console.warnicon.sml");
+                boldFoldout = new GUIStyle(EditorStyles.foldout) {fontStyle = FontStyle.Bold};
             }
         }
 
+        class SwitchGroup
+        {
+            public string name;
+            public DiagnosticSwitch[] switches;
+            public bool foldout;
+            public bool HasAnyChangedValues => switches.Any(s => !s.isSetToDefault);
+            public bool HasAnyUnappliedValues => switches.Any(s => s.needsRestart);
+        }
+
         private const uint kMaxRangeForSlider = 10;
-        bool m_HasAnyUnappliedSwitches;
+
+        private List<SwitchGroup> m_Switches;
+
+        private bool m_HasAcceptedWarning;
 
         public DiagnosticSwitchPreferences()
             : base("Preferences/Diagnostics", SettingsScope.User)
@@ -32,9 +47,7 @@ namespace UnityEditor
 
         public override bool HasSearchInterest(string searchContext)
         {
-            var switches = new List<DiagnosticSwitch>();
-            Debug.GetDiagnosticSwitches(switches);
-            foreach (var diagSwitch in switches)
+            foreach (var diagSwitch in Debug.diagnosticSwitches)
             {
                 if (PassesFilter(diagSwitch, searchContext))
                     return true;
@@ -42,21 +55,72 @@ namespace UnityEditor
             return false;
         }
 
+        public override void OnActivate(string searchContext, VisualElement rootElement)
+        {
+            var switches = Debug.diagnosticSwitches;
+
+            // If any switch has been configured, assume that the user already previously saw the warning, and don't get
+            // in their way if they are looking to reset it
+            m_HasAcceptedWarning = switches.Any(s => !s.isSetToDefault);
+
+            m_Switches = switches
+                .GroupBy(s => s.owningModule)
+                .Select(group => new SwitchGroup
+                {
+                    name = group.Key,
+                    switches = group.OrderBy(s => s.name).ToArray(),
+                    foldout = group.Any(s => !s.isSetToDefault)
+                })
+                .OrderBy(group => group.name)
+                .ToList();
+
+            if (!m_HasAcceptedWarning)
+            {
+                VisualTreeAsset warningPanel = (VisualTreeAsset)EditorGUIUtility.LoadRequired("UXML/DiagnosticsPreferences/WarningPanel.uxml");
+                warningPanel.CloneTree(rootElement);
+                rootElement.Q<Button>("ShowSettings").clicked += () =>
+                {
+                    m_HasAcceptedWarning = true;
+                    rootElement.Clear();
+
+                    EditorWindow.GetWindow<SettingsWindow>().SetupIMGUIForCurrentProviderIfNeeded();
+                };
+            }
+        }
+
+        public override void OnTitleBarGUI()
+        {
+            using (new EditorGUI.DisabledGroupScope(m_Switches.All(group => !group.HasAnyChangedValues)))
+            {
+                if (GUILayout.Button("Reset all"))
+                {
+                    foreach (var diagnosticSwitch in m_Switches.SelectMany(group => group.switches))
+                        diagnosticSwitch.persistentValue = diagnosticSwitch.defaultValue;
+                    DiagnosticSwitchesConsoleMessage.Instance.Update();
+                }
+            }
+        }
+
         public override void OnGUI(string searchContext)
         {
-            m_HasAnyUnappliedSwitches = false;
             using (new SettingsWindow.GUIScope())
             {
-                var switches = new List<DiagnosticSwitch>();
-                Debug.GetDiagnosticSwitches(switches);
-                switches.Sort((a, b) => Comparer<string>.Default.Compare(a.name, b.name));
-
-                m_HasAnyUnappliedSwitches = switches.Any(HasUnappliedValues);
-                for (var i = 0; i < switches.Count; ++i)
+                foreach (var group in m_Switches)
                 {
-                    m_HasAnyUnappliedSwitches |= DisplaySwitch(switches[i]);
+                    group.foldout = EditorGUILayout.Foldout(group.foldout, String.IsNullOrEmpty(group.name) ? "General" : group.name,
+                        group.HasAnyChangedValues ? Styles.boldFoldout : EditorStyles.foldout);
 
-                    EditorGUILayout.Space(EditorGUI.kControlVerticalSpacing);
+                    if (group.foldout)
+                    {
+                        foreach (var diagnosticSwitch in group.switches)
+                        {
+                            DisplaySwitch(diagnosticSwitch);
+                            EditorGUILayout.Space(EditorGUI.kControlVerticalSpacing);
+                            EditorGUIUtility.SetBoldDefaultFont(false);
+                        }
+                    }
+
+                    EditorGUILayout.Space(EditorGUI.kControlVerticalSpacing.value * 1.2f);
                 }
             }
         }
@@ -64,7 +128,7 @@ namespace UnityEditor
         public override void OnFooterBarGUI()
         {
             var helpBox = GUILayoutUtility.GetRect(Styles.restartNeededWarning, EditorStyles.helpBox, GUILayout.MinHeight(40));
-            if (m_HasAnyUnappliedSwitches)
+            if (m_Switches.Any(group => group.HasAnyUnappliedValues))
                 EditorGUI.HelpBox(helpBox, Styles.restartNeededWarning.text, MessageType.Warning);
         }
 
@@ -74,26 +138,40 @@ namespace UnityEditor
                 || SearchUtils.MatchSearchGroups(filterString, diagnosticSwitch.name);
         }
 
-        private static bool HasUnappliedValues(DiagnosticSwitch diagnosticSwitch)
+        private void DisplaySwitch(DiagnosticSwitch diagnosticSwitch)
         {
-            return !Equals(diagnosticSwitch.value, diagnosticSwitch.persistentValue);
-        }
-
-        private bool DisplaySwitch(DiagnosticSwitch diagnosticSwitch)
-        {
-            var labelText = new GUIContent(diagnosticSwitch.name, diagnosticSwitch.name + "\n\n" + diagnosticSwitch.description);
-            var hasUnappliedValue = HasUnappliedValues(diagnosticSwitch);
-
-            EditorGUI.BeginChangeCheck();
+            var labelText = new GUIContent(diagnosticSwitch.name, diagnosticSwitch.description);
 
             var rowRect = GUILayoutUtility.GetRect(0, EditorGUI.kSingleLineHeight, GUILayout.ExpandWidth(true));
-            var warningRect = new Rect(rowRect.x, rowRect.y, Styles.smallWarningIcon.width, Styles.smallWarningIcon.height);
-            if (m_HasAnyUnappliedSwitches)
-            {
-                rowRect.x += warningRect.width + 2;
-            }
-            if (hasUnappliedValue && Event.current.type == EventType.Repaint)
+            rowRect.xMax -= GUISkin.current.verticalScrollbar.fixedWidth + 5;
+            var iconScaleFactor = EditorGUI.kSingleLineHeight / Styles.smallWarningIcon.height;
+            var warningRect = new Rect(rowRect.x, rowRect.y, Styles.smallWarningIcon.width * iconScaleFactor, Styles.smallWarningIcon.height * iconScaleFactor);
+            rowRect.x += warningRect.width + 2;
+            if (diagnosticSwitch.needsRestart && Event.current.type == EventType.Repaint)
                 GUI.DrawTexture(warningRect, Styles.smallWarningIcon);
+
+            var resetButtonSize = EditorStyles.miniButton.CalcSize(GUIContent.Temp("Reset"));
+            var resetButtonRect = new Rect(rowRect.xMax - resetButtonSize.x, rowRect.y, resetButtonSize.x,
+                resetButtonSize.y);
+            rowRect.xMax -= resetButtonSize.x + 2;
+            if (!diagnosticSwitch.isSetToDefault)
+            {
+                if (GUI.Button(resetButtonRect, "Reset", EditorStyles.miniButton))
+                {
+                    diagnosticSwitch.persistentValue = diagnosticSwitch.defaultValue;
+                    DiagnosticSwitchesConsoleMessage.Instance.Update();
+                }
+            }
+            else
+            {
+                // Reserve an ID for the 'reset' button so that if the user begins typing in a text-valued switch, the
+                // button showing up doesn't cause the focus to change
+                GUIUtility.GetControlID("Button".GetHashCode(), FocusType.Passive, resetButtonRect);
+            }
+
+            EditorGUIUtility.SetBoldDefaultFont(!diagnosticSwitch.persistentValue.Equals(diagnosticSwitch.defaultValue));
+
+            EditorGUI.BeginChangeCheck();
 
             if (diagnosticSwitch.value is bool)
             {
@@ -172,9 +250,7 @@ namespace UnityEditor
             }
 
             if (EditorGUI.EndChangeCheck())
-                Debug.SetDiagnosticSwitch(diagnosticSwitch.name, diagnosticSwitch.persistentValue, true);
-
-            return hasUnappliedValue;
+                DiagnosticSwitchesConsoleMessage.Instance.Update();
         }
 
         [SettingsProvider]
@@ -183,11 +259,7 @@ namespace UnityEditor
             // Diagnostic switches might be turned off in the build,
             // in which case there will be none of them -- don't
             // create the preference pane then.
-            var switches = new List<DiagnosticSwitch>();
-            Debug.GetDiagnosticSwitches(switches);
-            if (switches.Count == 0)
-                return null;
-            return new DiagnosticSwitchPreferences();
+            return Debug.diagnosticSwitches.Length != 0 ? new DiagnosticSwitchPreferences() : null;
         }
     }
 }

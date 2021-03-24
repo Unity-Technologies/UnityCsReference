@@ -63,6 +63,11 @@ namespace UnityEditor
             set { SetActualViewInternal(value, sendEvents: true); }
         }
 
+        static readonly Vector2 k_DockedMinSize = new Vector2(100, 100);
+        static readonly Vector2 k_DockedMaxSize = new Vector2(8096, 8096);
+        public override Vector2 minSize { get => (actualView?.docked ?? false) ? k_DockedMinSize : base.minSize; }
+        public override Vector2 maxSize { get => (actualView?.docked ?? false) ? k_DockedMaxSize : base.maxSize; }
+
         internal void SetActualViewInternal(EditorWindow value, bool sendEvents)
         {
             if (m_ActualView == value)

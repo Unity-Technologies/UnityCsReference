@@ -221,7 +221,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void SetupAdvancedMenu()
         {
             toolbarSettingsMenu.tooltip = L10n.Tr("Advanced");
-            toolbarSettingsMenu.menu.AppendAction(L10n.Tr("Advanced Project Settings"), a =>
+
+            var dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
+            dropdownItem.text = L10n.Tr("Advanced Project Settings");
+            dropdownItem.action = () =>
             {
                 if (!m_SettingsProxy.advancedSettingsExpanded)
                 {
@@ -230,43 +233,45 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
                 SettingsWindow.Show(SettingsScope.Project, PackageManagerProjectSettingsProvider.k_PackageManagerSettingsPath);
                 PackageManagerWindowAnalytics.SendEvent("advancedProjectSettings");
-            });
+            };
 
-            toolbarSettingsMenu.menu.AppendSeparator();
-
-            toolbarSettingsMenu.menu.AppendAction(L10n.Tr("Reset Packages to defaults"), a =>
+            dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
+            dropdownItem.insertSeparatorBefore = true;
+            dropdownItem.text = L10n.Tr("Reset Packages to defaults");
+            dropdownItem.action = () =>
             {
                 EditorApplication.ExecuteMenuItem(k_ResetPackagesMenuPath);
                 m_PageManager.Refresh(RefreshOptions.UpmListOffline);
                 PackageManagerWindowAnalytics.SendEvent("resetToDefaults");
-            });
+            };
 
             if (Unsupported.IsDeveloperBuild())
             {
-                toolbarSettingsMenu.menu.AppendSeparator();
-                toolbarSettingsMenu.menu.AppendAction(L10n.Tr("Reset Package Database"), a =>
+                dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
+                dropdownItem.insertSeparatorBefore = true;
+                dropdownItem.text = L10n.Tr("Reset Package Database");
+                dropdownItem.action = () =>
                 {
                     PackageManagerWindow.instance?.Close();
                     m_PageManager.Reload();
-                });
+                };
 
-                toolbarSettingsMenu.menu.AppendAction(L10n.Tr("Reset Stylesheets"), a =>
+                dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
+                dropdownItem.text = L10n.Tr("Reset Stylesheets");
+                dropdownItem.action = () =>
                 {
                     PackageManagerWindow.instance?.Close();
                     m_ResourceLoader.Reset();
-                });
+                };
             }
-
-            PackageManagerExtensions.ExtensionCallback(() =>
-            {
-                foreach (var extension in PackageManagerExtensions.MenuExtensions)
-                    extension.OnAdvancedMenuCreate(toolbarSettingsMenu.menu);
-            });
         }
 
         private void SetupAddMenu()
         {
-            addMenu.menu.AppendAction(L10n.Tr("Add package from disk..."), a =>
+            var dropdownItem = addMenu.AddBuiltInDropdownItem();
+            dropdownItem.text = L10n.Tr("Add package from disk...");
+            dropdownItem.userData = "AddFromDisk";
+            dropdownItem.action = () =>
             {
                 var path = m_Application.OpenFilePanelWithFilters(L10n.Tr("Select package on disk"), "", new[] { "package.json file", "json" });
                 if (string.IsNullOrEmpty(path))
@@ -291,9 +296,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     Debug.Log($"[Package Manager] Cannot add package from disk {path}: {e.Message}");
                 }
-            }, a => DropdownMenuAction.Status.Normal, "AddFromDisk");
+            };
 
-            addMenu.menu.AppendAction(L10n.Tr("Add package from tarball..."), a =>
+            dropdownItem = addMenu.AddBuiltInDropdownItem();
+            dropdownItem.text = L10n.Tr("Add package from tarball...");
+            dropdownItem.userData = "AddFromTarball";
+            dropdownItem.action = () =>
             {
                 var path = m_Application.OpenFilePanelWithFilters(L10n.Tr("Select package on disk"), "", new[] { "Package tarball", "tgz, tar.gz" });
                 if (!string.IsNullOrEmpty(path) && !m_PackageDatabase.isInstallOrUninstallInProgress)
@@ -301,17 +309,20 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_PackageDatabase.InstallFromPath(path);
                     PackageManagerWindowAnalytics.SendEvent("addFromTarball");
                 }
-            }, a => DropdownMenuAction.Status.Normal, "AddFromTarball");
+            };
 
-            addMenu.menu.AppendAction(L10n.Tr("Add package from git URL..."), a =>
+            dropdownItem = addMenu.AddBuiltInDropdownItem();
+            dropdownItem.text = L10n.Tr("Add package from git URL...");
+            dropdownItem.userData = "AddFromGit";
+            dropdownItem.action = () =>
             {
-                var configs = new GenericInputDropdown.Configs
+                var args = new InputDropdownArgs
                 {
                     title = L10n.Tr("Add package from git URL"),
                     iconUssClass = "git",
-                    label = L10n.Tr("URL"),
+                    placeholderText = L10n.Tr("URL"),
                     submitButtonText = L10n.Tr("Add"),
-                    inputSubmittedCallback = url =>
+                    onInputSubmitted = url =>
                     {
                         if (!m_PackageDatabase.isInstallOrUninstallInProgress)
                         {
@@ -327,26 +338,19 @@ namespace UnityEditor.PackageManager.UI.Internal
                         }
                     }
                 };
-                // We are using the `worldBound` of the toolbar rather than the worldBound of the addMenu because addMenu have a `-1` left margin
-                // And that makes the dropdown show in a bit of a misaligned place
-                var rect = GUIUtility.GUIToScreenRect(worldBound);
-                var dropdown = new GenericInputDropdown(m_ResourceLoader, PackageManagerWindow.instance, configs) { position = rect };
-                DropdownContainer.ShowDropdown(dropdown);
-            }, a => DropdownMenuAction.Status.Normal, "AddFromGit");
+                addMenu.ShowInputDropdown(args);
+            };
 
-            addMenu.menu.AppendAction(L10n.Tr("Add package by name..."), a =>
+            dropdownItem = addMenu.AddBuiltInDropdownItem();
+            dropdownItem.text = L10n.Tr("Add package by name...");
+            dropdownItem.userData = "AddByName";
+            dropdownItem.action = () =>
             {
                 // Same as above, the worldBound of the toolbar is used rather than the addMenu
                 var rect = GUIUtility.GUIToScreenRect(worldBound);
                 var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_PackageFiltering, m_UpmClient, m_PackageDatabase, m_PageManager, PackageManagerWindow.instance) { position = rect };
                 DropdownContainer.ShowDropdown(dropdown);
-            }, a => DropdownMenuAction.Status.Normal, "AddByName");
-
-            PackageManagerExtensions.ExtensionCallback(() =>
-            {
-                foreach (var extension in PackageManagerExtensions.MenuExtensions)
-                    extension.OnAddMenuCreate(addMenu.menu);
-            });
+            };
         }
 
         private void AddFilterTabToDropdownMenu(PackageFilterTab tab, Action<DropdownMenuAction> action = null, Func<DropdownMenuAction, DropdownMenuAction.Status> actionStatusCallback = null)
@@ -375,12 +379,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             AddFilterTabToDropdownMenu(PackageFilterTab.AssetStore);
             filterTabsMenu.menu.AppendSeparator();
             AddFilterTabToDropdownMenu(PackageFilterTab.BuiltIn);
-
-            PackageManagerExtensions.ExtensionCallback(() =>
-            {
-                foreach (var extension in PackageManagerExtensions.MenuExtensions)
-                    extension.OnFilterMenuCreate(filterTabsMenu.menu);
-            });
         }
 
         private void SetupOrdering()
@@ -518,12 +516,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private VisualElementCache cache { get; set; }
 
-        internal ToolbarMenu addMenu { get { return cache.Get<ToolbarMenu>("toolbarAddMenu"); }}
+        internal ExtendableToolbarMenu addMenu { get { return cache.Get<ExtendableToolbarMenu>("toolbarAddMenu"); }}
         private ToolbarMenu filterTabsMenu { get { return cache.Get<ToolbarMenu>("toolbarFilterTabsMenu"); } }
         private ToolbarMenu orderingMenu { get { return cache.Get<ToolbarMenu>("toolbarOrderingMenu"); } }
         private ToolbarWindowMenu filtersMenu { get { return cache.Get<ToolbarWindowMenu>("toolbarFiltersMenu"); } }
         private ToolbarButton clearFiltersButton { get { return cache.Get<ToolbarButton>("toolbarClearFiltersButton"); } }
         private ToolbarSearchField searchToolbar { get { return cache.Get<ToolbarSearchField>("toolbarSearch"); } }
-        private ToolbarMenu toolbarSettingsMenu { get { return cache.Get<ToolbarMenu>("toolbarSettingsMenu"); } }
+        internal ExtendableToolbarMenu toolbarSettingsMenu { get { return cache.Get<ExtendableToolbarMenu>("toolbarSettingsMenu"); } }
     }
 }

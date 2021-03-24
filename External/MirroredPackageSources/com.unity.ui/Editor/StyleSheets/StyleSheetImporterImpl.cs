@@ -17,6 +17,10 @@ namespace UnityEditor.UIElements.StyleSheets
 {
     abstract class StyleValueImporter
     {
+        private static StyleSheetImportGlossary s_Glossary;
+
+        internal static StyleSheetImportGlossary glossary => s_Glossary ?? (s_Glossary = new StyleSheetImportGlossary());
+
         const string k_ResourcePathFunctionName = "resource";
         const string k_VariableFunctionName = "var";
 
@@ -26,6 +30,7 @@ namespace UnityEditor.UIElements.StyleSheets
         protected readonly StyleSheetImportErrors m_Errors;
         protected readonly StyleValidator m_Validator;
         protected string m_AssetPath;
+        protected int m_CurrentLine;
 
         public StyleValueImporter(UnityEditor.AssetImporters.AssetImportContext context)
         {
@@ -256,7 +261,7 @@ namespace UnityEditor.UIElements.StyleSheets
                             }
                         }
 
-                        if ( isResource)
+                        if (isResource)
                         {
                             value.valueType = StyleValueType.AssetReference;
                             value.valueIndex = assetIndex;
@@ -270,7 +275,7 @@ namespace UnityEditor.UIElements.StyleSheets
                         }
                         else
                         {
-                            Debug.LogError( "ResourcePath was not converted to AssetReference when converting stylesheet :  " + path);
+                            Debug.LogError("ResourcePath was not converted to AssetReference when converting stylesheet :  " + path);
                         }
                     }
                 }
@@ -360,7 +365,7 @@ namespace UnityEditor.UIElements.StyleSheets
             var argTerm = funcTerm.Arguments.FirstOrDefault() as PrimitiveTerm;
             if (argTerm == null)
             {
-                m_Errors.AddSemanticError(StyleSheetImportErrorCode.MissingFunctionArgument, funcTerm.Name);
+                m_Errors.AddSemanticError(StyleSheetImportErrorCode.MissingFunctionArgument, funcTerm.Name, m_CurrentLine);
                 return;
             }
 
@@ -368,18 +373,18 @@ namespace UnityEditor.UIElements.StyleSheets
             m_Builder.AddValue(path, StyleValueType.ResourcePath);
         }
 
-        static protected StyleSheetImportErrorCode ConvertErrorCode(URIValidationResult result)
+        internal static (StyleSheetImportErrorCode, string) ConvertErrorCode(URIValidationResult result)
         {
             switch (result)
             {
                 case URIValidationResult.InvalidURILocation:
-                    return StyleSheetImportErrorCode.InvalidURILocation;
+                    return (StyleSheetImportErrorCode.InvalidURILocation, glossary.invalidUriLocation);
                 case URIValidationResult.InvalidURIScheme:
-                    return StyleSheetImportErrorCode.InvalidURIScheme;
+                    return (StyleSheetImportErrorCode.InvalidURIScheme, glossary.invalidUriScheme);
                 case URIValidationResult.InvalidURIProjectAssetPath:
-                    return StyleSheetImportErrorCode.InvalidURIProjectAssetPath;
+                    return (StyleSheetImportErrorCode.InvalidURIProjectAssetPath, glossary.invalidAssetPath);
                 default:
-                    return StyleSheetImportErrorCode.Internal;
+                    return (StyleSheetImportErrorCode.Internal, glossary.internalErrorWithStackTrace);
             }
         }
 
@@ -387,14 +392,16 @@ namespace UnityEditor.UIElements.StyleSheets
         {
             string path = (string)term.Value;
 
-            string projectRelativePath, subAssetPath, errorMessage;
+            string projectRelativePath, subAssetPath, errorToken;
 
-            URIValidationResult result = URIHelpers.ValidAssetURL(assetPath, path, out errorMessage, out projectRelativePath, out subAssetPath);
+            URIValidationResult result = URIHelpers.ValidAssetURL(assetPath, path, out errorToken, out projectRelativePath, out subAssetPath);
 
             if (result != URIValidationResult.OK)
             {
+                var(_, message) = ConvertErrorCode(result);
+
                 m_Builder.AddValue(path, StyleValueType.MissingAssetReference);
-                m_Errors.AddValidationWarning(errorMessage, m_Builder.currentProperty.line);
+                m_Errors.AddValidationWarning(string.Format(message, errorToken), m_CurrentLine);
             }
             else
             {
@@ -428,7 +435,7 @@ namespace UnityEditor.UIElements.StyleSheets
                             }
                             else
                             {
-                                m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidHighResolutionImage, string.Format("Invalid asset type {0}, only Texture2D is supported for variants with @2x suffix", asset.GetType().Name));
+                                m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidHighResolutionImage, string.Format(glossary.invalidHighResAssetType, asset.GetType().Name, projectRelativePath), m_CurrentLine);
                             }
                             return;
                         }
@@ -441,7 +448,7 @@ namespace UnityEditor.UIElements.StyleSheets
                 }
                 else
                 {
-                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURIProjectAssetType, string.Format("Invalid asset type {0}, only Font, FontAssets, Sprite, Texture2D and VectorImage are supported", asset.GetType().Name));
+                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURIProjectAssetType, string.Format(glossary.invalidAssetType, asset == null ? "null" : asset.GetType().Name, projectRelativePath), m_CurrentLine);
                 }
             }
         }
@@ -451,7 +458,7 @@ namespace UnityEditor.UIElements.StyleSheets
             func = StyleValueFunction.Unknown;
             if (term.Arguments.Length == 0)
             {
-                m_Errors.AddSemanticError(StyleSheetImportErrorCode.MissingFunctionArgument, term.Name);
+                m_Errors.AddSemanticError(StyleSheetImportErrorCode.MissingFunctionArgument, string.Format(glossary.missingFunctionArgument, term.Name), m_CurrentLine);
                 return false;
             }
 
@@ -468,7 +475,7 @@ namespace UnityEditor.UIElements.StyleSheets
             catch (System.Exception)
             {
                 var prop = m_Builder.currentProperty;
-                m_Errors.AddValidationWarning($"Unknown function {term.Name} in declaration {prop.name}: {term.Name}", prop.line);
+                m_Errors.AddValidationWarning(string.Format(glossary.unknownFunction, term.Name, prop.name), prop.line);
                 return false;
             }
 
@@ -495,17 +502,17 @@ namespace UnityEditor.UIElements.StyleSheets
                     string varName = variableTerm?.Value as string;
                     if (string.IsNullOrEmpty(varName))
                     {
-                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, "Variable name is missing");
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, glossary.missingVariableName, m_CurrentLine);
                         return false;
                     }
-                    else if (!varName.StartsWith("--"))
+                    if (!varName.StartsWith("--"))
                     {
-                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, $"Variable {varName} is missing '--' prefix");
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, string.Format(glossary.missingVariablePrefix, varName), m_CurrentLine);
                         return false;
                     }
                     if (varName.Length < 3)
                     {
-                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, "Variable name is empty");
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, glossary.emptyVariableName, m_CurrentLine);
                         return false;
                     }
 
@@ -515,7 +522,7 @@ namespace UnityEditor.UIElements.StyleSheets
                 {
                     if (foundComma)
                     {
-                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, "Too many function arguments");
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, glossary.tooManyFunctionArguments, m_CurrentLine);
                         return false;
                     }
 
@@ -524,22 +531,24 @@ namespace UnityEditor.UIElements.StyleSheets
                     ++i;
                     if (i >= argc)
                     {
-                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, "Empty function argument");
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, glossary.emptyFunctionArgument, m_CurrentLine);
                         return false;
                     }
                 }
                 else if (!foundComma)
                 {
-                    string msg = "Expected ','";
+                    string token = "";
                     while (arg.GetType() == typeof(Whitespace) && i + 1 < argc)
                     {
                         arg = term.Arguments[++i];
                     }
 
                     if (arg.GetType() != typeof(Whitespace))
-                        msg = $"{msg} got {arg}";
+                    {
+                        token = arg.ToString();
+                    }
 
-                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, msg);
+                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, string.Format(glossary.unexpectedTokenInFunction, token), m_CurrentLine);
                     return false;
                 }
             }
@@ -601,7 +610,7 @@ namespace UnityEditor.UIElements.StyleSheets
                         VisitUrlFunction(primitiveTerm);
                         break;
                     default:
-                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedUnit, primitiveTerm.ToString());
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedUnit, string.Format(glossary.unsupportedUnit, primitiveTerm.ToString()), m_CurrentLine);
                         return;
                 }
             }
@@ -645,7 +654,7 @@ namespace UnityEditor.UIElements.StyleSheets
             }
             else
             {
-                m_Errors.AddInternalError(term.GetType().Name);
+                m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedTerm, string.Format(glossary.unsupportedTerm, term.GetType().Name), m_CurrentLine);
             }
         }
 
@@ -736,11 +745,11 @@ namespace UnityEditor.UIElements.StyleSheets
             {
                 if (e.isWarning)
                 {
-                    m_Context.LogImportWarning(e.ToString(), e.assetPath, e.line);
+                    m_Context.LogImportWarning(e.ToString(glossary), e.assetPath, e.line);
                 }
                 else
                 {
-                    m_Context.LogImportError(e.ToString(), e.assetPath, e.line);
+                    m_Context.LogImportError(e.ToString(glossary), e.assetPath, e.line);
                 }
             }
         }
@@ -771,7 +780,7 @@ namespace UnityEditor.UIElements.StyleSheets
             {
                 foreach (StylesheetParseError error in styleSheet.Errors)
                 {
-                    m_Errors.AddSyntaxError(error.ToString());
+                    m_Errors.AddSyntaxError(string.Format(glossary.ussParsingError, error.Message), error.Line);
                 }
             }
             else
@@ -782,8 +791,7 @@ namespace UnityEditor.UIElements.StyleSheets
                 }
                 catch (System.Exception exc)
                 {
-                    Debug.LogException(exc);
-                    m_Errors.AddInternalError(exc.StackTrace);
+                    m_Errors.AddInternalError(string.Format(glossary.internalErrorWithStackTrace, exc.Message, exc.StackTrace), m_CurrentLine);
                 }
             }
 
@@ -800,13 +808,14 @@ namespace UnityEditor.UIElements.StyleSheets
                     {
                         var importedPath = styleSheet.ImportDirectives[i].Href;
 
-                        string projectRelativePath, errorMessage;
-
-                        URIValidationResult importResult = URIHelpers.ValidAssetURL(assetPath, importedPath, out errorMessage, out projectRelativePath);
+                        URIValidationResult importResult = URIHelpers.ValidAssetURL(assetPath, importedPath, out var errorToken, out var projectRelativePath);
 
                         UnityStyleSheet importedStyleSheet = null;
                         if (importResult != URIValidationResult.OK)
-                            m_Errors.AddSemanticError(ConvertErrorCode(importResult), errorMessage);
+                        {
+                            var(code, message) = ConvertErrorCode(importResult);
+                            m_Errors.AddSemanticError(code, string.Format(message, errorToken), m_CurrentLine);
+                        }
                         else
                         {
                             importedStyleSheet = DeclareDependencyAndLoad(projectRelativePath) as UnityStyleSheet;
@@ -828,9 +837,7 @@ namespace UnityEditor.UIElements.StyleSheets
                 else
                 {
                     asset.imports = new UnityStyleSheet.ImportStruct[0];
-                    var errorMsg = $"The {assetPath} contains circular @import dependencies. All @import directives will be ignored for this StyleSheet.";
-                    Debug.LogError(errorMsg);
-                    m_Errors.AddInternalError(errorMsg);
+                    m_Errors.AddValidationWarning(glossary.circularImport, -1);
                 }
 
                 OnImportSuccess(asset);
@@ -866,11 +873,15 @@ namespace UnityEditor.UIElements.StyleSheets
             {
                 m_Builder.BeginRule(rule.Line);
 
+                m_CurrentLine = rule.Line;
+
                 // Note: we must rely on recursion to correctly handle parser types here
                 VisitBaseSelector(rule.Selector);
 
                 foreach (Property property in rule.Declarations)
                 {
+                    m_CurrentLine = property.Line;
+
                     ValidateProperty(property);
 
                     m_Builder.BeginProperty(property.Name, property.Line);
@@ -926,7 +937,7 @@ namespace UnityEditor.UIElements.StyleSheets
             }
             else
             {
-                m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidSelectorListDelimiter, selectorList.Delimiter);
+                m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidSelectorListDelimiter, string.Format(glossary.invalidSelectorListDelimiter, selectorList.Delimiter), m_CurrentLine);
             }
         }
 
@@ -936,7 +947,7 @@ namespace UnityEditor.UIElements.StyleSheets
 
             if (fullSpecificity == 0)
             {
-                m_Errors.AddInternalError("Failed to calculate selector specificity " + complexSelector);
+                m_Errors.AddInternalError(string.Format(glossary.internalError, "Failed to calculate selector specificity " + complexSelector), m_CurrentLine);
                 return;
             }
 
@@ -952,7 +963,7 @@ namespace UnityEditor.UIElements.StyleSheets
 
                     if (string.IsNullOrEmpty(simpleSelector))
                     {
-                        m_Errors.AddInternalError("Expected simple selector inside complex selector " + simpleSelector);
+                        m_Errors.AddInternalError(string.Format(glossary.internalError, "Expected simple selector inside complex selector " + simpleSelector), m_CurrentLine);
                         return;
                     }
 
@@ -970,7 +981,7 @@ namespace UnityEditor.UIElements.StyleSheets
                                 relationShip = StyleSelectorRelationship.Descendent;
                                 break;
                             default:
-                                m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidComplexSelectorDelimiter, complexSelector.ToString());
+                                m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidComplexSelectorDelimiter, string.Format(glossary.invalidComplexSelectorDelimiter, complexSelector), m_CurrentLine);
                                 return;
                         }
                     }
@@ -991,7 +1002,7 @@ namespace UnityEditor.UIElements.StyleSheets
 
                 if (specificity == 0)
                 {
-                    m_Errors.AddInternalError("Failed to calculate selector specificity " + selector);
+                    m_Errors.AddInternalError(string.Format(glossary.internalError, "Failed to calculate selector specificity " + selector), m_CurrentLine);
                     return;
                 }
 
@@ -1027,17 +1038,17 @@ namespace UnityEditor.UIElements.StyleSheets
         {
             if (!CSSSpec.ParseSelector(selector, out parts))
             {
-                m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedSelectorFormat, selector);
+                m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedSelectorFormat, string.Format(glossary.unsupportedSelectorFormat, selector), m_CurrentLine);
                 return false;
             }
             if (parts.Any(p => p.type == StyleSelectorType.Unknown))
             {
-                m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedSelectorFormat, selector);
+                m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedSelectorFormat, string.Format(glossary.unsupportedSelectorFormat, selector), m_CurrentLine);
                 return false;
             }
             if (parts.Any(p => p.type == StyleSelectorType.RecursivePseudoClass))
             {
-                m_Errors.AddSemanticError(StyleSheetImportErrorCode.RecursiveSelectorDetected, selector);
+                m_Errors.AddSemanticError(StyleSheetImportErrorCode.RecursiveSelectorDetected, string.Format(glossary.unsupportedSelectorFormat, selector), m_CurrentLine);
                 return false;
             }
             return true;

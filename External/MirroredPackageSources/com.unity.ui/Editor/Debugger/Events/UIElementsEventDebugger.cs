@@ -794,9 +794,9 @@ namespace UnityEditor.UIElements.Debugger
             {
                 var line = m_SelectedEvents[0];
                 var calls = m_Debugger.GetBeginEndProcessedEvents(panel);
-                eventBase = line != null ? calls?[line.lineNumber - 1].eventBase : null;
-                focused = line != null ? calls?[line.lineNumber - 1].focusedElement : null;
-                capture = line != null ? calls?[line.lineNumber - 1].mouseCapture : null;
+                eventBase = line != null ? calls ? [line.lineNumber - 1].eventBase : null;
+                focused = line != null ? calls ? [line.lineNumber - 1].focusedElement : null;
+                capture = line != null ? calls ? [line.lineNumber - 1].mouseCapture : null;
             }
 
             UpdateSelectionCount();
@@ -1226,7 +1226,7 @@ namespace UnityEditor.UIElements.Debugger
             UpdatePlaybackButtons();
         }
 
-        public override void OnVersionChanged(VisualElement ve, VersionChangeType changeTypeFlag) { }
+        public override void OnVersionChanged(VisualElement ve, VersionChangeType changeTypeFlag) {}
 
         protected override void OnSelectPanelDebug(IPanelDebug selectedPanelDebug)
         {

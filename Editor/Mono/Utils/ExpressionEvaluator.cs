@@ -5,82 +5,207 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace UnityEditor
 {
-    // Evaluates simple expressions, supports int & float and operators: + - * / % ^ ( )
+    // Evaluates simple expressions.
+    // - supports data types: float, int, double, long.
+    // - operations: + - * / % ^ ( )
+    // - functions: sqrt, sin, cos, tan, floor, ceil, round, L, R
+    //     L(a,b) results in a linear ramp between a and b, based on index & count.
+    //     R(a,b) results in a random value between a and b.
+    //     Both L and R function presence is treated as if the variable was present and an
+    //       Instance needs to be evaluated.
+    // - variables: 'x', 'v' or 'f' can be treated as input for later evaluation via Instance
+    // - expressions starting with +=, -=, *=, /= are treated the same as if they were "x+(...)" etc.
     public class ExpressionEvaluator
     {
-        private readonly static Operator[] s_Operators =
+        internal class Expression
         {
-            new Operator('-', 2, 2, Associativity.Left),
-            new Operator('+', 2, 2, Associativity.Left),
-            new Operator('/', 3, 2, Associativity.Left),
-            new Operator('*', 3, 2, Associativity.Left),
-            new Operator('%', 3, 2, Associativity.Left),
-            new Operator('^', 4, 2, Associativity.Right),
-            new Operator('u', 4, 1, Associativity.Left) // unary minus trick. For example we convert 2/-7+(-9*8)*2^-9-5 to 2/u7+(u9*8)*2^u9-5 before evaluation
+            internal Expression(string expression)
+            {
+                expression = PreFormatExpression(expression);
+                var infixTokens = ExpressionToTokens(expression, out hasVariables);
+                infixTokens = FixUnaryOperators(infixTokens);
+                rpnTokens = InfixToRPN(infixTokens);
+            }
+
+            public bool Evaluate<T>(ref T value, int index = 0, int count = 1)
+            {
+                return EvaluateTokens(rpnTokens, ref value, index, count);
+            }
+
+            internal readonly string[] rpnTokens;
+            internal readonly bool hasVariables;
+        }
+
+        public static bool Evaluate<T>(string expression, out T value)
+        {
+            return Evaluate(expression, out value, out _);
+        }
+
+        internal static bool Evaluate<T>(string expression, out T value, out Expression delayed)
+        {
+            value = default;
+            delayed = null;
+            if (TryParse(expression, out value))
+                return true;
+            var expr = new Expression(expression);
+            if (expr.hasVariables)
+            {
+                value = default;
+                delayed = expr;
+                return false;
+            }
+            return EvaluateTokens(expr.rpnTokens, ref value, 0, 1);
+        }
+
+        // Simple PCG (https://www.pcg-random.org/) based random number generator
+        struct PcgRandom
+        {
+            readonly ulong increment;
+            ulong state;
+
+            public PcgRandom(ulong state = 0, ulong sequence = 0)
+            {
+                this.increment = (sequence << 1) | 1u;
+                this.state = 0;
+                Step();
+                this.state += state;
+                Step();
+            }
+
+            public uint GetUInt()
+            {
+                var prevState = state;
+                Step();
+                return XshRr(prevState);
+            }
+
+            static uint RotateRight(uint v, int rot) => (v >> rot) | (v << (-rot & 31));
+            static uint XshRr(ulong s) => RotateRight((uint)(((s >> 18) ^ s) >> 27), (int)(s >> 59));
+            const ulong Multiplier64 = 6364136223846793005ul;
+            void Step() { state = unchecked(state * Multiplier64 + increment); }
+        }
+
+        static PcgRandom s_Random = new PcgRandom(0);
+
+        static Dictionary<string, Operator> s_Operators = new Dictionary<string, Operator>
+        {
+            {"-", new Operator(Op.Sub, 2, 2, Associativity.Left)},
+            {"+", new Operator(Op.Add, 2, 2, Associativity.Left)},
+            {"/", new Operator(Op.Div, 3, 2, Associativity.Left)},
+            {"*", new Operator(Op.Mul, 3, 2, Associativity.Left)},
+            {"%", new Operator(Op.Mod, 3, 2, Associativity.Left)},
+            {"^", new Operator(Op.Pow, 5, 2, Associativity.Right)},
+            // unary minus trick. For example we convert 2/-7+(-9*8)*2^-9-5 to 2/_7+(_9*8)*2^_9-5 before evaluation
+            {"_", new Operator(Op.Neg, 5, 1, Associativity.Left)},
+            {"sqrt", new Operator(Op.Sqrt, 4, 1, Associativity.Left)},
+            {"cos", new Operator(Op.Cos, 4, 1, Associativity.Left)},
+            {"sin", new Operator(Op.Sin, 4, 1, Associativity.Left)},
+            {"tan", new Operator(Op.Tan, 4, 1, Associativity.Left)},
+            {"floor", new Operator(Op.Floor, 4, 1, Associativity.Left)},
+            {"ceil", new Operator(Op.Ceil, 4, 1, Associativity.Left)},
+            {"round", new Operator(Op.Round, 4, 1, Associativity.Left)},
+            {"R", new Operator(Op.Rand, 4, 2, Associativity.Left)},
+            {"L", new Operator(Op.Linear, 4, 2, Associativity.Left)},
         };
 
-        private enum Associativity { Left, Right }
-
-        private struct Operator
+        enum Op
         {
-            public char character;
-            public int presedence;
-            public Associativity associativity;
-            public int inputs;
+            Add, Sub, Mul, Div, Mod,
+            Neg,
+            Pow, Sqrt,
+            Sin, Cos, Tan,
+            Floor, Ceil, Round,
+            Rand, Linear
+        }
 
-            public Operator(char character, int presedence, int inputs, Associativity associativity)
+        enum Associativity { Left, Right }
+
+        class Operator
+        {
+            public readonly Op op;
+            public readonly int precedence;
+            public readonly Associativity associativity;
+            public readonly int inputs;
+
+            public Operator(Op op, int precedence, int inputs, Associativity associativity)
             {
-                this.character = character;
-                this.presedence = presedence;
+                this.op = op;
+                this.precedence = precedence;
                 this.inputs = inputs;
                 this.associativity = associativity;
             }
         }
 
-        public static bool Evaluate<T>(string expression, out T value)
+        internal static void SetRandomState(uint state)
         {
-            if (TryParse(expression, out value))
-                return true;
-
-            expression = PreFormatExpression(expression);
-            string[] infixTokens = ExpressionToTokens(expression);
-            infixTokens = FixUnaryOperators(infixTokens);
-            string[] RPNTokens = InfixToRPN(infixTokens);
-            return Evaluate(RPNTokens, out value);
+            s_Random = new PcgRandom(state);
         }
 
-        // Evaluate RPN tokens (http://en.wikipedia.org/wiki/Reverse_Polish_notation)
-        private static bool Evaluate<T>(string[] tokens, out T value)
+        // Evaluate RPN tokens (https://en.wikipedia.org/wiki/Reverse_Polish_notation)
+        static bool EvaluateTokens<T>(string[] tokens, ref T value, int index, int count)
         {
-            Stack<string> stack = new Stack<string>();
+            var res = false;
+            if (typeof(T) == typeof(float))
+            {
+                var v = (double)(float)(object)value;
+                res = EvaluateDouble(tokens, ref v, index, count);
+                value = (T)(object)(float)v;
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                var v = (double)(int)(object)value;
+                res = EvaluateDouble(tokens, ref v, index, count);
+                value = (T)(object)(int)v;
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                var v = (double)(long)(object)value;
+                res = EvaluateDouble(tokens, ref v, index, count);
+                value = (T)(object)(long)v;
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                var v = (double)(object)value;
+                res = EvaluateDouble(tokens, ref v, index, count);
+                value = (T)(object)v;
+            }
+            return res;
+        }
 
-            foreach (string token in tokens)
+        static bool EvaluateDouble(string[] tokens, ref double value, int index, int count)
+        {
+            var stack = new Stack<string>();
+
+            foreach (var token in tokens)
             {
                 if (IsOperator(token))
                 {
-                    Operator oper = CharToOperator(token[0]);
-                    List<T> values = new List<T>();
-                    bool parsed = true;
+                    Operator oper = TokenToOperator(token);
+                    var values = new List<double>();
+                    var parsed = true;
 
                     while (stack.Count > 0 && !IsCommand(stack.Peek()) && values.Count < oper.inputs)
                     {
-                        T newValue;
-                        parsed &= TryParse<T>(stack.Pop(), out newValue);
+                        parsed &= TryParse<double>(stack.Pop(), out var newValue);
                         values.Add(newValue);
                     }
 
                     values.Reverse();
 
                     if (parsed && values.Count == oper.inputs)
-                        stack.Push(Evaluate<T>(values.ToArray(), token[0]).ToString());
+                        stack.Push(EvaluateOp(values.ToArray(), oper.op, index, count).ToString(CultureInfo.InvariantCulture));
                     else // Can't parse values or too few values for the operator -> exit
                     {
-                        value = default(T);
                         return false;
                     }
+                }
+                else if (IsVariable(token))
+                {
+                    stack.Push(token == "#" ? index.ToString() : value.ToString(CultureInfo.InvariantCulture));
                 }
                 else
                 {
@@ -94,15 +219,14 @@ namespace UnityEditor
                     return true;
             }
 
-            value = default(T);
             return false;
         }
 
-        // Translate tokens from infix into RPN (http://en.wikipedia.org/wiki/Shunting-yard_algorithm)
-        private static string[] InfixToRPN(string[] tokens)
+        // Translate tokens from infix into RPN (https://en.wikipedia.org/wiki/Shunting-yard_algorithm)
+        static string[] InfixToRPN(string[] tokens)
         {
-            Stack<char> operatorStack = new Stack<char>();
-            Queue<string> outputQueue = new Queue<string>();
+            var operatorStack = new Stack<string>();
+            var outputQueue = new Queue<string>();
 
             foreach (string token in tokens)
             {
@@ -112,25 +236,35 @@ namespace UnityEditor
 
                     if (command == '(') // Bracket open
                     {
-                        operatorStack.Push(command);
+                        operatorStack.Push(token);
                     }
                     else if (command == ')') // Bracket close
                     {
-                        while (operatorStack.Count > 0 && operatorStack.Peek() != '(')
-                            outputQueue.Enqueue(operatorStack.Pop().ToString());
-
+                        while (operatorStack.Count > 0 && operatorStack.Peek() != "(")
+                            outputQueue.Enqueue(operatorStack.Pop());
                         if (operatorStack.Count > 0)
                             operatorStack.Pop();
+                        if (operatorStack.Count > 0 && IsDelayedFunction(operatorStack.Peek()))
+                            outputQueue.Enqueue(operatorStack.Pop());
+                    }
+                    else if (command == ',') // Function argument separator
+                    {
+                        while (operatorStack.Count > 0 && operatorStack.Peek() != "(")
+                            outputQueue.Enqueue(operatorStack.Pop());
                     }
                     else // All the other operators
                     {
-                        Operator o = CharToOperator(command);
+                        Operator o = TokenToOperator(token);
 
                         while (NeedToPop(operatorStack, o))
-                            outputQueue.Enqueue(operatorStack.Pop().ToString());
+                            outputQueue.Enqueue(operatorStack.Pop());
 
-                        operatorStack.Push(command);
+                        operatorStack.Push(token);
                     }
+                }
+                else if (IsDelayedFunction(token))
+                {
+                    operatorStack.Push(token);
                 }
                 else // Not a command, just a regular number
                 {
@@ -138,7 +272,7 @@ namespace UnityEditor
                 }
             }
             while (operatorStack.Count > 0)
-                outputQueue.Enqueue(operatorStack.Pop().ToString());
+                outputQueue.Enqueue(operatorStack.Pop());
 
             return outputQueue.ToArray();
         }
@@ -146,16 +280,15 @@ namespace UnityEditor
         // While there is an operator (topOfStack) at the top of the operators stack and
         // either (newOperator) is left-associative and its precedence is less or equal to that of (topOfStack), or
         // (newOperator) is right-associative and its precedence is less than (topOfStack)
-        private static bool NeedToPop(Stack<char> operatorStack, Operator newOperator)
+        static bool NeedToPop(Stack<string> operatorStack, Operator newOperator)
         {
             if (operatorStack.Count > 0)
             {
-                Operator topOfStack = CharToOperator(operatorStack.Peek());
-
-                if (IsOperator(topOfStack.character))
+                Operator topOfStack = TokenToOperator(operatorStack.Peek());
+                if (topOfStack != null)
                 {
-                    if (newOperator.associativity == Associativity.Left && newOperator.presedence <= topOfStack.presedence ||
-                        newOperator.associativity == Associativity.Right && newOperator.presedence < topOfStack.presedence)
+                    if (newOperator.associativity == Associativity.Left && newOperator.precedence <= topOfStack.precedence ||
+                        newOperator.associativity == Associativity.Right && newOperator.precedence < topOfStack.precedence)
                     {
                         return true;
                     }
@@ -165,15 +298,15 @@ namespace UnityEditor
         }
 
         // Splits expression to meaningful tokens
-        private static string[] ExpressionToTokens(string expression)
+        static string[] ExpressionToTokens(string expression, out bool hasVariables)
         {
-            List<string> result = new List<string>();
-            string currentString = "";
+            hasVariables = false;
+            var result = new List<string>();
+            var currentString = "";
 
-            for (int c = 0; c < expression.Length; c++)
+            foreach (var currentChar in expression)
             {
-                char currentChar = expression[c];
-                if (IsCommand(currentChar))
+                if (IsCommand(currentChar.ToString()))
                 {
                     if (currentString.Length > 0)
                         result.Add(currentString);
@@ -185,247 +318,191 @@ namespace UnityEditor
                 {
                     if (currentChar != ' ')
                         currentString += currentChar;
+                    else
+                    {
+                        if (currentString.Length > 0)
+                            result.Add(currentString);
+                        currentString = "";
+                    }
                 }
             }
 
             if (currentString.Length > 0)
                 result.Add(currentString);
 
+            hasVariables = result.Any(f => IsVariable(f) || IsDelayedFunction(f));
             return result.ToArray();
         }
 
-        private static bool IsCommand(string token)
+        static bool IsCommand(string token)
         {
-            if (token.Length != 1)
-                return false;
-
-            return IsCommand(token[0]);
-        }
-
-        private static bool IsCommand(char character)
-        {
-            if (character == '(' || character == ')')
-                return true;
-
-            return IsOperator(character);
-        }
-
-        private static bool IsOperator(string token)
-        {
-            if (token.Length != 1)
-                return false;
-
-            return IsOperator(token[0]);
-        }
-
-        private static bool IsOperator(char character)
-        {
-            foreach (Operator o in s_Operators)
-                if (o.character == character)
+            if (token.Length == 1)
+            {
+                char c = token[0];
+                if (c == '(' || c == ')' || c == ',')
                     return true;
+            }
+            return IsOperator(token);
+        }
 
+        static bool IsVariable(string token)
+        {
+            if (token.Length == 1)
+            {
+                char c = token[0];
+                return c == 'x' || c == 'v' || c == 'f' || c == '#';
+            }
             return false;
         }
 
-        private static Operator CharToOperator(char character)
+        static bool IsDelayedFunction(string token)
         {
-            foreach (Operator o in s_Operators)
-                if (o.character == character)
-                    return o;
+            var op = TokenToOperator(token);
+            if (op != null)
+            {
+                if (op.op == Op.Rand || op.op == Op.Linear)
+                    return true;
+            }
+            return false;
+        }
 
-            return new Operator();
+        static bool IsOperator(string token)
+        {
+            return s_Operators.ContainsKey(token);
+        }
+
+        static Operator TokenToOperator(string token)
+        {
+            return s_Operators.TryGetValue(token, out var op) ? op : null;
         }
 
         // Clean up the expression before any parsing
-        private static string PreFormatExpression(string expression)
+        static string PreFormatExpression(string expression)
         {
-            string result = expression;
+            var result = expression;
             result = result.Trim();
 
             if (result.Length == 0)
                 return result;
 
-            char lastChar = result[result.Length - 1];
+            var lastChar = result[result.Length - 1];
 
             // remove trailing operator for niceness (user is middle of typing, and we don't want to evaluate to zero)
-            if (IsOperator(lastChar))
+            if (IsOperator(lastChar.ToString()))
                 result = result.TrimEnd(lastChar);
+
+            // turn +=, -=, *=, /= into variable forms
+            if (result.Length >= 2 && result[1] == '=')
+            {
+                char op = result[0];
+                string expr = result.Substring(2);
+                if (op == '+') result = $"x+({expr})";
+                if (op == '-') result = $"x-({expr})";
+                if (op == '*') result = $"x*({expr})";
+                if (op == '/') result = $"x/({expr})";
+            }
 
             return result;
         }
 
-        // Turn unary minus into an operator. For example: - ( 1 - 2 ) * - 3 becomes: u ( 1 - 2 ) * u 3
-        private static string[] FixUnaryOperators(string[] tokens)
+        // Turn unary minus into an operator. For example: - ( 1 - 2 ) * - 3 becomes: _ ( 1 - 2 ) * _ 3
+        static string[] FixUnaryOperators(string[] tokens)
         {
             if (tokens.Length == 0)
                 return tokens;
 
             if (tokens[0] == "-")
-                tokens[0] = "u";
+                tokens[0] = "_";
 
             for (int i = 1; i < tokens.Length - 1; i++)
             {
                 string token = tokens[i];
                 string previousToken = tokens[i - 1];
-                string nextToken = tokens[i - 1];
-
-                if (token == "-" && (IsCommand(previousToken) || nextToken == "(" || nextToken == ")"))
-                    tokens[i] = "u";
+                if (token == "-" && IsCommand(previousToken) && previousToken != ")")
+                    tokens[i] = "_";
             }
             return tokens;
         }
 
-        // According to internetz, there are many bad ways to do arithmetics with generics. This is one of them.
-        private static T Evaluate<T>(T[] values, char oper)
+        static double EvaluateOp(double[] values, Op op, int index, int count)
         {
-            if (typeof(T) == typeof(float))
+            var a = values.Length >= 1 ? values[0] : 0;
+            var b = values.Length >= 2 ? values[1] : 0;
+            switch (op)
             {
-                if (values.Length == 1)
+                case Op.Neg: return -a;
+                case Op.Add: return a + b;
+                case Op.Sub: return a - b;
+                case Op.Mul: return a * b;
+                case Op.Div: return a / b;
+                case Op.Mod: return a % b;
+                case Op.Pow: return Math.Pow(a, b);
+                case Op.Sqrt: return a <= 0 ? 0 : Math.Sqrt(a);
+                case Op.Floor: return Math.Floor(a);
+                case Op.Ceil: return Math.Ceiling(a);
+                case Op.Round: return Math.Round(a);
+                case Op.Cos: return Math.Cos(a);
+                case Op.Sin: return Math.Sin(a);
+                case Op.Tan: return Math.Tan(a);
+                case Op.Rand:
                 {
-                    switch (oper)
-                    {
-                        case 'u':
-                            return (T)(object)((float)(object)values[0] * -1.0f);
-                    }
+                    var r = s_Random.GetUInt() & 0xFFFFFF;
+                    var f = r / (double)0xFFFFFF;
+                    return a + f * (b - a);
                 }
-                else if (values.Length == 2)
+                case Op.Linear:
                 {
-                    switch (oper)
-                    {
-                        case '+':
-                            return (T)(object)((float)(object)values[0] + (float)(object)values[1]);
-                        case '-':
-                            return (T)(object)((float)(object)values[0] - (float)(object)values[1]);
-                        case '*':
-                            return (T)(object)((float)(object)values[0] * (float)(object)values[1]);
-                        case '/':
-                            return (T)(object)((float)(object)values[0] / (float)(object)values[1]);
-                        case '%':
-                            return (T)(object)((float)(object)values[0] % (float)(object)values[1]);
-                        case '^':
-                            return (T)(object)UnityEngine.Mathf.Pow((float)(object)values[0], (float)(object)values[1]);
-                    }
+                    if (count < 1)
+                        count = 1;
+                    var f = count < 2 ? 0.5 : index / (double)(count - 1);
+                    return a + f * (b - a);
                 }
             }
-            else if (typeof(T) == typeof(int))
-            {
-                if (values.Length == 1)
-                {
-                    switch (oper)
-                    {
-                        case 'u':
-                            return (T)(object)((int)(object)values[0] * -1);
-                    }
-                }
-                else if (values.Length == 2)
-                {
-                    switch (oper)
-                    {
-                        case '+':
-                            return (T)(object)((int)(object)values[0] + (int)(object)values[1]);
-                        case '-':
-                            return (T)(object)((int)(object)values[0] - (int)(object)values[1]);
-                        case '*':
-                            return (T)(object)((int)(object)values[0] * (int)(object)values[1]);
-                        case '/':
-                            return (T)(object)((int)(object)values[0] / (int)(object)values[1]);
-                        case '%':
-                            return (T)(object)((int)(object)values[0] % (int)(object)values[1]);
-                        case '^':
-                            return (T)(object)(int)Math.Pow((int)(object)values[0], (int)(object)values[1]);
-                    }
-                }
-            }
-            if (typeof(T) == typeof(double))
-            {
-                if (values.Length == 1)
-                {
-                    switch (oper)
-                    {
-                        case 'u':
-                            return (T)(object)((double)(object)values[0] * -1.0f);
-                    }
-                }
-                else if (values.Length == 2)
-                {
-                    switch (oper)
-                    {
-                        case '+':
-                            return (T)(object)((double)(object)values[0] + (double)(object)values[1]);
-                        case '-':
-                            return (T)(object)((double)(object)values[0] - (double)(object)values[1]);
-                        case '*':
-                            return (T)(object)((double)(object)values[0] * (double)(object)values[1]);
-                        case '/':
-                            return (T)(object)((double)(object)values[0] / (double)(object)values[1]);
-                        case '%':
-                            return (T)(object)((double)(object)values[0] % (double)(object)values[1]);
-                        case '^':
-                            return (T)(object)System.Math.Pow((double)(object)values[0], (double)(object)values[1]);
-                    }
-                }
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                if (values.Length == 1)
-                {
-                    switch (oper)
-                    {
-                        case 'u':
-                            return (T)(object)((long)(object)values[0] * -1);
-                    }
-                }
-                else if (values.Length == 2)
-                {
-                    switch (oper)
-                    {
-                        case '+':
-                            return (T)(object)((long)(object)values[0] + (long)(object)values[1]);
-                        case '-':
-                            return (T)(object)((long)(object)values[0] - (long)(object)values[1]);
-                        case '*':
-                            return (T)(object)((long)(object)values[0] * (long)(object)values[1]);
-                        case '/':
-                            return (T)(object)((long)(object)values[0] / (long)(object)values[1]);
-                        case '%':
-                            return (T)(object)((long)(object)values[0] % (long)(object)values[1]);
-                        case '^':
-                            return (T)(object)(long)System.Math.Pow((long)(object)values[0], (long)(object)values[1]);
-                    }
-                }
-            }
-            return default(T);
+            return 0;
         }
 
-        private static bool TryParse<T>(string expression, out T result)
+        static bool TryParse<T>(string expression, out T result)
         {
             expression = expression.Replace(',', '.');
             expression = expression.TrimEnd('f');
+            expression = expression.ToLowerInvariant();
 
             bool success = false;
-            result = default(T);
+            result = default;
             if (typeof(T) == typeof(float))
             {
-                float temp = 0.0f;
-                success = float.TryParse(expression, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out temp);
-                result = (T)(object)temp;
+                if (expression == "pi")
+                {
+                    success = true;
+                    result = (T)(object)(float)Math.PI;
+                }
+                else
+                {
+                    success = float.TryParse(expression, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                    result = (T)(object)temp;
+                }
             }
             else if (typeof(T) == typeof(int))
             {
-                int temp = 0;
-                success = int.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out temp);
+                success = int.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
                 result = (T)(object)temp;
             }
             else if (typeof(T) == typeof(double))
             {
-                double temp = 0;
-                success = double.TryParse(expression, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out temp);
-                result = (T)(object)temp;
+                if (expression == "pi")
+                {
+                    success = true;
+                    result = (T)(object)Math.PI;
+                }
+                else
+                {
+                    success = double.TryParse(expression, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                    result = (T)(object)temp;
+                }
             }
             else if (typeof(T) == typeof(long))
             {
-                long temp = 0;
-                success = long.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out temp);
+                success = long.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
                 result = (T)(object)temp;
             }
             return success;

@@ -243,7 +243,7 @@ namespace UnityEditor
         // Show a notification message.
         public void ShowNotification(GUIContent notification)
         {
-            ShowNotification(notification, kWarningFadeoutTime);
+            ShowNotification(notification, kWarningFadeoutWait);
         }
 
         public void ShowNotification(GUIContent notification, double fadeoutWait)

@@ -10,7 +10,6 @@ namespace UnityEditor.UIElements.StyleSheets
         Syntax,
         Semantic,
         Validation,
-        Other,
         Internal
     }
 
@@ -18,9 +17,8 @@ namespace UnityEditor.UIElements.StyleSheets
     {
         None,
         Internal,
-        UnsupportedFunction,
-        UnsupportedParserType,
         UnsupportedUnit,
+        UnsupportedTerm,
         InvalidSelectorListDelimiter,
         InvalidComplexSelectorDelimiter,
         UnsupportedSelectorFormat,
@@ -54,11 +52,11 @@ namespace UnityEditor.UIElements.StyleSheets
             this.isWarning = isWarning;
         }
 
-        public override string ToString()
+        public string ToString(StyleSheetImportGlossary glossary)
         {
-            string lineStr = line >= 0 ? $":{line}" : "";
-            return UnityString.Format("StyleSheet import: type={0}, code={1} file={2}{3}\n    {4}",
-                error, code, assetPath, lineStr, message);
+            string lineStr = line > -1 ? $" ({glossary.line} {line})" : "";
+            string typeStr = isWarning ? glossary.warning : glossary.error;
+            return $"{assetPath}{lineStr}: {typeStr}: {message}";
         }
     }
 
@@ -68,33 +66,36 @@ namespace UnityEditor.UIElements.StyleSheets
 
         public string assetPath { get; set; }
 
-        public void AddSyntaxError(string message)
+        public void AddSyntaxError(string message, int line)
         {
             m_Errors.Add(new StyleSheetImportError(
                 StyleSheetImportErrorType.Syntax,
                 StyleSheetImportErrorCode.None,
                 assetPath,
-                message)
+                message,
+                line)
             );
         }
 
-        public void AddSemanticError(StyleSheetImportErrorCode code, string message)
+        public void AddSemanticError(StyleSheetImportErrorCode code, string message, int line)
         {
             m_Errors.Add(new StyleSheetImportError(
                 StyleSheetImportErrorType.Semantic,
                 code,
                 assetPath,
-                message)
+                message,
+                line)
             );
         }
 
-        public void AddInternalError(string message)
+        public void AddInternalError(string message, int line = -1)
         {
             m_Errors.Add(new StyleSheetImportError(
                 StyleSheetImportErrorType.Internal,
                 StyleSheetImportErrorCode.None,
                 assetPath,
-                message)
+                message,
+                line)
             );
         }
 

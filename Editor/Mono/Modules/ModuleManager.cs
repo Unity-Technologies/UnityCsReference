@@ -36,7 +36,7 @@ namespace UnityEditor.Modules
         {
             get
             {
-                return (bool)(Debug.GetDiagnosticSwitch("ModuleManagerLogging") ?? false);
+                return (bool)(Debug.GetDiagnosticSwitch("ModuleManagerLogging").value ?? false);
             }
         }
 

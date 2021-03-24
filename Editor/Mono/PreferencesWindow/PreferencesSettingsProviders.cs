@@ -46,6 +46,7 @@ namespace UnityEditor
         {
             public static readonly GUIContent loadPreviousProjectOnStartup = EditorGUIUtility.TrTextContent("Load Previous Project on Startup");
             public static readonly GUIContent disableEditorAnalytics = EditorGUIUtility.TrTextContent("Disable Editor Analytics (Pro Only)");
+            public static readonly GUIContent autoSaveScenesBeforeBuilding = EditorGUIUtility.TrTextContent("Auto-save scenes before building");
             public static readonly GUIContent scriptChangesDuringPlay = EditorGUIUtility.TrTextContent("Script Changes While Playing");
             public static readonly GUIContent editorFont = EditorGUIUtility.TrTextContent("Editor Font");
             public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Theme");
@@ -143,6 +144,7 @@ namespace UnityEditor
 
         private bool m_ReopenLastUsedProjectOnStartup;
         private bool m_EnableEditorAnalytics;
+        private bool m_AutoSaveScenesBeforeBuilding;
         private ScriptChangesDuringPlayOptions m_ScriptCompilationDuringPlay;
         private bool m_DeveloperMode;
         private bool m_ShowRepaintDots;
@@ -465,6 +467,7 @@ namespace UnityEditor
                 m_EnableEditorAnalytics = !EditorGUILayout.Toggle(GeneralProperties.disableEditorAnalytics, !m_EnableEditorAnalytics) || !pro && !m_EnableEditorAnalytics;
             }
 
+            m_AutoSaveScenesBeforeBuilding = EditorGUILayout.Toggle(GeneralProperties.autoSaveScenesBeforeBuilding, m_AutoSaveScenesBeforeBuilding);
             m_ScriptCompilationDuringPlay = (ScriptChangesDuringPlayOptions)EditorGUILayout.EnumPopup(GeneralProperties.scriptChangesDuringPlay, m_ScriptCompilationDuringPlay);
 
             CodeOptimization codeOptimization = (CodeOptimization)EditorGUILayout.EnumPopup(ExternalProperties.codeOptimizationOnStartup, m_ScriptDebugInfoEnabled ? CodeOptimization.Debug : CodeOptimization.Release);
@@ -1013,6 +1016,7 @@ namespace UnityEditor
 
             EditorPrefs.SetBool("ReopenLastUsedProjectOnStartup", m_ReopenLastUsedProjectOnStartup);
             EditorPrefs.SetBool("EnableEditorAnalytics", m_EnableEditorAnalytics);
+            EditorPrefs.SetBool("SaveScenesBeforeBuilding", m_AutoSaveScenesBeforeBuilding);
             EditorPrefs.SetInt("ScriptCompilationDuringPlay", (int)m_ScriptCompilationDuringPlay);
 
             // The Preferences window always writes all preferences, we don't want this behavior since we

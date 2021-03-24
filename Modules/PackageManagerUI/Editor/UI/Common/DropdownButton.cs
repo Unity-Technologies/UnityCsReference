@@ -2,134 +2,199 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.UIElements;
+using System;
+using System.Linq;
+using UnityEditor.UIElements;
 using UnityEngine;
-using System.Collections.Generic;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    enum DropdownStatus { None = 0, Success, Error, Refresh }
-
-    class DropdownButton : Button
+    internal class DropdownButton : VisualElement, IToolbarMenuElement
     {
-        static string HasDropDownClass = "hasDropDown";
-        static string HasStatusClass = "hasStatus";
+        private const string k_HasDropDownClass = "hasDropDown";
+        private const string k_HasCustomAction = "customAction";
 
-        internal new class UxmlFactory : UxmlFactory<DropdownButton, UxmlTraits> {}
+        private const float k_MarginsWidth = 6.0f;
+        private const float k_PaddingWidth = 14.0f;
+        private const float k_SideElementWidth = 18.0f;
+        private const float k_DropdownWidth = 12.0f;
 
-        public new class UxmlTraits : VisualElement.UxmlTraits
+        public event Action onBeforeShowDropdown = delegate {};
+
+        private TextElement m_Label;
+        public float estimatedWidth
         {
-            UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
-
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+            get
             {
-                get { yield break; }
-            }
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                var button = ve as DropdownButton;
-                button.Label.text = m_Text.GetValueFromBag(bag, cc);
-                button.StatusIcon.pickingMode = PickingMode.Ignore;
-            }
-        }
-
-        public TextElement Label;
-        public VisualElement StatusIcon;
-
-        public VisualElement DropDownArea;
-        public VisualElement DropDown;
-
-        DropdownStatus status = DropdownStatus.None;
-        public DropdownStatus Status
-        {
-            get {return status;}
-            set
-            {
-                status = value;
-                StatusIcon.RemoveFromClassList("none");
-                StatusIcon.RemoveFromClassList("success");
-                StatusIcon.RemoveFromClassList("error");
-                StatusIcon.RemoveFromClassList("refresh");
-
-                StatusIcon.AddToClassList(status.ToString().ToLower());
-
-                UIUtils.SetElementDisplay(StatusIcon, status != DropdownStatus.None);
-
-                if (status == DropdownStatus.None)
-                    RemoveFromClassList(HasStatusClass);
-                else
-                    AddToClassList(HasStatusClass);
+                var width = string.IsNullOrEmpty(text) ? 0.0f :  m_Label.MeasureTextSize(text, 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).x;
+                if (hasIcon)
+                    width += k_SideElementWidth;
+                if (m_AlwaysShowDropdown || m_DropdownMenu != null)
+                    width += ClassListContains(k_HasCustomAction) ? k_SideElementWidth : k_DropdownWidth;
+                return width + k_MarginsWidth + k_PaddingWidth;
             }
         }
 
-        GenericMenu dropdownMenu;
-        /// <summary>
-        /// Sets a dropdown menu for this button. The dropdown menu icon will only show if
-        /// there is a non-null menu set.
-        /// </summary>
-        public GenericMenu DropdownMenu
+        private Background? m_IconBackground;
+        private VisualElement m_ImageIcon;
+        public bool hasIcon => m_ImageIcon != null && (m_IconBackground != null || m_ImageIcon.classList.Any());
+        private void ShowImageIcon()
         {
-            get { return dropdownMenu;}
-            set
+            if (m_ImageIcon == null)
             {
-                UIUtils.SetElementDisplay(DropDownArea, value != null);
-                dropdownMenu = value;
+                m_ImageIcon = new VisualElement { name = "imageIcon" };
+                Insert(0, m_ImageIcon);
+            }
+            UIUtils.SetElementDisplay(m_ImageIcon, true);
+        }
 
-                if (dropdownMenu == null)
-                    RemoveFromClassList(HasDropDownClass);
-                else
-                    AddToClassList(HasDropDownClass);
+        private void HideImageIcon()
+        {
+            if (m_ImageIcon != null)
+            {
+                m_ImageIcon.ClearClassList();
+                UIUtils.SetElementDisplay(m_ImageIcon, false);
             }
         }
 
-        public new string text
+        public void SetIcon(string ussClass)
         {
-            get { return Label.text; }
-            set { Label.text = value; }
-        }
-
-        public void OnDropdownButtonClicked()
-        {
-            if (DropdownMenu == null)
+            if (m_IconBackground != null)
                 return;
-            var menuPosition = new Vector2(layout.xMin, layout.center.y + 2);
-            menuPosition = parent.LocalToWorld(menuPosition);
-            var menuRect = new Rect(menuPosition, Vector2.zero);
-            DropdownMenu.DropDown(menuRect);
+
+            if (string.IsNullOrEmpty(ussClass))
+            {
+                HideImageIcon();
+            }
+            else
+            {
+                ShowImageIcon();
+                m_ImageIcon.ClearClassList();
+                m_ImageIcon.AddToClassList(ussClass);
+            }
+        }
+
+        public void SetIcon(Texture2D icon)
+        {
+            if (icon == null)
+            {
+                m_IconBackground = null;
+                HideImageIcon();
+            }
+            else
+            {
+                ShowImageIcon();
+                m_IconBackground = Background.FromTexture2D(icon);
+                m_ImageIcon.ClearClassList();
+                m_ImageIcon.style.backgroundImage = new StyleBackground((Background)m_IconBackground);
+            }
+        }
+
+        private Clickable m_Clickable;
+
+        private VisualElement m_DropDownArea;
+        private void RefreshDropdownArea()
+        {
+            var showDropdownArea = m_AlwaysShowDropdown || m_DropdownMenu != null;
+            if (showDropdownArea && m_DropDownArea == null)
+            {
+                m_DropDownArea = new VisualElement { name = "dropDownArea" };
+                m_DropDownArea.Add(new VisualElement { name = "dropDown" });
+                m_DropDownArea.RegisterCallback<MouseDownEvent>(evt =>
+                {
+                    // If there's no custom button action meaning the button click event will show the dropdown menu anyways
+                    // we'll just let the buttonClick event handle `ShowMenu` so the button `clicked` state show properly
+                    if (m_Clicked == null)
+                        return;
+
+                    evt.PreventDefault();
+                    evt.StopImmediatePropagation();
+
+                    ShowDropdown();
+                });
+                Add(m_DropDownArea);
+            }
+            UIUtils.SetElementDisplay(m_DropDownArea, showDropdownArea);
+            EnableInClassList(k_HasDropDownClass, showDropdownArea);
+        }
+
+        private DropdownMenu m_DropdownMenu;
+        /// <summary>
+        /// Sets a dropdown menu for this button. The dropdown menu icon will only show if there is a non-null menu set.
+        /// </summary>
+        public DropdownMenu menu
+        {
+            get { return m_DropdownMenu; }
+            set
+            {
+                m_DropdownMenu = value;
+                RefreshDropdownArea();
+            }
+        }
+
+        private bool m_AlwaysShowDropdown;
+        public bool alwaysShowDropdown
+        {
+            get => m_AlwaysShowDropdown;
+            set
+            {
+                if (m_AlwaysShowDropdown == value)
+                    return;
+                m_AlwaysShowDropdown = value;
+                RefreshDropdownArea();
+            }
+        }
+
+        private Action m_Clicked;
+        /// <summary>
+        /// If the clicked event is never set, then the default behaviour of the button click is to open the dropdown menu
+        /// </summary>
+        public event Action clicked
+        {
+            add
+            {
+                m_Clicked += value;
+                AddToClassList(k_HasCustomAction);
+            }
+            remove
+            {
+                m_Clicked -= value;
+            }
+        }
+
+        public string text
+        {
+            get => m_Label.text;
+            set => m_Label.text = value;
+        }
+
+        private void OnButtonClicked()
+        {
+            if (m_Clicked != null)
+                m_Clicked.Invoke();
+            else
+                ShowDropdown();
+        }
+
+        private void ShowDropdown()
+        {
+            onBeforeShowDropdown?.Invoke();
+            if (menu != null)
+                this.ShowMenu();
         }
 
         public DropdownButton()
         {
+            AddToClassList(Button.ussClassName);
+
             style.flexDirection = FlexDirection.Row;
 
-            StatusIcon = new VisualElement();
-            StatusIcon.name = "statusIcon";
-            Add(StatusIcon);
+            m_Clickable = new Clickable(OnButtonClicked);
+            this.AddManipulator(m_Clickable);
 
-            Label = new TextElement();
-            Label.name = "label";
-            Add(Label);
-
-            DropDown = new VisualElement();
-            DropDown.name = "dropDown";
-
-            DropDownArea = new VisualElement();
-            DropDownArea.RegisterCallback<MouseDownEvent>(evt =>
-            {
-                evt.PreventDefault();
-                evt.StopImmediatePropagation();
-
-                OnDropdownButtonClicked();
-            });
-            DropDownArea.name = "dropDownArea";
-            DropDownArea.Add(DropDown);
-            Add(DropDownArea);
-
-            DropdownMenu = null;
-
-            Status = DropdownStatus.None;
+            m_Label = new TextElement { name = "label" };
+            Add(m_Label);
         }
     }
 }

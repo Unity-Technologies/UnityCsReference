@@ -8,7 +8,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="DropdownField"/> using the data read from a UXML file.
         /// </summary>
-        public new class UxmlFactory : UxmlFactory<DropdownField, UxmlTraits> { }
+        public new class UxmlFactory : UxmlFactory<DropdownField, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="DropdownField"/>.
@@ -102,11 +102,11 @@ namespace UnityEngine.UIElements
             set
             {
                 m_Index = value;
-                
+
                 if (m_Choices == null || value >= m_Choices.Count || value < 0)
-                this.value = null;
+                    this.value = null;
                 else
-                this.value = m_Choices[m_Index];
+                    this.value = m_Choices[m_Index];
             }
         }
 
@@ -126,7 +126,7 @@ namespace UnityEngine.UIElements
         /// Construct a DropdownField.
         /// </summary>
         public DropdownField()
-            : this(null) { }
+            : this(null) {}
 
         /// <summary>
         /// Construct a DropdownField.
@@ -163,7 +163,7 @@ namespace UnityEngine.UIElements
         /// Construct a DropdownField.
         /// </summary>
         public DropdownField(List<string> choices, string defaultValue, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
-            : this(null, choices, defaultValue, formatSelectedValueCallback, formatListItemCallback) { }
+            : this(null, choices, defaultValue, formatSelectedValueCallback, formatListItemCallback) {}
 
         /// <summary>
         /// Construct a DropdownField.
@@ -185,7 +185,7 @@ namespace UnityEngine.UIElements
         /// Construct a DropdownField.
         /// </summary>
         public DropdownField(List<string> choices, int defaultIndex, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
-            : this(null, choices, defaultIndex, formatSelectedValueCallback, formatListItemCallback) { }
+            : this(null, choices, defaultIndex, formatSelectedValueCallback, formatListItemCallback) {}
 
         /// <summary>
         /// Construct a DropdownField.

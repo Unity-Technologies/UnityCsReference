@@ -283,7 +283,7 @@ namespace UnityEditorInternal.Profiling
             TryRestoringSelection();
         }
 
-        public override void OnSelected()
+        protected override void OnSelected()
         {
             base.OnSelected();
             TryRestoringSelection();

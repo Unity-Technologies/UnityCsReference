@@ -167,52 +167,55 @@ namespace UnityEditor
             if (s_Styles == null)
                 s_Styles = new Styles();
 
-            using (var horizontal = new EditorGUILayout.HorizontalScope())
+            bool wasChanged = GUI.changed;
+
+            using (var vertical = new EditorGUILayout.VerticalScope())
             {
-                using (new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, templateProp))
+                using (new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, templateProp))
                 {
-                    if (TemplateGUIThumbnails.Length < 1)
+                    using (var horizontal = new EditorGUILayout.HorizontalScope())
                     {
-                        GUILayout.Label(EditorGUIUtility.TrTextContent("No templates found."));
+                        if (TemplateGUIThumbnails.Length < 1)
+                        {
+                            GUILayout.Label(EditorGUIUtility.TrTextContent("No templates found."));
+                        }
+                        else
+                        {
+                            int numCols = Mathf.Min((int)Mathf.Max((Screen.width - kWebTemplateGridPadding * 2.0f) / kThumbnailSize, 1.0f), TemplateGUIThumbnails.Length);
+                            int numRows = Mathf.Max((int)Mathf.Ceil((float)TemplateGUIThumbnails.Length / (float)numCols), 1);
+
+                            templateProp.stringValue = Templates[
+                                ThumbnailList(
+                                    GUILayoutUtility.GetRect(numCols * kThumbnailSize, numRows * (kThumbnailSize + kThumbnailLabelHeight), GUILayout.ExpandWidth(false)),
+                                    GetTemplateIndex(templateProp.stringValue),
+                                    TemplateGUIThumbnails,
+                                    numCols
+                                )].ToString();
+                        }
                     }
-                    else
+
+                    bool templateChanged = !wasChanged && GUI.changed;
+
+                    bool orgChanged = GUI.changed;
+                    GUI.changed = false;
+                    foreach (string key in PlayerSettings.templateCustomKeys)
                     {
-                        int numCols = Mathf.Min((int)Mathf.Max((Screen.width - kWebTemplateGridPadding * 2.0f) / kThumbnailSize, 1.0f), TemplateGUIThumbnails.Length);
-                        int numRows = Mathf.Max((int)Mathf.Ceil((float)TemplateGUIThumbnails.Length / (float)numCols), 1);
+                        string value = PlayerSettings.GetTemplateCustomValue(key);
+                        value = EditorGUILayout.TextField(PrettyTemplateKeyName(key), value);
+                        PlayerSettings.SetTemplateCustomValue(key, value);
+                    }
 
+                    if (GUI.changed)
+                        templateProp.serializedObject.Update();
+                    GUI.changed |= orgChanged;
 
-                        bool wasChanged = GUI.changed;
-
-                        templateProp.stringValue = Templates[
-                            ThumbnailList(
-                                GUILayoutUtility.GetRect(numCols * kThumbnailSize, numRows * (kThumbnailSize + kThumbnailLabelHeight), GUILayout.ExpandWidth(false)),
-                                GetTemplateIndex(templateProp.stringValue),
-                                TemplateGUIThumbnails,
-                                numCols
-                            )].ToString();
-
-                        bool templateChanged = !wasChanged && GUI.changed;
-
-                        bool orgChanged = GUI.changed;
-                        GUI.changed = false;
-                        foreach (string key in PlayerSettings.templateCustomKeys)
-                        {
-                            string value = PlayerSettings.GetTemplateCustomValue(key);
-                            value = EditorGUILayout.TextField(PrettyTemplateKeyName(key), value);
-                            PlayerSettings.SetTemplateCustomValue(key, value);
-                        }
-                        if (GUI.changed)
-                            templateProp.serializedObject.Update();
-                        GUI.changed |= orgChanged;
-
-                        if (templateChanged)
-                        {
-                            GUIUtility.hotControl = 0;
-                            GUIUtility.keyboardControl = 0;
-                            templateProp.serializedObject.ApplyModifiedProperties();
-                            PlayerSettings.templateCustomKeys = Templates[GetTemplateIndex(templateProp.stringValue)].CustomKeys;
-                            templateProp.serializedObject.Update();
-                        }
+                    if (templateChanged)
+                    {
+                        GUIUtility.hotControl = 0;
+                        GUIUtility.keyboardControl = 0;
+                        templateProp.serializedObject.ApplyModifiedProperties();
+                        PlayerSettings.templateCustomKeys = Templates[GetTemplateIndex(templateProp.stringValue)].CustomKeys;
+                        templateProp.serializedObject.Update();
                     }
                 }
             }

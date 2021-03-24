@@ -247,5 +247,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return $"{name.ToLower()}@{version}";
         }
+
+        public static bool IsDifferentVersionThanRequested(IPackageVersion packageVersion)
+        {
+            return !string.IsNullOrEmpty(packageVersion?.packageInfo?.projectDependenciesEntry) &&
+                !packageVersion.HasTag(PackageTag.Git | PackageTag.Local | PackageTag.Custom) &&
+                packageVersion.packageInfo.projectDependenciesEntry != packageVersion.versionString;
+        }
+
+        public static bool IsRequestedButOverriddenVersion(IPackage package, IPackageVersion version)
+        {
+            return !string.IsNullOrEmpty(version?.versionString) &&
+                version.versionString == package?.versions.primary.packageInfo?.projectDependenciesEntry;
+        }
     }
 }

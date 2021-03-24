@@ -107,5 +107,7 @@ namespace UnityEditor
         GameCoreXboxOne = 32,
 
         PS5 = 33,
+
+        EmbeddedLinux = 34,
     }
 }

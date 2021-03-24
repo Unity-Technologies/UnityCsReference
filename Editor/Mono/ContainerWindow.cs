@@ -39,6 +39,7 @@ namespace UnityEditor
 
         static internal bool s_Modal = false;
         private static ContainerWindow s_MainWindow;
+        static internal ContainerWindow mainWindow { get => s_MainWindow; }
 
         private static class Styles
         {
@@ -212,8 +213,28 @@ namespace UnityEditor
             Internal_SetMinMaxSizes(min, max);
         }
 
+        static internal bool InternalRequestCloseAll(bool keepMainWindow)
+        {
+            var unsaved = windows
+                .Where(w => keepMainWindow || w.showMode != ShowMode.MainWindow)
+                .SelectMany(w => w.m_UnsavedEditorWindows)
+                .ToList();
+
+            if (unsaved.Any())
+                return PrivateRequestClose(unsaved);
+
+            return true;
+        }
+
         internal bool InternalRequestClose()
         {
+            if (IsMainWindow())
+            {
+                var UnsavedWindows = windows.SelectMany(w => w.m_UnsavedEditorWindows).ToList();
+
+                if (UnsavedWindows.Any())
+                    return PrivateRequestClose(UnsavedWindows);
+            }
             if (hasUnsavedChanges)
             {
                 return PrivateRequestClose(m_UnsavedEditorWindows);
@@ -233,7 +254,17 @@ namespace UnityEditor
             return true;
         }
 
-        private bool PrivateRequestClose(List<EditorWindow> allUnsaved)
+        internal bool InternalRequestCloseAllExcept(EditorWindow editorWindow)
+        {
+            var unsaved = m_UnsavedEditorWindows.Where(w => w != editorWindow);
+
+            if (unsaved.Any())
+                return PrivateRequestClose(unsaved.ToList());
+
+            return true;
+        }
+
+        private static bool PrivateRequestClose(List<EditorWindow> allUnsaved)
         {
             Debug.Assert(allUnsaved.Count > 0);
 

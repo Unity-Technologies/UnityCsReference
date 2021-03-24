@@ -22,6 +22,7 @@ using UnityEngine.Internal;
 using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
 using PreviewMaterialType = UnityEditor.EditorGUIUtility.PreviewType;
 using System.Linq;
+using Unity.Profiling;
 
 namespace UnityEditor
 {
@@ -37,8 +38,6 @@ namespace UnityEditor
         internal static RecycledTextEditor s_RecycledEditor = new RecycledTextEditor();
         internal static string s_OriginalText = "";
         internal static string s_RecycledCurrentEditingString;
-        internal static double s_RecycledCurrentEditingFloat;
-        internal static long s_RecycledCurrentEditingInt;
         private static bool bKeyEventActive = false;
 
         internal static bool s_DragToPosition = true;
@@ -1986,10 +1985,20 @@ namespace UnityEditor
         // Make a text field for entering floats.
         internal static float FloatFieldInternal(Rect position, GUIContent label, float value, GUIStyle style)
         {
+            NumberFieldValue v = new NumberFieldValue(value);
+            FloatFieldInternal(position, label, ref v, style);
+            return MathUtils.ClampToFloat(v.doubleVal);
+        }
+
+        internal static void FloatFieldInternal(Rect position, GUIContent label, ref NumberFieldValue value, GUIStyle style)
+        {
             int id = GUIUtility.GetControlID(s_FloatFieldHash, FocusType.Keyboard, position);
             Rect position2 = PrefixLabel(position, id, label);
             position.xMax = position2.x;
-            return DoFloatField(s_RecycledEditor, position2, position, id, value, kFloatFieldFormatString, style, true);
+            var dragSensitivity = Event.current.GetTypeForControl(id) == EventType.MouseDown
+                ? (float)NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue)
+                : 0.0f;
+            DoNumberField(s_RecycledEditor, position2, position, id, ref value, kFloatFieldFormatString, style, true, dragSensitivity);
         }
 
         internal static double DoubleFieldInternal(Rect position, double value, GUIStyle style)
@@ -2001,14 +2010,36 @@ namespace UnityEditor
         // Make a text field for entering floats.
         internal static double DoubleFieldInternal(Rect position, GUIContent label, double value, GUIStyle style)
         {
+            NumberFieldValue v = new NumberFieldValue(value);
+            DoubleFieldInternal(position, label, ref v, style);
+            return v.doubleVal;
+        }
+
+        internal static void DoubleFieldInternal(Rect position, GUIContent label, ref NumberFieldValue value, GUIStyle style)
+        {
             int id = GUIUtility.GetControlID(s_FloatFieldHash, FocusType.Keyboard, position);
             Rect position2 = PrefixLabel(position, id, label);
             position.xMax = position2.x;
-            return DoDoubleField(s_RecycledEditor, position2, position, id, value, kDoubleFieldFormatString, style, true);
+            var dragSensitivity = Event.current.GetTypeForControl(id) == EventType.MouseDown
+                ? NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue)
+                : 0.0;
+            DoNumberField(s_RecycledEditor, position2, position, id, ref value, kDoubleFieldFormatString, style, true, dragSensitivity);
         }
 
         // Handle dragging of value
-        internal static void DragNumberValue(Rect dragHotZone, int id, bool isDouble, ref double doubleVal, ref long longVal, double dragSensitivity)
+        internal static void DragNumberValue(Rect dragHotZone, int id, bool isDouble, ref double doubleVal,
+            ref long longVal, double dragSensitivity)
+        {
+            NumberFieldValue v = default;
+            v.isDouble = isDouble;
+            v.doubleVal = doubleVal;
+            v.longVal = longVal;
+            DragNumberValue(dragHotZone, id, ref v, dragSensitivity);
+            doubleVal = v.doubleVal;
+            longVal = v.longVal;
+        }
+
+        static void DragNumberValue(Rect dragHotZone, int id, ref NumberFieldValue value, double dragSensitivity)
         {
             Event evt = Event.current;
 
@@ -2028,8 +2059,8 @@ namespace UnityEditor
                         GUIUtility.keyboardControl = id;
 
                         s_DragCandidateState = DragCandidateState.InitiatedDragging;
-                        s_DragStartValue = doubleVal;
-                        s_DragStartIntValue = longVal;
+                        s_DragStartValue = value.doubleVal;
+                        s_DragStartIntValue = value.longVal;
                         s_DragStartPos = evt.mousePosition;
                         s_DragSensitivity = dragSensitivity;
                         evt.Use();
@@ -2062,15 +2093,16 @@ namespace UnityEditor
                                 // Don't change the editor.content.text here.
                                 // Instead, wait for scripting validation to enforce clamping etc. and then
                                 // update the editor.content.text in the repaint event.
-                                if (isDouble)
+                                if (value.isDouble)
                                 {
-                                    doubleVal += HandleUtility.niceMouseDelta * s_DragSensitivity;
-                                    doubleVal = MathUtils.RoundBasedOnMinimumDifference(doubleVal, s_DragSensitivity);
+                                    value.doubleVal += HandleUtility.niceMouseDelta * s_DragSensitivity;
+                                    value.doubleVal = MathUtils.RoundBasedOnMinimumDifference(value.doubleVal, s_DragSensitivity);
                                 }
                                 else
                                 {
-                                    longVal += (long)Math.Round(HandleUtility.niceMouseDelta * s_DragSensitivity);
+                                    value.longVal += (long)Math.Round(HandleUtility.niceMouseDelta * s_DragSensitivity);
                                 }
+                                value.success = true;
                                 GUI.changed = true;
 
                                 evt.Use();
@@ -2081,8 +2113,9 @@ namespace UnityEditor
                 case EventType.KeyDown:
                     if (GUIUtility.hotControl == id && evt.keyCode == KeyCode.Escape && s_DragCandidateState != DragCandidateState.NotDragging)
                     {
-                        doubleVal = s_DragStartValue;
-                        longVal = s_DragStartIntValue;
+                        value.doubleVal = s_DragStartValue;
+                        value.longVal = s_DragStartIntValue;
+                        value.success = true;
                         GUI.changed = true;
                         //              s_LastEditorControl = -1;
                         GUIUtility.hotControl = 0;
@@ -2136,9 +2169,14 @@ namespace UnityEditor
             return value;
         }
 
-        internal static readonly string s_AllowedCharactersForFloat = "inftynaeINFTYNAE0123456789.,-*/+%^()";
+        // allowed characters in a float field, that encompass:
+        // - numbers,
+        // - infinity/nan
+        // - expressions
+        // - expression evaluation functions
+        internal static readonly string s_AllowedCharactersForFloat = "inftynaeINFTYNAE0123456789.,-*/+%^()cosqrludxvRL=pP#";
 
-        internal static readonly string s_AllowedCharactersForInt = "0123456789-*/+%^()";
+        internal static readonly string s_AllowedCharactersForInt = "0123456789-*/+%^()cosintaqrtelfundxvRL,=pPI#";
 
         static bool HasKeyboardFocus(int controlID)
         {
@@ -2148,13 +2186,59 @@ namespace UnityEditor
             return (GUIUtility.keyboardControl == controlID && EditorGUIUtility.HasCurrentWindowKeyFocus());
         }
 
-        internal static void DoNumberField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id, bool isDouble, ref double doubleVal, ref long longVal, string formatString, GUIStyle style, bool draggable, double dragSensitivity)
+        internal struct NumberFieldValue
+        {
+            public NumberFieldValue(double v)
+            {
+                isDouble = true;
+                doubleVal = v;
+                longVal = 0;
+                expression = null;
+                success = false;
+            }
+
+            public NumberFieldValue(long v)
+            {
+                isDouble = false;
+                doubleVal = 0;
+                longVal = v;
+                expression = null;
+                success = false;
+            }
+
+            public bool isDouble;
+            public double doubleVal;
+            public long longVal;
+            public ExpressionEvaluator.Expression expression;
+            public bool success;
+            public bool hasResult => success || expression != null;
+        }
+
+        internal static void DoNumberField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id,
+            bool isDouble, ref double doubleVal, ref long longVal, string formatString, GUIStyle style, bool draggable,
+            double dragSensitivity)
+        {
+            NumberFieldValue val = default;
+            val.isDouble = isDouble;
+            val.doubleVal = doubleVal;
+            val.longVal = longVal;
+            DoNumberField(editor, position, dragHotZone, id, ref val, formatString, style, draggable, dragSensitivity);
+            if (val.success)
+            {
+                doubleVal = val.doubleVal;
+                longVal = val.longVal;
+            }
+        }
+
+        internal static void DoNumberField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id,
+            ref NumberFieldValue value, string formatString, GUIStyle style, bool draggable,
+            double dragSensitivity)
         {
             bool changed;
-            string allowedCharacters = isDouble ? s_AllowedCharactersForFloat : s_AllowedCharactersForInt;
+            string allowedCharacters = value.isDouble ? s_AllowedCharactersForFloat : s_AllowedCharactersForInt;
             if (draggable)
             {
-                DragNumberValue(dragHotZone, id, isDouble, ref doubleVal, ref longVal, dragSensitivity);
+                DragNumberValue(dragHotZone, id, ref value, dragSensitivity);
             }
 
             Event evt = Event.current;
@@ -2163,20 +2247,20 @@ namespace UnityEditor
             {
                 if (!editor.IsEditingControl(id))
                 {
-                    str = s_RecycledCurrentEditingString = isDouble ? doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : longVal.ToString(formatString, CultureInfo.InvariantCulture);
+                    str = s_RecycledCurrentEditingString = value.isDouble ? value.doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : value.longVal.ToString(formatString, CultureInfo.InvariantCulture);
                 }
                 else
                 {
                     str = s_RecycledCurrentEditingString;
                     if (evt.type == EventType.ValidateCommand && evt.commandName == EventCommandNames.UndoRedoPerformed)
                     {
-                        str = isDouble ? doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : longVal.ToString(formatString, CultureInfo.InvariantCulture);
+                        str = value.isDouble ? value.doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : value.longVal.ToString(formatString, CultureInfo.InvariantCulture);
                     }
                 }
             }
             else
             {
-                str = isDouble ? doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : longVal.ToString(formatString, CultureInfo.InvariantCulture);
+                str = value.isDouble ? value.doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : value.longVal.ToString(formatString, CultureInfo.InvariantCulture);
             }
 
             if (GUIUtility.keyboardControl == id)
@@ -2189,19 +2273,10 @@ namespace UnityEditor
                     GUI.changed = true;
                     s_RecycledCurrentEditingString = str;
 
-                    // clean up the text
-                    if (isDouble)
-                    {
-                        if (StringToDouble(str, out doubleVal))
-                        {
-                            s_RecycledCurrentEditingFloat = doubleVal;
-                        }
-                    }
+                    if (value.isDouble)
+                        StringToDouble(str, ref value);
                     else
-                    {
-                        StringToLong(str, out longVal);
-                        s_RecycledCurrentEditingInt = longVal;
-                    }
+                        StringToLong(str, ref value);
                 }
             }
             else
@@ -2212,33 +2287,39 @@ namespace UnityEditor
 
         internal static bool StringToDouble(string str, out double value)
         {
+            NumberFieldValue v = default;
+            StringToDouble(str, ref v);
+            value = v.doubleVal;
+            return v.success;
+        }
+
+        static void StringToDouble(string str, ref NumberFieldValue value)
+        {
+            value.expression = null;
+            value.success = true;
             string lowered = str.ToLower();
             if (lowered == "inf" || lowered == "infinity")
-            {
-                value = double.PositiveInfinity;
-            }
+                value.doubleVal = double.PositiveInfinity;
             else if (lowered == "-inf" || lowered == "-infinity")
-            {
-                value = double.NegativeInfinity;
-            }
+                value.doubleVal = double.NegativeInfinity;
             else if (lowered == "nan")
-            {
-                value = double.NaN;
-            }
+                value.doubleVal = double.NaN;
             else
-            {
-                if (!ExpressionEvaluator.Evaluate(str, out value))
-                    return false;
-
-                return true;
-            }
-
-            return false;
+                value.success = ExpressionEvaluator.Evaluate(str, out value.doubleVal, out value.expression);
         }
 
         internal static bool StringToLong(string str, out long value)
         {
-            return ExpressionEvaluator.Evaluate(str, out value);
+            NumberFieldValue v = default;
+            StringToLong(str, ref v);
+            value = v.longVal;
+            return v.success;
+        }
+
+        static void StringToLong(string str, ref NumberFieldValue value)
+        {
+            value.expression = null;
+            value.success = ExpressionEvaluator.Evaluate(str, out value.longVal, out value.expression);
         }
 
         internal static int ArraySizeField(Rect position, GUIContent label, int value, GUIStyle style)
@@ -2340,9 +2421,27 @@ namespace UnityEditor
             EndProperty();
         }
 
-        internal static void DelayedNumberFieldInternal(Rect position, Rect dragHotZone, int id, bool isDouble, ref double doubleVal, ref long longVal, string formatString, GUIStyle style, bool draggable, double dragSensitivity)
+        internal static void DelayedNumberFieldInternal(Rect position, Rect dragHotZone, int id, bool isDouble,
+            ref double doubleVal, ref long longVal, string formatString, GUIStyle style, bool draggable,
+            double dragSensitivity)
         {
-            string allowedCharacters = isDouble ? s_AllowedCharactersForFloat : s_AllowedCharactersForInt;
+            NumberFieldValue val = default;
+            val.isDouble = isDouble;
+            val.doubleVal = doubleVal;
+            val.longVal = longVal;
+            DelayedNumberFieldInternal(position, dragHotZone, id, ref val, formatString, style, draggable, dragSensitivity);
+            if (val.success)
+            {
+                doubleVal = val.doubleVal;
+                longVal = val.longVal;
+            }
+        }
+
+        static void DelayedNumberFieldInternal(Rect position, Rect dragHotZone, int id,
+            ref NumberFieldValue value, string formatString, GUIStyle style, bool draggable,
+            double dragSensitivity)
+        {
+            string allowedCharacters = value.isDouble ? s_AllowedCharactersForFloat : s_AllowedCharactersForInt;
 
             Event evt = Event.current;
             string str;
@@ -2350,32 +2449,32 @@ namespace UnityEditor
             {
                 if (!s_DelayedTextEditor.IsEditingControl(id) && s_DragCandidateState == DragCandidateState.NotDragging)
                 {
-                    str = s_RecycledCurrentEditingString = isDouble ? doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : longVal.ToString(formatString, CultureInfo.InvariantCulture);
+                    str = s_RecycledCurrentEditingString = value.isDouble ? value.doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : value.longVal.ToString(formatString, CultureInfo.InvariantCulture);
                 }
                 else
                 {
                     str = s_RecycledCurrentEditingString;
                     if (evt.type == EventType.ValidateCommand && evt.commandName == EventCommandNames.UndoRedoPerformed)
                     {
-                        str = isDouble ? doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : longVal.ToString(formatString, CultureInfo.InvariantCulture);
+                        str = value.isDouble ? value.doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : value.longVal.ToString(formatString, CultureInfo.InvariantCulture);
                     }
                 }
             }
             else
             {
-                str = isDouble ? doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : longVal.ToString(formatString, CultureInfo.InvariantCulture);
+                str = value.isDouble ? value.doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : value.longVal.ToString(formatString, CultureInfo.InvariantCulture);
             }
 
             if (draggable)
             {
                 double dragDouble = 0;
                 long dragLong = 0;
-                bool isConverted = isDouble ? StringToDouble(str, out dragDouble) : StringToLong(str, out dragLong);
+                bool isConverted = value.isDouble ? StringToDouble(str, out dragDouble) : StringToLong(str, out dragLong);
 
                 if (isConverted)
                 {
-                    DragNumberValue(dragHotZone, id, isDouble, ref dragDouble, ref dragLong, dragSensitivity);
-                    str = isDouble ? dragDouble.ToString(formatString, CultureInfo.InvariantCulture) : dragLong.ToString(formatString, CultureInfo.InvariantCulture);
+                    DragNumberValue(dragHotZone, id, value.isDouble, ref dragDouble, ref dragLong, dragSensitivity);
+                    str = value.isDouble ? dragDouble.ToString(formatString, CultureInfo.InvariantCulture) : dragLong.ToString(formatString, CultureInfo.InvariantCulture);
                 }
             }
 
@@ -2396,32 +2495,14 @@ namespace UnityEditor
 
                     if (!s_DelayedTextEditor.IsEditingControl(id) && s_DragCandidateState == DragCandidateState.NotDragging)
                     {
-                        bool equalValues = isDouble ? str.Equals(doubleVal) : str.Equals(longVal);
+                        bool equalValues = value.isDouble ? str.Equals(value.doubleVal) : str.Equals(value.longVal);
                         if (!equalValues && (!showMixedValue || (showMixedValue && k_MultiEditValueString != str)))
                         {
                             GUI.changed = true;
-                            if (isDouble)
-                            {
-                                double newValue;
-                                doubleVal = StringToDouble(str, out newValue) ? newValue : doubleVal;
-                            }
+                            if (value.isDouble)
+                                StringToDouble(str, ref value);
                             else
-                            {
-                                long newValue;
-                                longVal = StringToLong(str, out newValue) ? newValue : longVal;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // clean up the text
-                        if (isDouble)
-                        {
-                            s_RecycledCurrentEditingFloat = doubleVal;
-                        }
-                        else
-                        {
-                            s_RecycledCurrentEditingInt = longVal;
+                                StringToLong(str, ref value);
                         }
                     }
                 }
@@ -2429,16 +2510,10 @@ namespace UnityEditor
             else
             {
                 GUI.changed = true;
-                if (isDouble)
-                {
-                    double newValue;
-                    doubleVal = StringToDouble(str, out newValue) ? newValue : doubleVal;
-                }
+                if (value.isDouble)
+                    StringToDouble(str, ref value);
                 else
-                {
-                    long newValue;
-                    longVal = StringToLong(str, out newValue) ? newValue : longVal;
-                }
+                    StringToLong(str, ref value);
             }
             GUI.changed |= wasChanged;
         }
@@ -2572,10 +2647,18 @@ namespace UnityEditor
         // Make a text field for entering integers.
         internal static long LongFieldInternal(Rect position, GUIContent label, long value, GUIStyle style)
         {
+            NumberFieldValue v = new NumberFieldValue(value);
+            LongFieldInternal(position, label, ref v, style);
+            return v.longVal;
+        }
+
+        static void LongFieldInternal(Rect position, GUIContent label, ref NumberFieldValue value, GUIStyle style)
+        {
             int id = GUIUtility.GetControlID(s_FloatFieldHash, FocusType.Keyboard, position);
             Rect position2 = PrefixLabel(position, id, label);
             position.xMax = position2.x;
-            return DoLongField(s_RecycledEditor, position2, position, id, value, kIntFieldFormatString, style, true, NumericFieldDraggerUtility.CalculateIntDragSensitivity(value));
+            var dragSensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity(value.longVal);
+            DoNumberField(s_RecycledEditor, position2, position, id, ref value, kIntFieldFormatString, style, true, dragSensitivity);
         }
 
         public static float Slider(Rect position, float value, float leftValue, float rightValue)
@@ -6789,6 +6872,8 @@ namespace UnityEditor
         static readonly string s_ArrayMultiInfoFormatString = EditorGUIUtility.TrTextContent("This field cannot display arrays with more than {0} elements when multiple objects are selected.").text;
         static readonly GUIContent s_ArrayMultiInfoContent = new GUIContent();
 
+        static ProfilerMarker s_EvalExpressionMarker = new ProfilerMarker("Inspector.EvaluateMultiExpression");
+
         internal static bool DefaultPropertyField(Rect position, SerializedProperty property, GUIContent label)
         {
             label = BeginPropertyInternal(position, label, property);
@@ -6805,24 +6890,61 @@ namespace UnityEditor
                     case SerializedPropertyType.Integer:
                     {
                         BeginChangeCheck();
-                        long newValue = LongField(position, label, property.longValue);
-                        if (EndChangeCheck())
+                        NumberFieldValue val = new NumberFieldValue(property.longValue);
+                        LongField(position, label, ref val);
+                        if (EndChangeCheck() && val.hasResult)
                         {
-                            property.longValue = newValue;
+                            if (val.expression != null)
+                            {
+                                using (s_EvalExpressionMarker.Auto())
+                                {
+                                    var values = property.allLongValues;
+                                    for (var i = 0; i < values.Length; ++i)
+                                        val.expression.Evaluate(ref values[i], i, values.Length);
+                                    property.allLongValues = values;
+                                }
+                            }
+                            else
+                            {
+                                property.longValue = val.longVal;
+                            }
                         }
                         break;
                     }
                     case SerializedPropertyType.Float:
                     {
                         BeginChangeCheck();
+                        NumberFieldValue val = new NumberFieldValue(property.doubleValue);
 
                         // Necessary to check for float type to get correct string formatting for float and double.
                         bool isFloat = property.type == "float";
-                        double newValue = isFloat ? FloatField(position, label, property.floatValue) :
-                            DoubleField(position, label, property.doubleValue);
-                        if (EndChangeCheck())
+                        if (isFloat)
+                            FloatField(position, label, ref val);
+                        else
+                            DoubleField(position, label, ref val);
+
+                        if (EndChangeCheck() && val.hasResult)
                         {
-                            property.doubleValue = newValue;
+                            if (val.expression != null)
+                            {
+                                using (s_EvalExpressionMarker.Auto())
+                                {
+                                    var values = property.allDoubleValues;
+                                    for (var i = 0; i < values.Length; ++i)
+                                    {
+                                        val.expression.Evaluate(ref values[i], i, values.Length);
+                                        if (isFloat)
+                                            values[i] = MathUtils.ClampToFloat(values[i]);
+                                    }
+                                    property.allDoubleValues = values;
+                                }
+                            }
+                            else
+                            {
+                                if (isFloat)
+                                    val.doubleVal = MathUtils.ClampToFloat(val.doubleVal);
+                                property.doubleValue = val.doubleVal;
+                            }
                         }
                         break;
                     }
@@ -7564,6 +7686,11 @@ namespace UnityEditor
             return FloatField(position, EditorGUIUtility.TempContent(label), value, style);
         }
 
+        internal static void FloatField(Rect position, GUIContent label, ref NumberFieldValue value)
+        {
+            FloatFieldInternal(position, label, ref value, EditorStyles.numberField);
+        }
+
         [ExcludeFromDocs]
         public static float FloatField(Rect position, GUIContent label, float value)
         {
@@ -7650,6 +7777,11 @@ namespace UnityEditor
         public static double DoubleField(Rect position, GUIContent label, double value, [DefaultValue("EditorStyles.numberField")] GUIStyle style)
         {
             return DoubleFieldInternal(position, label, value, style);
+        }
+
+        static void DoubleField(Rect position, GUIContent label, ref NumberFieldValue value)
+        {
+            DoubleFieldInternal(position, label, ref value, EditorStyles.numberField);
         }
 
         [ExcludeFromDocs]
@@ -7788,6 +7920,11 @@ namespace UnityEditor
         public static long LongField(Rect position, GUIContent label, long value)
         {
             return LongField(position, label, value, EditorStyles.numberField);
+        }
+
+        static void LongField(Rect position, GUIContent label, ref NumberFieldValue value)
+        {
+            LongFieldInternal(position, label, ref value, EditorStyles.numberField);
         }
 
         public static long LongField(Rect position, GUIContent label, long value, [DefaultValue("EditorStyles.numberField")] GUIStyle style)

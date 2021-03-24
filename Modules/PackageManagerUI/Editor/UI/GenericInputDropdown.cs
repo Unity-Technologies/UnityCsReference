@@ -10,16 +10,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class GenericInputDropdown : DropdownContent
     {
-        internal class Configs
-        {
-            public string title;
-            public string iconUssClass;
-            public string label;
-            public string submitButtonText;
-            public string defaultValue;
-            public Action<string> inputSubmittedCallback;
-        }
-
         public static readonly string k_DefaultSubmitButtonText = L10n.Tr("Submit");
         internal override Vector2 windowSize => new Vector2(320, 50);
 
@@ -34,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ResourceLoader = resourceLoader;
         }
 
-        public GenericInputDropdown(ResourceLoader resourceLoader, EditorWindow anchorWindow, Configs configs)
+        public GenericInputDropdown(ResourceLoader resourceLoader, EditorWindow anchorWindow, InputDropdownArgs args)
         {
             ResolveDependencies(resourceLoader);
 
@@ -44,7 +34,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             cache = new VisualElementCache(root);
 
-            Init(anchorWindow, configs);
+            Init(anchorWindow, args);
         }
 
         internal override void OnDropdownShown()
@@ -73,30 +63,38 @@ namespace UnityEditor.PackageManager.UI.Internal
             submitClicked = null;
         }
 
-        private void Init(EditorWindow anchorWindow, Configs configs)
+        private void Init(EditorWindow anchorWindow, InputDropdownArgs args)
         {
             m_AnchorWindow = anchorWindow;
 
-            inputTextField.value = configs?.defaultValue ?? string.Empty;
+            inputTextField.value = args.defaultValue ?? string.Empty;
             inputTextField.RegisterCallback<ChangeEvent<string>>(OnTextFieldChange);
             inputTextField.visualInput.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
 
             m_InputPlaceholder = new TextFieldPlaceholder(inputTextField);
-            m_InputPlaceholder.text = configs?.label ?? string.Empty;
+            m_InputPlaceholder.text = args.placeholderText ?? string.Empty;
 
-            mainTitle.text = configs?.title ?? string.Empty;
+            mainTitle.text = args.title ?? string.Empty;
             UIUtils.SetElementDisplay(mainTitle, !string.IsNullOrEmpty(mainTitle.text));
 
-            var showIcon = !string.IsNullOrEmpty(configs?.iconUssClass);
-            if (showIcon)
-                icon.AddToClassList(configs.iconUssClass);
+            var showIcon = false;
+            if (!string.IsNullOrEmpty(args.iconUssClass))
+            {
+                showIcon = true;
+                icon.AddToClassList(args.iconUssClass);
+            }
+            else if (args.icon != null)
+            {
+                showIcon = true;
+                icon.style.backgroundImage = new StyleBackground((Background)args.icon);
+            }
             UIUtils.SetElementDisplay(icon, showIcon);
 
             submitButton.clickable.clicked += SubmitClicked;
             submitButton.SetEnabled(!string.IsNullOrEmpty(inputTextField.value));
-            submitButton.text = !string.IsNullOrEmpty(configs?.submitButtonText) ? configs.submitButtonText : k_DefaultSubmitButtonText;
-            if (configs?.inputSubmittedCallback != null)
-                submitClicked = configs.inputSubmittedCallback;
+            submitButton.text = !string.IsNullOrEmpty(args.submitButtonText) ? args.submitButtonText : k_DefaultSubmitButtonText;
+            if (args.onInputSubmitted != null)
+                submitClicked = args.onInputSubmitted;
         }
 
         private void SubmitClicked()

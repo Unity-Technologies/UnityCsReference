@@ -55,12 +55,12 @@ namespace UnityEditor.SceneManagement
             }
         }
 
-        internal static PrefabStage OpenPrefab(string prefabAssetPath)
+        public static PrefabStage OpenPrefab(string prefabAssetPath)
         {
             return OpenPrefab(prefabAssetPath, null, PrefabStage.Mode.InIsolation);
         }
 
-        internal static PrefabStage OpenPrefab(string prefabAssetPath, GameObject openedFromInstance)
+        public static PrefabStage OpenPrefab(string prefabAssetPath, GameObject openedFromInstance)
         {
             var prefabStageMode = openedFromInstance != null ? PrefabStage.Mode.InContext : PrefabStage.Mode.InIsolation;
             return OpenPrefab(prefabAssetPath, openedFromInstance, prefabStageMode, StageNavigationManager.Analytics.ChangeType.EnterViaUnknown);
@@ -72,7 +72,7 @@ namespace UnityEditor.SceneManagement
             return OpenPrefab(prefabAssetPath, openedFromInstance, prefabStageMode, changeTypeAnalytics);
         }
 
-        internal static PrefabStage OpenPrefab(string prefabAssetPath, GameObject openedFromInstance, PrefabStage.Mode prefabStageMode)
+        public static PrefabStage OpenPrefab(string prefabAssetPath, GameObject openedFromInstance, PrefabStage.Mode prefabStageMode)
         {
             return OpenPrefab(prefabAssetPath, openedFromInstance, prefabStageMode, StageNavigationManager.Analytics.ChangeType.EnterViaUnknown);
         }
@@ -80,16 +80,16 @@ namespace UnityEditor.SceneManagement
         internal static PrefabStage OpenPrefab(string prefabAssetPath, GameObject openedFromInstance, PrefabStage.Mode prefabStageMode, StageNavigationManager.Analytics.ChangeType changeTypeAnalytics)
         {
             if (string.IsNullOrEmpty(prefabAssetPath))
-                throw new ArgumentNullException(prefabAssetPath);
+                throw new ArgumentNullException(nameof(prefabAssetPath));
 
             if (openedFromInstance != null && !PrefabUtility.IsPartOfPrefabInstance(openedFromInstance))
                 throw new ArgumentException("GameObject must be part of a Prefab instance, or null.", nameof(openedFromInstance));
 
             if (!prefabAssetPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException("Incorrect file extension: " + prefabAssetPath + ". Must be '.prefab'", prefabAssetPath);
+                throw new ArgumentException("Incorrect file extension: " + prefabAssetPath + ". Must be '.prefab'", nameof(prefabAssetPath));
 
             if (AssetDatabase.LoadMainAssetAtPath(prefabAssetPath) == null)
-                throw new ArgumentException("Prefab not found at path " + prefabAssetPath, prefabAssetPath);
+                throw new ArgumentException("Prefab not found at path " + prefabAssetPath, nameof(prefabAssetPath));
 
             return OpenPrefabMode(prefabAssetPath, openedFromInstance, prefabStageMode, changeTypeAnalytics);
         }

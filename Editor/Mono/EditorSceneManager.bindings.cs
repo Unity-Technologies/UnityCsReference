@@ -186,7 +186,7 @@ namespace UnityEditor.SceneManagement
         [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("SaveCurrentModifiedScenesIfUserWantsTo")]
-        public extern static bool SaveCurrentModifiedScenesIfUserWantsTo();
+        internal extern static bool SaveCurrentModifiedScenesIfUserWantsTo(string message);
 
         [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]

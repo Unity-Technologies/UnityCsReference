@@ -56,7 +56,7 @@ namespace UnityEditor.UIElements
                 s_DefaultCommonDarkStyleSheet = LoadSKinnedStyleSheetForFont(EditorResources.darkSkinIndex, EditorResources.currentFontName);
                 s_DefaultCommonDarkStyleSheet.isUnityStyleSheet = true;
             }
-            
+
             return s_DefaultCommonDarkStyleSheet;
         }
 
@@ -67,12 +67,10 @@ namespace UnityEditor.UIElements
                 s_DefaultCommonLightStyleSheet = LoadSKinnedStyleSheetForFont(EditorResources.normalSkinIndex, EditorResources.currentFontName);
                 s_DefaultCommonLightStyleSheet.isUnityStyleSheet = true;
             }
-            
+
             return s_DefaultCommonLightStyleSheet;
         }
 
-        
-        
         static UIElementsEditorUtility()
         {
         }

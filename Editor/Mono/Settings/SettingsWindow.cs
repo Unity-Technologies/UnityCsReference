@@ -256,6 +256,11 @@ namespace UnityEditor
                 EditorPrefs.SetString(GetPrefKeyName(titleContent.text + "_current_provider"), newlySelectedProvider.settingsPath);
             }
 
+            SetupIMGUIForCurrentProviderIfNeeded();
+        }
+
+        internal void SetupIMGUIForCurrentProviderIfNeeded()
+        {
             if (m_SettingsPanel.childCount == 0)
             {
                 var imguiContainer = new IMGUIContainer(DrawSettingsPanel);

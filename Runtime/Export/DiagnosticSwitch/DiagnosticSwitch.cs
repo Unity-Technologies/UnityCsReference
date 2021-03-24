@@ -6,45 +6,49 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
-    // Keep this in sync with DiagnosticSwitch::SwitchFlags in C++
-    [Flags]
-    internal enum DiagnosticSwitchFlags
-    {
-        None                        = 0,
-        CanChangeAfterEngineStart   = (1 << 0)
-    }
-
     [StructLayout(LayoutKind.Sequential)]
-    [UsedByNativeCode]
-    internal struct DiagnosticSwitch
+    [RequiredByNativeCode]
+    [NativeHeader("Runtime/Utilities/DiagnosticSwitch.h")]
+    [NativeClass("DiagnosticSwitch", "struct DiagnosticSwitch;")]
+    [NativeAsStruct]
+    internal class DiagnosticSwitch
     {
-        public string name;
-        public string description;
-        public DiagnosticSwitchFlags flags;
-        public object value;
-        public object minValue;
-        public object maxValue;
-        public object persistentValue;
-        public EnumInfo enumInfo;
+        private IntPtr m_Ptr;
 
-        [UsedByNativeCode]
-        private static void AppendDiagnosticSwitchToList(List<DiagnosticSwitch> list, string name, string description,
-            DiagnosticSwitchFlags flags, object value, object minValue, object maxValue, object persistentValue, EnumInfo enumInfo)
+        // Only constructed in native code
+        private DiagnosticSwitch() {}
+
+        // Keep this in sync with DiagnosticSwitch::SwitchFlags in C++
+        [Flags]
+        internal enum Flags
         {
-            list.Add(new DiagnosticSwitch
-            {
-                name = name,
-                description = description,
-                flags = flags,
-                value = value,
-                minValue = minValue,
-                maxValue = maxValue,
-                persistentValue = persistentValue,
-                enumInfo = enumInfo
-            });
+            None                        = 0,
+            CanChangeAfterEngineStart   = (1 << 0)
         }
+
+        public extern string name { get; }
+        public extern string description { get; }
+        [NativeName("OwningModuleName")] public extern string owningModule { get; }
+        public extern Flags flags { get; }
+
+        public object value { get => GetScriptingValue(); set => SetScriptingValue(value, false); }
+        [NativeName("ScriptingDefaultValue")] public extern object defaultValue { get; }
+        [NativeName("ScriptingMinValue")] public extern object minValue { get; }
+        [NativeName("ScriptingMaxValue")] public extern object maxValue { get; }
+        public object persistentValue { get => GetScriptingPersistentValue(); set => SetScriptingValue(value, true); }
+        [NativeName("ScriptingEnumInfo")] public extern EnumInfo enumInfo { get; }
+
+        private extern object GetScriptingValue();
+        private extern object GetScriptingPersistentValue();
+
+        [NativeThrows]
+        private extern void SetScriptingValue(object value, bool setPersistent);
+
+        public bool isSetToDefault => Equals(persistentValue, defaultValue);
+        public bool needsRestart => !Equals(value, persistentValue);
     }
 }

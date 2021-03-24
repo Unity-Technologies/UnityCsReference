@@ -7,7 +7,7 @@ namespace UnityEditor.UIElements
     {
         internal static string k_DefaultPanelTextSettingsPath =
             "UIPackageResources/Text/Default Panel Text Settings.asset";
-        
+
 
         PanelTextSettingsImporter() {}
 

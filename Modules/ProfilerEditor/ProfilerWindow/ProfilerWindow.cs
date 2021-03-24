@@ -4,8 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Collections.ObjectModel;
 using UnityEditor.Accessibility;
 using UnityEditor.Networking.PlayerConnection;
@@ -18,10 +16,8 @@ using UnityEngine;
 using UnityEngine.Networking.PlayerConnection;
 using UnityEngine.Profiling;
 using UnityEngine.Scripting;
-using Unity.Profiling;
+using UnityEngine.UIElements;
 using Debug = UnityEngine.Debug;
-using System.Net;
-using UnityEditor.Collaboration;
 using UnityEditor.MPE;
 
 namespace UnityEditor
@@ -29,11 +25,6 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Profiler", icon = "UnityEditor.ProfilerWindow")]
     public sealed class ProfilerWindow : EditorWindow, IHasCustomMenu, IProfilerWindowController, ProfilerModulesDropdownWindow.IResponder
     {
-        static class Markers
-        {
-            public static readonly ProfilerMarker drawDetailsView = new ProfilerMarker("ProfilerWindow.DrawDetailsView");
-        }
-
         internal static class Styles
         {
             public static readonly GUIContent addArea = EditorGUIUtility.TrTextContent("Profiler Modules", "Add and remove profiler modules");
@@ -108,30 +99,24 @@ namespace UnityEditor
 
         static List<ProfilerWindow> s_ProfilerWindows = new List<ProfilerWindow>();
 
+        const string k_UxmlResourceName = "ProfilerWindow.uxml";
+        const string k_UssSelector_ProfilerWindowDark = "profiler-window--dark";
+        const string k_UssSelector_ProfilerWindowLight = "profiler-window--light";
+        const string k_UssSelector_MainSplitView = "main-split-view";
+        const string k_UssSelector_ToolbarAndChartsLegacyIMGUIContainer = "toolbar-and-charts__legacy-imgui-container";
+        const string k_UssSelector_ModuleDetailsView_Container = "module-details-view__container";
+        const string k_MainSplitViewFixedPaneSizePreferenceKey = "ProfilerWindow.MainSplitView.FixedPaneSize";
         const int k_NoModuleSelected = -1;
         const string k_SelectedModuleIndexPreferenceKey = "ProfilerWindow.SelectedModuleIndex";
         const string k_DynamicModulesPreferenceKey = "ProfilerWindow.DynamicModules";
 
+        static readonly Vector2 k_MinimumWindowSize = new Vector2(720f, 216f);
+
         [NonSerialized]
         bool m_Initialized;
 
-        [SerializeField]
-        SplitterState m_VertSplit;
-
-        internal SplitterState ChartsDetailedViewSplitterState
-        {
-            get => m_VertSplit;
-            set => m_VertSplit = value;
-        }
-
         [NonSerialized]
         float m_FrameCountLabelMinWidth = 0;
-
-        const string k_VertSplitterPercentageElement0PrefKey = "ProfilerWindow.VerticalSplitter.Relative[0]";
-        const string k_VertSplitterPercentageElement1PrefKey = "ProfilerWindow.VerticalSplitter.Relative[1]";
-        const int k_VertSplitterMinSizes = 100;
-        const float k_LineHeight = 16.0f;
-        const float k_RightPaneMinSize = 700;
 
         // For keeping correct "Recording" state on window maximizing
         [SerializeField]
@@ -144,20 +129,13 @@ namespace UnityEditor
         [SerializeField]
         string m_ActiveNativePlatformSupportModuleName;
 
-        [SerializeField]
-        int m_SelectedModuleIndex;
+        [NonSerialized]
+        int m_SelectedModuleIndex = k_NoModuleSelected;
 
         int m_CurrentFrame = FrameDataView.invalidOrCurrentFrameIndex;
         int m_LastFrameFromTick = FrameDataView.invalidOrCurrentFrameIndex;
 
         bool m_CurrentFrameEnabled = false;
-
-        // Profiling GUI constants
-        const float kRowHeight = 16;
-        const float kIndentPx = 16;
-        const float kBaseIndent = 8;
-
-        const float kNameColumnSize = 350;
 
         const int k_MainThreadIndex = 0;
 
@@ -184,9 +162,16 @@ namespace UnityEditor
 
         internal string ConnectedTargetName => m_AttachProfilerState.connectionName;
         internal bool ConnectedToEditor => m_AttachProfilerState.connectedToTarget == ConnectionTarget.Editor;
+        internal TwoPaneSplitView MainSplitView { get; private set; }
 
         [SerializeField]
         bool m_ClearOnPlay;
+
+        // UI references.
+        IMGUIContainer m_ToolbarAndChartsIMGUIContainer;
+        VisualElement m_DetailsViewContainer;
+
+        internal VisualElement DetailsViewContainer => m_DetailsViewContainer;
 
         const string kProfilerRecentSaveLoadProfilePath = "ProfilerRecentSaveLoadProfilePath";
         const string kProfilerEnabledSessionKey = "ProfilerEnabled";
@@ -195,6 +180,8 @@ namespace UnityEditor
 
         internal event Action<int, bool> currentFrameChanged = delegate {};
         internal event Action frameDataViewAboutToBeDisposed = delegate {};
+        // TODO This event must be made public as part of Extensibility.
+        internal event Action<long> SelectedFrameIndexChanged;
 
         internal event Action<bool> recordingStateChanged = delegate {};
         internal event Action<bool> deepProfileChanged = delegate {};
@@ -206,53 +193,15 @@ namespace UnityEditor
         {
             get
             {
-                if ((m_SelectedModuleIndex != k_NoModuleSelected) &&
-                    (m_SelectedModuleIndex >= 0) &&
-                    (m_SelectedModuleIndex < m_Modules.Count))
-                {
-                    return m_Modules[m_SelectedModuleIndex];
-                }
-
-                return null;
+                return ModuleAtIndex(m_SelectedModuleIndex);
             }
             set
             {
-                var previousSelectedModule = selectedModule;
-                var previousSelectedModuleIndex = m_SelectedModuleIndex;
-                int newSelectedModuleIndex = k_NoModuleSelected;
-                if (value == null)
-                {
-                    // ??? should this be like this?
-                    //throw new ArgumentNullException($"???????.", $"{nameof(value)}");
-                    m_SelectedModuleIndex = k_NoModuleSelected;
-                    SessionState.SetInt(k_SelectedModuleIndexPreferenceKey, k_NoModuleSelected);
-                    InitializeSelectedModuleIndex();
-                    newSelectedModuleIndex = m_SelectedModuleIndex;
-                }
-                else
-                {
-                    newSelectedModuleIndex = IndexOfModule(value as ProfilerModuleBase);
-                    if (newSelectedModuleIndex == k_NoModuleSelected)
-                        throw new ArgumentException($"The {value.name} module is not registered with the Profiler Window.", $"{nameof(value)}");
-                    if (!value.active)
-                    {
-                        value.active = true;
-                    }
-                }
-
-                if (previousSelectedModuleIndex == newSelectedModuleIndex)
-                    // nothing changed
+                // As far as I can tell, the only time this check is required is when a new frame is selected in a chart view that is already selected. We can mitigate that when we restructure charts for UIToolkit.
+                if (selectedModule == value)
                     return;
 
-                m_SelectedModuleIndex = newSelectedModuleIndex;
-
-                previousSelectedModule?.OnDeselected();
-                selectedModule?.OnSelected();
-
-                Repaint();
-                GUIUtility.keyboardControl = 0;
-                if (Event.current != null)
-                    GUIUtility.ExitGUI();
+                SelectModule(value);
             }
         }
 
@@ -391,10 +340,51 @@ namespace UnityEditor
 
         void OnEnable()
         {
-            InitializeIfNeeded();
-
+            minSize = k_MinimumWindowSize;
             titleContent = GetLocalizedTitleContent();
-            s_ProfilerWindows.Add(this);
+            s_ProfilerWindows.Add(this); // TODO Remove until we have a need for this.
+
+            InitializeIfNeeded();
+            ConstructVisualTree();
+            SubscribeToGlobalEvents();
+
+            // If there is already an open instance of the Module Editor window, resubscribe to the onChangesConfirmed event.
+            if (ModuleEditorWindow.TryGetOpenInstance(out var moduleEditorWindow))
+            {
+                moduleEditorWindow.onChangesConfirmed += OnModuleEditorChangesConfirmed;
+            }
+
+            foreach (var module in m_Modules)
+            {
+                module.OnEnable();
+            }
+
+            // Select the last selected module this session. If there wasn't one, try to select the first active module.
+            var moduleIndexToSelect = SessionState.GetInt(k_SelectedModuleIndexPreferenceKey, k_NoModuleSelected);
+            if (moduleIndexToSelect != k_NoModuleSelected)
+                SelectModuleAtIndex(moduleIndexToSelect);
+            else
+                SelectFirstActiveModule();
+        }
+
+        void OnDisable()
+        {
+            SaveViewSettings();
+            m_AttachProfilerState.Dispose();
+            m_AttachProfilerState = null;
+            s_ProfilerWindows.Remove(this);
+
+            DeselectSelectedModuleIfNecessary();
+            foreach (var module in m_Modules)
+            {
+                module.OnDisable();
+            }
+
+            UnsubscribeFromGlobalEvents();
+        }
+
+        void SubscribeToGlobalEvents()
+        {
             EditorApplication.playModeStateChanged += OnPlaymodeStateChanged;
             EditorApplication.pauseStateChanged += OnPauseStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged += OnSettingsChanged;
@@ -405,21 +395,25 @@ namespace UnityEditor
             ProfilerDriver.profilerCaptureLoaded += ProfilerWindowAnalytics.SendSaveLoadEvent;
             ProfilerDriver.profilerConnected += ProfilerWindowAnalytics.SendConnectionEvent;
             ProfilerDriver.profilingStateChange += ProfilerWindowAnalytics.ProfilingStateChange;
+        }
 
-            if (ModuleEditorWindow.TryGetOpenInstance(out var moduleEditorWindow))
-            {
-                moduleEditorWindow.onChangesConfirmed += OnModuleEditorChangesConfirmed;
-            }
-
-            foreach (var module in m_Modules)
-            {
-                module.OnEnable();
-            }
-            selectedModule?.OnSelected();
+        void UnsubscribeFromGlobalEvents()
+        {
+            EditorApplication.playModeStateChanged -= OnPlaymodeStateChanged;
+            EditorApplication.pauseStateChanged -= OnPauseStateChanged;
+            UserAccessiblitySettings.colorBlindConditionChanged -= OnSettingsChanged;
+            ProfilerUserSettings.settingsChanged -= OnSettingsChanged;
+            ProfilerDriver.profileLoaded -= OnProfileLoaded;
+            ProfilerDriver.profileCleared -= OnProfileCleared;
+            ProfilerDriver.profilerCaptureSaved -= ProfilerWindowAnalytics.SendSaveLoadEvent;
+            ProfilerDriver.profilerCaptureLoaded -= ProfilerWindowAnalytics.SendSaveLoadEvent;
+            ProfilerDriver.profilerConnected -= ProfilerWindowAnalytics.SendConnectionEvent;
+            ProfilerDriver.profilingStateChange -= ProfilerWindowAnalytics.ProfilingStateChange;
         }
 
         void InitializeIfNeeded()
         {
+            // TODO We no longer need this m_Initialized flag as Initialize() is only called from OnEnable.
             if (m_Initialized)
                 return;
 
@@ -438,9 +432,7 @@ namespace UnityEditor
                 m_Modules = InstantiateAvailableProfilerModules();
 
             m_AreaReferenceCounter = new ProfilerAreaReferenceCounter();
-            InitializeActiveNativePlatformSupportModuleName();
-            InitializeSelectedModuleIndex();
-            ConfigureLayoutProperties();
+            m_ActiveNativePlatformSupportModuleName = EditorUtility.GetActiveNativePlatformSupportModuleName();
 
             m_Initialized = true;
         }
@@ -451,6 +443,13 @@ namespace UnityEditor
             if (m_Modules == null)
             {
                 return false;
+            }
+
+            // Check if any modules are null. This can occur if a module's deserialization failed due to a missing type (e.g. user removed a Profiler module type).
+            foreach (var module in m_Modules)
+            {
+                if (module == null)
+                    return false;
             }
 
             // If we have deserialized modules, check they are valid using the name. Module serialization was broken in 2020.2.0a15 until ~2020.2.0a20. For users coming from those versions we need to validate the serialized module state and rebuild the modules if invalid.
@@ -507,39 +506,23 @@ namespace UnityEditor
             }
         }
 
-        void InitializeActiveNativePlatformSupportModuleName()
+        void ConstructVisualTree()
         {
-            m_ActiveNativePlatformSupportModuleName = EditorUtility.GetActiveNativePlatformSupportModuleName();
-        }
+            var template = EditorGUIUtility.Load(k_UxmlResourceName) as VisualTreeAsset;
+            template.CloneTree(rootVisualElement);
 
-        void InitializeSelectedModuleIndex()
-        {
-            m_SelectedModuleIndex = SessionState.GetInt(k_SelectedModuleIndexPreferenceKey, k_NoModuleSelected);
+            var themeUssClass = (EditorGUIUtility.isProSkin) ? k_UssSelector_ProfilerWindowDark : k_UssSelector_ProfilerWindowLight;
+            rootVisualElement.AddToClassList(themeUssClass);
 
-            // If no module is selected or the selected module is not active anymore, attempt to select the first active module.
-            if (m_SelectedModuleIndex == k_NoModuleSelected || (selectedModule != null && !selectedModule.active))
-            {
-                for (int i = 0; i < m_Modules.Count; i++)
-                {
-                    var module = m_Modules[i];
-                    if (module.active)
-                    {
-                        m_SelectedModuleIndex = i;
-                        break;
-                    }
-                }
-            }
-        }
+            m_ToolbarAndChartsIMGUIContainer = rootVisualElement.Q<IMGUIContainer>(k_UssSelector_ToolbarAndChartsLegacyIMGUIContainer);
+            m_ToolbarAndChartsIMGUIContainer.onGUIHandler = DoLegacyGUI_ToolbarAndCharts;
 
-        void ConfigureLayoutProperties()
-        {
-            if (m_VertSplit == null || !m_VertSplit.IsValid())
-            {
-                m_VertSplit = SplitterState.FromRelative(new[] { EditorPrefs.GetFloat(k_VertSplitterPercentageElement0PrefKey, 50f), EditorPrefs.GetFloat(k_VertSplitterPercentageElement1PrefKey, 50f) }, new float[] { k_VertSplitterMinSizes, k_VertSplitterMinSizes }, null);
-            }
+            MainSplitView = rootVisualElement.Q<TwoPaneSplitView>(k_UssSelector_MainSplitView);
+            // TwoPaneSplitView.viewDataKey is not currently supported so we need to manually persist its state.
+            var fixedPaneSize = EditorPrefs.GetFloat(k_MainSplitViewFixedPaneSizePreferenceKey, k_MinimumWindowSize.y * 0.5f);
+            MainSplitView.fixedPaneInitialDimension = fixedPaneSize;
 
-            // 2 times the min splitter size plus one line height for the toolbar up top
-            minSize = new Vector2(Chart.kSideWidth + k_RightPaneMinSize, k_VertSplitterMinSizes * m_VertSplit.minSizes.Length + k_LineHeight);
+            m_DetailsViewContainer = rootVisualElement.Q<VisualElement>(k_UssSelector_ModuleDetailsView_Container);
         }
 
         void OnSettingsChanged()
@@ -621,28 +604,12 @@ namespace UnityEditor
 
         void CloseModule(ProfilerModuleBase module)
         {
-            // Reset the current selection. TODO Perhaps we could maintain module selection?
-            var previousSelectedModule = selectedModule;
-            m_SelectedModuleIndex = k_NoModuleSelected;
-            previousSelectedModule?.OnDeselected();
-
-            module.OnClosed();
-        }
-
-        int IndexOfModule(ProfilerModuleBase module)
-        {
-            int index = k_NoModuleSelected;
-            for (int i = 0; i < m_Modules.Count; i++)
+            if (module == selectedModule)
             {
-                var m = m_Modules[i];
-                if (m.Equals(module))
-                {
-                    index = i;
-                    break;
-                }
+                SelectFirstActiveModule();
             }
 
-            return index;
+            module.OnClosed();
         }
 
         void CheckForPlatformModuleChange()
@@ -666,31 +633,6 @@ namespace UnityEditor
             Repaint();
         }
 
-        void OnDisable()
-        {
-            SaveViewSettings();
-            m_AttachProfilerState.Dispose();
-            m_AttachProfilerState = null;
-            s_ProfilerWindows.Remove(this);
-
-            selectedModule?.OnDeselected();
-            foreach (var module in m_Modules)
-            {
-                module.OnDisable();
-            }
-
-            EditorApplication.playModeStateChanged -= OnPlaymodeStateChanged;
-            EditorApplication.pauseStateChanged -= OnPauseStateChanged;
-            UserAccessiblitySettings.colorBlindConditionChanged -= OnSettingsChanged;
-            ProfilerUserSettings.settingsChanged -= OnSettingsChanged;
-            ProfilerDriver.profileLoaded -= OnProfileLoaded;
-            ProfilerDriver.profileCleared -= OnProfileCleared;
-            ProfilerDriver.profilerCaptureSaved -= ProfilerWindowAnalytics.SendSaveLoadEvent;
-            ProfilerDriver.profilerCaptureLoaded -= ProfilerWindowAnalytics.SendSaveLoadEvent;
-            ProfilerDriver.profilerConnected -= ProfilerWindowAnalytics.SendConnectionEvent;
-            ProfilerDriver.profilingStateChange -= ProfilerWindowAnalytics.ProfilingStateChange;
-        }
-
         void SaveViewSettings()
         {
             foreach (var module in m_Modules)
@@ -698,12 +640,7 @@ namespace UnityEditor
                 module.SaveViewSettings();
             }
 
-            if (m_VertSplit != null && m_VertSplit.relativeSizes != null)
-            {
-                EditorPrefs.SetFloat(k_VertSplitterPercentageElement0PrefKey, m_VertSplit.relativeSizes[0]);
-                EditorPrefs.SetFloat(k_VertSplitterPercentageElement1PrefKey, m_VertSplit.relativeSizes[1]);
-            }
-
+            EditorPrefs.SetFloat(k_MainSplitViewFixedPaneSizePreferenceKey, MainSplitView.fixedPane.resolvedStyle.height);
             SessionState.SetInt(k_SelectedModuleIndexPreferenceKey, m_SelectedModuleIndex);
         }
 
@@ -893,7 +830,8 @@ namespace UnityEditor
                     if (ProfilerDriver.lastFrameIndex != window.m_LastFrameFromTick)
                     {
                         window.m_LastFrameFromTick = ProfilerDriver.lastFrameIndex;
-                        window.RepaintImmediately();
+                        window.m_ToolbarAndChartsIMGUIContainer.MarkDirtyRepaint();
+                        window.InvokeSelectedFrameIndexChangedEventIfNecessary(window.m_LastFrameFromTick);
                     }
                 }
             }
@@ -1101,7 +1039,7 @@ namespace UnityEditor
             Repaint();
         }
 
-        void DrawMainToolbar()
+        float DrawMainToolbar()
         {
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
 
@@ -1187,6 +1125,8 @@ namespace UnityEditor
             }
 
             GUILayout.EndHorizontal();
+
+            return EditorStyles.toolbar.fixedHeight;
         }
 
         void DrawModuleSelectionDropdownMenu()
@@ -1242,6 +1182,7 @@ namespace UnityEditor
 
         void FrameNavigationControls()
         {
+            // TODO We shouldn't be relying on GUI cycles to reset state like this.
             if (m_CurrentFrame > ProfilerDriver.lastFrameIndex)
             {
                 SetCurrentFrameDontPause(ProfilerDriver.lastFrameIndex);
@@ -1305,6 +1246,7 @@ namespace UnityEditor
         void SetCurrentFrameDontPause(int frame)
         {
             m_CurrentFrame = frame;
+            InvokeSelectedFrameIndexChangedEventIfNecessary(frame);
         }
 
         void SetCurrentFrame(int frame)
@@ -1328,7 +1270,7 @@ namespace UnityEditor
             Repaint();
         }
 
-        void OnGUI()
+        void DoLegacyGUI_ToolbarAndCharts()
         {
             if (Event.current.isMouse)
                 ProfilerWindowAnalytics.RecordProfilerSessionMouseEvent();
@@ -1336,31 +1278,17 @@ namespace UnityEditor
             if (Event.current.isKey)
                 ProfilerWindowAnalytics.RecordProfilerSessionKeyboardEvent();
 
-            CheckForPlatformModuleChange();
+            CheckForPlatformModuleChange(); // TODO Move this to an update loop or a callback.
 
-            if (m_SelectedModuleIndex == k_NoModuleSelected && Event.current.type == EventType.Repaint)
-            {
-                for (int i = 0; i < m_Modules.Count; i++)
-                {
-                    var module = m_Modules[i];
-                    if (module.active)
-                    {
-                        var chart = module.chart;
-                        chart.ChartSelected();
-                        break;
-                    }
-                }
-            }
-
-            DrawMainToolbar();
-
-            SplitterGUILayout.BeginVerticalSplit(m_VertSplit);
+            var toolbarHeight = DrawMainToolbar();
 
             m_GraphPos = EditorGUILayout.BeginScrollView(m_GraphPos, Styles.profilerGraphBackground);
 
-            // Charts are the full width minus the scrollbar's width. An additional pixel is subtracted to prevent the scroll view creating a horizontal scrollbar.
-            var scrollViewContentWidth = position.width - GUI.skin.verticalScrollbar.fixedWidth - 1;
-            var scrollViewViewportHeight = ChartsDetailedViewSplitterState.realSizes[0];
+            // MainSplitView.fixedPane will be null on the first pass through here as MainSplitView picks up its children in its PostDisplaySetup.
+            var fixedPaneRect = (MainSplitView.fixedPane != null) ?  MainSplitView.fixedPane.layout : Rect.zero;
+            var verticalScrollbarStyle = GUI.skin.verticalScrollbar;
+            var scrollViewContentWidth = fixedPaneRect.width - verticalScrollbarStyle.fixedWidth - verticalScrollbarStyle.padding.horizontal;
+            var scrollViewViewportHeight = fixedPaneRect.height - toolbarHeight;
             int newCurrentFrame = DrawModuleChartViews(new Vector2(scrollViewContentWidth, scrollViewViewportHeight));
             if (newCurrentFrame != m_CurrentFrame)
             {
@@ -1371,21 +1299,6 @@ namespace UnityEditor
             }
 
             EditorGUILayout.EndScrollView();
-
-            GUILayout.BeginVertical();
-            var selectedModule = this.selectedModule;
-            if (selectedModule != null)
-            {
-                DrawDetailsViewForModule(selectedModule);
-            }
-            else
-            {
-                EditorGUILayout.BeginHorizontal(EditorStyles.contentToolbar);
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.EndHorizontal();
-            }
-            GUILayout.EndVertical();
-            SplitterGUILayout.EndVerticalSplit();
         }
 
         int DrawModuleChartViews(Vector2 containerSize)
@@ -1472,27 +1385,13 @@ namespace UnityEditor
             return newCurrentFrame;
         }
 
-        void DrawDetailsViewForModule(ProfilerModuleBase module)
-        {
-            using (Markers.drawDetailsView.Auto())
-            {
-                var detailViewPosition = new Rect(0, m_VertSplit.realSizes[0] + EditorGUI.kWindowToolbarHeight, position.width, m_VertSplit.realSizes[1]);
-                var detailViewToolbar = detailViewPosition;
-                detailViewToolbar.height = EditorStyles.contentToolbar.CalcHeight(GUIContent.none, 10.0f);
-                module.DrawToolbar(detailViewPosition);
-
-                detailViewPosition.yMin += detailViewToolbar.height;
-                module.DrawDetailsView(detailViewPosition);
-
-                // Draw separator
-                var lineRect = new Rect(0, m_VertSplit.realSizes[0] + EditorGUI.kWindowToolbarHeight - 1, position.width, 1);
-                EditorGUI.DrawRect(lineRect, Styles.borderColor);
-            }
-        }
-
         void ProfilerModulesDropdownWindow.IResponder.OnModuleActiveStateChanged()
         {
-            Repaint();
+            m_ToolbarAndChartsIMGUIContainer.MarkDirtyRepaint();
+
+            // If we have no module selected, try to select the first one.
+            if (m_SelectedModuleIndex == k_NoModuleSelected)
+                SelectFirstActiveModule();
         }
 
         void ProfilerModulesDropdownWindow.IResponder.OnConfigureModules()
@@ -1761,6 +1660,120 @@ namespace UnityEditor
                 {
                     m_AreaReferenceCounter.DecrementArea(area);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Select the Profiler module at the specified index. The currently selected Profiler module will be deselected.
+        /// </summary>
+        /// <param name="index"></param>
+        void SelectModuleAtIndex(int index)
+        {
+            var module = ModuleAtIndex(index);
+            SelectModuleWithIndexAndDeselectSelectedModuleIfNecessary(module, index);
+        }
+
+        /// <summary>
+        /// Select the specified Profiler module. The currently selected Profiler module will be deselected.
+        /// </summary>
+        /// <param name="module"></param>
+        void SelectModule(ProfilerModuleBase module)
+        {
+            var index = IndexOfModule(module);
+            SelectModuleWithIndexAndDeselectSelectedModuleIfNecessary(module, index);
+        }
+
+        /// <summary>
+        /// Select the first active Profiler module. The currently selected Profiler module will be deselected.
+        /// </summary>
+        void SelectFirstActiveModule()
+        {
+            var moduleIndexToSelect = k_NoModuleSelected;
+            for (int i = 0; i < m_Modules.Count; ++i)
+            {
+                var module = m_Modules[i];
+                if (module.active)
+                {
+                    moduleIndexToSelect = i;
+                    break;
+                }
+            }
+
+            SelectModuleAtIndex(moduleIndexToSelect);
+        }
+
+        void SelectModuleWithIndexAndDeselectSelectedModuleIfNecessary(ProfilerModuleBase moduleToSelect, int moduleIndexToSelect)
+        {
+            DeselectSelectedModuleIfNecessary();
+
+            if (moduleToSelect != null)
+            {
+                // Ensure the module being selected is active.
+                if (!moduleToSelect.active)
+                {
+                    moduleToSelect.active = true;
+                }
+
+                // Create the module's details view and add it to the hierarchy.
+                var detailsView = moduleToSelect.CreateDetailsView();
+                if (detailsView == null)
+                    throw new ArgumentNullException($"{moduleToSelect.name} did not provide a details view.");
+                m_DetailsViewContainer.Add(detailsView);
+
+                m_SelectedModuleIndex = moduleIndexToSelect;
+            }
+        }
+
+        void DeselectSelectedModuleIfNecessary()
+        {
+            DeselectModuleAtIndexIfNecessary(m_SelectedModuleIndex);
+        }
+
+        void DeselectModuleAtIndexIfNecessary(int index)
+        {
+            var moduleIndexToDeselect = index;
+            var moduleToDeselect = ModuleAtIndex(moduleIndexToDeselect);
+            if (moduleToDeselect != null)
+            {
+                moduleToDeselect.CloseDetailsView();
+                m_SelectedModuleIndex = k_NoModuleSelected;
+            }
+        }
+
+        int IndexOfModule(ProfilerModuleBase module)
+        {
+            int index = k_NoModuleSelected;
+            for (int i = 0; i < m_Modules.Count; i++)
+            {
+                var m = m_Modules[i];
+                if (m.Equals(module))
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            return index;
+        }
+
+        ProfilerModuleBase ModuleAtIndex(int index)
+        {
+            if ((index != k_NoModuleSelected) && (index >= 0) && (index < m_Modules.Count))
+            {
+                return m_Modules[index];
+            }
+
+            return null;
+        }
+
+        // TODO Ideally we wouldn't need this method. However, the current IMGUI tangle means setting the current frame can occur an unpredictable number of times per frame. We want to ensure we only invoke this event once for the selected frame. Fully transitioning to UIToolkit (especially on the toolbar) should simplify this.
+        int m_LastReportedSelectedFrameIndex;
+        void InvokeSelectedFrameIndexChangedEventIfNecessary(int newFrame)
+        {
+            if (newFrame != m_LastReportedSelectedFrameIndex)
+            {
+                SelectedFrameIndexChanged?.Invoke(selectedFrameIndex);
+                m_LastReportedSelectedFrameIndex = newFrame;
             }
         }
 

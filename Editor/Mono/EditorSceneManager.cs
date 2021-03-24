@@ -51,6 +51,8 @@ namespace UnityEditor.SceneManagement
             return CreateSceneAssetInternal(scenePath, createDefaultGameObjects);
         }
 
+        public static bool SaveCurrentModifiedScenesIfUserWantsTo() => SaveCurrentModifiedScenesIfUserWantsTo(null);
+
         [uei.ExcludeFromDocs]
         public static Scene OpenScene(string scenePath)
         {

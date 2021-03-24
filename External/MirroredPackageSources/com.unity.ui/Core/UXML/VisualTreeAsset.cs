@@ -280,7 +280,7 @@ namespace UnityEngine.UIElements
         {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
-            
+
             if ((visualElementAssets == null || visualElementAssets.Count <= 0) &&
                 (templateAssets == null || templateAssets.Count <= 0))
                 return;
@@ -345,7 +345,7 @@ namespace UnityEngine.UIElements
                     // tracked for live reloading on changes, and also accessible for users that need to keep track
                     // of their cloned VisualTreeAssets.
                     rootVe.visualTreeAssetSource = this;
-                    
+
                     // if contentContainer == this, the shadow and the logical hierarchy are identical
                     // otherwise, if there is a CC, we want to insert in the shadow
                     target.hierarchy.Add(rootVe);

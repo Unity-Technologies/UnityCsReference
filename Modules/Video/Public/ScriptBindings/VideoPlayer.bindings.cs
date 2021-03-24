@@ -94,6 +94,8 @@ namespace UnityEngine.Video
 
         public extern string targetMaterialProperty { get; set; }
 
+        internal extern string effectiveTargetMaterialProperty { get; }
+
         public extern VideoAspectRatio aspectRatio { get; set; }
 
         public extern float targetCameraAlpha { get; set; }

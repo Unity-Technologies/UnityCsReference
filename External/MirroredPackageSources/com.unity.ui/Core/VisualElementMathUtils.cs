@@ -13,7 +13,7 @@ namespace UnityEngine.UIElements
         // Translate to pivot, scale, rotate, translate back, then do final translation.
         Matrix4x4 pivottedMatrixWithLayout
         {
-            get { return Matrix4x4.TRS( positionWithLayout + transformOrigin , m_Rotation, m_Scale) * Matrix4x4.Translate(-transformOrigin); }
+            get { return Matrix4x4.TRS(positionWithLayout + transformOrigin , m_Rotation, m_Scale) * Matrix4x4.Translate(-transformOrigin); }
         }
 
         void TransformAlignedRect(ref Rect r)
@@ -38,13 +38,12 @@ namespace UnityEngine.UIElements
 
         internal static Rect CalculateConservativeRect(ref Matrix4x4 matrix, Rect rect)
         {
-
             //Mathf.Min does not check for NAN
             if (float.IsNaN(rect.height) | float.IsNaN(rect.width) | float.IsNaN(rect.x) | float.IsNaN(rect.y))
             {
                 //fall back to old algorithm
                 rect = new Rect(MultiplyMatrix44Point2(ref matrix, rect.position),
-                                            MultiplyVector2(ref matrix, rect.size));
+                    MultiplyVector2(ref matrix, rect.size));
                 OrderMinMaxRect(ref rect);
                 return rect;
             }
@@ -73,8 +72,6 @@ namespace UnityEngine.UIElements
         internal static void TransformAlignedRect(ref Matrix4x4 matrix, ref Rect rect)
         {
             rect =  CalculateConservativeRect(ref matrix, rect);
-
-
         }
 
         internal static void OrderMinMaxRect(ref Rect rect)

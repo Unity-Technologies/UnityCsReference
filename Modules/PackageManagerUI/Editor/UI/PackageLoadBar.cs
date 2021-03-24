@@ -52,6 +52,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             cache = new VisualElementCache(root);
 
+            var dropDownButton = new DropdownButton();
+            dropDownButton.name = "loadAssetsDropdown";
+            loadAssetsDropdownContainer.Add(dropDownButton);
+
             loadMoreLabel.OnLeftClick(LoadItemsClicked);
         }
 
@@ -61,8 +65,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
             m_PageManager.onRefreshOperationFinish += Refresh;
 
-            loadAssetsDropdown.clickable.clicked += loadAssetsDropdown.OnDropdownButtonClicked;
-
             Refresh();
             UpdateMenu();
 
@@ -71,16 +73,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void UpdateMenu()
         {
-            var menu = new GenericMenu();
+            var menu = new DropdownMenu();
 
             if (m_Total == 0)
                 EditorApplication.delayCall += () => UpdateMenu();
 
             AddDropdownItems(menu);
-            loadAssetsDropdown.DropdownMenu = menu.GetItemCount() > 0 ? menu : null;
+            loadAssetsDropdown.menu = menu.MenuItems().Count > 0 ? menu : null;
         }
 
-        public void AddDropdownItems(GenericMenu menu)
+        public void AddDropdownItems(DropdownMenu menu)
         {
             m_LoadAllDiff = m_Total - m_NumberOfPackagesShown <= (int)AssetsToLoad.Min;
             var minDiff = m_LoadAllDiff;
@@ -97,10 +99,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 AddDropdownItem(menu, (int)AssetsToLoad.All);
         }
 
-        public void AddDropdownItem(GenericMenu menu, int value)
+        public void AddDropdownItem(DropdownMenu menu, int value)
         {
             var textValue = value == (int)AssetsToLoad.All ? k_All : value.ToString();
-            menu.AddItem(new GUIContent(L10n.Tr(textValue)), m_SettingsProxy.loadAssets == value ? true : false, () =>
+            menu.AppendAction(L10n.Tr(textValue), a =>
             {
                 loadAssetsDropdown.text = L10n.Tr(textValue);
                 m_SettingsProxy.loadAssets = value;
@@ -110,7 +112,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 UpdateMenu();
 
                 PackageManagerWindowAnalytics.SendEvent($"load {value}");
-            });
+            }, a => m_SettingsProxy.loadAssets == value ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
         }
 
         public void OnDisable()
@@ -214,6 +216,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Label loadedLabel { get { return cache.Get<Label>("loadedLabel"); } }
         private Label loadMoreLabel { get { return cache.Get<Label>("loadMoreLabel"); } }
         private VisualElement loadBarContainer { get { return cache.Get<VisualElement>("loadBarContainer"); } }
+        private VisualElement loadAssetsDropdownContainer { get { return cache.Get<VisualElement>("loadAssetsDropdownContainer"); } }
         private DropdownButton loadAssetsDropdown { get { return cache.Get<DropdownButton>("loadAssetsDropdown"); } }
     }
 }

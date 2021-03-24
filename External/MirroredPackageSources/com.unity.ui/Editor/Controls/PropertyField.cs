@@ -200,7 +200,7 @@ namespace UnityEditor.UIElements
                 {
                     if (!m_SerializedProperty.isValid)
                         return;
-                    
+
                     EditorGUI.BeginChangeCheck();
                     m_SerializedProperty.serializedObject.Update();
 
@@ -548,7 +548,7 @@ namespace UnityEditor.UIElements
                         var field = new EnumFlagsField
                         {
                             choices = enumData.displayNames.ToList(),
-                            value = (Enum) Enum.ToObject(enumType, property.intValue)
+                            value = (Enum)Enum.ToObject(enumType, property.intValue)
                         };
                         return ConfigureField<EnumFlagsField, Enum>(field, property);
                     }
