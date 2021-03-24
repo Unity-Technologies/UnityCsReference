@@ -637,6 +637,7 @@ namespace UnityEditor
             }
 
             obj.ApplyModifiedProperties();
+
             return EditorGUI.EndChangeCheck();
         }
 
