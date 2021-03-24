@@ -8,95 +8,95 @@ using System.Linq;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
-    internal struct ExpressionTypeValue
+    internal struct ExpressionTypeValue<TVersion> where TVersion : struct, IVersion<TVersion>
     {
-        public Func<SemVersion, SemVersion, SemVersion, bool> IsValid { get; set; }
+        public Func<TVersion, TVersion, TVersion, bool> IsValid { get; set; }
         public string AppliedRule { get; set; }
     }
 
-    internal class ExpressionTypeFactory
+    internal class ExpressionTypeFactory<TVersion> where TVersion : struct, IVersion<TVersion>
     {
-        public static Dictionary<ExpressionTypeKey, ExpressionTypeValue> Create()
+        public static Dictionary<ExpressionTypeKey, ExpressionTypeValue<TVersion>> Create()
         {
-            return new Dictionary<ExpressionTypeKey, ExpressionTypeValue>
+            return new Dictionary<ExpressionTypeKey, ExpressionTypeValue<TVersion>>
             {
                 {
-                    new ExpressionTypeKey(hasLeftSemVer: true),
-                    new ExpressionTypeValue
+                    new ExpressionTypeKey(hasLeftVersion: true),
+                    new ExpressionTypeValue<TVersion>
                     {
-                        IsValid = SemVersionRangesEvaluators.MinimumVersionInclusive,
+                        IsValid = VersionRangesEvaluators<TVersion>.MinimumVersionInclusive,
                         AppliedRule = "x >= {0}",
                     }
                 },
                 {
-                    new ExpressionTypeKey(leftSymbol: '(', rightSymbol: ')', hasSeparator: true, hasLeftSemVer: true),
-                    new ExpressionTypeValue
+                    new ExpressionTypeKey(leftSymbol: '(', rightSymbol: ')', hasSeparator: true, hasLeftVersion: true),
+                    new ExpressionTypeValue<TVersion>
                     {
-                        IsValid = SemVersionRangesEvaluators.MinimumVersionExclusive,
+                        IsValid = VersionRangesEvaluators<TVersion>.MinimumVersionExclusive,
                         AppliedRule = "x > {0}",
                     }
                 },
                 {
-                    new ExpressionTypeKey(leftSymbol: '[', rightSymbol: ']', hasLeftSemVer: true),
-                    new ExpressionTypeValue
+                    new ExpressionTypeKey(leftSymbol: '[', rightSymbol: ']', hasLeftVersion: true),
+                    new ExpressionTypeValue<TVersion>
                     {
-                        IsValid = SemVersionRangesEvaluators.ExactVersionMatch,
+                        IsValid = VersionRangesEvaluators<TVersion>.ExactVersionMatch,
                         AppliedRule = "x == {0}",
                     }
                 },
                 {
-                    new ExpressionTypeKey(leftSymbol: '(', rightSymbol: ']', hasSeparator: true, hasRightSemVer: true),
-                    new ExpressionTypeValue
+                    new ExpressionTypeKey(leftSymbol: '(', rightSymbol: ']', hasSeparator: true, hasRightVersion: true),
+                    new ExpressionTypeValue<TVersion>
                     {
-                        IsValid = SemVersionRangesEvaluators.MaximumVersionInclusive,
+                        IsValid = VersionRangesEvaluators<TVersion>.MaximumVersionInclusive,
                         AppliedRule = "x <= {1}",
                     }
                 },
                 {
-                    new ExpressionTypeKey(leftSymbol: '(', rightSymbol: ']', hasSeparator: true, hasLeftSemVer: true, hasRightSemVer: true),
-                    new ExpressionTypeValue
+                    new ExpressionTypeKey(leftSymbol: '(', rightSymbol: ']', hasSeparator: true, hasLeftVersion: true, hasRightVersion: true),
+                    new ExpressionTypeValue<TVersion>
                     {
-                        IsValid = SemVersionRangesEvaluators.MixedExclusiveMinimumAndInclusiveMaximumVersion,
+                        IsValid = VersionRangesEvaluators<TVersion>.MixedExclusiveMinimumAndInclusiveMaximumVersion,
                         AppliedRule = "{0} < x <= {1}",
                     }
                 },
                 {
-                    new ExpressionTypeKey(leftSymbol: '(', rightSymbol: ')', hasSeparator: true, hasRightSemVer: true),
-                    new ExpressionTypeValue
+                    new ExpressionTypeKey(leftSymbol: '(', rightSymbol: ')', hasSeparator: true, hasRightVersion: true),
+                    new ExpressionTypeValue<TVersion>
                     {
-                        IsValid = SemVersionRangesEvaluators.MaximumVersionExclusive,
+                        IsValid = VersionRangesEvaluators<TVersion>.MaximumVersionExclusive,
                         AppliedRule = "x < {1}",
                     }
                 },
                 {
-                    new ExpressionTypeKey(leftSymbol: '[', rightSymbol: ']', hasSeparator: true, hasLeftSemVer: true, hasRightSemVer: true),
-                    new ExpressionTypeValue
+                    new ExpressionTypeKey(leftSymbol: '[', rightSymbol: ']', hasSeparator: true, hasLeftVersion: true, hasRightVersion: true),
+                    new ExpressionTypeValue<TVersion>
                     {
-                        IsValid = SemVersionRangesEvaluators.ExactRangeInclusive,
+                        IsValid = VersionRangesEvaluators<TVersion>.ExactRangeInclusive,
                         AppliedRule = "{0} <= x <= {1}",
                     }
                 },
                 {
-                    new ExpressionTypeKey(leftSymbol: '(', rightSymbol: ')', hasSeparator: true, hasLeftSemVer: true, hasRightSemVer: true),
-                    new ExpressionTypeValue
+                    new ExpressionTypeKey(leftSymbol: '(', rightSymbol: ')', hasSeparator: true, hasLeftVersion: true, hasRightVersion: true),
+                    new ExpressionTypeValue<TVersion>
                     {
-                        IsValid = SemVersionRangesEvaluators.ExactRangeExclusive,
+                        IsValid = VersionRangesEvaluators<TVersion>.ExactRangeExclusive,
                         AppliedRule = "{0} < x < {1}",
                     }
                 },
                 {
-                    new ExpressionTypeKey(leftSymbol: '[', rightSymbol: ')', hasSeparator: true, hasLeftSemVer: true, hasRightSemVer: true),
-                    new ExpressionTypeValue
+                    new ExpressionTypeKey(leftSymbol: '[', rightSymbol: ')', hasSeparator: true, hasLeftVersion: true, hasRightVersion: true),
+                    new ExpressionTypeValue<TVersion>
                     {
-                        IsValid = SemVersionRangesEvaluators.MixedInclusiveMinimumAndExclusiveMaximumVersion,
+                        IsValid = VersionRangesEvaluators<TVersion>.MixedInclusiveMinimumAndExclusiveMaximumVersion,
                         AppliedRule = "{0} <= x < {1}",
                     }
                 },
                 {
-                    new ExpressionTypeKey(leftSymbol: '(', rightSymbol: ')', hasLeftSemVer: true),
-                    new ExpressionTypeValue
+                    new ExpressionTypeKey(leftSymbol: '(', rightSymbol: ')', hasLeftVersion: true),
+                    new ExpressionTypeValue<TVersion>
                     {
-                        IsValid = (left, right, version) => SemVersionRangesEvaluators.Invalid($"({version})"),
+                        IsValid = (left, right, version) => VersionRangesEvaluators<TVersion>.Invalid($"({version})"),
                         AppliedRule = "Invalid",
                     }
                 },

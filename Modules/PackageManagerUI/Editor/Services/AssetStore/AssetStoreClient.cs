@@ -107,10 +107,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 RefreshLocalInfos();
 
                 if (offset == 0)
-                {
-                    RefreshProductUpdateDetails();
                     m_FetchedInfos.Clear();
-                }
 
                 AssetStoreRestAPI.instance.GetProductIDList(offset, limit, searchText, productList =>
                 {
@@ -136,16 +133,23 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     }
 
                     var placeholderPackages = new List<IPackage>();
-
+                    var infosToFetchUpdateDetails = new List<LocalInfo>();
                     foreach (var product in productList.list)
                     {
+                        var productIdString = product.productId.ToString();
                         // create a placeholder before fetching data from the cloud for the first time
-                        if (!m_FetchedInfos.ContainsKey(product.productId.ToString()))
-                            placeholderPackages.Add(new PlaceholderPackage(product.productId.ToString(), product.displayName, PackageType.AssetStore, PackageTag.None, PackageProgress.Refreshing));
+                        if (!m_FetchedInfos.ContainsKey(productIdString))
+                            placeholderPackages.Add(new PlaceholderPackage(productIdString, product.displayName, PackageType.AssetStore, PackageTag.None, PackageProgress.Refreshing));
+
+                        var localInfo = m_LocalInfos.Get(productIdString);
+                        if (localInfo?.updateInfoFetched == false)
+                            infosToFetchUpdateDetails.Add(localInfo);
                     }
 
                     if (placeholderPackages.Any())
                         onPackagesChanged?.Invoke(placeholderPackages);
+                    if (infosToFetchUpdateDetails.Any())
+                        RefreshProductUpdateDetails(infosToFetchUpdateDetails);
 
                     onListOperationFinish?.Invoke();
                 });
@@ -424,10 +428,9 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     AssetStoreDownloadOperation.instance.AbortDownloadPackageAsync(download);
             }
 
-            public void RefreshProductUpdateDetails(IEnumerable<LocalInfo> localInfos = null)
+            public void RefreshProductUpdateDetails(IEnumerable<LocalInfo> localInfos)
             {
-                localInfos = localInfos ?? m_LocalInfos.Values.Where(info => !info.updateInfoFetched);
-                if (!localInfos.Any())
+                if (localInfos?.Any() != true)
                     return;
 
                 AssetStoreRestAPI.instance.GetProductUpdateDetail(localInfos, updateDetails =>
@@ -498,6 +501,9 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     return;
                 var package = new AssetStorePackage(fetchedInfo, localInfo);
                 onPackagesChanged?.Invoke(new[] { package });
+
+                if (!localInfo.updateInfoFetched)
+                    RefreshProductUpdateDetails(new[] { localInfo });
             }
 
             private void OnLocalInfoRemoved(LocalInfo localInfo)

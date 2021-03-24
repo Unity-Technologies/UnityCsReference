@@ -294,8 +294,10 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     return;
                 }
 
+                // We want to prioritize new fetch update details calls as those are more likely to be the ones users are interested in
+                var newlocalInfos = localInfos.Concat(m_Helper?.m_Queue?.ToArray() ?? Enumerable.Empty<LocalInfo>());
                 m_Helper?.Stop();
-                m_Helper = new ProductUpdateDetailHelper($"{host}{kUpdateUri}", m_AsyncHTTPClient, localInfos, k_ProductUpdateDetailsChunkSize, doneCallbackAction);
+                m_Helper = new ProductUpdateDetailHelper($"{host}{kUpdateUri}", m_AsyncHTTPClient, newlocalInfos, k_ProductUpdateDetailsChunkSize, doneCallbackAction);
                 m_Helper.Start();
             }
 

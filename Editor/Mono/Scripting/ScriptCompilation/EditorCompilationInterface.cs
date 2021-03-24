@@ -133,6 +133,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static void SetAdditionalVersionMetaDatas(VersionMetaData[] versionMetaDatas)
+        {
+            Instance.SetAdditionalVersionMetaDatas(versionMetaDatas);
+        }
+
+        [RequiredByNativeCode]
         public static void SetAllScripts(string[] allScripts, string[] assemblyFilenames)
         {
             Instance.SetAllScripts(allScripts, assemblyFilenames);

@@ -556,6 +556,11 @@ namespace UnityEngine
             get { return UsesLoadStoreActions(); }
         }
 
+        public static bool supportsStoreAndResolveAction
+        {
+            get { return SupportsStoreAndResolveAction(); }
+        }
+
         [Obsolete("Vertex program support is required in Unity 5.0+")]
         public static bool supportsVertexPrograms { get { return true; } }
 
@@ -804,6 +809,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::UsesLoadStoreActions")]
         static extern bool UsesLoadStoreActions();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsStoreAndResolveAction")]
+        static extern bool SupportsStoreAndResolveAction();
     }
 
 
@@ -980,6 +988,8 @@ namespace UnityEngine
         public static bool supportsMipStreaming => ShimManager.systemInfoShim.supportsMipStreaming;
 
         public static bool usesLoadStoreActions => ShimManager.systemInfoShim.usesLoadStoreActions;
+
+        public static bool supportsStoreAndResolveAction => ShimManager.systemInfoShim.supportsStoreAndResolveAction;
 
         public static bool IsFormatSupported(GraphicsFormat format, FormatUsage usage)
         {

@@ -71,7 +71,8 @@ namespace UnityEditor.Rendering
         OpenGLCore      = 15, // Desktop OpenGL 3+, compiled with MS D3DCompiler + HLSLcc
         Vulkan          = 18, // Vulkan SPIR-V, compiled with MS D3DCompiler + HLSLcc
         Switch          = 19, // Nintendo Switch (NVN)
-        XboxOneD3D12    = 20  // Xbox One D3D12
+        XboxOneD3D12    = 20, // Xbox One D3D12
+        PS5             = 23  // PS5
     }
 
     public enum ShaderCompilerMessageSeverity

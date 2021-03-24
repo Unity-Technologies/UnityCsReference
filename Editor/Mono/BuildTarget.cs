@@ -124,6 +124,8 @@ namespace UnityEditor
 
         CloudRendering = 41,
 
+        PS5 = 44,
+
         // obsolete identifiers. We're using different values so that ToString() works.
         [System.Obsolete("Use iOS instead (UnityUpgradable) -> iOS", true)]
         iPhone = -1,

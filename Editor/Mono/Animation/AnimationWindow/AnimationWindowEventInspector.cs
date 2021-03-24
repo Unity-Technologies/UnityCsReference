@@ -49,7 +49,7 @@ namespace UnityEditor
 
             bool singleFunctionName = Array.TrueForAll(data.selectedEvents, evt => evt.functionName == firstEvent.functionName);
 
-            GUI.changed = false;
+            EditorGUI.BeginChangeCheck();
 
             if (data.root != null)
             {
@@ -158,7 +158,7 @@ namespace UnityEditor
                 }
             }
 
-            if (GUI.changed)
+            if (EditorGUI.EndChangeCheck())
                 SetData(awEvents, data);
         }
 

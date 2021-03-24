@@ -10,7 +10,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
     {
         public bool Equals(ExpressionTypeKey other)
         {
-            return m_LeftSymbol == other.m_LeftSymbol && m_RightSymbol == other.m_RightSymbol && m_HasSeparator == other.m_HasSeparator && m_HasLeftSemVer == other.m_HasLeftSemVer && m_HasRightSemVer == other.m_HasRightSemVer;
+            return m_LeftSymbol == other.m_LeftSymbol && m_RightSymbol == other.m_RightSymbol && m_HasSeparator == other.m_HasSeparator && m_HasLeftVersion == other.m_HasLeftVersion && m_HasRightVersion == other.m_HasRightVersion;
         }
 
         public override bool Equals(object obj)
@@ -26,8 +26,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 var hashCode = m_LeftSymbol.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_RightSymbol.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_HasSeparator.GetHashCode();
-                hashCode = (hashCode * 397) ^ m_HasLeftSemVer.GetHashCode();
-                hashCode = (hashCode * 397) ^ m_HasRightSemVer.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_HasLeftVersion.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_HasRightVersion.GetHashCode();
                 return hashCode;
             }
         }
@@ -35,16 +35,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
         private readonly char m_LeftSymbol;
         private readonly char m_RightSymbol;
         private readonly bool m_HasSeparator;
-        private readonly bool m_HasLeftSemVer;
-        private readonly bool m_HasRightSemVer;
+        private readonly bool m_HasLeftVersion;
+        private readonly bool m_HasRightVersion;
 
-        public ExpressionTypeKey(char leftSymbol = default(char), char rightSymbol = default(char), bool hasSeparator = false, bool hasLeftSemVer = false, bool hasRightSemVer = false)
+        public ExpressionTypeKey(char leftSymbol = default(char), char rightSymbol = default(char), bool hasSeparator = false, bool hasLeftVersion = false, bool hasRightVersion = false)
         {
             m_LeftSymbol = leftSymbol;
             m_RightSymbol = rightSymbol;
             m_HasSeparator = hasSeparator;
-            m_HasLeftSemVer = hasLeftSemVer;
-            m_HasRightSemVer = hasRightSemVer;
+            m_HasLeftVersion = hasLeftVersion;
+            m_HasRightVersion = hasRightVersion;
         }
     }
 }

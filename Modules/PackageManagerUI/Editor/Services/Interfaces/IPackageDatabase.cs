@@ -22,7 +22,7 @@ namespace UnityEditor.PackageManager.UI
         event Action<PackageFilterTab> onRefreshOperationFinish;
         event Action<Error> onRefreshOperationError;
 
-        event Action<IPackage, DownloadProgress> onDownloadProgress;
+        event Action<DownloadProgress> onDownloadProgress;
 
         void RegisterEvents();
 

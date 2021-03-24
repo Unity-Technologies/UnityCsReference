@@ -175,13 +175,6 @@ namespace UnityEngine
             SetEnabledFading(enabled, 0.5f);
         }
 
-        extern private RaycastHit Raycast(Ray ray, float maxDistance, ref bool hasHit);
-
-        internal bool Raycast(Ray ray, out RaycastHit hitInfo, float maxDistance)
-        {
-            bool hasHit = false;
-            hitInfo = Raycast(ray, maxDistance, ref hasHit);
-            return hasHit;
-        }
+        extern internal RaycastHit Raycast(Ray ray, float maxDistance, ref bool hasHit);
     }
 }

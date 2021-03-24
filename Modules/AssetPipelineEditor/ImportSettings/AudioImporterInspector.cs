@@ -253,7 +253,7 @@ namespace UnityEditor
                 allowedFormats.Add(AudioCompressionFormat.MP3);
             }
 
-            if (platform == BuildTargetGroup.PS4)
+            if (platform == BuildTargetGroup.PS4 || platform == BuildTargetGroup.PS5)
             {
                 allowedFormats.Add(AudioCompressionFormat.ATRAC9);
             }
