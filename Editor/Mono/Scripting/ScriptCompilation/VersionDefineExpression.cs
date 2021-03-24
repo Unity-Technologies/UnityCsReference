@@ -6,11 +6,11 @@ using System;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
-    internal struct VersionDefineExpression
+    internal struct VersionDefineExpression<TVersion> where TVersion : struct, IVersion<TVersion>
     {
-        private Func<SemVersion, SemVersion, SemVersion, bool> m_IsValid;
-        public SemVersion Left { get; }
-        public SemVersion Right { get; }
+        private Func<TVersion, TVersion, TVersion, bool> m_IsValid;
+        public TVersion Left { get; }
+        public TVersion Right { get; }
 
         private string m_AppliedRule;
         public string AppliedRule
@@ -19,15 +19,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
             set { m_AppliedRule = value; }
         }
 
-        public VersionDefineExpression(Func<SemVersion, SemVersion, SemVersion, bool> isValid, SemVersion leftSemVersion, SemVersion rightSemVersion)
+        public VersionDefineExpression(Func<TVersion, TVersion, TVersion, bool> isValid, TVersion leftVersion, TVersion rightVersion)
         {
             m_IsValid = isValid;
             m_AppliedRule = null;
-            Left = leftSemVersion;
-            Right = rightSemVersion;
+            Left = leftVersion;
+            Right = rightVersion;
         }
 
-        public bool IsValid(SemVersion version)
+        public bool IsValid(TVersion version)
         {
             if (!version.IsInitialized)
             {

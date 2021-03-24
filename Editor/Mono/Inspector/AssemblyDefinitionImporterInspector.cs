@@ -139,7 +139,13 @@ namespace UnityEditor
             public bool noEngineReferences;
         }
 
-        SemVersionRangesFactory m_SemVersionRanges;
+        public static string UnityVersionTypeName
+        {
+            // This string must stay in sync with the native kUnityVersionTypeName in ScriptCompilationPipeline.cpp
+            get { return "Unity"; }
+        }
+        VersionRangesFactory<SemVersion> m_SemVersionRanges;
+        VersionRangesFactory<UnityVersion> m_UnityVersionRanges;
 
         ReorderableList m_ReferencesList;
         ReorderableList m_PrecompiledReferencesList;
@@ -164,7 +170,8 @@ namespace UnityEditor
             base.OnEnable();
             m_AssemblyName = extraDataSerializedObject.FindProperty("assemblyName");
             InitializeReorderableLists();
-            m_SemVersionRanges = new SemVersionRangesFactory();
+            m_SemVersionRanges = new VersionRangesFactory<SemVersion>();
+            m_UnityVersionRanges = new VersionRangesFactory<UnityVersion>();
             m_AllowUnsafeCode = extraDataSerializedObject.FindProperty("allowUnsafeCode");
             m_UseGUIDs = extraDataSerializedObject.FindProperty("useGUIDs");
             m_AutoReferenced = extraDataSerializedObject.FindProperty("autoReferenced");
@@ -495,6 +502,24 @@ namespace UnityEditor
             return defines;
         }
 
+        private List<string> BuildListOfVersionDefineResourceOptions(string preselectedResourceName)
+        {
+            var versionDefineResourceOptions = EditorCompilationInterface.Instance.GetVersionMetaDatas().Keys.ToList();
+
+            if (!string.IsNullOrEmpty(preselectedResourceName) && !versionDefineResourceOptions.Contains(preselectedResourceName))
+            {
+                versionDefineResourceOptions.Add(preselectedResourceName);
+            }
+
+            versionDefineResourceOptions.Insert(0, "Select...");
+
+            bool optionUnityIsInTheList = versionDefineResourceOptions.Remove(UnityVersionTypeName);
+            if (optionUnityIsInTheList)
+                versionDefineResourceOptions.Insert(1, UnityVersionTypeName);
+
+            return versionDefineResourceOptions;
+        }
+
         private void DrawVersionDefineListElement(Rect rect, int index, bool isactive, bool isfocused)
         {
             var list = m_VersionDefineList.serializedProperty;
@@ -505,18 +530,12 @@ namespace UnityEditor
 
             rect.height -= EditorGUIUtility.standardVerticalSpacing;
 
-            var assetPathsMetaData = EditorCompilationInterface.Instance.GetAssetPathsMetaData().SelectMany(x => x.VersionMetaDatas.Select(y => y.Name)).ToList();
+            var versionedResourceOptions = BuildListOfVersionDefineResourceOptions(nameProp.stringValue);
 
-            if (!string.IsNullOrEmpty(nameProp.stringValue) && !assetPathsMetaData.Contains(nameProp.stringValue))
-            {
-                assetPathsMetaData.Add(nameProp.stringValue);
-            }
-
-            assetPathsMetaData.Insert(0, "Select...");
             int indexOfSelected = 0;
             if (!string.IsNullOrEmpty(nameProp.stringValue))
             {
-                indexOfSelected = assetPathsMetaData.IndexOf(nameProp.stringValue);
+                indexOfSelected = versionedResourceOptions.IndexOf(nameProp.stringValue);
             }
 
             bool mixed = versionDefineProp.hasMultipleDifferentValues;
@@ -524,22 +543,31 @@ namespace UnityEditor
 
             var elementRect = new Rect(rect);
             elementRect.height = EditorGUIUtility.singleLineHeight;
-            int popupIndex = EditorGUI.Popup(elementRect, GUIContent.Temp("Resource", "Select the package or module that you want to set a define for."), indexOfSelected, assetPathsMetaData.ToArray());
-            nameProp.stringValue = assetPathsMetaData[popupIndex];
+            int popupIndex = EditorGUI.Popup(elementRect, GUIContent.Temp("Resource", "Select 'Unity' or the package or module that you want to set a define for."), indexOfSelected, versionedResourceOptions.ToArray());
+            nameProp.stringValue = versionedResourceOptions[popupIndex];
 
             elementRect.y += EditorGUIUtility.singleLineHeight;
             defineProp.stringValue = EditorGUI.TextField(elementRect, GUIContent.Temp("Define", "Specify the name you want this define to have. This define is only set if the expression below returns true."), defineProp.stringValue);
 
             elementRect.y += EditorGUIUtility.singleLineHeight;
-            expressionProp.stringValue = EditorGUI.TextField(elementRect, GUIContent.Temp("Expression", "Specify the semantic version of your chosen module or package. You must use mathematical interval notation."), expressionProp.stringValue);
+            expressionProp.stringValue = EditorGUI.TextField(elementRect, GUIContent.Temp("Expression", "Specify the Unity version or the semantic version of your chosen module or package. You must use mathematical interval notation."), expressionProp.stringValue);
 
             string expressionOutcome = null;
             if (!string.IsNullOrEmpty(expressionProp.stringValue))
             {
                 try
                 {
-                    var expression = m_SemVersionRanges.GetExpression(expressionProp.stringValue);
-                    expressionOutcome = expression.AppliedRule;
+                    if (!string.IsNullOrEmpty(nameProp.stringValue) &&
+                        nameProp.stringValue.Equals(UnityVersionTypeName, StringComparison.Ordinal))
+                    {
+                        var expression = m_UnityVersionRanges.GetExpression(expressionProp.stringValue);
+                        expressionOutcome = expression.AppliedRule;
+                    }
+                    else
+                    {
+                        var expression = m_SemVersionRanges.GetExpression(expressionProp.stringValue);
+                        expressionOutcome = expression.AppliedRule;
+                    }
                 }
                 catch (Exception)
                 {

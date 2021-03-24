@@ -373,6 +373,11 @@ namespace UnityEngine
         ASTC_HDR_10x10 = 70,
         ASTC_HDR_12x12 = 71,
 
+        // 16-bit raw integer formats
+        RG32 = 72,
+        RGB48 = 73,
+        RGBA64 = 74,
+
         // please note that obsolete attrs are currently disabled because we have tests that checks for "no warnings"
         // yet at the same time there are packages that reference old ASTC enums.
         // hence the only way is to go to trunk -> fix packages -> obsolete
@@ -1217,7 +1222,8 @@ namespace UnityEngine.Rendering
         N3DS = 19,
         Vulkan = 21,
         Switch = 22,
-        XboxOneD3D12 = 23
+        XboxOneD3D12 = 23,
+        PlayStation5 = 26
     }
 
     public enum GraphicsTier

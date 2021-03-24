@@ -214,6 +214,10 @@ namespace UnityEditor
         ASTC_HDR_10x10 = 70,
         // ASTC (block size 12x12) compressed HDR RGB(A) texture format.
         ASTC_HDR_12x12 = 71,
+
+        RG32 = 72,
+        RGB48 = 73,
+        RGBA64 = 74,
     }
 
     // Mip map filter for [[TextureImporter]].

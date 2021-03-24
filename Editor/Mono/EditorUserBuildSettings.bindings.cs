@@ -25,6 +25,25 @@ namespace UnityEditor
     }
 
 
+    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    public enum PS5BuildSubtarget
+    {
+        /// Build package that it's hosted on the PC
+        /// SA: EditorUserBuildSettings.ps5BuildSubtarget.
+        PCHosted = 0,
+        /// Build a package suited for TestKit testing
+        /// SA: EditorUserBuildSettings.ps5BuildSubtarget.
+        Package = 1,
+        Iso = 2,
+    }
+
+    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    public enum PS5BuildCompressionType
+    {
+        Default = 0,
+        Kraken = 1
+    }
+
     /// Target PS4 build Hardware Target.
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
     public enum PS4HardwareTarget
@@ -282,7 +301,6 @@ namespace UnityEditor
             set;
         }
 
-
         ///PS4 Build Hardware Target
         public static extern PS4HardwareTarget ps4HardwareTarget
         {
@@ -292,6 +310,44 @@ namespace UnityEditor
             set;
         }
 
+        ///PS5 Build Subtarget
+        public static extern PS5BuildSubtarget ps5BuildSubtarget
+        {
+            [NativeMethod("GetSelectedPS5BuildSubtarget")]
+            get;
+            [NativeMethod("SetSelectedPS5BuildSubtarget")]
+            set;
+        }
+
+        ///PS5 Build Compression type
+        public static extern PS5BuildCompressionType ps5BuildCompressionType
+        {
+            [NativeMethod("GetSelectedPS5BuildCompressionType")]
+            get;
+            [NativeMethod("SetSelectedPS5BuildCompressionType")]
+            set;
+        }
+
+        ///PS5 Build Compression level
+        public static extern int ps5BuildCompressionLevel
+        {
+            [NativeMethod("GetSelectedPS5BuildCompressionLevel")]
+            get;
+            [NativeMethod("SetSelectedPS5BuildCompressionLevel")]
+            set;
+        }
+
+        ///PS5 Keep package files
+        public static extern bool ps5KeepPackageFiles
+        {
+            [NativeMethod("GetPS5KeepPackageFiles")]
+            get;
+            [NativeMethod("SetPS5KeepPackageFiles")]
+            set;
+        }
+
+        // PS5 workspace name
+        public static extern string ps5WorkspaceName { get; set; }
 
         // Are null references actively checked?
         public static extern bool explicitNullChecks { get; set; }

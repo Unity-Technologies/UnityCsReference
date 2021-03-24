@@ -140,7 +140,7 @@ namespace UnityEditor.Modules
 
                 if (!mixedValues && !Array.Exists(formatValuesForAll, i => i == formatForAll))
                 {
-                    EditorGUILayout.HelpBox(string.Format(L10n.Tr("The selected format value {0} is not compatible on this platform, please change it to a valid one from the dropdown."), (TextureImporterFormat)formatForAll), MessageType.Error);
+                    EditorGUILayout.HelpBox(string.Format(L10n.Tr("The selected format value {0} is not compatible on this platform for the selected texture type, please change it to a valid one from the dropdown."), (TextureImporterFormat)formatForAll), MessageType.Error);
                 }
             }
 

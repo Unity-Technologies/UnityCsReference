@@ -14,6 +14,7 @@ using UnityEditor.Modules;
 using UnityEditor.Scripting.Compilers;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.Profiling;
 using CompilerMessage = UnityEditor.Scripting.Compilers.CompilerMessage;
 using CompilerMessageType = UnityEditor.Scripting.Compilers.CompilerMessageType;
@@ -180,7 +181,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public Action<CompilationSetupErrorFlags> setupErrorFlagsChanged;
         private AssetPathMetaData[] m_AssetPathsMetaData;
-        private Dictionary<string, string> m_AllDistinctVersionMetaDatas;
+        private Dictionary<string, VersionMetaData> m_VersionMetaDatas;
 
         public event Action<object> compilationStarted;
         public event Action<object> compilationFinished;
@@ -221,18 +222,31 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             m_AssetPathsMetaData = assetPathMetaDatas;
 
-            var assetPathVersionMetaDataComparer = new AssetPathVersionMetaDataComparer();
+            var versionMetaDataComparer = new VersionMetaDataComparer();
 
-            m_AllDistinctVersionMetaDatas = assetPathMetaDatas ?
-                .SelectMany(x => x.VersionMetaDatas ?? new AssetPathVersionMetaData[0])
-                .Distinct(assetPathVersionMetaDataComparer)
-                .ToDictionary(x => x.Name, x => x.Version);
+            m_VersionMetaDatas = assetPathMetaDatas ?
+                .Where(x => x.VersionMetaData != null)
+                .Select(x => x.VersionMetaData)
+                .Distinct(versionMetaDataComparer)
+                .ToDictionary(x => x.Name, x => x);
             UpdateCustomTargetAssembliesAssetPathsMetaData(customScriptAssemblies, assetPathMetaDatas, forceUpdate: true);
+        }
+
+        internal void SetAdditionalVersionMetaDatas(VersionMetaData[] versionMetaDatas)
+        {
+            Assert.IsTrue(m_VersionMetaDatas != null, "EditorCompilation.SetAssetPathsMetaData() must be called before EditorCompilation.SetAdditionalVersionMetaDatas()");
+            foreach (var versionMetaData in versionMetaDatas)
+                m_VersionMetaDatas[versionMetaData.Name] = versionMetaData;
         }
 
         internal AssetPathMetaData[] GetAssetPathsMetaData()
         {
             return m_AssetPathsMetaData;
+        }
+
+        internal Dictionary<string, VersionMetaData> GetVersionMetaDatas()
+        {
+            return m_VersionMetaDatas;
         }
 
         public void SetAllScripts(string[] allScripts, string[] assemblyFilenames)
@@ -1297,7 +1311,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 // This is called in GetTargetAssembliesWithScripts and is required for compilation to
                 // be set up correctly. Since we early out here, we need to call this here.
-                UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), m_AllDistinctVersionMetaDatas, settings);
+                UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), m_VersionMetaDatas, settings);
                 return;
             }
 
@@ -2095,7 +2109,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public TargetAssemblyInfo[] GetTargetAssembliesWithScripts(ScriptAssemblySettings settings)
         {
-            UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), m_AllDistinctVersionMetaDatas, settings);
+            UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), m_VersionMetaDatas, settings);
 
             var targetAssemblies = EditorBuildRules.GetTargetAssembliesWithScripts(allScripts, projectDirectory, customTargetAssemblies, settings);
 
@@ -2191,7 +2205,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 settings.ExtraGeneralDefines = defines;
             }
 
-            UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), m_AllDistinctVersionMetaDatas, settings);
+            UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), m_VersionMetaDatas, settings);
 
             var assemblies = new EditorBuildRules.CompilationAssemblies
             {
@@ -2225,12 +2239,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         // TODO: Get rid of calls to this method and ensure that the defines are always setup correctly at all times.
-        private static void UpdateAllTargetAssemblyDefines(IDictionary<string, EditorBuildRules.TargetAssembly> customScriptAssemblies, EditorBuildRules.TargetAssembly[] predefinedTargetAssemblies, Dictionary<string, string> assetPathVersionMetaDatas, ScriptAssemblySettings settings)
+        private static void UpdateAllTargetAssemblyDefines(IDictionary<string, EditorBuildRules.TargetAssembly> customScriptAssemblies, EditorBuildRules.TargetAssembly[] predefinedTargetAssemblies,
+            Dictionary<string, VersionMetaData> versionMetaDatas, ScriptAssemblySettings settings)
         {
             var allTargetAssemblies = customScriptAssemblies.Values.ToArray()
                 .Concat(predefinedTargetAssemblies ?? new EditorBuildRules.TargetAssembly[0]);
 
-            var semVersionRangesFactory = new SemVersionRangesFactory();
+            var semVersionRangesFactory = new VersionRangesFactory<SemVersion>();
+            var unityVersionRangesFactory = new VersionRangesFactory<UnityVersion>();
 
             string[] editorOnlyCompatibleDefines = null;
 
@@ -2240,11 +2256,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             foreach (var targetAssembly in allTargetAssemblies)
             {
-                SetTargetAssemblyDefines(targetAssembly, semVersionRangesFactory, assetPathVersionMetaDatas, editorOnlyCompatibleDefines, playerAssembliesDefines, settings);
+                SetTargetAssemblyDefines(targetAssembly, semVersionRangesFactory, unityVersionRangesFactory, versionMetaDatas, editorOnlyCompatibleDefines, playerAssembliesDefines, settings);
             }
         }
 
-        private static void SetTargetAssemblyDefines(EditorBuildRules.TargetAssembly targetAssembly, SemVersionRangesFactory semVersionRangesFactory, Dictionary<string, string> assetPathVersionMetaDatas, string[] editorOnlyCompatibleDefines, string[] playerAssembliesDefines, ScriptAssemblySettings settings)
+        private static void SetTargetAssemblyDefines(EditorBuildRules.TargetAssembly targetAssembly, VersionRangesFactory<SemVersion> semVersionRangesFactory, VersionRangesFactory<UnityVersion> unityVersionRangesFactory,
+            Dictionary<string, VersionMetaData> versionMetaDatas, string[] editorOnlyCompatibleDefines, string[] playerAssembliesDefines, ScriptAssemblySettings settings)
         {
             string[] settingsExtraGeneralDefines = settings.ExtraGeneralDefines;
             int populatedVersionDefinesCount = 0;
@@ -2266,7 +2283,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             Array.Copy(compilationDefines, 0, defines, populatedVersionDefinesCount, compilationDefines.Length);
             populatedVersionDefinesCount += compilationDefines.Length;
 
-            if (assetPathVersionMetaDatas == null)
+            if (versionMetaDatas == null)
             {
                 targetAssembly.Defines = defines;
                 return;
@@ -2277,7 +2294,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             for (int i = 0; i < targetAssemblyVersionDefines.Count; i++)
             {
                 var targetAssemblyVersionDefine = targetAssemblyVersionDefines[i];
-                if (!assetPathVersionMetaDatas.ContainsKey(targetAssemblyVersionDefine.name))
+                if (!versionMetaDatas.ContainsKey(targetAssemblyVersionDefine.name))
                 {
                     continue;
                 }
@@ -2295,10 +2312,32 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 try
                 {
-                    var versionDefineExpression = semVersionRangesFactory.GetExpression(targetAssemblyVersionDefine.expression);
-                    var assetPathVersionMetaData = assetPathVersionMetaDatas[targetAssemblyVersionDefine.name];
-                    var semVersion = SemVersionParser.Parse(assetPathVersionMetaData);
-                    if (versionDefineExpression.IsValid(semVersion))
+                    var versionMetaData = versionMetaDatas[targetAssemblyVersionDefine.name];
+                    var versionString = versionMetaData.Version;
+                    bool isValid = false;
+                    switch (versionMetaData.Type)
+                    {
+                        case VersionType.VersionTypeUnity:
+                        {
+                            var versionDefineExpression = unityVersionRangesFactory.GetExpression(targetAssemblyVersionDefine.expression);
+                            var unityVersion = UnityVersionParser.Parse(versionString);
+                            isValid = versionDefineExpression.IsValid(unityVersion);
+                            break;
+                        }
+
+                        case VersionType.VersionTypePackage:
+                        {
+                            var versionDefineExpression = semVersionRangesFactory.GetExpression(targetAssemblyVersionDefine.expression);
+                            var semVersion = SemVersionParser.Parse(versionString);
+                            isValid = versionDefineExpression.IsValid(semVersion);
+                            break;
+                        }
+
+                        default:
+                            throw new NotImplementedException($"EditorCompilation does not recognize versionMetaData.Type {versionMetaData.Type}. UNIMPLEMENTED");
+                    }
+
+                    if (isValid)
                     {
                         defines[populatedVersionDefinesCount] = targetAssemblyVersionDefine.define;
                         ++populatedVersionDefinesCount;
@@ -2317,7 +2356,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         ScriptAssembly[] GetAllScriptAssembliesOfType(ScriptAssemblySettings settings, EditorBuildRules.TargetAssemblyType type)
         {
-            UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), m_AllDistinctVersionMetaDatas, settings);
+            UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), m_VersionMetaDatas, settings);
 
             var assemblies = new EditorBuildRules.CompilationAssemblies
             {

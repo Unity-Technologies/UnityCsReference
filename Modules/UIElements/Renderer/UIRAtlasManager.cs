@@ -328,6 +328,9 @@ namespace UnityEngine.UIElements
                 case TextureFormat.ASTC_HDR_8x8:        // HDR
                 case TextureFormat.ASTC_HDR_10x10:      // HDR
                 case TextureFormat.ASTC_HDR_12x12:      // HDR
+                case TextureFormat.RG32:                // HDR
+                case TextureFormat.RGB48:               // HDR
+                case TextureFormat.RGBA64:              // HDR
                     return false;
                 default:
                     // This exception is required if we want to be able to detect new enum values in test

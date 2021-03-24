@@ -184,9 +184,9 @@ namespace UnityEditor.PackageManager.UI
             ClearSupportingImages();
         }
 
-        private void OnDownloadProgress(IPackage package, DownloadProgress progress)
+        private void OnDownloadProgress(DownloadProgress progress)
         {
-            if (displayVersion?.packageUniqueId == package.uniqueId)
+            if (displayVersion?.packageUniqueId == progress.packageId)
             {
                 if (progress.state == DownloadProgress.State.Error || progress.state == DownloadProgress.State.Aborted)
                 {

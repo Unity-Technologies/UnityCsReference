@@ -6,7 +6,7 @@ using System;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
-    internal struct SemVersion : IComparable<SemVersion>, IComparable
+    internal struct SemVersion : IVersion<SemVersion>
     {
         public bool IsInitialized { get; }
 
@@ -156,17 +156,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return currentParts.Length.CompareTo(otherParts.Length);
         }
 
-        public override bool Equals(object obj)
+        public bool Equals(SemVersion other)
         {
-            if (ReferenceEquals(obj, null))
-                return false;
-
-            var other = (SemVersion)obj;
-
+            // We do not compare the Build
             return Major == other.Major &&
                 Minor == other.Minor &&
                 Patch == other.Patch &&
                 string.Equals(Prerelease, other.Prerelease, StringComparison.Ordinal);
+        }
+
+        public override bool Equals(object other)
+        {
+            if (ReferenceEquals(other, null))
+                return false;
+
+            return other.GetType() == GetType() && Equals((SemVersion)other);
         }
 
         public override string ToString()
@@ -196,33 +200,39 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return result;
             }
         }
+
+        public SemVersion Parse(string version, bool strict = false)
+        {
+            return SemVersionParser.Parse(version, strict);
+        }
+
+        public static SemVersionTypeTraits VersionTypeTraits { get; } = new SemVersionTypeTraits();
+        public IVersionTypeTraits GetVersionTypeTraits()
+        {
+            return VersionTypeTraits;
+        }
+    }
+
+    internal class SemVersionTypeTraits : IVersionTypeTraits
+    {
+        public bool IsAllowedFirstCharacter(char c, bool strict = false)
+        {
+            return VersionTypeTraitsUtils.IsCharDigit(c);
+        }
+
+        public bool IsAllowedLastCharacter(char c, bool strict = false)
+        {
+            return VersionTypeTraitsUtils.IsCharDigit(c) || VersionTypeTraitsUtils.IsCharLetter(c);
+        }
+
+        public bool IsAllowedCharacter(char c)
+        {
+            return VersionTypeTraitsUtils.IsCharDigit(c) || c == '.' || c == '-' || VersionTypeTraitsUtils.IsCharLetter(c);
+        }
     }
 
     internal static class SemVersionParser
     {
-        private static string GetStringUntil(string value, ref int cursor, Func<char, bool> isEnd)
-        {
-            int length = 0;
-            for (int i = cursor; i < value.Length; i++)
-            {
-                if (isEnd(value[i]))
-                {
-                    break;
-                }
-
-                length++;
-            }
-
-            if (length == value.Length)
-            {
-                return null;
-            }
-
-            int newIndex = cursor;
-            cursor += length;
-            return value.Substring(newIndex, length);
-        }
-
         public static SemVersion Parse(string version, bool strict = false)
         {
             int cursor = 0;
@@ -236,29 +246,29 @@ namespace UnityEditor.Scripting.ScriptCompilation
             //Doing this instead because RegEx is impressively slow
             try
             {
-                major = int.Parse(GetStringUntil(version, ref cursor, x => !char.IsDigit(x)));
+                major = int.Parse(VersionUtils.ConsumeVersionComponentFromString(version, ref cursor, x => !char.IsDigit(x)));
                 if (cursor < version.Length && version[cursor] == '.')
                 {
                     cursor++;
-                    minor = int.Parse(GetStringUntil(version, ref cursor, x => !char.IsDigit(x)) ?? "0");
+                    minor = int.Parse(VersionUtils.ConsumeVersionComponentFromString(version, ref cursor, x => !char.IsDigit(x)) ?? "0");
                 }
 
                 if (cursor < version.Length && version[cursor] == '.')
                 {
                     cursor++;
-                    patch = int.Parse(GetStringUntil(version, ref cursor, x => !char.IsDigit(x)) ?? "0");
+                    patch = int.Parse(VersionUtils.ConsumeVersionComponentFromString(version, ref cursor, x => !char.IsDigit(x)) ?? "0");
                 }
 
                 if (cursor < version.Length && version[cursor] == '-')
                 {
                     cursor++;
-                    prerelease = GetStringUntil(version, ref cursor, x => x == '+');
+                    prerelease = VersionUtils.ConsumeVersionComponentFromString(version, ref cursor, x => x == '+');
                 }
 
                 if (cursor < version.Length && version[cursor] == '+')
                 {
                     cursor++;
-                    build = GetStringUntil(version, ref cursor, x => x == '\0');
+                    build = VersionUtils.ConsumeVersionComponentFromString(version, ref cursor, x => x == '\0');
                 }
             }
             catch (Exception)

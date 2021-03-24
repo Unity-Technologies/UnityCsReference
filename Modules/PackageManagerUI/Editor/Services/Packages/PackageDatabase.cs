@@ -55,7 +55,7 @@ namespace UnityEditor.PackageManager.UI
             public event Action<PackageFilterTab> onRefreshOperationFinish = delegate {};
             public event Action<Error> onRefreshOperationError = delegate {};
 
-            public event Action<IPackage, DownloadProgress> onDownloadProgress = delegate {};
+            public event Action<DownloadProgress> onDownloadProgress = delegate {};
 
             // args 1,2, 3 are added, removed and preUpdated, and postUpdated packages respectively
             public event Action<IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>> onPackagesChanged = delegate {};
@@ -345,7 +345,7 @@ namespace UnityEditor.PackageManager.UI
                         AssetStore.AssetStoreClient.instance.RefreshLocal();
                     }
 
-                    onDownloadProgress?.Invoke(package, progress);
+                    onDownloadProgress?.Invoke(progress);
                 }
             }
 

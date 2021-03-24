@@ -255,15 +255,15 @@ namespace UnityEditor.PackageManager.UI
             UpdateNoPackagesLabel();
         }
 
-        private void OnDownloadProgress(IPackage package, DownloadProgress progress)
+        private void OnDownloadProgress(DownloadProgress progress)
         {
-            var item = GetPackageItem(package?.uniqueId);
+            var item = GetPackageItem(progress.packageId);
             if (item != null)
             {
                 if (progress.state == DownloadProgress.State.Completed || progress.state == DownloadProgress.State.Aborted || progress.state == DownloadProgress.State.Error)
                 {
                     item.StopSpinner();
-                    item.SetPackage(package);
+                    item.SetPackage(PackageDatabase.instance.GetPackage(progress.packageId));
                 }
                 else
                     item.StartSpinner();
