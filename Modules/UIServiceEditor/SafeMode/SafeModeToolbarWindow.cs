@@ -26,7 +26,13 @@ namespace UnityEditor
 
         static void RefreshIsPreviewPackagesInUse()
         {
-            s_IsPreviewPackagesInUse = PackageManager.PackageInfo.GetAll().Any(info => info.version.Contains("preview") || info.version.StartsWith("0."));
+            s_IsPreviewPackagesInUse = PackageManager.PackageInfo.GetAll().FirstOrDefault(info =>
+            {
+                var versionSplitOnTag = info.version.Split('-');
+                return info.registry?.isDefault == true &&
+                ((versionSplitOnTag.Length > 1 && (!string.IsNullOrEmpty(versionSplitOnTag[1])))
+                    || info.version.StartsWith("0."));
+            }) != null;
         }
 
         private static class Styles

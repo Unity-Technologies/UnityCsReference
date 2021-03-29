@@ -29,7 +29,6 @@ namespace UnityEditor
         private static class Style
         {
             public static readonly GUIContent physicsDebug          = EditorGUIUtility.TrTextContent("Physics Debug");
-            public static readonly GUIContent workflow              = EditorGUIUtility.TrTextContent("Workflow", "The \"Hide\" mode is useful for fast discovery while the \"Show\" mode is useful for finding specific items.");
             public static readonly GUIContent staticColor           = EditorGUIUtility.TrTextContent("Static Colliders");
             public static readonly GUIContent triggerColor          = EditorGUIUtility.TrTextContent("Triggers");
             public static readonly GUIContent rigidbodyColor        = EditorGUIUtility.TrTextContent("Rigidbodies");
@@ -91,6 +90,13 @@ namespace UnityEditor
             m_RenderingFoldout = new SavedBool("PhysicsDebugWindow.ShowRenderingFoldout", false);
             m_OverlayWindow = new OverlayWindow(Style.physicsDebug, DisplayControls, (int)SceneViewOverlay.Ordering.PhysicsDebug, null,
                 SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+        }
+
+        public void OnDisable()
+        {
+            // This this to catch domain reloading that happens when we transition between Edit and Play modes
+            if (m_SceneViewListenerAdded)
+                OnBecameInvisible();
         }
 
         void AddPicker()
