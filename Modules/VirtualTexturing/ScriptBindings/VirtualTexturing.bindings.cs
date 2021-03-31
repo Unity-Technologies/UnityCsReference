@@ -23,6 +23,9 @@ namespace UnityEngine.Rendering
 
             [NativeThrows] extern public static void Update();
 
+            [NativeThrows] internal static void SetDebugFlag(Guid guid, bool enabled) { SetDebugFlag(guid.ToByteArray(), enabled); }
+            [NativeThrows] extern private static void SetDebugFlag(byte[] guid, bool enabled);
+
             public const int AllMips = int.MaxValue;
         }
 

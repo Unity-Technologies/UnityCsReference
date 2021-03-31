@@ -48,6 +48,7 @@ namespace UnityEditor.SceneTemplate
 
         private const string k_SnapshotTooltip = "Take a snapshot based on the selected target then assign it as thumbnail.";
         private const string k_SnapshotButtonLabel = "Take Snapshot";
+        private const string k_SnapshotTargetPopupName = "snapshot";
         private const string k_CreatePipelineTooltip = "Create a new Scene Template Pipeline.";
         private const string k_CreatePipelineButtonLabel = "Create New Scene Template Pipeline";
         private const string k_PipelineHelpUrl = "https://docs.unity3d.com/2020.2/Documentation/Manual/scene-templates.html";
@@ -63,7 +64,7 @@ namespace UnityEditor.SceneTemplate
         private class SnapshotTargetInfo
         {
             public string Name { get; set; }
-            public Action<SnapshotTargetInfo, SerializedProperty> OnSnapshotAction { get; set; }
+            public Action<SnapshotTargetInfo, Action> OnSnapshotAction { get; set; }
         }
 
         public override Texture2D RenderStaticPreview(string assetPath, Object[] subAssets, int width, int height)
@@ -518,10 +519,11 @@ namespace UnityEditor.SceneTemplate
             // Snapshot button with dropdown
             var cameraNames = Camera.allCameras.Select(c => new SnapshotTargetInfo { Name = c.name, OnSnapshotAction = TakeSnapshotFromCamera }).ToList();
             cameraNames.Add(new SnapshotTargetInfo()); // Separator
-            cameraNames.Add(new SnapshotTargetInfo { Name = "Game View", OnSnapshotAction = (info, property) => TakeSnapshotFromGameView(property) });
+            cameraNames.Add(new SnapshotTargetInfo { Name = "Game View", OnSnapshotAction = (info, callback) => TakeSnapshotFromGameView(callback) });
             var snapshotTargetPopup = new PopupField<SnapshotTargetInfo>("View", cameraNames, Camera.allCameras.Length == 0 ? 1 : 0);
             snapshotTargetPopup.formatListItemCallback = info => info.Name;
             snapshotTargetPopup.formatSelectedValueCallback = info => info.Name;
+            snapshotTargetPopup.name = k_SnapshotTargetPopupName;
             propertyElement.Add(snapshotTargetPopup);
 
             var snapshotSecondRowElement = CreateEmptyLabelRow();
@@ -531,7 +533,8 @@ namespace UnityEditor.SceneTemplate
                 var targetInfo = snapshotTargetPopup.value;
                 if (targetInfo.OnSnapshotAction == null)
                     return;
-                targetInfo.OnSnapshotAction(targetInfo, thumbnailProperty);
+
+                targetInfo.OnSnapshotAction(targetInfo, null);
             });
             snapshotButton.tooltip = k_SnapshotTooltip;
             snapshotButton.text = k_SnapshotButtonLabel;
@@ -541,7 +544,15 @@ namespace UnityEditor.SceneTemplate
             return propertyElement;
         }
 
-        private void TakeSnapshotFromCamera(SnapshotTargetInfo targetInfo, SerializedProperty thumbnailProperty)
+        // For testing purposes
+        internal void TakeSnapshot(string targetName, Action onFinishedCallback)
+        {
+            var snapshotTargetPopup = Root.Q<PopupField<SnapshotTargetInfo>>(k_SnapshotTargetPopupName);
+            var targetInfo = snapshotTargetPopup.choices.FirstOrDefault((info => info.Name == targetName));
+            targetInfo?.OnSnapshotAction?.Invoke(targetInfo, onFinishedCallback);
+        }
+
+        private void TakeSnapshotFromCamera(SnapshotTargetInfo targetInfo, Action onFinishedCallback)
         {
             var sceneTemplateAsset = serializedObject.targetObject as SceneTemplateAsset;
             if (!sceneTemplateAsset)
@@ -563,8 +574,12 @@ namespace UnityEditor.SceneTemplate
             // and apply modifications.
             sceneTemplateAsset.AddThumbnailToAsset(snapshotTexture);
 
-            thumbnailProperty.objectReferenceValue = snapshotTexture;
+            // Thumbnail property gets disposed after AssetDatabase.SaveAssets
+            var templateThumbnailProperty = serializedObject.FindProperty(k_TemplateThumbnailPropertyName);
+            templateThumbnailProperty.objectReferenceValue = snapshotTexture;
             serializedObject.ApplyModifiedProperties();
+
+            onFinishedCallback?.Invoke();
         }
 
         private void TakeSnapshotFromSceneCamera(SerializedProperty thumbnailProperty)
@@ -631,7 +646,7 @@ namespace UnityEditor.SceneTemplate
             return uncompressedTexture;
         }
 
-        private void TakeSnapshotFromGameView(SerializedProperty thumbnailProperty)
+        private void TakeSnapshotFromGameView(Action onFinishedCallback)
         {
             var sceneTemplateAsset = serializedObject.targetObject as SceneTemplateAsset;
             if (!sceneTemplateAsset)
@@ -653,8 +668,12 @@ namespace UnityEditor.SceneTemplate
                 // This needs to be done before we set it into the property
                 // and apply modifications.
                 sceneTemplateAsset.AddThumbnailToAsset(textureCopy);
-                thumbnailProperty.objectReferenceValue = textureCopy;
+
+                var templateThumbnailProperty = serializedObject.FindProperty(k_TemplateThumbnailPropertyName);
+                templateThumbnailProperty.objectReferenceValue = textureCopy;
                 serializedObject.ApplyModifiedProperties();
+
+                onFinishedCallback?.Invoke();
             });
         }
 

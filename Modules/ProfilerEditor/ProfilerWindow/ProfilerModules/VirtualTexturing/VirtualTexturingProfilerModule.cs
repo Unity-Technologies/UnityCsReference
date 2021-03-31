@@ -15,7 +15,7 @@ namespace UnityEditorInternal.Profiling
     [Serializable]
     internal class VirtualTexturingProfilerModule : ProfilerModuleBase
     {
-        [SerializeField]
+        [SerializeReference]
         VirtualTexturingProfilerView m_VTProfilerView;
 
         const string k_IconName = "Profiler.VirtualTexturing";
@@ -49,7 +49,6 @@ namespace UnityEditorInternal.Profiling
 
         public override void DrawToolbar(Rect position)
         {
-            DrawEmptyToolbar();
         }
 
         public override void DrawDetailsView(Rect position)
@@ -70,13 +69,6 @@ namespace UnityEditorInternal.Profiling
             }
 
             return chartCounters;
-        }
-
-        protected override List<ProfilerCounterData> CollectDefaultDetailCounters()
-        {
-            var detailCounter = new List<ProfilerCounterData>(1);
-            detailCounter.Add(new ProfilerCounterData() { m_Name = "Max Cache Mip Bias", m_Category = k_VTCountersCategoryName });
-            return detailCounter;
         }
     }
 }

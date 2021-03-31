@@ -33,6 +33,7 @@ namespace UnityEditor
 
         Vector3[] m_Points;
         bool m_Loop;
+        int m_MinPointCount;
         LineIntersectionHighlight m_IntersectionHighlight;
 
         public Vector3[] points
@@ -41,23 +42,25 @@ namespace UnityEditor
             set => m_Points = value;
         }
 
-        public LineHandle(IList<Vector2> points, bool loop, LineIntersectionHighlight intersectionHighlight = LineIntersectionHighlight.None)
+        public LineHandle(IList<Vector2> points, bool loop, int minPointCount, LineIntersectionHighlight intersectionHighlight = LineIntersectionHighlight.None)
         {
             int count = points.Count;
             m_Points = new Vector3[count];
             for (int i = 0; i < count; i++)
                 m_Points[i] = points[i];
             m_Loop = loop;
+            m_MinPointCount = minPointCount;
             m_IntersectionHighlight = intersectionHighlight;
         }
 
-        public LineHandle(IList<Vector3> points, bool loop, LineIntersectionHighlight intersectionHighlight = LineIntersectionHighlight.None)
+        public LineHandle(IList<Vector3> points, bool loop, int minPointCount, LineIntersectionHighlight intersectionHighlight = LineIntersectionHighlight.None)
         {
             int count = points.Count;
             m_Points = new Vector3[count];
             for (int i = 0; i < count; i++)
                 m_Points[i] = points[i];
             m_Loop = loop;
+            m_MinPointCount = minPointCount;
             m_IntersectionHighlight = intersectionHighlight;
         }
 
@@ -73,7 +76,8 @@ namespace UnityEditor
                 EditorSnapSettings.move,
                 false,
                 m_IntersectionHighlight,
-                m_Loop);
+                m_Loop,
+                m_MinPointCount);
 
             for (int i = 0, c = m_Points.Length; i < c; i++)
             {
@@ -118,11 +122,12 @@ namespace UnityEditor
             float handleSize,
             Handles.CapFunction capFunction,
             LineIntersectionHighlight intersectionHighlight,
-            bool loop = false
+            bool loop,
+            int minPointCount
         )
         {
             int id = GUIUtility.GetControlID(s_InsertPointHash, FocusType.Passive);
-            Do(id, ref line, handleDir, slideDir1, slideDir2, handleSize, capFunction, EditorSnapSettings.move, false, intersectionHighlight, loop);
+            Do(id, ref line, handleDir, slideDir1, slideDir2, handleSize, capFunction, EditorSnapSettings.move, false, intersectionHighlight, loop, minPointCount);
         }
 
         public static void Do(
@@ -136,12 +141,15 @@ namespace UnityEditor
             Vector2 snap,
             bool drawHelper,
             LineIntersectionHighlight intersectionHighlight,
-            bool loop
+            bool loop,
+            int minPointCount
         )
         {
             var evt = Event.current;
             var activeIndex = GUIUtility.hotControl == id ? s_InsertedIndex : -1;
             var evtType = evt.GetTypeForControl(id);
+
+            int lineCount = line.Length;
 
             switch (evtType)
             {
@@ -159,7 +167,6 @@ namespace UnityEditor
                     HandleUtility.DistanceToPolyLine(line, loop, out int hoveredEdgeIndex);
 
                     var color = Handles.color;
-                    int lineCount = line.Length;
 
                     for (int n = 0, lineIterCount = loop ? line.Length : line.Length - 1; n < lineIterCount; n++)
                     {
@@ -257,7 +264,10 @@ namespace UnityEditor
 
                         if (IsRemoveEvent(evt))
                         {
-                            ArrayUtility.RemoveAt(ref line, (nearestEdgeIndex + 1) % count);
+                            if (lineCount > minPointCount)
+                            {
+                                ArrayUtility.RemoveAt(ref line, (nearestEdgeIndex + 1) % count);
+                            }
                             GUI.changed = true;
                             evt.Use();
                             return;

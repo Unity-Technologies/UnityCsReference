@@ -19,7 +19,7 @@ namespace UnityEditor
         // only return true if the size has changed
         protected abstract bool CopyHandleSizeToCollider(T collider);
 
-        protected virtual Quaternion GetHandleRotation()
+        protected virtual Quaternion GetHandleRotation(T collider)
         {
             return Quaternion.identity;
         }
@@ -40,7 +40,7 @@ namespace UnityEditor
 
                 // collider matrix is 2d projection of center multiplied by transform's matrix with custom postmultiplied lossy scale matrix
                 // only rotation of transform about z-axis should be considered, if at all
-                using (new Handles.DrawingScope(Matrix4x4.TRS(collider.transform.position, GetHandleRotation(), Vector3.one)))
+                using (new Handles.DrawingScope(Matrix4x4.TRS(collider.transform.position, GetHandleRotation(collider), Vector3.one)))
                 {
                     Matrix4x4 colliderTransformMatrix = collider.transform.localToWorldMatrix;
 

@@ -93,6 +93,7 @@ namespace Unity.UI.Builder
                 else
                     target.style.top = m_SplitView.resolvedStyle.height - newDimension;
             }
+            m_SplitView.fixedPaneDimension = newDimension;
         }
 
         protected void OnMouseDown(MouseDownEvent e)

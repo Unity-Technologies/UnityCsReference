@@ -31,7 +31,7 @@ namespace UnityEditor
 
         public override Matrix4x4 localToWorldMatrix => m_Collider.transform.localToWorldMatrix;
 
-        public EdgeColliderPath(EdgeCollider2D target) : base(false)
+        public EdgeColliderPath(EdgeCollider2D target) : base(false, 0, 2)
         {
             m_Collider = target;
             m_Points2D = new List<Vector2>();

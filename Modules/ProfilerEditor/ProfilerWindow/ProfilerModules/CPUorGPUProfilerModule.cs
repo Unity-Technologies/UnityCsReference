@@ -104,8 +104,7 @@ namespace UnityEditorInternal.Profiling
 
         protected abstract ProfilerViewType DefaultViewTypeSetting { get; }
 
-        [SerializeField]
-        ProfilerTimeSampleSelection m_Selection = null;
+        ProfilerTimeSampleSelection m_Selection;
         public ProfilerTimeSampleSelection selection
         {
             get { return m_Selection;  }

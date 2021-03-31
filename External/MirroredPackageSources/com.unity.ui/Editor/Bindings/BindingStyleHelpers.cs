@@ -52,6 +52,9 @@ namespace UnityEditor.UIElements.Bindings
                 while (propCopy.NextVisible(false));     // Never expand children.
             }
 
+            if (element is IMixedValueSupport mixedValuePropertyField)
+                mixedValuePropertyField.showMixedValue = prop.hasMultipleDifferentValues;
+
             // It's possible for there to be no label in a compound field, for example. So, nothing to style.
             if (element == null)
                 return;
