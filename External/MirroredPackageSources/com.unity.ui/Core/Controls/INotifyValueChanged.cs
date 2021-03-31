@@ -8,12 +8,12 @@ namespace UnityEngine.UIElements
     public interface INotifyValueChanged<T>
     {
         /// <summary>
-        /// The Value held by the control.
+        /// The value the control holds.
         /// </summary>
         T value { get; set; }
 
         /// <summary>
-        /// Set the value and, even if different, does not notify registers callbacks with a ChangeEvent<T>
+        /// Sets the value and, even if different, doesn't notify registers callbacks with a <see cref="ChangeEvent{T}"/>
         /// </summary>
         /// <param name="newValue">The new value to be set.</param>
         void SetValueWithoutNotify(T newValue);
@@ -21,12 +21,12 @@ namespace UnityEngine.UIElements
 
 
     /// <summary>
-    /// INotifyValueChangedExtensions is a set of extension methods useful for objects implementing <see cref="INotifyValueChanged"/>.
+    /// INotifyValueChangedExtensions is a set of extension methods useful for objects implementing <see cref="INotifyValueChanged{T}"/>.
     /// </summary>
     public static class INotifyValueChangedExtensions
     {
         /// <summary>
-        /// Registers this callback to receive ChangeEvent<T> when value is changed.
+        /// Registers this callback to receive <see cref="ChangeEvent{T}"/> when the value is changed.
         /// </summary>
         public static bool RegisterValueChangedCallback<T>(this INotifyValueChanged<T> control, EventCallback<ChangeEvent<T>> callback)
         {
@@ -41,7 +41,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Unregisters this callback from receiving ChangeEvent<T> when value is changed.
+        /// Unregisters this callback from receiving <see cref="ChangeEvent{T}"/> when the value is changed.
         /// </summary>
         public static bool UnregisterValueChangedCallback<T>(this INotifyValueChanged<T> control, EventCallback<ChangeEvent<T>> callback)
         {

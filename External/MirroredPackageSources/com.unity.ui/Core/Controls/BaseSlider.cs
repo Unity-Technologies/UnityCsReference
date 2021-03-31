@@ -93,6 +93,13 @@ namespace UnityEngine.UIElements
 
         private bool m_ShowInputField = false;
 
+        /// <summary>
+        /// The visibility of the optional field inside the slider control.
+        /// </summary>
+        /// <remarks>
+        /// Set this property to true to display a numerical text field that provides another way to
+        /// edit the slider value.
+        /// </remarks>
         public virtual bool showInputField
         {
             get { return m_ShowInputField; }
@@ -189,7 +196,7 @@ namespace UnityEngine.UIElements
         private bool m_Inverted = false;
 
         /// <summary>
-        /// This is indicating whether or not this slider is inverted.
+        /// This indicates whether or not this slider is inverted.
         /// For an inverted horizontal slider, high value is located to the left, low value is located to the right
         /// For an inverted vertical slider, high value is located to the bottom, low value is located to the top.
         /// </summary>
@@ -291,6 +298,8 @@ namespace UnityEngine.UIElements
             UpdateTextFieldVisibility();
         }
 
+        /// <undoc/>
+        /// TODO why not make this stuff internal?
         protected static float GetClosestPowerOfTen(float positiveNumber)
         {
             if (positiveNumber <= 0)
@@ -298,6 +307,8 @@ namespace UnityEngine.UIElements
             return Mathf.Pow(10, Mathf.RoundToInt(Mathf.Log10(positiveNumber)));
         }
 
+        /// <undoc/>
+        /// TODO why not make this stuff internal?
         protected static float RoundToMultipleOf(float value, float roundingValue)
         {
             if (roundingValue == 0)
@@ -471,7 +482,7 @@ namespace UnityEngine.UIElements
             if (needsElement)
             {
                 IStyle inlineStyles = dragElement.style;
-                dragElement.visible = visible; // Only visible if parent is as well.
+                dragElement.style.visibility = StyleKeyword.Null; // Only visible if parent is as well.
 
                 // Any factor smaller than 1f will necessitate a drag element
                 if (direction == SliderDirection.Horizontal)

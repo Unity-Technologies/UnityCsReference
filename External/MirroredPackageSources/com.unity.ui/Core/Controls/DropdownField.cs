@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// A control that allows the user to pick a choice from a list of options.
+    /// </summary>
     public class DropdownField : BaseField<string>
     {
         /// <summary>

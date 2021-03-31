@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// A control that allows single selection out of a logical group of <see cref="RadioButton"/> elements. Selecting one will deselect the others.
+    /// </summary>
     public class RadioButtonGroup : BaseField<int>, IGroupBox
     {
         /// <summary>
@@ -45,6 +48,13 @@ namespace UnityEngine.UIElements
         List<RadioButton> m_RadioButtons = new List<RadioButton>();
         EventCallback<ChangeEvent<bool>> m_RadioButtonValueChangedCallback;
 
+        /// <summary>
+        /// The list of available choices in the group.
+        /// </summary>
+        /// <remarks>
+        /// Writing to this property removes existing <see cref="RadioButton"/> elements and
+        /// re-creates them to display the new list.
+        /// </remarks>
         public IEnumerable<string> choices
         {
             get => m_Choices;
@@ -75,9 +85,17 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Initializes and returns an instance of RadioButtonGroup.
+        /// </summary>
         public RadioButtonGroup()
             : this(null) {}
 
+        /// <summary>
+        /// Initializes and returns an instance of RadioButtonGroup.
+        /// </summary>
+        /// <param name="label">The label for this group</param>
+        /// <param name="radioButtonChoices">The choices to display in this group</param>
         public RadioButtonGroup(string label, List<string> radioButtonChoices = null)
             : base(label, null)
         {

@@ -153,21 +153,25 @@ namespace UnityEngine.UIElements
             return default;
         }
 
+        /// <undoc/>
         public static bool operator==(Background lhs, Background rhs)
         {
             return lhs.texture == rhs.texture && lhs.sprite == rhs.sprite && lhs.renderTexture == rhs.renderTexture && lhs.vectorImage == rhs.vectorImage;
         }
 
+        /// <undoc/>
         public static bool operator!=(Background lhs, Background rhs)
         {
             return !(lhs == rhs);
         }
 
+        /// <undoc/>
         public bool Equals(Background other)
         {
             return other == this;
         }
 
+        /// <undoc/>
         public override bool Equals(object obj)
         {
             if (!(obj is Background))

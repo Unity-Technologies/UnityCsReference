@@ -49,6 +49,8 @@ namespace Unity.UI.Builder
         {
             AddType(typeof(Texture2D), "Texture");
 
+            AddType(typeof(RenderTexture), "Render Texture");
+
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(k_UssPath));
             var fieldContainer = new VisualElement {name = k_ImageStyleFieldContainerName};
             fieldContainer.AddToClassList(k_ImageStyleFieldContainerClassName);

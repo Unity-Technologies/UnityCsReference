@@ -923,7 +923,6 @@ namespace UnityEditor
         static Shader s_ShowMipsShader;
         static Shader s_ShowTextureStreamingShader;
         static Shader s_AuraShader;
-        static Shader s_BuildFilterShader;
         static Material s_FadeMaterial;
         static Material s_ApplyFilterMaterial;
         static Texture2D s_MipColorsTexture;
@@ -2158,12 +2157,24 @@ namespace UnityEditor
             Graphics.Blit(m_SceneTargetTexture, fadedRT);
 
             // Fourth pass: Draw objects which do meet filter in a mask
+
+            // cache old state, we need to disable post and similar for the mask pass
+            var oldSceneViewState = sceneViewState.fxEnabled;
+            var oldImageEffects = sceneViewState.imageEffectsEnabled;
+            UpdateImageEffects(false);
+            sceneViewState.fxEnabled = false;
+            var skybox = RenderSettings.skybox;
+            RenderSettings.skybox = null;
+
             RenderTexture.active = m_SceneTargetTexture;
             GL.Clear(false, true, Color.clear);
-            if (!s_BuildFilterShader)
-                s_BuildFilterShader = EditorGUIUtility.LoadRequired("SceneView/SceneViewBuildFilter.shader") as Shader;
-            m_Camera.SetReplacementShader(s_BuildFilterShader, "");
+            m_Camera.ResetReplacementShader();
             Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, drawGizmos);
+
+            // restore old state
+            UpdateImageEffects(oldImageEffects);
+            sceneViewState.fxEnabled = oldSceneViewState;
+            RenderSettings.skybox = skybox;
 
             // Final pass: Blit the faded scene where the mask isn't set
             if (!s_ApplyFilterMaterial)

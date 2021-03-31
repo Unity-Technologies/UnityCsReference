@@ -5,6 +5,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
+using System;
 
 namespace UnityEditor
 {
@@ -63,6 +64,8 @@ namespace UnityEditor
         private double m_NextSearch = double.MaxValue;
         internal bool m_SyncSearch;
         internal string m_OldSearch;
+        string m_SearchStringDebounced;
+        Action m_DeregisterDebounceCall;
 
         [MenuItem("CONTEXT/Component/Find References In Scene")]
         private static void OnSearchForReferencesToComponent(MenuCommand command)
@@ -125,6 +128,7 @@ namespace UnityEditor
         {
             SearchService.SearchService.syncSearchChanged -= OnSyncSearchChanged;
             searchableWindows.Remove(this);
+            m_DeregisterDebounceCall = null;
         }
 
         private void OnSyncSearchChanged(SearchService.SearchService.SyncSearchEvent evt, string syncViewId, string searchQuery)
@@ -296,6 +300,12 @@ namespace UnityEditor
             SearchFieldGUI(EditorGUILayout.kLabelFloatMaxW * 1.5f);
         }
 
+        void SetSearchFilterDebounced()
+        {
+            SetSearchFilter(m_SearchStringDebounced, (SearchMode)searchMode, true, true);
+            m_SearchStringDebounced = "";
+        }
+
         internal void SearchFieldGUI(float maxWidth)
         {
             Rect rect = GUILayoutUtility.GetRect(EditorGUILayout.kLabelFloatMaxW * 0.2f, maxWidth, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.toolbarSearchFieldWithJump);
@@ -331,7 +341,11 @@ namespace UnityEditor
                     m_SyncSearch ? EditorStyles.toolbarSearchFieldWithJumpSynced : EditorStyles.toolbarSearchFieldWithJump,
                     string.IsNullOrEmpty(m_SearchFilter) ? EditorStyles.toolbarSearchFieldCancelButtonWithJumpEmpty : EditorStyles.toolbarSearchFieldCancelButtonWithJump);
             if (EditorGUI.EndChangeCheck())
-                SetSearchFilter(searchFilter, (SearchMode)searchMode, true, true);
+            {
+                m_SearchStringDebounced = searchFilter;
+                m_DeregisterDebounceCall?.Invoke();
+                m_DeregisterDebounceCall = EditorApplication.CallDelayed(SetSearchFilterDebounced, SearchUtils.debounceThresholdMs / 1000f);
+            }
 
             m_HasSearchFilterFocus = GUIUtility.keyboardControl == searchFieldControlId;
 

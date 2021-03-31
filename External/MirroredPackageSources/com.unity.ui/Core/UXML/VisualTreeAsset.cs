@@ -644,13 +644,28 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// This class is used during UXML template instantiation.
+    /// This structure holds information used during UXML template instantiation.
     /// </summary>
     public struct CreationContext : IEquatable<CreationContext>
     {
+        /// <undoc/>
+        // TODO why is this public? It's not used internally and could be obtained by default(CreationContext)
         public static readonly CreationContext Default = new CreationContext();
+
+        /// <summary>
+        /// The element into which the <see cref="visualTreeAsset"/> is being cloned or instantiated.
+        /// <see cref="VisualTreeAsset.CloneTree()"/>
+        /// <see cref="VisualTreeAsset.Instantiate()"/>
+        /// </summary>
         public VisualElement target { get; private set; }
+
+        /// <summary>
+        /// The target UXML file to clone or instantiate.
+        /// </summary>
         public VisualTreeAsset visualTreeAsset { get; private set; }
+
+        /// <undoc/>
+        // TODO This feature leaks in the API but isn't usable
         public Dictionary<string, VisualElement> slotInsertionPoints { get; private set; }
 
         internal List<TemplateAsset.AttributeOverride> attributeOverrides { get; private set; }
@@ -677,6 +692,7 @@ namespace UnityEngine.UIElements
             return obj is CreationContext && Equals((CreationContext)obj);
         }
 
+        /// <undoc/>
         public bool Equals(CreationContext other)
         {
             return EqualityComparer<VisualElement>.Default.Equals(target, other.target) &&
@@ -693,11 +709,13 @@ namespace UnityEngine.UIElements
             return hashCode;
         }
 
+        /// <undoc/>
         public static bool operator==(CreationContext context1, CreationContext context2)
         {
             return context1.Equals(context2);
         }
 
+        /// <undoc/>
         public static bool operator!=(CreationContext context1, CreationContext context2)
         {
             return !(context1 == context2);

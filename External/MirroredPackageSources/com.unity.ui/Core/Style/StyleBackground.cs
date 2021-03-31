@@ -85,36 +85,43 @@ namespace UnityEngine.UIElements
         private Background m_Value;
         private StyleKeyword m_Keyword;
 
+        /// <undoc/>
         public static bool operator==(StyleBackground lhs, StyleBackground rhs)
         {
             return lhs.m_Keyword == rhs.m_Keyword && lhs.m_Value == rhs.m_Value;
         }
 
+        /// <undoc/>
         public static bool operator!=(StyleBackground lhs, StyleBackground rhs)
         {
             return !(lhs == rhs);
         }
 
+        /// <undoc/>
         public static implicit operator StyleBackground(StyleKeyword keyword)
         {
             return new StyleBackground(keyword);
         }
 
+        /// <undoc/>
         public static implicit operator StyleBackground(Background v)
         {
             return new StyleBackground(v);
         }
 
+        /// <undoc/>
         public static implicit operator StyleBackground(Texture2D v)
         {
             return new StyleBackground(v);
         }
 
+        /// <undoc/>
         public bool Equals(StyleBackground other)
         {
             return other == this;
         }
 
+        /// <undoc/>
         public override bool Equals(object obj)
         {
             return obj is StyleBackground other && Equals(other);

@@ -52,31 +52,37 @@ namespace UnityEngine.UIElements
         private int m_Value;
         private StyleKeyword m_Keyword;
 
+        /// <undoc/>
         public static bool operator==(StyleInt lhs, StyleInt rhs)
         {
             return lhs.m_Keyword == rhs.m_Keyword && lhs.m_Value == rhs.m_Value;
         }
 
+        /// <undoc/>
         public static bool operator!=(StyleInt lhs, StyleInt rhs)
         {
             return !(lhs == rhs);
         }
 
+        /// <undoc/>
         public static implicit operator StyleInt(StyleKeyword keyword)
         {
             return new StyleInt(keyword);
         }
 
+        /// <undoc/>
         public static implicit operator StyleInt(int v)
         {
             return new StyleInt(v);
         }
 
+        /// <undoc/>
         public bool Equals(StyleInt other)
         {
             return other == this;
         }
 
+        /// <undoc/>
         public override bool Equals(object obj)
         {
             return obj is StyleInt other && Equals(other);

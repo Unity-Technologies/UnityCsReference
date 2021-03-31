@@ -86,8 +86,15 @@ namespace UnityEngine
         [NativeProperty("DynamicLightmapST")]
         extern public Vector4 realtimeLightmapScaleOffset { get; set; }
 
-        [NativeProperty("GarbageCollectCameraData")]
+        [Obsolete("Terrain.freeUnusedRenderingResources is obsolete; use keepUnusedRenderingResources instead.")]
+        [NativeProperty("FreeUnusedRenderingResourcesObsolete")]
         extern public bool freeUnusedRenderingResources { get; set; }
+
+        [NativeProperty("KeepUnusedRenderingResources")]
+        extern public bool keepUnusedRenderingResources { get; set; }
+
+        extern public bool GetKeepUnusedCameraRenderingResources(int cameraInstanceID);
+        extern public void SetKeepUnusedCameraRenderingResources(int cameraInstanceID, bool keepUnused);
 
         extern public ShadowCastingMode shadowCastingMode { get; set; }
 

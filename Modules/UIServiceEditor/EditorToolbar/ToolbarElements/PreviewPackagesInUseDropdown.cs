@@ -16,7 +16,7 @@ namespace UnityEditor.Toolbars
     [EditorToolbarElement("Package Manager/PreviewPackagesInUse", typeof(DefaultMainToolbar))]
     sealed class PreviewPackagesInUseDropdown : ToolbarButton
     {
-        private const int k_MinWidthChangePreviewPackageInUseToIcon = 1235;
+        private const int k_FullTextRequiredWidth = 207;
 
         private bool m_IsPreviewPackagesInUse;
 
@@ -92,7 +92,12 @@ namespace UnityEditor.Toolbars
         {
             if (m_IsPreviewPackagesInUse && !m_PackageManagerPrefs.dismissPreviewPackagesInUse)
             {
-                var useIcon = Toolbar.get.window.position.width < k_MinWidthChangePreviewPackageInUseToIcon;
+                var toolbarRightAlign = parent;
+                var allButtonsExcludingPreviewDropdownWidth = toolbarRightAlign.Children().Where(button => button.name != "PreviewPackagesInUseDropdown").Sum(button =>
+                    button.rect.width + button.resolvedStyle.paddingRight + button.resolvedStyle.paddingLeft + button.resolvedStyle.marginLeft
+                    + button.resolvedStyle.marginRight + button.resolvedStyle.borderLeftWidth + button.resolvedStyle.borderRightWidth);
+
+                var useIcon = toolbarRightAlign.rect.width - allButtonsExcludingPreviewDropdownWidth < k_FullTextRequiredWidth;
                 EnableInClassList("icon", useIcon);
             }
         }

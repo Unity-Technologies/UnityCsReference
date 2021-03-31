@@ -9,6 +9,12 @@ namespace UnityEngine.UIElements
     /// </summary>
     public struct StyleFontDefinition : IStyleValue<FontDefinition>, IEquatable<StyleFontDefinition>
     {
+        /// <summary>
+        /// The actual value of the definition.
+        /// </summary>
+        /// <remarks>
+        /// This value is only valid if the <see cref="keyword"/> is <see cref="StyleKeyword.Undefined"/>.
+        /// </remarks>
         public FontDefinition value
         {
             get { return m_Keyword == StyleKeyword.Undefined ? m_Value : new FontDefinition(); }
@@ -91,21 +97,25 @@ namespace UnityEngine.UIElements
         private StyleKeyword m_Keyword;
         private FontDefinition m_Value;
 
+        /// <undoc/>
         public static implicit operator StyleFontDefinition(StyleKeyword keyword)
         {
             return new StyleFontDefinition(keyword);
         }
 
+        /// <undoc/>
         public static implicit operator StyleFontDefinition(FontDefinition f)
         {
             return new StyleFontDefinition(f);
         }
 
+        /// <undoc/>
         public bool Equals(StyleFontDefinition other)
         {
             return m_Keyword == other.m_Keyword && m_Value.Equals(other.m_Value);
         }
 
+        /// <undoc/>
         public override bool Equals(object obj)
         {
             return obj is StyleFontDefinition other && Equals(other);
@@ -119,11 +129,13 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <undoc/>
         public static bool operator==(StyleFontDefinition left, StyleFontDefinition right)
         {
             return left.Equals(right);
         }
 
+        /// <undoc/>
         public static bool operator!=(StyleFontDefinition left, StyleFontDefinition right)
         {
             return !left.Equals(right);

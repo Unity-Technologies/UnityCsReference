@@ -14,7 +14,7 @@ namespace Unity.UI.Builder
 
         // Used to restore in-memory StyleSheet asset if closing without saving.
         [SerializeField]
-        StyleSheet m_Backup;
+        StyleSheet m_BackupStyleSheet;
 
         // This is for automatic style path fixing after a uss file name change.
         [SerializeField]
@@ -29,6 +29,11 @@ namespace Unity.UI.Builder
             set => m_StyleSheet = value;
         }
 
+        public StyleSheet backupStyleSheet
+        {
+            get => m_BackupStyleSheet;
+        }
+
         public string assetPath => AssetDatabase.GetAssetPath(m_StyleSheet);
 
         public string oldPath => m_OldPath;
@@ -39,7 +44,7 @@ namespace Unity.UI.Builder
                 ussPath = AssetDatabase.GetAssetPath(styleSheet);
 
             m_StyleSheet = styleSheet;
-            m_Backup = styleSheet.DeepCopy();
+            m_BackupStyleSheet = styleSheet.DeepCopy();
             m_OldPath = ussPath;
             m_NewPath = null;
         }
@@ -61,7 +66,7 @@ namespace Unity.UI.Builder
             //
             // Restore from file system in case of unsaved changes.
             //if (!string.IsNullOrEmpty(path))
-                //AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+            //AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
         }
 
         public void FixRuleReferences()
@@ -79,10 +84,10 @@ namespace Unity.UI.Builder
             visualTreeAsset.ReplaceStyleSheetPaths(m_OldPath, newUSSPath);
 
             // Need to save a backup before the AssetDatabase.Refresh().
-            if (m_Backup == null)
-                m_Backup = m_StyleSheet.DeepCopy();
+            if (m_BackupStyleSheet == null)
+                m_BackupStyleSheet = m_StyleSheet.DeepCopy();
             else
-                m_StyleSheet.DeepOverwrite(m_Backup);
+                m_StyleSheet.DeepOverwrite(m_BackupStyleSheet);
 
             WriteUSSToFile(newUSSPath);
         }
@@ -90,11 +95,11 @@ namespace Unity.UI.Builder
         public bool PostSaveToDiskChecksAndFixes()
         {
             m_StyleSheet = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(m_NewPath);
-            bool needsFullRefresh = m_StyleSheet != m_Backup;
+            bool needsFullRefresh = m_StyleSheet != m_BackupStyleSheet;
 
             // Get back selection markers from backup:
             if (needsFullRefresh)
-                m_Backup.DeepOverwrite(m_StyleSheet);
+                m_BackupStyleSheet.DeepOverwrite(m_StyleSheet);
 
             m_NewPath = null;
             return needsFullRefresh;
@@ -111,19 +116,19 @@ namespace Unity.UI.Builder
 
         public void RestoreFromBackup()
         {
-            if (m_Backup == null || m_StyleSheet == null)
+            if (m_BackupStyleSheet == null || m_StyleSheet == null)
                 return;
 
-            m_Backup.DeepOverwrite(m_StyleSheet);
+            m_BackupStyleSheet.DeepOverwrite(m_StyleSheet);
         }
 
         public void ClearBackup()
         {
-            if (m_Backup == null)
+            if (m_BackupStyleSheet == null)
                 return;
 
-            m_Backup.Destroy();
-            m_Backup = null;
+            m_BackupStyleSheet.Destroy();
+            m_BackupStyleSheet = null;
         }
 
         public void ClearUndo()

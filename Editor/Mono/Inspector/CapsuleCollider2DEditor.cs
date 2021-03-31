@@ -96,10 +96,10 @@ namespace UnityEditor
             return collider.size != oldSize;
         }
 
-        protected override Quaternion GetHandleRotation()
+        protected override Quaternion GetHandleRotation(CapsuleCollider2D collider)
         {
             Vector3 diameterVector, heightVector;
-            GetHandleVectorsInWorldSpace(target as CapsuleCollider2D, out heightVector, out diameterVector);
+            GetHandleVectorsInWorldSpace(collider, out heightVector, out diameterVector);
             return Quaternion.LookRotation(Vector3.forward, heightVector);
         }
 

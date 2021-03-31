@@ -190,6 +190,7 @@ namespace UnityEngine.UIElements
             m_Value = value;
         }
 
+        /// <undoc/>
         public static implicit operator int(FocusChangeDirection fcd)
         {
             return fcd?.m_Value ?? 0;

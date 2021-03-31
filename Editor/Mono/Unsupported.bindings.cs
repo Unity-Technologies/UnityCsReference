@@ -138,11 +138,11 @@ namespace UnityEditor
 
         public static void PasteGameObjectsFromPasteboard()
         {
-            PasteGameObjectsFromPasteboard(null);
+            PasteGameObjectsFromPasteboard(null, 0);
         }
 
         [FreeFunction]
-        internal static extern void PasteGameObjectsFromPasteboard(Transform parent);
+        internal static extern void PasteGameObjectsFromPasteboard(Transform parent, int customSceneHandle = 0);
 
         [FreeFunction("AssetDatabase::GetSingletonAsset")]
         public static extern UnityEngine.Object GetSerializedAssetInterfaceSingleton(string className);

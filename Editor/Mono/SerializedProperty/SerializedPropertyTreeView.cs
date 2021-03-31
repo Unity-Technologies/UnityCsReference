@@ -117,7 +117,10 @@ namespace UnityEditor
                 {
                     // The list of objects is the same, but since some should now potentially be hidden, we need to request a reload
                     if (!ActiveObjectsEquals(objs, m_ActiveObjects))
+                    {
+                        UpdateActiveObjects(objs);
                         needsReload = true;
+                    }
 
                     return false;
                 }
@@ -125,10 +128,11 @@ namespace UnityEditor
                 Clear();
             }
 
+            UpdateActiveObjects(objs);
+
             // Recreate data store
             m_Objects = objs;
             m_Elements = new Data[objs.Length];
-            m_ActiveObjects = new bool[objs.Length];
 
             int elementIndex = 0;
             for (int i = 0; i < objs.Length; i++)
@@ -136,11 +140,6 @@ namespace UnityEditor
                 // we don't want to list hidden objects
                 if (objs[i] == null || objs[i].hideFlags == HideFlags.HideAndDontSave || objs[i].hideFlags == HideFlags.HideInHierarchy)
                     continue;
-
-                if (objs[i] is Component)
-                {
-                    m_ActiveObjects[i] = ((Component)objs[i]).gameObject.activeInHierarchy;
-                }
 
                 m_Elements[elementIndex] = new Data(objs[i], m_PropNames);
 
@@ -152,6 +151,23 @@ namespace UnityEditor
 
             needsReload = true;
             return true;
+        }
+
+        // Updates the cached active objects array (m_ActiveObjects) to reflect the current state of the passed objects
+        private void UpdateActiveObjects(Object[] objs)
+        {
+            m_ActiveObjects = new bool[objs.Length];
+
+            for (int i = 0; i < objs.Length; i++)
+            {
+                if (objs[i] == null || objs[i].hideFlags == HideFlags.HideAndDontSave || objs[i].hideFlags == HideFlags.HideInHierarchy)
+                    continue;
+
+                if (objs[i] is Component)
+                {
+                    m_ActiveObjects[i] = ((Component)objs[i]).gameObject.activeInHierarchy;
+                }
+            }
         }
 
         private void Clear()

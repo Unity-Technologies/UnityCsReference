@@ -224,9 +224,8 @@ namespace UnityEditor
                     bool boldFont = sceneHeaderItem.scene == SceneManager.GetActiveScene();
                     DoItemGUI(rect, firstRow, sceneHeaderItem, selected, focused, boldFont);
 
-                    // Frame the actual scene header row (by clicking left of scene icon)
-                    if (GUI.Button(new Rect(rect.x, rect.y, rect.height, rect.height), GUIContent.none, GUIStyle.none))
-                        m_TreeView.Frame(sceneHeaderItem.id, true, false);
+                    if (sceneHeaderItem.scene.isLoaded)
+                        DoStickyHeaderItemFoldout(rect, sceneHeaderItem);
 
                     m_TreeView.HandleUnusedMouseEventsForItem(rect, sceneHeaderItem, firstRow);
 
@@ -256,6 +255,25 @@ namespace UnityEditor
                     // On Windows prevent right mouse down to propagate to items beneath (which will select items below this item)
                     evt.Use();
                 }
+            }
+        }
+
+        void DoStickyHeaderItemFoldout(Rect rect, TreeViewItem item)
+        {
+            Rect foldoutRect = new Rect(rect.x + GetFoldoutIndent(item), Mathf.Round(rect.y + customFoldoutYOffset), foldoutStyleWidth, k_LineHeight);
+            var expanded = m_TreeView.data.IsExpanded(item);
+            var newExpanded = DoFoldoutButton(foldoutRect, expanded, foldoutStyle);
+            if (expanded != newExpanded)
+            {
+                m_TreeView.ChangeExpandedState(item, newExpanded, Event.current.alt);
+                m_TreeView.ReloadData();
+                if (!newExpanded)
+                {
+                    m_TreeView.Frame(item.id, true, false);
+                }
+
+                // The TreeView was reloaded with new expanded state so we should not continue iterating visible rows.
+                GUIUtility.ExitGUI();
             }
         }
 

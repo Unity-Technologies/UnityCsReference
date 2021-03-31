@@ -85,11 +85,13 @@ namespace UnityEngine.UIElements
             return $"{fontAsset}";
         }
 
+        /// <undoc/>
         public bool Equals(FontDefinition other)
         {
             return Equals(m_Font, other.m_Font) && Equals(m_FontAsset, other.m_FontAsset);
         }
 
+        /// <undoc/>
         public override bool Equals(object obj)
         {
             return obj is FontDefinition other && Equals(other);
@@ -103,11 +105,13 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <undoc/>
         public static bool operator==(FontDefinition left, FontDefinition right)
         {
             return left.Equals(right);
         }
 
+        /// <undoc/>
         public static bool operator!=(FontDefinition left, FontDefinition right)
         {
             return !left.Equals(right);

@@ -64,9 +64,16 @@ namespace UnityEditor.UIElements
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        /// <summary>
+        /// Initializes and returns an instance of RectField.
+        /// </summary>
         public RectField()
             : this(null) {}
 
+        /// <summary>
+        /// Initializes and returns an instance of RectField.
+        /// </summary>
+        /// <param name="label">The text to use as a label.</param>
         public RectField(string label)
             : base(label, 2)
         {
@@ -136,9 +143,16 @@ namespace UnityEditor.UIElements
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        /// <summary>
+        /// Initializes and returns an instance of RectIntField.
+        /// </summary>
         public RectIntField()
             : this(null) {}
 
+        /// <summary>
+        /// Initializes and returns an instance of RectIntField.
+        /// </summary>
+        /// <param name="label">The text to use as a label.</param>
         public RectIntField(string label)
             : base(label, 2)
         {
@@ -205,14 +219,15 @@ namespace UnityEditor.UIElements
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
         /// <summary>
-        /// Constructor.
+        /// Initializes and returns an instance of Vector2Field.
         /// </summary>
         public Vector2Field()
             : this(null) {}
 
         /// <summary>
-        /// Constructor.
+        /// Initializes and returns an instance of Vector2Field.
         /// </summary>
+        /// <param name="label">The text to use as a label.</param>
         public Vector2Field(string label)
             : base(label, 2)
         {
@@ -280,14 +295,15 @@ namespace UnityEditor.UIElements
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
         /// <summary>
-        /// Constructor.
+        /// Initializes and returns an instance of Vector3Field.
         /// </summary>
         public Vector3Field()
             : this(null) {}
 
         /// <summary>
-        /// Constructor.
+        /// Initializes and returns an instance of Vector3Field.
         /// </summary>
+        /// <param name="label">The text to use as a label.</param>
         public Vector3Field(string label)
             : base(label, 3)
         {
@@ -357,14 +373,15 @@ namespace UnityEditor.UIElements
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
         /// <summary>
-        /// Constructor.
+        /// Initializes and returns an instance of Vector4Field.
         /// </summary>
         public Vector4Field()
             : this(null) {}
 
         /// <summary>
-        /// Constructor.
+        /// Initializes and returns an instance of Vector4Field.
         /// </summary>
+        /// <param name="label">The text to use as a label.</param>
         public Vector4Field(string label)
             : base(label, 4)
         {
@@ -431,14 +448,15 @@ namespace UnityEditor.UIElements
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
         /// <summary>
-        /// Constructor.
+        /// Initializes and returns an instance of Vector2IntField.
         /// </summary>
         public Vector2IntField()
             : this(null) {}
 
         /// <summary>
-        /// Constructor.
+        /// Initializes and returns an instance of Vector2IntField.
         /// </summary>
+        /// <param name="label">The text to use as a label.</param>
         public Vector2IntField(string label)
             : base(label, 2)
         {
@@ -480,7 +498,7 @@ namespace UnityEditor.UIElements
             /// <summary>
             /// Initializes the <see cref="UxmlTraits"/> for the <see cref="Vector3IntField"/>.
             /// </summary>
-            /// <param name="ve">[[VisualElement] to initialize.</param>
+            /// <param name="ve">VisualElement to initialize.</param>
             /// <param name="bag">Bag of attributes where to get them.</param>
             /// <param name="cc">Context Creation, unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
@@ -506,14 +524,15 @@ namespace UnityEditor.UIElements
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
         /// <summary>
-        /// Constructor.
+        /// Initializes and returns an instance of Vector3IntField.
         /// </summary>
         public Vector3IntField()
             : this(null) {}
 
         /// <summary>
-        /// Constructor.
+        /// Initializes and returns an instance of Vector3IntField.
         /// </summary>
+        /// <param name="label">The text to use as a label.</param>
         public Vector3IntField(string label)
             : base(label, 3)
         {

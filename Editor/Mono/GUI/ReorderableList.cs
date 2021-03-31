@@ -699,7 +699,7 @@ namespace UnityEditorInternal
             return new Rect(listRect.x, listRect.y + GetElementYOffset(index), listRect.width, GetElementHeight(index));
         }
 
-        bool isOverMaxMultiEditLimit => m_Elements != null && lastKnownBiggestArray > m_Elements.serializedObject.maxArraySizeForMultiEditing && m_Elements.serializedObject.isEditingMultipleObjects;
+        bool isOverMaxMultiEditLimit => m_Elements != null && smallerArraySize > m_Elements.serializedObject.maxArraySizeForMultiEditing && m_Elements.serializedObject.isEditingMultipleObjects;
 
         public int count
         {
@@ -707,28 +707,7 @@ namespace UnityEditorInternal
             {
                 if (m_Elements != null)
                 {
-                    int smallerArraySize = m_Elements.arraySize;
-                    lastKnownBiggestArray = smallerArraySize;
-
-                    try
-                    {
-                        if (!m_Elements.hasMultipleDifferentValues)
-                            return smallerArraySize;
-                    }
-                    catch   // If we catch an exception this probably means we have gone through this property and must reset it to read its data again
-                    {
-                        m_Elements = m_SerializedObject.FindProperty(m_PropertyPath);
-                    }
-
-                    foreach (Object targetObject in m_Elements.serializedObject.targetObjects)
-                    {
-                        using (SerializedObject serializedObject = new SerializedObject(targetObject))
-                        {
-                            SerializedProperty property = serializedObject.FindProperty(m_Elements.propertyPath);
-                            smallerArraySize = Math.Min(property.arraySize, smallerArraySize);
-                            lastKnownBiggestArray = Math.Max(property.arraySize, lastKnownBiggestArray);
-                        }
-                    }
+                    smallerArraySize = m_Elements.minArraySize;
 
                     if (isOverMaxMultiEditLimit) return 0;
 
@@ -738,7 +717,7 @@ namespace UnityEditorInternal
             }
         }
         int m_Count;
-        int lastKnownBiggestArray;
+        int smallerArraySize;
 
         public void DoLayoutList() //TODO: better API?
         {
@@ -1202,7 +1181,7 @@ namespace UnityEditorInternal
                     // pick the active element based on click position
                     int selected = GetRowIndex(Event.current.mousePosition.y - listRect.y);
 
-                    if (evt.control && multiSelect) // Toggle selection
+                    if (EditorGUI.actionKey && multiSelect) // Toggle selection
                     {
                         if (IsSelected(selected))
                             Deselect(selected);
@@ -1318,14 +1297,20 @@ namespace UnityEditorInternal
                             var oldActiveElement = index;
                             var newActiveElement = targetIndex;
 
+                            // Array size may have changes so we need to recache array size for isOverMaxMultiEditLimit check
+                            _ = count;
+
                             // Retain expanded state after reordering properties
-                            if (m_SerializedObject != null && m_Elements != null)
+                            if (m_SerializedObject != null && m_Elements != null && !isOverMaxMultiEditLimit)
                             {
                                 SerializedProperty prop1 = m_Elements.GetArrayElementAtIndex(oldActiveElement);
                                 SerializedProperty prop2 = m_Elements.GetArrayElementAtIndex(newActiveElement);
                                 bool tempExpanded = prop1.isExpanded;
                                 prop1.isExpanded = prop2.isExpanded;
                                 prop2.isExpanded = tempExpanded;
+
+                                if (prop1.propertyType == SerializedPropertyType.Gradient || prop2.propertyType == SerializedPropertyType.Gradient)
+                                    GradientPreviewCache.ClearCache();
                             }
 
                             // update the active element, now that we've moved it

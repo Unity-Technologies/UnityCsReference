@@ -442,20 +442,8 @@ namespace UnityEditor
             {
                 Type t = listInfo.FieldType;
 
-                // if the current type is an Array or List, the next two elements in the queue
-                // are Array and data[], we can skip them directly to test against the field name.
-                if (t.IsArray)
-                {
-                    t = t.GetElementType();
-                    propertyName.Dequeue();
-                    propertyName.Dequeue();
-                }
-                else if (t.IsArrayOrList())
-                {
-                    t = t.GetGenericArguments().Single();
-                    propertyName.Dequeue();
-                    propertyName.Dequeue();
-                }
+                if (t.IsArray) t = t.GetElementType();
+                else if (t.IsArrayOrList()) t = t.GetGenericArguments().Single();
 
                 FieldInfo f = t.GetField(propertyName.Dequeue(), fieldFilter);
                 if (f != null) listInfo = f;

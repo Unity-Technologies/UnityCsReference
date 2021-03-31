@@ -46,7 +46,7 @@ namespace UnityEditor.UIElements
 
         private static CustomStyleProperty<Color> s_CurveColorProperty = new CustomStyleProperty<Color>("--unity-curve-color");
         /// <summary>
-        /// Optional rectangle that the curve is restrained within. If the range width or height is < 0 then CurveField computes an automatic range, which encompasses the whole curve.
+        /// Optional rectangle that the curve is restrained within. If the range width or height is &lt; 0 then CurveField computes an automatic range, which encompasses the whole curve.
         /// </summary>
         public Rect ranges { get; set; }
 
@@ -165,9 +165,16 @@ namespace UnityEditor.UIElements
         VisualElement m_ZeroIndicator;
         VisualElement m_ContentParent;
 
+        /// <summary>
+        /// Initializes and returns an instance of CurveField.
+        /// </summary>
         public CurveField()
             : this(null) {}
 
+        /// <summary>
+        /// Initializes and returns an instance of CurveField.
+        /// </summary>
+        /// <param name="label">The text to use as a label.</param>
         public CurveField(string label)
             : base(label, null)
         {

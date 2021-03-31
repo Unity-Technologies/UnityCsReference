@@ -90,9 +90,14 @@ namespace UnityEngine.UIElements
 
         LifeCycleStatus lifeCycleStatus { get; set; }
 
+        /// <undoc/>
         [Obsolete("Override PreDispatch(IPanel panel) instead.")]
         protected virtual void PreDispatch() {}
 
+        /// <summary>
+        /// Allows subclasses to perform custom logic before the event is dispatched.
+        /// </summary>
+        /// <param name="panel">The panel where the event will be dispatched.</param>
         protected internal virtual void PreDispatch(IPanel panel)
         {
 #pragma warning disable 618
@@ -100,9 +105,14 @@ namespace UnityEngine.UIElements
 #pragma warning restore 618
         }
 
+        /// <undoc/>
         [Obsolete("Override PostDispatch(IPanel panel) instead.")]
         protected virtual void PostDispatch() {}
 
+        /// <summary>
+        /// Allows subclasses to perform custom logic after the event has been dispatched.
+        /// </summary>
+        /// <param name="panel">The panel where the event has been dispatched.</param>
         protected internal virtual void PostDispatch(IPanel panel)
         {
 #pragma warning disable 618
@@ -112,7 +122,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Whether this event type bubbles up in the event propagation path.
+        /// Returns whether this event type bubbles up in the event propagation path.
         /// </summary>
         public bool bubbles
         {
@@ -131,7 +141,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Whether this event is sent down the event propagation path during the TrickleDown phase.
+        /// Returns whether this event is sent down the event propagation path during the TrickleDown phase.
         /// </summary>
         public bool tricklesDown
         {
@@ -149,7 +159,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        // Original target. May be different than 'target' when propagating event and 'target.isCompositeRoot' is true
+        // Original target. May be different than 'target' when propagating event and 'target.isCompositeRoot' is true.
         internal IEventHandler leafTarget { get; private set; }
 
         IEventHandler m_Target;
@@ -205,7 +215,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Whether StopImmediatePropagation() was called for this event.
+        /// Indicates whether StopImmediatePropagation() was called for this event.
         /// </summary>
         public bool isImmediatePropagationStopped
         {
@@ -224,7 +234,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Immediately stops the propagation of the event. The event is not sent to other elements along the propagation path. This method prevents other event handlers from executing on the current target.
+        /// Immediately stops the propagation of the event. The event isn't sent to other elements along the propagation path. This method prevents other event handlers from executing on the current target.
         /// </summary>
         public void StopImmediatePropagation()
         {
@@ -233,7 +243,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Return true if the default actions should not be executed for this event.
+        /// Returns true if the default actions should not be executed for this event.
         /// </summary>
         public bool isDefaultPrevented
         {
@@ -252,7 +262,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Whether the default actions are prevented from being executed for this event.
+        /// Indicates whether the default actions are prevented from being executed for this event.
         /// </summary>
         public void PreventDefault()
         {
@@ -296,7 +306,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Whether the event is being dispatched to a visual element. An event cannot be redispatched while it being dispatched. If you need to recursively dispatch an event, it is recommended that you use a copy of the event.
+        /// Indicates whether the event is being dispatched to a visual element. An event cannot be redispatched while it being dispatched. If you need to recursively dispatch an event, it is recommended that you use a copy of the event.
         /// </summary>
         public bool dispatch
         {

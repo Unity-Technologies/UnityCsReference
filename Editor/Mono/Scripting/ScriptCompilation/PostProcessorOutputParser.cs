@@ -9,7 +9,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 {
     internal class PostProcessorOutputParser : CompilerOutputParserBase
     {
-        private static Regex sCompilerOutput = new Regex(@"\s*(?<filename>[^:]*)\((?<line>\d+),(?<column>\d+)\):\s*(?<type>warning|error)\s*(?<message>.*)", RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+        private static Regex sCompilerOutput = new Regex(@"(?<filename>[^:]*)\((?<line>\d+),(?<column>\d+)\):\s*(?<type>warning|error)\s*(?<message>.*)", RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 
         protected override string GetInformationIdentifier()
         {

@@ -238,6 +238,22 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal bool isVerticalScrollDisplayed
+        {
+            get
+            {
+                return verticalScroller.resolvedStyle.display == DisplayStyle.Flex;
+            }
+        }
+
+        internal bool isHorizontalScrollDisplayed
+        {
+            get
+            {
+                return horizontalScroller.resolvedStyle.display == DisplayStyle.Flex;
+            }
+        }
+
         /// <summary>
         /// The current scrolling position.
         /// </summary>
@@ -383,7 +399,7 @@ namespace UnityEngine.UIElements
                 throw new ArgumentNullException(nameof(child));
 
             if (!contentContainer.Contains(child))
-                throw new ArgumentException("Cannot scroll to a VisualElement that is not a child of the ScrollView content-container.");
+                throw new ArgumentException("Cannot scroll to a VisualElement that's not a child of the ScrollView content-container.");
 
             float yDeltaOffset = 0, xDeltaOffset = 0;
 
@@ -480,6 +496,7 @@ namespace UnityEngine.UIElements
         public Scroller verticalScroller { get; private set; }
 
         private VisualElement m_ContentContainer;
+        private VisualElement m_ContentAndVerticalScrollContainer;
 
         /// <summary>
         /// Contains full content, potentially partially visible.
@@ -500,6 +517,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// USS class name of content elements in elements of this type.
         /// </summary>
+        public static readonly string contentAndVerticalScrollUssClassName = ussClassName + "__content-and-vertical-scroll-container";
+        /// <summary>
+        /// USS class name of content elements in elements of this type.
+        /// </summary>
         public static readonly string contentUssClassName = ussClassName + "__content-container";
         /// <summary>
         /// USS class name of horizontal scrollers in elements of this type.
@@ -509,9 +530,23 @@ namespace UnityEngine.UIElements
         /// USS class name of vertical scrollers in elements of this type.
         /// </summary>
         public static readonly string vScrollerUssClassName = ussClassName + "__vertical-scroller";
+        /// <summary>
+        /// USS class name that's added when the ScrollView is in horizontal mode.
+        /// <seealso cref="ScrollViewMode.Horizontal"/>
+        /// </summary>
         public static readonly string horizontalVariantUssClassName = ussClassName + "--horizontal";
+        /// <summary>
+        /// USS class name that's added when the ScrollView is in vertical mode.
+        /// <seealso cref="ScrollViewMode.Vertical"/>
+        /// </summary>
         public static readonly string verticalVariantUssClassName = ussClassName + "--vertical";
+        /// <summary>
+        /// USS class name that's added when the ScrollView is in both horizontal and vertical mode.
+        /// <seealso cref="ScrollViewMode.VerticalAndHorizontal"/>
+        /// </summary>
         public static readonly string verticalHorizontalVariantUssClassName = ussClassName + "--vertical-horizontal";
+        /// <undoc/>
+        // TODO why does this exist? It is set in all cases...
         public static readonly string scrollVariantUssClassName = ussClassName + "--scroll";
 
         /// <summary>
@@ -526,12 +561,19 @@ namespace UnityEngine.UIElements
         {
             AddToClassList(ussClassName);
 
+            m_ContentAndVerticalScrollContainer = new VisualElement() { name = "unity-content-and-vertical-scroll-container" };
+            m_ContentAndVerticalScrollContainer.AddToClassList(contentAndVerticalScrollUssClassName);
+
+            hierarchy.Add(m_ContentAndVerticalScrollContainer);
+
             contentViewport = new VisualElement() {name = "unity-content-viewport"};
             contentViewport.AddToClassList(viewportUssClassName);
             contentViewport.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-            contentViewport.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-            contentViewport.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            hierarchy.Add(contentViewport);
+            contentViewport.pickingMode = PickingMode.Ignore;
+
+            m_ContentAndVerticalScrollContainer.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            m_ContentAndVerticalScrollContainer.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            m_ContentAndVerticalScrollContainer.Add(contentViewport);
 
             m_ContentContainer = new VisualElement() {name = "unity-content-container"};
             // Content container overflow is set to scroll which clip but we need to disable clipping in this case
@@ -554,8 +596,9 @@ namespace UnityEngine.UIElements
                     scrollOffset = new Vector2(value, scrollOffset.y);
                     UpdateContentViewTransform();
                 }, SliderDirection.Horizontal)
-            {viewDataKey = "HorizontalScroller", visible = false};
+            { viewDataKey = "HorizontalScroller" };
             horizontalScroller.AddToClassList(hScrollerUssClassName);
+            horizontalScroller.style.display = DisplayStyle.None;
             hierarchy.Add(horizontalScroller);
 
             verticalScroller = new Scroller(defaultMinScrollValue, defaultMaxScrollValue,
@@ -564,13 +607,17 @@ namespace UnityEngine.UIElements
                     scrollOffset = new Vector2(scrollOffset.x, value);
                     UpdateContentViewTransform();
                 }, SliderDirection.Vertical)
-            {viewDataKey = "VerticalScroller", visible = false};
+            { viewDataKey = "VerticalScroller" };
             verticalScroller.AddToClassList(vScrollerUssClassName);
-            hierarchy.Add(verticalScroller);
+            verticalScroller.style.display = DisplayStyle.None;
+            m_ContentAndVerticalScrollContainer.Add(verticalScroller);
 
             touchScrollBehavior = TouchScrollBehavior.Clamped;
 
             RegisterCallback<WheelEvent>(OnScrollWheel);
+            verticalScroller.RegisterCallback<GeometryChangedEvent>(OnScrollersGeometryChanged);
+            horizontalScroller.RegisterCallback<GeometryChangedEvent>(OnScrollersGeometryChanged);
+
             m_CapturedTargetPointerMoveCallback = OnPointerMove;
             m_CapturedTargetPointerUpCallback = OnPointerUp;
             scrollOffset = Vector2.zero;
@@ -609,10 +656,10 @@ namespace UnityEngine.UIElements
 
             if (evt.destinationPanel.contextType == ContextType.Player)
             {
-                contentViewport.RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
-                contentViewport.RegisterCallback<PointerMoveEvent>(OnPointerMove);
-                contentViewport.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
-                contentViewport.RegisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
+                m_ContentAndVerticalScrollContainer.RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
+                m_ContentAndVerticalScrollContainer.RegisterCallback<PointerMoveEvent>(OnPointerMove);
+                m_ContentAndVerticalScrollContainer.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
+                m_ContentAndVerticalScrollContainer.RegisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
 
                 contentContainer.RegisterCallback<PointerCaptureEvent>(OnPointerCapture);
                 contentContainer.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
@@ -628,10 +675,10 @@ namespace UnityEngine.UIElements
 
             if (evt.originPanel.contextType == ContextType.Player)
             {
-                contentViewport.UnregisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
-                contentViewport.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
-                contentViewport.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
-                contentViewport.UnregisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
+                m_ContentAndVerticalScrollContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
+                m_ContentAndVerticalScrollContainer.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
+                m_ContentAndVerticalScrollContainer.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
+                m_ContentAndVerticalScrollContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
 
                 contentContainer.UnregisterCallback<PointerCaptureEvent>(OnPointerCapture);
                 contentContainer.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
@@ -680,8 +727,8 @@ namespace UnityEngine.UIElements
             // Addition is always allowed.
             if (evt.layoutPass > 0)
             {
-                needsVerticalCached = needsVerticalCached || verticalScroller.visible;
-                needsHorizontalCached = needsHorizontalCached || horizontalScroller.visible;
+                needsVerticalCached = needsVerticalCached || isVerticalScrollDisplayed;
+                needsHorizontalCached = needsHorizontalCached || isHorizontalScrollDisplayed;
             }
 
             UpdateScrollers(needsHorizontalCached, needsVerticalCached);
@@ -1069,51 +1116,71 @@ namespace UnityEngine.UIElements
             m_ScrollingPointerId = PointerId.invalidPointerId;
         }
 
-        void UpdateScrollers(bool displayHorizontal, bool displayVertical)
+        void AdjustScrollers()
         {
             float horizontalFactor = contentContainer.boundingBox.width > Mathf.Epsilon ? contentViewport.layout.width / contentContainer.boundingBox.width : 1f;
             float verticalFactor = contentContainer.boundingBox.height > Mathf.Epsilon ? contentViewport.layout.height / contentContainer.boundingBox.height : 1f;
 
             horizontalScroller.Adjust(horizontalFactor);
             verticalScroller.Adjust(verticalFactor);
+        }
+
+        void UpdateScrollers(bool displayHorizontal, bool displayVertical)
+        {
+            AdjustScrollers();
 
             // Set availability
             horizontalScroller.SetEnabled(contentContainer.boundingBox.width - contentViewport.layout.width > 0);
             verticalScroller.SetEnabled(contentContainer.boundingBox.height - contentViewport.layout.height > 0);
 
-            // Expand content if scrollbars are hidden
-            var newShowVertical = displayVertical && m_VerticalScrollerVisibility != ScrollerVisibility.Hidden;
             var newShowHorizontal = displayHorizontal && m_HorizontalScrollerVisibility != ScrollerVisibility.Hidden;
-            contentViewport.style.marginRight = newShowVertical ? verticalScroller.layout.width : 0;
-            horizontalScroller.style.right = newShowVertical ? verticalScroller.layout.width : 0;
-            contentViewport.style.marginBottom = newShowHorizontal ? horizontalScroller.layout.height : 0;
-            verticalScroller.style.bottom = newShowHorizontal ? horizontalScroller.layout.height : 0;
+            var newShowVertical = displayVertical && m_VerticalScrollerVisibility != ScrollerVisibility.Hidden;
+            var newHorizontalDisplay = newShowHorizontal ? DisplayStyle.Flex : DisplayStyle.None;
+            var newVerticalDisplay = newShowVertical ? DisplayStyle.Flex : DisplayStyle.None;
 
-            // Need to set always, for touch scrolling.
-            horizontalScroller.lowValue = 0f;
-            horizontalScroller.highValue = scrollableWidth;
-            verticalScroller.lowValue = 0f;
-            verticalScroller.highValue = scrollableHeight;
-
-            if (!displayHorizontal || !(scrollableWidth > 0f))
+            // Set display as necessary
+            if (newHorizontalDisplay != horizontalScroller.style.display)
             {
-                horizontalScroller.value = 0f;
+                horizontalScroller.style.display = newHorizontalDisplay;
+            }
+            if (newVerticalDisplay != verticalScroller.style.display)
+            {
+                verticalScroller.style.display = newVerticalDisplay;
             }
 
-            if (!displayVertical || !(scrollableHeight > 0f))
+            // Need to set always, for touch scrolling.
+            verticalScroller.lowValue = 0f;
+            verticalScroller.highValue = scrollableHeight;
+            horizontalScroller.lowValue = 0f;
+            horizontalScroller.highValue = scrollableWidth;
+
+            if (!needsVertical || !(scrollableHeight > 0f))
             {
                 verticalScroller.value = 0f;
             }
 
-            // Set visibility and remove/add content viewport margin as necessary
-            if (horizontalScroller.visible != newShowHorizontal)
+            if (!needsHorizontal || !(scrollableWidth > 0f))
             {
-                horizontalScroller.visible = newShowHorizontal;
+                horizontalScroller.value = 0f;
             }
-            if (verticalScroller.visible != newShowVertical)
+        }
+
+        private void OnScrollersGeometryChanged(GeometryChangedEvent evt)
+        {
+            if (evt.oldRect.size == evt.newRect.size)
             {
-                verticalScroller.visible = newShowVertical;
+                return;
             }
+
+            var newShowHorizontal = needsHorizontal && m_HorizontalScrollerVisibility != ScrollerVisibility.Hidden;
+
+            // Add some space if both scrollers are visible
+            if (newShowHorizontal)
+            {
+                horizontalScroller.style.marginRight = verticalScroller.layout.width;
+            }
+
+            AdjustScrollers();
         }
 
         // TODO: Same behaviour as IMGUI Scroll view

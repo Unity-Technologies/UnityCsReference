@@ -36,21 +36,23 @@ namespace UnityEditor
         AndroidApiLevelAuto = 0,
 
         // Android 4.1, "Jelly Bean", API level 16
-        [Obsolete("Minimum supported Android API level is 19 (Android 4.4 KitKat). Please use AndroidApiLevel19 or higher", true)]
+        [Obsolete("Minimum supported Android API level is 22 (Android 5.1 Lollipop). Please use AndroidApiLevel22 or higher", true)]
         AndroidApiLevel16 = 16,
 
         // Android 4.2, "Jelly Bean", API level 17
-        [Obsolete("Minimum supported Android API level is 19 (Android 4.4 KitKat). Please use AndroidApiLevel19 or higher", true)]
+        [Obsolete("Minimum supported Android API level is 22 (Android 5.1 Lollipop). Please use AndroidApiLevel22 or higher", true)]
         AndroidApiLevel17 = 17,
 
         // Android 4.3, "Jelly Bean", API level 18
-        [Obsolete("Minimum supported Android API level is 19 (Android 4.4 KitKat). Please use AndroidApiLevel19 or higher", true)]
+        [Obsolete("Minimum supported Android API level is 22 (Android 5.1 Lollipop). Please use AndroidApiLevel22 or higher", true)]
         AndroidApiLevel18 = 18,
 
         // Android 4.4, "KitKat", API level 19
+        [Obsolete("Minimum supported Android API level is 22 (Android 5.1 Lollipop). Please use AndroidApiLevel22 or higher", true)]
         AndroidApiLevel19 = 19,
 
         // Android 5.0, "Lollipop", API level 21
+        [Obsolete("Minimum supported Android API level is 22 (Android 5.1 Lollipop). Please use AndroidApiLevel22 or higher", true)]
         AndroidApiLevel21 = 21,
 
         // Android 5.1, "Lollipop", API level 22

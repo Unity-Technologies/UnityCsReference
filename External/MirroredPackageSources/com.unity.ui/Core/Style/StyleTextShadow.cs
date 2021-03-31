@@ -53,31 +53,37 @@ namespace UnityEngine.UIElements
         private StyleKeyword m_Keyword;
         private TextShadow m_Value;
 
+        /// <undoc/>
         public static bool operator==(StyleTextShadow lhs, StyleTextShadow rhs)
         {
             return lhs.m_Keyword == rhs.m_Keyword && lhs.m_Value == rhs.m_Value;
         }
 
+        /// <undoc/>
         public static bool operator!=(StyleTextShadow lhs, StyleTextShadow rhs)
         {
             return !(lhs == rhs);
         }
 
+        /// <undoc/>
         public static implicit operator StyleTextShadow(StyleKeyword keyword)
         {
             return new StyleTextShadow(keyword);
         }
 
+        /// <undoc/>
         public static implicit operator StyleTextShadow(TextShadow v)
         {
             return new StyleTextShadow(v);
         }
 
+        /// <undoc/>
         public bool Equals(StyleTextShadow other)
         {
             return other == this;
         }
 
+        /// <undoc/>
         public override bool Equals(object obj)
         {
             if (!(obj is StyleTextShadow))

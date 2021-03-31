@@ -270,6 +270,25 @@ namespace UnityEngine
         public bool RenderToCubemap(RenderTexture cubemap, int faceMask)    { return RenderToCubemapImpl(cubemap, faceMask); }
         public bool RenderToCubemap(RenderTexture cubemap)                  { return RenderToCubemapImpl(cubemap, 63); }
 
+        public enum SceneViewFilterMode
+        {
+            Off = 0,
+            ShowFiltered = 1
+        }
+
+        [NativeConditional("UNITY_EDITOR")]
+        extern private int GetFilterMode();
+
+        [NativeConditional("UNITY_EDITOR")]
+        public SceneViewFilterMode sceneViewFilterMode
+        {
+            get
+            {
+                return (SceneViewFilterMode)GetFilterMode();
+            }
+        }
+
+
         // TODO: it should be collapsed with others
         [NativeName("RenderToCubemap")] extern private bool RenderToCubemapEyeImpl(RenderTexture cubemap, int faceMask, MonoOrStereoscopicEye stereoEye);
         public bool RenderToCubemap(RenderTexture cubemap, int faceMask, MonoOrStereoscopicEye stereoEye)

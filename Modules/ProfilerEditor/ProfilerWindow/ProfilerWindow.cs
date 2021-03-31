@@ -808,11 +808,9 @@ namespace UnityEditor
             }
         }
 
-        static void EditorGUI_HyperLinkClicked(object sender, EventArgs e)
+        static void EditorGUI_HyperLinkClicked(EditorWindow window, HyperLinkClickedEventArgs args)
         {
-            EditorGUILayout.HyperLinkClickedEventArgs args = (EditorGUILayout.HyperLinkClickedEventArgs)e;
-
-            if (args.hyperlinkInfos.ContainsKey("openprofiler"))
+            if (args.hyperLinkData.ContainsKey("openprofiler"))
                 ShowProfilerWindow();
         }
 

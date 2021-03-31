@@ -68,14 +68,15 @@ namespace UnityEditor.UIElements
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
         /// <summary>
-        /// Constructor.
+        /// Initializes and returns an instance of ColorField.
         /// </summary>
         public ColorField()
             : this(null) {}
 
         /// <summary>
-        /// Constructor.
+        /// Initializes and returns an instance of ColorField.
         /// </summary>
+        /// <param name="label">The text to use as a label.</param>
         public ColorField(string label)
             : base(label, null)
         {

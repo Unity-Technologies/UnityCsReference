@@ -44,15 +44,35 @@ namespace UnityEditor
             // paste as a child if a gameObject is selected
             if (selected.Length == 1)
             {
+                Scene subScene = new Scene();
+                bool pasteToSubScene = false;
+                bool isSubScene = false;
+
+                // If target is subScene make sure we just move objects under subScene
+                if (SubSceneGUI.IsSubSceneHeader(selected[0].gameObject))
+                {
+                    subScene = SubSceneGUI.GetSubScene(selected[0].gameObject);
+                    isSubScene = subScene.isSubScene;
+                    pasteToSubScene = subScene.IsValid();
+                }
+
                 // handle paste after cut
                 if (CutBoard.hasCutboardData)
                 {
-                    CutBoard.PasteAsChildren(selected[0]);
+                    if (pasteToSubScene)
+                    {
+                        if (subScene.handle != 0)
+                            CutBoard.PasteToScene(subScene, selected[0]);
+                    }
+                    else if (!isSubScene)
+                    {
+                        CutBoard.PasteAsChildren(selected[0]);
+                    }
                 }
                 // paste after copy
-                else
+                else if (pasteToSubScene || !isSubScene)
                 {
-                    Unsupported.PasteGameObjectsFromPasteboard(selected[0]);
+                    Unsupported.PasteGameObjectsFromPasteboard(selected[0], pasteToSubScene ? subScene.handle : 0);
                 }
             }
             RepaintHierarchyWindowsAfterPaste();
@@ -69,7 +89,16 @@ namespace UnityEditor
 
         internal static bool CanPasteAsChild()
         {
-            return ((SceneHierarchyWindow.lastInteractedHierarchyWindow != null && SceneHierarchyWindow.lastInteractedHierarchyWindow.sceneHierarchy != null) || SceneView.lastActiveSceneView != null) && Selection.transforms.Length == 1;
+            bool canPaste = (Unsupported.CanPasteGameObjectsFromPasteboard() || CutBoard.hasCutboardData)
+                && ((SceneHierarchyWindow.lastInteractedHierarchyWindow != null && SceneHierarchyWindow.lastInteractedHierarchyWindow.sceneHierarchy != null)
+                    || SceneView.lastActiveSceneView != null)
+                && Selection.transforms.Length == 1;
+
+            var activeGO = Selection.activeGameObject;
+            if (activeGO != null && SubSceneGUI.IsSubSceneHeader(activeGO))
+                return canPaste && SubSceneGUI.GetSubScene(activeGO).IsValid();
+
+            return canPaste;
         }
 
         internal static bool GetIsCustomParentSelected(Transform fallbackParent)

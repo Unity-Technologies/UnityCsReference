@@ -44,6 +44,9 @@ namespace UnityEngine.UIElements
             return e;
         }
 
+        /// <summary>
+        /// Initializes and returns an instance of TooltipEvent.
+        /// </summary>
         public TooltipEvent()
         {
             LocalInit();

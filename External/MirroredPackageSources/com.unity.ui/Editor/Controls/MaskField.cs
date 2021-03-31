@@ -384,10 +384,10 @@ namespace UnityEditor.UIElements
             UxmlIntAttributeDescription m_MaskValue = new UxmlIntAttributeDescription { name = "value" };
 
             /// <summary>
-            /// Initialize the <see cref="UxmlTraits"/> for <see cref="MaskField"/>.
+            /// Initializes the <see cref="UxmlTraits"/> for <see cref="MaskField"/>.
             /// </summary>
             /// <param name="ve">The VisualElement that will be populated.</param>
-            /// <param name="bag">The bag from which the attributes are taken.</param>
+            /// <param name="bag">The bag from where the attributes are taken.</param>
             /// <param name="cc">The creation context, unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -472,11 +472,26 @@ namespace UnityEditor.UIElements
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
 
+        /// <summary>
+        /// Initializes and returns an instance of MaskField.
+        /// </summary>
+        /// <param name="choices">A list of choices to populate the field.</param>
+        /// <param name="defaultValue">The initial mask value for this field.</param>
+        /// <param name="formatSelectedValueCallback">A callback to format the selected value. Unity calls this method automatically when a new value is selected in the field..</param>
+        /// <param name="formatListItemCallback">The initial mask value this field should use. Unity calls this method automatically when displaying choices for the field.</param>
         public MaskField(List<string> choices, int defaultMask, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
             : this(null, choices, defaultMask, formatSelectedValueCallback, formatListItemCallback)
         {
         }
 
+        /// <summary>
+        /// Initializes and returns an instance of MaskField.
+        /// </summary>
+        /// <param name="label">The text to use as a label for the field.</param>
+        /// <param name="choices">A list of choices to populate the field.</param>
+        /// <param name="defaultValue">The initial mask value for this field.</param>
+        /// <param name="formatSelectedValueCallback">A callback to format the selected value. Unity calls this method automatically when a new value is selected in the field..</param>
+        /// <param name="formatListItemCallback">The initial mask value this field should use. Unity calls this method automatically when displaying choices for the field.</param>
         public MaskField(string label, List<string> choices, int defaultMask, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
             : this(label)
         {
@@ -490,9 +505,16 @@ namespace UnityEditor.UIElements
             this.formatSelectedValueCallback = formatSelectedValueCallback;
         }
 
+        /// <summary>
+        /// Initializes and returns an instance of MaskField.
+        /// </summary>
         public MaskField()
             : this(null) {}
 
+        /// <summary>
+        /// Initializes and returns an instance of MaskField.
+        /// </summary>
+        /// <param name="label">The text to use as a label for the field.</param>
         public MaskField(string label)
             : base(label)
         {

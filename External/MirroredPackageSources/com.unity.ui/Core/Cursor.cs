@@ -24,6 +24,7 @@ namespace UnityEngine.UIElements
             return obj is Cursor && Equals((Cursor)obj);
         }
 
+        /// <undoc/>
         public bool Equals(Cursor other)
         {
             return EqualityComparer<Texture2D>.Default.Equals(texture, other.texture) &&
@@ -40,11 +41,13 @@ namespace UnityEngine.UIElements
             return hashCode;
         }
 
+        /// <undoc/>
         public static bool operator==(Cursor style1, Cursor style2)
         {
             return style1.Equals(style2);
         }
 
+        /// <undoc/>
         public static bool operator!=(Cursor style1, Cursor style2)
         {
             return !(style1 == style2);

@@ -28,6 +28,7 @@ namespace UnityEngine.UIElements
             return obj is TextShadow && Equals((TextShadow)obj);
         }
 
+        /// <undoc/>
         public bool Equals(TextShadow other)
         {
             return other.offset == offset && other.blurRadius == blurRadius && other.color == color;
@@ -42,11 +43,13 @@ namespace UnityEngine.UIElements
             return hashCode;
         }
 
+        /// <undoc/>
         public static bool operator==(TextShadow style1, TextShadow style2)
         {
             return style1.Equals(style2);
         }
 
+        /// <undoc/>
         public static bool operator!=(TextShadow style1, TextShadow style2)
         {
             return !(style1 == style2);

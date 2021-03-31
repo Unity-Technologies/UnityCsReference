@@ -663,7 +663,7 @@ namespace Unity.Collections
         [NativeContainerIsReadOnly]
         [DebuggerDisplay("Length = {Length}")]
         [DebuggerTypeProxy(typeof(NativeArrayReadOnlyDebugView<>))]
-        public struct ReadOnly
+        public struct ReadOnly : IEnumerable<T>
         {
             [NativeDisableUnsafePtrRestriction]
             internal void* m_Buffer;
@@ -718,6 +718,54 @@ namespace Unity.Collections
                 var versionPtr = (int*)m_Safety.versionNode;
                 if (m_Safety.version != ((*versionPtr) & AtomicSafetyHandle.ReadCheck))
                     AtomicSafetyHandle.CheckReadAndThrowNoEarlyOut(m_Safety);
+            }
+
+            [ExcludeFromDocs]
+            public struct Enumerator : IEnumerator<T>
+            {
+                ReadOnly m_Array;
+                int m_Index;
+
+                public Enumerator(in ReadOnly array)
+                {
+                    m_Array = array;
+                    m_Index = -1;
+                }
+
+                public void Dispose()
+                {
+                }
+
+                public bool MoveNext()
+                {
+                    m_Index++;
+                    return m_Index < m_Array.Length;
+                }
+
+                public void Reset()
+                {
+                    m_Index = -1;
+                }
+
+                // Let NativeArray indexer check for out of range.
+                public T Current => m_Array[m_Index];
+
+                object IEnumerator.Current => Current;
+            }
+
+            public Enumerator GetEnumerator()
+            {
+                return new Enumerator(this);
+            }
+
+            IEnumerator<T> IEnumerable<T>.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
             }
         }
     }

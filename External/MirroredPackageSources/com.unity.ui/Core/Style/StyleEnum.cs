@@ -53,31 +53,37 @@ namespace UnityEngine.UIElements
         private T m_Value;
         private StyleKeyword m_Keyword;
 
+        /// <undoc/>
         public static bool operator==(StyleEnum<T> lhs, StyleEnum<T> rhs)
         {
             return lhs.m_Keyword == rhs.m_Keyword && UnsafeUtility.EnumEquals(lhs.m_Value, rhs.m_Value);
         }
 
+        /// <undoc/>
         public static bool operator!=(StyleEnum<T> lhs, StyleEnum<T> rhs)
         {
             return !(lhs == rhs);
         }
 
+        /// <undoc/>
         public static implicit operator StyleEnum<T>(StyleKeyword keyword)
         {
             return new StyleEnum<T>(keyword);
         }
 
+        /// <undoc/>
         public static implicit operator StyleEnum<T>(T v)
         {
             return new StyleEnum<T>(v);
         }
 
+        /// <undoc/>
         public bool Equals(StyleEnum<T> other)
         {
             return other == this;
         }
 
+        /// <undoc/>
         public override bool Equals(object obj)
         {
             return obj is StyleEnum<T> other && Equals(other);

@@ -116,9 +116,10 @@ namespace UnityEngine.UIElements
         /// The type of element for which this element type can substitute for.
         /// </summary>
         /// <remarks>
-        /// Enable the element described by this IUXmlAttribute to appear anywhere the <see cref="substituteForTypeName"/> element can appear in a UXML document. For example, if an element restricts its children to <Button> elements (using the <see cref="uxmlChildElementsDescription"/> property), elements having their <see cref="substitueForTypeName"/> returning <c>Button</c> will be accepted as children of that element.
+        /// Enables the element to appear anywhere the <see cref="substituteForTypeName"/> element can appear in a UXML document.
+        /// For example, if an element restricts its children to Button elements (using the <see cref="uxmlChildElementsDescription"/> property), elements that have <see cref="substitueForTypeName"/> return <c>Button</c> are accepted as children of that element.
         ///
-        /// The value of this property is used for the <c>element</c> <c>substitutionGroup</c> attribute in UXML schema definition.
+        /// The value of this property is used for the element's substitutionGroup attribute in UXML schema definition.
         /// </remarks>
         string substituteForTypeName { get; }
 
@@ -143,7 +144,7 @@ namespace UnityEngine.UIElements
         bool AcceptsAttributeBag(IUxmlAttributes bag, CreationContext cc);
 
         /// <summary>
-        /// Instanciate and initialize an object of type <c>T0</c>.
+        /// Instantiate and initialize an object of type <c>T0</c>.
         /// </summary>
         /// <param name="bag">A bag of name-value pairs, one for each attribute of the UXML element. This can be used to initialize the properties of the created object.</param>
         /// <param name="cc">When the element is created as part of a template instance inserted in another document, this contains information about the insertion point.</param>

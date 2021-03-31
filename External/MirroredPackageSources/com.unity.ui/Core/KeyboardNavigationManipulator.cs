@@ -2,24 +2,68 @@ using System;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Represents an operation that the user is trying to accomplish through a specific input mechanism.
+    /// </summary>
+    /// <remarks>
+    /// Tests the received callback value for <see cref="KeyboardNavigationManipulator"/> against the values of this enum to implement the operation in your UI.
+    /// </remarks>
     public enum KeyboardNavigationOperation
     {
+        /// <summary>
+        /// Default value. Indicates an uninitialized enum value.
+        /// </summary>
         None,
+        /// <summary>
+        /// Selects all UI selectable elements or text.
+        /// </summary>
         SelectAll,
+        /// <summary>
+        /// Cancels the current UI interaction.
+        /// </summary>
         Cancel,
+        /// <summary>
+        /// Submits or concludes the current UI interaction.
+        /// </summary>
         Submit,
+        /// <summary>
+        /// Selects the previous item.
+        /// </summary>
         Previous,
+        /// <summary>
+        /// Selects the next item.
+        /// </summary>
         Next,
+        /// <summary>
+        /// Moves the selection up one page (in a list which has scrollable area).
+        /// </summary>
         PageUp,
+        /// <summary>
+        /// Moves the selection down one page (in a list which has scrollable area).
+        /// </summary>
         PageDown,
+        /// <summary>
+        /// Selects the first element.
+        /// </summary>
         Begin,
+        /// <summary>
+        /// Selects the last element.
+        /// </summary>
         End,
     }
 
+    /// <summary>
+    /// Provides a default implementation for translating input device specific events to higher level navigation operations as commonly possible with a keyboard.
+    /// </summary>
     public class KeyboardNavigationManipulator : Manipulator
     {
         readonly Action<KeyboardNavigationOperation, EventBase> m_Action;
 
+        /// <summary>
+        /// Initializes and returns an instance of KeyboardNavigationManipulator, configured to invoke the specified callback.
+        /// </summary>
+        /// <param name="action">This action is invoked when specific low level events are dispatched to the target <see cref="VisualElement"/>,
+        /// with a specific value of <see cref="KeyboardNavigationOperation"/> and a reference to the original low level event.</param>
         public KeyboardNavigationManipulator(Action<KeyboardNavigationOperation, EventBase> action)
         {
             m_Action = action;
@@ -63,7 +107,7 @@ namespace UnityEngine.UIElements
                     case KeyCode.PageUp: return KeyboardNavigationOperation.PageUp;
                     case KeyCode.PageDown: return KeyboardNavigationOperation.PageDown;
                 }
-
+                // TODO why do we want to invoke the callback in this case? Looks weird.
                 return KeyboardNavigationOperation.None;
             }
 

@@ -68,9 +68,16 @@ namespace UnityEditor.UIElements
         private Vector3Field m_CenterField;
         private Vector3Field m_ExtentsField;
 
+        /// <summary>
+        /// Initializes and returns an instance of BoundsField.
+        /// </summary>
         public BoundsField()
             : this(null) {}
 
+        /// <summary>
+        /// Initializes and returns an instance of BoundsField.
+        /// </summary>
+        /// <param name="label">The text to use as a label.</param>
         public BoundsField(string label)
             : base(label, null)
         {

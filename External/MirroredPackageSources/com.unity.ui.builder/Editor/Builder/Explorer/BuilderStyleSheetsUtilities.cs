@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine.UIElements;
 
@@ -48,15 +49,34 @@ namespace Unity.UI.Builder
             return true;
         }
 
-        public static void RemoveUSSFromAsset(BuilderPaneWindow paneWindow, int selectedStyleSheetIndex)
+        public static void RemoveUSSFromAsset(BuilderPaneWindow paneWindow, BuilderSelection selection, VisualElement clickedElement)
         {
-            // We need to save all files before we remove the USS.
+            // We need to save all files before we remove the USS references.
             // If we don't do this, changes in the removed USS will be lost.
             var shouldContinue = s_CheckForUnsavedChanges(paneWindow);
             if (!shouldContinue)
                 return;
 
-            BuilderAssetUtilities.RemoveStyleSheetFromAsset(paneWindow.document, selectedStyleSheetIndex);
+            var selectedElements = selection.selection;
+
+            if (!selectedElements.Contains(clickedElement))
+            {
+                // Removed just clicked element
+                var clickedStyleSheetIndex = (int)clickedElement.GetProperty(BuilderConstants.ElementLinkedStyleSheetIndexVEPropertyName);
+                BuilderAssetUtilities.RemoveStyleSheetFromAsset(paneWindow.document, clickedStyleSheetIndex);
+            }
+            else
+            {
+                // Removed selected elements
+                var styleSheetIndexes = selectedElements.Where(x => BuilderSharedStyles.IsStyleSheetElement(x) &&
+                    string.IsNullOrEmpty(x.GetProperty(BuilderConstants.ExplorerItemLinkedUXMLFileName) as string))
+                    .Select(x => (int)x.GetProperty(BuilderConstants.ElementLinkedStyleSheetIndexVEPropertyName))
+                    .OrderByDescending(x => x)
+                    .ToArray();
+
+                BuilderAssetUtilities.RemoveStyleSheetsFromAsset(paneWindow.document, styleSheetIndexes);
+            }
+
             paneWindow.OnEnableAfterAllSerialization();
         }
 

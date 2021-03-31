@@ -69,6 +69,18 @@ namespace Unity.UI.Builder
             document.RemoveStyleSheetFromDocument(ussIndex);
         }
 
+        public static void RemoveStyleSheetsFromAsset(
+            BuilderDocument document, int[] indexes)
+        {
+            Undo.RegisterCompleteObjectUndo(
+                document.visualTreeAsset, "Remove StyleSheets from UXML");
+
+            foreach (var index in indexes)
+            {
+                document.RemoveStyleSheetFromDocument(index);
+            }
+        }
+
         public static void ReorderStyleSheetsInAsset(
             BuilderDocument document, VisualElement styleSheetsContainerElement)
         {

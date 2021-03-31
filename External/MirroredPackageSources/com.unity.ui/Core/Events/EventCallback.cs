@@ -2,8 +2,21 @@ using System;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Defines the structure of a callback that can be registered onto an element for an event type
+    /// </summary>
+    /// <param name="evt">The event instance</param>
+    /// <typeparam name="TEventType">The type of event to register the callback for</typeparam>
     public delegate void EventCallback<in TEventType>(TEventType evt);
 
+    /// <summary>
+    /// Defines the structure of a callback that can be registered onto an element for an event type,
+    /// along with a custom user defined argument.
+    /// </summary>
+    /// <param name="evt">The event instance.</param>
+    /// <param name="userArgs">The user argument instance.</param>
+    /// <typeparam name="TEventType">The type of event registered for the callback.</typeparam>
+    /// <typeparam name="TCallbackArgs">The type of the user argument.</typeparam>
     public delegate void EventCallback<in TEventType, in TCallbackArgs>(TEventType evt, TCallbackArgs userArgs);
 
     internal abstract class EventCallbackFunctorBase

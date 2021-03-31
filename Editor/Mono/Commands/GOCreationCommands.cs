@@ -73,7 +73,10 @@ namespace UnityEditor
             GameObjectUtility.EnsureUniqueNameForSibling(go);
             Undo.SetCurrentGroupName("Create " + go.name);
 
-            EditorWindow.FocusWindowIfItsOpen<SceneHierarchyWindow>();
+            var sh = SceneHierarchyWindow.GetSceneHierarchyWindowToFocusForNewGameObjects();
+            if (sh != null)
+                sh.Focus();
+
             Selection.activeGameObject = go;
         }
 

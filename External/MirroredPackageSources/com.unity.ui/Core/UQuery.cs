@@ -204,7 +204,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Query object containing all the selection rules. Can be saved and rerun later without re-allocating memory.
+    /// Query object containing all the selection rules. The object can be saved and rerun later without re-allocating memory.
     /// </summary>
     public struct UQueryState<T> : IEnumerable<T>, IEquatable<UQueryState<T>> where T : VisualElement
     {
@@ -298,7 +298,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Selects the n th element matching all the criteria, or null if not enough elements were found.
+        /// Selects the nth element matching all the criteria, or null if not enough elements were found.
         /// </summary>
         /// <param name="index">The index of the matched element.</param>
         /// <returns>The match element at the specified index.</returns>
@@ -407,6 +407,10 @@ namespace UnityEngine.UIElements
             return result;
         }
 
+        /// <summary>
+        /// Allows traversing the results of the query with `foreach` without creating GC allocations.
+        /// </summary>
+        /// <returns>A <see cref="UQueryState{T}.Enumerator"/> instance configured to traverse the results.</returns>
         public Enumerator GetEnumerator() => new Enumerator(this);
 
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
@@ -415,6 +419,7 @@ namespace UnityEngine.UIElements
 
         private static readonly ListQueryMatcher<VisualElement> s_EnumerationList = new ListQueryMatcher<VisualElement>();
 
+        /// <undoc/>
         public struct Enumerator : IEnumerator<T>
         {
             private List<VisualElement> iterationList;
@@ -429,20 +434,25 @@ namespace UnityEngine.UIElements
                 currentIndex = -1;
             }
 
+            /// <undoc/>
             public T Current => (T)iterationList[currentIndex];
 
+            /// <undoc/>
             object IEnumerator.Current => Current;
 
+            /// <undoc/>
             public bool MoveNext()
             {
                 return (++currentIndex < iterationList.Count); // increment current position and check if reached end of buffer
             }
 
+            /// <undoc/>
             public void Reset()
             {
                 currentIndex = -1;
             }
 
+            /// <undoc/>
             public void Dispose()
             {
                 VisualElementListPool.Release(iterationList);
@@ -450,12 +460,14 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <undoc/>
         public bool Equals(UQueryState<T> other)
         {
             return ReferenceEquals(m_Element, other.m_Element) &&
                 EqualityComparer<List<RuleMatcher>>.Default.Equals(m_Matchers, other.m_Matchers);
         }
 
+        /// <undoc/>
         public override bool Equals(object obj)
         {
             if (!(obj is UQueryState<T>))
@@ -474,11 +486,13 @@ namespace UnityEngine.UIElements
             return hashCode;
         }
 
+        /// <undoc/>
         public static bool operator==(UQueryState<T> state1, UQueryState<T> state2)
         {
             return state1.Equals(state2);
         }
 
+        /// <undoc/>
         public static bool operator!=(UQueryState<T> state1, UQueryState<T> state2)
         {
             return !(state1 == state2);
@@ -518,8 +532,13 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Selects all elements with the given class. Not to be confused with Type (see OfType<>()).
+        /// Selects all elements with the specified class in the class list, as specified with the `class` attribute in a UXML file or added with <see cref="VisualElement.AddToClassList(string)"/> method.
         /// </summary>
+        /// <param name="classname">The class to use in the query.</param>
+        /// <remarks>
+        /// This method can be called multiple times in order to select elements with multiple classes.
+        /// To select elements by their C# type, use <see cref="OfType{T2}(string,string[])"/>.
+        /// </remarks>
         public UQueryBuilder<T> Class(string classname)
         {
             AddClass(classname);
@@ -861,16 +880,19 @@ namespace UnityEngine.UIElements
         }
 
         // Quick One-liners accessors
+        /// <undoc/>
         public static implicit operator T(UQueryBuilder<T> s)
         {
             return s.First();
         }
 
+        /// <undoc/>
         public static bool operator==(UQueryBuilder<T> builder1, UQueryBuilder<T> builder2)
         {
             return builder1.Equals(builder2);
         }
 
+        /// <undoc/>
         public static bool operator!=(UQueryBuilder<T> builder1, UQueryBuilder<T> builder2)
         {
             return !(builder1 == builder2);
@@ -950,6 +972,7 @@ namespace UnityEngine.UIElements
             Build().ForEach(funcCall);
         }
 
+        /// <undoc/>
         public bool Equals(UQueryBuilder<T> other)
         {
             return EqualityComparer<List<StyleSelector>>.Default.Equals(m_StyleSelectors, other.m_StyleSelectors) &&
@@ -962,6 +985,7 @@ namespace UnityEngine.UIElements
                 negatedPseudoStatesMask == other.negatedPseudoStatesMask;
         }
 
+        /// <undoc/>
         public override bool Equals(object obj)
         {
             if (!(obj is UQueryBuilder<T>))
@@ -1005,7 +1029,7 @@ namespace UnityEngine.UIElements
         private static UQueryState<VisualElement> SingleElementTypeAndNameAndClassQuery = new UQueryBuilder<VisualElement>(null).SingleBaseType().Name(String.Empty).Class(String.Empty).Build();
 
         /// <summary>
-        /// Convenience overload, shorthand for Query<T>.Build().First().
+        /// Convenience overload, shorthand for `Query&lt;T&gt;.Build().First().`
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>
@@ -1017,7 +1041,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Convenience overload, shorthand for Query<T>.Build().First().
+        /// Convenience overload, shorthand for `Query&lt;T&gt;.Build().First().`
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>
@@ -1029,7 +1053,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Convenience overload, shorthand for Query<T>.Build().First().
+        /// Convenience overload, shorthand for `Query&lt;T&gt;.Build().First().`
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>
@@ -1084,7 +1108,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Convenience overload, shorthand for Query<T>.Build().First().
+        /// Convenience overload, shorthand for `Query&lt;T&gt;.Build().First().`
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>

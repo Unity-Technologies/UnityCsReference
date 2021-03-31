@@ -110,10 +110,17 @@ namespace UnityEditor.UIElements
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
-
+        /// <summary>
+        /// Initializes and returns an instance of CurveField.
+        /// </summary>
         public TagField()
             : this(null) {}
 
+        /// <summary>
+        /// Initializes and returns an instance of CurveField.
+        /// </summary>
+        /// <param name="label">The text to use as a label for the field.</param>
+        /// <param name="defaultValue">The initial tag value this field should use.</param>
         public TagField(string label, string defaultValue = null)
             : base(label)
         {

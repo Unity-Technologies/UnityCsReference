@@ -79,7 +79,7 @@ namespace UnityEditor
             else
             {
                 Scene targetScene = EditorSceneManager.GetSceneByHandle(Selection.activeInstanceID);
-                PasteToScene(targetScene);
+                PasteToScene(targetScene, fallbackParent);
             }
         }
 
@@ -90,7 +90,7 @@ namespace UnityEditor
 
             foreach (var go in m_GOCutboard)
             {
-                if (go != null)
+                if (go != null && CanSetParent(go, parent))
                 {
                     SetParent(go, parent);
                 }
@@ -105,7 +105,7 @@ namespace UnityEditor
         {
             foreach (var go in m_GOCutboard)
             {
-                if (go != null)
+                if (go != null && CanSetParent(go, target))
                 {
                     if (target.parent != null)
                         SetParent(go, target.parent);
@@ -119,11 +119,11 @@ namespace UnityEditor
             Reset();
         }
 
-        private static void PasteToScene(Scene targetScene)
+        internal static void PasteToScene(Scene targetScene, Transform targetGO)
         {
             foreach (var go in m_GOCutboard)
             {
-                if (go != null)
+                if (go != null && CanSetParent(go, targetGO))
                 {
                     MoveToScene(go, targetScene);
                 }
@@ -193,6 +193,17 @@ namespace UnityEditor
         internal static bool AreCutAndPasteStagesSame()
         {
             return m_StageCutWasPerformedIn == StageUtility.GetCurrentStage();
+        }
+
+        private static bool CanSetParent(Transform transform, Transform target)
+        {
+            bool canSetParent = transform != target;
+            if (target != null)
+                canSetParent = canSetParent && !transform.IsChildOf(target) && !target.IsChildOf(transform);
+            if (SubSceneGUI.IsSubSceneHeader(transform.gameObject))
+                canSetParent = canSetParent && !SubSceneGUI.IsChildOrSameAsOtherTransform(transform, target) && !SubSceneGUI.IsChildOrSameAsOtherTransform(target, transform);
+
+            return canSetParent;
         }
     }
 }

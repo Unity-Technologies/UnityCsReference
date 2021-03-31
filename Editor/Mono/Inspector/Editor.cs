@@ -912,12 +912,13 @@ namespace UnityEditor
 
         internal void ShowOpenButton(UnityObject[] assets, bool enableCondition = true)
         {
+            enableCondition &= (CanOpenMultipleObjects() || assets.Length == 1);
             bool previousGUIState = GUI.enabled;
             GUI.enabled = enableCondition;
 
             if (GUILayout.Button(BaseStyles.open, EditorStyles.miniButton))
             {
-                if (AssetDatabase.MakeEditable(
+                if (!ShouldTryToMakeEditableOnOpen() || AssetDatabase.MakeEditable(
                     assets.Select(AssetDatabase.GetAssetPath).ToArray(),
                     "Do you want to check out this file or files?"))
                 {
@@ -932,6 +933,16 @@ namespace UnityEditor
         protected virtual bool ShouldHideOpenButton()
         {
             return false;
+        }
+
+        internal virtual bool CanOpenMultipleObjects()
+        {
+            return true;
+        }
+
+        internal virtual bool ShouldTryToMakeEditableOnOpen()
+        {
+            return true;
         }
 
         internal virtual void OnHeaderIconGUI(Rect iconRect)

@@ -1,5 +1,8 @@
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// A control that allows users to select a single option inside a <see cref="RadioButtonGroup"/>
+    /// </summary>
     public class RadioButton : BaseBoolField, IGroupBoxOption
     {
         /// <summary>
@@ -140,8 +143,10 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <undoc/>
         public void SetSelected(bool selected)
         {
+            // TODO this is an implementation of IGroupBoxOption, does it need to be public? (explicit interface implementation)
             // We're using value here and not SetValueWithoutNotify, to allow users to receive events when this gets
             // changed from other options. Checks in the setter and the group manager will prevent infinite loops.
             value = selected;

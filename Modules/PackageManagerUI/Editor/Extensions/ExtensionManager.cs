@@ -217,6 +217,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshPackageActionsBasedOnWidth()
         {
             var childrenWidth = m_PackageActions.Sum(a => a.visible ? a.dropdownButton.estimatedWidth : 0.0f);
+            UIUtils.SetElementDisplay(m_ToolbarExtensionContainer, childrenWidth != 0);
             var showCollapsedButton = childrenWidth > m_ToolbarExtensionContainer.rect.width;
             if (showCollapsedButton == UIUtils.IsElementVisible(m_CollapsedPackageActions))
                 return;

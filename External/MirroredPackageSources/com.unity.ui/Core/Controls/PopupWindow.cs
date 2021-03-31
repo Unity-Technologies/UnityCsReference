@@ -41,6 +41,9 @@ namespace UnityEngine.UIElements
         /// </summary>
         public static readonly string contentUssClassName = ussClassName + "__content-container";
 
+        /// <summary>
+        /// Initializes and returns an instance of PopupWindow.
+        /// </summary>
         public PopupWindow()
         {
             AddToClassList(ussClassName);

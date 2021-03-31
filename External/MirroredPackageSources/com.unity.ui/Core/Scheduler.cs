@@ -66,11 +66,13 @@ namespace UnityEngine.UIElements
             return hashCode;
         }
 
+        /// <undoc/>
         public static bool operator==(TimerState state1, TimerState state2)
         {
             return state1.Equals(state2);
         }
 
+        /// <undoc/>
         public static bool operator!=(TimerState state1, TimerState state2)
         {
             return !(state1 == state2);

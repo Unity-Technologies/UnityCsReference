@@ -170,6 +170,26 @@ namespace UnityEditor
             }
         }
 
+        internal void ComparisonPopupClosed(Object instanceObject)
+        {
+            if (instanceObject is GameObject)
+                SyncTreeViewItemNameForGameObject((GameObject)instanceObject);
+        }
+
+        void SyncTreeViewItemNameForGameObject(GameObject gameObject)
+        {
+            foreach (var item in GetRows())
+            {
+                var poItem = item as PrefabOverridesTreeViewItem;
+                if (poItem != null && poItem.obj == gameObject)
+                {
+                    item.displayName = poItem.obj.name;
+                    Repaint();
+                    return;
+                }
+            }
+        }
+
         protected override TreeViewItem BuildRoot()
         {
             Debug.Assert(m_PrefabInstanceRoot != null, "We should always have a valid apply target");
@@ -578,6 +598,7 @@ namespace UnityEditor
             public override void OnClose()
             {
                 Undo.postprocessModifications -= RecheckOverrideStatus;
+                m_Owner.ComparisonPopupClosed(m_Instance);
 
                 base.OnClose();
                 if (m_SourceEditor != null)

@@ -327,7 +327,7 @@ namespace UnityEngine.UIElements
         /// This property can only be set when the <see cref="VisualElement"/> is not yet part of a <see cref="Panel"/>. Once part of a <see cref="Panel"/>, this property becomes effectively read-only, and attempts to change it will throw an exception.
         /// The specification of proper <see cref="UsageHints"/> drives the system to make better decisions on how to process or accelerate certain operations based on the anticipated usage pattern.
         /// Note that those hints do not affect behavioral or visual results, but only affect the overall performance of the panel and the elements within.
-        /// Generally it advised to always consider specifying the proper <see cref="UsageHints"/>, but keep in mind that some <see cref="UsageHints"/> may be internally ignored under certain conditions (e.g. due to hardware limitations on the target platform).
+        /// It's advised to always consider specifying the proper <see cref="UsageHints"/>, but keep in mind that some <see cref="UsageHints"/> might be internally ignored under certain conditions (e.g. due to hardware limitations on the target platform).
         /// </summary>
         public UsageHints usageHints
         {
@@ -376,6 +376,13 @@ namespace UnityEngine.UIElements
         Quaternion m_Rotation = Quaternion.identity;
         Vector3 m_Scale = Vector3.one;
 
+        /// <summary>
+        /// Returns a transform object for this VisualElement.
+        /// <seealso cref="ITransform"/>
+        /// </summary>
+        /// <remarks>
+        /// The transform object implements changes to the VisualElement object.
+        /// </remarks>
         public ITransform transform
         {
             get { return this; }
@@ -482,6 +489,13 @@ namespace UnityEngine.UIElements
 
         // This will replace the Rect position
         // origin and size relative to parent
+        /// <summary>
+        /// The position and size of the VisualElement relative to its parent, as computed by the layout system.
+        /// </summary>
+        /// <remarks>
+        /// Before reading from this property, add it to a panel and wait for one frame to ensure that the element layout is computed.
+        /// After the layout is computed, a <see cref="GeometryChangedEvent"/> will be sent on this element.
+        /// </remarks>
         public Rect layout
         {
             get
@@ -537,6 +551,13 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// The rectangle of the content area of the element, in the local space of the element.
+        /// </summary>
+        /// <remarks>
+        /// In the box model used by UI Toolkit, the content area refers to the inner rectangle for displaying text and images.
+        /// It excludes the borders and the padding.
+        /// </remarks>
         public Rect contentRect
         {
             get
@@ -550,6 +571,13 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// The rectangle of the padding area of the element, in the local space of the element.
+        /// </summary>
+        /// <remarks>
+        /// In the box model used by UI Toolkit, the padding area refers to the inner rectangle. The inner rectangle includes
+        /// the <see cref="contentRect"/> and padding, but excludes the border.
+        /// </remarks>
         protected Rect paddingRect
         {
             get
@@ -958,7 +986,13 @@ namespace UnityEngine.UIElements
         /// </summary>
         public PickingMode pickingMode { get; set; }
 
-        // does not guarantee uniqueness
+        /// <summary>
+        /// The name of this VisualElement.
+        /// </summary>
+        /// <remarks>
+        /// Use this property to write USS selectors that target a specific element.
+        /// The standard practice is to give an element a unique name.
+        /// </remarks>
         public string name
         {
             get { return m_Name; }
@@ -1029,6 +1063,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        ///  Initializes and returns an instance of VisualElement.
+        /// </summary>
         public VisualElement()
         {
             m_Children = s_EmptyList;
@@ -1356,6 +1393,16 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Indicates whether or not this element should be rendered.
+        /// </summary>
+        /// <remarks>
+        /// The value of this property reflects the value of <see cref="IResolvedStyle.visibility"/> for this element.
+        /// The value is true for <see cref="Visibility.Visible"/> and false for <see cref="Visibility.Hidden"/>.
+        /// Writing to this property writes to <see cref="IStyle.visibility"/>.
+        /// <seealso cref="resolvedStyle"/>
+        /// <seealso cref="style"/>
+        /// </remarks>
         public bool visible
         {
             get
@@ -1540,13 +1587,26 @@ namespace UnityEngine.UIElements
 
         internal virtual void OnViewDataReady() {}
 
-        // position should be in local space
-        // override to customize intersection between point and shape
+
+        /// <summary>
+        /// Checks if the specified point intersects with this VisualElement's layout.
+        /// </summary>
+        /// <remarks>
+        /// Unity calls this method to find out what elements are under a cursor (such as a mouse).
+        /// Do not rely on this method to perform invalidation,
+        /// since Unity might cache results or skip some invocations of this method for performance reasons.
+        /// By default, a VisualElement has a rectangular area. Override this method in your VisualElement subclass to customize this behaviour.
+        /// </remarks>
+        /// <param name="localPoint">The point in the local space of the element.</param>
+        /// <returns>Returns true if the point is contained within the element's layout. Otherwise, returns false.</returns>
+        /// TODO rect is internal, yet it's probably what users would want to use in this case
         public virtual bool ContainsPoint(Vector2 localPoint)
         {
             return rect.Contains(localPoint);
         }
 
+        /// <undoc/>
+        // TODO this is only used by GraphView... should we maybe remove it from the API or make it internal?
         public virtual bool Overlaps(Rect rectangle)
         {
             return rect.Overlaps(rectangle, true);
@@ -1555,10 +1615,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The modes available to measure <see cref="VisualElement"/> sizes.
         /// </summary>
-        /// <remarks>
-        /// This enum value is passed to <see cref="UIElements.VisualElement.DoMeasure"/>. This lets UI elements indicate their natural size during the layout algorithm.
-        /// </remarks>
-        /// <seealso cref="VisualElement.MeasureTextSize"/>
+        /// <seealso cref="TextElement.MeasureTextSize"/>
         public enum MeasureMode
         {
             /// <summary>
@@ -1602,6 +1659,8 @@ namespace UnityEngine.UIElements
             yogaNode.SetMeasureFunction(null);
         }
 
+        /// <undoc/>
+        /// TODO this is public but since "requiresMeasureFunction" is internal this is not useful for users
         protected internal virtual Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
         {
             return new Vector2(float.NaN, float.NaN);
@@ -1757,6 +1816,14 @@ namespace UnityEngine.UIElements
             return m_ClassList;
         }
 
+        /// <summary>
+        /// Removes all classes from the class list of this element.
+        /// <seealso cref="AddToClassList"/>
+        /// </summary>
+        /// <remarks>
+        /// This method might cause unexpected results for built-in Unity elements,
+        /// since they might rely on classes to be present in their list to function.
+        /// </remarks>
         public void ClearClassList()
         {
             if (m_ClassList.Count > 0)
@@ -1767,6 +1834,10 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Adds a class to the class list of the element in order to assign styles from USS.
+        /// </summary>
+        /// <param name="className">The name of the class to add to the list.</param>
         public void AddToClassList(string className)
         {
             if (m_ClassList == s_EmptyClassList)
@@ -1791,6 +1862,10 @@ namespace UnityEngine.UIElements
             IncrementVersion(VersionChangeType.StyleSheet);
         }
 
+        /// <summary>
+        /// Removes a class from the class list of the element.
+        /// </summary>
+        /// <param name="className">The name of the class to remove to the list.</param>
         public void RemoveFromClassList(string className)
         {
             if (m_ClassList.Remove(className))
@@ -1835,6 +1910,11 @@ namespace UnityEngine.UIElements
                 RemoveFromClassList(className);
         }
 
+        /// <summary>
+        /// Searches for a class in the class list of this element.
+        /// </summary>
+        /// <param name="cls">The name of the class for the search query.</param>
+        /// <returns>Returns true if the class is part of the list. Otherwise, returns false.</returns>
         public bool ClassListContains(string cls)
         {
             for (int i = 0; i < m_ClassList.Count; i++)
@@ -1847,10 +1927,10 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Searchs up the hierachy of this VisualElement and retrieves stored userData, if any is found.
+        /// Searches up the hierarchy of this VisualElement and retrieves stored userData, if any is found.
         /// </summary>
         /// <remarks>
-        /// This will ignore the current userData and return the first parent's non-null userData
+        /// This ignores the current userData and returns the first parent's non-null userData.
         /// </remarks>
         public object FindAncestorUserData()
         {
@@ -2023,6 +2103,18 @@ namespace UnityEngine.UIElements
     /// </summary>
     public static partial class VisualElementExtensions
     {
+        /// <summary>
+        /// Aligns a VisualElement's left, top, right and bottom edges with the corresponding edges of its parent.
+        /// </summary>
+        /// <remarks>
+        /// This method provides a way to set the following styles in one operation:
+        /// - <see cref="IStyle.position"/> is set to <see cref="Position.Absolute"/>
+        /// - <see cref="IStyle.left"/> is set to 0
+        /// - <see cref="IStyle.top"/> is set to 0
+        /// - <see cref="IStyle.right"/> is set to 0
+        /// - <see cref="IStyle.bottom"/> is set to 0
+        /// </remarks>
+        /// <param name="elem">The element to be aligned with its parent</param>
         public static void StretchToParentSize(this VisualElement elem)
         {
             if (elem == null)
@@ -2039,8 +2131,15 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// The given VisualElement's left and right edges will be aligned with the corresponding edges of the parent element.
+        /// Aligns a VisualElement's left and right edges with the corresponding edges of its parent.
         /// </summary>
+        /// <remarks>
+        /// This method provides a way to set the following styles in one operation:
+        /// - <see cref="IStyle.position"/> is set to <see cref="Position.Absolute"/>
+        /// - <see cref="IStyle.left"/> is set to 0
+        /// - <see cref="IStyle.right"/> is set to 0
+        /// </remarks>
+        /// <param name="elem">The element to be aligned with its parent</param>
         public static void StretchToParentWidth(this VisualElement elem)
         {
             if (elem == null)

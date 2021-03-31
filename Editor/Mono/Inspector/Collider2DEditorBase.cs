@@ -28,6 +28,7 @@ namespace UnityEditor
         static ContactPoint2D[] m_Contacts = new ContactPoint2D[100];
 
         private SavedBool m_ShowInfoFoldout;
+        private bool m_RequiresConstantRepaint;
 
         private SerializedProperty m_Material;
         private SerializedProperty m_IsTrigger;
@@ -62,6 +63,8 @@ namespace UnityEditor
 
             m_ShowCompositeRedundants.value = !m_UsedByComposite.boolValue;
             m_ShowCompositeRedundants.valueChanged.AddListener(Repaint);
+
+            m_RequiresConstantRepaint = false;
         }
 
         public override void OnDisable()
@@ -123,6 +126,8 @@ namespace UnityEditor
 
         private void ShowColliderInfoProperties()
         {
+            m_RequiresConstantRepaint = false;
+
             m_ShowInfoFoldout.value = m_ShowInfo.target = EditorGUILayout.Foldout(m_ShowInfo.target, "Info", true);
             if (EditorGUILayout.BeginFadeGroup(m_ShowInfo.faded))
             {
@@ -139,6 +144,9 @@ namespace UnityEditor
                     EditorGUI.EndDisabledGroup();
 
                     ShowContacts(collider);
+
+                    // We need to repaint as some of the above properties can change without causing a repaint.
+                    m_RequiresConstantRepaint = true;
                 }
                 else
                 {
@@ -246,6 +254,11 @@ namespace UnityEditor
             }
             );
             return e == false;
+        }
+
+        public override bool RequiresConstantRepaint()
+        {
+            return m_RequiresConstantRepaint;
         }
     }
 }

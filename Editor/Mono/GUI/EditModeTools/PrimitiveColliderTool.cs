@@ -33,9 +33,7 @@ namespace UnityEditor
         {
             foreach (var obj in targets)
             {
-                var collider = (T)obj;
-
-                if (Mathf.Approximately(collider.transform.lossyScale.sqrMagnitude, 0f))
+                if (!(obj is T collider) || Mathf.Approximately(collider.transform.lossyScale.sqrMagnitude, 0f))
                     continue;
 
                 // collider matrix is center multiplied by transform's matrix with custom postmultiplied lossy scale matrix

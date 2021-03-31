@@ -210,6 +210,15 @@ namespace UnityEditor.EditorTools
             return (EditorToolAttribute)type.GetCustomAttributes(typeof(EditorToolAttribute), false).FirstOrDefault();
         }
 
+        internal static int GetNonBuiltinToolCount()
+        {
+            var globalToolsCount = GetCustomEditorToolsForType(null).Count;
+            var customToolsCount = EditorToolManager.GetCustomEditorToolsCount(true);
+            var totalCount = globalToolsCount + customToolsCount;
+
+            return totalCount;
+        }
+
         internal static Type GetCustomEditorToolTargetType(EditorTool tool)
         {
             var attr = GetEditorToolAttribute(tool);

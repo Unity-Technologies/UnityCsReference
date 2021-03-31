@@ -427,6 +427,17 @@ namespace UnityEditor
             Repaint();
         }
 
+        internal bool IsSelectedTab()
+        {
+            DockArea da = m_Parent as DockArea;
+            if (da)
+            {
+                int idx = da.m_Panes.IndexOf(this);
+                return da.selected == idx;
+            }
+            return false;
+        }
+
         // Moves keyboard focus to this EditorWindow.
         public void Focus()
         {

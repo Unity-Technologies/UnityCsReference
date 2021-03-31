@@ -9,6 +9,17 @@ using System.ComponentModel;
 
 namespace UnityEditor
 {
+    namespace Build
+    {
+        [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+        public enum OverrideTextureCompression
+        {
+            NoOverride = 0,
+            ForceUncompressed = 1,
+            ForceFastCompressor = 2,
+        }
+    }
+
     /// Target PS4 build platform.
     ///
     /// SA: EditorUserBuildSettings.ps4BuildSubtarget.
@@ -519,6 +530,9 @@ namespace UnityEditor
             [NativeMethod("SetSelectedWSABuildAndRunDeployTarget")]
             set;
         }
+
+        public static extern int overrideMaxTextureSize { get; set; }
+        public static extern Build.OverrideTextureCompression overrideTextureCompression { get; set; }
 
         // The currently active build target.
         public static extern BuildTarget activeBuildTarget { get; }

@@ -586,6 +586,9 @@
     <Compile Include="..\..\Editor\Mono\BuildPipeline\CodeStrippingUtils.cs">
       <Link>Editor\Mono\BuildPipeline\CodeStrippingUtils.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildPipeline\DataBuildDirtyTracker.cs">
+      <Link>Editor\Mono\BuildPipeline\DataBuildDirtyTracker.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\DesktopStandaloneBuildWindowExtension.cs">
       <Link>Editor\Mono\BuildPipeline\DesktopStandaloneBuildWindowExtension.cs</Link>
     </Compile>
@@ -1065,6 +1068,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\EnumDataUtility.cs">
       <Link>Editor\Mono\EnumDataUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\EventWithPerformanceTracker.cs">
+      <Link>Editor\Mono\EventWithPerformanceTracker.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\ExportPackageOptions.cs">
       <Link>Editor\Mono\ExportPackageOptions.cs</Link>
@@ -1662,6 +1668,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\HotReload\HotReloadSerializer.bindings.cs">
       <Link>Editor\Mono\HotReload\HotReloadSerializer.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\HyperLinkClickedEventArgs.cs">
+      <Link>Editor\Mono\HyperLinkClickedEventArgs.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\ICleanuppable.cs">
       <Link>Editor\Mono\ICleanuppable.cs</Link>
@@ -3150,6 +3159,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\VersionDefineExpression.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\VersionDefineExpression.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\VersionDefinesConsoleLogs.bindings.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\VersionDefinesConsoleLogs.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\VersionRanges.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\VersionRanges.cs</Link>
@@ -5341,12 +5353,6 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerExtension.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerMenuExtension.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerMenuExtension.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerToolbarExtension.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerToolbarExtension.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPage.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPage.cs</Link>
     </Compile>
@@ -5439,9 +5445,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageVersionItem.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageVersionItem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackagesAction.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\PackagesAction.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ScopedRegistriesSettings.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ScopedRegistriesSettings.cs</Link>
@@ -7334,7 +7337,7 @@
       <HintPath>..\..\External\ExCSS\builds\builds\lib\net35\ExCSS.Unity.dll</HintPath>
     </Reference>
     <Reference Include="Bee.BeeDriver">
-      <HintPath>..\..\artifacts\Stevedore\bee-libraries_1a42\Bee.BeeDriver.dll</HintPath>
+      <HintPath>..\..\artifacts\Stevedore\bee-libraries_b54a\Bee.BeeDriver.dll</HintPath>
     </Reference>
     <ProjectReference Include="UnityEngine.csproj">
       <Project>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</Project>

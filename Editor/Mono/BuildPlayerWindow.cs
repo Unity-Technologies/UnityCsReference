@@ -76,6 +76,44 @@ namespace UnityEditor
             public GUIContent learnAboutUnityCloudBuild = EditorGUIUtility.TrTextContent("Learn about Unity Cloud Build");
             public GUIContent compressionMethod = EditorGUIUtility.TrTextContent("Compression Method", "Compression applied to Player data (scenes and resources).\nDefault - none or default platform compression.\nLZ4 - fast compression suitable for Development Builds.\nLZ4HC - higher compression rate variance of LZ4, causes longer build times. Works best for Release Builds.");
 
+            public readonly GUIContent assetImportOverrides = EditorGUIUtility.TrTextContent("Asset Import Overrides", "Asset import overrides for local development. Reducing maximum texture size or compression settings can speed up asset imports and platform switches.");
+            public readonly GUIContent maxTextureSize = EditorGUIUtility.TrTextContent("Max Texture Size", "Maximum texture import size for local development. Reducing maximum texture size can speed up asset imports and platform switches.");
+            public readonly GUIContent[] maxTextureSizeLabels =
+            {
+                EditorGUIUtility.TrTextContent("No Override", "Use maximum texture size as specified in per-texture import settings."),
+                EditorGUIUtility.TrTextContent("Max 2048", "Make imported textures never exceed 2048 pixels in width or height."),
+                EditorGUIUtility.TrTextContent("Max 1024", "Make imported textures never exceed 1024 pixels in width or height."),
+                EditorGUIUtility.TrTextContent("Max 512", "Make imported textures never exceed 512 pixels in width or height."),
+                EditorGUIUtility.TrTextContent("Max 256", "Make imported textures never exceed 256 pixels in width or height."),
+                EditorGUIUtility.TrTextContent("Max 128", "Make imported textures never exceed 128 pixels in width or height."),
+                EditorGUIUtility.TrTextContent("Max 64", "Make imported textures never exceed 64 pixels in width or height."),
+            };
+            public readonly int[] maxTextureSizeValues =
+            {
+                0,
+                2048,
+                1024,
+                512,
+                256,
+                128,
+                64,
+            };
+            public readonly GUIContent[] textureCompressionLabels =
+            {
+                EditorGUIUtility.TrTextContent("No Override", "Do not modify texture import compression settings."),
+                EditorGUIUtility.TrTextContent("Force Fast Compressor", "Use a faster but lower quality texture compression mode for all compressed textures. Turn off Crunch compression."),
+                EditorGUIUtility.TrTextContent("Force Uncompressed", "Do not compress textures."),
+            };
+            public readonly int[] textureCompressionValues =
+            {
+                (int)OverrideTextureCompression.NoOverride,
+                (int)OverrideTextureCompression.ForceFastCompressor,
+                (int)OverrideTextureCompression.ForceUncompressed,
+            };
+
+            public readonly GUIContent textureCompression = EditorGUIUtility.TrTextContent("Texture Compression", "Texture compression override for local development. Fast or Uncompressed can speed up asset imports and platform switches.");
+            public readonly GUIContent applyOverrides = EditorGUIUtility.TrTextContent("Apply Overrides", "Apply asset import override settings");
+
             public Compression[] compressionTypes =
             {
                 Compression.None,
@@ -139,6 +177,7 @@ namespace UnityEditor
 
         public BuildPlayerWindow()
         {
+            s_CurrOverrideMaxTextureSize = -1;
             minSize = new Vector2(640, 580);
             position = new Rect(50, 50, minSize.x, minSize.y);
             titleContent = EditorGUIUtility.TrTextContent("Build Settings");
@@ -214,6 +253,59 @@ namespace UnityEditor
             return true;
         }
 
+        static int s_CurrOverrideMaxTextureSize = -1;
+        static OverrideTextureCompression s_CurrOverrideTextureCompression;
+
+        static bool hasAssetImportOverrideChanges =>
+            s_CurrOverrideMaxTextureSize != EditorUserBuildSettings.overrideMaxTextureSize ||
+            s_CurrOverrideTextureCompression != EditorUserBuildSettings.overrideTextureCompression;
+
+        static void ApplyAssetImportOverridesToSettingsAsset()
+        {
+            EditorUserBuildSettings.overrideMaxTextureSize = s_CurrOverrideMaxTextureSize;
+            EditorUserBuildSettings.overrideTextureCompression = s_CurrOverrideTextureCompression;
+        }
+
+        static void DrawOverrideLine()
+        {
+            var rect = EditorGUILayout.s_LastRect;
+            var prevMargin = EditorGUIUtility.leftMarginCoord;
+            EditorGUIUtility.leftMarginCoord = 2;
+            EditorGUI.DrawOverrideBackground(rect);
+            EditorGUIUtility.leftMarginCoord = prevMargin;
+        }
+
+        void AssetImportOverridesGui()
+        {
+            if (s_CurrOverrideMaxTextureSize < 0)
+            {
+                // fetch initial values
+                s_CurrOverrideMaxTextureSize = EditorUserBuildSettings.overrideMaxTextureSize;
+                s_CurrOverrideTextureCompression = EditorUserBuildSettings.overrideTextureCompression;
+            }
+
+            GUILayout.Space(5);
+            GUILayout.Label(styles.assetImportOverrides, styles.title);
+            var oldLabelWidth = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = 125;
+            s_CurrOverrideMaxTextureSize = EditorGUILayout.IntPopup(
+                styles.maxTextureSize,
+                s_CurrOverrideMaxTextureSize,
+                styles.maxTextureSizeLabels,
+                styles.maxTextureSizeValues);
+            if (s_CurrOverrideMaxTextureSize != 0)
+                DrawOverrideLine();
+
+            s_CurrOverrideTextureCompression = (OverrideTextureCompression)EditorGUILayout.IntPopup(
+                styles.textureCompression,
+                (int)s_CurrOverrideTextureCompression,
+                styles.textureCompressionLabels,
+                styles.textureCompressionValues);
+            if (s_CurrOverrideTextureCompression != OverrideTextureCompression.NoOverride)
+                DrawOverrideLine();
+            EditorGUIUtility.labelWidth = oldLabelWidth;
+        }
+
         void ActiveBuildTargetsGUI()
         {
             GUILayout.BeginVertical();
@@ -248,25 +340,35 @@ namespace UnityEditor
             }
 
             GUILayout.EndScrollView();
+
+            AssetImportOverridesGui();
             GUILayout.EndVertical();
             GUILayout.Space(10);
 
-            // Switching build target in the editor
-            BuildTarget selectedTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
-            BuildTargetGroup selectedTargetGroup = EditorUserBuildSettingsUtils.CalculateSelectedBuildTargetGroup();
-
             GUILayout.BeginHorizontal();
 
+            // Switch build target
+            BuildTarget selectedTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
+            BuildTargetGroup selectedTargetGroup = EditorUserBuildSettingsUtils.CalculateSelectedBuildTargetGroup();
             GUI.enabled = BuildPipeline.IsBuildTargetSupported(selectedTargetGroup, selectedTarget);
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("Player Settings..."), GUILayout.Width(Styles.kButtonWidth)))
             {
                 SettingsService.OpenProjectSettings("Project/Player");
                 GUIUtility.ExitGUI();
             }
+            GUI.enabled = true;
+
+            // Apply import overrides
+            if (hasAssetImportOverrideChanges)
+            {
+                if (GUILayout.Button(styles.applyOverrides, GUILayout.Width(Styles.kButtonWidth)))
+                {
+                    ApplyAssetImportOverridesToSettingsAsset();
+                    AssetDatabase.Refresh();
+                }
+            }
 
             GUILayout.EndHorizontal();
-
-            GUI.enabled = true;
 
             GUILayout.EndVertical();
         }
@@ -728,7 +830,7 @@ namespace UnityEditor
             bool shouldDrawArrayBoundsChecksToggle = buildWindowExtension != null ? buildWindowExtension.ShouldDrawExplicitArrayBoundsCheckbox() : false;
             bool shouldDrawDevelopmentPlayerToggle = buildWindowExtension != null ? buildWindowExtension.ShouldDrawDevelopmentPlayerCheckbox() : true;
 
-            bool enableBuildScriptsOnly = (postprocessor != null ? postprocessor.SupportsScriptsOnlyBuild() : false);
+            bool enableBuildScriptsOnly = postprocessor != null ? postprocessor.SupportsScriptsOnlyBuild() && !postprocessor.UsesBeeBuild() : false;
             bool canInstallInBuildFolder = false;
 
             if (BuildPipeline.IsBuildTargetSupported(buildTargetGroup, buildTarget))
@@ -1006,6 +1108,7 @@ namespace UnityEditor
                 }
                 else if (GUILayout.Button(buildButton, GUILayout.Width(Styles.kButtonWidth)))
                 {
+                    ApplyAssetImportOverridesToSettingsAsset();
                     CallBuildMethods(askForBuildLocation, BuildOptions.ShowBuiltPlayer);
                     GUIUtility.ExitGUI();
                 }
@@ -1015,6 +1118,7 @@ namespace UnityEditor
                 GUI.enabled = BuildPipeline.IsBuildTargetSupported(selectedTargetGroup, selectedTarget) && EditorUserBuildSettings.activeBuildTargetGroup != selectedTargetGroup;
                 if (GUILayout.Button(styles.switchPlatform, GUILayout.Width(Styles.kButtonWidth)))
                 {
+                    ApplyAssetImportOverridesToSettingsAsset();
                     EditorUserBuildSettings.SwitchActiveBuildTargetAsync(selectedTargetGroup, selectedTarget);
                     GUIUtility.ExitGUI();
                 }

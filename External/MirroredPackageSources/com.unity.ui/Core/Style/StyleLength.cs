@@ -64,36 +64,43 @@ namespace UnityEngine.UIElements
         private Length m_Value;
         private StyleKeyword m_Keyword;
 
+        /// <undoc/>
         public static bool operator==(StyleLength lhs, StyleLength rhs)
         {
             return lhs.m_Keyword == rhs.m_Keyword && lhs.m_Value == rhs.m_Value;
         }
 
+        /// <undoc/>
         public static bool operator!=(StyleLength lhs, StyleLength rhs)
         {
             return !(lhs == rhs);
         }
 
+        /// <undoc/>
         public static implicit operator StyleLength(StyleKeyword keyword)
         {
             return new StyleLength(keyword);
         }
 
+        /// <undoc/>
         public static implicit operator StyleLength(float v)
         {
             return new StyleLength(v);
         }
 
+        /// <undoc/>
         public static implicit operator StyleLength(Length v)
         {
             return new StyleLength(v);
         }
 
+        /// <undoc/>
         public bool Equals(StyleLength other)
         {
             return other == this;
         }
 
+        /// <undoc/>
         public override bool Equals(object obj)
         {
             return obj is StyleLength other && Equals(other);

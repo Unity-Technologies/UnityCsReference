@@ -53,7 +53,7 @@ namespace UnityEditor.Compilation
             ApiCompatibilityLevel = ApiCompatibilityLevel.NET_4_6;
             ResponseFiles = new string[0];
             RoslynAnalyzerDllPaths = new string[0];
-            LanguageVersion = "8.0";
+            LanguageVersion = "9.0";
         }
 
         internal ScriptCompilerOptions(ScriptCompilerOptions scriptCompilerOptions)

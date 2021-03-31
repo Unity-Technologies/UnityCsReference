@@ -5,18 +5,9 @@
 using System;
 using UnityEngine.UIElements;
 
-namespace UnityEditor.PackageManager.UI
-{
-    internal interface IAlert
-    {
-        void SetError(UIError error);
-        void ClearError();
-    }
-}
-
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class Alert : VisualElement, IAlert
+    internal class Alert : VisualElement
     {
         internal new class UxmlFactory : UxmlFactory<Alert> {}
 

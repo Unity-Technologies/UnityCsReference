@@ -54,7 +54,14 @@ namespace UnityEditor.UIElements
             }
         }
 
+        /// <summary>
+        /// Binding object that will be updated.
+        /// </summary>
         public IBinding binding { get; set; }
+
+        /// <summary>
+        /// Path of the target property to be bound.
+        /// </summary>
         public string bindingPath { get; set; }
 
         /// <summary>

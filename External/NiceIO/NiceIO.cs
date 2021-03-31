@@ -8,6 +8,7 @@ using System.Text;
 using System.IO;
 using System.ComponentModel;
 using System.Diagnostics;
+using static NiceIO.NPath;
 using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
 
 //Lets make it hard to accidentally use System.IO.File & System.IO.Directly, and require that it is always completely spelled out.
@@ -63,9 +64,7 @@ namespace NiceIO
         static readonly StringComparison PathStringComparison =
             k_IsCaseSensitiveFileSystem ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
-        private readonly string _path;
-
-        [ThreadStatic] private static NPath _frozenCurrentDirectory;
+        private readonly string _path;      
 
         static NPath Empty => new NPath("");
 
@@ -323,7 +322,7 @@ namespace NiceIO
                     return new NPath(substring);
                 }
 
-                return NPath.Empty;
+                return Empty;
             }
         }
 
@@ -1167,10 +1166,7 @@ namespace NiceIO
         /// The current directory in use by the process.
         /// </summary>
         /// <remarks>Note that every read from this property will result in an operating system query, unless <see cref="WithFrozenCurrentDirectory">WithFrozenCurrentDirectory</see> is used.</remarks>
-        public static NPath CurrentDirectory
-        {
-            get { return _frozenCurrentDirectory ?? FileSystem.Active.Directory_GetCurrentDirectory(); }
-        }
+        public static NPath CurrentDirectory => FileSystem.Active.Directory_GetCurrentDirectory();
 
         class SetCurrentDirectoryOnDispose : IDisposable
         {
@@ -1194,7 +1190,7 @@ namespace NiceIO
         /// <returns>A token representing the change in current directory. When this is disposed, the current directory will be returned to its previous value. The usual usage pattern is to capture the token with a <c>using</c> statement, such that it is automatically disposed of when the <c>using</c> block exits.</returns>
         public static IDisposable SetCurrentDirectory(NPath directory)
         {
-            var result = new SetCurrentDirectoryOnDispose(NPath.CurrentDirectory);
+            var result = new SetCurrentDirectoryOnDispose(CurrentDirectory);
             FileSystem.Active.Directory_SetCurrentDirectory(directory);
             return result;
         }
@@ -2600,6 +2596,77 @@ namespace NiceIO
             }
         }
 
+        /// <summary>
+        /// A Filesystem that forwards all calls to another filesytem. Derive your own filesystem from this if you only want to
+        /// change the behaviour of a few methods.
+        /// </summary>
+        public class RelayingFileSystem : FileSystem
+        {
+	        /// <summary>
+	        /// The filesystem all methods will be forwarded to
+	        /// </summary>
+	        protected FileSystem BaseFileSystem { get; }
+	        
+	        /// <summary>
+	        /// Constructor
+	        /// </summary>
+	        /// <param name="baseFileSystem">the filesystem all calls will be forwarded to</param>
+	        protected RelayingFileSystem(NPath.FileSystem baseFileSystem) => BaseFileSystem = baseFileSystem;
+	        /// <inheritdoc />
+	        public override NPath[] Directory_GetFiles(NPath path, string filter, SearchOption searchOptions) => BaseFileSystem.Directory_GetFiles(path, filter, searchOptions);
+	        /// <inheritdoc />
+	        public override bool Directory_Exists(NPath path) => BaseFileSystem.Directory_Exists(path);
+	        /// <inheritdoc />
+	        public override bool File_Exists(NPath path) => BaseFileSystem.File_Exists(path);
+	        /// <inheritdoc />
+	        public override void File_WriteAllBytes(NPath path, byte[] bytes) => BaseFileSystem.File_WriteAllBytes(path, bytes);
+	        /// <inheritdoc />
+	        public override void File_Copy(NPath path, NPath destinationPath, bool overWrite) => BaseFileSystem.File_Copy(path, destinationPath, overWrite);
+	        /// <inheritdoc />
+	        public override void File_Delete(NPath path) => BaseFileSystem.File_Delete(path);
+	        /// <inheritdoc />
+	        public override void File_Move(NPath path, NPath destinationPath) => BaseFileSystem.File_Move(path, destinationPath);
+	        /// <inheritdoc />
+	        public override void File_WriteAllText(NPath path, string contents) => BaseFileSystem.File_WriteAllText(path, contents);
+	        /// <inheritdoc />
+	        public override string File_ReadAllText(NPath path) => BaseFileSystem.File_ReadAllText(path);
+			/// <inheritdoc />
+	        public override void File_WriteAllLines(NPath path, string[] contents) => BaseFileSystem.File_WriteAllLines(path, contents);
+			/// <inheritdoc />
+	        public override string[] File_ReadAllLines(NPath path) => BaseFileSystem.File_ReadAllLines(path);
+			/// <inheritdoc />	        
+			public override byte[] File_ReadAllBytes(NPath path) => BaseFileSystem.File_ReadAllBytes(path);
+			/// <inheritdoc />
+	        public override void File_SetLastWriteTimeUtc(NPath path, DateTime lastWriteTimeUtc) => BaseFileSystem.File_SetLastWriteTimeUtc(path, lastWriteTimeUtc);
+			/// <inheritdoc />
+	        public override DateTime File_GetLastWriteTimeUtc(NPath path) => BaseFileSystem.File_GetLastWriteTimeUtc(path);
+			/// <inheritdoc />
+	        public override void File_SetAttributes(NPath path, FileAttributes value) => BaseFileSystem.File_SetAttributes(path, value);
+			/// <inheritdoc />
+	        public override FileAttributes File_GetAttributes(NPath path) => BaseFileSystem.File_GetAttributes(path);
+			/// <inheritdoc />
+			public override long File_GetSize(NPath path) => BaseFileSystem.File_GetSize(path);
+			/// <inheritdoc />
+	        public override void Directory_CreateDirectory(NPath path) => BaseFileSystem.Directory_CreateDirectory(path);
+			/// <inheritdoc />
+	        public override void Directory_Delete(NPath path, bool b) => BaseFileSystem.Directory_Delete(path, b);
+			/// <inheritdoc />
+	        public override void Directory_Move(NPath path, NPath destPath) => BaseFileSystem.Directory_Move(path, destPath);
+			/// <inheritdoc />
+	        public override NPath Directory_GetCurrentDirectory() => BaseFileSystem.Directory_GetCurrentDirectory();
+	        /// <inheritdoc />
+	        public override void Directory_SetCurrentDirectory(NPath directoryPath) => BaseFileSystem.Directory_SetCurrentDirectory(directoryPath);
+	        /// <inheritdoc />
+	        public override NPath[] Directory_GetDirectories(NPath path, string filter, SearchOption searchOptions) => BaseFileSystem.Directory_GetDirectories(path, filter, searchOptions);
+
+	        /// <inheritdoc />
+	        public override NPath Resolve(NPath path) => BaseFileSystem.Resolve(path);
+	        /// <inheritdoc />
+	        public override bool IsSymbolicLink(NPath path) => BaseFileSystem.IsSymbolicLink(path);
+	        /// <inheritdoc />
+	        public override void CreateSymbolicLink(NPath fromPath, NPath targetPath, bool targetIsFile) => BaseFileSystem.CreateSymbolicLink(fromPath, targetPath, targetIsFile);
+        }
+
         class WithFileSystemHelper : IDisposable
         {
             private FileSystem _previousFileSystem;
@@ -2620,27 +2687,13 @@ namespace NiceIO
             }
         }
 
-        class WithFrozenDirectoryHelper : IDisposable
-        {
-            public void Dispose()
-            {
-                NPath._frozenCurrentDirectory = null;
-            }
-        }
-
         /// <summary>
         /// Temporarily assume that the current directory is a given value, instead of querying it from the environment when needed, in order to improve performance.
         /// </summary>
         /// <param name="frozenCurrentDirectory">The current directory to assume.</param>
         /// <returns>A token representing the registered callback. This should be disposed of when the assumption is no longer required. The usual usage pattern is to capture the token with a <c>using</c> statement, such that it is automatically disposed of when the <c>using</c> block exits.</returns>
-        public static IDisposable WithFrozenCurrentDirectory(NPath frozenCurrentDirectory)
-        {
-            if (_frozenCurrentDirectory != null)
-                throw new InvalidOperationException(
-                    $"{nameof(WithFrozenCurrentDirectory)} called, while there was already a frozen current directory set: {_frozenCurrentDirectory}");
-            _frozenCurrentDirectory = frozenCurrentDirectory;
-            return new WithFrozenDirectoryHelper();
-        }
+        [Obsolete("Obsolete. If you need this behaviour you can implement a custom NPath.FileSystem and install it with NPath.WithFileSystem()", true)]
+        public static IDisposable WithFrozenCurrentDirectory(NPath frozenCurrentDirectory) => throw null;
     }
 
     /// <summary>

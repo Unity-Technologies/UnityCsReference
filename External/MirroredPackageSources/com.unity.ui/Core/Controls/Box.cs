@@ -15,6 +15,9 @@ namespace UnityEngine.UIElements
         /// </summary>
         public static readonly string ussClassName = "unity-box";
 
+        /// <summary>
+        ///  Initializes and returns an instance of Box.
+        /// </summary>
         public Box()
         {
             AddToClassList(ussClassName);

@@ -12,6 +12,9 @@ namespace UnityEngine.UIElements
         void DropDown(Rect position, VisualElement targetElement = null, bool anchored = false);
     }
 
+    /// <summary>
+    /// GenericDropdownMenu allows you to display contextual menus with default textual options or any <see cref="VisualElement"/>.
+    /// </summary>
     public class GenericDropdownMenu : IGenericMenu
     {
         class MenuItem
@@ -35,9 +38,12 @@ namespace UnityEngine.UIElements
         /// </summary>
         public static readonly string labelUssClassName = ussClassName + "__label";
         /// <summary>
-        /// USS class name of containers in elements of this type.
+        /// USS class name of inner containers in elements of this type.
         /// </summary>
         public static readonly string containerInnerUssClassName = ussClassName + "__container-inner";
+        /// <summary>
+        /// USS class name of outer containers in elements of this type.
+        /// </summary>
         public static readonly string containerOuterUssClassName = ussClassName + "__container-outer";
         /// <summary>
         /// USS class name of separators in elements of this type.
@@ -63,6 +69,9 @@ namespace UnityEngine.UIElements
         /// </summary>
         public VisualElement contentContainer => m_ScrollView.contentContainer;
 
+        /// <summary>
+        ///  Initializes and returns an instance of GenericDropdownMenu.
+        /// </summary>
         public GenericDropdownMenu()
         {
             m_MenuContainer = new VisualElement();
@@ -319,6 +328,12 @@ namespace UnityEngine.UIElements
             return -1;
         }
 
+        /// <summary>
+        /// Adds an item to this menu using a default VisualElement.
+        /// </summary>
+        /// <param name="itemName">The text to display to the user.</param>
+        /// <param name="isChecked">Indicates whether a checkmark next to the item is displayed.</param>
+        /// <param name="action">The callback to invoke when the item is selected by the user.</param>
         public void AddItem(string itemName, bool isChecked, Action action)
         {
             var menuItem = AddItem(itemName, isChecked, true);
@@ -329,6 +344,16 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Adds an item to this menu using a default VisualElement.
+        /// </summary>
+        /// <remarks>
+        /// This overload of the method accepts an arbitrary object that's passed as a parameter to your callback.
+        /// </remarks>
+        /// <param name="itemName">The text to display to the user.</param>
+        /// <param name="isChecked">Indicates whether a checkmark next to the item is displayed.</param>
+        /// <param name="action">The callback to invoke when the item is selected by the user.</param>
+        /// <param name="data">The object to pass to the callback as a parameter.</param>
         public void AddItem(string itemName, bool isChecked, Action<object> action, object data)
         {
             var menuItem = AddItem(itemName, isChecked, true, data);
@@ -339,13 +364,26 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Adds a disabled item to this menu using a default VisualElement.
+        /// </summary>
+        /// <remarks>
+        /// Items added with this method cannot be selected by the user.
+        /// </remarks>
+        /// <param name="itemName">The text to display to the user.</param>
+        /// <param name="isChecked">Indicates whether a checkmark next to the item is displayed.</param>
         public void AddDisabledItem(string itemName, bool isChecked)
         {
             AddItem(itemName, isChecked, false);
         }
 
+        /// <summary>
+        /// Adds a visual separator after the previously added items in this menu.
+        /// </summary>
+        /// <param name="path">Not used.</param>
         public void AddSeparator(string path)
         {
+            // TODO path is not used. This is because IGenericMenu requires it, but this is not great.
             var separator = new VisualElement();
             separator.AddToClassList(separatorUssClassName);
             separator.pickingMode = PickingMode.Ignore;
@@ -398,8 +436,20 @@ namespace UnityEngine.UIElements
             return menuItem;
         }
 
+        /// <summary>
+        /// Displays the menu at the specified position.
+        /// </summary>
+        /// <remarks>
+        /// This method automatically finds the parent VisualElement that displays the menu.
+        /// For editor UI, <see cref="EditorWindow.rootVisualElement"/> is used as the parent.
+        /// For runtime UI,<see cref="UIDocument.rootVisualElement"/> is used as the parent.
+        /// </remarks>
+        /// <param name="position">The position in the coordinate space of the panel.</param>
+        /// <param name="targetElement">The element used to determine in which root to parent the menu.</param>
+        /// <param name="anchored">Whether the menu should use the width of the position argument instead of its normal width.</param>
         public void DropDown(Rect position, VisualElement targetElement = null, bool anchored = false)
         {
+            // TODO the argument should not optional. This is because IGenericMenu requires it, but this is not great.
             if (targetElement == null)
             {
                 Debug.LogError("VisualElement Generic Menu needs a target to find a root to attach to.");

@@ -120,6 +120,9 @@ namespace UnityEngine.UIElements
         /// </summary>
         public static readonly string textInputUssName = "unity-text-input";
 
+        /// <summary>
+        /// The value of the input field.
+        /// </summary>
         public string text
         {
             get { return m_TextInputBase.text; }
@@ -200,7 +203,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// If set to true, the value property is not updated until either the user presses Enter or the text field loses focus.
+        /// If set to true, the value property isn't updated until either the user presses Enter or the text field loses focus.
         /// </summary>
         public bool isDelayed
         {
@@ -218,7 +221,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Computes the size needed to display a text string based on element style values such as font, font-size, word-wrap, and so on.
+        /// Computes the size needed to display a text string based on element style values such as font, font-size, and word-wrap.
         /// </summary>
         /// <param name="textToMeasure">The text to measure.</param>
         /// <param name="width">Suggested width. Can be zero.</param>
@@ -240,11 +243,23 @@ namespace UnityEngine.UIElements
 
         internal bool hasFocus => m_TextInputBase.hasFocus;
 
+        /// <summary>
+        /// Converts a value of the specified generic type from the subclass to a string representation.
+        /// </summary>
+        /// <remarks>Subclasses must implement this method.</remarks>
+        /// <param name="value">The value to convert.</param>
+        /// <returns>A string representing the value.</returns>
         protected virtual string ValueToString(TValueType value)
         {
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Converts a string to the value of the specified generic type from the subclass.
+        /// </summary>
+        /// <remarks>Subclasses must implement this method.</remarks>
+        /// <param name="str">The string to convert.</param>
+        /// <returns>A value converted from the string.</returns>
         protected virtual TValueType StringToValue(string str)
         {
             throw new NotImplementedException();
@@ -557,6 +572,9 @@ namespace UnityEngine.UIElements
 
             private string m_Text;
 
+            /// <summary>
+            /// The value of the input field.
+            /// </summary>
             public string text
             {
                 get { return m_Text; }

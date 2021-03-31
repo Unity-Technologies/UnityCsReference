@@ -52,31 +52,37 @@ namespace UnityEngine.UIElements
         private Cursor m_Value;
         private StyleKeyword m_Keyword;
 
+        /// <undoc/>
         public static bool operator==(StyleCursor lhs, StyleCursor rhs)
         {
             return lhs.m_Keyword == rhs.m_Keyword && lhs.m_Value == rhs.m_Value;
         }
 
+        /// <undoc/>
         public static bool operator!=(StyleCursor lhs, StyleCursor rhs)
         {
             return !(lhs == rhs);
         }
 
+        /// <undoc/>
         public static implicit operator StyleCursor(StyleKeyword keyword)
         {
             return new StyleCursor(keyword);
         }
 
+        /// <undoc/>
         public static implicit operator StyleCursor(Cursor v)
         {
             return new StyleCursor(v);
         }
 
+        /// <undoc/>
         public bool Equals(StyleCursor other)
         {
             return other == this;
         }
 
+        /// <undoc/>
         public override bool Equals(object obj)
         {
             return obj is StyleCursor other && Equals(other);

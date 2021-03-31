@@ -38,6 +38,7 @@ namespace UnityEngine.UIElements
             return obj is ManipulatorActivationFilter && Equals((ManipulatorActivationFilter)obj);
         }
 
+        /// <undoc/>
         public bool Equals(ManipulatorActivationFilter other)
         {
             return button == other.button &&
@@ -126,11 +127,13 @@ namespace UnityEngine.UIElements
                 ((modifiers & EventModifiers.Command) != 0 || !command);
         }
 
+        /// <undoc/>
         public static bool operator==(ManipulatorActivationFilter filter1, ManipulatorActivationFilter filter2)
         {
             return filter1.Equals(filter2);
         }
 
+        /// <undoc/>
         public static bool operator!=(ManipulatorActivationFilter filter1, ManipulatorActivationFilter filter2)
         {
             return !(filter1 == filter2);

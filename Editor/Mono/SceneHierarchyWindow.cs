@@ -315,10 +315,35 @@ namespace UnityEditor
             return CutCopyPasteUtility.CanPasteAsChild();
         }
 
+        internal static SceneHierarchyWindow GetSceneHierarchyWindowToFocusForNewGameObjects()
+        {
+            // Prioritize last interacted if showing (even if locked)
+            if (lastInteractedHierarchyWindow != null && lastInteractedHierarchyWindow.IsSelectedTab())
+                return lastInteractedHierarchyWindow;
+
+            var hierarchies = GetAllSceneHierarchyWindows();
+            if (hierarchies.Count == 0)
+                return null;
+
+            // Otherwise find any window that is showing
+            foreach (var hierarchy in hierarchies)
+            {
+                if (hierarchy.IsSelectedTab())
+                    return hierarchy;
+            }
+
+            // If none is showing then prefer the last interacted one
+            if (lastInteractedHierarchyWindow != null)
+                return lastInteractedHierarchyWindow;
+
+            // Otherwise use any
+            return hierarchies[0];
+        }
+
         [UsedByNativeCode]
         internal static void FrameAndRenameNewGameObject()
         {
-            SceneHierarchyWindow hierarchyWindow = lastInteractedHierarchyWindow;
+            SceneHierarchyWindow hierarchyWindow = GetSceneHierarchyWindowToFocusForNewGameObjects();
 
             if (hierarchyWindow == null)
                 return;

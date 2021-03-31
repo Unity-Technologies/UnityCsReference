@@ -24,7 +24,7 @@ namespace UnityEngine.UIElements
         bool HasTrickleDownHandlers();
 
         /// <summary>
-        /// Return true if event handlers for the event propagation BubbleUp phase have been attached on this object.
+        /// Returns true if event handlers for the event propagation BubbleUp phase, have been attached on this object.
         /// </summary>
         /// <returns>True if object has event handlers for the BubbleUp phase.</returns>
         bool HasBubbleUpHandlers();
@@ -197,8 +197,32 @@ namespace UnityEngine.UIElements
             return m_CallbackRegistry != null && m_CallbackRegistry.HasBubbleHandlers();
         }
 
+        /// <summary>
+        /// Executes logic after the callbacks registered on the event target have executed,
+        /// unless the event is marked to prevent its default behaviour.
+        /// <see cref="EventBase{T}.PreventDefault"/>.
+        /// </summary>
+        /// <remarks>
+        /// This method is designed to be overriden by subclasses. Use it to implement event handling without
+        /// registering callbacks, which guarantees precedences of callbacks registered by users of the subclass.
+        /// Unlike <see cref="ExecuteDefaultAction"/>, this method is called after the callbacks registered on
+        /// the element but before callbacks registered on its ancestors with <see cref="TrickleDown.NoTrickleDown"/>.
+        /// </remarks>
+        /// <param name="evt">The event instance.</param>
         protected virtual void ExecuteDefaultActionAtTarget(EventBase evt) {}
 
+        /// <summary>
+        /// Executes logic after the callbacks registered on the event target have executed,
+        /// unless the event has been marked to prevent its default behaviour.
+        /// <see cref="EventBase{T}.PreventDefault"/>.
+        /// </summary>
+        /// <remarks>
+        /// This method is designed to be overriden by subclasses. Use it to implement event handling without
+        /// registering callbacks which guarantees precedences of callbacks registered by users of the subclass.
+        /// Unlike <see cref="ExecuteDefaultActionAtTarget"/>, this method is called after both the callbacks registered
+        /// on the element and callbacks registered on its ancestors with <see cref="TrickleDown.NoTrickleDown"/>.
+        /// </remarks>
+        /// <param name="evt">The event instance.</param>
         protected virtual void ExecuteDefaultAction(EventBase evt) {}
     }
 }

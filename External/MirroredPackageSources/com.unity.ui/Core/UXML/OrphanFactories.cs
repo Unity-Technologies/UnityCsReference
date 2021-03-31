@@ -113,7 +113,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Defines <see cref="UxmlTraits"/> for the <Style> tag.
+    /// Defines <see cref="UxmlTraits"/> for the Style tag.
     /// </summary>
     public class UxmlStyleTraits : UxmlTraits
     {
@@ -121,9 +121,7 @@ namespace UnityEngine.UIElements
         UxmlStringAttributeDescription m_Path = new UxmlStringAttributeDescription { name = UxmlGenericAttributeNames.k_PathAttributeName };
         UxmlStringAttributeDescription m_Src = new UxmlStringAttributeDescription { name = UxmlGenericAttributeNames.k_SrcAttributeName };
 
-        /// <summary>
-        /// Returns an empty enumerable because <Style> cannot have children.
-        /// </summary>
+        /// <undoc/>
         public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
         {
             get { yield break; }
@@ -166,7 +164,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Defines <see cref="UxmlTraits"/> for the <Template> tag.
+    /// Defines <see cref="UxmlTraits"/> for the Template tag.
     /// </summary>
     public class UxmlTemplateTraits : UxmlTraits
     {
@@ -174,9 +172,7 @@ namespace UnityEngine.UIElements
         UxmlStringAttributeDescription m_Path = new UxmlStringAttributeDescription { name = UxmlGenericAttributeNames.k_PathAttributeName };
         UxmlStringAttributeDescription m_Src = new UxmlStringAttributeDescription { name = UxmlGenericAttributeNames.k_SrcAttributeName };
 
-        /// <summary>
-        /// Returns an empty enumerable because <Template> cannot have children.
-        /// </summary>
+        /// <undoc/>
         public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
         {
             get { yield break; }
@@ -216,16 +212,14 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Defines <see cref="UxmlTraits"/> for the <AttributeOverrides> tag.
+    /// Defines <see cref="UxmlTraits"/> for the AttributeOverrides tag.
     /// </summary>
     public class UxmlAttributeOverridesTraits : UxmlTraits
     {
         internal const string k_ElementNameAttributeName = "element-name";
         UxmlStringAttributeDescription m_ElementName = new UxmlStringAttributeDescription { name = k_ElementNameAttributeName, use = UxmlAttributeDescription.Use.Required };
 
-        /// <summary>
-        /// Returns an empty enumerable because <AttributeOverrides> cannot have children.
-        /// </summary>
+        /// <undoc/>
         public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
         {
             get { yield break; }

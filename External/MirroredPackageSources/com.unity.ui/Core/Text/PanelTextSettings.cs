@@ -6,6 +6,10 @@ using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Represents text rendering settings for a specific UI panel.
+    /// <seealso cref="PanelSettings.textSettings"/>
+    /// </summary>
     public class PanelTextSettings : TextSettings
     {
         private static PanelTextSettings s_DefaultPanelTextSettings;

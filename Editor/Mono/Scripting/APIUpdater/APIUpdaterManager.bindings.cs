@@ -119,7 +119,7 @@ namespace UnityEditorInternal.APIUpdating
             var finishOk = false;
             var waitEvents = tasks.Select(t => t.Event).ToArray();
             var timeout = TimeSpan.FromSeconds(30);
-            if (WaitHandle.WaitAll(waitEvents, timeout))
+            if (WaitOnManyEvents(waitEvents, timeout))
             {
                 if (!HandleAssemblyUpdaterErrors(tasks))
                 {
@@ -136,6 +136,42 @@ namespace UnityEditorInternal.APIUpdating
             APIUpdaterLogger.WriteToFile(L10n.Tr("Update finished with {0} in {1} ms ({2}/{3} assembly(ies) updated)."), finishOk ? L10n.Tr("success") : L10n.Tr("error"), sw.ElapsedMilliseconds, updatedCount, assembliesToCheckCount);
 
             PersistListOfAssembliesToUpdate();
+        }
+
+        internal static bool WaitOnManyEvents(IEnumerable<WaitHandle> waitEvents, TimeSpan timeout)
+        {
+            var timeBomb = DateTime.Now + timeout;
+            foreach (var batch in BatchWaitHandles(waitEvents))
+            {
+                if (!WaitHandle.WaitAll(batch, timeBomb - DateTime.Now))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static IEnumerable<WaitHandle[]> BatchWaitHandles(IEnumerable<WaitHandle> handles)
+        {
+            // According to documentation (https://docs.microsoft.com/en-us/dotnet/api/system.threading.waithandle.waitall?view=net-5.0#System_Threading_WaitHandle_WaitAll_System_Threading_WaitHandle___System_Int32)
+            // WaitAll accepts a maximum of 64 handles. So the max size of the returned batch will be 64
+            const int batchMaxSize = 64;
+            var currentBatch = new List<WaitHandle>(batchMaxSize);
+            foreach (var handle in handles)
+            {
+                currentBatch.Add(handle);
+                if (currentBatch.Count == batchMaxSize)
+                {
+                    yield return currentBatch.ToArray();
+                    currentBatch = new List<WaitHandle>(batchMaxSize);
+                }
+            }
+
+            if (currentBatch.Count > 0)
+            {
+                yield return currentBatch.ToArray();
+            }
         }
 
         /*

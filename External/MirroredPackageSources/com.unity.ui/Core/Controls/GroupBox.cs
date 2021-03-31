@@ -53,6 +53,9 @@ namespace UnityEngine.UIElements
 
         Label m_TitleLabel;
 
+        /// <summary>
+        /// The title text of the box.
+        /// </summary>
         public string text
         {
             get => m_TitleLabel?.text;

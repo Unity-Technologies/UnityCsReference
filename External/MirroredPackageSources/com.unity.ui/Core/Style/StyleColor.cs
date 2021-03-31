@@ -52,42 +52,50 @@ namespace UnityEngine.UIElements
         private Color m_Value;
         private StyleKeyword m_Keyword;
 
+        /// <undoc/>
         public static bool operator==(StyleColor lhs, StyleColor rhs)
         {
             return lhs.m_Keyword == rhs.m_Keyword && lhs.m_Value == rhs.m_Value;
         }
 
+        /// <undoc/>
         public static bool operator!=(StyleColor lhs, StyleColor rhs)
         {
             return !(lhs == rhs);
         }
 
+        /// <undoc/>
         public static bool operator==(StyleColor lhs, Color rhs)
         {
             var styleColor = new StyleColor(rhs);
             return lhs == styleColor;
         }
 
+        /// <undoc/>
         public static bool operator!=(StyleColor lhs, Color rhs)
         {
             return !(lhs == rhs);
         }
 
+        /// <undoc/>
         public static implicit operator StyleColor(StyleKeyword keyword)
         {
             return new StyleColor(keyword);
         }
 
+        /// <undoc/>
         public static implicit operator StyleColor(Color v)
         {
             return new StyleColor(v);
         }
 
+        /// <undoc/>
         public bool Equals(StyleColor other)
         {
             return other == this;
         }
 
+        /// <undoc/>
         public override bool Equals(object obj)
         {
             return obj is StyleColor other && Equals(other);

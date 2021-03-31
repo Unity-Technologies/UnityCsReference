@@ -54,31 +54,37 @@ namespace UnityEngine.UIElements
         private Font m_Value;
         private StyleKeyword m_Keyword;
 
+        /// <undoc/>
         public static bool operator==(StyleFont lhs, StyleFont rhs)
         {
             return lhs.m_Keyword == rhs.m_Keyword && lhs.m_Value == rhs.m_Value;
         }
 
+        /// <undoc/>
         public static bool operator!=(StyleFont lhs, StyleFont rhs)
         {
             return !(lhs == rhs);
         }
 
+        /// <undoc/>
         public static implicit operator StyleFont(StyleKeyword keyword)
         {
             return new StyleFont(keyword);
         }
 
+        /// <undoc/>
         public static implicit operator StyleFont(Font v)
         {
             return new StyleFont(v);
         }
 
+        /// <undoc/>
         public bool Equals(StyleFont other)
         {
             return other == this;
         }
 
+        /// <undoc/>
         public override bool Equals(object obj)
         {
             return obj is StyleFont other && Equals(other);

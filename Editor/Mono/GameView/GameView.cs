@@ -854,8 +854,8 @@ namespace UnityEditor
             if (EditorApplication.isPlayingOrWillChangePlaymode)
                 EditorGUIUtility.AddCursorRect(viewInWindow, MouseCursor.CustomCursor);
 
-            // Gain mouse lock when clicking on game view content
-            if (type == EventType.MouseDown && viewInWindow.Contains(Event.current.mousePosition))
+            // Gain mouse lock when clicking on game view content, unless game is paused
+            if (!EditorApplication.isPaused && type == EventType.MouseDown && viewInWindow.Contains(Event.current.mousePosition))
             {
                 AllowCursorLockAndHide(true);
             }

@@ -124,7 +124,10 @@ namespace UnityEditor.UIElements
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
-
+        /// <summary>
+        /// Initializes and returns an instance of LayerField.
+        /// </summary>
+        /// <param name="label">The text to use as a label for the field.</param>
         public LayerField(string label)
             : base(label, InitializeLayers(), 0)
         {
@@ -134,15 +137,27 @@ namespace UnityEditor.UIElements
             SetValueWithoutNotify(0);
         }
 
+        /// <summary>
+        /// Initializes and returns an instance of LayerField.
+        /// </summary>
         public LayerField()
             : this(null) {}
 
+        /// <summary>
+        /// Initializes and returns an instance of LayerField.
+        /// </summary>
+        /// <param name="defaultValue">The initial layer value this field should use.</param>
         public LayerField(int defaultValue)
             : this(null, defaultValue)
         {
             SetValueWithoutNotify(defaultValue);
         }
 
+        /// <summary>
+        /// Initializes and returns an instance of LayerField.
+        /// </summary>
+        /// <param name="label">The text to use as a label for the field.</param>
+        /// <param name="defaultValue">The initial layer value this field should use.</param>
         public LayerField(string label, int defaultValue)
             : this(label)
         {

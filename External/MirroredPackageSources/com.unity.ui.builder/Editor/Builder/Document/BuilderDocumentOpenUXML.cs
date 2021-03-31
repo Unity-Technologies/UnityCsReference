@@ -686,8 +686,10 @@ namespace Unity.UI.Builder
 
             for (int i = 0; i < styleSheetsUsed.Count; ++i)
             {
-                if (m_OpenUSSFiles[i].styleSheet == styleSheetsUsed[i])
+                if (m_OpenUSSFiles[i].styleSheet == styleSheetsUsed[i] && m_OpenUSSFiles[i].backupStyleSheet != null)
+                {
                     continue;
+                }
 
                 m_OpenUSSFiles[i].Set(styleSheetsUsed[i], null);
             }

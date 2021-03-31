@@ -903,7 +903,7 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        void ChangeExpandedState(TreeViewItem item, bool expand, bool includeChildren)
+        internal void ChangeExpandedState(TreeViewItem item, bool expand, bool includeChildren)
         {
             if (includeChildren)
                 data.SetExpandedWithChildren(item, expand);

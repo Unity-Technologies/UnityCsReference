@@ -36,7 +36,7 @@ namespace UnityEditor
 
         public override Matrix4x4 localToWorldMatrix => m_Collider.transform.localToWorldMatrix;
 
-        public PolygonColliderPath(PolygonCollider2D target, int shapeIndex) : base(true)
+        public PolygonColliderPath(PolygonCollider2D target, int shapeIndex) : base(true, 0, 3)
         {
             m_Collider = target;
             m_PathIndex = shapeIndex;

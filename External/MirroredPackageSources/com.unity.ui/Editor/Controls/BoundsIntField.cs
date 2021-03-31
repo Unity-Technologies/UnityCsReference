@@ -69,9 +69,16 @@ namespace UnityEditor.UIElements
         /// </summary>
         public static readonly string sizeUssClassName = ussClassName + "__size-field";
 
+        /// <summary>
+        /// Initializes and returns an instance of BoundsIntField.
+        /// </summary>
         public BoundsIntField()
             : this(null) {}
 
+        /// <summary>
+        /// Initializes and returns an instance of BoundsIntField.
+        /// </summary>
+        /// <param name="label">The text to use as a label.</param>
         public BoundsIntField(string label)
             : base(label, null)
         {

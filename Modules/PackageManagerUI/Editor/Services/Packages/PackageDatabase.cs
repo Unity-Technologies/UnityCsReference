@@ -8,16 +8,6 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor.Scripting.ScriptCompilation;
 
-namespace UnityEditor.PackageManager.UI
-{
-    internal static class PackageDatabase
-    {
-        // This instance reference is kept for compatibility reasons, as it is internal visible to the Upm Develop package
-        // To be addressed further in https://jira.unity3d.com/browse/PAX-1317
-        internal static Internal.PackageDatabase instance => Internal.ServicesContainer.instance.Resolve<Internal.PackageDatabase>();
-    }
-}
-
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]

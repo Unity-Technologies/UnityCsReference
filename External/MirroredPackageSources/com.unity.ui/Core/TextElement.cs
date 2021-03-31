@@ -10,7 +10,10 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Abstract base class for <see cref="VisualElement"/> containing text.
+    /// Base class for a <see cref="VisualElement"/> that displays text.
+    /// </summary>
+    /// <summary>
+    /// Use this as the super class if you are declaring a custom VisualElement that displays text. For example, <see cref="Button"/> or <see cref="Label"/> use this as their base class.
     /// </summary>
     public class TextElement : BindableElement, ITextElement, INotifyValueChanged<string>
     {
@@ -58,6 +61,9 @@ namespace UnityEngine.UIElements
         /// </summary>
         public static readonly string ussClassName = "unity-text-element";
 
+        /// <summary>
+        /// Initializes and returns an instance of TextElement.
+        /// </summary>
         public TextElement()
         {
             requireMeasureFunction = true;
@@ -98,6 +104,13 @@ namespace UnityEngine.UIElements
 
         [SerializeField]
         private string m_Text = String.Empty;
+
+        /// <summary>
+        /// The text to be displayed.
+        /// </summary>
+        /// <remarks>
+        /// Changing this value will implicitly invoke the <see cref="INotifyValueChanged{T}.value"/> setter, which will raise a <see cref="ChangeEvent{T}"/> of type string.
+        /// </remarks>
         public virtual string text
         {
             get { return ((INotifyValueChanged<string>) this).value; }
@@ -152,7 +165,6 @@ namespace UnityEngine.UIElements
         /// overflow: Overflow.Hidden
         /// whiteSpace: WhiteSpace.NoWrap
         /// textOverflow: TextOverflow.Ellipsis
-        /// textOverflowPosition: TextOverflowPosition.<End | Start | Middle>
         ///
         /// The text Element hides elided text, and displays an ellipsis ('...') to indicate that there is hidden overflow content.
         /// </remarks>

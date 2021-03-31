@@ -31,8 +31,11 @@ namespace UnityEngine
             Ray ray = ScreenPointToRay(cam, screenPoint);
             var plane = new Plane(rect.rotation * Vector3.back, rect.position);
 
-            float dist;
-            if (!plane.Raycast(ray, out dist))
+            float dist = 0;
+
+            float dot = Vector3.Dot(Vector3.Normalize(rect.position - ray.origin), plane.normal);
+
+            if (dot != 0 && !plane.Raycast(ray, out dist))
                 return false;
 
             worldPoint = ray.GetPoint(dist);

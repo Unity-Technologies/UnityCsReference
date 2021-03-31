@@ -24,7 +24,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Whether or not this VisualElement is a root for visual styling, i.e. has :root selector.
+        /// Indicates whether or not this VisualElement is a root for visual styling. For example, if it has the :root selector.
         /// </summary>
         internal bool isRootVisualContainer { get; set; }
 
@@ -46,7 +46,15 @@ namespace UnityEngine.UIElements
         private VisualElement m_PhysicalParent;
         private VisualElement m_LogicalParent;
 
-
+        /// <summary>
+        /// The parent of this VisualElement.
+        /// </summary>
+        /// <remarks>
+        /// Unlike the <see cref="Hierarchy.parent"/> property, this property reflects for logical hierarchy.
+        /// For example, if you add an element to a <see cref="ScrollView"/>, the logical parent of this element is
+        /// the ScrollView itself, whereas the physical parent returned by the <see cref="Hierarchy.parent"/> property
+        /// returns a child of <see cref="ScrollView"/> which acts as the parent of your element.
+        /// </remarks>
         public VisualElement parent
         {
             get
@@ -62,6 +70,9 @@ namespace UnityEngine.UIElements
         // this will be null until a visual tree is added to a panel
         internal BaseVisualElementPanel elementPanel { get; private set; }
 
+        /// <summary>
+        /// The panel onto which this VisualElement is attached.
+        /// </summary>
         public IPanel panel { get { return elementPanel; } }
 
         // Logical container where child elements are added.
@@ -184,13 +195,18 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Retrieves the child element at position
+        /// Retrieves the child element at a specific index.
         /// </summary>
+        /// <param name="index">The index of the element.</param>
         public VisualElement ElementAt(int index)
         {
             return this[index];
         }
 
+        /// <summary>
+        /// Retrieves the child element at a specific index.
+        /// </summary>
+        /// <param name="key">The index of the element.</param>
         public VisualElement this[int key]
         {
             get
@@ -205,7 +221,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        ///  Number of child elements in this object's contentContainer
+        ///  Number of child elements in this object's contentContainer.
         ///
         /// </summary>
         public int childCount
@@ -223,7 +239,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Retrieves the child index of the specified VisualElement.
         /// </summary>
-        /// <param name="element">The child to return the index for.</param>
+        /// <param name="element">The child element to retrieve.</param>
         /// <returns>The index of the child, or -1 if the child is not found.</returns>
         public int IndexOf(VisualElement element)
         {
@@ -287,7 +303,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns the elements from its contentContainer
+        /// Returns the elements from its contentContainer.
         /// </summary>
         public IEnumerable<VisualElement> Children()
         {
@@ -302,7 +318,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Reorders child elements from this VisualElement contentContainer.
         /// </summary>
-        /// <param name="comp">Sorting criteria.</param>
+        /// <param name="comp">The sorting criteria.</param>
         public void Sort(Comparison<VisualElement> comp)
         {
             if (contentContainer == this)
@@ -389,8 +405,7 @@ namespace UnityEngine.UIElements
             private readonly VisualElement m_Owner;
 
             /// <summary>
-            ///  Access the physical parent of this element in the hierarchy
-            ///
+            /// The physical parent of this element in the hierarchy.
             /// </summary>
             public VisualElement parent
             {
@@ -629,6 +644,14 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            /// <summary>
+            /// Returns the element at the specified index in the hierarchy
+            /// </summary>
+            /// <remarks>
+            /// Throws an <see cref="IndexOutOfRangeException"/> exception if the index is invalid.
+            /// </remarks>
+            /// <param name="key">The index of the child</param>
+            /// <returns>The <see cref="VisualElement"/> at this index</returns>
             public VisualElement this[int key]
             {
                 get
@@ -729,11 +752,17 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            /// <summary>
+            /// Compares instances of the Hierarchy struct for equality.
+            /// </summary>
+            /// <param name="other">The structure to compare with.</param>
+            /// <returns>Returns true if the two instances refer to the same element, false otherwise.</returns>
             public bool Equals(Hierarchy other)
             {
                 return other == this;
             }
 
+            /// <undoc/>
             public override bool Equals(object obj)
             {
                 if (ReferenceEquals(null, obj)) return false;
@@ -745,11 +774,23 @@ namespace UnityEngine.UIElements
                 return (m_Owner != null ? m_Owner.GetHashCode() : 0);
             }
 
+            /// <summary>
+            /// Compares instances of the Hierarchy struct for equality.
+            /// </summary>
+            /// <param name="x">The left operand of the comparison.</param>
+            /// <param name="y">The right operand of the comparison.</param>
+            /// <returns>Returns true if the two instances refer to the same element, false otherwise.</returns>
             public static bool operator==(Hierarchy x, Hierarchy y)
             {
                 return ReferenceEquals(x.m_Owner, y.m_Owner);
             }
 
+            /// <summary>
+            /// Compares instances of the Hierarchy struct for inequality.
+            /// </summary>
+            /// <param name="x">The left operand of the comparison.</param>
+            /// <param name="y">The right operand of the comparison.</param>
+            /// <returns>Returns false if the two instances refer to the same element, true otherwise.</returns>
             public static bool operator!=(Hierarchy x, Hierarchy y)
             {
                 return !(x == y);
@@ -757,10 +798,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Removes this element from its parent hierarchy
-        /// </summary>
-        /// <summary>
-        /// Will remove this element from its hierarchy
+        /// Removes this element from its parent hierarchy.
         /// </summary>
         public void RemoveFromHierarchy()
         {
@@ -799,6 +837,14 @@ namespace UnityEngine.UIElements
             return null;
         }
 
+        /// <summary>
+        /// Checks if this element is an ancestor of the specified child element.
+        /// </summary>
+        /// <remarks>
+        /// This method "walks up" the hierarchy of the child element until it reaches this element or the root of the visual tree.
+        /// </remarks>
+        /// <param name="child">The child element to test against.</param>
+        /// <returns>Returns true if this element is a ancestor of the child element, false otherwise.</returns>
         public bool Contains(VisualElement child)
         {
             while (child != null)
@@ -831,7 +877,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Finds the lowest common ancestor between two VisualElements inside the VisualTree hierarchy
+        /// Finds the lowest common ancestor between two VisualElements inside the VisualTree hierarchy.
         /// </summary>
         public VisualElement FindCommonAncestor(VisualElement other)
         {

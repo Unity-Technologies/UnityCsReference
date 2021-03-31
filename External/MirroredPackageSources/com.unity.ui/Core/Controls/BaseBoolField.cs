@@ -83,6 +83,13 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Initializes the Label element whenever the <see cref="BaseBoolField.text"/> property changes.
+        /// </summary>
+        /// <remarks>
+        /// Override this method to modify the Label after its creation.
+        /// You must call the base implementation of this method before trying to access to <see cref="m_Label"/> property in your own implementation.
+        /// </remarks>
         protected virtual void InitLabel()
         {
             m_Label = new Label
@@ -142,6 +149,12 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Inverts the <see cref="BaseBoolField.value"/> property.
+        /// </summary>
+        /// <remarks>
+        /// Override this method to change the logic of toggling the value in your subclass.
+        /// </remarks>
         protected virtual void ToggleValue()
         {
             value = !value;

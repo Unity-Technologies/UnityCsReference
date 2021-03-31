@@ -262,11 +262,12 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// The resolution the UI is designed for.
-        /// <remarks>
-        /// If the screen resolution is larger than the reference resolution, unity scales
-        /// the UI up in the Game view. If it's smaller, Unity scales the UI down.
-        /// Unity scales the UI according to the <see cref="screenMatchMode">.
         /// </summary>
+        /// <remarks>
+        /// If the screen resolution is larger than the reference resolution, Unity scales
+        /// the UI up in the Game view. If it's smaller, Unity scales the UI down.
+        /// Unity scales the UI according to the <see cref="PanelSettings.screenMatchMode"/>.
+        /// </remarks>
         public Vector2Int referenceResolution
         {
             get => m_ReferenceResolution;

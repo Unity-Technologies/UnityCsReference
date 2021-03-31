@@ -99,26 +99,32 @@ namespace UnityEngine.UIElements
 
         private float m_Value;
         private Unit m_Unit;
+
+        /// <undoc/>
         public static implicit operator Length(float value)
         {
             return new Length(value, LengthUnit.Pixel);
         }
 
+        /// <undoc/>
         public static bool operator==(Length lhs, Length rhs)
         {
             return lhs.m_Value == rhs.m_Value && lhs.m_Unit == rhs.m_Unit;
         }
 
+        /// <undoc/>
         public static bool operator!=(Length lhs, Length rhs)
         {
             return !(lhs == rhs);
         }
 
+        /// <undoc/>
         public bool Equals(Length other)
         {
             return other == this;
         }
 
+        /// <undoc/>
         public override bool Equals(object obj)
         {
             return obj is Length other && Equals(other);

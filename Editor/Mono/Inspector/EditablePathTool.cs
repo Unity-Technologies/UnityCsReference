@@ -18,9 +18,9 @@ namespace UnityEditor
         public abstract void SetPoints(Vector3[] points);
         public abstract Matrix4x4 localToWorldMatrix { get; }
 
-        protected EditablePath2D(bool loop, int count = 0)
+        protected EditablePath2D(bool loop, int pointCount, int minPointCount)
         {
-            m_Handle = new LineHandle(new Vector3[count], loop, LineHandle.LineIntersectionHighlight.Always);
+            m_Handle = new LineHandle(new Vector3[pointCount], loop, minPointCount, LineHandle.LineIntersectionHighlight.Always);
         }
 
         public void Update()

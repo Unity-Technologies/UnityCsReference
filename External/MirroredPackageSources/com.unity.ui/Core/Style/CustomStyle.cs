@@ -35,6 +35,7 @@ namespace UnityEngine.UIElements
             return Equals((CustomStyleProperty<T>)obj);
         }
 
+        /// <undoc/>
         public bool Equals(CustomStyleProperty<T> other)
         {
             return name == other.name;
@@ -45,11 +46,13 @@ namespace UnityEngine.UIElements
             return name.GetHashCode();
         }
 
+        /// <undoc/>
         public static bool operator==(CustomStyleProperty<T> a, CustomStyleProperty<T> b)
         {
             return a.Equals(b);
         }
 
+        /// <undoc/>
         public static bool operator!=(CustomStyleProperty<T> a, CustomStyleProperty<T> b)
         {
             return !(a == b);

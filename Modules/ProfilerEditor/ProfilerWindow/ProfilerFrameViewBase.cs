@@ -156,14 +156,10 @@ namespace UnityEditorInternal.Profiling
             m_ProfilerWindow = profilerWindow;
             cpuModule = cpuOrGpuModule;
             gpuView = isGpuView;
-            // safety guarding against event registration leaks due to an imbalance of OnEnable/OnDisable Calls, by deregistering first
-            EditorGUI.hyperLinkClicked -= EditorGUI_HyperLinkClicked;
-            EditorGUI.hyperLinkClicked += EditorGUI_HyperLinkClicked;
         }
 
         public virtual void OnDisable()
         {
-            EditorGUI.hyperLinkClicked -= EditorGUI_HyperLinkClicked;
         }
 
         protected void DrawViewTypePopup(ProfilerViewType viewType)
@@ -428,25 +424,6 @@ namespace UnityEditorInternal.Profiling
                     }
                 }
             }
-        }
-
-        private void EditorGUI_HyperLinkClicked(object sender, EventArgs e)
-        {
-            EditorGUILayout.HyperLinkClickedEventArgs args = (EditorGUILayout.HyperLinkClickedEventArgs)e;
-
-            if (!args.hyperlinkInfos.TryGetValue("href", out string filePath) ||
-                !args.hyperlinkInfos.TryGetValue("line", out string lineString))
-                return;
-
-
-            if (!string.IsNullOrEmpty(filePath))
-                return;
-
-            int line = -1;
-            if (!int.TryParse(lineString, out line))
-                return;
-
-            LogEntries.OpenFileOnSpecificLineAndColumn(filePath, line, -1);
         }
 
         internal class SelectedSampleStackWindow : EditorWindow

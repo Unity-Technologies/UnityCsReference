@@ -268,7 +268,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Allow to set a value without being notified of the change, if any.
         /// </summary>
-        /// <param name="newValue">New value to bbe set.</param>
+        /// <param name="newValue">New value to be set.</param>
         public virtual void SetValueWithoutNotify(TValueType newValue)
         {
             m_Value = newValue;

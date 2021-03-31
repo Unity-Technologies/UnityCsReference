@@ -104,13 +104,19 @@ namespace UnityEditor
             for (int i = 0; i < targets.Length; i++)
             {
                 Canvas canvas = targets[i] as Canvas;
+                Canvas[] parentCanvas = canvas.transform.GetComponentsInParent<Canvas>(true);
 
-                if (canvas.transform.parent == null || canvas.transform.parent.GetComponentInParent<Canvas>() == null)
+                if (canvas.transform.parent == null || parentCanvas.Length == 0)
                     m_AllNested = false;
                 else
                     m_AllRoot = false;
 
-                if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
+                RenderMode renderMode = canvas.renderMode;
+
+                if (parentCanvas.Length > 0)
+                    renderMode = parentCanvas[parentCanvas.Length - 1].renderMode;
+
+                if (renderMode == RenderMode.ScreenSpaceOverlay)
                     m_NoneOverlay = false;
                 else
                     m_AllOverlay = false;

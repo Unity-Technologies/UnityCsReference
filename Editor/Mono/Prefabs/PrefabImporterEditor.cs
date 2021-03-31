@@ -15,8 +15,6 @@ namespace UnityEditor
     {
         static class Styles
         {
-            public static GUIContent openContent = EditorGUIUtility.TrTextContent("Open Prefab");
-            public static GUIContent openHelpText = EditorGUIUtility.TrTextContent("Open Prefab for full editing support.");
             public static GUIContent missingScriptsHelpText = EditorGUIUtility.TrTextContent("Prefab has missing scripts. Open Prefab to fix the issue.");
             public static GUIContent multiSelectionMissingScriptsHelpText = EditorGUIUtility.TrTextContent("Some of the selected Prefabs have missing scripts and needs to be fixed before editing them. Click to Open Prefab to fix the issue.");
             public static GUIContent savingFailedHelpText = EditorGUIUtility.TrTextContent("Saving has failed. Check the Console window to get more insight into what needs to be fixed on the Prefab Asset.\n\nOpen Prefab to fix the issue.");
@@ -43,10 +41,8 @@ namespace UnityEditor
 
         public override bool showImportedObject { get { return !hasMissingScripts; } }
 
-        public override bool UseDefaultMargins()
-        {
-            return false;
-        }
+        internal override bool CanOpenMultipleObjects() { return false; }
+        internal override bool ShouldTryToMakeEditableOnOpen() { return false; }
 
         bool isTextFieldCaretShowing
         {
@@ -271,7 +267,7 @@ namespace UnityEditor
             }
         }
 
-        internal override void OnHeaderControlsGUI()
+        public override void OnInspectorGUI()
         {
             if (assetTarget is DefaultAsset)
             {
@@ -284,57 +280,11 @@ namespace UnityEditor
                 using (new EditorGUI.DisabledScope(true))
                 {
                     CacheHasMixedBaseVariants();
-                    GUILayout.Label(Styles.baseContent);
                     EditorGUI.showMixedValue = m_HasMixedBaseVariants == 1;
-                    EditorGUILayout.ObjectField(variantBase, typeof(GameObject), false);
+                    EditorGUILayout.ObjectField(Styles.baseContent, variantBase, typeof(GameObject), false);
                     EditorGUI.showMixedValue = false;
                 }
             }
-            else
-            {
-                // Ensure we take up the same amount of height as regular controls
-                GUILayoutUtility.GetRect(10, 10, 16, 16, EditorStyles.layerMaskField);
-            }
-        }
-
-        public override void OnInspectorGUI()
-        {
-            if (assetTarget is DefaultAsset)
-            {
-                return;
-            }
-
-            EditorGUILayout.BeginVertical(EditorStyles.inspectorFullWidthMargins);
-
-            // Allow opening prefab even if file is not open for edit.
-            // For things with explicit save operations (scenes, prefabs) we allow editing
-            // and handle the potential version control conflict at the time when the user saves.
-            bool wasEnabled = GUI.enabled;
-            GUI.enabled = true;
-            using (new EditorGUI.DisabledScope(assetTargets.Length > 1))
-            {
-                GUILayout.Space(10);
-
-                EditorGUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-                if (GUILayout.Button(Styles.openContent, Styles.openButtonStyle))
-                {
-                    // We only support opening one prefab at a time (so do not use 'targets')
-                    PrefabStageUtility.OpenPrefab(AssetDatabase.GetAssetPath(assetTarget), null, PrefabStage.Mode.InIsolation, StageNavigationManager.Analytics.ChangeType.EnterViaAssetInspectorOpenButton);
-
-                    GUIUtility.ExitGUI();
-                }
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.EndHorizontal();
-
-                GUILayout.Space(5);
-
-                if (!hasMissingScripts && !m_SavingHasFailed)
-                {
-                    EditorGUILayout.HelpBox(Styles.openHelpText.text, MessageType.Info, true);
-                }
-            }
-            GUI.enabled = wasEnabled;
 
             if (hasMissingScripts)
             {
@@ -368,8 +318,6 @@ namespace UnityEditor
             {
                 EditorGUILayout.HelpBox(Styles.savingFailedHelpText.text, MessageType.Warning, true);
             }
-
-            EditorGUILayout.EndVertical();
         }
     }
 }

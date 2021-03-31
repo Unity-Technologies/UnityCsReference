@@ -3,8 +3,14 @@ using System.Collections.Generic;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Template Container.
+    /// Represents the root <see cref="VisualElement"/> of UXML file.
     /// </summary>
+    /// <remarks>
+    /// A TemplateContainer instance is created by Unity to represent the root of the UXML file and acts as the parent for all elements in the file.
+    /// Users typically don't create TemplateContainer objects directly.
+    /// When using <see cref="VisualTreeAsset.Instantiate()"/>, a TemplateContainer instance is returned to you to represent the root of the hierarchy.
+    /// When using UXML templates, a TemplateContainer is generated for the template instance and inserted into the hierarchy of the parent UXML file.
+    /// </remarks>
     public class TemplateContainer : BindableElement
     {
         /// <summary>
@@ -29,7 +35,7 @@ namespace UnityEngine.UIElements
             UxmlStringAttributeDescription m_Template = new UxmlStringAttributeDescription { name = k_TemplateAttributeName, use = UxmlAttributeDescription.Use.Required };
 
             /// <summary>
-            /// Returns an empty enumerable, as template instance do not have children.
+            /// Returns an empty enumerable, as template instances do not have children.
             /// </summary>
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -77,6 +83,10 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// The local ID of the template in the parent UXML file (RO).
+        /// </summary>
+        /// <remarks>This value is null, unless the TemplateContainer represents a UXML template within another UXML file.</remarks>
         public string templateId { get; private set; }
         private VisualElement m_ContentContainer;
 
@@ -92,8 +102,10 @@ namespace UnityEngine.UIElements
             internal set => m_TemplateSource = value;
         }
 
+        /// <undoc/>
         public TemplateContainer() : this(null) {}
 
+        /// <undoc/>
         public TemplateContainer(string templateId)
         {
             this.templateId = templateId;

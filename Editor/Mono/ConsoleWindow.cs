@@ -302,7 +302,6 @@ namespace UnityEditor
             m_ListView = new ListViewState(0, 0);
             m_CopyString = new StringBuilder();
             m_SearchText = string.Empty;
-            EditorGUI.hyperLinkClicked += EditorGUI_HyperLinkClicked;
         }
 
         internal void OnEnable()
@@ -851,23 +850,6 @@ namespace UnityEditor
                 textWithHyperlinks.Remove(textWithHyperlinks.Length - 1, 1);
 
             return textWithHyperlinks.ToString();
-        }
-
-        private void EditorGUI_HyperLinkClicked(object sender, EventArgs e)
-        {
-            EditorGUILayout.HyperLinkClickedEventArgs args = (EditorGUILayout.HyperLinkClickedEventArgs)e;
-
-            string filePath;
-            string lineString;
-            if (!args.hyperlinkInfos.TryGetValue("href", out filePath) ||
-                !args.hyperlinkInfos.TryGetValue("line", out lineString))
-                return;
-
-            int line = Int32.Parse(lineString);
-            var projectFilePath = filePath.Replace('\\', '/');
-
-            if (!String.IsNullOrEmpty(projectFilePath))
-                LogEntries.OpenFileOnSpecificLineAndColumn(filePath, line, -1);
         }
 
         [UsedImplicitly]

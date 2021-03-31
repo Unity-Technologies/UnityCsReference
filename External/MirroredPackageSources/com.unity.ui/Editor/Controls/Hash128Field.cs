@@ -5,24 +5,57 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    /// <summary>
+    /// Makes a field for editing an <see cref="Hash128"/>.
+    /// </summary>
     public class Hash128Field : TextInputBaseField<Hash128>
     {
         // This property to alleviate the fact we have to cast all the time
         Hash128Input integerInput => (Hash128Input)textInputBase;
 
+        /// <summary>
+        /// Instantiates a <see cref="Hash128Field"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<Hash128Field, UxmlTraits> {}
+
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="Hash128Field"/>.
+        /// </summary>
         public new class UxmlTraits : TextValueFieldTraits<Hash128, UxmlHash128AttributeDescription> {}
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-hash128-field";
+
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        /// <summary>
+        /// Initializes and returns an instance of Hash128Field.
+        /// </summary>
         public Hash128Field()
             : this((string)null) {}
 
+        /// <summary>
+        /// Initializes and returns an instance of Hash128Field.
+        /// </summary>
+        /// <param name="maxLength">Maximum number of characters for the field.</param>
         public Hash128Field(int maxLength)
             : this(null, maxLength) {}
 
+        /// <summary>
+        /// Initializes and returns an instance of Hash128Field.
+        /// </summary>
+        /// <param name="label">The text to use as a label.</param>
+        /// <param name="maxLength">Maximum number of characters for the field.</param>
         public Hash128Field(string label, int maxLength = kMaxLengthNone)
             : base(label, maxLength, Char.MinValue, new Hash128Input())
         {

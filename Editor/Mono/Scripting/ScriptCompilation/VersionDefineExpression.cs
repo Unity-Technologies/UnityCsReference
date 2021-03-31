@@ -36,5 +36,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             return m_IsValid(Left, Right, version);
         }
+
+        public static VersionDefineExpression<TVersion> Invalid { get; } = new VersionDefineExpression<TVersion>(
+            (unused1, unused2, unused3) => false, default(TVersion), default(TVersion));
     }
 }

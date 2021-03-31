@@ -146,8 +146,8 @@ namespace UnityEditor
             // This string must stay in sync with the native kUnityVersionTypeName in ScriptCompilationPipeline.cpp
             get { return "Unity"; }
         }
-        VersionRangesFactory<SemVersion> m_SemVersionRanges;
-        VersionRangesFactory<UnityVersion> m_UnityVersionRanges;
+        private readonly CachedVersionRangesFactory<SemVersion> m_SemVersionRanges = new CachedVersionRangesFactory<SemVersion>();
+        private readonly CachedVersionRangesFactory<UnityVersion> m_UnityVersionRanges = new CachedVersionRangesFactory<UnityVersion>();
 
         ReorderableList m_ReferencesList;
         ReorderableList m_PrecompiledReferencesList;
@@ -178,8 +178,8 @@ namespace UnityEditor
 
             m_AssemblyName = extraDataSerializedObject.FindProperty("assemblyName");
             InitializeReorderableLists();
-            m_SemVersionRanges = new VersionRangesFactory<SemVersion>();
-            m_UnityVersionRanges = new VersionRangesFactory<UnityVersion>();
+            m_SemVersionRanges.Clear();
+            m_UnityVersionRanges.Clear();
             m_RootNamespace = extraDataSerializedObject.FindProperty("rootNamespace");
             m_AllowUnsafeCode = extraDataSerializedObject.FindProperty("allowUnsafeCode");
             m_UseGUIDs = extraDataSerializedObject.FindProperty("useGUIDs");
@@ -569,12 +569,12 @@ namespace UnityEditor
                         nameProp.stringValue.Equals(UnityVersionTypeName, StringComparison.Ordinal))
                     {
                         var expression = m_UnityVersionRanges.GetExpression(expressionProp.stringValue);
-                        expressionOutcome = expression.AppliedRule;
+                        expressionOutcome = expression.Expression.AppliedRule;
                     }
                     else
                     {
                         var expression = m_SemVersionRanges.GetExpression(expressionProp.stringValue);
-                        expressionOutcome = expression.AppliedRule;
+                        expressionOutcome = expression.Expression.AppliedRule;
                     }
                 }
                 catch (Exception)

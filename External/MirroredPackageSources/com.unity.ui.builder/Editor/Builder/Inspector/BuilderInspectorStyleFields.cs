@@ -692,6 +692,11 @@ namespace Unity.UI.Builder
                         imageStyleField.SetValueWithoutNotify(value.texture);
                         imageStyleField.SetTypePopupValueWithoutNotify(typeof(Texture2D));
                     }
+                    else if (value.renderTexture != null)
+                    {
+                        imageStyleField.SetValueWithoutNotify(value.renderTexture);
+                        imageStyleField.SetTypePopupValueWithoutNotify(typeof(RenderTexture));
+                    }
                     else if (value.sprite != null)
                     {
                         imageStyleField.SetValueWithoutNotify(value.sprite);

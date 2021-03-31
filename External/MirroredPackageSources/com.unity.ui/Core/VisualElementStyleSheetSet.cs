@@ -7,10 +7,8 @@ namespace UnityEngine.UIElements
     /// This structure manipulates the set of <see cref="StyleSheet"/> objects attached to the owner <see cref="VisualElement"/>.
     /// </summary>
     /// <remarks>
-    ///
-    ///                 <see cref="VisualElementStyleSheetSet"/> instances cannot be created directly.
-    ///                 Use the <see cref="VisualElement.styleSheets"/> property accessor to work with the style sheets of an element.
-    ///
+    /// <see cref="VisualElementStyleSheetSet"/> instances can't be created directly.
+    /// Use the <see cref="VisualElement.styleSheets"/> property accessor to work with the style sheets of an element.
     /// </remarks>
     public struct VisualElementStyleSheetSet : IEquatable<VisualElementStyleSheetSet>
     {
@@ -125,7 +123,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Looks for the specified <see cref="StyleSheet"/>
         /// </summary>
-        /// <returns>True if the style sheet is attached to the owner element, false otherwise.</returns>
+        /// <returns>Returns true if the style sheet is attached to the owner element, false otherwise.</returns>
         public bool Contains(StyleSheet styleSheet)
         {
             if (styleSheet == null)
@@ -153,6 +151,10 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Reads the value at the specified index in the list of StyleSheet objects attached of the element
+        /// </summary>
+        /// <param name="index">The index of the StyleSheet</param>
         public StyleSheet this[int index]
         {
             get
@@ -164,6 +166,11 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Compares instances of the VisualElementStyleSheetSet struct for equality.
+        /// </summary>
+        /// <param name="other">The structure to compare with.</param>
+        /// <returns>Returns true if the two instances refer to the same element, false otherwise.</returns>
         public bool Equals(VisualElementStyleSheetSet other)
         {
             return Equals(m_Element, other.m_Element);
@@ -180,11 +187,23 @@ namespace UnityEngine.UIElements
             return (m_Element != null ? m_Element.GetHashCode() : 0);
         }
 
+        /// <summary>
+        /// Compares instances of the VisualElementStyleSheetSet struct for equality.
+        /// </summary>
+        /// <param name="left">The left operand of the comparison</param>
+        /// <param name="right">The right operand of the comparison</param>
+        /// <returns>True if the two instances refer to the same element, false otherwise.</returns>
         public static bool operator==(VisualElementStyleSheetSet left, VisualElementStyleSheetSet right)
         {
             return left.Equals(right);
         }
 
+        /// <summary>
+        /// Compares instances of the VisualElementStyleSheetSet struct for inequality.
+        /// </summary>
+        /// <param name="left">The left operand of the comparison</param>
+        /// <param name="right">The right operand of the comparison</param>
+        /// <returns>Returns false if the two instances refer to the same element, true otherwise.</returns>
         public static bool operator!=(VisualElementStyleSheetSet left, VisualElementStyleSheetSet right)
         {
             return !left.Equals(right);

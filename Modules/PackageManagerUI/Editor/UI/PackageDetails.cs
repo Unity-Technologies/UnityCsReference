@@ -9,18 +9,9 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
 
-namespace UnityEditor.PackageManager.UI
-{
-    internal abstract class PackageDetails : VisualElement
-    {
-        internal abstract IAlert detailError { get; }
-        internal abstract void RefreshPackageActionButtons();
-    }
-}
-
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class PackageDetails : UI.PackageDetails
+    internal class PackageDetails : VisualElement
     {
         internal new class UxmlFactory : UxmlFactory<PackageDetails> {}
 
@@ -449,7 +440,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshPackageActionButtons();
         }
 
-        internal override void RefreshPackageActionButtons()
+        internal void RefreshPackageActionButtons()
         {
             RefreshAddButton();
             RefreshRemoveButton();
@@ -788,7 +779,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageDetailsHeader header => cache.Get<PackageDetailsHeader>("detailsHeader");
         private PackageDetailsBody body => cache.Get<PackageDetailsBody>("detailsBody");
 
-        internal override IAlert detailError { get { return cache.Get<Alert>("detailError"); } }
+        internal Alert detailError { get { return cache.Get<Alert>("detailError"); } }
         private ScrollView detailScrollView { get { return cache.Get<ScrollView>("detailScrollView"); } }
         private VisualElement detail { get { return cache.Get<VisualElement>("detail"); } }
 

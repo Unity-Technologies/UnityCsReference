@@ -396,7 +396,7 @@ namespace UnityEditor.UIElements
                     if (editors.Length > 1)
                     {
                         if (editors[0] is PrefabImporterEditor && editors[1] is GameObjectInspector)
-                            headerText = "Root in Prefab Asset";
+                            headerText = "Root in Prefab Asset (Open for full editing support)";
                     }
 
                     GUILayout.Label(headerText, Styles.importedObjectsHeaderStyle, GUILayout.ExpandWidth(true));

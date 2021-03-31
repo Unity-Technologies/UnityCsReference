@@ -69,5 +69,8 @@ namespace UnityEditor
         // *undocumented*
         [NativeName("GetNameSpace")]
         internal extern string GetNamespace();
+
+        [NativeName("GetPropertiesHashString")]
+        internal extern string GetPropertiesHashString();
     }
 }

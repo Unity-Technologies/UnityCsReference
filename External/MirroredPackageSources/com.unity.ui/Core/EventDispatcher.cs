@@ -75,11 +75,13 @@ namespace UnityEngine.UIElements
             m_Dispatcher.OpenGate();
         }
 
+        /// <undoc/>
         public bool Equals(EventDispatcherGate other)
         {
             return Equals(m_Dispatcher, other.m_Dispatcher);
         }
 
+        /// <undoc/>
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
@@ -91,11 +93,13 @@ namespace UnityEngine.UIElements
             return (m_Dispatcher != null ? m_Dispatcher.GetHashCode() : 0);
         }
 
+        /// <undoc/>
         public static bool operator==(EventDispatcherGate left, EventDispatcherGate right)
         {
             return left.Equals(right);
         }
 
+        /// <undoc/>
         public static bool operator!=(EventDispatcherGate left, EventDispatcherGate right)
         {
             return !left.Equals(right);

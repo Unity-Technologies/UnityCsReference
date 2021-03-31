@@ -42,7 +42,6 @@ namespace UnityEditor
 
         internal static bool s_DragToPosition = true;
         internal static bool s_Dragged = false;
-        internal static bool s_PostPoneMove = false;
         internal static bool s_SelectAllOnMouseUp = true;
 
         private const double kFoldoutExpandTimeout = 0.7;
@@ -198,6 +197,11 @@ namespace UnityEditor
             public static Texture2D prefabOverlayRemovedIcon = EditorGUIUtility.LoadIcon("PrefabOverlayRemoved Icon");
             public static readonly GUIStyle linkButton = "FloatFieldLinkButton";
             public static Texture2D repaintDot = EditorGUIUtility.LoadIcon("RepaintDot");
+        }
+
+        static EditorGUI()
+        {
+            hyperLinkClicked += EditorGUI_OpenFileOnHyperLinkClicked;
         }
 
         internal static void BeginHandleMixedValueContentColor()
@@ -972,10 +976,6 @@ namespace UnityEditor
                             editor.MoveSelectionToAltCursor();
                             mayHaveChanged = true;
                         }
-                        else if (s_PostPoneMove)
-                        {
-                            editor.MoveCursorToPosition(Event.current.mousePosition);
-                        }
                         else if (s_SelectAllOnMouseUp)
                         {
                             // If cursor is invisible, it's a selectable label, and we don't want to select all automatically
@@ -987,19 +987,18 @@ namespace UnityEditor
                         }
                         else if (!s_Dragged && evt.button == 0)
                         {
-                            //extract hyperlink info
-                            Dictionary<string, string> hyperlinkInfos;
-                            if (HasClickedOnHyperlink(text, editor.cursorIndex, editor, out hyperlinkInfos)) // check if the cursor is between a hyperlink tag and store the hyperlink infos (tag arguments in a dictionary)
+                            // Extract hyperlink info
+                            Dictionary<string, string> hyperLinkData;
+                            if (HasClickedOnHyperlink(text, editor.cursorIndex, editor, out hyperLinkData)) // Check if the cursor is between hyperlink tags and store the hyperlink info (tag arguments in a dictionary)
                             {
-                                //raise event with the infos
-                                hyperLinkClicked(typeof(EditorGUI),
-                                    new EditorGUILayout.HyperLinkClickedEventArgs(hyperlinkInfos));
+                                // Raise event with the info
+                                var window = GUIView.current is HostView hostView ? hostView.actualView : null;
+                                hyperLinkClicked(window, new HyperLinkClickedEventArgs(hyperLinkData));
                             }
                         }
                         editor.MouseDragSelectsWholeWords(false);
                         s_DragToPosition = true;
                         s_Dragged = false;
-                        s_PostPoneMove = false;
                         if (evt.button == 0)
                         {
                             GUIUtility.hotControl = 0;
@@ -1031,10 +1030,6 @@ namespace UnityEditor
                             }
                             else
                             {
-                                // if mouse is over the selection, postpone cursor movement till Mouse Up - this is so we can do correct text dragging.
-                                //                      if (editor.hasSelection && editor.IsOverSelection(Event.current.mousePosition))
-                                //                          s_PostPoneMove = true;
-                                //                      else
                                 editor.MoveCursorToPosition(Event.current.mousePosition);
                                 s_SelectAllOnMouseUp = false;
                             }
@@ -1287,10 +1282,10 @@ namespace UnityEditor
             return origText;
         }
 
-        private static bool HasClickedOnHyperlink(string text, int cursorIndex, RecycledTextEditor editor, out Dictionary<string, string> hyperlinkInfos)
+        private static bool HasClickedOnHyperlink(string text, int cursorIndex, RecycledTextEditor editor, out Dictionary<string, string> hyperLinkData)
         {
             Vector2 mousePosition = Event.current.mousePosition;
-            hyperlinkInfos = new Dictionary<string, string>();
+            hyperLinkData = new Dictionary<string, string>();
             if (cursorIndex > 0)
             {
                 bool hitHyperlink = false;
@@ -1329,7 +1324,7 @@ namespace UnityEditor
                             int indexName = namePart.LastIndexOf(' ') + 1;
                             string name = namePart.Substring(indexName);
                             // Add the name of the attribute and its value in the dictionary
-                            hyperlinkInfos.Add(name, match.Value);
+                            hyperLinkData.Add(name, match.Value);
 
                             endPreviousAttributeIndex = match.Index + match.Value.Length + 1;
                         }
@@ -1341,7 +1336,28 @@ namespace UnityEditor
             return false;
         }
 
-        internal static event EventHandler hyperLinkClicked;
+        public static event Action<EditorWindow, HyperLinkClickedEventArgs> hyperLinkClicked;
+
+        private static void EditorGUI_OpenFileOnHyperLinkClicked(EditorWindow window, HyperLinkClickedEventArgs args)
+        {
+            string path;
+            if (!args.hyperLinkData.TryGetValue("href", out path))
+                return;
+            string lineString;
+            args.hyperLinkData.TryGetValue("line", out lineString);
+            int line = -1;
+            Int32.TryParse(lineString, out line);
+
+            var sanitizedPath = path.Replace('\\', '/');
+
+            if (!String.IsNullOrEmpty(sanitizedPath))
+            {
+                if (Uri.IsWellFormedUriString(sanitizedPath, UriKind.Absolute))
+                    Application.OpenURL(path);
+                else
+                    LogEntries.OpenFileOnSpecificLineAndColumn(path, line, -1);
+            }
+        }
 
         // KEYEVENTFIELD HERE ===============================================================
         internal static Event KeyEventField(Rect position, Event evt)
@@ -10895,16 +10911,6 @@ namespace UnityEditor
         {
             Rect r = s_LastRect = GetControlRect(false, EditorGUI.kSingleLineHeight, style, options);
             return EditorGUI.AdvancedLazyPopup(r, displayedOption, selectedIndex, displayedOptionsFunc, style);
-        }
-
-        internal class HyperLinkClickedEventArgs : EventArgs
-        {
-            public Dictionary<string, string> hyperlinkInfos { get; private set; }
-
-            public HyperLinkClickedEventArgs(Dictionary<string, string> hyperlinkInfos)
-            {
-                this.hyperlinkInfos = hyperlinkInfos;
-            }
         }
     }
 }

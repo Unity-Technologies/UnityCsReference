@@ -32,76 +32,20 @@ namespace UnityEngine.UIElements
     /// A ListView is a vertically scrollable area that links to, and displays, a list of items.
     /// </summary>
     /// <remarks>
-    /// <p>A <see cref="ListView"/> is a <see cref="ScrollView"/> with additional logic to display a list of vertically-arranged
+    /// A <see cref="ListView"/> is a <see cref="ScrollView"/> with additional logic to display a list of vertically-arranged
     /// VisualElements. Each VisualElement in the list is bound to a corresponding element in a data-source list. The
-    /// data-source list can contain elements of any type.</p>
-    ///
-    /// <p>The logic required to create VisualElements, and to bind them to or unbind them from the data source, varies depending
+    /// data-source list can contain elements of any type.\\
+    /// \\
+    /// The logic required to create VisualElements, and to bind them to or unbind them from the data source, varies depending
     /// on the intended result. It's up to you to implement logic that is appropriate to your use case. For the ListView to function
-    /// correctly, you must supply at least the following:</p>
+    /// correctly, you must supply at least the following:
     ///
-    /// <list type="bullet">
-    ///   <item>
-    ///     <description><see cref="ListView.itemHeight"/></description>
-    ///   </item>
-    ///   <item>
-    ///     <description><see cref="ListView.makeItem"/></description>
-    ///   </item>
-    ///   <item>
-    ///     <description><see cref="ListView.bindItem"/></description>
-    ///   </item>
-    /// </list>
+    ///- <see cref="ListView.itemHeight"/>
+    ///- <see cref="ListView.makeItem"/>
+    ///- <see cref="ListView.bindItem"/>
     ///
-    /// <p>The ListView creates enough VisualElements for the visible items, and supports binding many more. As the user scrolls, the ListView
-    /// recycles VisualElements and re-binds them to new data items.</p>
-    ///
-    /// <list type="bullet">
-    ///   <item>
-    ///     <description>To set the height of a single item in pixels, set the <c>item-height</c> property in UXML or the
-    ///     <see cref="ListView.itemHeight"/> property in C# to the desired value.</description>
-    ///   </item>
-    ///   <item>
-    ///     <description>To show a border around the scrollable area, set the <c>show-border</c> property in UXML or the
-    ///     <see cref="ListView.showBorder"/> property in C# to <c>true</c>.</description>
-    ///   </item>
-    ///   <item>
-    ///     <description>By default, the user can select one element in the list at a time. To change the default selection
-    ///     use the <c>selection-type</c> property in UXML or the<see cref="ListView.selectionType"/> property in C#.
-    ///        <list type="bullet">
-    ///          <item>
-    ///            <description>To allow the user to select more than one element simultaneously, set the property to
-    ///            <c>Selection.Multiple</c>.</description>
-    ///          </item>
-    ///          <item>
-    ///            <description>To prevent the user from selecting items, set the property to <c>Selection.None</c>.</description>
-    ///          </item>
-    ///        </list>
-    ///      </description>
-    ///   </item>
-    ///   <item>
-    ///     <description>By default, all rows in the ListView have same background color. To make the row background colors
-    ///     alternate, set the <c>show-alternating-row-backgrounds</c> property in UXML or the
-    ///     <see cref="ListView.showAlternatingRowBackgrounds"/> property in C# to
-    ///     <see cref="AlternatingRowBackground.ContentOnly"/> or
-    ///     <see cref="AlternatingRowBackground.All"/>. For details, see <see cref="AlternatingRowBackground"/>.</description>
-    ///   </item>
-    ///   <item>
-    ///     <description>By default, the user can't reorder the list's elements. To allow the user to drag the elements
-    ///     to reorder them, set the <c>reorderable</c> property in UXML or the <see cref="ListView.reorderable"/>
-    ///     property in C# to to true.</description>
-    ///   </item>
-    ///   <item>
-    ///     <description>To make the first item in the ListView display the number of items in the list, set the
-    ///     <c>show-bound-collection-size</c> property in UXML or the <see cref="ListView.showBoundCollectionSize"/>
-    ///     to true. This is useful for debugging.</description>
-    ///   </item>
-    ///   <item>
-    ///     <description>By default, the ListView's scroller element only scrolls vertically.
-    ///     To enable horizontal scrolling when the displayed element is wider than the visible area, set the
-    ///     <c>horizontal-scrolling-enabled</c> property in UXML or the <see cref="ListView.horizontalScrollingEnabled"/>
-    ///     to true.</description>
-    ///   </item>
-    /// </list>
+    /// The ListView creates VisualElements for the visible items, and supports binding many more. As the user scrolls, the ListView
+    /// recycles VisualElements and re-binds them to new data items.
     /// </remarks>
     /// <example>
     /// <code>
@@ -178,7 +122,7 @@ namespace UnityEngine.UIElements
             private readonly UxmlBoolAttributeDescription m_HorizontalScrollingEnabled = new UxmlBoolAttributeDescription { name = "horizontal-scrolling", defaultValue = false };
 
             /// <summary>
-            /// Returns an empty enumerable, because list views usually do not have child elements.
+            /// Returns an empty enumerable, as list views usually don't have child elements.
             /// </summary>
             /// <returns>An empty enumerable.</returns>
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -253,12 +197,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Callback triggered when a user double-clicks an item to activate it. This is different from selecting the item.
+        /// Callback triggered that's activated when a user double-clicks an item. This is different from selecting the item.
         /// </summary>
         [Obsolete("onItemChosen is obsolete, use onItemsChosen instead")]
         public event Action<object> onItemChosen;
         /// <summary>
-        /// Callback triggered when the user acts on a selection of one or more items, for example by double-clicking or pressing Enter.
+        /// Callback triggered when the user acts on a selection of one or more items. For example, by double-clicking or pressing Enter.
         /// </summary>
         /// <remarks>
         /// This callback receives an enumerable that contains the item or items chosen.
@@ -391,8 +335,6 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// ListView requires that all visual elements have the same height so that it can calculate the
         /// scroller size.
-        ///
-        /// This property must be set for the list view to function.
         /// </remarks>
         public int itemHeight
         {
@@ -412,7 +354,7 @@ namespace UnityEngine.UIElements
         /// Enable this property to display a border around the ListView.
         /// </summary>
         /// <remarks>
-        /// If set to true, a border appears around the ScrollView.
+        /// If set to true, a border appears around the ScrollView that the ListView uses internally.
         /// </remarks>
         public bool showBorder
         {
@@ -424,7 +366,8 @@ namespace UnityEngine.UIElements
         /// Gets or sets a value that indicates whether the user can drag list items to reorder them.
         /// </summary>
         /// <remarks>
-        /// Set this value to true to allow the user to drag and drop the items in the list. The ListView
+        /// The default values is <c>false.</c>
+        /// Set this value to <c>true</c> to allow the user to drag and drop the items in the list. The ListView
         /// provides a default controller to allow standard behavior. It also automatically handles reordering
         /// the items in the data source.
         /// </remarks>
@@ -510,11 +453,10 @@ namespace UnityEngine.UIElements
 
         private SelectionType m_SelectionType;
         /// <summary>
-        /// Controls the selection type.
+        /// Controls the selection type with values of <see cref="SelectionType"/> enum.
         /// </summary>
         /// <remarks>
-        /// You can set the ListView to make one item selectable at a time, make multiple items selectable, or disable selections completely.
-        ///
+        /// The default value is <see cref="SelectionType.Single"/>.
         /// When you set the ListView to disable selections, any current selection is cleared.
         /// </remarks>
         public SelectionType selectionType
@@ -533,8 +475,12 @@ namespace UnityEngine.UIElements
         [SerializeField] private AlternatingRowBackground m_ShowAlternatingRowBackgrounds = AlternatingRowBackground.None;
 
         /// <summary>
-        /// This property controls whether the background colors of ListView rows alternate. Takes a value from <see cref="AlternatingRowBackground"/>.
+        /// This property controls whether the background colors of ListView rows alternate.
+        /// Takes a value from the <see cref="AlternatingRowBackground"/> enum.
         /// </summary>
+        /// <remarks>
+        /// The default value is <see cref="AlternatingRowBackground.None"/>.
+        /// </remarks>
         public AlternatingRowBackground showAlternatingRowBackgrounds
         {
             get { return m_ShowAlternatingRowBackgrounds; }
@@ -550,13 +496,12 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// This property controls whether the list view displays the collection size (number of items).
-        /// Set to true to display the collection size, false to omit it. Default is true.
         /// </summary>
         /// <remarks>
-        /// When this property is set to true, Unity displays the collection size as the first item in the list, but does
+        /// The default values if <c>true</c>.
+        /// When this property is set to <c>false</c>, Unity displays the collection size as the first item in the list, but does
         /// not make it an actual list item that is part of the list index. If you query for list index 0,
         /// Unity returns the first real list item, and not the collection size.
-        ///
         /// This property is usually used to debug a ListView, because it indicates whether the data source is
         /// linked correctly. In production, the collection size is rarely displayed as a line item in a ListView.
         /// </remarks>>
@@ -567,9 +512,11 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// This property controls whether the ListView shows a horizontal scroll bar when its content
-        /// does not fit in the visible area. Set this property to true to display a horizontal scroll bar,
-        /// false to omit the horizontal scroll bar. The default value is False.
+        /// does not fit in the visible area.
         /// </summary>
+        /// <remarks>
+        /// The default value is <c>false</c>. Set this property to <c>true</c> to display a horizontal scroll bar.
+        /// </remarks>
         public bool horizontalScrollingEnabled
         {
             get { return m_HorizontalScrollingEnabled; }
@@ -663,7 +610,7 @@ namespace UnityEngine.UIElements
         /// When the <c>showAlternatingRowBackground</c> property is set to either of those values, odd-numbered items
         /// are displayed with a different background color than even-numbered items. This USS class is used to differentiate
         /// odd-numbered items from even-numbered items. When the <c>showAlternatingRowBackground</c> property is set to
-        /// <c>None</c>, the USS class is not added, and any styling or behavior that relies on it is invalidated.
+        /// <c>None</c>, the USS class is not added, and any styling or behavior that relies on it's invalidated.
         /// </remarks>
         public static readonly string itemAlternativeBackgroundUssClassName = itemUssClassName + "--alternative-background";
 
@@ -749,7 +696,7 @@ namespace UnityEngine.UIElements
         }
 
         // TODO: make private. This doesn't need to be in the public API. Unit tests can be implemented with SendEvent.
-        // Obsoleted for 2021.2. We can obsolete completely in the next version.
+        /// <undoc/>
         [Obsolete("OnKeyDown is obsolete and will be removed from ListView. Use the event system instead, i.e. SendEvent(EventBase e).", false)]
         public void OnKeyDown(KeyDownEvent evt)
         {

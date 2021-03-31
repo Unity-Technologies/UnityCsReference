@@ -13,6 +13,7 @@ using PlayerBuildProgramLibrary.Data;
 using UnityEditor.Build;
 using UnityEditor.CrashReporting;
 using UnityEditor.Scripting;
+using UnityEditor.Scripting.Compilers;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Utils;
 using UnityEditorInternal;
@@ -35,7 +36,7 @@ namespace UnityEditor.Modules
         PlayerBuildProgressAPI progressAPI = null;
 
 
-        void AddPluginsDataToDriver(BuildPostProcessArgs args)
+        PluginsData PluginsDataFor(BuildPostProcessArgs args)
         {
             var pluginsList = new List<Plugin>();
             string buildTargetName = BuildPipeline.GetBuildTargetName(args.target);
@@ -72,13 +73,13 @@ namespace UnityEditor.Modules
                 });
             }
 
-            Driver.DataForBuildProgram.Add(new PluginsData()
+            return new PluginsData
             {
                 Plugins = pluginsList.ToArray()
-            });
+            };
         }
 
-        void AddLinkerConfigToDriver(BuildPostProcessArgs args)
+        LinkerConfig LinkerConfigFor(BuildPostProcessArgs args)
         {
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
             var strippingLevel = PlayerSettings.GetManagedStrippingLevel(buildTargetGroup);
@@ -115,7 +116,7 @@ namespace UnityEditor.Modules
                     rcr, strippingLevel, null);
                 AssemblyStripper.WriteEditorData(linkerRunInformation);
 
-                Driver.DataForBuildProgram.Add(new LinkerConfig()
+                return new LinkerConfig
                 {
                     LinkXmlFiles = AssemblyStripper.GetLinkXmlFiles(linkerRunInformation).ToArray(),
                     EditorToLinkerData = linkerRunInformation.EditorToLinkerDataPath.ToNPath().MakeAbsolute().ToString(),
@@ -143,16 +144,18 @@ namespace UnityEditor.Modules
                         BuildOptions.AllowDebugging,
                     PerformEngineStripping = PlayerSettings.stripEngineCode,
                     EngineStrippingFlags = engineStrippingFlags.ToArray(),
-                });
+                };
             }
+
+            return null;
         }
 
         private static bool IsBuildOptionSet(BuildOptions options, BuildOptions flag) => (options & flag) != 0;
 
-        void AddIl2CppConfigToDriver(BuildPostProcessArgs args)
+        Il2CppConfig Il2CppConfigFor(BuildPostProcessArgs args)
         {
             if (!GetUseIl2Cpp(args))
-                return;
+                return null;
 
             var additionalArgs = new List<string>();
 
@@ -167,7 +170,7 @@ namespace UnityEditor.Modules
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
             var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
             var platformHasIncrementalGC = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", args.target);
-            Driver.DataForBuildProgram.Add(new Il2CppConfig()
+            return new Il2CppConfig
             {
                 EnableDeepProfilingSupport = GetDevelopment(args) &&
                     IsBuildOptionSet(args.report.summary.options,
@@ -184,27 +187,24 @@ namespace UnityEditor.Modules
                     .Select(imp => imp.assetPath)
                     .ToArray(),
                 AdditionalArgs = additionalArgs.ToArray()
-            });
+            };
         }
 
-        void AddPlayerBuildConfigToDriver(BuildPostProcessArgs args)
+        PlayerBuildConfig PlayerBuildConfigFor(BuildPostProcessArgs args) => new PlayerBuildConfig
         {
-            Driver.DataForBuildProgram.Add(new PlayerBuildConfig()
-            {
-                DestinationPath = GetInstallPathFor(args),
-                StagingArea = args.stagingArea,
-                CompanyName = args.companyName,
-                ProductName = Paths.MakeValidFileName(args.productName),
-                PlayerPackage = args.playerPackage,
-                ApplicationIdentifier = PlayerSettings.GetApplicationIdentifier(BuildPipeline.GetBuildTargetGroup(args.target)),
-                InstallIntoBuildsFolder = GetInstallingIntoBuildsFolder(args),
-                GenerateIdeProject = GetCreateSolution(args),
-                Development = (args.report.summary.options & BuildOptions.Development) == BuildOptions.Development,
-                UseIl2Cpp = GetUseIl2Cpp(args),
-                Architecture = GetArchitecture(args),
-                DataFolder = $"Library/PlayerDataCache/{BuildPipeline.GetBuildTargetName(args.target)}/Data"
-            });
-        }
+            DestinationPath = GetInstallPathFor(args),
+            StagingArea = args.stagingArea,
+            CompanyName = args.companyName,
+            ProductName = Paths.MakeValidFileName(args.productName),
+            PlayerPackage = args.playerPackage,
+            ApplicationIdentifier = PlayerSettings.GetApplicationIdentifier(BuildPipeline.GetBuildTargetGroup(args.target)),
+            InstallIntoBuildsFolder = GetInstallingIntoBuildsFolder(args),
+            GenerateIdeProject = GetCreateSolution(args),
+            Development = (args.report.summary.options & BuildOptions.Development) == BuildOptions.Development,
+            UseIl2Cpp = GetUseIl2Cpp(args),
+            Architecture = GetArchitecture(args),
+            DataFolder = $"Library/PlayerDataCache/{BuildPipeline.GetBuildTargetName(args.target)}/Data"
+        };
 
         public override bool UsesBeeBuild() => true;
         protected virtual string GetInstallPathFor(BuildPostProcessArgs args) => args.installPath;
@@ -259,28 +259,38 @@ namespace UnityEditor.Modules
             return $"Player{GetInstallPathFor(args).GetHashCode():x8}";
         }
 
-        protected virtual void SetupBeeDriver(BuildPostProcessArgs args)
+        protected virtual IEnumerable<object> GetDataForBuildProgramFor(BuildPostProcessArgs args)
+        {
+            yield return PlayerBuildConfigFor(args);
+            yield return PluginsDataFor(args);
+            yield return LinkerConfigFor(args);
+            yield return Il2CppConfigFor(args);
+        }
+
+        void SetupBeeDriver(BuildPostProcessArgs args)
         {
             RunnableProgram buildProgram = MakePlayerBuildProgram(args);
             progressAPI = new PlayerBuildProgressAPI($"Building {args.productName}");
             Driver = UnityBeeDriver.Make(buildProgram, DagName(args), DagDirectory.ToString(), false, NPath.CurrentDirectory.ToString(), progressAPI);
 
-            AddPlayerBuildConfigToDriver(args);
-            AddPluginsDataToDriver(args);
-            AddLinkerConfigToDriver(args);
-            AddIl2CppConfigToDriver(args);
+            foreach (var o in GetDataForBuildProgramFor(args))
+            {
+                if (o != null)
+                    Driver.DataForBuildProgram.Add(o.GetType(), o);
+            }
         }
 
         void ReportBuildResults(BeeDriverResult result)
         {
+            var parser = new MicrosoftCSharpCompilerOutputParser();
             foreach (var node in result.NodeResults)
             {
+                var output = node.outputfile;
+                if (string.IsNullOrEmpty(output))
+                    output = node.outputdirectory;
+
                 if (node.exitcode != 0)
                 {
-                    var output = node.outputfile;
-                    if (string.IsNullOrEmpty(output))
-                        output = node.outputdirectory;
-
                     if (node.annotation.StartsWith("UnityLinker ") && node.stdout.Contains("UnityEditor"))
                         Debug.LogError($"UnityEditor.dll assembly is referenced by user code, but this is not allowed.");
                     else if (node.annotation.StartsWith("IL2CPP_CodeGen"))
@@ -292,6 +302,16 @@ namespace UnityEditor.Modules
                     else
                         Debug.LogError($"Building {output} failed with output:\n{node.stdout}");
                 }
+
+                var lines = (node.stdout ?? string.Empty).Split(new[] {'\r', '\n'},
+                    StringSplitOptions.RemoveEmptyEntries);
+
+                var errorKey = "error:";
+                foreach (var error in lines.Where(l => l.StartsWith(errorKey, StringComparison.InvariantCultureIgnoreCase)))
+                    Debug.LogError($"{output}: {error.Substring(errorKey.Length).TrimStart()}");
+                var warningKey = "warning:";
+                foreach (var warning in lines.Where(l => l.StartsWith(warningKey, StringComparison.InvariantCultureIgnoreCase)))
+                    Debug.LogWarning($"{output}: {warning.Substring(warningKey.Length).TrimStart()}");
             }
 
             foreach (var resultBeeDriverMessage in result.BeeDriverMessages)

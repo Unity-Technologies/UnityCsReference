@@ -661,6 +661,20 @@ namespace UnityEditor.EditorTools
             }
         }
 
+        internal static int GetCustomEditorToolsCount(bool includeLockedInspectorTools)
+        {
+            var totalCustomToolsCount = 0;
+
+            totalCustomToolsCount += instance.m_CustomEditorTools.Count;
+
+            if (includeLockedInspectorTools)
+            {
+                totalCustomToolsCount += instance.m_LockedCustomEditorTools.Count;
+            }
+
+            return totalCustomToolsCount;
+        }
+
         internal static void GetCustomEditorToolsForTarget(UnityObject target, List<EditorTool> list, bool searchLockedInspectors)
         {
             list.Clear();

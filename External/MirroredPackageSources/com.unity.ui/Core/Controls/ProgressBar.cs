@@ -5,35 +5,36 @@ using UnityEngine.Scripting.APIUpdating;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// ProgressBar control using UIElements. Supports binding to float and int values.
+    /// Abstract base class for the ProgressBar.
     /// </summary>
     public abstract class AbstractProgressBar : BindableElement, INotifyValueChanged<float>
     {
         /// <summary>
-        /// Uss Class Name used to style the <see cref="ProgressBar"/>.
+        /// USS Class Name used to style the <see cref="ProgressBar"/>.
         /// </summary>
         public static readonly string ussClassName = "unity-progress-bar";
         /// <summary>
-        /// Uss Class Name used to style the container of the <see cref="ProgressBar"/>.
+        /// USS Class Name used to style the container of the <see cref="ProgressBar"/>.
         /// </summary>
         public static readonly string containerUssClassName = ussClassName + "__container";
         /// <summary>
-        /// Uss Class Name used to style the title of the <see cref="ProgressBar"/>.
+        /// USS Class Name used to style the title of the <see cref="ProgressBar"/>.
         /// </summary>
         public static readonly string titleUssClassName = ussClassName + "__title";
         /// <summary>
-        /// Uss Class Name used to style the container of the title of the <see cref="ProgressBar"/>.
+        /// USS Class Name used to style the container of the title of the <see cref="ProgressBar"/>.
         /// </summary>
         public static readonly string titleContainerUssClassName = ussClassName + "__title-container";
         /// <summary>
-        /// Uss Class Name used to style the progress bar of the <see cref="ProgressBar"/>.
+        /// USS Class Name used to style the progress bar of the <see cref="ProgressBar"/>.
         /// </summary>
         public static readonly string progressUssClassName = ussClassName + "__progress";
         /// <summary>
-        /// Uss Class Name used to style the background of the <see cref="ProgressBar"/>.
+        /// USS Class Name used to style the background of the <see cref="ProgressBar"/>.
         /// </summary>
         public static readonly string backgroundUssClassName = ussClassName + "__background";
 
+        /// <undoc/>
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
             UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "low-value", defaultValue = 0 };
@@ -59,7 +60,7 @@ namespace UnityEngine.UIElements
         readonly Label m_Title;
 
         /// <summary>
-        /// Sets the title of the ProgressBar which will be displayed in the center of the control.
+        /// Sets the title of the ProgressBar that displays in the center of the control.
         /// </summary>
         public string title
         {
@@ -67,9 +68,13 @@ namespace UnityEngine.UIElements
             set => m_Title.text = value;
         }
 
+        // TODO the value can be set from UXML but not from C#???
         internal float lowValue { get; set; }
+
+        // TODO the value can be set from UXML but not from C#???
         internal float highValue { get; set; } = 100f;
 
+        /// <undoc/>
         public AbstractProgressBar()
         {
             AddToClassList(ussClassName);
@@ -106,7 +111,7 @@ namespace UnityEngine.UIElements
         float m_Value;
 
         /// <summary>
-        /// Bindable float value that can be bound to int and float properties. Setting this will change the current displayed progress of the ProgressBar.
+        /// Sets the progress value. If the value has changed, dispatches an <see cref="ChangeEvent{T}"/> of type float.
         /// </summary>
         public virtual float value
         {
@@ -132,6 +137,10 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Sets the progress value.
+        /// </summary>
+        /// <param name="newValue"></param>
         public void SetValueWithoutNotify(float newValue)
         {
             m_Value = newValue;
@@ -181,9 +190,13 @@ namespace UnityEngine.UIElements
     }
 
 
+    /// <summary>
+    /// A control that displays the progress between a lower and upper bound value.
+    /// </summary>
     [MovedFrom(true, "UnityEditor.UIElements", "UnityEditor.UIElementsModule")]
     public class ProgressBar : AbstractProgressBar
     {
+        /// <undoc/>
         public new class UxmlFactory : UxmlFactory<ProgressBar, UxmlTraits> {}
     }
 }

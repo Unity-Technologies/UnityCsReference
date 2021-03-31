@@ -43,7 +43,7 @@ namespace UnityEditor.UIElements
         /// The object currently being exposed by the field.
         /// </summary>
         /// <remarks>
-        /// If the new value is different from the current value, this method notifies registered callbacks with a ChangeEvent<string>.
+        /// If the new value is different from the current value, this method notifies registered callbacks with a <see cref="ChangeEvent{T}"/> of type string.
         /// </remarks>
         public new string value
         {
