@@ -884,6 +884,8 @@ namespace UnityEditor
                     origin,
                     previousMenuItemPosition);
 
+                MenuUtils.RemoveInvalidMenuItems(menu);
+
                 previousMenuItemPosition = menuItem.priority;
             }
         }

@@ -263,6 +263,10 @@ namespace UnityEditor
                 return r;
             }
 
+            // Temporarily reset the indent level. See issue 946082.
+            int oldIndentLevel = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = 0;
+
             BeginAnimatedCheck(r, colorProperty);
 
             Rect leftRect = GetLeftAlignedFieldRect(r);
@@ -274,6 +278,9 @@ namespace UnityEditor
                 colorProperty.colorValue = newValue;
 
             EndAnimatedCheck();
+
+            // Restore the indent level
+            EditorGUI.indentLevel = oldIndentLevel;
 
             return r;
         }
@@ -290,6 +297,10 @@ namespace UnityEditor
             Rect r = GetControlRectForSingleLine();
             TexturePropertyMiniThumbnail(r, textureProp, label.text, label.tooltip);
 
+            // Temporarily reset the indent level. See issue 946082.
+            int oldIndentLevel = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = 0;
+
             // First extra control on the same line as the texture
             Rect r1 = GetRectAfterLabelWidth(r);
             if (extraProperty1.type == MaterialProperty.PropType.Color)
@@ -299,6 +310,9 @@ namespace UnityEditor
             // New line for extraProperty2
             Rect r2 = GetControlRectForSingleLine();
             ShaderProperty(r2, extraProperty2, label2.text, MaterialEditor.kMiniTextureFieldLabelIndentLevel + 1);
+
+            // Restore the indent level
+            EditorGUI.indentLevel = oldIndentLevel;
 
             // Return total rect
             r.height += r2.height;

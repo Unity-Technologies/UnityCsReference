@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.Bindings;
 using Object = UnityEngine.Object;
@@ -12,10 +13,9 @@ namespace UnityEditor.Build.Reporting
     [NativeClass("BuildReporting::PackedAssets")]
     public sealed class PackedAssets : Object
     {
-        public uint file
-        {
-            get { return GetFile(); }
-        }
+        private const string fileObsoleteMessage = "Report file index is no longer available. To find the matching report file for a particular asset the recommended way is to do a filename lookup in the report.";
+        [Obsolete(fileObsoleteMessage, true)]
+        public uint file => throw new NotSupportedException(fileObsoleteMessage);
 
         public string shortPath
         {
@@ -31,8 +31,6 @@ namespace UnityEditor.Build.Reporting
         {
             get { return GetContents(); }
         }
-
-        internal extern uint GetFile();
 
         internal extern string GetShortPath();
 

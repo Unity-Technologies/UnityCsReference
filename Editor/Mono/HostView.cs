@@ -441,10 +441,7 @@ namespace UnityEditor
             try
             {
                 GUILayoutUtility.unbalancedgroupscount = 0;
-                using (new EditorPerformanceTracker($"{GetActualViewName()}.OnGUI.{Event.current.type}"))
-                {
-                    m_OnGUI?.Invoke();
-                }
+                m_OnGUI?.Invoke();
                 if (GUILayoutUtility.unbalancedgroupscount > 0)
                 {
                     Debug.LogError("GUI Error: Invalid GUILayout state in " + GetActualViewName() + " view. Verify that all layout Begin/End calls match");

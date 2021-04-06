@@ -378,7 +378,7 @@ namespace UnityEditor.Search.Providers
                     if (rangeMatches.Count == 1 && rangeMatches[0].Groups.Count == 3)
                     {
                         var rg = rangeMatches[0].Groups;
-                        if (float.TryParse(rg[1].Value, out var min) && float.TryParse(rg[2].Value, out var max))
+                        if (Utils.TryParse(rg[1].Value, out float min) && Utils.TryParse(rg[2].Value, out float max))
                             return new ParseResult<PropertyRange>(true, new PropertyRange(min, max));
                     }
                 }
@@ -760,6 +760,9 @@ namespace UnityEditor.Search.Providers
                 case SerializedPropertyType.ManagedReference: break;
             }
 
+            if (sp.isArray)
+                return new GOP(sp.arraySize);
+
             return GOP.invalid;
         }
 
@@ -812,7 +815,7 @@ namespace UnityEditor.Search.Providers
                 return existingProperty;
 
             var gocs = go.GetComponents<Component>();
-            for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
+            for (int componentIndex = 0; componentIndex < gocs.Length; ++componentIndex)
             {
                 var c = gocs[componentIndex];
                 if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
@@ -825,6 +828,7 @@ namespace UnityEditor.Search.Providers
                     return property;
                 }
             }
+            god.properties[propertyName] = GOP.invalid;
             return GOP.invalid;
         }
 

@@ -151,7 +151,7 @@ namespace UnityEditor.Search
 
         public double GetNumberValue(double defaultValue = double.NaN)
         {
-            if (double.TryParse(innerText.ToString(), out var d))
+            if (Utils.TryParse(innerText.ToString(), out double d))
                 return d;
             return defaultValue;
         }

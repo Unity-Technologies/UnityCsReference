@@ -385,6 +385,9 @@ namespace UnityEditor
 
         void SubscribeToGlobalEvents()
         {
+            // maximize playmode will call ondisable which will unsibrcibe for clear events.
+            // we unsubscribe here to make sure that we dont end up with multiple
+            EditorApplication.playModeStateChanged -= OnPlaymodeStateChanged;
             EditorApplication.playModeStateChanged += OnPlaymodeStateChanged;
             EditorApplication.pauseStateChanged += OnPauseStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged += OnSettingsChanged;
@@ -399,7 +402,6 @@ namespace UnityEditor
 
         void UnsubscribeFromGlobalEvents()
         {
-            EditorApplication.playModeStateChanged -= OnPlaymodeStateChanged;
             EditorApplication.pauseStateChanged -= OnPauseStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged -= OnSettingsChanged;
             ProfilerUserSettings.settingsChanged -= OnSettingsChanged;

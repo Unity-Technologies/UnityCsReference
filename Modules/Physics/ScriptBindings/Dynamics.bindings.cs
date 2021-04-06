@@ -10,6 +10,8 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using UnityEngine.Internal;
 using UnityEngine.SceneManagement;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 
 
@@ -298,6 +300,7 @@ namespace UnityEngine
         extern public float contactOffset { get; set; }
         extern public Vector3 ClosestPoint(Vector3 position);
         extern public Bounds bounds { get; }
+        extern public bool hasModifiableContacts {get; set;}
 
         [NativeMethod("Material")]
         extern public PhysicMaterial sharedMaterial { get; set; }

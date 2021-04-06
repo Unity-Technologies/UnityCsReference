@@ -554,7 +554,7 @@ namespace UnityEditor
             GUI.color = oldColor;
         }
 
-        public void OverlayOnGUI()
+        public void OverlayOnGUI(Rect bounds)
         {
             if (!hasSelection)
                 return;
@@ -578,7 +578,7 @@ namespace UnityEditor
                 m_VBarTop.OnGUI(m_Layout.vBarTopRect);
             }
 
-            DrawLabels();
+            DrawLabels(bounds);
 
             GUI.color = oldColor;
         }
@@ -763,7 +763,7 @@ namespace UnityEditor
             return layout;
         }
 
-        private void DrawLabels()
+        private void DrawLabels(Rect bounds)
         {
             if (dragMode == DragMode.None)
                 return;
@@ -793,7 +793,6 @@ namespace UnityEditor
                     {
                         GUIContent labelContent = new GUIContent(string.Format("{0}", m_CurveEditor.FormatTime(selectionBounds.center.x, m_CurveEditor.invSnap, m_CurveEditor.timeFormat)));
                         Vector2 labelSize = styles.dragLabel.CalcSize(labelContent);
-
                         EditorGUI.DoDropShadowLabel(new Rect(m_Layout.leftLabelAnchor.x, m_Layout.leftLabelAnchor.y, labelSize.x, labelSize.y), labelContent, styles.dragLabel, 0.3f);
                     }
                 }
@@ -831,7 +830,14 @@ namespace UnityEditor
                     GUIContent labelContent = new GUIContent(string.Format("{0}, {1}", m_CurveEditor.FormatTime(localPosition.x, m_CurveEditor.invSnap, m_CurveEditor.timeFormat), m_CurveEditor.FormatValue(localPosition.y)));
                     Vector2 labelSize = styles.dragLabel.CalcSize(labelContent);
 
-                    EditorGUI.DoDropShadowLabel(new Rect(labelPosition.x, labelPosition.y - labelSize.y, labelSize.x, labelSize.y), labelContent, styles.dragLabel, 0.3f);
+                    // Clamp popup to remain inside the curve editor window
+                    var labelRect = new Rect(labelPosition.x, labelPosition.y - labelSize.y, labelSize.x, labelSize.y);
+                    labelRect.x += Mathf.Max(0.0f, bounds.xMin - labelRect.xMin);
+                    labelRect.x -= Mathf.Max(0.0f, labelRect.xMax - bounds.xMax);
+                    labelRect.y += Mathf.Max(0.0f, bounds.yMin - labelRect.yMin);
+                    labelRect.y -= Mathf.Max(0.0f, labelRect.yMax - bounds.yMax);
+
+                    EditorGUI.DoDropShadowLabel(labelRect, labelContent, styles.dragLabel, 0.3f);
                 }
             }
         }

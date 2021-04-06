@@ -14,7 +14,7 @@ namespace UnityEditor.Profiling
      StaticAccessor("Performance::Bindings", StaticAccessorType.DoubleColon)]
     internal struct EditorPerformanceTracker : IDisposable
     {
-        private bool m_Disposed;
+        private volatile bool m_Disposed;
         private readonly int m_WatchHandle;
 
         public EditorPerformanceTracker(string name)
@@ -23,12 +23,21 @@ namespace UnityEditor.Profiling
             m_WatchHandle = StartTracker(name);
         }
 
+        public EditorPerformanceTracker(ulong handle)
+        {
+            m_Disposed = false;
+            var isMainThread = UnityEditorInternal.InternalEditorUtility.CurrentThreadIsMainThread();
+            if (!isMainThread || !TryStartTrackerByHandle(handle, out m_WatchHandle))
+                m_WatchHandle = -1;
+        }
+
         public void Dispose()
         {
             if (m_Disposed)
                 return;
+            if (m_WatchHandle != -1)
+                StopTracker(m_WatchHandle);
             m_Disposed = true;
-            StopTracker(m_WatchHandle);
         }
 
         internal const ulong InvalidTrackerHandle = ulong.MaxValue;

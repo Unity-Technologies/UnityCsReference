@@ -37,7 +37,7 @@ namespace Unity.Profiling.LowLevel.Unsafe
         public string Name => ProfilerUnsafeUtility.Utf8ToString(NameUtf8, NameUtf8Len);
     }
 
-    [NativeHeader("Runtime/Profiler/ScriptBindings/ProfilerMarker.bindings.h")]
+    [NativeHeader("Runtime/Profiler/ScriptBindings/ProfilerUnsafeUtility.bindings.h")]
     [UsedByNativeCode]
     public static class ProfilerUnsafeUtility
     {
@@ -99,6 +99,9 @@ namespace Unity.Profiling.LowLevel.Unsafe
 
         [ThreadSafe]
         static extern unsafe IntPtr CreateMarker_Unsafe(char* name, int nameLen, ushort categoryId, MarkerFlags flags, int metadataCount);
+
+        [ThreadSafe]
+        internal static extern IntPtr GetMarker(string name);
 
         [ThreadSafe]
         public static extern void SetMarkerMetadata(IntPtr markerPtr, int index, string name, byte type, byte unit);
@@ -165,6 +168,7 @@ namespace Unity.Profiling.LowLevel.Unsafe
 
         [ThreadSafe]
         internal static extern void Internal_BeginWithObject(IntPtr markerPtr, UnityEngine.Object contextUnityObject);
+
         [NativeConditional("ENABLE_PROFILER")]
         internal static extern string Internal_GetName(IntPtr markerPtr);
 

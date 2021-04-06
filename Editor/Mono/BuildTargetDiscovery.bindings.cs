@@ -39,7 +39,8 @@ namespace UnityEditor
             UsesNativeHDR                   = (1 << 18),
             // removed: ProtectedGraphicsMem = (1 << 19),
             IsMTRenderingDisabledByDefault  = (1 << 20),
-            ConfigurableNormalMapEncoding   = (1 << 21)
+            ConfigurableNormalMapEncoding   = (1 << 21),
+            ConfigurableDefaultTextureCompressionFormat = (1 << 22)
         }
 
         [StructLayout(LayoutKind.Sequential)]

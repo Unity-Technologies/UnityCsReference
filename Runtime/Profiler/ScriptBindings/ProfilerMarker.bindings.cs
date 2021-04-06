@@ -18,7 +18,6 @@ namespace Unity.Profiling
 {
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Runtime/Profiler/ScriptBindings/ProfilerMarker.bindings.h")]
     public struct ProfilerMarker
     {
         [NativeDisableUnsafePtrRestriction]

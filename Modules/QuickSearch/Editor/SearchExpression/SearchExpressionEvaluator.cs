@@ -366,7 +366,7 @@ namespace UnityEditor.Search
                 var value = SelectorManager.SelectValue(item, ctx, match.Groups[2].Value.Substring(1));
                 if (value == null)
                     return "<no value>";
-                return match.Value.Replace(match.Groups[2].Value, $"{value}");;
+                return match.Value.Replace(match.Groups[2].Value, $"{value}");
             });
             return s_SelectorFormatStr.Replace(formatString, evaluator);
         }

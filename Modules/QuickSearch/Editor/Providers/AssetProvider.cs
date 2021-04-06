@@ -18,15 +18,46 @@ namespace UnityEditor.Search.Providers
     {
         enum IdentifierType { kNullIdentifier = 0, kImportedAsset = 1, kSceneObject = 2, kSourceAsset = 3, kBuiltInAsset = 4 };
 
-        readonly struct AssetMetaInfo
+        struct AssetMetaInfo
         {
             public readonly string path;
-            public readonly GlobalObjectId gid;
+            private readonly string gidString;
+
+            private GlobalObjectId m_GID;
+            public GlobalObjectId gid
+            {
+                get
+                {
+                    if (m_GID.assetGUID == default)
+                    {
+                        if (gidString != null && GlobalObjectId.TryParse(gidString, out m_GID))
+                            return m_GID;
+
+                        if (!string.IsNullOrEmpty(path))
+                        {
+                            m_GID = GetGID(path);
+                            return m_GID;
+                        }
+
+                        throw new Exception($"Failed to resolve GID for {path}, {gidString}");
+                    }
+
+                    return m_GID;
+                }
+            }
 
             public AssetMetaInfo(string path, GlobalObjectId gid)
             {
                 this.path = path;
-                this.gid = gid;
+                gidString = null;
+                m_GID = gid;
+            }
+
+            public AssetMetaInfo(string path, string gid)
+            {
+                this.path = path;
+                this.gidString = gid;
+                m_GID = default;
             }
         }
 
@@ -161,6 +192,13 @@ namespace UnityEditor.Search.Providers
             var gid = GetGID(item);
 
             var assetPath = AssetDatabase.GUIDToAssetPath(gid.assetGUID.ToString());
+            if (typeof(AssetImporter).IsAssignableFrom(type))
+            {
+                var importer = AssetImporter.GetAtPath(assetPath);
+                if (importer)
+                    return importer;
+            }
+
             if (gid.identifierType == (int)IdentifierType.kImportedAsset)
             {
                 var assetType = AssetDatabase.GetMainAssetTypeAtPath(assetPath);
@@ -235,6 +273,11 @@ namespace UnityEditor.Search.Providers
             return new AssetMetaInfo(path, GetGID(path));
         }
 
+        private static AssetMetaInfo CreateMetaInfo(string path, string gid)
+        {
+            return new AssetMetaInfo(path, gid);
+        }
+
         private static AssetMetaInfo CreateMetaInfo(string path, GlobalObjectId gid)
         {
             return new AssetMetaInfo(path, gid);
@@ -242,45 +285,48 @@ namespace UnityEditor.Search.Providers
 
         private static IEnumerator SearchAssets(SearchContext context, SearchProvider provider)
         {
-            var searchQuery = context.searchQuery;
-            var useIndexing = !context.options.HasAny(SearchFlags.NoIndexing) && assetIndexes.Count > 0;
-            if (!string.IsNullOrEmpty(searchQuery))
+            //using (new Profiling.EditorPerformanceTracker(searchPerformanceTracker))
             {
-                // Search by GUID
-                var guidPath = AssetDatabase.GUIDToAssetPath(searchQuery);
-                if (!string.IsNullOrEmpty(guidPath))
-                    yield return provider.CreateItem(context, GetGID(guidPath).ToString(), -1, $"{Path.GetFileName(guidPath)} ({searchQuery})", null, null, CreateMetaInfo(guidPath));
-
-                // Search indexes that are ready
-                bool allIndexesReady = false;
-                if (useIndexing)
+                var searchQuery = context.searchQuery;
+                var useIndexing = !context.options.HasAny(SearchFlags.NoIndexing) && assetIndexes.Count > 0;
+                if (!string.IsNullOrEmpty(searchQuery))
                 {
-                    allIndexesReady = assetIndexes.All(db => db.ready);
-                    if (allIndexesReady)
+                    // Search by GUID
+                    var guidPath = AssetDatabase.GUIDToAssetPath(searchQuery);
+                    if (!string.IsNullOrEmpty(guidPath))
+                        yield return provider.CreateItem(context, GetGID(guidPath).ToString(), -1, $"{Path.GetFileName(guidPath)} ({searchQuery})", null, null, CreateMetaInfo(guidPath));
+
+                    // Search indexes that are ready
+                    bool allIndexesReady = false;
+                    if (useIndexing)
+                    {
+                        allIndexesReady = assetIndexes.All(db => db.ready);
+                        if (allIndexesReady)
+                        {
+                            foreach (var db in assetIndexes)
+                                yield return SearchIndexes(context.searchQuery, context, provider, db);
+                        }
+                    }
+
+                    if (!useIndexing || !allIndexesReady || context.wantsMore)
+                    {
+                        // Perform a quick search on asset paths
+                        var findOptions = FindOptions.Words | FindOptions.Regex | FindOptions.Glob | (context.wantsMore ? FindOptions.Fuzzy : FindOptions.None);
+                        foreach (var e in FindProvider.Search(context, provider, findOptions))
+                            yield return CreateItem(context, provider, "Find", null, e.path, 998 + e.score, useGroupProvider: false);
+                    }
+
+                    // Finally wait for indexes that are being built to end the search.
+                    if (useIndexing && !allIndexesReady && !context.options.HasAny(SearchFlags.Synchronous))
                     {
                         foreach (var db in assetIndexes)
                             yield return SearchIndexes(context.searchQuery, context, provider, db);
                     }
                 }
 
-                if (!useIndexing || !allIndexesReady || context.wantsMore)
-                {
-                    // Perform a quick search on asset paths
-                    var findOptions = FindOptions.Words | FindOptions.Regex | FindOptions.Glob | (context.wantsMore ? FindOptions.Fuzzy : FindOptions.None);
-                    foreach (var e in FindProvider.Search(context, provider, findOptions))
-                        yield return CreateItem(context, provider, "Find", GetGID(e.path), e.path, 998 + e.score, useGroupProvider: false);
-                }
-
-                // Finally wait for indexes that are being built to end the search.
-                if (useIndexing && !allIndexesReady && !context.options.HasAny(SearchFlags.Synchronous))
-                {
-                    foreach (var db in assetIndexes)
-                        yield return SearchIndexes(context.searchQuery, context, provider, db);
-                }
+                if (context.wantsMore && context.filterType != null)
+                    yield return SearchPickableAssets(context, provider);
             }
-
-            if (context.wantsMore && context.filterType != null)
-                yield return SearchPickableAssets(context, provider);
         }
 
         private static IEnumerator SearchPickableAssets(SearchContext context, SearchProvider provider)
@@ -290,7 +336,7 @@ namespace UnityEditor.Search.Providers
             {
                 yield return AssetDatabase.FindAssets($"t:{context.filterType.Name}")
                     .Select(guid => AssetDatabase.GUIDToAssetPath(guid))
-                    .Select(path => CreateItem(context, provider, "More", GetGID(path), path, 999, useGroupProvider: false));
+                    .Select(path => CreateItem(context, provider, "More", null, path, 999, useGroupProvider: false));
             }
             else
             {
@@ -326,24 +372,10 @@ namespace UnityEditor.Search.Providers
             db.Report("Search", searchQuery);
             yield return index.Search(searchQuery.ToLowerInvariant(), context, provider)
                 .Where(e => e.id != null)
-                .Select(e => CreateItem(context, provider, db.name, ParseGID(db, e), db.index.GetDocument(e.index).path, e.score, useGroupProvider));
+                .Select(e => CreateItem(context, provider, db.name, e.id, db.index.GetDocument(e.index).path, e.score, useGroupProvider));
         }
 
-        private static GlobalObjectId ParseGID(SearchDatabase db, SearchResult r)
-        {
-            if (GlobalObjectId.TryParse(r.id, out var gid))
-                return gid;
-            if (db.index != null)
-            {
-                var doc = db.index.GetDocument(r.index);
-                if (doc.valid)
-                    return GetGID(doc.path);
-            }
-
-            return new GlobalObjectId();
-        }
-
-        public static SearchItem CreateItem(SearchContext context, SearchProvider provider, string dbName, GlobalObjectId gid, string path, int itemScore, bool useGroupProvider = true)
+        public static SearchItem CreateItem(SearchContext context, SearchProvider provider, string dbName, string gid, string path, int itemScore, bool useGroupProvider = true)
         {
             string filename = null;
             if (context.options.HasAny(SearchFlags.Debug) && !string.IsNullOrEmpty(dbName))
@@ -353,7 +385,7 @@ namespace UnityEditor.Search.Providers
             }
 
             var groupProvider = useGroupProvider ? SearchUtils.CreateGroupProvider(provider, GetProviderGroupName(dbName, path), provider.priority, cacheProvider: true) : provider;
-            return groupProvider.CreateItem(context, gid.ToString(), itemScore, filename, null, null, CreateMetaInfo(path, gid));
+            return groupProvider.CreateItem(context, gid ?? GetGID(path).ToString(), itemScore, filename, null, null, CreateMetaInfo(path, gid));
         }
 
         private static string GetProviderGroupName(string dbName, string path)

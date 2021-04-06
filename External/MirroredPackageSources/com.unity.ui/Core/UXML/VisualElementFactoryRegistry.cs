@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace UnityEngine.UIElements
 {
-    internal static class VisualElementFactoryRegistry
+    internal class VisualElementFactoryRegistry
     {
         private static Dictionary<string, List<IUxmlFactory>> s_Factories;
 
@@ -24,7 +24,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal static void RegisterFactory(IUxmlFactory factory)
+        protected static void RegisterFactory(IUxmlFactory factory)
         {
             List<IUxmlFactory> factoryList;
             if (factories.TryGetValue(factory.uxmlQualifiedName, out factoryList))
@@ -52,6 +52,9 @@ namespace UnityEngine.UIElements
             return factories.TryGetValue(fullTypeName, out factoryList);
         }
 
+        // Core UI Toolkit elements must be registered manually for both Editor and Player use cases.
+        // For performance in the Player we want to avoid scanning any builtin Unity assembly with reflection.
+        // Ideally a mechanism similar to the TypeCache in the Player would exist and remove the need for this.
         static void RegisterEngineFactories()
         {
             IUxmlFactory[] factories =
@@ -91,6 +94,7 @@ namespace UnityEngine.UIElements
                 new TreeView.UxmlFactory(),
                 new Foldout.UxmlFactory(),
                 new BindableElement.UxmlFactory(),
+                new TextElement.UxmlFactory(),
             };
 
             foreach (var factory in factories)
@@ -101,6 +105,8 @@ namespace UnityEngine.UIElements
 
         internal static void RegisterUserFactories()
         {
+            // In the Player, we filter assemblies to only introspect types of user assemblies
+            // which will exclude Unity builtin assemblies (i.e. runtime modules).
         }
     }
 }

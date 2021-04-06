@@ -345,11 +345,8 @@ namespace UnityEditor.Search
 
         public static void SendReportUsage()
         {
-            using (new EditorPerformanceTracker("Quicksearch.Analytics.SendReportUsage"))
-            {
-                var report = CreateSearchUsageReport();
-                Send(EventName.quickSearchUsageReport, report);
-            }
+            var report = CreateSearchUsageReport();
+            Send(EventName.quickSearchUsageReport, report);
         }
 
         public static void DebounceSendEvent(Func<GenericEvent> evtCreator)

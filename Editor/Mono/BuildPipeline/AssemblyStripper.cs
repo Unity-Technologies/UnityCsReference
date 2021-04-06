@@ -47,7 +47,7 @@ namespace UnityEditorInternal
         {
             get
             {
-                return Path.Combine(IL2CPPUtils.GetIl2CppFolder(), "build/deploy/netcoreapp3.1/UnityLinker" + (Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : ""));
+                return IL2CPPUtils.GetExePath("UnityLinker");
             }
         }
 

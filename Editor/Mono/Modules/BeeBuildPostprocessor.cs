@@ -36,7 +36,7 @@ namespace UnityEditor.Modules
         PlayerBuildProgressAPI progressAPI = null;
 
 
-        PluginsData PluginsDataFor(BuildPostProcessArgs args)
+        protected virtual PluginsData PluginsDataFor(BuildPostProcessArgs args)
         {
             var pluginsList = new List<Plugin>();
             string buildTargetName = BuildPipeline.GetBuildTargetName(args.target);
@@ -142,8 +142,7 @@ namespace UnityEditor.Modules
                     ModulesAssetPath = $"{BuildPipeline.GetPlaybackEngineDirectory(args.target, 0)}/modules.asset",
                     AllowDebugging = (args.report.summary.options & BuildOptions.AllowDebugging) ==
                         BuildOptions.AllowDebugging,
-                    PerformEngineStripping = PlayerSettings.stripEngineCode,
-                    EngineStrippingFlags = engineStrippingFlags.ToArray(),
+                    PerformEngineStripping = PlayerSettings.stripEngineCode
                 };
             }
 
@@ -203,7 +202,14 @@ namespace UnityEditor.Modules
             Development = (args.report.summary.options & BuildOptions.Development) == BuildOptions.Development,
             UseIl2Cpp = GetUseIl2Cpp(args),
             Architecture = GetArchitecture(args),
-            DataFolder = $"Library/PlayerDataCache/{BuildPipeline.GetBuildTargetName(args.target)}/Data"
+            DataFolder = $"Library/PlayerDataCache/{BuildPipeline.GetBuildTargetName(args.target)}/Data",
+            Services = new Services()
+            {
+                EnableAnalytics = UnityEngine.Analytics.Analytics.enabled,
+                EnableCrashReporting = UnityEditor.CrashReporting.CrashReportingSettings.enabled,
+                EnablePerformanceReporting = UnityEngine.Analytics.PerformanceReporting.enabled,
+                EnableUnityConnect = UnityEngine.Connect.UnityConnectSettings.enabled,
+            }
         };
 
         public override bool UsesBeeBuild() => true;

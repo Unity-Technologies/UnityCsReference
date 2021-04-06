@@ -6,96 +6,141 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Unity.Profiling;
+using Unity.Profiling.LowLevel;
+using Unity.Profiling.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.Profiling
 {
     [UsedByNativeCode]
-    [NativeHeader("Runtime/Profiler/ScriptBindings/Recorder.bindings.h")]
-    [NativeHeader("Runtime/Profiler/Recorder.h")]
-    [StructLayout(LayoutKind.Sequential)]
     public sealed class Recorder
     {
-        internal IntPtr m_Ptr;
+        const ProfilerRecorderOptions s_RecorderDefaultOptions =
+            ProfilerRecorder.SharedRecorder |
+            ProfilerRecorderOptions.WrapAroundWhenCapacityReached |
+            ProfilerRecorderOptions.SumAllSamplesInFrame |
+            ProfilerRecorderOptions.StartImmediately;
         static internal Recorder s_InvalidRecorder = new Recorder();
 
+        ProfilerRecorder m_RecorderCPU;
+        ProfilerRecorder m_RecorderGPU;
+
         // This class can't be explicitly created
-        internal Recorder() {}
-        internal Recorder(IntPtr ptr) { m_Ptr = ptr; }
+        internal Recorder()
+        {
+        }
+
+        internal Recorder(ProfilerRecorderHandle handle)
+        {
+            if (!handle.Valid)
+                return;
+
+            m_RecorderCPU = new ProfilerRecorder(handle, 1, s_RecorderDefaultOptions);
+
+            var description = ProfilerRecorderHandle.GetDescription(handle);
+            if ((description.Flags & MarkerFlags.SampleGPU) != 0)
+                m_RecorderGPU = new ProfilerRecorder(handle, 1, s_RecorderDefaultOptions | ProfilerRecorderOptions.GpuRecorder);
+        }
 
         ~Recorder()
         {
-            if (m_Ptr != IntPtr.Zero)
-                DisposeNative(m_Ptr);
+            m_RecorderCPU.Dispose();
+            m_RecorderGPU.Dispose();
         }
 
         public static Recorder Get(string samplerName)
         {
-            IntPtr nativeRecorder = GetInternal(samplerName);
-            if (nativeRecorder == IntPtr.Zero)
+            var handler = ProfilerRecorderHandle.Get(ProfilerCategory.Any, samplerName);
+            if (!handler.Valid)
                 return s_InvalidRecorder;
-
-            return new Recorder(nativeRecorder);
+            return new Recorder(handler);
         }
-
-        [NativeMethod(Name = "ProfilerBindings::GetRecorderInternal", IsFreeFunction = true)]
-        private extern static IntPtr GetInternal(string samplerName);
 
         public bool isValid
         {
-            get { return m_Ptr != IntPtr.Zero; }
+            get { return m_RecorderCPU.handle != 0; }
         }
-
-        [NativeMethod(Name = "ProfilerBindings::DisposeNativeRecorder", IsFreeFunction = true, IsThreadSafe = true)]
-        private extern static void DisposeNative(IntPtr ptr);
 
         public bool enabled
         {
-            get { return isValid ? IsEnabled() : false; }
-            set { if (isValid) SetEnabled(value); }
+            get { return m_RecorderCPU.IsRunning; }
+            set { SetEnabled(value); }
         }
-
-        [NativeMethod(IsThreadSafe = true)]
-        private extern bool IsEnabled();
-
-        [NativeMethod(IsThreadSafe = true)]
-        private extern void SetEnabled(bool enabled);
 
         public long elapsedNanoseconds
         {
-            get { return isValid ? GetElapsedNanoseconds() : 0; }
+            get
+            {
+                if (!m_RecorderCPU.Valid)
+                    return 0;
+                return m_RecorderCPU.LastValue;
+            }
         }
+
         public long gpuElapsedNanoseconds
         {
-            get { return isValid ? GetGpuElapsedNanoseconds() : 0; }
+            get
+            {
+                if (!m_RecorderGPU.Valid)
+                    return 0;
+                return m_RecorderGPU.LastValue;
+            }
         }
-
-        [NativeMethod(IsThreadSafe = true)]
-        private extern long GetElapsedNanoseconds();
-
-        [NativeMethod(IsThreadSafe = true)]
-        private extern long GetGpuElapsedNanoseconds();
 
         public int sampleBlockCount
         {
-            get { return isValid ? GetSampleBlockCount() : 0; }
+            get
+            {
+                if (!m_RecorderCPU.Valid)
+                    return 0;
+                if (m_RecorderCPU.Count != 1)
+                    return 0;
+                return (int)m_RecorderCPU.GetSample(0).Count;
+            }
         }
+
         public int gpuSampleBlockCount
         {
-            get { return isValid ? GetGpuSampleBlockCount() : 0; }
+            get
+            {
+                if (!m_RecorderGPU.Valid)
+                    return 0;
+                if (m_RecorderGPU.Count != 1)
+                    return 0;
+                return (int)m_RecorderGPU.GetSample(0).Count;
+            }
         }
 
-        [NativeMethod(IsThreadSafe = true)]
-        private extern int GetSampleBlockCount();
+        public void FilterToCurrentThread()
+        {
+            if (!m_RecorderCPU.Valid)
+                return;
+            m_RecorderCPU.FilterToCurrentThread();
+        }
 
-        [NativeMethod(IsThreadSafe = true)]
-        private extern int GetGpuSampleBlockCount();
+        public void CollectFromAllThreads()
+        {
+            if (!m_RecorderCPU.Valid)
+                return;
+            m_RecorderCPU.CollectFromAllThreads();
+        }
 
-        [ThreadSafe]
-        public extern void FilterToCurrentThread();
-
-        [ThreadSafe]
-        public extern void CollectFromAllThreads();
+        private void SetEnabled(bool state)
+        {
+            if (state)
+            {
+                m_RecorderCPU.Start();
+                if (m_RecorderGPU.Valid)
+                    m_RecorderGPU.Start();
+            }
+            else
+            {
+                m_RecorderCPU.Stop();
+                if (m_RecorderGPU.Valid)
+                    m_RecorderGPU.Stop();
+            }
+        }
     }
 }

@@ -268,7 +268,7 @@ namespace UnityEditor.Search
 
         public int CompareTo(SearchDocument other)
         {
-            return path.CompareTo(other.path);
+            return string.CompareOrdinal(path, other.path);
         }
     }
 
@@ -564,7 +564,7 @@ namespace UnityEditor.Search
                     context.AddSearchQueryErrors(parsedQuery.errors.Select(e => new SearchQueryError(e, context, provider)));
                 return Enumerable.Empty<SearchResult>();
             }
-            return parsedQuery.Apply(null).OrderBy(e => e.score).Distinct();
+            return parsedQuery.Apply(null) /*.OrderBy(e => e.score).Distinct()*/;
         }
 
         /// <summary>
@@ -824,8 +824,11 @@ namespace UnityEditor.Search
             {
                 removeDocIndexes = removeDocuments.Select(FindDocumentIndexByPath).Where(i => i != -1).ToArray();
                 foreach (var idi in removeDocIndexes)
+                {
+                    m_IndexByDocuments.Remove(m_Documents[idi].id);
                     m_Documents[idi] = default;
-                updatedDocIndexes = si.m_Documents.Select(d => FindDocumentIndexByPath(d.id)).ToArray();
+                }
+                updatedDocIndexes = si.m_Documents.Select(d => FindDocumentIndex(d.id)).ToArray();
 
                 var ignoreDocuments = removeDocIndexes.Concat(updatedDocIndexes.Where(i => i != -1)).OrderBy(i => i).ToArray();
                 indexes = new List<SearchIndexEntry>(m_Indexes.Where(e => m_Documents[e.index].valid && Array.BinarySearch(ignoreDocuments, e.index) < 0));
@@ -1318,7 +1321,7 @@ namespace UnityEditor.Search
                 else if (value is string)
                 {
                     var valueString = (string)value;
-                    if (double.TryParse(valueString, out number))
+                    if (Utils.TryParse(valueString, out number))
                     {
                         if (!exclude && op != SearchIndexOperator.NotEqual)
                             matches = SearchNumber(name, number, op, maxScore, subset);

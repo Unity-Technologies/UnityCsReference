@@ -1426,6 +1426,9 @@
     <Compile Include="..\..\Modules\Physics\ScriptBindings\Articulations.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\Articulations.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\ContactModification.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\ContactModification.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\Dynamics.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\Dynamics.bindings.cs</Link>
     </Compile>
@@ -3100,8 +3103,8 @@
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerScreenCapture.cs">
       <Link>Runtime\Profiler\ScriptBindings\ProfilerScreenCapture.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerUnsafeUtility.cs">
-      <Link>Runtime\Profiler\ScriptBindings\ProfilerUnsafeUtility.cs</Link>
+    <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerUnsafeUtility.bindings.cs">
+      <Link>Runtime\Profiler\ScriptBindings\ProfilerUnsafeUtility.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerUtility.cs">
       <Link>Runtime\Profiler\ScriptBindings\ProfilerUtility.cs</Link>

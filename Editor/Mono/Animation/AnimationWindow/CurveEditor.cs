@@ -1164,7 +1164,7 @@ namespace UnityEditor
                 DrawCurvesTangents();
                 DrawCurvesOverlay();
 
-                m_RectangleTool.OverlayOnGUI();
+                m_RectangleTool.OverlayOnGUI(rect);
 
                 EditSelectedPoints();
             }

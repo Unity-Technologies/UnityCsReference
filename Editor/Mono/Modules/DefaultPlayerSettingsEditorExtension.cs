@@ -42,6 +42,8 @@ namespace UnityEditor.Modules
 
         public virtual void ConfigurationSectionGUI() {}
 
+        public virtual void RenderingSectionGUI() {}
+
         public virtual bool SupportsOrientation()
         {
             return false;

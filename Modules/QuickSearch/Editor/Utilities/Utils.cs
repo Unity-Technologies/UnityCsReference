@@ -589,7 +589,7 @@ namespace UnityEditor.Search
                 return true;
             }
 
-            return double.TryParse(Convert.ToString(value), out number);
+            return TryParse(Convert.ToString(value), out number);
         }
 
         internal static bool IsRunningTests()
@@ -732,6 +732,72 @@ namespace UnityEditor.Search
         internal static string[] GetAssetRootFolders()
         {
             return AssetDatabase.GetAssetRootFolders();
+        }
+
+        public static bool TryParse<T>(string expression, out T result)
+        {
+            expression = expression.Replace(',', '.');
+            expression = expression.TrimEnd('f');
+            expression = expression.ToLowerInvariant();
+
+            bool success = false;
+            result = default;
+            if (typeof(T) == typeof(float))
+            {
+                if (expression == "pi")
+                {
+                    success = true;
+                    result = (T)(object)(float)Math.PI;
+                }
+                else
+                {
+                    success = float.TryParse(expression, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                    result = (T)(object)temp;
+                }
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                success = int.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                result = (T)(object)temp;
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                if (expression == "pi")
+                {
+                    success = true;
+                    result = (T)(object)Math.PI;
+                }
+                else
+                {
+                    success = double.TryParse(expression, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                    result = (T)(object)temp;
+                }
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                success = long.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                result = (T)(object)temp;
+            }
+            return success;
+        }
+
+        private const string k_RevealInFinderLabel = "Open Containing Folder";
+        internal static string GetRevealInFinderLabel() { return k_RevealInFinderLabel; }
+
+        public static string TrimText(string text)
+        {
+            return text.Trim().Replace("\n", " ");
+        }
+
+        public static string TrimText(string text, int maxLength)
+        {
+            text = TrimText(text);
+            if (text.Length > maxLength)
+            {
+                text = Utils.StripHTML(text);
+                text = text.Substring(0, Math.Min(text.Length, maxLength) - 1) + "\u2026";
+            }
+            return text;
         }
     }
 }

@@ -138,7 +138,7 @@ namespace UnityEngine
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (string.IsNullOrEmpty(format))
-                format = "F1";
+                format = "F2";
             if (formatProvider == null)
                 formatProvider = CultureInfo.InvariantCulture.NumberFormat;
             return UnityString.Format("Center: {0}, Extents: {1}", m_Center.ToString(format, formatProvider), m_Extents.ToString(format, formatProvider));

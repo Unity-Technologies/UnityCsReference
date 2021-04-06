@@ -754,6 +754,9 @@ namespace UnityEngine.Rendering
         [FreeFunction("RenderingCommandBuffer_Bindings::SetGlobalInt", HasExplicitThis = true)]
         extern public void SetGlobalInt(int nameID, int value);
 
+        [FreeFunction("RenderingCommandBuffer_Bindings::SetGlobalInteger", HasExplicitThis = true)]
+        extern public void SetGlobalInteger(int nameID, int value);
+
         [FreeFunction("RenderingCommandBuffer_Bindings::SetGlobalVector", HasExplicitThis = true)]
         extern public void SetGlobalVector(int nameID, Vector4 value);
 

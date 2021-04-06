@@ -126,6 +126,7 @@ namespace UnityEditor
         StringBuilder m_CopyString;
         private int m_ActiveInstanceID = 0;
         bool m_DevBuild;
+        int m_CallstackTextStart = 0;
 
         Vector2 m_TextScroll = Vector2.zero;
 
@@ -285,14 +286,8 @@ namespace UnityEditor
         [RequiredByNativeCode]
         public static void LogChanged()
         {
-            if (ms_ConsoleWindow == null)
+            if (!ms_ConsoleWindow)
                 return;
-
-            ms_ConsoleWindow.DoLogChanged();
-        }
-
-        public void DoLogChanged()
-        {
             ms_ConsoleWindow.Repaint();
         }
 
@@ -324,9 +319,6 @@ namespace UnityEditor
         {
             m_ConsoleAttachToPlayerState?.Dispose();
             m_ConsoleAttachToPlayerState = null;
-
-            if (ms_ConsoleWindow == this)
-                ms_ConsoleWindow = null;
         }
 
         private int RowHeight => (Constants.LogStyleLineCount > 1 ? Mathf.Max(32, (Constants.LogStyleLineCount * m_LineHeight)) : m_LineHeight) + m_BorderHeight;
@@ -432,6 +424,7 @@ namespace UnityEditor
             if (entry != null)
             {
                 m_ActiveText = entry.message;
+                m_CallstackTextStart = entry.callstackTextStartUTF16;
                 // ping object referred by the log entry
                 if (m_ActiveInstanceID != entry.instanceID)
                 {
@@ -442,6 +435,7 @@ namespace UnityEditor
             }
             else
             {
+                m_CallstackTextStart = 0;
                 m_ActiveText = string.Empty;
                 m_ActiveInstanceID = 0;
                 m_ListView.row = -1;
@@ -747,7 +741,7 @@ namespace UnityEditor
             // Display active text (We want word wrapped text with a vertical scrollbar)
             m_TextScroll = GUILayout.BeginScrollView(m_TextScroll, Constants.Box);
 
-            string stackWithHyperlinks = StacktraceWithHyperlinks(m_ActiveText);
+            string stackWithHyperlinks = StacktraceWithHyperlinks(m_ActiveText, m_CallstackTextStart);
             float height = Constants.MessageStyle.CalcHeight(GUIContent.Temp(stackWithHyperlinks), position.width);
             EditorGUILayout.SelectableLabel(stackWithHyperlinks, Constants.MessageStyle, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true), GUILayout.MinHeight(height + 10));
 
@@ -762,6 +756,9 @@ namespace UnityEditor
                     EditorGUIUtility.systemCopyBuffer = m_CopyString.ToString();
                 e.Use();
             }
+
+            if (!ms_ConsoleWindow)
+                ms_ConsoleWindow = this;
         }
 
         private void SearchField(Event e)
@@ -808,10 +805,11 @@ namespace UnityEditor
             }
         }
 
-        internal static string StacktraceWithHyperlinks(string stacktraceText)
+        internal static string StacktraceWithHyperlinks(string stacktraceText, int callstackTextStart)
         {
             StringBuilder textWithHyperlinks = new StringBuilder();
-            var lines = stacktraceText.Split(new string[] {"\n"}, StringSplitOptions.None);
+            textWithHyperlinks.Append(stacktraceText.Substring(0, callstackTextStart));
+            var lines = stacktraceText.Substring(callstackTextStart).Split(new string[] { "\n" }, StringSplitOptions.None);
             for (int i = 0; i < lines.Length; ++i)
             {
                 string textBeforeFilePath = ") (at ";

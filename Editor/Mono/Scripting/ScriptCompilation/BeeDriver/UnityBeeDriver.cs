@@ -54,12 +54,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
             result.DataForBuildProgram.Add(new BeeBuildProgramCommon.Data.ConfigurationData
             {
                 Il2CppDir = IL2CPPUtils.GetIl2CppFolder(),
+                Il2CppPath = IL2CPPUtils.GetExePath("il2cpp"),
+                UnityLinkerPath = IL2CPPUtils.GetExePath("UnityLinker"),
                 NetCoreRunPath = NetCoreRunProgram.NetCoreRunPath,
                 EditorContentsPath = EditorApplication.applicationContentsPath,
                 ProjectDirectory = projectDirectory,
                 Packages = UnityBeeDriver.GetPackageInfos(NPath.CurrentDirectory.ToString()),
                 UnityVersion = Application.unityVersion,
-                UnitySourceCodePath = Unsupported.IsSourceBuild() ? Unsupported.GetBaseUnityDeveloperFolder() : null
+                UnitySourceCodePath = Unsupported.IsSourceBuild() ? Unsupported.GetBaseUnityDeveloperFolder() : null,
+                AdvancedLicense = PlayerSettings.advancedLicense
             });
             return result;
         }

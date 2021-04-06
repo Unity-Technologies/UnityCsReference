@@ -316,12 +316,6 @@ namespace UnityEditorInternal
                 File.Copy(file, Paths.Combine(destinationFolder, Path.GetFileName(file)), true);
         }
 
-        internal static void CopyConfigFiles(string tempFolder, string destinationFolder)
-        {
-            var sourceFolder = Paths.Combine(IL2CPPBuilder.GetCppOutputDirectory(tempFolder), "Data", "etc");
-            FileUtil.CopyDirectoryRecursive(sourceFolder, destinationFolder);
-        }
-
         internal static string ApiCompatibilityLevelToDotNetProfileArgument(ApiCompatibilityLevel compatibilityLevel)
         {
             switch (compatibilityLevel)
@@ -481,6 +475,19 @@ namespace UnityEditorInternal
                 "il2cpp"));
         }
 
+        internal static string GetIl2CppBeeSettingsFolder()
+        {
+            return $"{GetIl2CppFolder()}/build/BeeSettings/offline";
+        }
+
+        internal static string GetExePath(string executableFileName)
+        {
+            var il2cppPath = $"{IL2CPPUtils.GetIl2CppFolder()}/build/deploy/net5.0/{executableFileName}{(Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "")}";
+            if (!File.Exists(il2cppPath))
+                il2cppPath = $"{IL2CPPUtils.GetIl2CppFolder()}/build/deploy/net5.0/{BinaryDirectoryForPlatform(Application.platform)}/{executableFileName}{(Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "")}";
+            return il2cppPath;
+        }
+
         internal static string GetTundraFolder()
         {
             return $"{GetIl2CppFolder()}/external/bee/tundra";
@@ -511,6 +518,15 @@ namespace UnityEditorInternal
             }
 
             return arguments.Aggregate(String.Empty, (current, arg) => current + arg + " ");
+        }
+
+        private static string BinaryDirectoryForPlatform(RuntimePlatform platform)
+        {
+            if (platform == RuntimePlatform.WindowsEditor)
+                return "win-x64";
+            else if (platform == RuntimePlatform.LinuxEditor)
+                return "linux-x64";
+            return "osx-x64";
         }
     }
 
@@ -811,7 +827,7 @@ namespace UnityEditorInternal
 
         public static string GetIl2CppExe()
         {
-            return $"{IL2CPPUtils.GetIl2CppFolder()}/build/deploy/netcoreapp3.1/il2cpp{(Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "")}";
+            return IL2CPPUtils.GetExePath("il2cpp");
         }
 
         private string GetIl2CppTundraExe()

@@ -319,6 +319,7 @@ namespace UnityEditor.Search
         ///
         /// </summary>
         /// <returns></returns>
+        [Obsolete("This API will be removed")]
         public string ToGlobalId()
         {
             return $"{provider?.id ?? "unknown"}:{id}";

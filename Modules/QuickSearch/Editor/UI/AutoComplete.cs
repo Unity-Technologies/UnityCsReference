@@ -490,6 +490,9 @@ namespace UnityEditor.Search
                     maxLabelSize = sf;
             }
             position.width = maxLabelSize;
+            var xOffscreen = parent.width - position.xMax;
+            if (xOffscreen < 0)
+                position.x += xOffscreen;
 
             s_LastInput = te.text;
         }
@@ -614,7 +617,7 @@ namespace UnityEditor.Search
             var itemHeight = Styles.autoCompleteItemLabel.fixedHeight;
             if (setMinMax)
                 popupSize = new Vector2(popupSize.x, Mathf.Max(115f, Mathf.Min(propositions.Count * itemHeight, popupSize.y)));
-            var popupOffset = new Vector2(te.position.xMin, te.position.yMax - 4f);
+            var popupOffset = new Vector2(te.position.xMin, SearchField.searchFieldSingleLineHeight);
             return new Rect(te.graphicalCursorPos + popupOffset, popupSize);
         }
     }

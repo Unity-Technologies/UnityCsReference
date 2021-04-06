@@ -23,7 +23,7 @@ namespace UnityEditor.Search
         internal static SearchExpression NumberParser(StringView outerText)
         {
             var trimmedText = ParserUtils.SimplifyExpression(outerText);
-            if (!double.TryParse(trimmedText.ToString(), out _))
+            if (!Utils.TryParse(trimmedText.ToString(), out double _))
                 return null;
 
             SearchExpressionType types = SearchExpressionType.Number;

@@ -3862,9 +3862,6 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderStyleUtilities.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderStyleUtilities.cs</Link>
     </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderUXMLEditorFactories.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderUXMLEditorFactories.cs</Link>
-    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderCanvas.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderCanvas.cs</Link>
     </Compile>
@@ -4444,8 +4441,11 @@
     <Compile Include="..\..\Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabaseExperimental.bindings.cs">
       <Link>Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabaseExperimental.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\AssetDatabase\Editor\V2\ArtifactBrowser.cs">
-      <Link>Modules\AssetDatabase\Editor\V2\ArtifactBrowser.cs</Link>
+    <Compile Include="..\..\Modules\AssetDatabase\Editor\V2\Managed\ArtifactBrowser.cs">
+      <Link>Modules\AssetDatabase\Editor\V2\Managed\ArtifactBrowser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AssetDatabase\Editor\V2\Managed\ArtifactDifferenceReporter.cs">
+      <Link>Modules\AssetDatabase\Editor\V2\Managed\ArtifactDifferenceReporter.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AssetDatabase\Editor\V2\MultiArtifactTestImporter.bindings.cs">
       <Link>Modules\AssetDatabase\Editor\V2\MultiArtifactTestImporter.bindings.cs</Link>
@@ -5403,9 +5403,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageManagerToolbar.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageManagerToolbar.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageManagerUXMLFactories.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\PackageManagerUXMLFactories.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageManagerWindow.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageManagerWindow.cs</Link>

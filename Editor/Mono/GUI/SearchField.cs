@@ -68,7 +68,7 @@ namespace UnityEditor.IMGUI.Controls
 
             // Search field
             Rect textRect = rect;
-            text = EditorGUI.TextFieldInternal(m_ControlID, textRect, text, style);
+            text = EditorGUI.TextFieldInternal(m_ControlID, textRect, text, style, cancelButtonStyle);
 
             GUI.Button(buttonRect, GUIContent.none,
                 !string.IsNullOrEmpty(text) ? cancelButtonStyle : emptyCancelButtonStyle);

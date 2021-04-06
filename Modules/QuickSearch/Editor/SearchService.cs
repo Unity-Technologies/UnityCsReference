@@ -246,7 +246,10 @@ namespace UnityEditor.Search
                         session.Start();
                         var sessionEnded = !session.FetchSome(allItems, k_MaxFetchTimeMs);
                         if (options.HasAny(SearchFlags.FirstBatchAsync))
+                        {
                             session.SendItems(context.subset != null ? allItems.Intersect(context.subset) : allItems);
+                            allItems.Clear();
+                        }
                         if (sessionEnded)
                             session.Stop();
                     }
@@ -376,16 +379,46 @@ namespace UnityEditor.Search
             Action<SearchContext> onSearchCompleted,
             SearchFlags options = SearchFlags.None)
         {
+            var requestId = Guid.NewGuid().ToString("N");
+            if (options.HasAny(SearchFlags.Debug))
+                Debug.Log($"{requestId} Request started {context.searchText} ({options | context.options})");
             var sessionCount = 0;
-            context.asyncItemReceived += (c, items) => onIncomingItems?.Invoke(c, items.Where(e => e != null));
-            context.sessionStarted += c => ++ sessionCount;
+            var firstBatchResolved = false;
+            var completed = false;
+            var batchCount = 1;
+            context.asyncItemReceived += (c, items) =>
+            {
+                if (options.HasAny(SearchFlags.Debug))
+                    Debug.Log($"{requestId} #{batchCount++} Request incoming batch {context.searchText}");
+                onIncomingItems?.Invoke(c, items.Where(e => e != null));
+            };
+            context.sessionStarted += c =>
+            {
+                if (options.HasAny(SearchFlags.Debug))
+                    Debug.Log($"{requestId} Request session begin {context.searchText}");
+                ++sessionCount;
+            };
             context.sessionEnded += c =>
             {
+                if (options.HasAny(SearchFlags.Debug))
+                    Debug.Log($"{requestId} Request session ended {context.searchText}");
                 --sessionCount;
-                if (sessionCount == 0)
+                if (sessionCount == 0 && firstBatchResolved)
+                {
+                    if (options.HasAny(SearchFlags.Debug))
+                        Debug.Log($"{requestId} Request async ended {context.searchText}");
                     onSearchCompleted?.Invoke(c);
+                    completed = true;
+                }
             };
             GetItems(context, options | SearchFlags.FirstBatchAsync);
+            firstBatchResolved = true;
+            if (sessionCount == 0 && !completed)
+            {
+                if (options.HasAny(SearchFlags.Debug))
+                    Debug.Log($"{requestId} Request sync ended {context.searchText}");
+                onSearchCompleted?.Invoke(context);
+            }
         }
 
         private static void OnSearchEnded(SearchContext context)
@@ -401,7 +434,7 @@ namespace UnityEditor.Search
             po = item1.score.CompareTo(item2.score);
             if (po != 0)
                 return po;
-            return string.Compare(item1.id, item2.id, StringComparison.Ordinal);
+            return string.CompareOrdinal(item1.id, item2.id);
         }
 
         private static void RefreshProviders()

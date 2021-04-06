@@ -137,11 +137,6 @@ namespace UnityEditor.Experimental.GraphView
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
         }
 
-        static GraphElement()
-        {
-            RegisterAll();
-        }
-
         ClickSelector m_ClickSelector;
 
         public virtual bool IsSelectable()
@@ -291,13 +286,6 @@ namespace UnityEditor.Experimental.GraphView
             }
 
             return false;
-        }
-
-        static void RegisterAll()
-        {
-            VisualElementFactoryRegistry.RegisterFactory(new Pill.UxmlFactory());
-            VisualElementFactoryRegistry.RegisterFactory(new ResizableElement.UxmlFactory());
-            VisualElementFactoryRegistry.RegisterFactory(new StickyNote.UxmlFactory());
         }
     }
 }

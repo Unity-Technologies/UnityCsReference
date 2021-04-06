@@ -204,6 +204,9 @@ namespace UnityEditor.Modules
         // Leave blank if no contribution
         void ConfigurationSectionGUI();
 
+        // Leave blank if no contribution
+        void RenderingSectionGUI();
+
         bool SupportsOrientation();
 
         bool SupportsStaticBatching();

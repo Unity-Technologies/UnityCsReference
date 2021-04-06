@@ -527,43 +527,37 @@ namespace UnityEditor.Search
 
         private void ProduceArtifacts(Task resolveTask, IList<string> paths)
         {
-            using (new EditorPerformanceTracker($"Search.ProduceArtifacts"))
-            {
-                if (resolveTask?.Canceled() ?? false)
-                    return;
+            if (resolveTask?.Canceled() ?? false)
+                return;
 
-                resolveTask.Report("Producing artifacts...");
-                resolveTask.total = paths.Count;
-                if (resolveTask?.Canceled() ?? false)
-                    return;
+            resolveTask.Report("Producing artifacts...");
+            resolveTask.total = paths.Count;
+            if (resolveTask?.Canceled() ?? false)
+                return;
 
-                ResolveArtifacts(CreateArtifacts(paths), null, resolveTask, true);
-            }
+            ResolveArtifacts(CreateArtifacts(paths), null, resolveTask, true);
         }
 
         private bool ResolveArtifacts(IndexArtifact[] artifacts, IList<IndexArtifact> partialSet, Task task, bool combineAutoResolve)
         {
             try
             {
-                using (new EditorPerformanceTracker("Search.ResolveArtifacts"))
+                partialSet = partialSet ?? artifacts;
+
+                if (!this || task.Canceled())
+                    return false;
+
+                int completed = artifacts.Length - partialSet.Count;
+                if (ResolveArtifactPaths(partialSet, out var remainingArtifacts, task, ref completed))
                 {
-                    partialSet = partialSet ?? artifacts;
-
-                    if (!this || task.Canceled())
+                    if (task.Canceled())
                         return false;
-
-                    int completed = artifacts.Length - partialSet.Count;
-                    if (ResolveArtifactPaths(partialSet, out var remainingArtifacts, task, ref completed))
-                    {
-                        if (task.Canceled())
-                            return false;
-                        return task.RunThread(() => CombineIndexes(settings, artifacts, task, combineAutoResolve));
-                    }
-
-                    // Resume later with remaining artifacts
-                    Utils.CallDelayed(() => ResolveArtifacts(artifacts, remainingArtifacts, task, combineAutoResolve),
-                        GetArtifactResolutionCheckDelay(remainingArtifacts.Count));
+                    return task.RunThread(() => CombineIndexes(settings, artifacts, task, combineAutoResolve));
                 }
+
+                // Resume later with remaining artifacts
+                Utils.CallDelayed(() => ResolveArtifacts(artifacts, remainingArtifacts, task, combineAutoResolve),
+                    GetArtifactResolutionCheckDelay(remainingArtifacts.Count));
             }
             catch (Exception err)
             {
@@ -764,15 +758,12 @@ namespace UnityEditor.Search
 
         private void ProcessIncrementalUpdate(AssetIndexChangeSet changeset)
         {
-            using (new EditorPerformanceTracker("Search.IncrementalUpdate"))
-            {
-                var updates = CreateArtifacts(changeset.updated);
-                var taskName = $"Updating {settings.name.ToLowerInvariant()} search index";
+            var updates = CreateArtifacts(changeset.updated);
+            var taskName = $"Updating {settings.name.ToLowerInvariant()} search index";
 
-                Interlocked.Increment(ref m_UpdateTasks);
-                m_CurrentUpdateTask = new Task("Update", taskName, (task, data) => MergeDocuments(task, data, changeset), updates.Length, this);
-                ResolveArtifacts(updates, null, m_CurrentUpdateTask, false);
-            }
+            Interlocked.Increment(ref m_UpdateTasks);
+            m_CurrentUpdateTask = new Task("Update", taskName, (task, data) => MergeDocuments(task, data, changeset), updates.Length, this);
+            ResolveArtifacts(updates, null, m_CurrentUpdateTask, false);
         }
 
         private void MergeDocuments(Task task, TaskData data, AssetIndexChangeSet changeset)

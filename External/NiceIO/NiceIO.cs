@@ -515,24 +515,14 @@ namespace NiceIO
         /// </summary>
         /// <param name="append">An optional path fragment to append before testing.</param>
         /// <returns>True if the path (with optional appended fragment) exists and is a directory, false otherwise.</returns>
-        public bool DirectoryExists(NPath append = null)
-        {
-            var path = append != null ? Combine(append) : this;
-            StatCallback.Invoke(path);
-            return FileSystem.Active.Directory_Exists(path);
-        }
+        public bool DirectoryExists(NPath append = null) => FileSystem.Active.Directory_Exists(append != null ? Combine(append) : this);
 
         /// <summary>
         /// Tests whether the path exists and is a file.
         /// </summary>
         /// <param name="append">An optional path fragment to append before testing.</param>
         /// <returns>True if the path (with optional appended fragment) exists and is a file, false otherwise.</returns>
-        public bool FileExists(NPath append = null)
-        {
-            var path = append != null ? Combine(append) : this;
-            StatCallback.Invoke(path);
-            return FileSystem.Active.File_Exists(path);
-        }
+        public bool FileExists(NPath append = null) => FileSystem.Active.File_Exists(append != null ? Combine(append) : this);
 
         /// <summary>
         /// The extension of the file, excluding the initial "." character.
@@ -799,21 +789,14 @@ namespace NiceIO
         /// <param name="filter">The filter to match against the names of files. Wildcards can be included.</param>
         /// <param name="recurse">If true, search recursively inside subdirectories of this path; if false, search only for files that are immediate children of this path. Defaults to false.</param>
         /// <returns>An array of files that were found.</returns>
-        public NPath[] Files(string filter, bool recurse = false)
-        {
-            GlobbingCallback.Invoke(this, filter, recurse);
-            return FileSystem.Active.Directory_GetFiles(_path, filter, recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
-        }
+        public NPath[] Files(string filter, bool recurse = false) => FileSystem.Active.Directory_GetFiles(_path, filter, recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
 
         /// <summary>
         /// Find all files within this path.
         /// </summary>
         /// <param name="recurse">If true, search recursively inside subdirectories of this path; if false, search only for files that are immediate children of this path. Defaults to false.</param>
         /// <returns>An array of files that were found.</returns>
-        public NPath[] Files(bool recurse = false)
-        {
-            return Files("*", recurse);
-        }
+        public NPath[] Files(bool recurse = false) => Files("*", recurse);
 
         /// <summary>
         /// Find all files within this path that have one of the provided extensions.
@@ -825,9 +808,7 @@ namespace NiceIO
         {
             if (!DirectoryExists() || extensions.Length == 0)
                 return new NPath[] {};
-
-            GlobbingCallback.Invoke(this, extensions, recurse);
-
+            
             return FileSystem.Active.Directory_GetFiles(this, "*", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly).Where(p => extensions.Contains(p.Extension)).ToArray();
         }
 
@@ -860,7 +841,6 @@ namespace NiceIO
         /// <returns>An array of directories that were found.</returns>
         public NPath[] Directories(string filter, bool recurse = false)
         {
-            GlobbingCallback.Invoke(this, filter, recurse);
             return FileSystem.Active.Directory_GetDirectories(this, filter, recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
         }
 
@@ -1382,21 +1362,13 @@ namespace NiceIO
         /// Opens a text file, reads all the text in the file into a single string, then closes the file.
         /// </summary>
         /// <returns>The contents of the text file, as a single string.</returns>
-        public string ReadAllText()
-        {
-            ReadContentsCallback.Invoke(this);
-            return FileSystem.Active.File_ReadAllText(this);
-        }
+        public string ReadAllText() => FileSystem.Active.File_ReadAllText(this);
 
         /// <summary>
         /// Opens a file, reads all the bytes in the file, then closes the file.
         /// </summary>
         /// <returns>The contents of the file, as a bytes array.</returns>
-        public byte[] ReadAllBytes()
-        {
-            ReadContentsCallback.Invoke(this);
-            return FileSystem.Active.File_ReadAllBytes(this);
-        }
+        public byte[] ReadAllBytes() => FileSystem.Active.File_ReadAllBytes(this);
 
         /// <summary>
         /// Opens a text file, writes all entries of a string array as separate lines into the file, then closes the file.
@@ -1414,11 +1386,7 @@ namespace NiceIO
         /// Opens a text file, reads all lines of the file into a string array, and then closes the file.
         /// </summary>
         /// <returns>A string array containing all lines of the file.</returns>
-        public string[] ReadAllLines()
-        {
-            ReadContentsCallback.Invoke(this);
-            return FileSystem.Active.File_ReadAllLines(this);
-        }
+        public string[] ReadAllLines() => FileSystem.Active.File_ReadAllLines(this);
 
         /// <summary>
         /// Copy all files in this NPath to the given destination directory.
@@ -1512,95 +1480,7 @@ namespace NiceIO
                 FileSystem.Active.File_SetAttributes(this, value);
             }
         }
-
-        private abstract class NPathTLSCallback<T, TConcreteType> : IDisposable
-        {
-            [ThreadStatic] private static List<NPathTLSCallback<T, TConcreteType>> _activeCallbacks;
-
-            private readonly Action<T> _callback;
-
-            internal NPathTLSCallback(Action<T> callback)
-            {
-                _callback = callback;
-
-                if (_activeCallbacks == null)
-                    _activeCallbacks = new List<NPathTLSCallback<T, TConcreteType>>();
-
-                _activeCallbacks.Add(this);
-            }
-
-            public void Dispose()
-            {
-                if (_activeCallbacks == null || !_activeCallbacks.Remove(this))
-                    throw new ObjectDisposedException(GetType().Name);
-
-                if (_activeCallbacks.Count == 0)
-                    _activeCallbacks = null;
-            }
-
-            protected internal static void Invoke(T globRequest)
-            {
-                if (_activeCallbacks == null)
-                    return;
-
-                foreach (var callback in _activeCallbacks)
-                    callback._callback(globRequest);
-            }
-        }
-
-        private sealed class GlobbingCallback : NPathTLSCallback<GlobRequest, GlobbingCallback>
-        {
-            public GlobbingCallback(Action<GlobRequest> callback) : base(callback)
-            {
-            }
-
-            internal static void Invoke(NPath path, string filter, bool recurse)
-            {
-                Invoke(new GlobRequest() {Path = path, Filters = new[] {filter}, Recurse = recurse});
-            }
-
-            internal static void Invoke(NPath path, string[] extensions, bool recurse)
-            {
-                Invoke(new GlobRequest() {Path = path, Filters = extensions.Select(ext => $"*.{ext.TrimStart('.')}").ToArray(), Recurse = recurse});
-            }
-        }
-
-        class ReadContentsCallback : NPathTLSCallback<NPath, ReadContentsCallback>
-        {
-            public ReadContentsCallback(Action<NPath> callback) : base(callback)
-            {
-            }
-        }
-
-        class StatCallback : NPathTLSCallback<NPath, StatCallback>
-        {
-            public StatCallback(Action<NPath> callback) : base(callback)
-            {
-            }
-        }
-
-        /// <summary>
-        /// Register a callback to be invoked when any globbing (selection of files/directories using filesystem enumeration) is performed on the current thread.
-        /// </summary>
-        /// <param name="callback">The callback to invoke.</param>
-        /// <returns>A token representing the registered callback. This should be disposed of when the callback is no longer required. The usual usage pattern is to capture the token with a <c>using</c> statement, such that it is automatically disposed of when the <c>using</c> block exits.</returns>
-        public static IDisposable WithGlobbingCallback(Action<GlobRequest> callback) => new GlobbingCallback(callback);
-
-        /// <summary>
-        /// Register a callback to be invoked when any reading of file contents (e.g. <c>ReadAllText</c>) is performed on the current thread.
-        /// </summary>
-        /// <param name="callback">The callback to invoke.</param>
-        /// <returns>A token representing the registered callback. This should be disposed of when the callback is no longer required. The usual usage pattern is to capture the token with a <c>using</c> statement, such that it is automatically disposed of when the <c>using</c> block exits.</returns>
-        public static IDisposable WithReadContentsCallback(Action<NPath> callback) =>
-            new ReadContentsCallback(callback);
-
-        /// <summary>
-        /// Register a callback to be invoked when any checking of file existence (e.g. <c>FileExists</c>) is performed on the current thread.
-        /// </summary>
-        /// <param name="callback">The callback to invoke.</param>
-        /// <returns>A token representing the registered callback. This should be disposed of when the callback is no longer required. The usual usage pattern is to capture the token with a <c>using</c> statement, such that it is automatically disposed of when the <c>using</c> block exits.</returns>
-        public static IDisposable WithStatCallback(Action<NPath> callback) => new StatCallback(callback);
-
+        
         /// <summary>
         /// Until .Dispose is invoked on the returnvalue, makes all NPath's on this thread use the provided filesystem implementation for all filesystem access.
         /// </summary>
@@ -1625,7 +1505,7 @@ namespace NiceIO
         /// <summary>
         /// Abstract baseclass you can use to plug in different underlying filesystem behaviour for NPath to operate on
         /// </summary>
-        public abstract class FileSystem
+        public abstract class FileSystem : IDisposable
         {
             [ThreadStatic] internal static FileSystem _active;
 
@@ -1640,6 +1520,11 @@ namespace NiceIO
                     return new WindowsFileSystem();
                 else
                     return new PosixFileSystem();
+            }
+
+            /// <inheritdoc />
+            public virtual void Dispose()
+            {
             }
 
 #pragma warning disable 1591
@@ -2600,7 +2485,7 @@ namespace NiceIO
         /// A Filesystem that forwards all calls to another filesytem. Derive your own filesystem from this if you only want to
         /// change the behaviour of a few methods.
         /// </summary>
-        public class RelayingFileSystem : FileSystem
+        public abstract class RelayingFileSystem : FileSystem
         {
 	        /// <summary>
 	        /// The filesystem all methods will be forwarded to
@@ -2694,28 +2579,6 @@ namespace NiceIO
         /// <returns>A token representing the registered callback. This should be disposed of when the assumption is no longer required. The usual usage pattern is to capture the token with a <c>using</c> statement, such that it is automatically disposed of when the <c>using</c> block exits.</returns>
         [Obsolete("Obsolete. If you need this behaviour you can implement a custom NPath.FileSystem and install it with NPath.WithFileSystem()", true)]
         public static IDisposable WithFrozenCurrentDirectory(NPath frozenCurrentDirectory) => throw null;
-    }
-
-    /// <summary>
-    /// Describes an individual attempt to 'glob' filesystem entries (multiply-select filesystem entries using filesystem enumeration).
-    /// </summary>
-    ///
-    internal struct GlobRequest
-    {
-        /// <summary>
-        /// The path in which globbing was performed.
-        /// </summary>
-        public NPath Path;
-
-        /// <summary>
-        /// Was the attempt flagged as recursive, meaning that the results should include filesystem entries in subdirectories of <c>Path</c>?
-        /// </summary>
-        public bool Recurse;
-
-        /// <summary>
-        /// The filters used to select filesystem entries. As long as an entry matches any one filter, it is included.
-        /// </summary>
-        public string[] Filters;
     }
 
     /// <summary>

@@ -401,7 +401,7 @@ namespace UnityEditor.Search
                     int c = x.score.CompareTo(y.score);
                     if (c != 0)
                         return c;
-                    return x.id.CompareTo(y.id);
+                    return string.CompareOrdinal(x.id, y.id);
                 }
             }
 

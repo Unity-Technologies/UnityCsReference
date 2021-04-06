@@ -14,11 +14,14 @@ namespace BeeBuildProgramCommon.Data
     public class ConfigurationData
     {
         public string Il2CppDir;
+        public string UnityLinkerPath;
+        public string Il2CppPath;
         public string NetCoreRunPath;
         public string EditorContentsPath;
         public string ProjectDirectory;
         public PackageInfo[] Packages;
         public string UnityVersion;
         public string UnitySourceCodePath;
+        public bool AdvancedLicense;
     }
 }

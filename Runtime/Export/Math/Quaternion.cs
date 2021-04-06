@@ -252,7 +252,7 @@ namespace UnityEngine
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (string.IsNullOrEmpty(format))
-                format = "F1";
+                format = "F5";
             if (formatProvider == null)
                 formatProvider = CultureInfo.InvariantCulture.NumberFormat;
             return UnityString.Format("({0}, {1}, {2}, {3})", x.ToString(format, formatProvider), y.ToString(format, formatProvider), z.ToString(format, formatProvider), w.ToString(format, formatProvider));

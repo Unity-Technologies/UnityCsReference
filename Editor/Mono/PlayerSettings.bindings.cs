@@ -248,6 +248,17 @@ namespace UnityEditor
         DXT5nm = 1
     }
 
+    internal enum TextureCompressionFormat
+    {
+        Unknown = 0,
+        ETC = 1,
+        ETC2 = 2,
+        ASTC = 3,
+        PVRTC = 4,
+        DXTC = 5,
+        BPTC = 6
+    }
+
     // Player Settings is where you define various parameters for the final game that you will build in Unity. Some of these values are used in the Resolution Dialog that launches when you open a standalone game.
     [NativeClass(null)]
     [NativeHeader("Editor/Mono/PlayerSettings.bindings.h")]
@@ -1356,6 +1367,12 @@ namespace UnityEditor
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
         public static extern void SetNormalMapEncoding(BuildTargetGroup platform, NormalMapEncoding encoding);
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        internal static extern TextureCompressionFormat GetDefaultTextureCompressionFormat(BuildTargetGroup platform);
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        internal static extern void SetDefaultTextureCompressionFormat(BuildTargetGroup platform, TextureCompressionFormat format);
 
         [FreeFunction("GetPlayerSettings().GetEditorOnly().RecompileScripts")]
         internal static extern void RecompileScripts(string reason, bool refreshProject = true);

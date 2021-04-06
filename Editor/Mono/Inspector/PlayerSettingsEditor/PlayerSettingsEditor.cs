@@ -1860,6 +1860,14 @@ namespace UnityEditor
                 }
             }
 
+            if (settingsExtension != null)
+            {
+                using (new EditorGUI.DisabledScope(EditorApplication.isPlaying))
+                {
+                    settingsExtension.RenderingSectionGUI();
+                }
+            }
+
             if (settingsExtension != null && settingsExtension.SupportsCustomNormalMapEncoding())
             {
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))

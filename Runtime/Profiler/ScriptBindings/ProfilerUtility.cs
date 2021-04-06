@@ -22,6 +22,8 @@ namespace Unity.Profiling.LowLevel
         Warning = 1 << 4,
 
         Counter = 1 << 7,
+
+        SampleGPU = 1 << 8,
     }
 
     // Supported profiler metadata types.

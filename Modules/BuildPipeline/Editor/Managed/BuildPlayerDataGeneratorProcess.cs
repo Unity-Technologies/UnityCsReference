@@ -34,7 +34,6 @@ namespace UnityEditor.Build.Player
         private static string buildDataGeneratorPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools",
             buildDataGenerator, buildDataGeneratorPathExe);
 
-
         public void Execute(BuildPlayerDataGeneratorOptions options)
         {
             Program typeDbGeneratorProcess;

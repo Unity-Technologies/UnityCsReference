@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEditor.UIElements.Debugger;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -7,7 +8,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     [InitializeOnLoad]
-    internal class UXMLEditorFactories
+    internal class UXMLEditorFactories : VisualElementFactoryRegistry
     {
         private static readonly bool k_Registered;
 
@@ -18,87 +19,32 @@ namespace UnityEditor.UIElements
 
             k_Registered = true;
 
-            IUxmlFactory[] factories =
+            // Generic element types cannot be discovered through reflection.
+            // Resort to manual registration for now (these classes are internal / duplicate PropertyField?)
+            IUxmlFactory[] propertyControls =
             {
-                // Primitives
-                new TextElement.UxmlFactory(),
-
-                // Compounds
                 new PropertyControl<int>.UxmlFactory(),
                 new PropertyControl<long>.UxmlFactory(),
                 new PropertyControl<float>.UxmlFactory(),
                 new PropertyControl<double>.UxmlFactory(),
                 new PropertyControl<string>.UxmlFactory(),
-
-                new VisualSplitter.UxmlFactory(),
-
-                // Toolbar
-                new Toolbar.UxmlFactory(),
-                new ToolbarButton.UxmlFactory(),
-                new ToolbarToggle.UxmlFactory(),
-                new ToolbarSpacer.UxmlFactory(),
-                new ToolbarMenu.UxmlFactory(),
-                new ToolbarSearchField.UxmlFactory(),
-                new ToolbarPopupSearchField.UxmlFactory(),
-                new ToolbarBreadcrumbs.UxmlFactory(),
-                // Bound
-                new PropertyField.UxmlFactory(),
-                new InspectorElement.UxmlFactory(),
-
-                // Fields
-                new FloatField.UxmlFactory(),
-                new DoubleField.UxmlFactory(),
-                new IntegerField.UxmlFactory(),
-                new LongField.UxmlFactory(),
-                new CurveField.UxmlFactory(),
-                new ObjectField.UxmlFactory(),
-                new ColorField.UxmlFactory(),
-                new EnumField.UxmlFactory(),
-                new MaskField.UxmlFactory(),
-                new LayerMaskField.UxmlFactory(),
-                new LayerField.UxmlFactory(),
-                new TagField.UxmlFactory(),
-                new GradientField.UxmlFactory(),
-                new EnumFlagsField.UxmlFactory(),
-                new Hash128Field.UxmlFactory(),
-
-                // Compounds
-                new RectField.UxmlFactory(),
-                new Vector2Field.UxmlFactory(),
-                new Vector3Field.UxmlFactory(),
-                new Vector4Field.UxmlFactory(),
-                new BoundsField.UxmlFactory(),
-
-
-                new RectIntField.UxmlFactory(),
-                new Vector2IntField.UxmlFactory(),
-                new Vector3IntField.UxmlFactory(),
-                new BoundsIntField.UxmlFactory(),
-
-                new EventTypeSearchField.UxmlFactory()
             };
-
-            foreach (IUxmlFactory factory in factories)
+            foreach (var uxmlFactory in propertyControls)
             {
-                VisualElementFactoryRegistry.RegisterFactory(factory);
+                RegisterFactory(uxmlFactory);
             }
 
-            // Discover packages and user factories.
-            HashSet<string> userAssemblies = new HashSet<string>(ScriptingRuntime.GetAllUserAssemblies());
+            // Discover all factories thanks to the type cache!
             var types = TypeCache.GetTypesDerivedFrom<IUxmlFactory>();
             foreach (var type in types)
             {
-                if (type.IsAbstract
-                    || !userAssemblies.Contains(type.Assembly.GetName().Name + ".dll")
-                    || !typeof(IUxmlFactory).IsAssignableFrom(type)
-                    || type.IsInterface
-                    || type.IsGenericType
-                    || type.Assembly.GetName().Name == "UnityEngine.UIElementsModule"
-                    || type.Assembly.GetName().Name == "UnityEditor.UIElementsModule")
+                TypeAttributes attributes = type.Attributes;
+                if (type.Assembly.GetName().Name == "UnityEngine.UIElementsModule" // Exclude core UIElements factories which are registered manually
+                    || (attributes & (TypeAttributes.Abstract | TypeAttributes.Interface)) != 0
+                    || type.IsGenericType)
                     continue;
-
                 var factory = (IUxmlFactory)Activator.CreateInstance(type);
-                VisualElementFactoryRegistry.RegisterFactory(factory);
+                RegisterFactory(factory);
             }
         }
     }

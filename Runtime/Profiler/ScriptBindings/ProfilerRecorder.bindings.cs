@@ -107,6 +107,7 @@ namespace Unity.Profiling
         CollectOnlyOnCurrentThread = 1 << 2,
         WrapAroundWhenCapacityReached = 1 << 3,
         SumAllSamplesInFrame = 1 << 4,
+        GpuRecorder = 1 << 6,
 
         Default = WrapAroundWhenCapacityReached | SumAllSamplesInFrame
     }
@@ -139,7 +140,11 @@ namespace Unity.Profiling
             Stop = 1,
             Reset = 2,
             Release = 4,
+            SetFilterToCurrentThread = 5,
+            SetToCollectFromAllThreads = 6,
         }
+
+        internal const ProfilerRecorderOptions SharedRecorder = (ProfilerRecorderOptions)(1 << 7);
 
         internal enum CountOptions
         {
@@ -345,6 +350,18 @@ namespace Unity.Profiling
             }
 
             return array;
+        }
+
+        internal void FilterToCurrentThread()
+        {
+            CheckInitializedAndThrow();
+            Control(this, ControlOptions.SetFilterToCurrentThread);
+        }
+
+        internal void CollectFromAllThreads()
+        {
+            CheckInitializedAndThrow();
+            Control(this, ControlOptions.SetToCollectFromAllThreads);
         }
 
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]

@@ -53,7 +53,7 @@ namespace UnityEngine
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (string.IsNullOrEmpty(format))
-                format = "F1";
+                format = "F2";
             if (formatProvider == null)
                 formatProvider = CultureInfo.InvariantCulture.NumberFormat;
             return UnityString.Format("Origin: {0}, Dir: {1}", m_Origin.ToString(format, formatProvider), m_Direction.ToString(format, formatProvider));

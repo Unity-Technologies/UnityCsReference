@@ -879,6 +879,11 @@ namespace UnityEngine.Rendering
             SetGlobalInt(Shader.PropertyToID(name), value);
         }
 
+        public void SetGlobalInteger(string name, int value)
+        {
+            SetGlobalInteger(Shader.PropertyToID(name), value);
+        }
+
         public void SetGlobalVector(string name, Vector4 value)
         {
             SetGlobalVector(Shader.PropertyToID(name), value);

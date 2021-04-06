@@ -8,6 +8,11 @@ namespace PlayerBuildProgramLibrary.Data
     {
         public string AssetPath;
         public string DestinationPath;
+
+        public override string ToString()
+        {
+            return $"'{AssetPath} -> '{DestinationPath}'";
+        }
     }
 
     public class PluginsData
@@ -29,6 +34,7 @@ namespace PlayerBuildProgramLibrary.Data
         public bool InstallIntoBuildsFolder;
         public bool GenerateIdeProject;
         public bool Development;
+        public Services Services;
     }
 
     public class BuiltFilesOutput
@@ -49,7 +55,6 @@ namespace PlayerBuildProgramLibrary.Data
         public string[] AdditionalArgs = new string[0];
         public bool AllowDebugging;
         public bool PerformEngineStripping;
-        public string[] EngineStrippingFlags = new string[0];
     }
 
     public class Il2CppConfig
@@ -65,5 +70,13 @@ namespace PlayerBuildProgramLibrary.Data
         public string[] AdditionalArgs = new string[0];
         public string ExtraTypes;
         public bool CreateSymbolFiles;
+    }
+
+    public class Services
+    {
+        public bool EnableUnityConnect;
+        public bool EnablePerformanceReporting;
+        public bool EnableAnalytics;
+        public bool EnableCrashReporting;
     }
 }

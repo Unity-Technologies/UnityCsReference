@@ -2394,7 +2394,8 @@ namespace UnityEditor
                     if ((GUIUtility.keyboardControl == 0 || !keyboardValidation) && m_LastFolders != null && m_LastFolders.Length > 0)
                     {
                         m_SearchFilter.folders = m_LastFolders;
-                        SetFolderSelection(GetFolderInstanceIDs(m_LastFolders), true);
+                        if (m_FolderTree != null)
+                            SetFolderSelection(GetFolderInstanceIDs(m_LastFolders), true);
                     }
                 }
             }

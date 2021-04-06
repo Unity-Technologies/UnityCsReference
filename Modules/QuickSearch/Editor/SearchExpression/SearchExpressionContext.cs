@@ -118,6 +118,8 @@ namespace UnityEditor.Search
         {
             if (expr != null && !expr.alias.IsNullOrEmpty())
                 return expr.alias.ToString();
+            if (runtime.frames == null)
+                return defaultLabel;
             foreach (var f in runtime.frames)
             {
                 if (!f.valid)

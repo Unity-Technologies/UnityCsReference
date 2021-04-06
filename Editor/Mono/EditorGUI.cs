@@ -22,6 +22,7 @@ using UnityEngine.Internal;
 using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
 using PreviewMaterialType = UnityEditor.EditorGUIUtility.PreviewType;
 using System.Linq;
+using System.Reflection;
 using Unity.Profiling;
 
 namespace UnityEditor
@@ -820,9 +821,14 @@ namespace UnityEditor
             return EventType.Ignore;
         }
 
+        internal static string DoTextField(RecycledTextEditor editor, int id, Rect position, string text, GUIStyle style, string allowedletters, out bool changed, bool reset, bool multiline, bool passwordField)
+        {
+            return DoTextField(editor, id, position, text, style, allowedletters, out changed, reset, multiline, passwordField, null);
+        }
+
         // Should we select all text from the current field when the mouse goes up?
         // (We need to keep track of this to support both SwipeSelection & initial click selects all)
-        internal static string DoTextField(RecycledTextEditor editor, int id, Rect position, string text, GUIStyle style, string allowedletters, out bool changed, bool reset, bool multiline, bool passwordField)
+        internal static string DoTextField(RecycledTextEditor editor, int id, Rect position, string text, GUIStyle style, string allowedletters, out bool changed, bool reset, bool multiline, bool passwordField, GUIStyle cancelButtonStyle)
         {
             Event evt = Event.current;
 
@@ -1236,7 +1242,10 @@ namespace UnityEditor
                             }
                         }
 
-                        EditorGUIUtility.AddCursorRect(position, MouseCursor.Text);
+                        var cursorRect = position;
+                        if (cancelButtonStyle != null && !String.IsNullOrEmpty(text))
+                            cursorRect.width -= cancelButtonStyle.fixedWidth;
+                        EditorGUIUtility.AddCursorRect(cursorRect, MouseCursor.Text);
                     }
 
                     if (!editor.IsEditingControl(id))
@@ -1697,6 +1706,13 @@ namespace UnityEditor
             return text;
         }
 
+        internal static string TextFieldInternal(int id, Rect position, string text, GUIStyle style, GUIStyle cancelButtonStyle)
+        {
+            bool dummy;
+            text = DoTextField(s_RecycledEditor, id, IndentedRect(position), text, style, null, out dummy, false, false, false, cancelButtonStyle);
+            return text;
+        }
+
         internal static string TextFieldInternal(Rect position, string text, GUIStyle style)
         {
             int id = GUIUtility.GetControlID(s_TextFieldHash, FocusType.Keyboard, position);
@@ -1754,7 +1770,7 @@ namespace UnityEditor
                 s_RecycledEditor.text = text = "";
                 GUI.changed = true;
             }
-            text = DoTextField(s_RecycledEditor, id, textRect, text, searchFieldStyle, null, out dummy, false, false, false);
+            text = DoTextField(s_RecycledEditor, id, textRect, text, searchFieldStyle, null, out dummy, false, false, false, cancelButtonStyle);
             GUI.Button(buttonRect, GUIContent.none, cancelButtonStyle);
 
             return text;
@@ -6988,7 +7004,22 @@ namespace UnityEditor
                     case SerializedPropertyType.Color:
                     {
                         BeginChangeCheck();
-                        Color newColor = ColorField(position, label, property.colorValue);
+                        bool showAlpha = true;
+                        bool hdr = false;
+
+                        var propertyFieldInfo = ScriptAttributeUtility.GetFieldInfoFromProperty(property, out var propertyType);
+                        if (propertyFieldInfo != null)
+                        {
+                            var attributes = propertyFieldInfo.GetCustomAttributes<ColorUsageAttribute>(false).ToArray();
+                            if (attributes.Length > 0)
+                            {
+                                var attribute = attributes[0];
+                                showAlpha = attribute.showAlpha;
+                                hdr = attribute.hdr;
+                            }
+                        }
+
+                        Color newColor = ColorField(position, label, property.colorValue, true, showAlpha, hdr);
                         if (EndChangeCheck())
                         {
                             property.colorValue = newColor;

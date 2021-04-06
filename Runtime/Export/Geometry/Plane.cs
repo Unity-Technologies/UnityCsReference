@@ -132,7 +132,7 @@ namespace UnityEngine
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (string.IsNullOrEmpty(format))
-                format = "F1";
+                format = "F2";
             if (formatProvider == null)
                 formatProvider = CultureInfo.InvariantCulture.NumberFormat;
             return UnityString.Format("(normal:{0}, distance:{1})", m_Normal.ToString(format, formatProvider), m_Distance.ToString(format, formatProvider));

@@ -425,39 +425,37 @@ namespace UnityEditor
 
             if (obj != null && !showMixedValue)
             {
-                bool isCubemap = obj is Cubemap;
+                Matrix4x4 guiMatrix = GUI.matrix; // Initial matrix is saved in order to be able to reset it to default
                 bool isSprite = obj is Sprite;
+                bool alphaIsTransparencyTex2D = (obj is Texture2D && (obj as Texture2D).alphaIsTransparency);
                 Rect thumbRect = thumbStyle.padding.Remove(position);
 
-                if (isCubemap || isSprite)
+                Texture2D t2d = AssetPreview.GetAssetPreview(obj);
+                if (t2d != null)
                 {
-                    Texture2D t2d = AssetPreview.GetAssetPreview(obj);
-                    if (t2d != null)
-                    {
-                        if (isSprite || t2d.alphaIsTransparency)
-                            DrawTextureTransparent(thumbRect, t2d);
-                        else
-                            DrawPreviewTexture(thumbRect, t2d);
-                    }
-                    else
-                    {
-                        // Preview not loaded -> Draw icon
-                        thumbRect.x += (thumbRect.width - content.image.width) / 2f;
-                        thumbRect.y += (thumbRect.height - content.image.width) / 2f;
-                        GUIStyle.none.Draw(thumbRect, content.image, false, false, false, false);
+                    // A checkerboard background is drawn behind transparent textures (for visibility)
+                    if (isSprite || t2d.alphaIsTransparency || alphaIsTransparencyTex2D)
+                        GUI.DrawTexture(thumbRect, EditorGUI.transparentCheckerTexture, ScaleMode.StretchToFill, false);
 
-                        // Keep repaint until the object field has a proper preview
-                        HandleUtility.Repaint();
-                    }
+                    // Draw asset preview (scaled to fit inside the frame)
+                    GUIUtility.ScaleAroundPivot(thumbRect.size / position.size, thumbRect.position);
+                    GUIStyle.none.Draw(thumbRect, t2d, false, false, false, false);
+                    GUI.matrix = guiMatrix;
                 }
                 else
                 {
-                    // Draw texture
-                    Texture2D t2d = content.image as Texture2D;
-                    if (t2d != null && t2d.alphaIsTransparency)
-                        DrawTextureTransparent(thumbRect, t2d);
+                    // Preview not loaded -> Draw icon
+                    if (isSprite || alphaIsTransparencyTex2D)
+                    {
+                        // A checkerboard background is drawn behind transparent textures (for visibility)
+                        GUI.DrawTexture(thumbRect, EditorGUI.transparentCheckerTexture, ScaleMode.StretchToFill, false);
+                        GUI.DrawTexture(thumbRect, content.image, ScaleMode.StretchToFill, true);
+                    }
                     else
                         DrawPreviewTexture(thumbRect, content.image);
+
+                    // Keep repainting until the object field has a proper preview
+                    HandleUtility.Repaint();
                 }
             }
             else
