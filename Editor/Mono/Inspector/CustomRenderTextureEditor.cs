@@ -483,7 +483,16 @@ namespace UnityEditor
 
             var extension = isFormatHDR ? "exr" : "png";
 
-            var directory = Path.GetDirectoryName(AssetDatabase.GetAssetPath(texture.GetInstanceID()));
+            string directory;
+            if (!IsPersistent(texture))
+            {
+                directory = Application.dataPath;
+            }
+            else
+            {
+                directory = Path.GetDirectoryName(AssetDatabase.GetAssetPath(texture.GetInstanceID()));
+            }
+
             string assetPath = EditorUtility.SaveFilePanel("Save Custom Render Texture", directory, texture.name, extension);
             if (!string.IsNullOrEmpty(assetPath))
             {

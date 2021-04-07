@@ -202,21 +202,31 @@ namespace UnityEditor.PackageManager.UI
             if (isInstalled && isDirectDependency && !installedFromPath && !HasTag(PackageTag.BuiltIn))
                 m_Tag |= PackageTag.Embeddable;
 
-            if (m_Version?.IsRelease() == true)
+            if (isUnityPackage)
             {
-                m_Tag |= PackageTag.Release;
-                SemVersion? verified;
-                bool isVerifiedParsed = SemVersionParser.TryParse(m_PackageInfo.versions.verified, out verified);
+                if (m_Version?.IsRelease() == true)
+                {
+                    m_Tag |= PackageTag.Release;
+                    SemVersion? verified;
+                    bool isVerifiedParsed = SemVersionParser.TryParse(m_PackageInfo.versions.verified, out verified);
 
-                if (isVerifiedParsed && m_Version == verified && !installedFromPath)
-                    m_Tag |= PackageTag.Verified;
+                    if (isVerifiedParsed && m_Version == verified && !installedFromPath)
+                        m_Tag |= PackageTag.Verified;
+                }
+                else
+                {
+                    if ((version?.Major == 0 && string.IsNullOrEmpty(version?.Prerelease)) ||
+                        IsVersionTagPreview(version))
+                        m_Tag |= PackageTag.Preview;
+                }
             }
-            else
-            {
-                if ((version?.Major == 0 && string.IsNullOrEmpty(version?.Prerelease)) ||
-                    PackageTag.Preview.ToString().Equals(version?.Prerelease.Split('.')[0], StringComparison.InvariantCultureIgnoreCase))
-                    m_Tag |= PackageTag.Preview;
-            }
+        }
+
+        private bool IsVersionTagPreview(SemVersion? version)
+        {
+            var versionTag = version?.Prerelease.Split('.')[0];
+
+            return !string.IsNullOrEmpty(versionTag);
         }
 
         private static string GetDisplayName(PackageInfo info)

@@ -183,6 +183,8 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox("RenderTextures with depth must have an Aniso Level of 0.", MessageType.Info);
             }
 
+            serializedObject.ApplyModifiedProperties();
+
             if (EditorGUI.EndChangeCheck())
                 ApplySettingsToTextures();
         }
@@ -192,8 +194,6 @@ namespace UnityEditor
             serializedObject.Update();
 
             OnRenderTextureGUI(s_AllGUIElements);
-
-            serializedObject.ApplyModifiedProperties();
         }
 
         public override void OnPreviewSettings()

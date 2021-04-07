@@ -676,7 +676,7 @@ namespace UnityEngine
         {
             Vector2 point = style.GetCursorPixelPosition(localPosition, m_Content, p);
             point.y += 1.0f / GUIUtility.pixelsPerPoint; // we make sure no floating point errors can make us land on another line
-            point.x = localPosition.x;
+            point.x = 0;
             return style.GetCursorStringIndex(localPosition, m_Content, point);
         }
 

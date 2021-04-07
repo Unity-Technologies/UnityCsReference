@@ -1458,6 +1458,7 @@ namespace UnityEditor
             m_ListArea.InitForSearch(m_ListAreaRect, HierarchyType.Assets,
                 m_SearchFilter, false,
                 s => AssetDatabase.GetMainAssetInstanceID(s));
+            m_ListArea.InitSelection(Selection.instanceIDs);
         }
 
         void OnInspectorUpdate()

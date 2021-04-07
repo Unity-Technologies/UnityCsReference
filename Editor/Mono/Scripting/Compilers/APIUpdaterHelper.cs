@@ -11,12 +11,15 @@ using System.Text;
 using System.Text.RegularExpressions;
 using static System.Environment;
 
+using UnityEditor.Compilation;
 using UnityEditor.PackageManager;
 using UnityEditor.Utils;
 using UnityEditor.VersionControl;
 using UnityEditorInternal.APIUpdating;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
+
+using Assembly = System.Reflection.Assembly;
 
 namespace UnityEditor.Scripting.Compilers
 {
@@ -26,22 +29,29 @@ namespace UnityEditor.Scripting.Compilers
         {
             void PrepareFileWithTypesWithMovedFromAttribute(string filePath)
             {
-                // builds a list of types that `MovedFromAttribute` applied to it, groupped by assembly
+                var userAssemblySearchLocations  = CompilationPipeline.GetPrecompiledAssemblyPaths(CompilationPipeline.PrecompiledAssemblySources.UserAssembly).Select(Path.GetDirectoryName).Distinct();
+
                 var sb1 = new StringBuilder();
                 var searchPaths = new[]
                 {
                     Path.Combine(MonoFrameworkPath, "Managed"),
                     Path.Combine(MonoFrameworkPath, "Managed/UnityEngine"),
-                    Application.dataPath
-                };
+                    Application.dataPath,
+                    Path.Combine(Application.dataPath, "../Library/ScriptAssemblies/")
+                }.Concat(userAssemblySearchLocations).ToArray();
+
 
                 sb1.AppendLine($"Search Paths:{searchPaths.Length}");
                 foreach (var sp in searchPaths)
                     sb1.AppendLine(sp);
 
+                var checkedAssemblies = new HashSet<string>();
+
+                // builds a list of types that `MovedFromAttribute` applied to it, groupped by assembly
                 var g = TypeCache.GetTypesWithAttribute(typeof(MovedFromAttribute)).GroupBy(t => t.Assembly.Location);
                 foreach (var byAssembly in g)
                 {
+                    checkedAssemblies.Add(byAssembly.Key);
                     sb1.AppendLine($"{byAssembly.Key}:{byAssembly.Count()}");
                     foreach (var tt in byAssembly)
                     {
@@ -49,6 +59,20 @@ namespace UnityEditor.Scripting.Compilers
                     }
                 }
 
+                if (UnityEditor.EditorUtility.isInSafeMode)
+                {
+                    // in "SafeMode" the runtime will only load the very minimum subset of assemblies needed by the Editor so we may have assemblies (for example
+                    // declared in packages) that were not loaded and may contain types marked with "MovedFrom". In this case we simply collect the list of
+                    // assemblies from ScritpAssemblies that have not been loaded and pass this list to the program that will do the check.
+                    var assembliesInScriptAssembliesFolder = Directory.GetFiles("Library/ScriptAssemblies", "*.dll").Select(path => Path.GetFullPath(path));
+
+                    Func<string, bool> needsChecking = candidate => !checkedAssemblies.Contains(candidate) && !Regex.IsMatch(candidate, "(?:Unity.*\\.TestRunner|Assembly-CSharp.*)\\.dll");
+                    var notLoadedAssemblies = assembliesInScriptAssembliesFolder.Where(needsChecking);
+                    foreach (var assemblyNotCheckedPath in notLoadedAssemblies)
+                    {
+                        sb1.AppendLine($"{assemblyNotCheckedPath}:0"); // 0 means: load the assembly and check the types.
+                    }
+                }
                 sb1.Remove(sb1.Length - Environment.NewLine.Length, Environment.NewLine.Length);  // remove last new line
                 File.WriteAllText(filePath, sb1.ToString());
             }

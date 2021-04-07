@@ -80,7 +80,13 @@ namespace UnityEditor
             // when undo or redo is done, we need to reset global tools rotation
             Undo.undoRedoPerformed += OnSelectionChange;
             UnityConnect.instance.StateChanged += OnUnityConnectStateChanged;
-            m_IsPreviewPackagesInUse = PackageManager.PackageInfo.GetAll().FirstOrDefault(info => info.version.Contains("preview") || info.version.StartsWith("0.")) != null;
+            m_IsPreviewPackagesInUse = PackageManager.PackageInfo.GetAll().FirstOrDefault(info =>
+            {
+                var versionSplitOnTag = info.version.Split('-');
+                return info.registry?.isDefault == true &&
+                ((versionSplitOnTag.Length > 1 && (!string.IsNullOrEmpty(versionSplitOnTag[1])))
+                    || info.version.StartsWith("0."));
+            }) != null;
             m_PackageManagerPrefs = ServicesContainer.instance.Resolve<PackageManagerPrefs>();
             m_ApplicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
         }

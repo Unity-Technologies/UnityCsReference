@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEditor.Scripting.ScriptCompilation;
@@ -613,9 +612,14 @@ namespace UnityEditor.PackageManager.UI
                 return;
 
             var path = package.versions.primary.localPath;
-            if (m_IOProxy.FileExists(path))
+            try
             {
-                m_AssetDatabase.ImportPackage(path, true);
+                if (m_IOProxy.FileExists(path))
+                    m_AssetDatabase.ImportPackage(path, true);
+            }
+            catch (System.IO.IOException e)
+            {
+                Debug.Log($"[Package Manager] Cannot import package {package.displayName}: {e.Message}");
             }
         }
     }

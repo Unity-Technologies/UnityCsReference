@@ -23,8 +23,8 @@ namespace UnityEditor.UIElements
         internal static readonly string s_DefaultCommonLightStyleSheetPath =
             Path.Combine(UIElementsPackageUtility.EditorResourcesBasePath, "StyleSheets/Generated/DefaultCommonLight.uss.asset");
 
-        internal static readonly StyleSheet s_DefaultCommonDarkStyleSheet;
-        internal static readonly StyleSheet s_DefaultCommonLightStyleSheet;
+        internal static StyleSheet s_DefaultCommonDarkStyleSheet;
+        internal static StyleSheet s_DefaultCommonLightStyleSheet;
 
         internal static string GetStyleSheetPathForFont(string sheetPath, string fontName)
         {
@@ -49,14 +49,34 @@ namespace UnityEditor.UIElements
             return EditorGUIUtility.Load(GetStyleSheetPathForFont(skin == EditorResources.darkSkinIndex ? s_DefaultCommonDarkStyleSheetPath : s_DefaultCommonLightStyleSheetPath, fontName)) as StyleSheet;
         }
 
+        internal static StyleSheet GetCommonDarkStyleSheet()
+        {
+            if (s_DefaultCommonDarkStyleSheet == null)
+            {
+                s_DefaultCommonDarkStyleSheet = LoadSKinnedStyleSheetForFont(EditorResources.darkSkinIndex, EditorResources.currentFontName);
+                if(s_DefaultCommonDarkStyleSheet != null)
+                    s_DefaultCommonDarkStyleSheet.isUnityStyleSheet = true;
+            }
+            
+            return s_DefaultCommonDarkStyleSheet;
+        }
+
+        internal static StyleSheet GetCommonLightStyleSheet()
+        {
+            if (s_DefaultCommonLightStyleSheet == null)
+            {
+                s_DefaultCommonLightStyleSheet = LoadSKinnedStyleSheetForFont(EditorResources.normalSkinIndex, EditorResources.currentFontName);
+                if(s_DefaultCommonDarkStyleSheet != null)
+                    s_DefaultCommonLightStyleSheet.isUnityStyleSheet = true;
+            }
+            
+            return s_DefaultCommonLightStyleSheet;
+        }
+
+        
+        
         static UIElementsEditorUtility()
         {
-            // Load the stylesheet of the current font
-            s_DefaultCommonDarkStyleSheet = LoadSKinnedStyleSheetForFont(EditorResources.darkSkinIndex, EditorResources.currentFontName);
-            s_DefaultCommonDarkStyleSheet.isUnityStyleSheet = true;
-
-            s_DefaultCommonLightStyleSheet = LoadSKinnedStyleSheetForFont(EditorResources.normalSkinIndex, EditorResources.currentFontName);
-            s_DefaultCommonLightStyleSheet.isUnityStyleSheet = true;
         }
 
         internal static int GetCursorId(StyleSheet sheet, StyleValueHandle handle)
@@ -104,18 +124,25 @@ namespace UnityEditor.UIElements
             return (int)MouseCursor.Arrow;
         }
 
+        private static readonly string k_DefaultStylesAppliedPropertyName = "DefaultStylesApplied";
         internal static void AddDefaultEditorStyleSheets(VisualElement ve)
         {
-            if (ve.styleSheets.count == 0)
+            if (ve.styleSheets.count == 0 || ve.GetProperty(k_DefaultStylesAppliedPropertyName) == null)
             {
+                // we load both in case anyone (uibuilder) is still using the internal api and access the static fields directly.
+                var lightStyle = GetCommonLightStyleSheet();
+                var darkStyle = GetCommonDarkStyleSheet();
+                
                 if (EditorGUIUtility.isProSkin)
                 {
-                    ve.styleSheets.Add(s_DefaultCommonDarkStyleSheet);
+                    ve.styleSheets.Add(darkStyle);
                 }
                 else
                 {
-                    ve.styleSheets.Add(s_DefaultCommonLightStyleSheet);
+                    ve.styleSheets.Add(lightStyle);
                 }
+
+                ve.SetProperty(k_DefaultStylesAppliedPropertyName, true);
             }
         }
 
@@ -123,12 +150,14 @@ namespace UnityEditor.UIElements
         {
             if (!EditorGUIUtility.isProSkin)
             {
+                var lightStyle = GetCommonLightStyleSheet();
+                var darkStyle = GetCommonDarkStyleSheet();
                 var e = ele;
                 while (e != null)
                 {
-                    if (e.styleSheets.Contains(s_DefaultCommonLightStyleSheet))
+                    if (e.styleSheets.Contains(lightStyle))
                     {
-                        e.styleSheets.Swap(s_DefaultCommonLightStyleSheet, s_DefaultCommonDarkStyleSheet);
+                        e.styleSheets.Swap(lightStyle, darkStyle);
                         break;
                     }
                     e = e.parent;
