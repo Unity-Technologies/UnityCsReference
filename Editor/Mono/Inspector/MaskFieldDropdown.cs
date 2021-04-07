@@ -8,6 +8,7 @@ using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
 using static UnityEditor.MaskDropDownUtils;
+using System.Reflection;
 
 namespace UnityEditor
 {
@@ -187,9 +188,10 @@ namespace UnityEditor
         int m_OptionCount;
         int m_AllLayersMask;
 
-        public StaticFieldDropdown(SerializedProperty property)
+        public StaticFieldDropdown(UnityEngine.Object[] targetObjects, string propertyPath)
         {
-            m_SerializedProperty = property;
+            var so = new SerializedObject(targetObjects);
+            m_SerializedProperty = so.FindProperty(propertyPath);
         }
 
         public override Vector2 GetWindowSize()
@@ -269,14 +271,26 @@ namespace UnityEditor
 
         public override void OnOpen()
         {
-            m_OptionCount = Enum.GetValues(typeof(StaticEditorFlags)).Length - 1;
-            m_OptionNames = new string[m_OptionCount];
+            m_OptionCount = 0;
+            List<FieldInfo> filteredFields = new List<FieldInfo>();
+            var fields = typeof(StaticEditorFlags).GetFields();
+            foreach (var field in fields)
+            {
+                if (!field.IsDefined(typeof(ObsoleteAttribute), true) && !field.IsSpecialName)
+                {
+                    filteredFields.Add(field);
+                    m_OptionCount++;
+                }
+            }
 
+            m_OptionNames = new string[m_OptionCount];
             for (int i = 0; i < m_OptionCount; i++)
             {
-                int flagIndex = (int)Math.Pow(2, i);
-                m_OptionNames[i] = ObjectNames.NicifyVariableName(((StaticEditorFlags)(flagIndex)).ToString());
-                m_AllLayersMask |= flagIndex;
+                var val = (int)(filteredFields[i].GetValue(null));
+                var index = (int)Math.Log(val, 2);
+
+                m_OptionNames[index] = ObjectNames.NicifyVariableName(filteredFields[i].Name);
+                m_AllLayersMask |= val;
             }
 
             GetMultiSelectionValues(m_SerializedProperty, out m_SelectionMaskValues, out m_SelectionMatch, m_OptionCount);

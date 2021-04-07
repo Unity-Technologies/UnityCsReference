@@ -15,6 +15,8 @@ namespace UnityEditor.ShortcutManagement
         List<ShortcutEntry>[] m_IndexedShortcutEntries;
         List<ShortcutEntry> m_ShortcutEntries;
 
+        public const int MaxIndexedEntries = (int)KeyCode.Mouse0;
+
         public Directory(IEnumerable<ShortcutEntry> entries)
         {
             Initialize(entries);
@@ -23,7 +25,7 @@ namespace UnityEditor.ShortcutManagement
         public void Initialize(IEnumerable<ShortcutEntry> entries)
         {
             m_ShortcutEntries = new List<ShortcutEntry>(entries.Count());
-            m_IndexedShortcutEntries = new List<ShortcutEntry>[(int)KeyCode.Mouse0];
+            m_IndexedShortcutEntries = new List<ShortcutEntry>[MaxIndexedEntries];
             foreach (ShortcutEntry entry in entries)
             {
                 m_ShortcutEntries.Add(entry);

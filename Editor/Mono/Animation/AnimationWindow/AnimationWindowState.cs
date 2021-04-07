@@ -352,6 +352,10 @@ namespace UnityEditorInternal
 
         private void PurgeSelection()
         {
+            linkedWithSequencer = false;
+            Object.DestroyImmediate(m_OverrideControlInterface);
+
+            // Selected object could have been changed when unlocking the animation window
             Object.DestroyImmediate(m_Selection);
             m_Selection = null;
         }

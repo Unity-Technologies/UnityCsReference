@@ -210,6 +210,13 @@ namespace UnityEditor
 
         internal bool InternalRequestClose()
         {
+            if (IsMainWindow())
+            {
+                var UnsavedWindows = windows.SelectMany(w => w.m_UnsavedEditorWindows).ToList();
+
+                if (UnsavedWindows.Any())
+                    return PrivateRequestClose(UnsavedWindows);
+            }
             if (hasUnsavedChanges)
             {
                 return PrivateRequestClose(m_UnsavedEditorWindows);

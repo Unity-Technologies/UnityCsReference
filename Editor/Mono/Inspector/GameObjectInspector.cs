@@ -578,7 +578,10 @@ namespace UnityEditor
             if (toggled)
             {
                 rect = GUILayoutUtility.topLevel.GetLast();
-                PopupWindowWithoutFocus.Show(rect, new StaticFieldDropdown(m_StaticEditorFlags));
+                // We do not pass the serializedProperty directly, as its parent serializedObject
+                // can get destroyed when references to parent windows are lost, thus we use
+                // the target object & the path to reconstruct the property inside the window itself
+                PopupWindow.Show(rect, new StaticFieldDropdown(m_StaticEditorFlags.serializedObject.targetObjects, m_StaticEditorFlags.propertyPath));
                 GUIUtility.ExitGUI();
             }
         }

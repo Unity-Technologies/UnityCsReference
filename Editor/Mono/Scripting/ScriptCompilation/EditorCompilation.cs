@@ -26,7 +26,18 @@ using File = System.IO.File;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
-    class EditorCompilation
+    internal interface IEditorCompilation
+    {
+        PrecompiledAssemblyProviderBase PrecompiledAssemblyProvider { get; set; }
+
+        ScriptAssembly[] GetAllScriptAssemblies(
+            EditorScriptCompilationOptions options,
+            PrecompiledAssembly[] unityAssembliesArg,
+            Dictionary<string, PrecompiledAssembly> precompiledAssembliesArg,
+            string[] defines);
+    }
+
+    class EditorCompilation : IEditorCompilation
     {
         private const int kLogIdentifierFor_EditorMessages = 1234;
         private const int kLogIdentifierFor_PlayerMessages = 1235;

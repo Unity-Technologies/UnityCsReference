@@ -1869,6 +1869,20 @@ namespace UnityEngine.Rendering
         AsyncCompute = 1 << 1
     }
 
+    //Needs to line up with the common elements of the c++ version of this enum found GfxDeviceTypes.h (GfxClearFlags)
+    [Flags]
+    public enum RTClearFlags
+    {
+        None = 0,
+        Color = 1 << 0,
+        Depth = 1 << 1,
+        Stencil = 1 << 2,
+        All = Color | Depth | Stencil,
+        DepthStencil = Depth | Stencil,
+        ColorDepth = Color | Depth,
+        ColorStencil = Color | Stencil
+    }
+
     //Needs to line up with the common elements of the c++ version of this enum found GfxDeviceTypes.h
     public enum RenderTextureSubElement
     {
