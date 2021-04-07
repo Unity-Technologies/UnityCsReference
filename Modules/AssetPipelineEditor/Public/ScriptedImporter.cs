@@ -69,7 +69,10 @@ namespace UnityEditor.AssetImporters
                         if (handledExts.ContainsKey(x1.Key) && handledExts[x1.Key] && x1.Value)
                         {
                             // Log error message and remove from handledExts
-                            Debug.LogError(String.Format("Scripted importers {0} and {1} are targeting the {2} extension, rejecting both.", importer.FullName, (imp as Type).FullName, x1.Key));
+                            string rejectedImporters = $"{importer.FullName} (assembly: {importer.Module.FullyQualifiedName})";
+                            rejectedImporters = $"{rejectedImporters}, {imp.FullName} (assembly: {imp.Module.FullyQualifiedName})";
+                            Debug.LogError(String.Format("Multiple scripted importers are targeting the extension '{0}' and have all been rejected: {1} ", x1.Key, rejectedImporters));
+
                             handledExts.Remove(x1.Key);
                         }
                     }

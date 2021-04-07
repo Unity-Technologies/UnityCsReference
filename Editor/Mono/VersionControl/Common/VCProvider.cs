@@ -289,7 +289,7 @@ namespace UnityEditor.VersionControl
                 return true;
 
             var assetList = new AssetList();
-            assetList.AddRange(paths.Select(GetAssetByPath));
+            assetList.AddRange(paths.Select(GetAssetByPath).Where(a => a != null));
 
             try
             {
@@ -306,7 +306,7 @@ namespace UnityEditor.VersionControl
                         return false;
                     }
 
-                    paths = assetList.Select(asset => asset.path).ToArray();
+                    paths = assetList.Where(a => a != null).Select(a => a.path).ToArray();
                 }
                 else
                 {
