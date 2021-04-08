@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Security.Cryptography;
 using System.Text;
 using Unity.CodeEditor;
@@ -19,10 +18,10 @@ namespace UnityEditor
 
             // TODO: Rider and possibly other code editors, use reflection to call this method.
             // To avoid conflicts and null reference exception, this is left as a dummy method.
-            Unity.CodeEditor.CodeEditor.Editor.Current.SyncAll();
+            Unity.CodeEditor.CodeEditor.Editor.CurrentCodeEditor.SyncAll();
 
             #pragma warning disable 618
-            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) != ScriptEditorUtility.ScriptEditor.Other)
+            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorPath) != ScriptEditorUtility.ScriptEditor.Other)
             {
                 Synchronizer.Sync();
             }

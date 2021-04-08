@@ -140,7 +140,7 @@ namespace UnityEditor
                 oldLabelWidth = EditorGUIUtility.labelWidth;
                 oldFieldWidth = EditorGUIUtility.fieldWidth;
                 // Draw with custom drawer
-                propertyDrawer.OnGUISafe(position, property.Copy(), label ?? EditorGUIUtility.TempContent(property.localizedDisplayName));
+                propertyDrawer.OnGUISafe(position, property.Copy(), label ?? EditorGUIUtility.TempContent(property.localizedDisplayName, tooltip));
                 // Restore widths
                 EditorGUIUtility.labelWidth = oldLabelWidth;
                 EditorGUIUtility.fieldWidth = oldFieldWidth;
@@ -222,7 +222,7 @@ namespace UnityEditor
 
             if (propertyDrawer != null)
             {
-                height += propertyDrawer.GetPropertyHeightSafe(property.Copy(), label ?? EditorGUIUtility.TempContent(property.displayName));
+                height += propertyDrawer.GetPropertyHeightSafe(property.Copy(), label ?? EditorGUIUtility.TempContent(property.displayName, tooltip));
             }
             else if (!includeChildren)
             {
@@ -237,7 +237,7 @@ namespace UnityEditor
                 bool childrenAreExpanded = property.isExpanded && EditorGUI.HasVisibleChildFields(property);
 
                 // Loop through all child properties
-                var tc = EditorGUIUtility.TempContent(property.displayName);
+                var tc = EditorGUIUtility.TempContent(property.localizedDisplayName, tooltip);
                 if (childrenAreExpanded)
                 {
                     SerializedProperty endProperty = property.GetEndProperty();

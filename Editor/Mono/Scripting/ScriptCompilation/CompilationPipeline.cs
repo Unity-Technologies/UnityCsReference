@@ -330,15 +330,15 @@ namespace UnityEditor.Compilation
 
         public static string[] GetPrecompiledAssemblyNames()
         {
-            return GetPrecompiledAssemblyNames(EditorCompilationInterface.Instance);
+            var precompiledAssemblyProvider = EditorCompilationInterface.Instance.PrecompiledAssemblyProvider;
+            return GetPrecompiledAssemblyNames(precompiledAssemblyProvider);
         }
 
-        internal static string[] GetPrecompiledAssemblyNames(EditorCompilation editorCompilation)
+        internal static string[] GetPrecompiledAssemblyNames(IPrecompiledAssemblyProvider precompiledAssemblyProvider)
         {
-            return editorCompilation.GetAllPrecompiledAssemblies()
+            return precompiledAssemblyProvider.GetPrecompiledAssemblies(true, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget)
                 .Where(x => (x.Flags & sc.AssemblyFlags.UserAssembly) == sc.AssemblyFlags.UserAssembly)
                 .Select(x => AssetPath.GetFileName(x.Path))
-                .Distinct()
                 .ToArray();
         }
 
@@ -359,10 +359,11 @@ namespace UnityEditor.Compilation
 
         public static string[] GetPrecompiledAssemblyPaths(PrecompiledAssemblySources precompiledAssemblySources)
         {
-            return GetPrecompiledAssemblyPaths(EditorCompilationInterface.Instance, precompiledAssemblySources);
+            var precompiledAssemblyProvider = EditorCompilationInterface.Instance.PrecompiledAssemblyProvider;
+            return GetPrecompiledAssemblyPaths(precompiledAssemblySources, precompiledAssemblyProvider);
         }
 
-        internal static string[] GetPrecompiledAssemblyPaths(EditorCompilation editorCompilation, PrecompiledAssemblySources precompiledAssemblySources)
+        internal static string[] GetPrecompiledAssemblyPaths(PrecompiledAssemblySources precompiledAssemblySources, IPrecompiledAssemblyProvider precompiledAssemblyProvider)
         {
             HashSet<string> assemblyNames = new HashSet<string>();
             sc.AssemblyFlags flags = sc.AssemblyFlags.None;
@@ -383,7 +384,7 @@ namespace UnityEditor.Compilation
             if ((precompiledAssemblySources & PrecompiledAssemblySources.UserAssembly) != 0)
                 flags |= sc.AssemblyFlags.UserAssembly;
 
-            var precompiledAssemblies = editorCompilation.GetAllPrecompiledAssemblies().Concat(EditorCompilationInterface.Instance.GetUnityAssemblies());
+            var precompiledAssemblies = precompiledAssemblyProvider.GetPrecompiledAssemblies(true, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget).Concat(EditorCompilationInterface.Instance.GetUnityAssemblies());
             foreach (var a in precompiledAssemblies.Where(x => (x.Flags & flags) != 0))
                 assemblyNames.Add(a.Path);
 
@@ -392,17 +393,20 @@ namespace UnityEditor.Compilation
 
         public static string GetPrecompiledAssemblyPathFromAssemblyName(string assemblyName)
         {
-            return GetPrecompiledAssemblyPathFromAssemblyName(assemblyName, EditorCompilationInterface.Instance);
+            var precompiledAssemblyProvider = EditorCompilationInterface.Instance.PrecompiledAssemblyProvider;
+            return GetPrecompiledAssemblyPathFromAssemblyName(assemblyName, precompiledAssemblyProvider);
         }
 
-        internal static string GetPrecompiledAssemblyPathFromAssemblyName(string assemblyName, EditorCompilation editorCompilation)
+        internal static string GetPrecompiledAssemblyPathFromAssemblyName(string assemblyName, IPrecompiledAssemblyProvider precompiledAssemblyProvider)
         {
-            var precompiledAssembliesWithName = editorCompilation.GetAllPrecompiledAssemblies()
-                .Where(x => AssetPath.GetFileName(x.Path) == assemblyName  && (x.Flags & sc.AssemblyFlags.UserAssembly) == sc.AssemblyFlags.UserAssembly);
+            var precompiledAssemblies = precompiledAssemblyProvider.GetPrecompiledAssemblies(true, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
 
-            if (precompiledAssembliesWithName.Any())
+            foreach (var assembly in precompiledAssemblies)
             {
-                return precompiledAssembliesWithName.Single().Path;
+                if ((assembly.Flags & sc.AssemblyFlags.UserAssembly) == sc.AssemblyFlags.UserAssembly && AssetPath.GetFileName(assembly.Path) == assemblyName)
+                {
+                    return assembly.Path;
+                }
             }
             return null;
         }

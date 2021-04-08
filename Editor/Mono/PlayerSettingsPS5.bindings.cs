@@ -70,6 +70,8 @@ namespace UnityEditor
             [NativeProperty("ps5disableAutoHideSplash", false, TargetType.Field)] extern public static bool disableAutoHideSplash { get; set; }
             [NativeProperty("ps5IncludedModules", false, TargetType.Field)] extern public static string[] includedModules { get; set; }
             [NativeProperty("ps5UpdateReferencePackage", false, TargetType.Function)] extern public static string updateReferencePackage { get; set; }
+            [NativeProperty("ps5SharedBinaryContentLabels", false, TargetType.Field)] extern public static string[] sharedBinaryContentLabels { get; set; }
+            [NativeProperty("ps5SharedBinarySystemFolders", false, TargetType.Field)] extern public static string[] sharedBinarySystemFolders { get; set; }
             [NativeProperty(TargetType = TargetType.Field)] extern public static bool enableApplicationExit { get; set; }
             [NativeProperty(TargetType = TargetType.Field)] extern public static bool resetTempFolder { get; set; }
             [NativeProperty(TargetType = TargetType.Field)] extern public static int playerPrefsMaxSize { get; set; }

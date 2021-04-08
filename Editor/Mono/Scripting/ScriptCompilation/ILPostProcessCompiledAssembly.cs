@@ -32,7 +32,7 @@ internal class ILPostProcessCompiledAssembly : ICompiledAssembly
 
         Name = Path.GetFileNameWithoutExtension(m_AssemblyFilename);
 
-        var precompiledAssemblyReferences = targetAssembly.PrecompiledReferences.Select(a => a.Path);
+        var precompiledAssemblyReferences = targetAssembly.ExplicitPrecompiledReferences;
         var targetAssemblyReferences = targetAssembly.References.Select(a => a.FullPath(outputPath));
 
         References = precompiledAssemblyReferences.Concat(targetAssemblyReferences).ToArray();

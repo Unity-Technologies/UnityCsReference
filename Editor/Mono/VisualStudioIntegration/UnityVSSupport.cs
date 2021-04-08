@@ -28,8 +28,19 @@ namespace UnityEditor.VisualStudioIntegration
             Initialize(null);
         }
 
+        [RequiredByNativeCode]
+        public static bool IsDefaultExternalCodeEditor()
+        {
+            return CodeEditor.Editor.CurrentCodeEditor is DefaultExternalCodeEditor;
+        }
+
         public static void Initialize(string editorPath)
         {
+            if (!IsDefaultExternalCodeEditor())
+            {
+                return;
+            }
+
             var externalEditor = editorPath ?? ScriptEditorUtility.GetExternalScriptEditor();
 
             if (Application.platform == RuntimePlatform.OSXEditor)
@@ -152,7 +163,7 @@ namespace UnityEditor.VisualStudioIntegration
             {
                 externalEditor = SyncVS.FindBestVisualStudio();
                 if (externalEditor != null)
-                    CodeEditor.SetExternalScriptEditor(externalEditor);
+                    CodeEditor.Editor.SetCodeEditor(externalEditor);
             }
 
             VisualStudioVersion vsVersion;

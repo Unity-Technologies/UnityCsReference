@@ -26,6 +26,7 @@ namespace UnityEditor
             public static GUIContent AmbisonicDecoderPlugin = EditorGUIUtility.TrTextContent("Ambisonic Decoder Plugin", "Native audio plugin performing ambisonic-to-binaural filtering of sources.");
             public static GUIContent DisableAudio           = EditorGUIUtility.TrTextContent("Disable Unity Audio", "Prevent allocating the output device in the runtime. Use this if you want to use other sound systems than the built-in one.");
             public static GUIContent VirtualizeEffects      = EditorGUIUtility.TrTextContent("Virtualize Effects", "When enabled, dynamically turn off effects and spatializers on AudioSources that are culled in order to save CPU.");
+            public static GUIContent EnableOutputSuspension = EditorGUIUtility.TrTextContent("Enable Output Suspension (editor only)", "When enabled automatically suspends audio output after detecting that the output has been silent for a long duration (editor only). Suspending the audio system disables a mechanism in the operating system that prevents the computer from going into sleep mode.");
 
             public static GUIContent DSPBufferSizeInfo = EditorGUIUtility.TrTextContent("The requested buffer size ({0}) has been overridden to {1} by the operating system");
         }
@@ -43,6 +44,7 @@ namespace UnityEditor
         private SerializedProperty m_AmbisonicDecoderPlugin;
         private SerializedProperty m_DisableAudio;
         private SerializedProperty m_VirtualizeEffects;
+        private SerializedProperty m_EnableOutputSuspension;
 
         private void OnEnable()
         {
@@ -59,6 +61,7 @@ namespace UnityEditor
             m_AmbisonicDecoderPlugin    = serializedObject.FindProperty("m_AmbisonicDecoderPlugin");
             m_DisableAudio              = serializedObject.FindProperty("m_DisableAudio");
             m_VirtualizeEffects         = serializedObject.FindProperty("m_VirtualizeEffects");
+            m_EnableOutputSuspension    = serializedObject.FindProperty("m_EnableOutputSuspension");
         }
 
         //This function assumes that index 0 is None...
@@ -134,6 +137,8 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             EditorGUILayout.PropertyField(m_DisableAudio, Styles.DisableAudio);
+            EditorGUILayout.PropertyField(m_EnableOutputSuspension, Styles.EnableOutputSuspension);
+
 
             if (EditorGUI.EndChangeCheck() && m_DisableAudio.boolValue.Equals(true))
             {

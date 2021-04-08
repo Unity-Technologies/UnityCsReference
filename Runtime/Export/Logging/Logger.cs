@@ -124,28 +124,28 @@ namespace UnityEngine
                 logHandler.LogFormat(LogType.Error, context, kTagFormat, new object[] {tag, GetString(message)});
         }
 
-        public void LogFormat(LogType logType, string format, params object[] args)
-        {
-            if (IsLogTypeAllowed(logType))
-                logHandler.LogFormat(logType, null, format, args);
-        }
-
         public void LogException(Exception exception)
         {
             if (logEnabled)
                 logHandler.LogException(exception, null);
         }
 
-        public void LogFormat(LogType logType, Object context, string format, params object[] args)
-        {
-            if (IsLogTypeAllowed(logType))
-                logHandler.LogFormat(logType, context, format, args);
-        }
-
         public void LogException(Exception exception, Object context)
         {
             if (logEnabled)
                 logHandler.LogException(exception, context);
+        }
+
+        public void LogFormat(LogType logType, string format, params object[] args)
+        {
+            if (IsLogTypeAllowed(logType))
+                logHandler.LogFormat(logType, null, format, args);
+        }
+
+        public void LogFormat(LogType logType, Object context, string format, params object[] args)
+        {
+            if (IsLogTypeAllowed(logType))
+                logHandler.LogFormat(logType, context, format, args);
         }
     }
 }

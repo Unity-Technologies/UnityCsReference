@@ -18,14 +18,14 @@ namespace UnityEditor
 
             public void OnActiveBuildTargetChanged(BuildTarget oldTarget, BuildTarget newTarget)
             {
-                CodeEditor.Editor.Current.SyncAll();
+                CodeEditor.Editor.CurrentCodeEditor.SyncAll();
             }
         }
 
         [RequiredByNativeCode]
         public static void SyncEditorProject()
         {
-            CodeEditor.Editor.Current.SyncAll();
+            CodeEditor.Editor.CurrentCodeEditor.SyncAll();
         }
 
         // For the time being this doesn't use the callback
@@ -36,7 +36,7 @@ namespace UnityEditor
             string[] movedAssets,
             string[] movedFromAssetPaths)
         {
-            CodeEditor.Editor.Current.SyncIfNeeded(addedAssets, deletedAssets, movedAssets, movedFromAssetPaths, importedAssets);
+            CodeEditor.Editor.CurrentCodeEditor.SyncIfNeeded(addedAssets, deletedAssets, movedAssets, movedFromAssetPaths, importedAssets);
         }
 
         [MenuItem("Assets/Open C# Project")]
@@ -44,7 +44,16 @@ namespace UnityEditor
         {
             // Ensure that the mono islands are up-to-date
             AssetDatabase.Refresh();
-            CodeEditor.Editor.Current.SyncAll();
+            #pragma warning disable 618
+            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorPath) == ScriptEditorUtility.ScriptEditor.Other)
+            {
+                CodeEditor.Editor.CurrentCodeEditor.SyncAll();
+            }
+            else
+            {
+                SyncVS.Synchronizer.Sync();
+            }
+
             OpenProjectFileUnlessInBatchMode();
         }
 
@@ -54,9 +63,9 @@ namespace UnityEditor
                 return;
 
             #pragma warning disable 618
-            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.Other)
+            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorPath) == ScriptEditorUtility.ScriptEditor.Other)
             {
-                CodeEditor.Editor.Current.OpenProject();
+                CodeEditor.Editor.CurrentCodeEditor.OpenProject();
             }
             else
             {
