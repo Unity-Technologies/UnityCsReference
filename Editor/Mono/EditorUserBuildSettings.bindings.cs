@@ -34,7 +34,11 @@ namespace UnityEditor
         /// Build a package suited for TestKit testing
         /// SA: EditorUserBuildSettings.ps5BuildSubtarget.
         Package = 1,
-        Iso = 2,
+
+        // Build a GP5 project, this performs the same steps as if building an installable package but without the final packaging step, instead the generated
+        // GP5 project is opened in the Sony GP5 editor where it can be edited and deployed to a workspace, and then an installable package can be built using
+        // the generatad batch file.
+        GP5Project = 2
     }
 
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
@@ -722,6 +726,14 @@ namespace UnityEditor
             [NativeMethod("GetRedirectWritesToHostMountForSwitch")]
             get;
             [NativeMethod("SetRedirectWritesToHostMountForSwitch")]
+            set;
+        }
+
+        public static extern bool switchUseLegacyNvnPoolAllocator
+        {
+            [NativeMethod("GetUseLegacyNvnPoolAllocatorForSwitch")]
+            get;
+            [NativeMethod("SetUseLegacyNvnPoolAllocatorForSwitch")]
             set;
         }
 

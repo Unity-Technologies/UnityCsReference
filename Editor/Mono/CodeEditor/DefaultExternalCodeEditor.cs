@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Unity.CodeEditor;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor
@@ -60,7 +61,7 @@ namespace UnityEditor
             get
             {
                 if (m_ChosenInstallation == null)
-                    m_ChosenInstallation = CodeEditor.CurrentEditorInstallation;
+                    m_ChosenInstallation = CodeEditor.CurrentEditorPath;
                 return m_ChosenInstallation;
             }
             set
@@ -123,12 +124,19 @@ namespace UnityEditor
 
         public bool OpenProject(string path, int line, int column)
         {
+#pragma warning disable 618
+            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorPath) != ScriptEditorUtility.ScriptEditor.Other)
+#pragma warning restore 618
+            {
+                return false;
+            }
+
             if (path != "" && !SupportsExtension(path)) // Assets - Open C# Project passes empty path here
             {
                 return false;
             }
 
-            string applicationPath = CodeEditor.CurrentEditorInstallation.Trim();
+            string applicationPath = CodeEditor.CurrentEditorPath.Trim();
             if (applicationPath == CodeEditor.SystemDefaultPath)
             {
                 return false;

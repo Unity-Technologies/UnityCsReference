@@ -757,7 +757,7 @@ namespace UnityEditorInternal
 
         public static bool OpenFileAtLineExternal(string filename, int line)
         {
-            if (!CodeEditor.Editor.Current.OpenProject(filename, line))
+            if (!CodeEditor.Editor.CurrentCodeEditor.OpenProject(filename, line))
             {
                 return OpenFileAtLineExternal(filename, line, 0);
             }

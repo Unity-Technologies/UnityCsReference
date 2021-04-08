@@ -162,6 +162,7 @@ namespace UnityEditor
         SerializedProperty m_NoEngineReferences;
 
         Exception initializeException;
+        IPrecompiledAssemblyProvider m_AssemblyProvider;
 
         public override bool showImportedObject => false;
 
@@ -179,6 +180,7 @@ namespace UnityEditor
             m_CompatibleWithAnyPlatform = extraDataSerializedObject.FindProperty("compatibleWithAnyPlatform");
             m_PlatformCompatibility = extraDataSerializedObject.FindProperty("platformCompatibility");
             m_NoEngineReferences = extraDataSerializedObject.FindProperty("noEngineReferences");
+            m_AssemblyProvider = EditorCompilationInterface.Instance.PrecompiledAssemblyProvider;
 
             AssemblyReloadEvents.afterAssemblyReload += AfterAssemblyReload;
         }
@@ -641,11 +643,12 @@ namespace UnityEditor
             int selectedIndex = EditorGUI.Popup(rect, label, currentlySelectedIndex, m_PrecompileReferenceListEntry.ToArray());
             EditorGUI.EndDisabled();
 
+
             if (selectedIndex > 0)
             {
                 var selectedAssemblyName = m_PrecompileReferenceListEntry[selectedIndex];
-                var assembly = EditorCompilationInterface.Instance.GetAllPrecompiledAssemblies()
-                    .Single(x => AssetPath.GetFileName(x.Path) == selectedAssemblyName);
+                var assembly = m_AssemblyProvider.GetPrecompiledAssemblies(true, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget)
+                    .First(x => AssetPath.GetFileName(x.Path) == selectedAssemblyName);
                 nameProp.stringValue = selectedAssemblyName;
                 pathProp.stringValue = assembly.Path;
                 fileNameProp.stringValue = AssetPath.GetFileName(assembly.Path);
@@ -749,8 +752,10 @@ namespace UnityEditor
                 }
             }
 
-            var nameToPrecompiledReference = EditorCompilationInterface.Instance.GetAllPrecompiledAssemblies()
+            var nameToPrecompiledReference = EditorCompilationInterface.Instance.PrecompiledAssemblyProvider
+                .GetPrecompiledAssemblies(true, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget)
                 .Where(x => (x.Flags & AssemblyFlags.UserAssembly) == AssemblyFlags.UserAssembly)
+                .Distinct()
                 .ToDictionary(x => AssetPath.GetFileName(x.Path), x => x);
             foreach (var precompiledReferenceName in data.precompiledReferences ?? Enumerable.Empty<String>())
             {

@@ -2,53 +2,68 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Scripting;
+using static UnityEditor.TypeCache;
 
 namespace Unity.CodeEditor
 {
     public class CodeEditor
     {
-        internal static CodeEditor Editor { get; } = new CodeEditor();
-        List<IExternalCodeEditor> m_ExternalCodeEditors = new List<IExternalCodeEditor>();
-        IExternalCodeEditor m_DefaultEditor = new DefaultExternalCodeEditor();
-        internal const string SystemDefaultPath = "";
-
         public struct Installation
         {
             public string Name;
             public string Path;
         }
 
-        [RequiredByNativeCode]
-        static bool OpenProject(string path, int line, int column)
+        private readonly List<IExternalCodeEditor> m_ExternalCodeEditors = new List<IExternalCodeEditor>();
+        private readonly IExternalCodeEditor m_DefaultEditor = new DefaultExternalCodeEditor();
+        private IExternalCodeEditor m_CurrentEditor;
+        private Installation m_CurrentInstallation;
+        internal const string SystemDefaultPath = "";
+
+        public IExternalCodeEditor CurrentCodeEditor => m_CurrentEditor;
+        public Installation CurrentInstallation => m_CurrentInstallation;
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static IExternalCodeEditor CurrentEditor => Editor.CurrentCodeEditor;
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static string CurrentEditorInstallation => CurrentEditorPath;
+        public static string CurrentEditorPath => EditorPrefs.GetString("kScriptsDefaultApp", "");
+
+        public static CodeEditor Editor { get; } = new CodeEditor();
+
+        public CodeEditor()
         {
-            var didOpenProject = Editor.Current.OpenProject(path, line, column);
+            m_CurrentEditor = m_DefaultEditor;
+            m_CurrentInstallation = GetInstallationForPath(CurrentEditorPath);
+        }
+
+        [RequiredByNativeCode]
+        private static bool OpenProject(string path, int line, int column)
+        {
+            var didOpenProject = Editor.CurrentCodeEditor.OpenProject(path, line, column);
             if (didOpenProject)
             {
-                CodeEditorAnalytics.SendCodeEditorUsage(CodeEditor.Editor.Current);
+                CodeEditorAnalytics.SendCodeEditorUsage(CodeEditor.Editor.CurrentCodeEditor);
             }
             return didOpenProject;
         }
 
         [OnOpenAsset]
-        static bool OnOpenAsset(int instanceID, int line, int column)
+        private static bool OnOpenAsset(int instanceID, int line, int column)
         {
             var selected = EditorUtility.InstanceIDToObject(instanceID);
             var assetPath = AssetDatabase.GetAssetPath(selected);
-
-            #pragma warning disable 618
-            if (ScriptEditorUtility.GetScriptEditorFromPath(CurrentEditorInstallation) != ScriptEditorUtility.ScriptEditor.Other)
-            {
-                return false;
-            }
 
             if (string.IsNullOrEmpty(assetPath))
             {
@@ -56,72 +71,63 @@ namespace Unity.CodeEditor
             }
 
             var assetFilePath = Path.GetFullPath(assetPath);
-            var didOpenProject = Editor.Current.OpenProject(assetFilePath, line, column);
+            var didOpenProject = Editor.CurrentCodeEditor.OpenProject(assetFilePath, line, column);
             if (didOpenProject)
             {
-                CodeEditorAnalytics.SendCodeEditorUsage(CodeEditor.Editor.Current);
+                CodeEditorAnalytics.SendCodeEditorUsage(CodeEditor.Editor.CurrentCodeEditor);
             }
             return didOpenProject;
         }
 
-        internal Installation EditorInstallation
+        public Installation GetInstallationForPath(string editorPath)
         {
-            get
+            if (editorPath == null)
             {
-                var editorPath = CurrentEditorInstallation.Trim();
-                if (editorPath == CodeEditor.SystemDefaultPath)
-                {
-                    // If no script editor is set, try to use first found supported one.
-                    var editorPaths = GetFoundScriptEditorPaths();
-                    if (editorPaths.Count > 0)
-                    {
-                        return new Installation { Path = editorPaths.Keys.First() };
-                    }
-
-                    return new Installation
-                    {
-                        Name = "Internal",
-                        Path = editorPath,
-                    };
-                }
-
-                foreach (var codeEditor in m_ExternalCodeEditors)
-                {
-                    Installation installation;
-                    if (codeEditor.TryGetInstallationForPath(editorPath, out installation))
-                    {
-                        return installation;
-                    }
-                }
-
-                return new Installation { Path = editorPath };
+                throw new ArgumentException("GetInstallationForPath: Does not allow null editorPath");
             }
+
+            Installation installation;
+            if (editorPath == CodeEditor.SystemDefaultPath)
+            {
+                m_DefaultEditor.TryGetInstallationForPath(editorPath, out installation);
+                return installation;
+            }
+
+            foreach (var codeEditor in m_ExternalCodeEditors)
+            {
+                if (codeEditor.TryGetInstallationForPath(editorPath, out installation))
+                {
+                    return installation;
+                }
+            }
+            m_DefaultEditor.TryGetInstallationForPath(editorPath, out installation);
+            return installation;
         }
 
-        internal IExternalCodeEditor Current
+        public IExternalCodeEditor GetCodeEditorForPath(string editorPath)
         {
-            get
+            if (editorPath == null)
             {
-                var editorPath = CurrentEditorInstallation.Trim();
-                if (editorPath == CodeEditor.SystemDefaultPath)
-                {
-                    return m_DefaultEditor;
-                }
+                throw new ArgumentException("GetCodeEditorForPath: Does not allow null editorPath");
+            }
 
-                foreach (var codeEditor in m_ExternalCodeEditors)
-                {
-                    Installation installation;
-                    if (codeEditor.TryGetInstallationForPath(editorPath, out installation))
-                    {
-                        return codeEditor;
-                    }
-                }
-
+            if (editorPath == CodeEditor.SystemDefaultPath)
+            {
                 return m_DefaultEditor;
             }
+
+            foreach (var codeEditor in m_ExternalCodeEditors)
+            {
+                Installation installation;
+                if (codeEditor.TryGetInstallationForPath(editorPath, out installation))
+                {
+                    return codeEditor;
+                }
+            }
+            return m_DefaultEditor;
         }
 
-        internal Dictionary<string, string> GetFoundScriptEditorPaths()
+        public Dictionary<string, string> GetFoundScriptEditorPaths()
         {
             var result = new Dictionary<string, string>();
 
@@ -133,38 +139,67 @@ namespace Unity.CodeEditor
             return result;
         }
 
-        internal static void AddIfPathExists(string name, string path, Dictionary<string, string> list)
+        private static void AddIfPathExists(string name, string path, Dictionary<string, string> list)
         {
-            if (list.ContainsKey(path))
-                return;
+            if (list.ContainsKey(path)) return;
             if (Directory.Exists(path)) list.Add(path, name);
             else if (File.Exists(path)) list.Add(path, name);
         }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static void SetExternalScriptEditor(string path)
         {
-            if (CurrentEditorInstallation == path)
+            Editor.SetCodeEditor(path);
+        }
+
+        public void SetCodeEditor(string editorPath)
+        {
+            if (editorPath == null)
             {
-                return;
+                throw new ArgumentException("SetCodeEditor: Does not allow null editorPath");
             }
 
-            EditorPrefs.SetString("kScriptsDefaultApp", path);
-            Editor.Current.Initialize(path);
+            EditorPrefs.SetString("kScriptsDefaultApp", editorPath);
+            m_CurrentEditor = ComputeCurrentEditor(editorPath);
+            m_CurrentInstallation = GetInstallationForPath(editorPath);
+            m_CurrentEditor.Initialize(editorPath);
+        }
+
+        private IExternalCodeEditor ComputeCurrentEditor(string editorPath)
+        {
+            if (m_ExternalCodeEditors.Count() == 0)
+            {
+                TypeCollection collection = TypeCache.GetTypesDerivedFrom<IExternalCodeEditor>();
+                for (int i = 0; i < collection.Count(); i++)
+                {
+                    var codeEditorType = collection[i];
+                    if (codeEditorType == typeof(DefaultExternalCodeEditor))
+                        continue;
+
+                    if (codeEditorType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null) != null)
+                    {
+                        IExternalCodeEditor codeEditor = (IExternalCodeEditor)Activator.CreateInstance(codeEditorType);
+                        m_ExternalCodeEditors.Add(codeEditor);
+                    }
+                }
+            }
+
+            return GetCodeEditorForPath(editorPath);
         }
 
         public static void Register(IExternalCodeEditor externalCodeEditor)
         {
+            if (Editor.m_ExternalCodeEditors.Select(editor => editor.GetType()).Any(editorType => editorType == externalCodeEditor.GetType()))
+                return;
             Editor.m_ExternalCodeEditors.Add(externalCodeEditor);
+            CodeEditor.Editor.SetCodeEditor(Editor.m_CurrentInstallation.Path);
         }
 
         public static void Unregister(IExternalCodeEditor externalCodeEditor)
         {
             Editor.m_ExternalCodeEditors.Remove(externalCodeEditor);
+            CodeEditor.Editor.SetCodeEditor(Editor.m_CurrentInstallation.Path);
         }
-
-        public static IExternalCodeEditor CurrentEditor => Editor.Current;
-
-        public static string CurrentEditorInstallation => EditorPrefs.GetString("kScriptsDefaultApp");
 
         public static bool OSOpenFile(string appPath, string arguments)
         {
@@ -199,7 +234,7 @@ namespace Unity.CodeEditor
         /// behavior in CommandLineToArgvW and possibly other argument processors.
         /// </remarks>
         // https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
-        static string QuoteForProcessStart(string argument)
+        public static string QuoteForProcessStart(string argument)
         {
             var sb = new StringBuilder();
             // Quote for g_shell_parse_argv when running on Unix (under Mono).

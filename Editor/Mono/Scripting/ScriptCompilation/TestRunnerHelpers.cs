@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Modules;
@@ -11,7 +12,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 {
     static class TestRunnerHelpers
     {
-        private const string k_NunitAssemblyName = "nunit.framework.dll";
+        internal const string NunitAssemblyName = "nunit.framework.dll";
         private const string k_EditorTestRunnerAssemblyName = "UnityEditor.TestRunner.dll";
         private const string k_EngineTestRunnerAssemblyName = "UnityEngine.TestRunner.dll";
 
@@ -22,9 +23,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return false;
             }
 
-            return !targetAssembly.References.Any(x => x.Filename.Contains(k_EngineTestRunnerAssemblyName) || x.Filename.Contains(k_EditorTestRunnerAssemblyName))
-                && !targetAssembly.Filename.Contains(k_EngineTestRunnerAssemblyName)
-                && !targetAssembly.Filename.Contains(k_EditorTestRunnerAssemblyName)
+            bool referencesTestRunnerAssembly = false;
+            foreach (var reference in targetAssembly.References)
+            {
+                referencesTestRunnerAssembly =
+                    reference.Filename.Equals(k_EditorTestRunnerAssemblyName, StringComparison.Ordinal)
+                    || reference.Filename.Equals(k_EngineTestRunnerAssemblyName, StringComparison.Ordinal);
+
+                if (referencesTestRunnerAssembly)
+                {
+                    break;
+                }
+            }
+
+            return !referencesTestRunnerAssembly
+                && !targetAssembly.Filename.Equals(k_EditorTestRunnerAssemblyName, StringComparison.Ordinal)
+                && !targetAssembly.Filename.Equals(k_EngineTestRunnerAssemblyName, StringComparison.Ordinal)
                 && (PlayerSettings.playModeTestRunnerEnabled || (targetAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly);
         }
 
@@ -37,13 +51,31 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static bool ShouldAddNunitReferences(EditorBuildRules.TargetAssembly targetAssembly)
         {
-            return !targetAssembly.PrecompiledReferences.Any(x => AssetPath.GetFileName(x.Path) == k_NunitAssemblyName)
+            bool referencesNUnit = false;
+
+            if ((targetAssembly.Flags & AssemblyFlags.ExplicitReferences) == AssemblyFlags.ExplicitReferences)
+            {
+                foreach (var explicitPrecompiledReference in targetAssembly.ExplicitPrecompiledReferences)
+                {
+                    referencesNUnit = explicitPrecompiledReference.Equals(NunitAssemblyName, StringComparison.Ordinal);
+                    if (referencesNUnit)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return !referencesNUnit
                 && (PlayerSettings.playModeTestRunnerEnabled || (targetAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly);
         }
 
-        public static bool IsPrecompiledAssemblyNunit(ref PrecompiledAssembly precompiledAssembly)
+        public static void AddNunitReferences(Dictionary<string, PrecompiledAssembly> nameToPrecompiledAssemblies, ref List<PrecompiledAssembly> precompiledReferences)
         {
-            return AssetPath.GetFileName(precompiledAssembly.Path) == k_NunitAssemblyName;
+            PrecompiledAssembly nUnitAssembly;
+            if (nameToPrecompiledAssemblies.TryGetValue(TestRunnerHelpers.NunitAssemblyName, out nUnitAssembly))
+            {
+                precompiledReferences.Add(nUnitAssembly);
+            }
         }
     }
 }

@@ -193,9 +193,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static void DirtyPrecompiledAssembly(string path)
+        public static void DirtyPrecompiledAssemblies(string[] paths)
         {
-            Instance.DirtyPrecompiledAssembly(path);
+            EmitExceptionAsError(() => Instance.DirtyPrecompiledAssemblies(paths));
         }
 
         [RequiredByNativeCode]
@@ -232,12 +232,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static void RunScriptUpdaterOnAssembly(string assemblyFilename)
         {
             Instance.RunScriptUpdaterOnAssembly(assemblyFilename);
-        }
-
-        [RequiredByNativeCode]
-        public static void SetAllPrecompiledAssemblies(PrecompiledAssembly[] precompiledAssemblies)
-        {
-            Instance.SetAllPrecompiledAssemblies(precompiledAssemblies);
         }
 
         [RequiredByNativeCode]

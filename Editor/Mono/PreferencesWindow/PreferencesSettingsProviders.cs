@@ -77,7 +77,6 @@ namespace UnityEditor
 
         internal class ExternalProperties
         {
-            public static readonly GUIContent addUnityProjeToSln = EditorGUIUtility.TrTextContent("Add .unityproj's to .sln");
             public static readonly GUIContent editorAttaching = EditorGUIUtility.TrTextContent("Editor Attaching");
             public static readonly GUIContent changingThisSettingRequiresRestart = EditorGUIUtility.TrTextContent("Changing this setting requires a restart to take effect.");
             public static readonly GUIContent revisionControlDiffMerge = EditorGUIUtility.TrTextContent("Revision Control Diff/Merge");
@@ -155,7 +154,6 @@ namespace UnityEditor
         private GICacheSettings m_GICacheSettings;
 
         private RefString m_ScriptEditorPath = new RefString("");
-        private bool m_ExternalEditorSupportsUnityProj;
         private RefString m_ImageAppPath = new RefString("");
         private int m_DiffToolIndex;
 
@@ -361,16 +359,14 @@ namespace UnityEditor
             FilePopup(ExternalProperties.externalScriptEditor, ScriptEditorUtility.GetExternalScriptEditor(), ref m_ScriptAppDisplayNames, ref m_ScriptApps, m_ScriptEditorPath, CodeEditor.SystemDefaultPath, OnScriptEditorChanged);
 
             #pragma warning disable 618
-            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.Other)
+            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorPath) == ScriptEditorUtility.ScriptEditor.Other)
             {
-                CodeEditor.Editor.Current.OnGUI();
+                CodeEditor.Editor.CurrentCodeEditor.OnGUI();
             }
             else
             {
                 GenerateAllProjectSettings();
             }
-
-            DoUnityProjCheckbox();
 
             bool oldValue = m_AllowAttachedDebuggingOfEditor;
             m_AllowAttachedDebuggingOfEditor = EditorGUILayout.Toggle(ExternalProperties.editorAttaching, m_AllowAttachedDebuggingOfEditor);
@@ -458,28 +454,6 @@ namespace UnityEditor
             }
         }
 
-        private void DoUnityProjCheckbox()
-        {
-            bool isConfigurable = false;
-            bool value = false;
-
-            ScriptEditorUtility.ScriptEditor scriptEditor = GetSelectedScriptEditor();
-
-            if (scriptEditor == ScriptEditorUtility.ScriptEditor.MonoDevelop)
-            {
-                isConfigurable = true;
-                value = m_ExternalEditorSupportsUnityProj;
-            }
-
-            using (new EditorGUI.DisabledScope(!isConfigurable))
-            {
-                value = EditorGUILayout.Toggle(ExternalProperties.addUnityProjeToSln, value);
-            }
-
-            if (isConfigurable)
-                m_ExternalEditorSupportsUnityProj = value;
-        }
-
         #pragma warning disable 618
         private ScriptEditorUtility.ScriptEditor GetSelectedScriptEditor()
         {
@@ -488,7 +462,7 @@ namespace UnityEditor
 
         private void OnScriptEditorChanged()
         {
-            CodeEditor.SetExternalScriptEditor(m_ScriptEditorPath);
+            CodeEditor.Editor.SetCodeEditor(m_ScriptEditorPath);
             UnityEditor.VisualStudioIntegration.UnityVSSupport.ScriptEditorChanged(m_ScriptEditorPath.str);
         }
 
@@ -1020,8 +994,7 @@ namespace UnityEditor
 
         private void WritePreferences()
         {
-            CodeEditor.SetExternalScriptEditor(m_ScriptEditorPath);
-            EditorPrefs.SetBool("kExternalEditorSupportsUnityProj", m_ExternalEditorSupportsUnityProj);
+            CodeEditor.Editor.SetCodeEditor(m_ScriptEditorPath);
 
             EditorPrefs.SetString("kImagesDefaultApp", m_ImageAppPath);
             EditorPrefs.SetString("kDiffsDefaultApp", m_DiffTools.Length == 0 ? "" : m_DiffTools[m_DiffToolIndex]);
@@ -1094,13 +1067,12 @@ namespace UnityEditor
         {
             m_ScriptEditorPath.str = ScriptEditorUtility.GetExternalScriptEditor();
 
-            m_ExternalEditorSupportsUnityProj = EditorPrefs.GetBool("kExternalEditorSupportsUnityProj", false);
             m_ImageAppPath.str = EditorPrefs.GetString("kImagesDefaultApp");
 
             m_ScriptApps = BuildAppPathList(m_ScriptEditorPath, kRecentScriptAppsKey, CodeEditor.SystemDefaultPath);
             m_ScriptAppsEditions = new string[m_ScriptApps.Length];
 
-            if (Application.platform == RuntimePlatform.WindowsEditor)
+            if (Application.platform == RuntimePlatform.WindowsEditor && UnityVSSupport.IsUnityVSEnabled())
             {
                 foreach (var vsPaths in SyncVS.InstalledVisualStudios.Values)
                     foreach (var vsPath in vsPaths)
@@ -1119,11 +1091,6 @@ namespace UnityEditor
             }
 
             var foundScriptEditorPaths = CodeEditor.Editor.GetFoundScriptEditorPaths();
-            if (Application.platform == RuntimePlatform.OSXEditor)
-            {
-                CodeEditor.AddIfPathExists("Visual Studio", "/Applications/Visual Studio.app", foundScriptEditorPaths);
-                CodeEditor.AddIfPathExists("Visual Studio (Preview)", "/Applications/Visual Studio (Preview).app", foundScriptEditorPaths);
-            }
 
             foreach (var scriptEditorPath in foundScriptEditorPaths.Keys)
             {

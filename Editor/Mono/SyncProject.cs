@@ -78,7 +78,7 @@ namespace UnityEditor
             {
                 get
                 {
-                    var vs = CodeEditor.CurrentEditorInstallation;
+                    var vs = CodeEditor.CurrentEditorPath;
                     if (InstalledVisualStudios.ContainsKey(UnityEditor.VisualStudioVersion.VisualStudio2008) &&
                         (vs != String.Empty) &&
                         PathsAreEquivalent(InstalledVisualStudios[UnityEditor.VisualStudioVersion.VisualStudio2008].Last().Path, vs))
@@ -159,7 +159,7 @@ namespace UnityEditor
                 return;
 
             #pragma warning disable 618
-            if (Synchronizer.SolutionExists() && ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) != ScriptEditorUtility.ScriptEditor.Other)
+            if (Synchronizer.SolutionExists() && ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorPath) != ScriptEditorUtility.ScriptEditor.Other)
             {
                 Synchronizer.Sync();
             }
