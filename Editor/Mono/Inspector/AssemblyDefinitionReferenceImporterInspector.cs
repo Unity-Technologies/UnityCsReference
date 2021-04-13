@@ -50,6 +50,10 @@ namespace UnityEditor
         public override void OnEnable()
         {
             base.OnEnable();
+
+            //Ensure UIElements handles the IMGUI container with margins
+            alwaysAllowExpansion = true;
+
             m_Reference = extraDataSerializedObject.FindProperty("reference");
             m_ReferenceName = m_Reference.FindPropertyRelative("name");
             m_ReferenceAsset = m_Reference.FindPropertyRelative("asset");

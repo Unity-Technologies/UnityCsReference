@@ -290,13 +290,6 @@ namespace UnityEditor
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateScene>(), "New Scene.unity", EditorGUIUtility.FindTexture(typeof(SceneAsset)), null);
         }
 
-        [MenuItem("Assets/Create/Prefab Variant", true)]
-        static bool CreatePrefabVariantValidation()
-        {
-            var go = Selection.activeGameObject;
-            return (go != null && EditorUtility.IsPersistent(go));
-        }
-
         [MenuItem("Assets/Create/Prefab", false, 202)]
         static void CreatePrefab()
         {
@@ -308,24 +301,87 @@ namespace UnityEditor
                 null);
         }
 
+        [MenuItem("Assets/Create/Prefab Variant", true)]
+        static bool CreatePrefabVariantValidation()
+        {
+            var gameObjects = Selection.gameObjects;
+            if (gameObjects == null || gameObjects.Length == 0)
+                return false;
+
+            foreach (var go in gameObjects)
+            {
+                if (go == null || !EditorUtility.IsPersistent(go))
+                    return false;
+            }
+            return true;
+        }
+
         [MenuItem("Assets/Create/Prefab Variant", false, 203)]
         static void CreatePrefabVariant()
         {
-            var go = Selection.activeGameObject;
-            if (go == null || !EditorUtility.IsPersistent(go))
+            var gameObjects = Selection.gameObjects;
+            if (gameObjects == null || gameObjects.Length == 0)
                 return;
 
-            string sourcePath = AssetDatabase.GetAssetPath(go);
+            if (gameObjects.Length == 1)
+            {
+                var go = gameObjects[0];
+                if (go == null || !EditorUtility.IsPersistent(go))
+                    return;
 
-            string sourceDir = Path.GetDirectoryName(sourcePath).ConvertSeparatorsToUnity();
-            string variantPath = string.Format("{0}/{1} Variant.prefab", sourceDir, go.name);
+                string sourcePath = AssetDatabase.GetAssetPath(go);
+                string sourceDir = Path.GetDirectoryName(sourcePath).ConvertSeparatorsToUnity();
+                string variantPath = GetPrefabVariantPath(sourceDir, go.name);
 
-            StartNameEditingIfProjectWindowExists(
-                0,
-                ScriptableObject.CreateInstance<DoCreatePrefabVariant>(),
-                variantPath,
-                EditorGUIUtility.FindTexture("PrefabVariant Icon"),
-                sourcePath);
+                StartNameEditingIfProjectWindowExists(
+                    0,
+                    ScriptableObject.CreateInstance<DoCreatePrefabVariant>(),
+                    variantPath,
+                    EditorGUIUtility.FindTexture("PrefabVariant Icon"),
+                    sourcePath);
+            }
+            else if (gameObjects.Length > 1)
+            {
+                CreatePrefabVariants(gameObjects);
+            }
+        }
+
+        static GameObject[] CreatePrefabVariants(GameObject[] gameObjects)
+        {
+            if (gameObjects == null)
+                return null;
+
+            foreach (var go in gameObjects)
+            {
+                if (go == null || !EditorUtility.IsPersistent(go))
+                    return null;
+            }
+
+            var createdVariants = new List<GameObject>();
+            foreach (var go in gameObjects)
+            {
+                string sourcePath = AssetDatabase.GetAssetPath(go);
+                string sourceDir = Path.GetDirectoryName(sourcePath).ConvertSeparatorsToUnity();
+                string variantPath = GetPrefabVariantPath(sourceDir, go.name);
+                variantPath = AssetDatabase.GenerateUniqueAssetPath(variantPath);
+
+                var variant = PrefabUtility.CreateVariant(go, variantPath);
+                if (variant != null)
+                    createdVariants.Add(variant);
+            }
+
+            if (createdVariants.Count > 0)
+            {
+                Selection.objects = createdVariants.ToArray();
+                FrameObjectInProjectWindow(createdVariants.Last().GetInstanceID());
+            }
+
+            return createdVariants.ToArray();
+        }
+
+        static string GetPrefabVariantPath(string folder, string gameObjectName)
+        {
+            return string.Format("{0}/{1} Variant.prefab", folder, gameObjectName);
         }
 
         public static void CreateAssetWithContent(string filename, string content, Texture2D icon = null)

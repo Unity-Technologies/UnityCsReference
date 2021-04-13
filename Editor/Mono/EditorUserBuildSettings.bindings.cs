@@ -684,6 +684,14 @@ namespace UnityEditor
             set;
         }
 
+        public static extern bool switchUseLegacyNvnPoolAllocator
+        {
+            [NativeMethod("GetUseLegacyNvnPoolAllocatorForSwitch")]
+            get;
+            [NativeMethod("SetUseLegacyNvnPoolAllocatorForSwitch")]
+            set;
+        }
+
         internal static extern SwitchShaderCompilerConfig switchShaderCompilerConfig
         {
             [NativeMethod("GetSwitchShaderCompilerConfig")]

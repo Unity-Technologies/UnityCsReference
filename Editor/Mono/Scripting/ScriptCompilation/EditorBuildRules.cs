@@ -427,9 +427,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static bool ShouldUseAnalyzerForScriptAssembly(ScriptAssembly sa, TargetAssembly targetAssemblyOwningAnalyzer)
         {
-            if ((sa.Flags & AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers) == 0)
-                return false;
-
             if (targetAssemblyOwningAnalyzer == null)
                 return true;
 
@@ -543,8 +540,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
             }
 
-            if ((settings.CompilationOptions & EditorScriptCompilationOptions.BuildingWithRoslynAnalysis) != 0
-                && PlayerSettings.EnableRoslynAnalyzers)
+            if ((settings.CompilationOptions & EditorScriptCompilationOptions.BuildingWithRoslynAnalysis) != 0)
             {
                 var analyzers = assemblies.RoslynAnalyzerDllPaths;
                 foreach (var a in analyzers)
@@ -890,7 +886,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 var runtimeFirstPass = new TargetAssembly("Assembly-" + languageName + "-firstpass" + ".dll",
                     language,
-                    AssemblyFlags.FirstPass | AssemblyFlags.UserAssembly | AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers,
+                    AssemblyFlags.FirstPass | AssemblyFlags.UserAssembly,
                     TargetAssemblyType.Predefined,
                     null,
                     null,
@@ -900,7 +896,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 var runtime = new TargetAssembly("Assembly-" + languageName + ".dll",
                     language,
-                    AssemblyFlags.UserAssembly | AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers,
+                    AssemblyFlags.UserAssembly,
                     TargetAssemblyType.Predefined,
                     null,
                     null,
@@ -910,7 +906,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 var editorFirstPass = new TargetAssembly("Assembly-" + languageName + "-Editor-firstpass" + ".dll",
                     language,
-                    AssemblyFlags.EditorOnly | AssemblyFlags.FirstPass | AssemblyFlags.UserAssembly | AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers,
+                    AssemblyFlags.EditorOnly | AssemblyFlags.FirstPass | AssemblyFlags.UserAssembly,
                     TargetAssemblyType.Predefined,
                     null,
                     null,
@@ -920,7 +916,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 var editor = new TargetAssembly("Assembly-" + languageName + "-Editor" + ".dll",
                     language,
-                    AssemblyFlags.EditorOnly | AssemblyFlags.UserAssembly | AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers,
+                    AssemblyFlags.EditorOnly | AssemblyFlags.UserAssembly,
                     TargetAssemblyType.Predefined,
                     null,
                     null,

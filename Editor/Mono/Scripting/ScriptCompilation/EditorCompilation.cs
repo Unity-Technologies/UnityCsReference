@@ -2118,26 +2118,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies | additionalOptions, defines);
         }
 
-        public ScriptAssembly[] GetScriptAssembliesForRoslynAnalysis(string[] candidateAssemblies)
-        {
-            Dictionary<string, PrecompiledAssembly> precompiledAssemblies =
-                GetPrecompiledAssembliesDictionaryWithSetupErrorsTracking(
-                    isEditor: true,
-                    EditorUserBuildSettings.activeBuildTargetGroup,
-                    EditorUserBuildSettings.activeBuildTarget);
-
-            ScriptAssemblySettings settings =
-                CreateEditorScriptAssemblySettings(EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithRoslynAnalysis);
-
-            return GetAllScriptAssemblies(
-                settings,
-                unityAssemblies,
-                precompiledAssemblies,
-                defines: null,
-                targetAssemblyCondition: assembly => (assembly.Flags & AssemblyFlags.CandidateForCompilingWithRoslynAnalyzers) != 0
-                && candidateAssemblies.Contains(assembly.Filename));
-        }
-
         public ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options, string[] defines)
         {
             var isForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;

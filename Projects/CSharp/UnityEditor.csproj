@@ -3160,9 +3160,6 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ReferenceAssemblyHelpers.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\ReferenceAssemblyHelpers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\RoslynAnalysisRunner.cs">
-      <Link>Editor\Mono\Scripting\ScriptCompilation\RoslynAnalysisRunner.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ScriptAssembly.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\ScriptAssembly.cs</Link>
     </Compile>

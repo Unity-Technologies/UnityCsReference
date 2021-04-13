@@ -612,6 +612,11 @@ namespace UnityEngine
             get { return SupportsMultiview(); }
         }
 
+        public static bool supportsStoreAndResolveAction
+        {
+            get { return SupportsStoreAndResolveAction(); }
+        }
+
         [Obsolete("Vertex program support is required in Unity 5.0+")]
         public static bool supportsVertexPrograms { get { return true; } }
 
@@ -883,6 +888,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsMultiview")]
         static extern bool SupportsMultiview();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsStoreAndResolveAction")]
+        static extern bool SupportsStoreAndResolveAction();
     }
 
 
@@ -1075,6 +1083,8 @@ namespace UnityEngine
         public static bool usesLoadStoreActions => ShimManager.systemInfoShim.usesLoadStoreActions;
 
         public static HDRDisplaySupportFlags hdrDisplaySupportFlags => ShimManager.systemInfoShim.hdrDisplaySupportFlags;
+
+        public static bool supportsStoreAndResolveAction => ShimManager.systemInfoShim.supportsStoreAndResolveAction;
 
         public static bool IsFormatSupported(GraphicsFormat format, FormatUsage usage)
         {

@@ -560,7 +560,7 @@ namespace UnityEngine
                 MSAA4x = 12,
                 MSAA8x = 13,
                 //MSAA16x = 14, // this is only used internally.
-                StencilSampling = 15,
+                StencilSampling = 16,
             }
 
             // Keep in sync with DefaultFormat in Runtime/Graphics/Format.h
