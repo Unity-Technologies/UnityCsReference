@@ -108,17 +108,17 @@ namespace UnityEditorInternal
             m_ReorderableList.ClearCache();
         }
 
-        public float GetHeight()
+        public float GetHeight(bool includeChildren)
         {
-            return m_HeaderHeight + (Property.isExpanded && m_ReorderableList != null ? Constants.kHeaderPadding + m_ReorderableList.GetHeight() : 0.0f);
+            return m_HeaderHeight + (includeChildren && Property.isExpanded && m_ReorderableList != null ? Constants.kHeaderPadding + m_ReorderableList.GetHeight() : 0.0f);
         }
 
-        public void Draw(GUIContent label, Rect r)
+        public void Draw(GUIContent label, Rect r, bool includeChildren)
         {
-            Draw(label, r, ReorderableList.Defaults.infinityRect);
+            Draw(label, r, ReorderableList.Defaults.infinityRect, includeChildren);
         }
 
-        public void Draw(GUIContent label, Rect r, Rect visibleArea)
+        public void Draw(GUIContent label, Rect r, Rect visibleArea, bool includeChildren)
         {
             r.xMin += EditorGUI.indent;
             var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
@@ -156,6 +156,8 @@ namespace UnityEditorInternal
             }
             GUI.enabled = prevEnabled;
 
+            if (!includeChildren) return;
+
             if (Event.current.type == EventType.Used && sizeRect.Contains(Event.current.mousePosition)) Event.current.type = prevType;
 
             EditorGUI.DefaultPropertyField(sizeRect, m_ArraySize, GUIContent.none);
@@ -188,7 +190,7 @@ namespace UnityEditorInternal
                 Event.current.Use();
             }
 
-            if (Property.isExpanded)
+            if (includeChildren && Property.isExpanded)
             {
                 r.y += m_HeaderHeight + Constants.kHeaderPadding;
                 r.height -= m_HeaderHeight + Constants.kHeaderPadding;

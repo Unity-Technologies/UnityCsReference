@@ -804,7 +804,7 @@ namespace UnityEditor
                                     evt.Use();
                                     break;
                                 case 2:
-                                    m_Panes[sel].Close();
+                                    Close(m_Panes[sel]);
                                     evt.Use();
                                     break;
                             }

@@ -188,7 +188,7 @@ namespace UnityEditor
                     }
 
                     reorderableList.Property = property;
-                    reorderableList.Draw(label, position, visibleArea);
+                    reorderableList.Draw(label, position, visibleArea, includeChildren);
                     return !includeChildren && property.isExpanded;
                 }
 
@@ -224,7 +224,7 @@ namespace UnityEditor
                         if (position.Overlaps(visibleArea))
                         {
                             EditorGUI.BeginChangeCheck();
-                            childrenAreExpanded = handler.OnGUI(position, prop, null, false) && EditorGUI.HasVisibleChildFields(prop);
+                            childrenAreExpanded = handler.OnGUI(position, prop, null, UseReorderabelListControl(prop)) && EditorGUI.HasVisibleChildFields(prop);
                             // Changing child properties (like array size) may invalidate the iterator,
                             // so stop now, or we may get errors.
                             if (EditorGUI.EndChangeCheck())
@@ -276,7 +276,7 @@ namespace UnityEditor
                 }
 
                 reorderableList.Property = property;
-                height += s_reorderableLists[key].GetHeight();
+                height += s_reorderableLists[key].GetHeight(includeChildren);
                 return height;
             }
 
@@ -384,6 +384,7 @@ namespace UnityEditor
 
         static bool IsNonStringArray(SerializedProperty property)
         {
+            if (property == null) return false;
             // Strings should not be represented with ReorderableList, they will use custom drawer therefore we don't treat them as other arrays
             return property.isArray && property.propertyType != SerializedPropertyType.String;
         }
