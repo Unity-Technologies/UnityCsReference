@@ -188,7 +188,7 @@ namespace UnityEditor
             Vector3 resolution = GetTextureResolution(Texture);
             var format = GraphicsFormatUtility.GetFormatString(Texture.graphicsFormat);
             var size = EditorUtility.FormatBytes(TextureUtil.GetRuntimeMemorySizeLong(Texture));
-            string info = $"{resolution.z}x{resolution.y}x{resolution.z} {format} {size}";
+            string info = $"{resolution.x}x{resolution.y}x{resolution.z} {format} {size}";
             return info;
         }
 
@@ -270,9 +270,9 @@ namespace UnityEditor
 
         static Vector3 GetTextureResolution(Object[] textures)
         {
-            if (textures == null || textures.Length < 1) return Vector3.one * 2;
+            if (textures == null || textures.Length < 1) return Vector3.one;
 
-            Vector3 textureResolution = Vector3.one * 3;
+            Vector3 textureResolution = Vector3.one;
 
             foreach (var texture in textures)
             {

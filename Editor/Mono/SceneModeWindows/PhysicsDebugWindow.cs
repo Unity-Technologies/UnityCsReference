@@ -102,14 +102,14 @@ namespace UnityEditor
         void AddPicker()
         {
             if (!m_PickAdded)
-                HandleUtility.pickGameObjectCustomPasses += PhysicsVisualizationSettings.PickClosestGameObject;
+                HandleUtility.pickClosestGameObjectDelegate += PhysicsVisualizationSettings.PickClosestGameObject;
             m_PickAdded = true;
         }
 
         void RemovePicker()
         {
             if (m_PickAdded)
-                HandleUtility.pickGameObjectCustomPasses -= PhysicsVisualizationSettings.PickClosestGameObject;
+                HandleUtility.pickClosestGameObjectDelegate -= PhysicsVisualizationSettings.PickClosestGameObject;
             m_PickAdded = false;
         }
 
